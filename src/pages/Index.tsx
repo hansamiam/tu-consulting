@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Instagram, Linkedin } from "lucide-react";
-import heroImage from "@/assets/yale-campus.jpg";
+import heroImage from "@/assets/hero-campus.jpg";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { shouldRedirectToRussian } from "@/utils/languageDetection";
 
