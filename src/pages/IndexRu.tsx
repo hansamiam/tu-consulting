@@ -55,10 +55,12 @@ const IndexRu = () => {
 
   return (
     <div className="min-h-screen relative flex flex-col">
-      <LanguageSwitcher />
-      
       {/* Top Navy Bar */}
-      <div className="bg-navy py-3 border-b border-gold/10" />
+      <div className="bg-navy py-6 border-b border-gold/20">
+        <div className="max-w-6xl mx-auto px-6 flex justify-end">
+          <LanguageSwitcher />
+        </div>
+      </div>
       
       {/* Hero Section with Background Image */}
       <div 
@@ -77,7 +79,7 @@ const IndexRu = () => {
           </div>
           {/* Main Headline - Coming Soon */}
           <div className="mb-8 inline-block px-8 py-4 border-2 border-gold/30 rounded-lg">
-            <h1 className="font-heading text-5xl md:text-7xl lg:text-8xl font-bold text-gold leading-tight tracking-tight">
+            <h1 className="font-heading text-4xl md:text-6xl lg:text-7xl font-semibold text-gold leading-tight tracking-tight">
               Скоро запуск
             </h1>
           </div>
@@ -159,7 +161,7 @@ const IndexRu = () => {
       </div>
       
       {/* Bottom Navy Bar */}
-      <div className="bg-navy py-3 border-t border-gold/10" />
+      <div className="bg-navy py-6 border-t border-gold/20" />
     </div>
   );
 };

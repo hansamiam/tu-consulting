@@ -17,7 +17,7 @@ const LanguageSwitcher = () => {
   return (
     <button
       onClick={switchLanguage}
-      className="fixed top-6 right-6 z-50 text-xs text-primary-foreground/50 hover:text-gold transition-colors duration-200 font-light tracking-wide"
+      className="text-sm text-primary-foreground/60 hover:text-gold transition-colors duration-200 tracking-wider font-medium"
     >
       {isRussian ? 'EN' : 'RU'}
     </button>

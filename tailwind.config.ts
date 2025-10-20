@@ -55,7 +55,7 @@ export default {
         },
       },
       fontFamily: {
-        heading: ['Poppins', 'sans-serif'],
+        heading: ['Montserrat', 'sans-serif'],
         sans: ['Inter', 'sans-serif'],
       },
       backgroundImage: {
