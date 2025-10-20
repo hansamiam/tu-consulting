@@ -73,9 +73,11 @@ const Index = () => {
           </div>
 
           {/* Main Headline - Coming Soon */}
-          <h1 className="font-heading text-6xl md:text-8xl lg:text-9xl font-bold text-primary-foreground mb-8 leading-tight tracking-tight">
-            COMING <span className="text-gold">SOON</span>
-          </h1>
+          <div className="mb-8 inline-block px-8 py-4 border-2 border-gold/30 rounded-lg">
+            <h1 className="font-heading text-5xl md:text-7xl lg:text-8xl font-bold text-gold leading-tight tracking-tight">
+              Coming Soon
+            </h1>
+          </div>
 
           {/* Subheadline */}
           <p className="text-xl md:text-2xl text-primary-foreground/90 mb-12 max-w-2xl mx-auto font-light leading-relaxed">
@@ -117,24 +119,24 @@ const Index = () => {
           )}
 
           {/* Social Links */}
-          <div className="flex gap-6 justify-center mb-8">
+          <div className="flex gap-8 justify-center mb-8">
             <a
               href="https://instagram.com/topuniconsulting"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary-foreground/80 hover:text-gold transition-colors duration-300"
+              className="text-primary-foreground/70 hover:text-gold transition-colors duration-200"
               aria-label="Follow us on Instagram"
             >
-              <Instagram size={28} />
+              <Instagram size={24} strokeWidth={1.5} />
             </a>
             <a
               href="https://linkedin.com/company/topuniconsulting"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary-foreground/80 hover:text-gold transition-colors duration-300"
+              className="text-primary-foreground/70 hover:text-gold transition-colors duration-200"
               aria-label="Connect on LinkedIn"
             >
-              <Linkedin size={28} />
+              <Linkedin size={24} strokeWidth={1.5} />
             </a>
           </div>
 
