@@ -54,12 +54,15 @@ const IndexRu = () => {
   };
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative flex flex-col">
       <LanguageSwitcher />
+      
+      {/* Top Navy Bar */}
+      <div className="bg-navy py-3 border-b border-gold/10" />
       
       {/* Hero Section with Background Image */}
       <div 
-        className="min-h-screen relative flex items-center justify-center bg-cover bg-center"
+        className="flex-1 relative flex items-center justify-center bg-cover bg-center"
         style={{
           backgroundImage: `linear-gradient(rgba(10, 35, 66, 0.6), rgba(10, 35, 66, 0.6)), url(${heroImage})`,
         }}
@@ -154,6 +157,9 @@ const IndexRu = () => {
           </footer>
         </main>
       </div>
+      
+      {/* Bottom Navy Bar */}
+      <div className="bg-navy py-3 border-t border-gold/10" />
     </div>
   );
 };

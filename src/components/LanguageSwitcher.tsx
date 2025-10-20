@@ -15,16 +15,12 @@ const LanguageSwitcher = () => {
   };
 
   return (
-    <div className="fixed top-6 right-6 z-50">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={switchLanguage}
-        className="bg-background/80 backdrop-blur-sm border-gold/30 text-foreground hover:bg-gold/10 hover:text-gold transition-all duration-200"
-      >
-        {isRussian ? '🇬🇧 English' : '🇷🇺 Русский'}
-      </Button>
-    </div>
+    <button
+      onClick={switchLanguage}
+      className="fixed top-6 right-6 z-50 text-xs text-primary-foreground/50 hover:text-gold transition-colors duration-200 font-light tracking-wide"
+    >
+      {isRussian ? 'EN' : 'RU'}
+    </button>
   );
 };
 
