@@ -54,30 +54,24 @@ const IndexRu = () => {
   };
 
   return (
-    <div className="min-h-screen relative flex flex-col">
+    <div className="min-h-screen relative">
       <LanguageSwitcher />
       
-      {/* Top Section - Solid Navy */}
-      <div className="bg-navy py-8 px-6">
-        <div className="max-w-4xl mx-auto text-center">
+      {/* Hero Section with Background Image */}
+      <div 
+        className="min-h-screen relative flex items-center justify-center bg-cover bg-center"
+        style={{
+          backgroundImage: `linear-gradient(rgba(10, 35, 66, 0.6), rgba(10, 35, 66, 0.6)), url(${heroImage})`,
+        }}
+      >
+        <main className="relative z-10 max-w-4xl mx-auto px-6 py-20 text-center">
           {/* Logo/Brand Name */}
-          <div className="animate-fade-in">
+          <div className="mb-12 animate-fade-in">
             <h2 className="text-primary-foreground font-heading text-2xl md:text-3xl font-semibold tracking-wide mb-2">
               Top Uni Consulting
             </h2>
             <div className="w-24 h-1 bg-gold mx-auto rounded-full" />
           </div>
-        </div>
-      </div>
-
-      {/* Middle Section - Library Image */}
-      <div 
-        className="flex-1 relative bg-cover bg-center flex items-center justify-center"
-        style={{
-          backgroundImage: `linear-gradient(rgba(10, 35, 66, 0.4), rgba(10, 35, 66, 0.4)), url(${heroImage})`,
-        }}
-      >
-        <main className="relative z-10 max-w-4xl mx-auto px-6 py-20 text-center">
           {/* Main Headline - Coming Soon */}
           <div className="mb-8 inline-block px-8 py-4 border-2 border-gold/30 rounded-lg">
             <h1 className="font-heading text-5xl md:text-7xl lg:text-8xl font-bold text-gold leading-tight tracking-tight">
@@ -123,14 +117,9 @@ const IndexRu = () => {
               </p>
             </div>
           )}
-        </main>
-      </div>
 
-      {/* Bottom Section - Solid Navy */}
-      <div className="bg-navy py-12 px-6">
-        <div className="max-w-4xl mx-auto text-center space-y-6">
           {/* Social Links */}
-          <div className="flex gap-6 justify-center">
+          <div className="flex gap-6 justify-center mb-8">
             <a
               href="https://instagram.com/topuniconsulting"
               target="_blank"
@@ -163,7 +152,7 @@ const IndexRu = () => {
             </p>
             <p>© 2025 Top Uni Consulting | Все права защищены</p>
           </footer>
-        </div>
+        </main>
       </div>
     </div>
   );
