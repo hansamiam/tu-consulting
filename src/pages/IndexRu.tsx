@@ -1,25 +1,16 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Instagram, Linkedin } from "lucide-react";
 import heroImage from "@/assets/hero-library.jpg";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { shouldRedirectToRussian } from "@/utils/languageDetection";
 
-const Index = () => {
+const IndexRu = () => {
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (shouldRedirectToRussian()) {
-      navigate('/ru');
-    }
-  }, [navigate]);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -31,8 +22,8 @@ const Index = () => {
     
     if (!email.trim()) {
       toast({
-        title: "Email required",
-        description: "Please enter your email address",
+        title: "Требуется email",
+        description: "Пожалуйста, введите ваш email адрес",
         variant: "destructive",
       });
       return;
@@ -40,8 +31,8 @@ const Index = () => {
 
     if (!validateEmail(email)) {
       toast({
-        title: "Invalid email",
-        description: "Please enter a valid email address",
+        title: "Неверный email",
+        description: "Пожалуйста, введите корректный email адрес",
         variant: "destructive",
       });
       return;
@@ -57,8 +48,8 @@ const Index = () => {
     setEmail("");
     
     toast({
-      title: "Welcome aboard! 🎓",
-      description: "Thanks for joining! We'll let you know when we launch.",
+      title: "Добро пожаловать! 🎓",
+      description: "Спасибо за регистрацию! Мы сообщим вам о запуске.",
     });
   };
 
@@ -90,22 +81,22 @@ const Index = () => {
           {/* Main Headline - Coming Soon */}
           <div className="mb-8 inline-block px-8 py-4 border-2 border-gold/30 rounded-lg">
             <h1 className="font-heading text-5xl md:text-7xl lg:text-8xl font-bold text-gold leading-tight tracking-tight">
-              Coming Soon
+              Скоро запуск
             </h1>
           </div>
 
           {/* Subheadline */}
           <p className="text-xl md:text-2xl text-primary-foreground/90 mb-12 max-w-2xl mx-auto font-light leading-relaxed">
-            Guiding Ambitious Students to Top Universities Worldwide
+            Помогаем амбициозным студентам поступить в лучшие университеты мира
           </p>
 
           {/* Email Capture Form or Success Message */}
           {!isSubmitted ? (
-            <form onSubmit={handleSubmit} className="max-w-md mx-auto">
+            <form onSubmit={handleSubmit} className="max-w-md mx-auto mb-16">
               <div className="flex flex-col sm:flex-row gap-3 items-stretch">
                 <Input
                   type="email"
-                  placeholder="Enter your email"
+                  placeholder="Введите ваш email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="flex-1 h-12 bg-background/95 backdrop-blur-sm border-border text-foreground placeholder:text-muted-foreground focus:ring-gold focus:border-gold"
@@ -118,17 +109,17 @@ const Index = () => {
                   className="h-12 px-8"
                   disabled={isLoading}
                 >
-                  {isLoading ? "Joining..." : "Join Waitlist"}
+                  {isLoading ? "Регистрация..." : "Записаться"}
                 </Button>
               </div>
             </form>
           ) : (
-            <div className="max-w-md mx-auto p-6 bg-background/95 backdrop-blur-sm rounded-lg border border-gold/30">
+            <div className="max-w-md mx-auto mb-16 p-6 bg-background/95 backdrop-blur-sm rounded-lg border border-gold/30">
               <p className="text-gold font-semibold text-lg mb-2">
-                ✓ Thank you for joining!
+                ✓ Спасибо за регистрацию!
               </p>
               <p className="text-foreground/80">
-                We'll let you know when we launch.
+                Мы сообщим вам о запуске.
               </p>
             </div>
           )}
@@ -170,7 +161,7 @@ const Index = () => {
                 team@topuniconsulting.com
               </a>
             </p>
-            <p>© 2025 Top Uni Consulting | All Rights Reserved</p>
+            <p>© 2025 Top Uni Consulting | Все права защищены</p>
           </footer>
         </div>
       </div>
@@ -178,4 +169,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default IndexRu;
