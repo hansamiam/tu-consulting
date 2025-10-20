@@ -17,7 +17,7 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 210 74% 15%;
 
-    --primary: 210 74% 15%;
+    --primary: 210 65% 22%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 210 20% 96%;
@@ -39,7 +39,7 @@ All colors MUST be HSL.
     --radius: 0.5rem;
     
     /* Premium design tokens */
-    --navy: 210 74% 15%;
+    --navy: 210 65% 22%;
     --gold: 46 64% 52%;
     --gold-light: 46 64% 65%;
     --gold-dark: 46 64% 40%;
