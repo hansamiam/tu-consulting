@@ -55,7 +55,7 @@ export default {
         },
       },
       fontFamily: {
-        serif: ['Playfair Display', 'serif'],
+        heading: ['Poppins', 'sans-serif'],
         sans: ['Inter', 'sans-serif'],
       },
       backgroundImage: {

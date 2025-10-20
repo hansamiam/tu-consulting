@@ -66,21 +66,20 @@ const Index = () => {
         <main className="relative z-10 max-w-4xl mx-auto px-6 py-20 text-center">
           {/* Logo/Brand Name */}
           <div className="mb-12 animate-fade-in">
-            <h2 className="text-gold font-serif text-2xl md:text-3xl font-semibold tracking-wide mb-2">
+            <h2 className="text-gold font-heading text-2xl md:text-3xl font-semibold tracking-wide mb-2">
               Top Uni Consulting
             </h2>
             <div className="w-24 h-1 bg-gold mx-auto rounded-full" />
           </div>
 
-          {/* Main Headline */}
-          <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl font-bold text-primary-foreground mb-8 leading-tight">
-            Guiding Ambitious Students to{" "}
-            <span className="text-gold">Top Universities</span> Worldwide
+          {/* Main Headline - Coming Soon */}
+          <h1 className="font-heading text-6xl md:text-8xl lg:text-9xl font-bold text-primary-foreground mb-8 leading-tight tracking-tight">
+            COMING <span className="text-gold">SOON</span>
           </h1>
 
           {/* Subheadline */}
           <p className="text-xl md:text-2xl text-primary-foreground/90 mb-12 max-w-2xl mx-auto font-light leading-relaxed">
-            Personalized admissions guidance for students and families
+            Guiding Ambitious Students to Top Universities Worldwide
           </p>
 
           {/* Email Capture Form or Success Message */}
@@ -140,8 +139,16 @@ const Index = () => {
           </div>
 
           {/* Footer */}
-          <footer className="text-primary-foreground/60 text-sm">
-            © 2025 Top Uni Consulting | All Rights Reserved
+          <footer className="text-primary-foreground/60 text-sm space-y-2">
+            <p>
+              <a 
+                href="mailto:team@topuniconsulting.com" 
+                className="text-gold hover:text-gold-light transition-colors duration-300"
+              >
+                team@topuniconsulting.com
+              </a>
+            </p>
+            <p>© 2025 Top Uni Consulting | All Rights Reserved</p>
           </footer>
         </main>
       </div>
