@@ -92,9 +92,15 @@ const Index = () => {
           </div>
 
           {/* Subheadline */}
-          <p className="text-xl md:text-2xl text-primary-foreground/90 mb-12 max-w-2xl mx-auto font-light leading-relaxed">
+          <p className="text-xl md:text-2xl text-primary-foreground/90 mb-4 max-w-2xl mx-auto font-light leading-relaxed">
             Guiding Ambitious Students to Top Universities Worldwide
           </p>
+          
+          {/* Tagline */}
+          <div className="text-sm md:text-base text-primary-foreground/70 mb-12 max-w-xl mx-auto space-y-1">
+            <p>Central Asia's leading university admissions consulting firm</p>
+            <p>Now serving students worldwide</p>
+          </div>
 
           {/* Email Capture Form or Success Message */}
           {!isSubmitted ? (
