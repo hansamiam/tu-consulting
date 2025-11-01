@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Instagram, Linkedin } from "lucide-react";
 import heroImage from "@/assets/hero-campus.jpg";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { supabase } from "@/integrations/supabase/client";
 
 const IndexRu = () => {
   const [email, setEmail] = useState("");
@@ -40,10 +41,21 @@ const IndexRu = () => {
 
     setIsLoading(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const { error } = await supabase
+      .from('waitlist_emails')
+      .insert([{ email: email.trim() }]);
     
     setIsLoading(false);
+    
+    if (error) {
+      toast({
+        title: "Ошибка",
+        description: "Что-то пошло не так. Пожалуйста, попробуйте снова.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSubmitted(true);
     setEmail("");
     

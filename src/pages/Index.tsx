@@ -7,6 +7,7 @@ import { Instagram, Linkedin } from "lucide-react";
 import heroImage from "@/assets/hero-campus.jpg";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { shouldRedirectToRussian } from "@/utils/languageDetection";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [email, setEmail] = useState("");
@@ -49,10 +50,21 @@ const Index = () => {
 
     setIsLoading(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const { error } = await supabase
+      .from('waitlist_emails')
+      .insert([{ email: email.trim() }]);
     
     setIsLoading(false);
+    
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSubmitted(true);
     setEmail("");
     
