@@ -50,6 +50,7 @@ const Index = () => {
 
     setIsLoading(true);
     console.log("[Waitlist] Submitting email", email.trim());
+    console.log("[Waitlist] Env URL:", import.meta.env.VITE_SUPABASE_URL, "Key:", (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '').slice(0, 8) + '...');
     
     const { error } = await supabase
       .from('waitlist_emails')
@@ -61,7 +62,7 @@ const Index = () => {
       console.error("[Waitlist] Insert error:", error);
       toast({
         title: "Error",
-        description: "Something went wrong. Please try again.",
+        description: error.message || "Something went wrong. Please try again.",
         variant: "destructive",
       });
       return;

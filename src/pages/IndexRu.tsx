@@ -41,6 +41,7 @@ const IndexRu = () => {
 
     setIsLoading(true);
     console.log("[Waitlist-RU] Submitting email", email.trim());
+    console.log("[Waitlist-RU] Env URL:", import.meta.env.VITE_SUPABASE_URL, "Key:", (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '').slice(0, 8) + '...');
     
     const { error } = await supabase
       .from('waitlist_emails')
@@ -52,7 +53,7 @@ const IndexRu = () => {
       console.error("[Waitlist-RU] Insert error:", error);
       toast({
         title: "Ошибка",
-        description: "Что-то пошло не так. Пожалуйста, попробуйте снова.",
+        description: error.message || "Что-то пошло не так. Пожалуйста, попробуйте снова.",
         variant: "destructive",
       });
       return;
