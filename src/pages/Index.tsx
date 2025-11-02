@@ -49,6 +49,7 @@ const Index = () => {
     }
 
     setIsLoading(true);
+    console.log("[Waitlist] Submitting email", email.trim());
     
     const { error } = await supabase
       .from('waitlist_emails')
@@ -57,6 +58,7 @@ const Index = () => {
     setIsLoading(false);
     
     if (error) {
+      console.error("[Waitlist] Insert error:", error);
       toast({
         title: "Error",
         description: "Something went wrong. Please try again.",
@@ -65,6 +67,7 @@ const Index = () => {
       return;
     }
     
+    console.log("[Waitlist] Insert success for", email.trim());
     setIsSubmitted(true);
     setEmail("");
     
