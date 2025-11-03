@@ -113,9 +113,9 @@ const Index = () => {
           </p>
           
           {/* Tagline */}
-          <div className="text-sm md:text-base text-primary-foreground/70 mb-12 max-w-xl mx-auto space-y-1">
-            <p>Central Asia's leading university admissions consulting firm</p>
-            <p>Now serving students worldwide</p>
+          <div className="text-sm md:text-base text-primary-foreground/70 mb-12 max-w-xl mx-auto space-y-3">
+            <p>Central Asia's leading admissions consulting firm</p>
+            <p className="text-xs md:text-sm">Now serving students worldwide</p>
           </div>
 
           {/* Email Capture Form or Success Message */}

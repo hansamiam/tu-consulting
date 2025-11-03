@@ -104,9 +104,9 @@ const IndexRu = () => {
           </p>
           
           {/* Tagline */}
-          <div className="text-sm md:text-base text-primary-foreground/70 mb-12 max-w-xl mx-auto space-y-1">
-            <p>Ведущая консалтинговая фирма по поступлению в университеты Центральной Азии</p>
-            <p>Теперь обслуживаем студентов по всему миру</p>
+          <div className="text-sm md:text-base text-primary-foreground/70 mb-12 max-w-xl mx-auto space-y-3">
+            <p>Ведущая консалтинговая фирма по поступлению Центральной Азии</p>
+            <p className="text-xs md:text-sm">Теперь обслуживаем студентов по всему миру</p>
           </div>
 
           {/* Email Capture Form or Success Message */}
