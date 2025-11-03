@@ -100,7 +100,7 @@ const IndexRu = () => {
 
           {/* Subheadline */}
           <p className="text-xl md:text-2xl text-primary-foreground/90 mb-4 max-w-2xl mx-auto font-light leading-relaxed">
-            Помогаем амбициозным студентам поступить в лучшие университеты мира
+            Помогаем амбициозным студентам поступить в лучшие университеты
           </p>
           
           {/* Tagline */}
