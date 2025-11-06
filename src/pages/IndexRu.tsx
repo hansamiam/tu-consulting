@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +13,7 @@ const IndexRu = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -142,6 +144,17 @@ const IndexRu = () => {
               </p>
             </div>
           )}
+
+          {/* Team Link */}
+          <div className="mb-8">
+            <Button
+              onClick={() => navigate("/team/ru")}
+              variant="outline"
+              className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:border-gold"
+            >
+              Познакомьтесь с нашей командой
+            </Button>
+          </div>
 
           {/* Social Links */}
           <div className="flex gap-6 justify-center mb-8">

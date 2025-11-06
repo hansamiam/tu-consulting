@@ -4,13 +4,20 @@ import { Button } from "@/components/ui/button";
 const LanguageSwitcher = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const isRussian = location.pathname.startsWith('/ru');
+  const isRussian = location.pathname.includes('/ru');
 
   const switchLanguage = () => {
     if (isRussian) {
-      navigate('/');
+      // Remove /ru from the path
+      const newPath = location.pathname.replace('/ru', '');
+      navigate(newPath || '/');
     } else {
-      navigate('/ru');
+      // Add /ru to the path
+      if (location.pathname === '/') {
+        navigate('/ru');
+      } else {
+        navigate(`${location.pathname}/ru`);
+      }
     }
   };
 

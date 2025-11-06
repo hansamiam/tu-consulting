@@ -152,6 +152,17 @@ const Index = () => {
             </div>
           )}
 
+          {/* Team Link */}
+          <div className="mb-8">
+            <Button
+              onClick={() => navigate("/team")}
+              variant="outline"
+              className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:border-gold"
+            >
+              Meet Our Team
+            </Button>
+          </div>
+
           {/* Social Links */}
           <div className="flex gap-6 justify-center mb-8">
             <a
