@@ -115,7 +115,7 @@ const IndexRu = () => {
               <Button
                 type="submit"
                 variant="gold"
-                className="w-full sm:w-auto px-6 py-3 whitespace-nowrap"
+                className="self-center px-8 py-3 sm:w-auto whitespace-nowrap"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "Отправка..." : "Присоединиться"}
