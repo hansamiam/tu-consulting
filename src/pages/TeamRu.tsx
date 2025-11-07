@@ -47,7 +47,7 @@ const TeamRu = () => {
     <div 
       className="min-h-screen relative"
       style={{
-        backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)), url(${heroImage})`,
+        backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url(${heroImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed'
@@ -91,14 +91,43 @@ const TeamRu = () => {
                 <div className="text-sm md:text-base text-muted-foreground">лет совместного опыта</div>
               </div>
               <div className="space-y-3">
-                <div className="flex gap-3 justify-center items-center flex-wrap">
-                  <span className="text-2xl opacity-60 grayscale hover:grayscale-0 transition-all">🇺🇸</span>
-                  <span className="text-2xl opacity-60 grayscale hover:grayscale-0 transition-all">🇨🇦</span>
-                  <span className="text-2xl opacity-60 grayscale hover:grayscale-0 transition-all">🇬🇧</span>
-                  <span className="text-2xl opacity-60 grayscale hover:grayscale-0 transition-all">🇨🇳</span>
-                  <span className="text-2xl opacity-60 grayscale hover:grayscale-0 transition-all">🇰🇷</span>
+                <div className="flex gap-4 justify-center items-center flex-wrap">
+                  {/* USA - Stars and Stripes simplified */}
+                  <svg className="w-8 h-8 text-gold opacity-70 hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M3 4h18v2H3zm0 4h18v2H3zm0 4h18v2H3zm0 4h18v2H3zm0 4h18v2H3zM3 4h8v10H3z"/>
+                    <circle cx="5" cy="6" r="0.5"/>
+                    <circle cx="7" cy="6" r="0.5"/>
+                    <circle cx="9" cy="6" r="0.5"/>
+                    <circle cx="5" cy="8" r="0.5"/>
+                    <circle cx="7" cy="8" r="0.5"/>
+                    <circle cx="9" cy="8" r="0.5"/>
+                    <circle cx="5" cy="10" r="0.5"/>
+                    <circle cx="7" cy="10" r="0.5"/>
+                    <circle cx="9" cy="10" r="0.5"/>
+                  </svg>
+                  
+                  {/* Canada - Maple Leaf */}
+                  <svg className="w-8 h-8 text-gold opacity-70 hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2l1.5 4.5h4.5l-3.75 2.75 1.5 4.5L12 11l-3.75 2.75 1.5-4.5L6 6.5h4.5L12 2zm0 11v9m-3-3h6"/>
+                  </svg>
+                  
+                  {/* UK - Union Jack simplified */}
+                  <svg className="w-8 h-8 text-gold opacity-70 hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M3 4h18v16H3V4zm0 0l18 16M21 4L3 20M3 12h18M12 4v16"/>
+                  </svg>
+                  
+                  {/* China - Star */}
+                  <svg className="w-8 h-8 text-gold opacity-70 hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/>
+                  </svg>
+                  
+                  {/* South Korea - Yin Yang simplified */}
+                  <svg className="w-8 h-8 text-gold opacity-70 hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+                    <path d="M12 4a8 8 0 0 0 0 16 4 4 0 0 1 0-8 4 4 0 0 0 0-8z"/>
+                  </svg>
                 </div>
-                <div className="text-sm md:text-base text-muted-foreground">Межконтинентальная экспертиза</div>
+                <div className="text-sm md:text-base text-muted-foreground">межконтинентальная экспертиза</div>
               </div>
             </div>
           </div>
