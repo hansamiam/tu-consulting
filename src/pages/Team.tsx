@@ -90,42 +90,71 @@ const Team = () => {
                 <div className="text-4xl md:text-5xl font-bold text-gold">10+</div>
                 <div className="text-sm md:text-base text-muted-foreground">years of collective experience</div>
               </div>
-              <div className="space-y-3">
-                <div className="flex gap-4 justify-center items-center flex-wrap">
-                  {/* USA - Stars and Stripes simplified */}
-                  <svg className="w-8 h-8 text-gold opacity-70 hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M3 4h18v2H3zm0 4h18v2H3zm0 4h18v2H3zm0 4h18v2H3zm0 4h18v2H3zM3 4h8v10H3z"/>
-                    <circle cx="5" cy="6" r="0.5"/>
-                    <circle cx="7" cy="6" r="0.5"/>
-                    <circle cx="9" cy="6" r="0.5"/>
-                    <circle cx="5" cy="8" r="0.5"/>
-                    <circle cx="7" cy="8" r="0.5"/>
-                    <circle cx="9" cy="8" r="0.5"/>
-                    <circle cx="5" cy="10" r="0.5"/>
-                    <circle cx="7" cy="10" r="0.5"/>
-                    <circle cx="9" cy="10" r="0.5"/>
-                  </svg>
+              <div className="space-y-2">
+                <div className="flex gap-3 justify-center items-center flex-wrap text-4xl md:text-5xl font-bold text-gold">
+                  {/* USA Flag */}
+                  <div className="w-12 h-12 rounded-full border-2 border-gold/30 flex items-center justify-center bg-primary/5">
+                    <svg className="w-7 h-7" viewBox="0 0 60 40" fill="none">
+                      <rect width="60" height="40" fill="currentColor" opacity="0.2"/>
+                      <rect width="60" height="3" y="0" fill="currentColor"/>
+                      <rect width="60" height="3" y="7" fill="currentColor"/>
+                      <rect width="60" height="3" y="14" fill="currentColor"/>
+                      <rect width="60" height="3" y="21" fill="currentColor"/>
+                      <rect width="60" height="3" y="28" fill="currentColor"/>
+                      <rect width="60" height="3" y="35" fill="currentColor"/>
+                      <rect width="25" height="17" fill="currentColor" opacity="0.4"/>
+                      <circle cx="5" cy="3" r="1" fill="currentColor"/>
+                      <circle cx="10" cy="3" r="1" fill="currentColor"/>
+                      <circle cx="15" cy="3" r="1" fill="currentColor"/>
+                      <circle cx="20" cy="3" r="1" fill="currentColor"/>
+                      <circle cx="5" cy="8" r="1" fill="currentColor"/>
+                      <circle cx="10" cy="8" r="1" fill="currentColor"/>
+                      <circle cx="15" cy="8" r="1" fill="currentColor"/>
+                      <circle cx="20" cy="8" r="1" fill="currentColor"/>
+                      <circle cx="5" cy="13" r="1" fill="currentColor"/>
+                      <circle cx="10" cy="13" r="1" fill="currentColor"/>
+                      <circle cx="15" cy="13" r="1" fill="currentColor"/>
+                      <circle cx="20" cy="13" r="1" fill="currentColor"/>
+                    </svg>
+                  </div>
                   
-                  {/* Canada - Maple Leaf */}
-                  <svg className="w-8 h-8 text-gold opacity-70 hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2l1.5 4.5h4.5l-3.75 2.75 1.5 4.5L12 11l-3.75 2.75 1.5-4.5L6 6.5h4.5L12 2zm0 11v9m-3-3h6"/>
-                  </svg>
+                  {/* Canada Flag - Maple Leaf */}
+                  <div className="w-12 h-12 rounded-full border-2 border-gold/30 flex items-center justify-center bg-primary/5">
+                    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 3l1 3h3l-2 2 1 3-3-2-3 2 1-3-2-2h3l1-3zm-1 8v8m-2-2h6"/>
+                    </svg>
+                  </div>
                   
-                  {/* UK - Union Jack simplified */}
-                  <svg className="w-8 h-8 text-gold opacity-70 hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M3 4h18v16H3V4zm0 0l18 16M21 4L3 20M3 12h18M12 4v16"/>
-                  </svg>
+                  {/* UK Flag - Union Jack */}
+                  <div className="w-12 h-12 rounded-full border-2 border-gold/30 flex items-center justify-center bg-primary/5">
+                    <svg className="w-7 h-7" viewBox="0 0 60 40" fill="currentColor">
+                      <path d="M0 0h60v40H0z" opacity="0.2"/>
+                      <path d="M0 0l60 40M60 0L0 40" strokeWidth="8" stroke="currentColor" opacity="0.3"/>
+                      <path d="M30 0v40M0 20h60" strokeWidth="12" stroke="currentColor" opacity="0.3"/>
+                      <path d="M30 0v40M0 20h60" strokeWidth="6" stroke="currentColor"/>
+                    </svg>
+                  </div>
                   
-                  {/* China - Star */}
-                  <svg className="w-8 h-8 text-gold opacity-70 hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/>
-                  </svg>
+                  {/* China Flag - 5 Stars */}
+                  <div className="w-12 h-12 rounded-full border-2 border-gold/30 flex items-center justify-center bg-primary/5">
+                    <svg className="w-7 h-7" viewBox="0 0 30 20" fill="currentColor">
+                      <rect width="30" height="20" fill="currentColor" opacity="0.2"/>
+                      <path d="M5 3l1.5 4.5h4.5l-3.75 2.5 1.5 4.5L5 12l-3.75 2.5 1.5-4.5L-1 7.5h4.5z"/>
+                      <path d="M15 2l.5 1.5h1.5l-1.25 1 .5 1.5-1.25-1-1.25 1 .5-1.5-1.25-1h1.5z" opacity="0.8"/>
+                      <path d="M17 5l.5 1.5h1.5l-1.25 1 .5 1.5-1.25-1-1.25 1 .5-1.5-1.25-1h1.5z" opacity="0.8"/>
+                      <path d="M17 10l.5 1.5h1.5l-1.25 1 .5 1.5-1.25-1-1.25 1 .5-1.5-1.25-1h1.5z" opacity="0.8"/>
+                      <path d="M15 13l.5 1.5h1.5l-1.25 1 .5 1.5-1.25-1-1.25 1 .5-1.5-1.25-1h1.5z" opacity="0.8"/>
+                    </svg>
+                  </div>
                   
-                  {/* South Korea - Yin Yang simplified */}
-                  <svg className="w-8 h-8 text-gold opacity-70 hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="currentColor">
-                    <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.5"/>
-                    <path d="M12 4a8 8 0 0 0 0 16 4 4 0 0 1 0-8 4 4 0 0 0 0-8z"/>
-                  </svg>
+                  {/* South Korea Flag - Taeguk */}
+                  <div className="w-12 h-12 rounded-full border-2 border-gold/30 flex items-center justify-center bg-primary/5">
+                    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <circle cx="12" cy="12" r="9" opacity="0.3"/>
+                      <path d="M12 3a9 9 0 0 0 0 18c2.5 0 4.5-2 4.5-4.5S14.5 12 12 12c-2.5 0-4.5-2-4.5-4.5S9.5 3 12 3z" fill="currentColor" opacity="0.6"/>
+                      <path d="M17 6l1 1m0-1l-1 1m-11 9l1 1m0-1l-1 1m11 0l1-1m0 1l-1-1M7 7l1-1m0 1l-1-1" strokeWidth="2"/>
+                    </svg>
+                  </div>
                 </div>
                 <div className="text-sm md:text-base text-muted-foreground">cross-continental expertise</div>
               </div>
