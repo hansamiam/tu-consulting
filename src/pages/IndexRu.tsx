@@ -1,75 +1,12 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { Instagram, Linkedin } from "lucide-react";
+import { Instagram } from "lucide-react";
 import heroImage from "@/assets/hero-campus.jpg";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { supabase } from "@/integrations/supabase/client";
 
 const IndexRu = () => {
-  const [email, setEmail] = useState("");
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
   const navigate = useNavigate();
 
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!email.trim()) {
-      toast({
-        title: "Требуется email",
-        description: "Пожалуйста, введите ваш email адрес",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!validateEmail(email)) {
-      toast({
-        title: "Неверный email",
-        description: "Пожалуйста, введите корректный email адрес",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    console.log("[Waitlist-RU] Submitting email", email.trim());
-    console.log("[Waitlist-RU] Env URL:", import.meta.env.VITE_SUPABASE_URL, "Key:", (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '').slice(0, 8) + '...');
-    
-    const { error } = await supabase
-      .from('waitlist_emails')
-      .insert([{ email: email.trim() }]);
-    
-    setIsLoading(false);
-    
-    if (error) {
-      console.error("[Waitlist-RU] Insert error:", error);
-      toast({
-        title: "Ошибка",
-        description: error.message || "Что-то пошло не так. Пожалуйста, попробуйте снова.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    console.log("[Waitlist-RU] Insert success for", email.trim());
-    setIsSubmitted(true);
-    setEmail("");
-    
-    toast({
-      title: "Добро пожаловать! 🎓",
-      description: "Спасибо за регистрацию! Мы сообщим вам о запуске.",
-    });
-  };
 
   return (
     <div className="min-h-screen relative">
@@ -106,44 +43,9 @@ const IndexRu = () => {
           </p>
           
           {/* Tagline */}
-          <div className="text-sm md:text-base text-primary-foreground/70 mb-12 max-w-xl mx-auto space-y-3">
-            <p>Ведущая консалтинговая фирма по поступлению Центральной Азии</p>
+          <div className="text-sm md:text-base text-primary-foreground/70 mb-16 max-w-xl mx-auto">
             <p className="text-xs md:text-sm">Теперь обслуживаем студентов по всему миру</p>
           </div>
-
-          {/* Email Capture Form or Success Message */}
-          {!isSubmitted ? (
-            <form onSubmit={handleSubmit} className="max-w-md mx-auto mb-16">
-              <div className="flex flex-col sm:flex-row gap-3 items-stretch">
-                <Input
-                  type="email"
-                  placeholder="Введите ваш email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="flex-1 h-12 bg-background/95 backdrop-blur-sm border-border text-foreground placeholder:text-muted-foreground focus:ring-gold focus:border-gold"
-                  disabled={isLoading}
-                />
-                <Button 
-                  type="submit" 
-                  variant="gold" 
-                  size="lg"
-                  className="h-12 px-8"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Регистрация..." : "Записаться"}
-                </Button>
-              </div>
-            </form>
-          ) : (
-            <div className="max-w-md mx-auto mb-16 p-6 bg-background/95 backdrop-blur-sm rounded-lg border border-gold/30">
-              <p className="text-gold font-semibold text-lg mb-2">
-                ✓ Спасибо за регистрацию!
-              </p>
-              <p className="text-foreground/80">
-                Мы сообщим вам о запуске.
-              </p>
-            </div>
-          )}
 
           {/* Team Link */}
           <div className="mb-8">
@@ -159,22 +61,13 @@ const IndexRu = () => {
           {/* Social Links */}
           <div className="flex gap-6 justify-center mb-8">
             <a
-              href="https://instagram.com/topuniconsulting"
+              href="https://www.instagram.com/top_uni_consulting/?g=5"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary-foreground/60 hover:text-gold transition-all duration-200 p-2"
               aria-label="Follow us on Instagram"
             >
-              <Instagram size={20} strokeWidth={1.5} className="opacity-80" />
-            </a>
-            <a
-              href="https://linkedin.com/company/topuniconsulting"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary-foreground/60 hover:text-gold transition-all duration-200 p-2"
-              aria-label="Connect on LinkedIn"
-            >
-              <Linkedin size={20} strokeWidth={1.5} className="opacity-80" />
+              <Instagram size={32} strokeWidth={1.5} className="opacity-80" />
             </a>
           </div>
 
@@ -188,6 +81,7 @@ const IndexRu = () => {
                 team@topuniconsulting.com
               </a>
             </p>
+            <p>Ведущая консалтинговая фирма по поступлению Центральной Азии</p>
             <p>© 2025 Top Uni Consulting | Все права защищены</p>
           </footer>
         </main>
