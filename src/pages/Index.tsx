@@ -1,19 +1,71 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Instagram } from "lucide-react";
 import heroImage from "@/assets/hero-campus.jpg";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { shouldRedirectToRussian } from "@/utils/languageDetection";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (shouldRedirectToRussian()) {
       navigate('/ru');
     }
   }, [navigate]);
+
+  const handleWaitlistSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase
+        .from('waitlist_emails')
+        .insert([{ email: email.trim().toLowerCase() }]);
+
+      if (error) {
+        if (error.code === '23505') {
+          toast({
+            title: "Already registered!",
+            description: "This email is already on our waitlist. We'll notify you when we launch!",
+          });
+        } else {
+          throw error;
+        }
+      } else {
+        toast({
+          title: "Successfully joined! 🎉",
+          description: "Thank you for your interest! We'll keep you updated on our launch.",
+        });
+        setEmail("");
+      }
+    } catch (error) {
+      console.error('Error submitting to waitlist:', error);
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen relative">
@@ -55,20 +107,24 @@ const Index = () => {
           </div>
 
           {/* Waitlist Form */}
-          <form className="max-w-md mx-auto mb-8">
+          <form onSubmit={handleWaitlistSubmit} className="max-w-md mx-auto mb-8">
             <div className="flex gap-2">
               <input
                 type="email"
                 placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="flex-1 px-4 py-3 rounded-md bg-primary-foreground/10 border border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/50 focus:outline-none focus:border-gold focus:bg-primary-foreground/15 transition-all"
                 required
+                disabled={isSubmitting}
               />
               <Button
                 type="submit"
                 variant="gold"
                 className="px-6"
+                disabled={isSubmitting}
               >
-                Join Waitlist
+                {isSubmitting ? "Joining..." : "Join Waitlist"}
               </Button>
             </div>
           </form>

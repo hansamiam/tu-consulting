@@ -1,11 +1,64 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Instagram } from "lucide-react";
 import heroImage from "@/assets/hero-campus.jpg";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const IndexRu = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleWaitlistSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email.trim()) {
+      toast({
+        title: "Ошибка",
+        description: "Пожалуйста, введите действительный адрес электронной почты",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase
+        .from('waitlist_emails')
+        .insert([{ email: email.trim().toLowerCase() }]);
+
+      if (error) {
+        if (error.code === '23505') {
+          toast({
+            title: "Уже зарегистрирован!",
+            description: "Этот адрес уже в нашем списке ожидания. Мы уведомим вас о запуске!",
+          });
+        } else {
+          throw error;
+        }
+      } else {
+        toast({
+          title: "Успешно присоединились! 🎉",
+          description: "Спасибо за ваш интерес! Мы будем держать вас в курсе нашего запуска.",
+        });
+        setEmail("");
+      }
+    } catch (error) {
+      console.error('Error submitting to waitlist:', error);
+      toast({
+        title: "Ошибка",
+        description: "Что-то пошло не так. Пожалуйста, попробуйте еще раз.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
 
   return (
@@ -48,20 +101,24 @@ const IndexRu = () => {
           </div>
 
           {/* Waitlist Form */}
-          <form className="max-w-md mx-auto mb-8">
+          <form onSubmit={handleWaitlistSubmit} className="max-w-md mx-auto mb-8">
             <div className="flex gap-2">
               <input
                 type="email"
-                placeholder="Введите ваш email"
+                placeholder="Введите свой email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="flex-1 px-4 py-3 rounded-md bg-primary-foreground/10 border border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/50 focus:outline-none focus:border-gold focus:bg-primary-foreground/15 transition-all"
                 required
+                disabled={isSubmitting}
               />
               <Button
                 type="submit"
                 variant="gold"
                 className="px-6"
+                disabled={isSubmitting}
               >
-                Присоединиться
+                {isSubmitting ? "Отправка..." : "Присоединиться"}
               </Button>
             </div>
           </form>
