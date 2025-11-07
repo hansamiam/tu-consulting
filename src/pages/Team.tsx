@@ -144,7 +144,7 @@ const Team = () => {
                     <h2 className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">{member.name}</h2>
                     <div className="space-y-2 text-sm">
                       <p className="text-muted-foreground">
-                        <span className="font-semibold text-gold">From:</span> {member.hometown}
+                        <span className="font-semibold text-gold">Hometown:</span> {member.hometown}
                       </p>
                       <p className="text-muted-foreground">
                         <span className="font-semibold text-gold">Education:</span> {member.education}
