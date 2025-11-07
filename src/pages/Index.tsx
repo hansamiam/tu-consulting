@@ -51,7 +51,7 @@ const Index = () => {
           
           {/* Tagline */}
           <div className="text-sm md:text-base text-primary-foreground/70 mb-16 max-w-xl mx-auto">
-            <p className="text-xs md:text-sm">Now serving students worldwide</p>
+            <p className="text-base md:text-lg">Now serving students worldwide</p>
           </div>
 
           {/* Team Link */}
@@ -59,7 +59,7 @@ const Index = () => {
             <Button
               onClick={() => navigate("/team")}
               variant="outline"
-              className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:border-gold"
+              className="border-gold/50 bg-gold/10 text-primary-foreground hover:bg-gold/20 hover:border-gold"
             >
               Meet Our Team
             </Button>
@@ -79,7 +79,7 @@ const Index = () => {
           </div>
 
           {/* Footer */}
-          <footer className="text-primary-foreground/50 text-sm space-y-2">
+          <footer className="text-primary-foreground/50 text-sm space-y-3">
             <p>
               <a 
                 href="mailto:team@topuniconsulting.com" 
@@ -88,8 +88,10 @@ const Index = () => {
                 team@topuniconsulting.com
               </a>
             </p>
-            <p>Central Asia's leading admissions consulting firm</p>
-            <p>© 2025 Top Uni Consulting | All Rights Reserved</p>
+            <div className="border-t border-primary-foreground/10 pt-3 space-y-2">
+              <p>Central Asia's leading admissions consulting firm</p>
+              <p>© 2025 Top Uni Consulting | All Rights Reserved</p>
+            </div>
           </footer>
         </main>
       </div>
