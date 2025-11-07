@@ -88,18 +88,22 @@ const TeamRu = () => {
             {/* Stats Section */}
             <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
               <div className="space-y-2">
-                <div className="text-4xl md:text-5xl font-bold text-gold">$500K+</div>
+<div className="min-h-[40px] md:min-h-[56px] flex items-center justify-center">
+  <div className="text-4xl md:text-5xl font-bold text-gold">$500K+</div>
+</div>
                 <div className="text-sm md:text-base text-muted-foreground">стипендий получено</div>
               </div>
               <div className="space-y-2">
-                <div className="text-4xl md:text-5xl font-bold text-gold">10+</div>
+<div className="min-h-[40px] md:min-h-[56px] flex items-center justify-center">
+  <div className="text-4xl md:text-5xl font-bold text-gold">10+</div>
+</div>
                 <div className="text-sm md:text-base text-muted-foreground">лет совместного опыта</div>
               </div>
-              <div className="space-y-2">
-                <div className="text-4xl md:text-5xl font-bold text-gold flex items-center justify-center">
-                  <div className="flex gap-2 md:gap-3 items-center justify-center">
-                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0">
-                      <img src={usFlag} alt="Флаг США" className="w-full h-full object-cover" loading="lazy" />
+<div className="space-y-2">
+  <div className="min-h-[40px] md:min-h-[56px] flex items-center justify-center">
+    <div className="flex flex-nowrap gap-2 md:gap-3 items-center justify-center">
+      <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5 md:p-1">
+        <img src={usFlag} alt="Флаг США" className="w-full h-full object-cover" loading="lazy" />
                     </div>
                     <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0">
                       <img src={caFlag} alt="Флаг Канады" className="w-full h-full object-cover" loading="lazy" />
@@ -108,7 +112,7 @@ const TeamRu = () => {
                       <img src={gbFlag} alt="Флаг Великобритании" className="w-full h-full object-cover" loading="lazy" />
                     </div>
                     <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0">
-                      <img src={cnFlag} alt="Флаг Китая" className="w-full h-full object-cover" loading="lazy" />
+<img src={cnFlag} alt="Флаг Китая" className="w-full h-full object-cover object-left" loading="lazy" />
                     </div>
                     <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0">
                       <img src={krFlag} alt="Флаг Южной Кореи" className="w-full h-full object-cover" loading="lazy" />
