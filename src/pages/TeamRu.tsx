@@ -20,6 +20,7 @@ const TeamRu = () => {
   const teamMembers = [
     {
       name: "Самуэль Хан",
+      title: "Со-основатель",
       photo: samuelPhoto,
       hometown: "Торонто, Канада",
       education: "Йельский университет",
@@ -27,6 +28,7 @@ const TeamRu = () => {
     },
     {
       name: "Нурзада Абдивалиева",
+      title: "Со-основатель",
       photo: nurzadaPhoto,
       hometown: "Бишкек, Кыргызстан",
       education: "Американский университет Центральной Азии | Корейский институт развития (KDI) | Кембриджский университет | Университет Цинхуа",
@@ -34,6 +36,7 @@ const TeamRu = () => {
     },
     {
       name: "Джош Хьюз",
+      title: "Ведущий консультант",
       photo: joshPhoto,
       hometown: "Норт-Огаста, Южная Каролина, США",
       education: "Университет Южной Каролины | Гарвардский университет",
@@ -41,6 +44,7 @@ const TeamRu = () => {
     },
     {
       name: "Айгуль Абдубаетова",
+      title: "Старший советник",
       photo: aigulPhoto,
       hometown: "Бишкек, Кыргызстан",
       education: "Университет Орегона",
@@ -142,6 +146,7 @@ const TeamRu = () => {
                   </div>
                   <div className="space-y-3 w-full">
                     <h2 className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">{member.name}</h2>
+                    <p className="text-base font-medium text-gold">{member.title}</p>
                     <div className="space-y-2 text-sm">
                       <p className="text-muted-foreground">
                         <span className="font-semibold text-gold">Родной город:</span> {member.hometown}
