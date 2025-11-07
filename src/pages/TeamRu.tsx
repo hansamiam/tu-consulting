@@ -90,9 +90,15 @@ const TeamRu = () => {
                 <div className="text-4xl md:text-5xl font-bold text-gold">10+</div>
                 <div className="text-sm md:text-base text-muted-foreground">лет совместного опыта</div>
               </div>
-              <div className="space-y-2">
-                <div className="text-4xl md:text-5xl font-bold text-gold">5</div>
-                <div className="text-sm md:text-base text-muted-foreground">стран экспертизы</div>
+              <div className="space-y-3">
+                <div className="flex gap-3 justify-center items-center flex-wrap">
+                  <span className="text-2xl opacity-60 grayscale hover:grayscale-0 transition-all">🇺🇸</span>
+                  <span className="text-2xl opacity-60 grayscale hover:grayscale-0 transition-all">🇨🇦</span>
+                  <span className="text-2xl opacity-60 grayscale hover:grayscale-0 transition-all">🇬🇧</span>
+                  <span className="text-2xl opacity-60 grayscale hover:grayscale-0 transition-all">🇨🇳</span>
+                  <span className="text-2xl opacity-60 grayscale hover:grayscale-0 transition-all">🇰🇷</span>
+                </div>
+                <div className="text-sm md:text-base text-muted-foreground">Межконтинентальная экспертиза</div>
               </div>
             </div>
           </div>
