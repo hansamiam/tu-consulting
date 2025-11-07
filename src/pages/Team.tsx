@@ -16,53 +16,29 @@ const Team = () => {
       name: "Aigul Abdoubaetova",
       photo: aigulPhoto,
       hometown: "Bishkek, Kyrgyzstan",
-      education: "University of Oregon - MA in International Studies (2003)",
-      languages: "English (fluent), Kyrgyz (native), Russian (fluent)",
-      highlights: [
-        "Research Support Manager at University of Central Asia",
-        "Former Head of Research and Training Unit, OSCE Academy (2019-2024)",
-        "Central Asia Research Fellow, George Washington University (2019)",
-        "Managed multiple international research projects including US State Department and EU Horizon 2020 initiatives"
-      ]
+      education: "University of Oregon - MA",
+      languages: "English (fluent), Kyrgyz (native), Russian (fluent)"
     },
     {
       name: "Josh Hughes",
       photo: joshPhoto,
       hometown: "North Augusta, South Carolina, USA",
-      education: "University of South Carolina (BA) | Harvard University (MA in Regional Studies: Russia, Eastern Europe, and Central Asia)",
-      languages: "English (native), Russian (advanced), Kyrgyz (lower intermediate)",
-      highlights: [
-        "Foreign Language and Area Studies Fellow (2024-2026) - US Department of Education",
-        "Ethnographic research experience in Kyrgyzstan (2025)",
-        "Critical Language Scholarship recipient (2023) - US Department of State program",
-        "Political Science and Russian specialist with deep regional expertise"
-      ]
+      education: "University of South Carolina - BA | Harvard University - MA",
+      languages: "English (native), Russian (advanced), Kyrgyz (lower intermediate)"
     },
     {
       name: "Nurzada Abdivalieva",
       photo: nurzadaPhoto,
       hometown: "Bishkek, Kyrgyzstan",
-      education: "American University of Central Asia (BA) | KDI School (MA) | University of Cambridge (MPhil) | Tsinghua University (MA)",
-      languages: "Russian (native), Kyrgyz (native), English (advanced)",
-      highlights: [
-        "Schwarzman Scholar - prestigious full-ride scholarship (<3% acceptance rate) for MA at Tsinghua University",
-        "UCA Cambridge Trust Scholar - fully-funded MPhil in Sociology at Cambridge",
-        "Global Ambassador Scholar - fully-funded MA in Public Policy at KDI School",
-        "US Central Asia Education Fellowship and Capstone Finalist with DC internship"
-      ]
+      education: "American University of Central Asia - BA | KDI School - MA | University of Cambridge - MPhil | Tsinghua University - MA",
+      languages: "Russian (native), Kyrgyz (native), English (advanced)"
     },
     {
       name: "Samuel Han",
       photo: samuelPhoto,
       hometown: "Toronto, Canada",
-      education: "Yale University - Molecular, Cellular & Developmental Biology | East Asian Studies",
-      languages: "English, Korean (fluent); Russian, Chinese (conversational)",
-      highlights: [
-        "Research experience at Massachusetts General Hospital and Harvard Medical School",
-        "Aga Khan Foundation Canada Research & Development Fellow at University of Central Asia",
-        "Participant in fully-funded programs at Tsinghua University (China) and Waseda University (Japan)",
-        "Specialized in biological sciences with strong regional expertise in East Asia and Central Asia"
-      ]
+      education: "Yale University - BA",
+      languages: "English, Korean (bilingual); Russian, Chinese (conversational)"
     }
   ];
 
@@ -91,9 +67,6 @@ const Team = () => {
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
               Our Team
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Meet the experienced professionals dedicated to guiding ambitious students to top universities worldwide
-            </p>
           </div>
 
           {/* Team Grid */}
@@ -114,17 +87,9 @@ const Team = () => {
                     <p className="text-sm text-muted-foreground mb-1">
                       <span className="font-semibold">Education:</span> {member.education}
                     </p>
-                    <p className="text-sm text-muted-foreground mb-4">
+                    <p className="text-sm text-muted-foreground">
                       <span className="font-semibold">Languages:</span> {member.languages}
                     </p>
-                    <ul className="text-left space-y-2 text-sm">
-                      {member.highlights.map((highlight, i) => (
-                        <li key={i} className="flex items-start gap-2">
-                          <span className="text-primary mt-1">•</span>
-                          <span>{highlight}</span>
-                        </li>
-                      ))}
-                    </ul>
                   </div>
                 </div>
               </Card>
