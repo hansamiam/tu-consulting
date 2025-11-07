@@ -13,48 +13,48 @@ const TeamRu = () => {
 
   const teamMembers = [
     {
-      name: "Айгуль Абдубаетова",
-      photo: aigulPhoto,
-      hometown: "Бишкек, Кыргызстан",
-      education: "Университет Орегона - MA",
-      languages: "Английский (свободно), Кыргызский (родной), Русский (свободно)"
-    },
-    {
-      name: "Джош Хьюз",
-      photo: joshPhoto,
-      hometown: "Норт-Огаста, Южная Каролина, США",
-      education: "Университет Южной Каролины - BA | Гарвардский университет - MA",
-      languages: "Английский (родной), Русский (продвинутый), Кыргызский (ниже среднего)"
+      name: "Самуэль Хан",
+      photo: samuelPhoto,
+      hometown: "Торонто, Канада",
+      education: "Йельский университет",
+      languages: "Английский, Корейский (двуязычный); Русский, Китайский (разговорный)"
     },
     {
       name: "Нурзада Абдивалиева",
       photo: nurzadaPhoto,
       hometown: "Бишкек, Кыргызстан",
-      education: "Американский университет Центральной Азии - BA | Школа KDI - MA | Кембриджский университет - MPhil | Университет Цинхуа - MA",
+      education: "Американский университет Центральной Азии | Школа KDI | Кембриджский университет | Университет Цинхуа",
       languages: "Русский (родной), Кыргызский (родной), Английский (продвинутый)"
     },
     {
-      name: "Самуэль Хан",
-      photo: samuelPhoto,
-      hometown: "Торонто, Канада",
-      education: "Йельский университет - BA",
-      languages: "Английский, Корейский (двуязычный); Русский, Китайский (разговорный)"
+      name: "Джош Хьюз",
+      photo: joshPhoto,
+      hometown: "Норт-Огаста, Южная Каролина, США",
+      education: "Университет Южной Каролины | Гарвардский университет",
+      languages: "Английский (родной), Русский (продвинутый), Кыргызский (ниже среднего)"
+    },
+    {
+      name: "Айгуль Абдубаетова",
+      photo: aigulPhoto,
+      hometown: "Бишкек, Кыргызстан",
+      education: "Университет Орегона",
+      languages: "Английский (свободно), Кыргызский (родной), Русский (свободно)"
     }
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
+    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/30 to-background">
       {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+      <header className="border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate("/ru")}
-            className="gap-2"
+            className="gap-2 hover:text-primary transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            Вернуться на главную
+            Назад на главную
           </Button>
           <LanguageSwitcher />
         </div>
@@ -64,32 +64,43 @@ const TeamRu = () => {
       <main className="container mx-auto px-4 py-16">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16 space-y-4">
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              Наша команда
-            </h1>
+            <div className="inline-block">
+              <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-primary/80 to-gold bg-clip-text text-transparent mb-2">
+                Наша команда
+              </h1>
+              <div className="h-1 w-24 bg-gradient-to-r from-primary to-gold mx-auto rounded-full"></div>
+            </div>
           </div>
 
           {/* Team Grid */}
           <div className="grid md:grid-cols-2 gap-8">
             {teamMembers.map((member, index) => (
-              <Card key={index} className="p-6 hover:shadow-lg transition-shadow">
-                <div className="flex flex-col items-center text-center space-y-4">
-                  <img
-                    src={member.photo}
-                    alt={member.name}
-                    className="w-48 h-48 rounded-full object-cover border-4 border-primary/10"
-                  />
-                  <div>
-                    <h2 className="text-2xl font-bold mb-2">{member.name}</h2>
-                    <p className="text-sm text-muted-foreground mb-1">
-                      <span className="font-semibold">Родной город:</span> {member.hometown}
-                    </p>
-                    <p className="text-sm text-muted-foreground mb-1">
-                      <span className="font-semibold">Образование:</span> {member.education}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      <span className="font-semibold">Языки:</span> {member.languages}
-                    </p>
+              <Card 
+                key={index} 
+                className="group p-8 hover:shadow-2xl transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm hover:border-gold/30 hover:scale-[1.02]"
+              >
+                <div className="flex flex-col items-center text-center space-y-6">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-gold/20 rounded-full blur-xl group-hover:blur-2xl transition-all duration-300 opacity-0 group-hover:opacity-100"></div>
+                    <img
+                      src={member.photo}
+                      alt={member.name}
+                      className="relative w-48 h-48 rounded-full object-cover border-4 border-gold/30 group-hover:border-gold/60 transition-all duration-300 shadow-lg"
+                    />
+                  </div>
+                  <div className="space-y-3 w-full">
+                    <h2 className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">{member.name}</h2>
+                    <div className="space-y-2 text-sm">
+                      <p className="text-muted-foreground">
+                        <span className="font-semibold text-gold">Из:</span> {member.hometown}
+                      </p>
+                      <p className="text-muted-foreground">
+                        <span className="font-semibold text-gold">Образование:</span> {member.education}
+                      </p>
+                      <p className="text-muted-foreground">
+                        <span className="font-semibold text-gold">Языки:</span> {member.languages}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </Card>
