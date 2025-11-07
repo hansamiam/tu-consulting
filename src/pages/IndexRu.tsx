@@ -96,8 +96,19 @@ const IndexRu = () => {
           </p>
           
           {/* Tagline */}
-          <div className="text-sm md:text-base text-primary-foreground/70 mb-8 sm:mb-12 max-w-xl mx-auto px-4">
+          <div className="text-sm md:text-base text-primary-foreground/70 mb-6 sm:mb-8 max-w-xl mx-auto px-4">
             <p className="text-sm sm:text-base md:text-lg">Обслуживаем студентов по всему миру</p>
+          </div>
+
+          {/* Team Link */}
+          <div className="mb-6 sm:mb-8 px-4">
+            <Button
+              onClick={() => navigate("/team/ru")}
+              variant="outline"
+              className="border-gold/50 bg-gold/10 text-primary-foreground hover:bg-gold/20 hover:border-gold w-auto px-8 sm:w-auto sm:px-12"
+            >
+              Познакомьтесь с нашей командой
+            </Button>
           </div>
 
           {/* Waitlist Form */}
@@ -122,17 +133,6 @@ const IndexRu = () => {
               </Button>
             </div>
           </form>
-
-          {/* Team Link */}
-          <div className="mb-6 sm:mb-8 px-4">
-            <Button
-              onClick={() => navigate("/team/ru")}
-              variant="outline"
-              className="border-gold/50 bg-gold/10 text-primary-foreground hover:bg-gold/20 hover:border-gold w-full sm:w-auto"
-            >
-              Познакомьтесь с нашей командой
-            </Button>
-          </div>
 
           {/* Social Links */}
           <div className="flex gap-6 justify-center mb-6 sm:mb-8">
