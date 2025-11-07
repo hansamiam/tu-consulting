@@ -7,6 +7,7 @@ import aigulPhoto from "@/assets/aigul.jpeg";
 import joshPhoto from "@/assets/josh.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
 import samuelPhoto from "@/assets/samuel.jpg";
+import heroImage from "@/assets/hero-campus.jpg";
 
 const TeamRu = () => {
   const navigate = useNavigate();
@@ -43,7 +44,15 @@ const TeamRu = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/30 to-background">
+    <div 
+      className="min-h-screen relative"
+      style={{
+        backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)), url(${heroImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}
+    >
       {/* Header */}
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -63,12 +72,28 @@ const TeamRu = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-16">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16 space-y-4">
+          <div className="text-center mb-16 space-y-8">
             <div className="inline-block">
               <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-primary/80 to-gold bg-clip-text text-transparent mb-2">
                 Наша команда
               </h1>
               <div className="h-1 w-24 bg-gradient-to-r from-primary to-gold mx-auto rounded-full"></div>
+            </div>
+            
+            {/* Stats Section */}
+            <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+              <div className="space-y-2">
+                <div className="text-4xl md:text-5xl font-bold text-gold">$500K+</div>
+                <div className="text-sm md:text-base text-muted-foreground">стипендий получено</div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-4xl md:text-5xl font-bold text-gold">10+</div>
+                <div className="text-sm md:text-base text-muted-foreground">лет совместного опыта</div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-4xl md:text-5xl font-bold text-gold">5</div>
+                <div className="text-sm md:text-base text-muted-foreground">стран экспертизы</div>
+              </div>
             </div>
           </div>
 
@@ -85,7 +110,7 @@ const TeamRu = () => {
                     <img
                       src={member.photo}
                       alt={member.name}
-                      className="relative w-48 h-48 rounded-full object-cover border-4 border-gold/30 group-hover:border-gold/60 transition-all duration-300 shadow-lg"
+                      className="relative w-48 h-48 rounded-full object-cover border-4 border-primary/40 group-hover:border-primary/70 transition-all duration-300 shadow-lg"
                     />
                   </div>
                   <div className="space-y-3 w-full">
