@@ -8,6 +8,11 @@ import joshPhoto from "@/assets/josh.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
 import samuelPhoto from "@/assets/samuel.jpg";
 import heroImage from "@/assets/hero-campus.jpg";
+import usFlag from "@/assets/flags/us.svg";
+import caFlag from "@/assets/flags/ca.svg";
+import gbFlag from "@/assets/flags/gb.svg";
+import cnFlag from "@/assets/flags/cn.svg";
+import krFlag from "@/assets/flags/kr.svg";
 
 const TeamRu = () => {
   const navigate = useNavigate();
@@ -74,7 +79,7 @@ const TeamRu = () => {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16 space-y-8">
             <div className="inline-block">
-              <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-primary/80 to-gold bg-clip-text text-transparent mb-2">
+              <h1 className="text-4xl md:text-5xl font-bold text-primary mb-2">
                 Наша команда
               </h1>
               <div className="h-1 w-24 bg-gradient-to-r from-primary to-gold mx-auto rounded-full"></div>
@@ -91,69 +96,23 @@ const TeamRu = () => {
                 <div className="text-sm md:text-base text-muted-foreground">лет совместного опыта</div>
               </div>
               <div className="space-y-2">
-                <div className="flex gap-3 justify-center items-center flex-wrap text-4xl md:text-5xl font-bold text-gold">
-                  {/* USA Flag */}
-                  <div className="w-12 h-12 rounded-full border-2 border-gold/30 flex items-center justify-center bg-primary/5">
-                    <svg className="w-7 h-7" viewBox="0 0 60 40" fill="none">
-                      <rect width="60" height="40" fill="currentColor" opacity="0.2"/>
-                      <rect width="60" height="3" y="0" fill="currentColor"/>
-                      <rect width="60" height="3" y="7" fill="currentColor"/>
-                      <rect width="60" height="3" y="14" fill="currentColor"/>
-                      <rect width="60" height="3" y="21" fill="currentColor"/>
-                      <rect width="60" height="3" y="28" fill="currentColor"/>
-                      <rect width="60" height="3" y="35" fill="currentColor"/>
-                      <rect width="25" height="17" fill="currentColor" opacity="0.4"/>
-                      <circle cx="5" cy="3" r="1" fill="currentColor"/>
-                      <circle cx="10" cy="3" r="1" fill="currentColor"/>
-                      <circle cx="15" cy="3" r="1" fill="currentColor"/>
-                      <circle cx="20" cy="3" r="1" fill="currentColor"/>
-                      <circle cx="5" cy="8" r="1" fill="currentColor"/>
-                      <circle cx="10" cy="8" r="1" fill="currentColor"/>
-                      <circle cx="15" cy="8" r="1" fill="currentColor"/>
-                      <circle cx="20" cy="8" r="1" fill="currentColor"/>
-                      <circle cx="5" cy="13" r="1" fill="currentColor"/>
-                      <circle cx="10" cy="13" r="1" fill="currentColor"/>
-                      <circle cx="15" cy="13" r="1" fill="currentColor"/>
-                      <circle cx="20" cy="13" r="1" fill="currentColor"/>
-                    </svg>
-                  </div>
-                  
-                  {/* Canada Flag - Maple Leaf */}
-                  <div className="w-12 h-12 rounded-full border-2 border-gold/30 flex items-center justify-center bg-primary/5">
-                    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 3l1 3h3l-2 2 1 3-3-2-3 2 1-3-2-2h3l1-3zm-1 8v8m-2-2h6"/>
-                    </svg>
-                  </div>
-                  
-                  {/* UK Flag - Union Jack */}
-                  <div className="w-12 h-12 rounded-full border-2 border-gold/30 flex items-center justify-center bg-primary/5">
-                    <svg className="w-7 h-7" viewBox="0 0 60 40" fill="currentColor">
-                      <path d="M0 0h60v40H0z" opacity="0.2"/>
-                      <path d="M0 0l60 40M60 0L0 40" strokeWidth="8" stroke="currentColor" opacity="0.3"/>
-                      <path d="M30 0v40M0 20h60" strokeWidth="12" stroke="currentColor" opacity="0.3"/>
-                      <path d="M30 0v40M0 20h60" strokeWidth="6" stroke="currentColor"/>
-                    </svg>
-                  </div>
-                  
-                  {/* China Flag - 5 Stars */}
-                  <div className="w-12 h-12 rounded-full border-2 border-gold/30 flex items-center justify-center bg-primary/5">
-                    <svg className="w-7 h-7" viewBox="0 0 30 20" fill="currentColor">
-                      <rect width="30" height="20" fill="currentColor" opacity="0.2"/>
-                      <path d="M5 3l1.5 4.5h4.5l-3.75 2.5 1.5 4.5L5 12l-3.75 2.5 1.5-4.5L-1 7.5h4.5z"/>
-                      <path d="M15 2l.5 1.5h1.5l-1.25 1 .5 1.5-1.25-1-1.25 1 .5-1.5-1.25-1h1.5z" opacity="0.8"/>
-                      <path d="M17 5l.5 1.5h1.5l-1.25 1 .5 1.5-1.25-1-1.25 1 .5-1.5-1.25-1h1.5z" opacity="0.8"/>
-                      <path d="M17 10l.5 1.5h1.5l-1.25 1 .5 1.5-1.25-1-1.25 1 .5-1.5-1.25-1h1.5z" opacity="0.8"/>
-                      <path d="M15 13l.5 1.5h1.5l-1.25 1 .5 1.5-1.25-1-1.25 1 .5-1.5-1.25-1h1.5z" opacity="0.8"/>
-                    </svg>
-                  </div>
-                  
-                  {/* South Korea Flag - Taeguk */}
-                  <div className="w-12 h-12 rounded-full border-2 border-gold/30 flex items-center justify-center bg-primary/5">
-                    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <circle cx="12" cy="12" r="9" opacity="0.3"/>
-                      <path d="M12 3a9 9 0 0 0 0 18c2.5 0 4.5-2 4.5-4.5S14.5 12 12 12c-2.5 0-4.5-2-4.5-4.5S9.5 3 12 3z" fill="currentColor" opacity="0.6"/>
-                      <path d="M17 6l1 1m0-1l-1 1m-11 9l1 1m0-1l-1 1m11 0l1-1m0 1l-1-1M7 7l1-1m0 1l-1-1" strokeWidth="2"/>
-                    </svg>
+                <div className="h-12 md:h-14 flex items-center justify-center">
+                  <div className="flex gap-3 md:gap-4 items-center justify-center flex-nowrap overflow-x-auto">
+                    <div className="w-12 h-12 rounded-full border-2 border-gold/40 overflow-hidden bg-background">
+                      <img src={usFlag} alt="Флаг США" className="w-full h-full object-cover" loading="lazy" />
+                    </div>
+                    <div className="w-12 h-12 rounded-full border-2 border-gold/40 overflow-hidden bg-background">
+                      <img src={caFlag} alt="Флаг Канады" className="w-full h-full object-cover" loading="lazy" />
+                    </div>
+                    <div className="w-12 h-12 rounded-full border-2 border-gold/40 overflow-hidden bg-background">
+                      <img src={gbFlag} alt="Флаг Великобритании" className="w-full h-full object-cover" loading="lazy" />
+                    </div>
+                    <div className="w-12 h-12 rounded-full border-2 border-gold/40 overflow-hidden bg-background">
+                      <img src={cnFlag} alt="Флаг Китая" className="w-full h-full object-cover" loading="lazy" />
+                    </div>
+                    <div className="w-12 h-12 rounded-full border-2 border-gold/40 overflow-hidden bg-background">
+                      <img src={krFlag} alt="Флаг Южной Кореи" className="w-full h-full object-cover" loading="lazy" />
+                    </div>
                   </div>
                 </div>
                 <div className="text-sm md:text-base text-muted-foreground">межконтинентальная экспертиза</div>
