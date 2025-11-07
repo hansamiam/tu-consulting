@@ -29,7 +29,7 @@ const Team = () => {
       name: "Nurzada Abdivalieva",
       photo: nurzadaPhoto,
       hometown: "Bishkek, Kyrgyzstan",
-      education: "American University of Central Asia | KDI School | University of Cambridge | Tsinghua University",
+      education: "American University of Central Asia | Korea Development Institute (KDI) | University of Cambridge | Tsinghua University",
       languages: "Russian (native), Kyrgyz (native), English (advanced)"
     },
     {
@@ -96,21 +96,21 @@ const Team = () => {
                 <div className="text-sm md:text-base text-muted-foreground">years of collective experience</div>
               </div>
               <div className="space-y-2">
-                <div className="h-12 md:h-14 flex items-center justify-center">
-                  <div className="flex gap-3 md:gap-4 items-center justify-center flex-nowrap overflow-x-auto">
-                    <div className="w-12 h-12 rounded-full border-2 border-gold/40 overflow-hidden bg-background">
+                <div className="text-4xl md:text-5xl font-bold text-gold flex items-center justify-center">
+                  <div className="flex gap-2 md:gap-3 items-center justify-center">
+                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0">
                       <img src={usFlag} alt="USA flag" className="w-full h-full object-cover" loading="lazy" />
                     </div>
-                    <div className="w-12 h-12 rounded-full border-2 border-gold/40 overflow-hidden bg-background">
+                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0">
                       <img src={caFlag} alt="Canada flag" className="w-full h-full object-cover" loading="lazy" />
                     </div>
-                    <div className="w-12 h-12 rounded-full border-2 border-gold/40 overflow-hidden bg-background">
+                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0">
                       <img src={gbFlag} alt="United Kingdom flag" className="w-full h-full object-cover" loading="lazy" />
                     </div>
-                    <div className="w-12 h-12 rounded-full border-2 border-gold/40 overflow-hidden bg-background">
+                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0">
                       <img src={cnFlag} alt="China flag" className="w-full h-full object-cover" loading="lazy" />
                     </div>
-                    <div className="w-12 h-12 rounded-full border-2 border-gold/40 overflow-hidden bg-background">
+                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0">
                       <img src={krFlag} alt="South Korea flag" className="w-full h-full object-cover" loading="lazy" />
                     </div>
                   </div>

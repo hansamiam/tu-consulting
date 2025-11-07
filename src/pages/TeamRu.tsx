@@ -29,7 +29,7 @@ const TeamRu = () => {
       name: "Нурзада Абдивалиева",
       photo: nurzadaPhoto,
       hometown: "Бишкек, Кыргызстан",
-      education: "Американский университет Центральной Азии | Школа KDI | Кембриджский университет | Университет Цинхуа",
+      education: "Американский университет Центральной Азии | Корейский институт развития (KDI) | Кембриджский университет | Университет Цинхуа",
       languages: "Русский (родной), Кыргызский (родной), Английский (продвинутый)"
     },
     {
@@ -96,21 +96,21 @@ const TeamRu = () => {
                 <div className="text-sm md:text-base text-muted-foreground">лет совместного опыта</div>
               </div>
               <div className="space-y-2">
-                <div className="h-12 md:h-14 flex items-center justify-center">
-                  <div className="flex gap-3 md:gap-4 items-center justify-center flex-nowrap overflow-x-auto">
-                    <div className="w-12 h-12 rounded-full border-2 border-gold/40 overflow-hidden bg-background">
+                <div className="text-4xl md:text-5xl font-bold text-gold flex items-center justify-center">
+                  <div className="flex gap-2 md:gap-3 items-center justify-center">
+                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0">
                       <img src={usFlag} alt="Флаг США" className="w-full h-full object-cover" loading="lazy" />
                     </div>
-                    <div className="w-12 h-12 rounded-full border-2 border-gold/40 overflow-hidden bg-background">
+                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0">
                       <img src={caFlag} alt="Флаг Канады" className="w-full h-full object-cover" loading="lazy" />
                     </div>
-                    <div className="w-12 h-12 rounded-full border-2 border-gold/40 overflow-hidden bg-background">
+                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0">
                       <img src={gbFlag} alt="Флаг Великобритании" className="w-full h-full object-cover" loading="lazy" />
                     </div>
-                    <div className="w-12 h-12 rounded-full border-2 border-gold/40 overflow-hidden bg-background">
+                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0">
                       <img src={cnFlag} alt="Флаг Китая" className="w-full h-full object-cover" loading="lazy" />
                     </div>
-                    <div className="w-12 h-12 rounded-full border-2 border-gold/40 overflow-hidden bg-background">
+                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0">
                       <img src={krFlag} alt="Флаг Южной Кореи" className="w-full h-full object-cover" loading="lazy" />
                     </div>
                   </div>
