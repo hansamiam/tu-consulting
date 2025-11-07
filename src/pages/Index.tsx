@@ -50,9 +50,28 @@ const Index = () => {
           </p>
           
           {/* Tagline */}
-          <div className="text-sm md:text-base text-primary-foreground/70 mb-16 max-w-xl mx-auto">
+          <div className="text-sm md:text-base text-primary-foreground/70 mb-12 max-w-xl mx-auto">
             <p className="text-base md:text-lg">Now serving students worldwide</p>
           </div>
+
+          {/* Waitlist Form */}
+          <form className="max-w-md mx-auto mb-8">
+            <div className="flex gap-2">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="flex-1 px-4 py-3 rounded-md bg-primary-foreground/10 border border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/50 focus:outline-none focus:border-gold focus:bg-primary-foreground/15 transition-all"
+                required
+              />
+              <Button
+                type="submit"
+                variant="gold"
+                className="px-6"
+              >
+                Join Waitlist
+              </Button>
+            </div>
+          </form>
 
           {/* Team Link */}
           <div className="mb-8">
@@ -71,10 +90,10 @@ const Index = () => {
               href="https://www.instagram.com/top_uni_consulting/?g=5"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary-foreground/60 hover:text-gold transition-all duration-200 p-2"
+              className="text-gold hover:text-gold-light transition-all duration-200 p-2"
               aria-label="Follow us on Instagram"
             >
-              <Instagram size={32} strokeWidth={1.5} className="opacity-80" />
+              <Instagram size={32} strokeWidth={1.5} />
             </a>
           </div>
 
@@ -83,14 +102,14 @@ const Index = () => {
             <p>
               <a 
                 href="mailto:team@topuniconsulting.com" 
-                className="text-primary-foreground/60 hover:text-gold transition-colors duration-300"
+                className="text-gold hover:text-gold-light transition-colors duration-300"
               >
                 team@topuniconsulting.com
               </a>
             </p>
-            <div className="border-t border-primary-foreground/10 pt-3 space-y-2">
-              <p>Central Asia's leading admissions consulting firm</p>
-              <p>© 2025 Top Uni Consulting | All Rights Reserved</p>
+            <div className="border-t border-gold/20 pt-3 space-y-2">
+              <p className="text-primary-foreground/60">Central Asia's leading admissions consulting firm</p>
+              <p className="text-primary-foreground/50">© 2025 Top Uni Consulting | All Rights Reserved</p>
             </div>
           </footer>
         </main>
