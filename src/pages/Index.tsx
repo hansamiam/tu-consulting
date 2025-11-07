@@ -100,11 +100,6 @@ const Index = () => {
           <p className="text-lg sm:text-xl md:text-2xl text-primary-foreground/90 mb-3 sm:mb-4 max-w-2xl mx-auto font-light leading-relaxed px-4">
             Guiding Ambitious Students to Top Universities
           </p>
-          
-          {/* Tagline */}
-          <div className="text-sm md:text-base text-primary-foreground/70 mb-6 sm:mb-8 max-w-xl mx-auto px-4">
-            <p className="text-sm sm:text-base md:text-lg">Now serving students worldwide</p>
-          </div>
 
           {/* Team Link */}
           <div className="mb-6 sm:mb-8 px-4">
