@@ -42,7 +42,7 @@ const WhyTURu = () => {
           {/* Hero Section */}
           <div className="text-center space-y-6">
             <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent">
-              Почему TU?
+              Почему Top Uni?
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Компактная команда. Реальный опыт. Личное внимание. Без корпоративной наценки.
@@ -52,9 +52,6 @@ const WhyTURu = () => {
           {/* Key Differentiators */}
           <div className="grid md:grid-cols-2 gap-8">
             <Card className="p-8 space-y-4 border-gold/30 bg-gradient-to-br from-card/80 to-accent/5 hover:shadow-xl transition-all">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gold/20 to-accent/20 flex items-center justify-center">
-                <Users className="w-8 h-8 text-gold" />
-              </div>
               <h3 className="text-2xl font-bold text-primary">Маленькая команда, большое влияние</h3>
               <p className="text-muted-foreground">
                 В отличие от крупных фирм, где вы просто номер, наша небольшая команда означает, что каждый консультант обладает опытом высшего уровня. Вы работаете напрямую с тем, кто сам через это прошел—недавно.
@@ -65,9 +62,6 @@ const WhyTURu = () => {
             </Card>
 
             <Card className="p-8 space-y-4 border-primary/30 bg-gradient-to-br from-card/80 to-primary/5 hover:shadow-xl transition-all">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                <Heart className="w-8 h-8 text-primary" />
-              </div>
               <h3 className="text-2xl font-bold text-primary">Личное внимание</h3>
               <p className="text-muted-foreground">
                 Крупные фирмы берут высокие цены, но распыляют менторов. Мы держим нагрузку управляемой—вы получаете целенаправленную поддержку без наценки.
@@ -78,9 +72,6 @@ const WhyTURu = () => {
             </Card>
 
             <Card className="p-8 space-y-4 border-accent/30 bg-gradient-to-br from-card/80 to-gold/5 hover:shadow-xl transition-all">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-accent/20 to-gold/20 flex items-center justify-center">
-                <Award className="w-8 h-8 text-accent" />
-              </div>
               <h3 className="text-2xl font-bold text-primary">Глобальный опыт</h3>
               <p className="text-muted-foreground">
                 Многим местным консультантам не хватает международного охвата. Наша команда прошла приемные комиссии на континентах, получила $500K+ стипендий и понимает разные системы из первых рук.
@@ -91,9 +82,6 @@ const WhyTURu = () => {
             </Card>
 
             <Card className="p-8 space-y-4 border-gold/30 bg-gradient-to-br from-card/80 to-accent/5 hover:shadow-xl transition-all">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gold/20 to-primary/20 flex items-center justify-center">
-                <Target className="w-8 h-8 text-gold" />
-              </div>
               <h3 className="text-2xl font-bold text-primary">Доказанные результаты</h3>
               <p className="text-muted-foreground">
                 Получено $500K+ стипендий через строгие процессы. Наш опыт не теоретический—он доказан реальными успехами и неудачами.
@@ -107,9 +95,6 @@ const WhyTURu = () => {
           {/* Our Philosophy */}
           <Card className="p-12 bg-gradient-to-br from-primary/5 via-accent/5 to-gold/5 border-primary/20">
             <div className="max-w-4xl mx-auto space-y-6 text-center">
-              <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-gold/30 to-primary/30 flex items-center justify-center">
-                <Sparkles className="w-10 h-10 text-gold" />
-              </div>
               <h2 className="text-3xl md:text-4xl font-bold text-primary">Идеальные оценки не требуются</h2>
               <p className="text-lg text-muted-foreground">
                 Топовые университеты не только для "идеальных" студентов. Наша команда столкнулась с различиями в обучении, культурными барьерами, финансовыми ограничениями и неудачами. Мы учились на этих трудностях—теперь помогаем вам избежать тех же ошибок.
@@ -132,107 +117,32 @@ const WhyTURu = () => {
             </div>
           </Card>
 
-          {/* Comparison Table */}
-          <div className="space-y-6">
+          {/* Разница TopUni — тезисы в карточках */}
+          <section className="space-y-6">
             <h2 className="text-3xl md:text-4xl font-bold text-center bg-gradient-to-r from-primary to-gold bg-clip-text text-transparent">
               Разница TopUni
             </h2>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b-2 border-border">
-                    <th className="text-left p-4 text-muted-foreground font-medium w-2/5"></th>
-                    <th className="text-center p-4 text-muted-foreground font-medium">Крупные фирмы</th>
-                    <th className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
-                      <span className="text-gold font-bold">TopUni</span>
-                    </th>
-                    <th className="text-center p-4 text-muted-foreground font-medium">Местные</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b border-border">
-                    <td className="p-4 font-medium text-foreground">Глобальный опыт</td>
-                    <td className="text-center p-4">
-                      <span className="text-lg">✓</span>
-                    </td>
-                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
-                      <span className="text-gold text-lg font-bold">✓</span>
-                    </td>
-                    <td className="text-center p-4">
-                      <span className="text-destructive text-lg">✗</span>
-                    </td>
-                  </tr>
-                  <tr className="border-b border-border">
-                    <td className="p-4 font-medium text-foreground">Личное внимание</td>
-                    <td className="text-center p-4">
-                      <span className="text-destructive text-lg">✗</span>
-                    </td>
-                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
-                      <span className="text-gold text-lg font-bold">✓</span>
-                    </td>
-                    <td className="text-center p-4">
-                      <span className="text-lg">✓</span>
-                    </td>
-                  </tr>
-                  <tr className="border-b border-border">
-                    <td className="p-4 font-medium text-foreground">Доступные цены</td>
-                    <td className="text-center p-4">
-                      <span className="text-destructive text-lg">✗</span>
-                    </td>
-                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
-                      <span className="text-gold text-lg font-bold">✓</span>
-                    </td>
-                    <td className="text-center p-4">
-                      <span className="text-lg">✓</span>
-                    </td>
-                  </tr>
-                  <tr className="border-b border-border">
-                    <td className="p-4 font-medium text-foreground">Доказанный трек-рекорд</td>
-                    <td className="text-center p-4">
-                      <span className="text-lg">✓</span>
-                    </td>
-                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
-                      <span className="text-gold text-lg font-bold">✓</span>
-                    </td>
-                    <td className="text-center p-4">
-                      <span className="text-destructive text-lg">✗</span>
-                    </td>
-                  </tr>
-                  <tr className="border-b border-border">
-                    <td className="p-4 font-medium text-foreground">Недавний опыт</td>
-                    <td className="text-center p-4">
-                      <span className="text-destructive text-lg">✗</span>
-                    </td>
-                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
-                      <span className="text-gold text-lg font-bold">✓</span>
-                    </td>
-                    <td className="text-center p-4">
-                      <span className="text-destructive text-lg">✗</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="p-4 font-medium text-foreground">Прозрачная статистика</td>
-                    <td className="text-center p-4">
-                      <span className="text-destructive text-lg">✗</span>
-                      <p className="text-xs text-muted-foreground mt-1">Завышенные данные</p>
-                    </td>
-                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
-                      <span className="text-gold text-lg font-bold">✓</span>
-                      <p className="text-xs text-gold/80 mt-1 font-medium">Честный подход</p>
-                    </td>
-                    <td className="text-center p-4">
-                      <span className="text-lg">✓</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card className="p-6 bg-card/60 border-border/60">
+                <p className="text-foreground"><strong>Личное внимание вместо объёма.</strong> Мы ограничиваем нагрузку, чтобы каждый студент получал фокус.</p>
+              </Card>
+              <Card className="p-6 bg-card/60 border-border/60">
+                <p className="text-foreground"><strong>Без ограничений по подачам.</strong> Мы не ограничиваем направления — вашу планку задают ваши цели.</p>
+              </Card>
+              <Card className="p-6 bg-card/60 border-border/60">
+                <p className="text-foreground"><strong>Недавний и релевантный опыт.</strong> Актуальные выпускники и студенты, которые помнят, что работает.</p>
+              </Card>
+              <Card className="p-6 bg-card/60 border-border/60">
+                <p className="text-foreground"><strong>Прозрачные результаты.</strong> Без завышенной статистики — честные процессы и итоги.</p>
+              </Card>
+              <Card className="p-6 bg-card/60 border-border/60">
+                <p className="text-foreground"><strong>Глобальный охват.</strong> США, Великобритания, Канада, Китай, Корея — опыт на континентах.</p>
+              </Card>
+              <Card className="p-6 bg-card/60 border-border/60">
+                <p className="text-foreground"><strong>Фокус на стипендиях.</strong> Более $500K грантов — стратегии максимизации финансирования.</p>
+              </Card>
             </div>
-            
-            <p className="text-center text-sm text-muted-foreground italic max-w-3xl mx-auto">
-              Крупные фирмы завышают статистику, разрешая клиентам подавать только туда, где высокие шансы—у нас нет таких ограничений. Наша команда предлагает стратегии стипендий, поддержку в учебе, заявки в магистратуру и карьерный коучинг под вас.
-            </p>
-          </div>
+          </section>
 
           {/* CTA Section */}
           <Card className="p-12 bg-gradient-to-br from-primary/10 to-gold/10 border-primary/30 text-center space-y-6">

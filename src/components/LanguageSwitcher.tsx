@@ -22,12 +22,15 @@ const LanguageSwitcher = () => {
   };
 
   return (
-    <button
+    <Button
       onClick={switchLanguage}
-      className="text-sm text-primary-foreground/60 hover:text-gold transition-colors duration-200 tracking-wider font-medium"
+      variant="outline"
+      size="sm"
+      className="rounded-full border-gold/50 text-primary-foreground bg-background/30 hover:bg-background/50"
+      aria-label={isRussian ? 'Switch to English' : 'Переключить на русский'}
     >
       {isRussian ? 'EN' : 'RU'}
-    </button>
+    </Button>
   );
 };
 

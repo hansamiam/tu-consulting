@@ -42,7 +42,7 @@ const WhyTU = () => {
           {/* Hero Section */}
           <div className="text-center space-y-6">
             <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent">
-              Why TU?
+              Why Top Uni?
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Lean team. Real experience. Personal attention. No corporate markup.
@@ -52,9 +52,6 @@ const WhyTU = () => {
           {/* Key Differentiators */}
           <div className="grid md:grid-cols-2 gap-8">
             <Card className="p-8 space-y-4 border-gold/30 bg-gradient-to-br from-card/80 to-accent/5 hover:shadow-xl transition-all">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gold/20 to-accent/20 flex items-center justify-center">
-                <Users className="w-8 h-8 text-gold" />
-              </div>
               <h3 className="text-2xl font-bold text-primary">Small Team, Big Impact</h3>
               <p className="text-muted-foreground">
                 Unlike large firms where you're just a number, our small team means every consultant brings top-tier expertise. You work directly with someone who's been through it themselves—recently.
@@ -65,9 +62,6 @@ const WhyTU = () => {
             </Card>
 
             <Card className="p-8 space-y-4 border-primary/30 bg-gradient-to-br from-card/80 to-primary/5 hover:shadow-xl transition-all">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                <Heart className="w-8 h-8 text-primary" />
-              </div>
               <h3 className="text-2xl font-bold text-primary">Personal Attention</h3>
               <p className="text-muted-foreground">
                 Large firms charge premium but spread mentors thin. We keep client loads manageable—you get dedicated support without the markup.
@@ -78,9 +72,6 @@ const WhyTU = () => {
             </Card>
 
             <Card className="p-8 space-y-4 border-accent/30 bg-gradient-to-br from-card/80 to-gold/5 hover:shadow-xl transition-all">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-accent/20 to-gold/20 flex items-center justify-center">
-                <Award className="w-8 h-8 text-accent" />
-              </div>
               <h3 className="text-2xl font-bold text-primary">Global Experience</h3>
               <p className="text-muted-foreground">
                 Many local consultants lack international reach. Our team navigated admissions across continents, secured $500K+ in scholarships, and understand diverse systems firsthand.
@@ -91,9 +82,6 @@ const WhyTU = () => {
             </Card>
 
             <Card className="p-8 space-y-4 border-gold/30 bg-gradient-to-br from-card/80 to-accent/5 hover:shadow-xl transition-all">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gold/20 to-primary/20 flex items-center justify-center">
-                <Target className="w-8 h-8 text-gold" />
-              </div>
               <h3 className="text-2xl font-bold text-primary">Proven Results</h3>
               <p className="text-muted-foreground">
                 Secured $500K+ in scholarships through rigorous processes. Our expertise isn't theoretical—it's proven through real successes and setbacks.
@@ -107,9 +95,6 @@ const WhyTU = () => {
           {/* Our Philosophy */}
           <Card className="p-12 bg-gradient-to-br from-primary/5 via-accent/5 to-gold/5 border-primary/20">
             <div className="max-w-4xl mx-auto space-y-6 text-center">
-              <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-gold/30 to-primary/30 flex items-center justify-center">
-                <Sparkles className="w-10 h-10 text-gold" />
-              </div>
               <h2 className="text-3xl md:text-4xl font-bold text-primary">Perfect Grades Not Required</h2>
               <p className="text-lg text-muted-foreground">
                 Top universities aren't just for "perfect" students. Our team faced learning differences, cultural barriers, financial constraints, and setbacks. We learned from those struggles—now we help you avoid the same mistakes.
@@ -132,107 +117,32 @@ const WhyTU = () => {
             </div>
           </Card>
 
-          {/* Comparison Table */}
-          <div className="space-y-6">
+          {/* The TopUni Difference - Boxed statements */}
+          <section className="space-y-6">
             <h2 className="text-3xl md:text-4xl font-bold text-center bg-gradient-to-r from-primary to-gold bg-clip-text text-transparent">
               The TopUni Difference
             </h2>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b-2 border-border">
-                    <th className="text-left p-4 text-muted-foreground font-medium w-2/5"></th>
-                    <th className="text-center p-4 text-muted-foreground font-medium">Large Firms</th>
-                    <th className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
-                      <span className="text-gold font-bold">TopUni</span>
-                    </th>
-                    <th className="text-center p-4 text-muted-foreground font-medium">Small Local</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b border-border">
-                    <td className="p-4 font-medium text-foreground">Global Experience</td>
-                    <td className="text-center p-4">
-                      <span className="text-lg">✓</span>
-                    </td>
-                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
-                      <span className="text-gold text-lg font-bold">✓</span>
-                    </td>
-                    <td className="text-center p-4">
-                      <span className="text-destructive text-lg">✗</span>
-                    </td>
-                  </tr>
-                  <tr className="border-b border-border">
-                    <td className="p-4 font-medium text-foreground">Personal Attention</td>
-                    <td className="text-center p-4">
-                      <span className="text-destructive text-lg">✗</span>
-                    </td>
-                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
-                      <span className="text-gold text-lg font-bold">✓</span>
-                    </td>
-                    <td className="text-center p-4">
-                      <span className="text-lg">✓</span>
-                    </td>
-                  </tr>
-                  <tr className="border-b border-border">
-                    <td className="p-4 font-medium text-foreground">Affordable Pricing</td>
-                    <td className="text-center p-4">
-                      <span className="text-destructive text-lg">✗</span>
-                    </td>
-                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
-                      <span className="text-gold text-lg font-bold">✓</span>
-                    </td>
-                    <td className="text-center p-4">
-                      <span className="text-lg">✓</span>
-                    </td>
-                  </tr>
-                  <tr className="border-b border-border">
-                    <td className="p-4 font-medium text-foreground">Proven Track Record</td>
-                    <td className="text-center p-4">
-                      <span className="text-lg">✓</span>
-                    </td>
-                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
-                      <span className="text-gold text-lg font-bold">✓</span>
-                    </td>
-                    <td className="text-center p-4">
-                      <span className="text-destructive text-lg">✗</span>
-                    </td>
-                  </tr>
-                  <tr className="border-b border-border">
-                    <td className="p-4 font-medium text-foreground">Recent Experience</td>
-                    <td className="text-center p-4">
-                      <span className="text-destructive text-lg">✗</span>
-                    </td>
-                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
-                      <span className="text-gold text-lg font-bold">✓</span>
-                    </td>
-                    <td className="text-center p-4">
-                      <span className="text-destructive text-lg">✗</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="p-4 font-medium text-foreground">Transparent Statistics</td>
-                    <td className="text-center p-4">
-                      <span className="text-destructive text-lg">✗</span>
-                      <p className="text-xs text-muted-foreground mt-1">Inflated stats</p>
-                    </td>
-                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
-                      <span className="text-gold text-lg font-bold">✓</span>
-                      <p className="text-xs text-gold/80 mt-1 font-medium">Honest approach</p>
-                    </td>
-                    <td className="text-center p-4">
-                      <span className="text-lg">✓</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card className="p-6 bg-card/60 border-border/60">
+                <p className="text-foreground"><strong>Personal attention over volume.</strong> We cap client loads so every student gets focused support.</p>
+              </Card>
+              <Card className="p-6 bg-card/60 border-border/60">
+                <p className="text-foreground"><strong>No restrictive applications.</strong> We never limit where you can apply—your ambition sets the ceiling.</p>
+              </Card>
+              <Card className="p-6 bg-card/60 border-border/60">
+                <p className="text-foreground"><strong>Recent, relevant experience.</strong> Current and recent grads who remember the process—what works and what doesn’t.</p>
+              </Card>
+              <Card className="p-6 bg-card/60 border-border/60">
+                <p className="text-foreground"><strong>Transparent results.</strong> No inflated stats or cherry-picking—just honest guidance and outcomes.</p>
+              </Card>
+              <Card className="p-6 bg-card/60 border-border/60">
+                <p className="text-foreground"><strong>Global reach.</strong> US, UK, Canada, China, Korea—cross‑continental expertise for your goals.</p>
+              </Card>
+              <Card className="p-6 bg-card/60 border-border/60">
+                <p className="text-foreground"><strong>Scholarship-focused.</strong> Over $500K in awards—strategy to maximize funding opportunities.</p>
+              </Card>
             </div>
-            
-            <p className="text-center text-sm text-muted-foreground italic max-w-3xl mx-auto">
-              Large firms inflate stats by only letting clients apply where they have high chances—we have no such restrictions. Our team brings scholarship strategies, learning support, grad apps, and career coaching tailored to you.
-            </p>
-          </div>
+          </section>
 
           {/* CTA Section */}
           <Card className="p-12 bg-gradient-to-br from-primary/10 to-gold/10 border-primary/30 text-center space-y-6">

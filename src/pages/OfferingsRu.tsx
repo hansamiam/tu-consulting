@@ -152,7 +152,6 @@ const OfferingsRu = () => {
             <ArrowLeft size={20} />
             На главную
           </Button>
-          <LanguageSwitcher />
         </div>
       </header>
 

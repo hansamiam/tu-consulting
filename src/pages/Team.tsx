@@ -31,10 +31,9 @@ const Team = () => {
       strengths: "Learning strategies, supporting students with ADHD, immigrants and third-culture kids, adjusting to new environments, natural sciences",
       advice: "Don't hide your struggles; they make your story authentic and compelling",
       accomplishments: [
-        "Yale University undergraduate",
-        "Overcame ADHD and learning differences",
-        "Third-culture kid navigating multiple education systems",
-        "Specialized in natural sciences applications"
+        "Research experience at Massachusetts General Hospital and Harvard Medical School",
+        "Fully-funded programs in China (Tsinghua University) and Japan (Waseda University)",
+        "Aga Khan Foundation Canada Research & Development Fellow at University of Central Asia"
       ]
     },
     {
@@ -47,10 +46,11 @@ const Team = () => {
       strengths: "Scholarships and funding strategies, self-funded education pathways, cross-cultural adaptation, compelling storytelling, social sciences",
       advice: "Your story matters more than perfect grades; learn to tell it powerfully",
       accomplishments: [
-        "AUCA, KDI, Cambridge, Tsinghua graduate",
-        "Secured $200K+ in scholarships",
-        "Multiple competitive graduate admissions",
-        "Expert in cross-cultural education transitions"
+        "US Central Asia Education Fellowship — fully funded BA at AUCA",
+        "Capstone Finalist — fully funded 3-month internship in Washington, DC",
+        "Global Ambassador Scholarship — fully funded MA at KDI School",
+        "UCA Cambridge Trust — fully funded MPhil at the University of Cambridge",
+        "Schwarzman Scholar — prestigious full-ride MA at Tsinghua University (<3% acceptance)"
       ]
     },
     {
@@ -63,10 +63,9 @@ const Team = () => {
       strengths: "Graduate program applications, test-taking strategies, academic research, essay refinement, presentation skills, languages and humanities",
       advice: "Focus on clarity and authenticity in your writing—admissions committees read thousands of essays",
       accomplishments: [
-        "USC undergraduate, Harvard graduate",
-        "Perfect scores on multiple standardized tests",
-        "Published academic research",
-        "Multilingual (English, Russian, Kyrgyz)"
+        "Foreign Language and Area Studies (FLAS) Fellow, 2024–2026",
+        "Ethnographic research in Kyrgyzstan (2025)",
+        "Critical Language Scholarship (CLS) recipient, 2023"
       ]
     },
     {
@@ -79,10 +78,10 @@ const Team = () => {
       strengths: "Recommendation letter guidance, career coaching, early-to-mid career professionals, reference support, institutional advising, negotiation, international networking",
       advice: "Build genuine relationships with mentors early—strong recommendations come from authentic connections",
       accomplishments: [
-        "University of Oregon graduate",
-        "Written 100+ recommendation letters",
-        "Mentored diverse international students",
-        "Expert in institutional navigation and career transitions"
+        "American Association of University Women Fellowship (2002)",
+        "Central Asia Research Fellow, Elliott School of International Affairs, GWU (2019)",
+        "Research & Teaching Fellowship, OSCE Academy (2009)",
+        "International Peace Scholarship, P.E.O. (2001)"
       ]
     }
   ];

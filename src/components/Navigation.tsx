@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 interface NavigationProps {
   language?: "en" | "ru";
@@ -27,7 +28,7 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
       path: isRussian ? "/team/ru" : "/team" 
     },
     { 
-      label: isRussian ? "Почему мы" : "Why TU", 
+      label: isRussian ? "Почему мы" : "Why Us", 
       path: isRussian ? "/why-tu/ru" : "/why-tu" 
     },
     { 
@@ -55,22 +56,27 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
             Top Uni Consulting
           </button>
           
-          {/* Navigation Links */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            {links.map((link) => (
-              <button
-                key={link.path}
-                onClick={() => navigate(link.path)}
-                className={cn(
-                  "px-3 sm:px-4 py-2 text-sm sm:text-base font-medium rounded-md transition-all duration-200",
-                  isActive(link.path, link.exact)
-                    ? "text-gold bg-gold/10 border-b-2 border-gold"
-                    : "text-primary-foreground/80 hover:text-gold hover:bg-gold/5"
-                )}
-              >
-                {link.label}
-              </button>
-            ))}
+          {/* Navigation Links + Language */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
+              {links.map((link) => (
+                <button
+                  key={link.path}
+                  onClick={() => navigate(link.path)}
+                  className={cn(
+                    "px-3 sm:px-4 py-2 text-sm sm:text-base font-medium rounded-md transition-all duration-200",
+                    isActive(link.path, link.exact)
+                      ? "text-gold bg-gold/10 border-b-2 border-gold"
+                      : "text-primary-foreground/80 hover:text-gold hover:bg-gold/5"
+                  )}
+                >
+                  {link.label}
+                </button>
+              ))}
+            </div>
+            <div className="hidden sm:block ml-1">
+              <LanguageSwitcher />
+            </div>
           </div>
         </div>
       </div>

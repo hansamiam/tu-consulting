@@ -74,9 +74,6 @@ const IndexRu = () => {
       >
         <main className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-20 text-center">
           {/* Language Switcher */}
-          <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
-            <LanguageSwitcher />
-          </div>
           
           {/* Logo/Brand Name */}
           <div className="mb-8 sm:mb-12 animate-fade-in">
@@ -97,10 +94,6 @@ const IndexRu = () => {
             </p>
           </div>
 
-          {/* Subheadline */}
-          <p className="text-base sm:text-lg md:text-xl text-primary-foreground/90 mb-6 sm:mb-8 max-w-2xl mx-auto font-light leading-relaxed px-4">
-            Помогаем амбициозным студентам поступить в лучшие университеты
-          </p>
 
           {/* Waitlist Form */}
           <form onSubmit={handleWaitlistSubmit} className="max-w-md mx-auto mb-6 sm:mb-8 px-4">

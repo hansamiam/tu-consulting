@@ -173,7 +173,7 @@ const Offerings = () => {
             <ArrowLeft size={20} />
             Back to Home
           </Button>
-          <LanguageSwitcher />
+          
         </div>
       </header>
 
