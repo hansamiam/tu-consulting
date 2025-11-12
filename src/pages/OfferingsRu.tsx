@@ -8,6 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Check, Star, ArrowLeft } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useToast } from "@/hooks/use-toast";
+import heroCampus from "@/assets/hero-campus.jpg";
+import heroLibrary from "@/assets/hero-library.jpg";
+import yaleCampus from "@/assets/yale-campus.jpg";
 
 const OfferingsRu = () => {
   const navigate = useNavigate();
@@ -59,7 +62,7 @@ const OfferingsRu = () => {
       name: "Стартовый пакет",
       originalPrice: "$899",
       price: "$749",
-      discount: "Скидка 17%",
+      discount: "Скидка 20%",
       hours: "5 часов",
       features: [
         "5 часов комплексных консультаций",
@@ -75,7 +78,7 @@ const OfferingsRu = () => {
       badge: "Лучшее предложение",
       originalPrice: "$1,599",
       price: "$1,299",
-      discount: "Скидка 19%",
+      discount: "Скидка 30%",
       hours: "10 часов",
       features: [
         "10 часов комплексных консультаций",
@@ -92,7 +95,7 @@ const OfferingsRu = () => {
       badge: "Максимальная поддержка",
       originalPrice: "$2,999",
       price: "$1,999",
-      discount: "Скидка 33%",
+      discount: "Скидка 35%",
       hours: "20 часов",
       features: [
         "20 часов комплексных консультаций",
@@ -107,6 +110,8 @@ const OfferingsRu = () => {
       popular: false,
     },
   ];
+
+  const packageBackgrounds = [heroCampus, heroLibrary, yaleCampus];
 
   const consultations = [
     {
@@ -176,6 +181,11 @@ const OfferingsRu = () => {
                     ? "border-accent shadow-lg scale-105 bg-gradient-to-br from-accent/5 to-transparent"
                     : "border-border"
                 }`}
+                style={{
+                  backgroundImage: `linear-gradient(hsla(var(--background)/0.9), hsla(var(--background)/0.9)), url(${packageBackgrounds[index]})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center'
+                }}
               >
                 {pkg.badge && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2">

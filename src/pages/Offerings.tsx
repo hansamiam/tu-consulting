@@ -10,6 +10,8 @@ import { Check, Star, ArrowLeft } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useToast } from "@/hooks/use-toast";
 import heroImage from "@/assets/hero-campus.jpg";
+import heroLibrary from "@/assets/hero-library.jpg";
+import yaleCampus from "@/assets/yale-campus.jpg";
 
 const Offerings = () => {
   const navigate = useNavigate();
@@ -67,7 +69,7 @@ const Offerings = () => {
       name: "Starter Package",
       originalPrice: "$899",
       price: "$649",
-      discount: "28% OFF",
+      discount: "20% OFF",
       hours: "5 Hours",
       features: [
         "5 hours of comprehensive consulting",
@@ -84,7 +86,7 @@ const Offerings = () => {
       badge: "Best Value",
       originalPrice: "$1,599",
       price: "$1,199",
-      discount: "25% OFF",
+      discount: "30% OFF",
       hours: "10 Hours",
       features: [
         "10 hours of comprehensive consulting",
@@ -103,7 +105,7 @@ const Offerings = () => {
       badge: "Most Comprehensive",
       originalPrice: "$2,999",
       price: "$1,899",
-      discount: "37% OFF",
+      discount: "35% OFF",
       hours: "20 Hours",
       features: [
         "20 hours of comprehensive consulting",
@@ -120,6 +122,8 @@ const Offerings = () => {
       popular: false,
     },
   ];
+
+  const packageBackgrounds = [heroImage, heroLibrary, yaleCampus];
 
   const consultations = [
     {
@@ -184,9 +188,6 @@ const Offerings = () => {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-2">
             Choose the perfect package to achieve your university admission goals
           </p>
-          <p className="text-sm text-primary/70 font-medium italic">
-            We're here for your success, not just another transaction
-          </p>
         </div>
 
         {/* Package Pricing */}
@@ -198,11 +199,16 @@ const Offerings = () => {
             {packages.map((pkg, index) => (
                 <Card
                 key={index}
-                className={`relative border-gold/30 bg-card/50 backdrop-blur-sm hover:shadow-xl transition-all ${
+                className={`relative border-gold/30 bg-card/60 backdrop-blur-sm hover:shadow-xl transition-all ${
                   pkg.popular
                     ? "shadow-lg scale-105 border-accent/50"
                     : ""
                 }`}
+                style={{
+                  backgroundImage: `linear-gradient(hsla(var(--background)/0.88), hsla(var(--background)/0.88)), url(${packageBackgrounds[index]})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center'
+                }}
               >
                 {pkg.badge && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2">
@@ -262,9 +268,6 @@ const Offerings = () => {
             </h2>
             <p className="text-muted-foreground text-lg mb-4">
               Start with a trial consultation to experience our service
-            </p>
-            <p className="text-sm text-primary/60 font-medium italic">
-              Maximize your session—we want you fully prepared to succeed
             </p>
           </div>
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
@@ -443,7 +446,7 @@ const Offerings = () => {
                 <ul className="text-sm text-muted-foreground space-y-2 text-left max-w-lg mx-auto">
                   <li className="flex items-start gap-2">
                     <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
-                    <span>Steepest discounts we'll ever offer (up to 37% off)</span>
+                    <span>Founding cohort discount: 35% off</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
@@ -451,7 +454,7 @@ const Offerings = () => {
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
-                    <span>Direct influence on how we evolve our services</span>
+                    <span>Priority scheduling and faster turnaround</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
