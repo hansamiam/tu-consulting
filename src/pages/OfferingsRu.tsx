@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Check, Star, ArrowLeft } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import Navigation from "@/components/Navigation";
 import { useToast } from "@/hooks/use-toast";
 import heroCampus from "@/assets/hero-campus.jpg";
 import heroLibrary from "@/assets/hero-library.jpg";
@@ -94,8 +95,8 @@ const OfferingsRu = () => {
       name: "Премиум пакет",
       badge: "Максимальная поддержка",
       originalPrice: "$2,999",
-      price: "$1,999",
-      discount: "Скидка 35%",
+      price: "$1,799",
+      discount: "Скидка 40%",
       hours: "20 часов",
       features: [
         "20 часов комплексных консультаций",
@@ -141,7 +142,8 @@ const OfferingsRu = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card">
+      <Navigation language="ru" />
+      <header className="border-b border-border bg-card sticky top-16 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <Button
             variant="ghost"

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Instagram } from "lucide-react";
 import heroImage from "@/assets/hero-campus.jpg";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import Navigation from "@/components/Navigation";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -63,6 +64,7 @@ const IndexRu = () => {
 
   return (
     <div className="min-h-screen relative">
+      <Navigation language="ru" />
       {/* Hero Section with Background Image */}
       <div 
         className="min-h-screen relative flex items-center justify-center bg-cover bg-center"

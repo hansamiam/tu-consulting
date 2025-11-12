@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Check, Star, ArrowLeft } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import Navigation from "@/components/Navigation";
 import { useToast } from "@/hooks/use-toast";
 import heroImage from "@/assets/hero-campus.jpg";
 import heroLibrary from "@/assets/hero-library.jpg";
@@ -104,8 +105,8 @@ const Offerings = () => {
       name: "Premium Package",
       badge: "Most Comprehensive",
       originalPrice: "$2,999",
-      price: "$1,899",
-      discount: "35% OFF",
+      price: "$1,799",
+      discount: "40% OFF",
       hours: "20 Hours",
       features: [
         "20 hours of comprehensive consulting",
@@ -161,8 +162,9 @@ const Offerings = () => {
         backgroundAttachment: 'fixed'
       }}
     >
+      <Navigation language="en" />
       {/* Header */}
-      <header className="border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 shadow-sm">
+      <header className="border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 sticky top-16 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <Button
             variant="ghost"
