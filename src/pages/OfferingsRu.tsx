@@ -58,8 +58,8 @@ const OfferingsRu = () => {
     {
       name: "Стартовый пакет",
       originalPrice: "$899",
-      price: "$699",
-      discount: "Скидка 22%",
+      price: "$749",
+      discount: "Скидка 17%",
       hours: "5 часов",
       features: [
         "5 часов комплексных консультаций",
@@ -73,8 +73,8 @@ const OfferingsRu = () => {
       name: "Стандартный пакет",
       badge: "Лучшее предложение",
       originalPrice: "$1,599",
-      price: "$1,199",
-      discount: "Скидка 25%",
+      price: "$1,299",
+      discount: "Скидка 19%",
       hours: "10 часов",
       features: [
         "10 часов комплексных консультаций",
@@ -88,9 +88,9 @@ const OfferingsRu = () => {
     {
       name: "Премиум пакет",
       badge: "Максимальная поддержка",
-      originalPrice: "$2,799",
-      price: "$2,299",
-      discount: "Скидка 18%",
+      originalPrice: "$2,999",
+      price: "$1,999",
+      discount: "Скидка 33%",
       hours: "20 часов",
       features: [
         "20 часов комплексных консультаций",
@@ -229,10 +229,10 @@ const OfferingsRu = () => {
         <section className="mb-20">
           <div className="text-center mb-12">
             <h2 className="font-heading text-3xl font-bold mb-4 text-foreground">
-              Индивидуальные консультации
+              Ещё не готовы?
             </h2>
-            <p className="text-muted-foreground">
-              Не готовы к пакету? Начните с одной консультации
+            <p className="text-muted-foreground text-lg">
+              Начните с пробной консультации, чтобы познакомиться с нашим сервисом
             </p>
           </div>
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">

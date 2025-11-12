@@ -60,8 +60,8 @@ const Offerings = () => {
     {
       name: "Starter Package",
       originalPrice: "$899",
-      price: "$699",
-      discount: "22% OFF",
+      price: "$749",
+      discount: "17% OFF",
       hours: "5 Hours",
       features: [
         "5 hours of comprehensive consulting",
@@ -75,8 +75,8 @@ const Offerings = () => {
       name: "Standard Package",
       badge: "Best Value",
       originalPrice: "$1,599",
-      price: "$1,199",
-      discount: "25% OFF",
+      price: "$1,299",
+      discount: "19% OFF",
       hours: "10 Hours",
       features: [
         "10 hours of comprehensive consulting",
@@ -90,9 +90,9 @@ const Offerings = () => {
     {
       name: "Premium Package",
       badge: "Most Comprehensive",
-      originalPrice: "$2,799",
-      price: "$2,299",
-      discount: "18% OFF",
+      originalPrice: "$2,999",
+      price: "$1,999",
+      discount: "33% OFF",
       hours: "20 Hours",
       features: [
         "20 hours of comprehensive consulting",
@@ -235,10 +235,10 @@ const Offerings = () => {
         <section className="mb-20">
           <div className="text-center mb-12">
             <h2 className="font-heading text-3xl font-bold mb-4 text-foreground">
-              Individual Consultations
+              Not Ready Yet?
             </h2>
-            <p className="text-muted-foreground">
-              Not ready for a package? Start with a single consultation
+            <p className="text-muted-foreground text-lg">
+              Start with a trial consultation to experience our service
             </p>
           </div>
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
