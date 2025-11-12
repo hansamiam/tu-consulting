@@ -57,58 +57,49 @@ const OfferingsRu = () => {
   const packages = [
     {
       name: "Стартовый пакет",
-      badge: "Лучшее предложение",
       originalPrice: "$899",
-      price: "$599",
-      discount: "Скидка 33%",
-      sessions: "5 сессий",
-      duration: "по 50 мин",
-      perSession: "$119.80/сессия",
+      price: "$699",
+      discount: "Скидка 22%",
+      hours: "5 часов",
       features: [
-        "5 комплексных консультаций",
+        "5 часов комплексных консультаций",
         "Планирование сроков подачи",
         "Помощь в выборе университета",
         "Поддержка по email между сессиями",
-        "Доступ к библиотеке ресурсов",
-      ],
-      popular: true,
-    },
-    {
-      name: "Стандартный пакет",
-      originalPrice: "$1,499",
-      price: "$1,199",
-      discount: "Скидка 20%",
-      sessions: "10 сессий",
-      duration: "по 50 мин",
-      perSession: "$119.90/сессия",
-      features: [
-        "10 комплексных консультаций",
-        "Полная проверка заявки",
-        "Редактирование эссе",
-        "Подготовка к интервью",
-        "Приоритетная поддержка по email",
-        "Доступ к библиотеке ресурсов",
       ],
       popular: false,
     },
     {
+      name: "Стандартный пакет",
+      badge: "Лучшее предложение",
+      originalPrice: "$1,599",
+      price: "$1,199",
+      discount: "Скидка 25%",
+      hours: "10 часов",
+      features: [
+        "10 часов комплексных консультаций",
+        "Полная проверка заявки",
+        "Редактирование эссе",
+        "Подготовка к интервью",
+        "Приоритетная поддержка по email",
+      ],
+      popular: true,
+    },
+    {
       name: "Премиум пакет",
       badge: "Максимальная поддержка",
-      originalPrice: "$2,999",
-      price: "$2,499",
-      discount: "Скидка 17%",
-      sessions: "20 сессий",
-      duration: "по 50 мин",
-      perSession: "$124.95/сессия",
+      originalPrice: "$2,799",
+      price: "$2,299",
+      discount: "Скидка 18%",
+      hours: "20 часов",
       features: [
-        "20 комплексных консультаций",
+        "20 часов комплексных консультаций",
         "Полное управление заявкой",
         "Неограниченные правки эссе",
         "Пробные интервью (3 сессии)",
-        "Круглосуточная поддержка",
+        "Приоритетная поддержка",
         "Персональная стратегия успеха",
         "Поддержка после подачи",
-        "Доступ к библиотеке ресурсов",
       ],
       popular: false,
     },
@@ -119,22 +110,22 @@ const OfferingsRu = () => {
       name: "Быстрая консультация",
       price: "$60",
       duration: "25 минут",
-      description: "Идеально для конкретных вопросов или быстрых советов",
+      description: "Идеально для первого разговора и вопросов",
       features: [
-        "Целевые советы по вашим вопросам",
-        "Первичная оценка",
-        "Рекомендации по действиям",
+        "Узнать о вашем опыте",
+        "Обсудить ваши цели",
+        "Изучить варианты пакетов",
       ],
     },
     {
       name: "Углубленная консультация",
       price: "$100",
       duration: "50 минут",
-      description: "Комплексная сессия для детального планирования",
+      description: "Расширенная сессия для обсуждения вашего пути",
       features: [
-        "Детальная стратегия подачи",
-        "Обсуждение выбора университетов",
-        "Персональный план действий",
+        "Комплексное обсуждение",
+        "Первичная оценка",
+        "Рекомендации по пакетам",
         "Вопросы и ответы",
       ],
     },
@@ -203,10 +194,9 @@ const OfferingsRu = () => {
                       </span>
                     </div>
                     <div className="text-4xl font-bold text-accent">{pkg.price}</div>
-                    <div className="text-sm text-muted-foreground">{pkg.perSession}</div>
                   </div>
                   <CardDescription className="text-base pt-2">
-                    {pkg.sessions} • {pkg.duration}
+                    {pkg.hours}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -411,10 +401,56 @@ const OfferingsRu = () => {
           </Card>
         </section>
 
+        {/* Cohort Intake Section */}
+        <section className="mt-20">
+          <Card className="border-accent/30 bg-gradient-to-br from-accent/10 to-transparent">
+            <CardHeader className="text-center">
+              <div className="inline-block mx-auto px-4 py-2 bg-accent/20 border border-accent/30 rounded-full mb-2">
+                <p className="text-accent font-semibold text-sm">🎯 ОГРАНИЧЕННОЕ КОЛИЧЕСТВО МЕСТ</p>
+              </div>
+              <CardTitle className="text-3xl">Присоединяйтесь к нашей следующей группе</CardTitle>
+              <CardDescription className="text-base max-w-2xl mx-auto">
+                Мы принимаем студентов группами, чтобы обеспечить персональное внимание и исключительные результаты. 
+                Наш когортный подход позволяет нам уделить целенаправленное время уникальному пути каждого студента.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
+              <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold text-accent">Следующий набор</div>
+                  <p className="text-sm text-muted-foreground">Постоянный прием</p>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold text-accent">Осталось мест</div>
+                  <p className="text-sm text-muted-foreground">Свяжитесь для уточнения</p>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold text-accent">Дата начала</div>
+                  <p className="text-sm text-muted-foreground">После зачисления</p>
+                </div>
+              </div>
+              <Button
+                variant="gold"
+                size="lg"
+                onClick={() => {
+                  const formSection = document.getElementById("consultation-form");
+                  formSection?.scrollIntoView({ behavior: "smooth" });
+                }}
+              >
+                Подать заявку на следующую группу
+              </Button>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Trust Section */}
         <section className="mt-20 text-center">
           <div className="max-w-2xl mx-auto space-y-4">
             <p className="text-muted-foreground">
-              🎓 Все консультации проводятся консультантами из топовых университетов, включая Yale, Harvard и Stanford
+              🎓 Все консультации проводятся консультантами из топовых университетов, включая Yale, Harvard, Cambridge и Tsinghua
+            </p>
+            <p className="text-muted-foreground">
+              🌍 Доступно на русском и английском языках
             </p>
             <p className="text-sm text-muted-foreground">
               Вопросы? Напишите нам:{" "}

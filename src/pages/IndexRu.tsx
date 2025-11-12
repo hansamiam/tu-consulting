@@ -98,6 +98,13 @@ const IndexRu = () => {
           {/* Navigation Links */}
           <div className="mb-6 sm:mb-8 px-4 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
             <Button
+              onClick={() => navigate("/offerings/ru")}
+              variant="gold"
+              className="w-auto px-8 sm:w-auto sm:px-12"
+            >
+              Услуги и цены
+            </Button>
+            <Button
               onClick={() => navigate("/team/ru")}
               variant="outline"
               className="border-gold/50 bg-gold/10 text-primary-foreground hover:bg-gold/20 hover:border-gold w-auto px-8 sm:w-auto sm:px-12"
@@ -105,11 +112,11 @@ const IndexRu = () => {
               Наша команда
             </Button>
             <Button
-              onClick={() => navigate("/offerings/ru")}
-              variant="gold"
-              className="w-auto px-8 sm:w-auto sm:px-12"
+              onClick={() => navigate("/faq/ru")}
+              variant="ghost"
+              className="border-gold/30 text-primary-foreground hover:bg-gold/10 hover:border-gold w-auto px-8 sm:w-auto sm:px-12"
             >
-              Услуги и цены
+              Вопросы и ответы
             </Button>
           </div>
 

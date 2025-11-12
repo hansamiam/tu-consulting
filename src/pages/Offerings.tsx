@@ -59,58 +59,49 @@ const Offerings = () => {
   const packages = [
     {
       name: "Starter Package",
-      badge: "Best Value",
       originalPrice: "$899",
-      price: "$599",
-      discount: "33% OFF",
-      sessions: "5 Sessions",
-      duration: "50 min each",
-      perSession: "$119.80/session",
+      price: "$699",
+      discount: "22% OFF",
+      hours: "5 Hours",
       features: [
-        "5 comprehensive consulting sessions",
+        "5 hours of comprehensive consulting",
         "Application timeline planning",
         "University selection guidance",
         "Email support between sessions",
-        "Resource library access",
-      ],
-      popular: true,
-    },
-    {
-      name: "Standard Package",
-      originalPrice: "$1,499",
-      price: "$1,199",
-      discount: "20% OFF",
-      sessions: "10 Sessions",
-      duration: "50 min each",
-      perSession: "$119.90/session",
-      features: [
-        "10 comprehensive consulting sessions",
-        "Complete application review",
-        "Essay editing & feedback",
-        "Interview preparation",
-        "Priority email support",
-        "Resource library access",
       ],
       popular: false,
     },
     {
+      name: "Standard Package",
+      badge: "Best Value",
+      originalPrice: "$1,599",
+      price: "$1,199",
+      discount: "25% OFF",
+      hours: "10 Hours",
+      features: [
+        "10 hours of comprehensive consulting",
+        "Complete application review",
+        "Essay editing & feedback",
+        "Interview preparation",
+        "Priority email support",
+      ],
+      popular: true,
+    },
+    {
       name: "Premium Package",
       badge: "Most Comprehensive",
-      originalPrice: "$2,999",
-      price: "$2,499",
-      discount: "17% OFF",
-      sessions: "20 Sessions",
-      duration: "50 min each",
-      perSession: "$124.95/session",
+      originalPrice: "$2,799",
+      price: "$2,299",
+      discount: "18% OFF",
+      hours: "20 Hours",
       features: [
-        "20 comprehensive consulting sessions",
+        "20 hours of comprehensive consulting",
         "Complete application management",
         "Unlimited essay revisions",
         "Mock interviews (3 sessions)",
-        "24/7 priority support",
+        "Priority support",
         "Personalized success strategy",
         "Post-application guidance",
-        "Resource library access",
       ],
       popular: false,
     },
@@ -121,22 +112,22 @@ const Offerings = () => {
       name: "Quick Consultation",
       price: "$60",
       duration: "25 minutes",
-      description: "Perfect for specific questions or quick guidance",
+      description: "Perfect for initial conversation and questions",
       features: [
-        "Targeted advice on your concerns",
-        "Initial assessment",
-        "Action plan recommendations",
+        "Get to know your background",
+        "Discuss your goals",
+        "Explore package options",
       ],
     },
     {
       name: "In-Depth Consultation",
       price: "$100",
       duration: "50 minutes",
-      description: "Comprehensive session for detailed planning",
+      description: "Extended session to discuss your journey",
       features: [
-        "Detailed application strategy",
-        "University selection discussion",
-        "Personalized roadmap",
+        "Comprehensive discussion",
+        "Initial assessment",
+        "Package recommendations",
         "Q&A session",
       ],
     },
@@ -208,10 +199,9 @@ const Offerings = () => {
                       </span>
                     </div>
                     <div className="text-4xl font-bold text-accent">{pkg.price}</div>
-                    <div className="text-sm text-muted-foreground">{pkg.perSession}</div>
                   </div>
                   <CardDescription className="text-base pt-2">
-                    {pkg.sessions} • {pkg.duration}
+                    {pkg.hours}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -418,11 +408,56 @@ const Offerings = () => {
           </Card>
         </section>
 
+        {/* Cohort Intake Section */}
+        <section className="mt-20">
+          <Card className="border-accent/30 bg-gradient-to-br from-accent/10 to-transparent">
+            <CardHeader className="text-center">
+              <div className="inline-block mx-auto px-4 py-2 bg-accent/20 border border-accent/30 rounded-full mb-2">
+                <p className="text-accent font-semibold text-sm">🎯 LIMITED SPOTS AVAILABLE</p>
+              </div>
+              <CardTitle className="text-3xl">Join Our Next Cohort</CardTitle>
+              <CardDescription className="text-base max-w-2xl mx-auto">
+                We accept students in cohorts to ensure personalized attention and exceptional results. 
+                Our cohort-based approach allows us to dedicate focused time to each student's unique journey.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
+              <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold text-accent">Next Intake</div>
+                  <p className="text-sm text-muted-foreground">Rolling Admissions</p>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold text-accent">Spots Left</div>
+                  <p className="text-sm text-muted-foreground">Contact for Availability</p>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold text-accent">Start Date</div>
+                  <p className="text-sm text-muted-foreground">Upon Enrollment</p>
+                </div>
+              </div>
+              <Button
+                variant="gold"
+                size="lg"
+                onClick={() => {
+                  const formSection = document.getElementById("consultation-form");
+                  formSection?.scrollIntoView({ behavior: "smooth" });
+                }}
+              >
+                Apply for Next Cohort
+              </Button>
+            </CardContent>
+          </Card>
+        </section>
+
         {/* Trust Section */}
         <section className="mt-20 text-center">
           <div className="max-w-2xl mx-auto space-y-4">
             <p className="text-muted-foreground">
-              🎓 All consultations are led by consultants from top universities including Yale, Harvard, and Stanford
+              🎓 All consultations are led by consultants from top universities including Yale, Harvard, Cambridge, and Tsinghua
+            </p>
+            <p className="text-muted-foreground">
+              🌍 Available in Russian and English
             </p>
             <p className="text-sm text-muted-foreground">
               Questions? Email us at{" "}
