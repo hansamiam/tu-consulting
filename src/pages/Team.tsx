@@ -63,7 +63,7 @@ const Team = () => {
       hometown: "Bishkek, Kyrgyzstan",
       education: "University of Oregon",
       languages: "English (fluent), Kyrgyz (native), Russian (fluent)",
-      strengths: "Recommendation letter guidance, early-to-mid career professionals, reference support, institutional advising, negotiation, international networking",
+      strengths: "Recommendation letter guidance, career coaching, early-to-mid career professionals, reference support, institutional advising, negotiation, international networking",
       challenges: "Mentored hundreds of students and written countless recommendation letters across diverse contexts",
       lessons: "The right recommenders and how you approach them can transform your application",
       advice: "Build genuine relationships with mentors early—strong recommendations come from authentic connections"

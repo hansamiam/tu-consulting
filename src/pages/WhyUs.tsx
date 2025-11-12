@@ -118,6 +118,18 @@ const WhyUs = () => {
             </div>
           </Card>
 
+          {/* Forbes Article Quote */}
+          <Card className="p-8 bg-gradient-to-br from-accent/5 to-primary/5 border-accent/20">
+            <div className="max-w-4xl mx-auto space-y-4">
+              <p className="text-lg text-muted-foreground italic">
+                According to <a href="https://www.forbes.com/sites/christopherrim/2025/05/02/how-the-explosion-of-private-consultants-has-changed-the-college-admissions-landscape/" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-medium">Forbes</a>, the most critical factor in admissions consulting success is how well mentors truly understand their students.
+              </p>
+              <p className="text-base text-foreground font-medium">
+                We're young and fresh out of the process ourselves—we remember exactly what it feels like, what works, and what doesn't. Our proximity to the experience means we genuinely understand today's challenges and can relate to your struggles in ways that distant consultants simply can't.
+              </p>
+            </div>
+          </Card>
+
           {/* Comparison Infographic */}
           <div className="space-y-8">
             <h2 className="text-3xl md:text-4xl font-bold text-center bg-gradient-to-r from-primary to-gold bg-clip-text text-transparent">
@@ -140,6 +152,10 @@ const WhyUs = () => {
                   <div className="flex items-start gap-2">
                     <span className="text-destructive font-bold">✗</span>
                     <p className="text-muted-foreground">Cookie-cutter approach at scale</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-destructive font-bold">✗</span>
+                    <p className="text-muted-foreground">Inflated success statistics—only let you apply where you already have high chances</p>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="text-destructive font-bold">✗</span>
@@ -245,6 +261,7 @@ const WhyUs = () => {
                 <p className="text-sm text-gold font-medium">Senior Advisor</p>
                 <div className="space-y-2 text-sm text-muted-foreground">
                   <p>• Recommendation letter expertise</p>
+                  <p>• Career coaching & professional development</p>
                   <p>• Early-to-mid career professionals</p>
                   <p>• Institutional advising & negotiation</p>
                   <p>• International networking</p>

@@ -19,6 +19,10 @@ const FAQ = () => {
       answer: "Current students and recent graduates from top universities (Yale, Harvard, Cambridge, Tsinghua) who succeeded across diverse disciplines—STEM, humanities, business, and arts. They've personally won prestigious scholarships, navigated competitive admissions, and understand what it takes because they've done it themselves. More importantly, they remember the challenges and know how to guide you through yours."
     },
     {
+      question: "Who is this for?",
+      answer: "Everyone pursuing ambitious educational and career goals. We work with high school students applying to undergraduate programs, graduate school applicants (Master's, PhD, MBA), early-to-mid career professionals seeking career coaching and professional development, middle school students preparing extracurriculars and building strong foundations, students applying to competitive summer programs and boarding schools, job seekers needing application and interview preparation, and anyone navigating educational transitions or career advancement. Whether you're 13 or 35, if you're striving for excellence, we're here to help."
+    },
+    {
       question: "Do I need perfect grades to work with you?",
       answer: "Absolutely not. We specialize in helping students from all backgrounds and circumstances—whether you're dealing with lower grades, unique challenges, non-traditional paths, or just need guidance to take your best shot. You don't need to be a straight-A student to benefit from expert consulting. Our job is to help you present the strongest possible application with whatever starting point you have. Every student deserves a chance to reach for their dreams."
     },

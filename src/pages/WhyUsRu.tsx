@@ -118,6 +118,18 @@ const WhyUsRu = () => {
             </div>
           </Card>
 
+          {/* Forbes Article Quote */}
+          <Card className="p-8 bg-gradient-to-br from-accent/5 to-primary/5 border-accent/20">
+            <div className="max-w-4xl mx-auto space-y-4">
+              <p className="text-lg text-muted-foreground italic">
+                По данным <a href="https://www.forbes.com/sites/christopherrim/2025/05/02/how-the-explosion-of-private-consultants-has-changed-the-college-admissions-landscape/" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-medium">Forbes</a>, самый критический фактор успеха консалтинга по приему — это насколько хорошо менторы действительно понимают своих студентов.
+              </p>
+              <p className="text-base text-foreground font-medium">
+                Мы молоды и только что вышли из процесса сами—мы помним точно, каково это, что работает и что нет. Наша близость к опыту означает, что мы искренне понимаем сегодняшние вызовы и можем относиться к вашим трудностям так, как отдаленные консультанты просто не могут.
+              </p>
+            </div>
+          </Card>
+
           {/* Comparison Infographic */}
           <div className="space-y-8">
             <h2 className="text-3xl md:text-4xl font-bold text-center bg-gradient-to-r from-primary to-gold bg-clip-text text-transparent">
@@ -140,6 +152,10 @@ const WhyUsRu = () => {
                   <div className="flex items-start gap-2">
                     <span className="text-destructive font-bold">✗</span>
                     <p className="text-muted-foreground">Шаблонный подход в масштабе</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-destructive font-bold">✗</span>
+                    <p className="text-muted-foreground">Завышенная статистика успеха—позволяют подавать только туда, где у вас уже высокие шансы</p>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="text-destructive font-bold">✗</span>
@@ -245,6 +261,7 @@ const WhyUsRu = () => {
                 <p className="text-sm text-gold font-medium">Старший советник</p>
                 <div className="space-y-2 text-sm text-muted-foreground">
                   <p>• Экспертиза рекомендательных писем</p>
+                  <p>• Карьерный коучинг и профессиональное развитие</p>
                   <p>• Профессионалы ранней и средней карьеры</p>
                   <p>• Институциональное консультирование и переговоры</p>
                   <p>• Международный нетворкинг</p>
