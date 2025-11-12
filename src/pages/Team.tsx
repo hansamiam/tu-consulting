@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -24,7 +26,11 @@ const Team = () => {
       photo: samuelPhoto,
       hometown: "Toronto, Canada",
       education: "Yale University",
-      languages: "English, Korean (bilingual); Russian, Chinese (conversational)"
+      languages: "English, Korean (bilingual); Russian, Chinese (conversational)",
+      strengths: "Learning strategies, supporting students with ADHD, immigrants and third-culture kids, adjusting to new environments, natural sciences",
+      challenges: "Navigated learning differences and cultural adaptation as an immigrant student",
+      lessons: "Your unique background is your superpower—embrace it in your applications",
+      advice: "Don't hide your struggles; they make your story authentic and compelling"
     },
     {
       name: "Nurzada Abdivalieva",
@@ -32,7 +38,11 @@ const Team = () => {
       photo: nurzadaPhoto,
       hometown: "Bishkek, Kyrgyzstan",
       education: "American University of Central Asia | Korea Development Institute (KDI) | University of Cambridge | Tsinghua University",
-      languages: "Russian (native), Kyrgyz (native), English (advanced)"
+      languages: "Russian (native), Kyrgyz (native), English (advanced)",
+      strengths: "Scholarships and funding strategies, self-funded education pathways, cross-cultural adaptation, compelling storytelling, social sciences",
+      challenges: "Secured full funding for multiple degrees through scholarships despite limited initial resources",
+      lessons: "Financial constraints don't limit your potential—strategic scholarship hunting opens doors",
+      advice: "Your story matters more than perfect grades; learn to tell it powerfully"
     },
     {
       name: "Josh Hughes",
@@ -40,7 +50,11 @@ const Team = () => {
       photo: joshPhoto,
       hometown: "North Augusta, South Carolina, USA",
       education: "University of South Carolina | Harvard University",
-      languages: "English (native), Russian (advanced), Kyrgyz (lower intermediate)"
+      languages: "English (native), Russian (advanced), Kyrgyz (lower intermediate)",
+      strengths: "Graduate program applications, test-taking strategies, academic research, essay refinement, presentation skills, languages and humanities",
+      challenges: "Mastered multiple standardized tests and navigated competitive graduate admissions",
+      lessons: "Strategic preparation and understanding what evaluators want is half the battle",
+      advice: "Focus on clarity and authenticity in your writing—admissions committees read thousands of essays"
     },
     {
       name: "Aigul Abdoubaetova",
@@ -48,7 +62,11 @@ const Team = () => {
       photo: aigulPhoto,
       hometown: "Bishkek, Kyrgyzstan",
       education: "University of Oregon",
-      languages: "English (fluent), Kyrgyz (native), Russian (fluent)"
+      languages: "English (fluent), Kyrgyz (native), Russian (fluent)",
+      strengths: "Recommendation letter guidance, early-to-mid career professionals, reference support, institutional advising, negotiation, international networking",
+      challenges: "Mentored hundreds of students and written countless recommendation letters across diverse contexts",
+      lessons: "The right recommenders and how you approach them can transform your application",
+      advice: "Build genuine relationships with mentors early—strong recommendations come from authentic connections"
     }
   ];
 
@@ -83,7 +101,7 @@ const Team = () => {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16 space-y-8">
             <div className="inline-block">
-              <h1 className="text-4xl md:text-5xl font-bold text-primary mb-2">
+              <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mb-2">
                 Our Team
               </h1>
               <div className="h-1 w-24 bg-gradient-to-r from-primary to-gold mx-auto rounded-full"></div>
@@ -131,36 +149,87 @@ const Team = () => {
           {/* Team Grid */}
           <div className="grid md:grid-cols-2 gap-8">
             {teamMembers.map((member, index) => (
-              <Card 
-                key={index} 
-                className="group p-8 hover:shadow-2xl transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm hover:border-gold/30 hover:scale-[1.02]"
-              >
-                <div className="flex flex-col items-center text-center space-y-6">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-gold/20 rounded-full blur-xl group-hover:blur-2xl transition-all duration-300 opacity-0 group-hover:opacity-100"></div>
-                    <img
-                      src={member.photo}
-                      alt={member.name}
-                      className="relative w-48 h-48 rounded-full object-cover border-4 border-primary/40 group-hover:border-primary/70 transition-all duration-300 shadow-lg"
-                    />
-                  </div>
-                  <div className="space-y-3 w-full">
-                    <h2 className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">{member.name}</h2>
-                    <p className="text-base font-medium text-gold">{member.title}</p>
-                    <div className="space-y-2 text-sm">
-                      <p className="text-muted-foreground">
-                        <span className="font-semibold text-gold">Hometown:</span> {member.hometown}
-                      </p>
-                      <p className="text-muted-foreground">
-                        <span className="font-semibold text-gold">Education:</span> {member.education}
-                      </p>
-                      <p className="text-muted-foreground">
-                        <span className="font-semibold text-gold">Languages:</span> {member.languages}
-                      </p>
+              <Dialog key={index}>
+                <DialogTrigger asChild>
+                  <Card 
+                    className="group p-8 hover:shadow-2xl transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm hover:border-gold/30 hover:scale-[1.02] cursor-pointer"
+                  >
+                    <div className="flex flex-col items-center text-center space-y-6">
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-gold/20 rounded-full blur-xl group-hover:blur-2xl transition-all duration-300 opacity-0 group-hover:opacity-100"></div>
+                        <img
+                          src={member.photo}
+                          alt={member.name}
+                          className="relative w-48 h-48 rounded-full object-cover border-4 border-primary/40 group-hover:border-primary/70 transition-all duration-300 shadow-lg"
+                        />
+                      </div>
+                      <div className="space-y-3 w-full">
+                        <h2 className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">{member.name}</h2>
+                        <p className="text-base font-medium text-gold">{member.title}</p>
+                        <div className="space-y-2 text-sm">
+                          <p className="text-muted-foreground">
+                            <span className="font-semibold text-gold">Hometown:</span> {member.hometown}
+                          </p>
+                          <p className="text-muted-foreground">
+                            <span className="font-semibold text-gold">Education:</span> {member.education}
+                          </p>
+                          <p className="text-muted-foreground">
+                            <span className="font-semibold text-gold">Languages:</span> {member.languages}
+                          </p>
+                        </div>
+                        <p className="text-xs text-primary/70 mt-4">Click to learn more</p>
+                      </div>
+                    </div>
+                  </Card>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <div className="flex flex-col items-center text-center space-y-4 mb-6">
+                      <img
+                        src={member.photo}
+                        alt={member.name}
+                        className="w-32 h-32 rounded-full object-cover border-4 border-primary/40 shadow-lg"
+                      />
+                      <div>
+                        <DialogTitle className="text-2xl font-bold text-primary">{member.name}</DialogTitle>
+                        <p className="text-base font-medium text-gold mt-1">{member.title}</p>
+                      </div>
+                    </div>
+                  </DialogHeader>
+                  <div className="space-y-6 text-sm">
+                    <div>
+                      <h3 className="font-semibold text-gold text-base mb-2">Basic Info</h3>
+                      <div className="space-y-2">
+                        <p className="text-muted-foreground">
+                          <span className="font-semibold text-foreground">Hometown:</span> {member.hometown}
+                        </p>
+                        <p className="text-muted-foreground">
+                          <span className="font-semibold text-foreground">Education:</span> {member.education}
+                        </p>
+                        <p className="text-muted-foreground">
+                          <span className="font-semibold text-foreground">Languages:</span> {member.languages}
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gold text-base mb-2">Strengths & Specializations</h3>
+                      <p className="text-muted-foreground">{member.strengths}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gold text-base mb-2">Challenges Overcome</h3>
+                      <p className="text-muted-foreground">{member.challenges}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gold text-base mb-2">Key Lessons</h3>
+                      <p className="text-muted-foreground italic">{member.lessons}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gold text-base mb-2">Advice for Applicants</h3>
+                      <p className="text-muted-foreground italic font-medium">{member.advice}</p>
                     </div>
                   </div>
-                </div>
-              </Card>
+                </DialogContent>
+              </Dialog>
             ))}
           </div>
         </div>

@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -24,7 +26,11 @@ const TeamRu = () => {
       photo: samuelPhoto,
       hometown: "Торонто, Канада",
       education: "Йельский университет",
-      languages: "Английский, Корейский (двуязычный); Русский, Китайский (разговорный)"
+      languages: "Английский, Корейский (двуязычный); Русский, Китайский (разговорный)",
+      strengths: "Стратегии обучения, поддержка студентов с СДВГ, иммигранты и студенты третьей культуры, адаптация к новой среде, естественные науки",
+      challenges: "Преодолел трудности с обучением и культурной адаптацией как студент-иммигрант",
+      lessons: "Ваше уникальное происхождение — ваша суперсила; используйте это в заявках",
+      advice: "Не скрывайте свои трудности — они делают вашу историю аутентичной и убедительной"
     },
     {
       name: "Нурзада Абдивалиева",
@@ -32,7 +38,11 @@ const TeamRu = () => {
       photo: nurzadaPhoto,
       hometown: "Бишкек, Кыргызстан",
       education: "Американский университет Центральной Азии | Корейский институт развития (KDI) | Кембриджский университет | Университет Цинхуа",
-      languages: "Русский (родной), Кыргызский (родной), Английский (продвинутый)"
+      languages: "Русский (родной), Кыргызский (родной), Английский (продвинутый)",
+      strengths: "Стипендии и стратегии финансирования, пути самофинансирования образования, кросс-культурная адаптация, убедительное повествование, социальные науки",
+      challenges: "Обеспечила полное финансирование нескольких степеней через стипендии, несмотря на ограниченные начальные ресурсы",
+      lessons: "Финансовые ограничения не ограничивают ваш потенциал — стратегический поиск стипендий открывает двери",
+      advice: "Ваша история важнее идеальных оценок; научитесь рассказывать её убедительно"
     },
     {
       name: "Джош Хьюз",
@@ -40,7 +50,11 @@ const TeamRu = () => {
       photo: joshPhoto,
       hometown: "Норт-Огаста, Южная Каролина, США",
       education: "Университет Южной Каролины | Гарвардский университет",
-      languages: "Английский (родной), Русский (продвинутый), Кыргызский (ниже среднего)"
+      languages: "Английский (родной), Русский (продвинутый), Кыргызский (ниже среднего)",
+      strengths: "Заявки в магистратуру, стратегии сдачи тестов, академические исследования, доработка эссе, навыки презентации, языки и гуманитарные науки",
+      challenges: "Освоил множество стандартизированных тестов и преодолел конкурентные приемные комиссии в магистратуру",
+      lessons: "Стратегическая подготовка и понимание того, чего хотят оценщики — половина успеха",
+      advice: "Фокусируйтесь на ясности и аутентичности в письме — приемные комиссии читают тысячи эссе"
     },
     {
       name: "Айгуль Абдубаетова",
@@ -48,7 +62,11 @@ const TeamRu = () => {
       photo: aigulPhoto,
       hometown: "Бишкек, Кыргызстан",
       education: "Университет Орегона",
-      languages: "Английский (свободно), Кыргызский (родной), Русский (свободно)"
+      languages: "Английский (свободно), Кыргызский (родной), Русский (свободно)",
+      strengths: "Руководство по рекомендательным письмам, профессионалы на ранней и средней стадии карьеры, поддержка рекомендаций, институциональное консультирование, переговоры, международный нетворкинг",
+      challenges: "Наставила сотни студентов и написала бесчисленное количество рекомендательных писем в разных контекстах",
+      lessons: "Правильные рекомендатели и то, как вы к ним подходите, могут преобразить ваше заявление",
+      advice: "Стройте настоящие отношения с наставниками заранее — сильные рекомендации приходят из подлинных связей"
     }
   ];
 
@@ -83,7 +101,7 @@ const TeamRu = () => {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16 space-y-8">
             <div className="inline-block">
-              <h1 className="text-4xl md:text-5xl font-bold text-primary mb-2">
+              <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mb-2">
                 Наша команда
               </h1>
               <div className="h-1 w-24 bg-gradient-to-r from-primary to-gold mx-auto rounded-full"></div>
@@ -131,36 +149,87 @@ const TeamRu = () => {
           {/* Team Grid */}
           <div className="grid md:grid-cols-2 gap-8">
             {teamMembers.map((member, index) => (
-              <Card 
-                key={index} 
-                className="group p-8 hover:shadow-2xl transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm hover:border-gold/30 hover:scale-[1.02]"
-              >
-                <div className="flex flex-col items-center text-center space-y-6">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-gold/20 rounded-full blur-xl group-hover:blur-2xl transition-all duration-300 opacity-0 group-hover:opacity-100"></div>
-                    <img
-                      src={member.photo}
-                      alt={member.name}
-                      className="relative w-48 h-48 rounded-full object-cover border-4 border-primary/40 group-hover:border-primary/70 transition-all duration-300 shadow-lg"
-                    />
-                  </div>
-                  <div className="space-y-3 w-full">
-                    <h2 className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">{member.name}</h2>
-                    <p className="text-base font-medium text-gold">{member.title}</p>
-                    <div className="space-y-2 text-sm">
-                      <p className="text-muted-foreground">
-                        <span className="font-semibold text-gold">Родной город:</span> {member.hometown}
-                      </p>
-                      <p className="text-muted-foreground">
-                        <span className="font-semibold text-gold">Образование:</span> {member.education}
-                      </p>
-                      <p className="text-muted-foreground">
-                        <span className="font-semibold text-gold">Языки:</span> {member.languages}
-                      </p>
+              <Dialog key={index}>
+                <DialogTrigger asChild>
+                  <Card 
+                    className="group p-8 hover:shadow-2xl transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm hover:border-gold/30 hover:scale-[1.02] cursor-pointer"
+                  >
+                    <div className="flex flex-col items-center text-center space-y-6">
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-gold/20 rounded-full blur-xl group-hover:blur-2xl transition-all duration-300 opacity-0 group-hover:opacity-100"></div>
+                        <img
+                          src={member.photo}
+                          alt={member.name}
+                          className="relative w-48 h-48 rounded-full object-cover border-4 border-primary/40 group-hover:border-primary/70 transition-all duration-300 shadow-lg"
+                        />
+                      </div>
+                      <div className="space-y-3 w-full">
+                        <h2 className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">{member.name}</h2>
+                        <p className="text-base font-medium text-gold">{member.title}</p>
+                        <div className="space-y-2 text-sm">
+                          <p className="text-muted-foreground">
+                            <span className="font-semibold text-gold">Родной город:</span> {member.hometown}
+                          </p>
+                          <p className="text-muted-foreground">
+                            <span className="font-semibold text-gold">Образование:</span> {member.education}
+                          </p>
+                          <p className="text-muted-foreground">
+                            <span className="font-semibold text-gold">Языки:</span> {member.languages}
+                          </p>
+                        </div>
+                        <p className="text-xs text-primary/70 mt-4">Нажмите, чтобы узнать больше</p>
+                      </div>
+                    </div>
+                  </Card>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <div className="flex flex-col items-center text-center space-y-4 mb-6">
+                      <img
+                        src={member.photo}
+                        alt={member.name}
+                        className="w-32 h-32 rounded-full object-cover border-4 border-primary/40 shadow-lg"
+                      />
+                      <div>
+                        <DialogTitle className="text-2xl font-bold text-primary">{member.name}</DialogTitle>
+                        <p className="text-base font-medium text-gold mt-1">{member.title}</p>
+                      </div>
+                    </div>
+                  </DialogHeader>
+                  <div className="space-y-6 text-sm">
+                    <div>
+                      <h3 className="font-semibold text-gold text-base mb-2">Основная информация</h3>
+                      <div className="space-y-2">
+                        <p className="text-muted-foreground">
+                          <span className="font-semibold text-foreground">Родной город:</span> {member.hometown}
+                        </p>
+                        <p className="text-muted-foreground">
+                          <span className="font-semibold text-foreground">Образование:</span> {member.education}
+                        </p>
+                        <p className="text-muted-foreground">
+                          <span className="font-semibold text-foreground">Языки:</span> {member.languages}
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gold text-base mb-2">Сильные стороны и специализации</h3>
+                      <p className="text-muted-foreground">{member.strengths}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gold text-base mb-2">Преодоленные трудности</h3>
+                      <p className="text-muted-foreground">{member.challenges}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gold text-base mb-2">Ключевые уроки</h3>
+                      <p className="text-muted-foreground italic">{member.lessons}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gold text-base mb-2">Совет для абитуриентов</h3>
+                      <p className="text-muted-foreground italic font-medium">{member.advice}</p>
                     </div>
                   </div>
-                </div>
-              </Card>
+                </DialogContent>
+              </Dialog>
             ))}
           </div>
         </div>

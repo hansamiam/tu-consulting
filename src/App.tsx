@@ -11,6 +11,8 @@ import Offerings from "./pages/Offerings";
 import OfferingsRu from "./pages/OfferingsRu";
 import FAQ from "./pages/FAQ";
 import FAQRu from "./pages/FAQRu";
+import WhyUs from "./pages/WhyUs";
+import WhyUsRu from "./pages/WhyUsRu";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +32,8 @@ const App = () => (
           <Route path="/offerings/ru" element={<OfferingsRu />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/faq/ru" element={<FAQRu />} />
+          <Route path="/why-us" element={<WhyUs />} />
+          <Route path="/why-us/ru" element={<WhyUsRu />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
