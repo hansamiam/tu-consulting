@@ -62,8 +62,8 @@ const OfferingsRu = () => {
     {
       name: "Стартовый пакет",
       originalPrice: "$899",
-      price: "$749",
-      discount: "Скидка 20%",
+      price: "$764",
+      discount: "Скидка 15%",
       hours: "5 часов",
       features: [
         "5 часов комплексных консультаций",
@@ -76,10 +76,9 @@ const OfferingsRu = () => {
     },
     {
       name: "Стандартный пакет",
-      badge: "Лучшее предложение",
       originalPrice: "$1,599",
-      price: "$1,299",
-      discount: "Скидка 30%",
+      price: "$1,199",
+      discount: "Скидка 25%",
       hours: "10 часов",
       features: [
         "10 часов комплексных консультаций",
@@ -95,8 +94,8 @@ const OfferingsRu = () => {
       name: "Премиум пакет",
       badge: "Максимальная поддержка",
       originalPrice: "$2,999",
-      price: "$1,799",
-      discount: "Скидка 40%",
+      price: "$1,949",
+      discount: "Скидка 35%",
       hours: "20 часов",
       features: [
         "20 часов комплексных консультаций",
@@ -417,42 +416,53 @@ const OfferingsRu = () => {
         </section>
 
         {/* Cohort Intake Section */}
-        <section className="mt-20">
-          <Card className="border-accent/30 bg-gradient-to-br from-accent/10 to-transparent">
+        <section id="cohort-section" className="mt-20">
+          <Card className="border-accent/30 bg-gradient-to-br from-accent/10 via-gold/5 to-primary/5 backdrop-blur-sm shadow-xl">
             <CardHeader className="text-center">
               <div className="inline-block mx-auto px-4 py-2 bg-accent/20 border border-accent/30 rounded-full mb-2">
-                <p className="text-accent font-semibold text-sm">🎯 ОГРАНИЧЕННОЕ КОЛИЧЕСТВО МЕСТ</p>
+                <p className="text-accent font-semibold text-sm">ПЕРВАЯ КОГОРТА - СКОРО ЗАПУСК</p>
               </div>
-              <CardTitle className="text-3xl">Присоединяйтесь к нашей следующей группе</CardTitle>
-              <CardDescription className="text-base max-w-2xl mx-auto">
-                Мы принимаем студентов группами, чтобы обеспечить персональное внимание и исключительные результаты. 
-                Наш когортный подход позволяет нам уделить целенаправленное время уникальному пути каждого студента.
+              <CardTitle className="text-3xl md:text-4xl bg-gradient-to-r from-gold to-primary bg-clip-text text-transparent">Присоединяйтесь к нашей первой когорте</CardTitle>
+              <CardDescription className="text-base max-w-2xl mx-auto mt-4">
+                Станьте частью нашей первой когорты и получите исключительное внимание на старте. 
+                <span className="block mt-2 text-accent font-medium">
+                  Члены первой когорты получают внимание премиум-уровня по стандартной цене.
+                </span>
               </CardDescription>
             </CardHeader>
-            <CardContent className="text-center space-y-4">
-              <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto">
-                <div className="space-y-2">
-                  <div className="text-2xl font-bold text-accent">Следующий набор</div>
-                  <p className="text-sm text-muted-foreground">Постоянный прием</p>
-                </div>
-                <div className="space-y-2">
-                  <div className="text-2xl font-bold text-accent">Осталось мест</div>
-                  <p className="text-sm text-muted-foreground">Свяжитесь для уточнения</p>
-                </div>
-                <div className="space-y-2">
-                  <div className="text-2xl font-bold text-accent">Дата начала</div>
-                  <p className="text-sm text-muted-foreground">После зачисления</p>
-                </div>
+            <CardContent className="text-center space-y-6">
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-6 max-w-2xl mx-auto">
+                <p className="text-foreground font-semibold text-lg mb-2">Почему присоединиться к первой когорте?</p>
+                <ul className="text-sm text-muted-foreground space-y-2 text-left max-w-lg mx-auto">
+                  <li className="flex items-start gap-2">
+                    <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
+                    <span>Скидка для первой когорты: 40%</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
+                    <span>Дополнительное внимание, пока мы совершенствуем процесс с первыми участниками</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
+                    <span>Приоритетное планирование и быстрая обработка</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
+                    <span>Ограниченные места обеспечивают персональное руководство для вашего цикла подачи</span>
+                  </li>
+                </ul>
               </div>
               <Button
                 variant="gold"
                 size="lg"
                 onClick={() => {
-                  const formSection = document.getElementById("consultation-form");
-                  formSection?.scrollIntoView({ behavior: "smooth" });
+                  toast({
+                    title: "Скоро!",
+                    description: "Прием в когорту откроется в ближайшее время. Присоединяйтесь к списку ожидания на главной странице!",
+                  });
                 }}
               >
-                Подать заявку на следующую группу
+                Подать заявку в первую когорту
               </Button>
             </CardContent>
           </Card>

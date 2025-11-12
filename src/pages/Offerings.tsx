@@ -69,8 +69,8 @@ const Offerings = () => {
     {
       name: "Starter Package",
       originalPrice: "$899",
-      price: "$649",
-      discount: "20% OFF",
+      price: "$764",
+      discount: "15% OFF",
       hours: "5 Hours",
       features: [
         "5 hours of comprehensive consulting",
@@ -84,10 +84,9 @@ const Offerings = () => {
     },
     {
       name: "Standard Package",
-      badge: "Best Value",
       originalPrice: "$1,599",
       price: "$1,199",
-      discount: "30% OFF",
+      discount: "25% OFF",
       hours: "10 Hours",
       features: [
         "10 hours of comprehensive consulting",
@@ -105,8 +104,8 @@ const Offerings = () => {
       name: "Premium Package",
       badge: "Most Comprehensive",
       originalPrice: "$2,999",
-      price: "$1,799",
-      discount: "40% OFF",
+      price: "$1,949",
+      discount: "35% OFF",
       hours: "20 Hours",
       features: [
         "20 hours of comprehensive consulting",
@@ -448,7 +447,7 @@ const Offerings = () => {
                 <ul className="text-sm text-muted-foreground space-y-2 text-left max-w-lg mx-auto">
                   <li className="flex items-start gap-2">
                     <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
-                    <span>Founding cohort discount: 35% off</span>
+                    <span>Founding cohort discount: 40% off</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
