@@ -5,9 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Check, Star, ArrowLeft } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useToast } from "@/hooks/use-toast";
+import heroImage from "@/assets/hero-campus.jpg";
 
 const Offerings = () => {
   const navigate = useNavigate();
@@ -22,12 +24,15 @@ const Offerings = () => {
     currentChallenges: "",
     goals: "",
   });
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedConsultation, setSelectedConsultation] = useState<string>("");
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleFormSubmit = (consultationType: string) => {
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     // Validate form
     if (!formData.name || !formData.email) {
       toast({
@@ -43,7 +48,7 @@ const Offerings = () => {
       description: "We'll contact you shortly to schedule your consultation.",
     });
 
-    // Reset form
+    // Reset form and close dialog
     setFormData({
       name: "",
       email: "",
@@ -54,19 +59,21 @@ const Offerings = () => {
       currentChallenges: "",
       goals: "",
     });
+    setIsDialogOpen(false);
   };
 
   const packages = [
     {
       name: "Starter Package",
       originalPrice: "$899",
-      price: "$749",
-      discount: "17% OFF",
+      price: "$649",
+      discount: "28% OFF",
       hours: "5 Hours",
       features: [
         "5 hours of comprehensive consulting",
         "Application timeline planning",
         "University selection guidance",
+        "Essay structure review (1 essay)",
         "Recommendation letter support",
         "Email support between sessions",
       ],
@@ -76,16 +83,18 @@ const Offerings = () => {
       name: "Standard Package",
       badge: "Best Value",
       originalPrice: "$1,599",
-      price: "$1,299",
-      discount: "19% OFF",
+      price: "$1,199",
+      discount: "25% OFF",
       hours: "10 Hours",
       features: [
         "10 hours of comprehensive consulting",
         "Complete application review",
-        "Essay editing & feedback",
-        "Recommendation letter support",
-        "Interview preparation",
+        "Essay editing & feedback (up to 3 essays)",
+        "Recommendation letter strategy & review",
+        "Interview preparation (1 session)",
         "Priority email support",
+        "Application proofreading",
+        "Scholarship guidance",
       ],
       popular: true,
     },
@@ -93,18 +102,20 @@ const Offerings = () => {
       name: "Premium Package",
       badge: "Most Comprehensive",
       originalPrice: "$2,999",
-      price: "$1,999",
-      discount: "33% OFF",
+      price: "$1,899",
+      discount: "37% OFF",
       hours: "20 Hours",
       features: [
         "20 hours of comprehensive consulting",
         "Complete application management",
-        "Unlimited essay revisions",
-        "Recommendation letter strategy & review",
+        "Unlimited essay revisions (all essays)",
+        "Recommendation letter strategy & detailed review",
         "Mock interviews (3 sessions)",
-        "Priority support",
+        "Priority support with 24h response time",
         "Personalized success strategy",
         "Post-application guidance",
+        "Scholarship search assistance",
+        "Networking introduction support",
       ],
       popular: false,
     },
@@ -137,9 +148,17 @@ const Offerings = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div 
+      className="min-h-screen relative"
+      style={{
+        backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url(${heroImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}
+    >
       {/* Header */}
-      <header className="border-b border-border bg-card">
+      <header className="border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <Button
             variant="ghost"
@@ -157,13 +176,16 @@ const Offerings = () => {
         {/* Hero Section */}
         <div className="text-center mb-16">
           <div className="inline-block px-4 py-2 bg-accent/10 border border-accent/20 rounded-full mb-4">
-            <p className="text-accent font-semibold text-sm">🎉 LAUNCH SPECIAL - Limited Time Offer!</p>
+            <p className="text-accent font-semibold text-sm uppercase tracking-wide">First Cohort Special</p>
           </div>
-          <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-4">
+          <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mb-4">
             Our Services & Pricing
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-2">
             Choose the perfect package to achieve your university admission goals
+          </p>
+          <p className="text-sm text-primary/70 font-medium italic">
+            We're here for your success, not just another transaction
           </p>
         </div>
 
@@ -174,12 +196,12 @@ const Offerings = () => {
           </h2>
           <div className="grid md:grid-cols-3 gap-8">
             {packages.map((pkg, index) => (
-              <Card
+                <Card
                 key={index}
-                className={`relative ${
+                className={`relative border-gold/30 bg-card/50 backdrop-blur-sm hover:shadow-xl transition-all ${
                   pkg.popular
-                    ? "border-accent shadow-lg scale-105 bg-gradient-to-br from-accent/5 to-transparent"
-                    : "border-border"
+                    ? "shadow-lg scale-105 border-accent/50"
+                    : ""
                 }`}
               >
                 {pkg.badge && (
@@ -220,10 +242,8 @@ const Offerings = () => {
                     variant={pkg.popular ? "gold" : "default"}
                     className="w-full"
                     onClick={() => {
-                      toast({
-                        title: "Coming Soon!",
-                        description: "Package booking will be available shortly.",
-                      });
+                      const formSection = document.getElementById("cohort-section");
+                      formSection?.scrollIntoView({ behavior: "smooth" });
                     }}
                   >
                     Select Package
@@ -236,17 +256,20 @@ const Offerings = () => {
 
         {/* Individual Consultations */}
         <section className="mb-20">
-          <div className="text-center mb-12">
-            <h2 className="font-heading text-3xl font-bold mb-4 text-foreground">
+          <div className="text-center mb-8">
+            <h2 className="font-heading text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Not Ready Yet?
             </h2>
-            <p className="text-muted-foreground text-lg">
+            <p className="text-muted-foreground text-lg mb-4">
               Start with a trial consultation to experience our service
+            </p>
+            <p className="text-sm text-primary/60 font-medium italic">
+              Maximize your session—we want you fully prepared to succeed
             </p>
           </div>
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {consultations.map((consultation, index) => (
-              <Card key={index} className="border-border">
+              <Card key={index} className="border-gold/30 bg-card/50 backdrop-blur-sm hover:shadow-lg transition-all">
                 <CardHeader>
                   <CardTitle className="text-xl">{consultation.name}</CardTitle>
                   <div className="flex items-baseline gap-2 pt-2">
@@ -266,10 +289,10 @@ const Offerings = () => {
                   </ul>
                   <Button
                     variant="outline"
-                    className="w-full"
+                    className="w-full border-accent/30"
                     onClick={() => {
-                      const formSection = document.getElementById("consultation-form");
-                      formSection?.scrollIntoView({ behavior: "smooth" });
+                      setSelectedConsultation(consultation.name);
+                      setIsDialogOpen(true);
                     }}
                   >
                     Book Now
@@ -280,18 +303,16 @@ const Offerings = () => {
           </div>
         </section>
 
-        {/* Consultation Preparation Form */}
-        <section id="consultation-form" className="max-w-3xl mx-auto">
-          <Card className="border-accent/20 bg-gradient-to-br from-accent/5 to-transparent">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Maximize Your Consultation</CardTitle>
-              <CardDescription className="text-base">
-                Help us prepare for your session by sharing some information. The more details you provide,
-                the more value you'll get from your consultation time.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form className="space-y-6">
+        {/* Consultation Dialog */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl">Maximize Your {selectedConsultation}</DialogTitle>
+              <DialogDescription className="text-base">
+                Help us prepare for your session. The more details you provide, the more value you'll get from your consultation time.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleFormSubmit} className="space-y-6 mt-4">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="name">Full Name *</Label>
@@ -388,66 +409,67 @@ const Offerings = () => {
                   />
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                  <Button
-                    type="button"
-                    variant="gold"
-                    className="flex-1"
-                    onClick={() => handleFormSubmit("25min")}
-                  >
-                    Book 25-min Consultation ($60)
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="gold"
-                    className="flex-1"
-                    onClick={() => handleFormSubmit("50min")}
-                  >
-                    Book 50-min Consultation ($100)
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </section>
+              <div className="flex gap-4 pt-4">
+                <Button
+                  type="submit"
+                  variant="gold"
+                  className="flex-1"
+                >
+                  Submit & Book
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
 
         {/* Cohort Intake Section */}
-        <section className="mt-20">
-          <Card className="border-accent/30 bg-gradient-to-br from-accent/10 to-transparent">
+        <section id="cohort-section" className="mb-20">
+          <Card className="border-accent/30 bg-gradient-to-br from-accent/10 via-gold/5 to-primary/5 backdrop-blur-sm shadow-xl">
             <CardHeader className="text-center">
               <div className="inline-block mx-auto px-4 py-2 bg-accent/20 border border-accent/30 rounded-full mb-2">
-                <p className="text-accent font-semibold text-sm">🎯 LIMITED SPOTS AVAILABLE</p>
+                <p className="text-accent font-semibold text-sm">INAUGURAL COHORT - LAUNCHING SOON</p>
               </div>
-              <CardTitle className="text-3xl">Join Our Next Cohort</CardTitle>
-              <CardDescription className="text-base max-w-2xl mx-auto">
-                We accept students in cohorts to ensure personalized attention and exceptional results. 
-                Our cohort-based approach allows us to dedicate focused time to each student's unique journey.
+              <CardTitle className="text-3xl md:text-4xl bg-gradient-to-r from-gold to-primary bg-clip-text text-transparent">Join Our First Cohort</CardTitle>
+              <CardDescription className="text-base max-w-2xl mx-auto mt-4">
+                Be part of our founding cohort and receive exceptional attention as we launch. 
+                <span className="block mt-2 text-accent font-medium">
+                  First cohort members get premium-level attention at standard pricing.
+                </span>
               </CardDescription>
             </CardHeader>
-            <CardContent className="text-center space-y-4">
-              <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto">
-                <div className="space-y-2">
-                  <div className="text-2xl font-bold text-accent">Next Intake</div>
-                  <p className="text-sm text-muted-foreground">Rolling Admissions</p>
-                </div>
-                <div className="space-y-2">
-                  <div className="text-2xl font-bold text-accent">Spots Left</div>
-                  <p className="text-sm text-muted-foreground">Contact for Availability</p>
-                </div>
-                <div className="space-y-2">
-                  <div className="text-2xl font-bold text-accent">Start Date</div>
-                  <p className="text-sm text-muted-foreground">Upon Enrollment</p>
-                </div>
+            <CardContent className="text-center space-y-6">
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-6 max-w-2xl mx-auto">
+                <p className="text-foreground font-semibold text-lg mb-2">Why Join the First Cohort?</p>
+                <ul className="text-sm text-muted-foreground space-y-2 text-left max-w-lg mx-auto">
+                  <li className="flex items-start gap-2">
+                    <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
+                    <span>Steepest discounts we'll ever offer (up to 37% off)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
+                    <span>Extra attention as we perfect our process with founding members</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
+                    <span>Direct influence on how we evolve our services</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
+                    <span>Limited spots ensure personalized guidance for your application cycle</span>
+                  </li>
+                </ul>
               </div>
               <Button
                 variant="gold"
                 size="lg"
                 onClick={() => {
-                  const formSection = document.getElementById("consultation-form");
-                  formSection?.scrollIntoView({ behavior: "smooth" });
+                  toast({
+                    title: "Coming soon!",
+                    description: "Cohort applications will open shortly. Join the waitlist on our homepage!",
+                  });
                 }}
               >
-                Apply for Next Cohort
+                Apply for First Cohort
               </Button>
             </CardContent>
           </Card>

@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ArrowLeft } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import heroImage from "@/assets/hero-campus.jpg";
 
 const FAQRu = () => {
   const navigate = useNavigate();
@@ -24,21 +25,25 @@ const FAQRu = () => {
     {
       question: "Это только для заявок в Лигу Плюща?",
       answer: "Нет! Хотя наши консультанты имеют опыт Лиги Плюща, мы помогаем студентам подавать заявки в ведущие университеты по всему миру — США, Великобритания, Канада, Европа, Китай и далее. Независимо от того, стремитесь ли вы в Гарвард, Оксфорд, Макгилл или Университет Цинхуа, у нас есть опыт. Мы фокусируемся на поиске правильного варианта для ВАС, а не просто самого престижного названия."
-    },
-    {
-      question: "Как начать?",
-      answer: "Забронируйте пробную консультацию (25 или 50 минут) на нашей странице Услуги и цены. Эта сессия с низкими обязательствами позволит вам познакомиться с нами, обсудить вашу ситуацию и понять, подходим ли мы друг другу. Без давления — просто разговор о ваших целях и о том, как мы можем помочь вам их достичь."
     }
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div 
+      className="min-h-screen relative"
+      style={{
+        backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url(${heroImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}
+    >
       {/* Header */}
-      <header className="border-b border-border bg-card">
+      <header className="border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <Button
             variant="ghost"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/ru")}
             className="flex items-center gap-2 text-foreground hover:text-accent"
           >
             <ArrowLeft size={20} />
@@ -51,20 +56,26 @@ const FAQRu = () => {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
         {/* Hero Section */}
         <div className="text-center mb-12">
-          <h1 className="font-heading text-4xl md:text-5xl font-bold text-foreground mb-4">
-            Часто задаваемые вопросы
-          </h1>
+          <div className="inline-block">
+            <h1 className="font-heading text-4xl md:text-5xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mb-2">
+              Часто задаваемые вопросы
+            </h1>
+            <div className="h-1 w-32 bg-gradient-to-r from-primary to-gold mx-auto rounded-full mb-4"></div>
+          </div>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Всё, что вам нужно знать о TopUni Consulting и наших услугах
+            Всё, что вам нужно знать о TopUni Consulting
           </p>
         </div>
 
         {/* FAQ Accordion */}
-        <Card>
+        <Card className="border-gold/20 bg-card/50 backdrop-blur-sm shadow-xl">
           <CardHeader>
-            <CardTitle>Общие вопросы</CardTitle>
-            <CardDescription>
-              Не можете найти то, что ищете? Напишите нам на team@topuniconsulting.com
+            <CardTitle className="text-2xl text-primary">Быстрые ответы</CardTitle>
+            <CardDescription className="text-base">
+              Не можете найти то, что ищете? Напишите нам на{" "}
+              <a href="mailto:team@topuniconsulting.com" className="text-accent hover:underline">
+                team@topuniconsulting.com
+              </a>
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -84,8 +95,8 @@ const FAQRu = () => {
         </Card>
 
         {/* CTA Section */}
-        <div className="mt-12 text-center space-y-4">
-          <p className="text-muted-foreground">Готовы начать?</p>
+        <Card className="mt-12 p-8 bg-gradient-to-br from-primary/5 to-gold/5 border-primary/20 text-center space-y-4">
+          <p className="text-lg text-foreground font-medium">Готовы попробовать?</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               variant="gold"
@@ -98,11 +109,12 @@ const FAQRu = () => {
               variant="outline"
               size="lg"
               onClick={() => navigate("/team/ru")}
+              className="border-primary/30"
             >
               Познакомиться с командой
             </Button>
           </div>
-        </div>
+        </Card>
       </main>
     </div>
   );

@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ArrowLeft } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import heroImage from "@/assets/hero-campus.jpg";
 
 const FAQ = () => {
   const navigate = useNavigate();
@@ -24,17 +25,21 @@ const FAQ = () => {
     {
       question: "Is this just for Ivy League applications?",
       answer: "No! While our consultants have Ivy League experience, we help students apply to top universities worldwide—US, UK, Canada, Europe, China, and beyond. Whether you're aiming for Harvard, Oxford, McGill, or Tsinghua, we have the expertise. We focus on finding the right fit for YOU, not just the most prestigious name."
-    },
-    {
-      question: "How do I get started?",
-      answer: "Book a trial consultation (25 or 50 minutes) on our Services & Pricing page. This low-commitment session lets you meet us, discuss your situation, and see if we're the right fit. No pressure—just a conversation about your goals and how we can help you achieve them."
     }
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div 
+      className="min-h-screen relative"
+      style={{
+        backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url(${heroImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}
+    >
       {/* Header */}
-      <header className="border-b border-border bg-card">
+      <header className="border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <Button
             variant="ghost"
@@ -51,20 +56,26 @@ const FAQ = () => {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
         {/* Hero Section */}
         <div className="text-center mb-12">
-          <h1 className="font-heading text-4xl md:text-5xl font-bold text-foreground mb-4">
-            Frequently Asked Questions
-          </h1>
+          <div className="inline-block">
+            <h1 className="font-heading text-4xl md:text-5xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mb-2">
+              Frequently Asked Questions
+            </h1>
+            <div className="h-1 w-32 bg-gradient-to-r from-primary to-gold mx-auto rounded-full mb-4"></div>
+          </div>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Everything you need to know about TopUni Consulting and our services
+            Everything you need to know about TopUni Consulting
           </p>
         </div>
 
         {/* FAQ Accordion */}
-        <Card>
+        <Card className="border-gold/20 bg-card/50 backdrop-blur-sm shadow-xl">
           <CardHeader>
-            <CardTitle>Common Questions</CardTitle>
-            <CardDescription>
-              Can't find what you're looking for? Email us at team@topuniconsulting.com
+            <CardTitle className="text-2xl text-primary">Quick Answers</CardTitle>
+            <CardDescription className="text-base">
+              Can't find what you're looking for? Email us at{" "}
+              <a href="mailto:team@topuniconsulting.com" className="text-accent hover:underline">
+                team@topuniconsulting.com
+              </a>
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -84,8 +95,8 @@ const FAQ = () => {
         </Card>
 
         {/* CTA Section */}
-        <div className="mt-12 text-center space-y-4">
-          <p className="text-muted-foreground">Ready to get started?</p>
+        <Card className="mt-12 p-8 bg-gradient-to-br from-primary/5 to-gold/5 border-primary/20 text-center space-y-4">
+          <p className="text-lg text-foreground font-medium">Ready to take your shot?</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               variant="gold"
@@ -98,11 +109,12 @@ const FAQ = () => {
               variant="outline"
               size="lg"
               onClick={() => navigate("/team")}
+              className="border-primary/30"
             >
               Meet Our Team
             </Button>
           </div>
-        </div>
+        </Card>
       </main>
     </div>
   );

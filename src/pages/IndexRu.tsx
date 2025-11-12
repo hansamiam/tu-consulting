@@ -83,16 +83,27 @@ const IndexRu = () => {
             </h2>
             <div className="w-20 sm:w-24 h-1 bg-gold mx-auto rounded-full" />
           </div>
-          {/* Main Headline - Coming Soon */}
-          <div className="mb-6 sm:mb-8 inline-block px-6 sm:px-8 py-3 sm:py-4 border-2 border-gold/30 rounded-lg">
-            <h1 className="font-heading text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-semibold text-gold leading-tight tracking-tight">
-              Скоро запуск
-            </h1>
+          {/* Main Headline - First Cohort */}
+          <div className="mb-6 sm:mb-8 space-y-4">
+            <div className="inline-block px-6 sm:px-8 py-3 sm:py-4 border-2 border-gold/30 rounded-lg">
+              <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-gold leading-tight tracking-tight">
+                Запуск первой когорты
+              </h1>
+            </div>
+            <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 max-w-2xl mx-auto">
+              <p className="text-primary-foreground/90 font-medium mb-2">Станьте частью чего-то особенного</p>
+              <p className="text-primary-foreground/70 text-sm">
+                Присоединяйтесь к нашей первой когорте и получите внимание премиум-уровня со скидками для основателей до 37%
+              </p>
+            </div>
           </div>
 
           {/* Subheadline */}
-          <p className="text-base sm:text-lg md:text-xl text-primary-foreground/90 mb-6 sm:mb-8 max-w-2xl mx-auto font-light leading-relaxed px-4">
+          <p className="text-base sm:text-lg md:text-xl text-primary-foreground/90 mb-3 max-w-2xl mx-auto font-light leading-relaxed px-4">
             Помогаем амбициозным студентам поступить в лучшие университеты
+          </p>
+          <p className="text-sm text-gold/80 mb-6 sm:mb-8 italic">
+            Ограниченные места • Самые большие скидки • Дополнительное внимание для основателей
           </p>
           
           {/* Navigation Links */}
@@ -121,7 +132,8 @@ const IndexRu = () => {
           </div>
 
           {/* Waitlist Form */}
-          <form onSubmit={handleWaitlistSubmit} className="max-w-md mx-auto mb-6 sm:mb-8 px-4">
+          <form onSubmit={handleWaitlistSubmit} className="max-w-md mx-auto mb-4 px-4">
+            <p className="text-primary-foreground/80 text-sm mb-3">Присоединяйтесь к списку ожидания для уведомления об открытии приема</p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
               <input
                 type="email"
@@ -138,10 +150,14 @@ const IndexRu = () => {
                 className="self-center px-8 py-3 sm:w-auto whitespace-nowrap"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Отправка..." : "Присоединиться"}
+                {isSubmitting ? "Отправка..." : "Получить ранний доступ"}
               </Button>
             </div>
           </form>
+
+          <p className="text-primary-foreground/60 text-xs mb-6 sm:mb-8 italic">
+            Члены первой когорты получают эксклюзивные преимущества
+          </p>
 
           {/* Social Links */}
           <div className="flex gap-6 justify-center mb-6 sm:mb-8">
