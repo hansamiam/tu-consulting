@@ -28,9 +28,13 @@ const TeamRu = () => {
       education: "Йельский университет",
       languages: "Английский, Корейский (двуязычный); Русский, Китайский (разговорный)",
       strengths: "Стратегии обучения, поддержка студентов с СДВГ, иммигранты и студенты третьей культуры, адаптация к новой среде, естественные науки",
-      challenges: "Преодолел трудности с обучением и культурной адаптацией как студент-иммигрант",
-      lessons: "Ваше уникальное происхождение — ваша суперсила; используйте это в заявках",
-      advice: "Не скрывайте свои трудности — они делают вашу историю аутентичной и убедительной"
+      advice: "Не скрывайте свои трудности — они делают вашу историю аутентичной и убедительной",
+      accomplishments: [
+        "Йельский университет (бакалавриат)",
+        "Преодолел СДВГ и трудности с обучением",
+        "Студент третьей культуры, прошедший через множество образовательных систем",
+        "Специализация в приложениях по естественным наукам"
+      ]
     },
     {
       name: "Нурзада Абдивалиева",
@@ -40,9 +44,13 @@ const TeamRu = () => {
       education: "Американский университет Центральной Азии | Корейский институт развития (KDI) | Кембриджский университет | Университет Цинхуа",
       languages: "Русский (родной), Кыргызский (родной), Английский (продвинутый)",
       strengths: "Стипендии и стратегии финансирования, пути самофинансирования образования, кросс-культурная адаптация, убедительное повествование, социальные науки",
-      challenges: "Обеспечила полное финансирование нескольких степеней через стипендии, несмотря на ограниченные начальные ресурсы",
-      lessons: "Финансовые ограничения не ограничивают ваш потенциал — стратегический поиск стипендий открывает двери",
-      advice: "Ваша история важнее идеальных оценок; научитесь рассказывать её убедительно"
+      advice: "Ваша история важнее идеальных оценок; научитесь рассказывать её убедительно",
+      accomplishments: [
+        "Выпускник АУЦА, KDI, Кембриджа, Цинхуа",
+        "Получила более $200K стипендий",
+        "Множество конкурентных поступлений в магистратуру",
+        "Эксперт по межкультурным образовательным переходам"
+      ]
     },
     {
       name: "Джош Хьюз",
@@ -52,9 +60,13 @@ const TeamRu = () => {
       education: "Университет Южной Каролины | Гарвардский университет",
       languages: "Английский (родной), Русский (продвинутый), Кыргызский (ниже среднего)",
       strengths: "Заявки в магистратуру, стратегии сдачи тестов, академические исследования, доработка эссе, навыки презентации, языки и гуманитарные науки",
-      challenges: "Освоил множество стандартизированных тестов и преодолел конкурентные приемные комиссии в магистратуру",
-      lessons: "Стратегическая подготовка и понимание того, чего хотят оценщики — половина успеха",
-      advice: "Фокусируйтесь на ясности и аутентичности в письме — приемные комиссии читают тысячи эссе"
+      advice: "Фокусируйтесь на ясности и аутентичности в письме — приемные комиссии читают тысячи эссе",
+      accomplishments: [
+        "Бакалавриат USC, магистратура Гарвард",
+        "Идеальные баллы по множеству стандартизированных тестов",
+        "Опубликованные академические исследования",
+        "Многоязычный (английский, русский, кыргызский)"
+      ]
     },
     {
       name: "Айгуль Абдубаетова",
@@ -64,9 +76,13 @@ const TeamRu = () => {
       education: "Университет Орегона",
       languages: "Английский (свободно), Кыргызский (родной), Русский (свободно)",
       strengths: "Руководство по рекомендательным письмам, карьерный коучинг, профессионалы на ранней и средней стадии карьеры, поддержка рекомендаций, институциональное консультирование, переговоры, международный нетворкинг",
-      challenges: "Наставила сотни студентов и написала бесчисленное количество рекомендательных писем в разных контекстах",
-      lessons: "Правильные рекомендатели и то, как вы к ним подходите, могут преобразить ваше заявление",
-      advice: "Стройте настоящие отношения с наставниками заранее — сильные рекомендации приходят из подлинных связей"
+      advice: "Стройте настоящие отношения с наставниками заранее — сильные рекомендации приходят из подлинных связей",
+      accomplishments: [
+        "Выпускник Университета Орегона",
+        "Написала более 100 рекомендательных писем",
+        "Наставила разнообразных международных студентов",
+        "Эксперт по институциональной навигации и карьерным переходам"
+      ]
     }
   ];
 
@@ -165,7 +181,7 @@ const TeamRu = () => {
                       </div>
                       <div className="space-y-3 w-full">
                         <h2 className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">{member.name}</h2>
-                        <p className="text-base font-medium text-gold">{member.title}</p>
+                        <p className="text-base font-medium bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent">{member.title}</p>
                         <div className="space-y-2 text-sm">
                           <p className="text-muted-foreground">
                             <span className="font-semibold text-gold">Родной город:</span> {member.hometown}
@@ -177,7 +193,6 @@ const TeamRu = () => {
                             <span className="font-semibold text-gold">Языки:</span> {member.languages}
                           </p>
                         </div>
-                        <p className="text-xs text-primary/70 mt-4">Нажмите, чтобы узнать больше</p>
                       </div>
                     </div>
                   </Card>
@@ -192,7 +207,7 @@ const TeamRu = () => {
                       />
                       <div>
                         <DialogTitle className="text-2xl font-bold text-primary">{member.name}</DialogTitle>
-                        <p className="text-base font-medium text-gold mt-1">{member.title}</p>
+                        <p className="text-base font-medium bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mt-1">{member.title}</p>
                       </div>
                     </div>
                   </DialogHeader>
@@ -212,19 +227,22 @@ const TeamRu = () => {
                       </div>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gold text-base mb-2">Сильные стороны и специализации</h3>
+                      <h3 className="font-semibold text-gold text-base mb-2">Ключевые достижения</h3>
+                      <ul className="space-y-1.5">
+                        {member.accomplishments.map((accomplishment, idx) => (
+                          <li key={idx} className="flex items-start gap-2 text-muted-foreground">
+                            <span className="text-gold mt-0.5">•</span>
+                            <span>{accomplishment}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gold text-base mb-2">Специализируется в:</h3>
                       <p className="text-muted-foreground">{member.strengths}</p>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gold text-base mb-2">Преодоленные трудности</h3>
-                      <p className="text-muted-foreground">{member.challenges}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gold text-base mb-2">Ключевые уроки</h3>
-                      <p className="text-muted-foreground italic">{member.lessons}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gold text-base mb-2">Совет для абитуриентов</h3>
+                      <h3 className="font-semibold text-gold text-base mb-2">Совет одним предложением:</h3>
                       <p className="text-muted-foreground italic font-medium">{member.advice}</p>
                     </div>
                   </div>

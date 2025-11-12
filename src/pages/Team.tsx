@@ -28,9 +28,13 @@ const Team = () => {
       education: "Yale University",
       languages: "English, Korean (bilingual); Russian, Chinese (conversational)",
       strengths: "Learning strategies, supporting students with ADHD, immigrants and third-culture kids, adjusting to new environments, natural sciences",
-      challenges: "Navigated learning differences and cultural adaptation as an immigrant student",
-      lessons: "Your unique background is your superpower—embrace it in your applications",
-      advice: "Don't hide your struggles; they make your story authentic and compelling"
+      advice: "Don't hide your struggles; they make your story authentic and compelling",
+      accomplishments: [
+        "Yale University undergraduate",
+        "Overcame ADHD and learning differences",
+        "Third-culture kid navigating multiple education systems",
+        "Specialized in natural sciences applications"
+      ]
     },
     {
       name: "Nurzada Abdivalieva",
@@ -40,9 +44,13 @@ const Team = () => {
       education: "American University of Central Asia | Korea Development Institute (KDI) | University of Cambridge | Tsinghua University",
       languages: "Russian (native), Kyrgyz (native), English (advanced)",
       strengths: "Scholarships and funding strategies, self-funded education pathways, cross-cultural adaptation, compelling storytelling, social sciences",
-      challenges: "Secured full funding for multiple degrees through scholarships despite limited initial resources",
-      lessons: "Financial constraints don't limit your potential—strategic scholarship hunting opens doors",
-      advice: "Your story matters more than perfect grades; learn to tell it powerfully"
+      advice: "Your story matters more than perfect grades; learn to tell it powerfully",
+      accomplishments: [
+        "AUCA, KDI, Cambridge, Tsinghua graduate",
+        "Secured $200K+ in scholarships",
+        "Multiple competitive graduate admissions",
+        "Expert in cross-cultural education transitions"
+      ]
     },
     {
       name: "Josh Hughes",
@@ -52,9 +60,13 @@ const Team = () => {
       education: "University of South Carolina | Harvard University",
       languages: "English (native), Russian (advanced), Kyrgyz (lower intermediate)",
       strengths: "Graduate program applications, test-taking strategies, academic research, essay refinement, presentation skills, languages and humanities",
-      challenges: "Mastered multiple standardized tests and navigated competitive graduate admissions",
-      lessons: "Strategic preparation and understanding what evaluators want is half the battle",
-      advice: "Focus on clarity and authenticity in your writing—admissions committees read thousands of essays"
+      advice: "Focus on clarity and authenticity in your writing—admissions committees read thousands of essays",
+      accomplishments: [
+        "USC undergraduate, Harvard graduate",
+        "Perfect scores on multiple standardized tests",
+        "Published academic research",
+        "Multilingual (English, Russian, Kyrgyz)"
+      ]
     },
     {
       name: "Aigul Abdoubaetova",
@@ -64,9 +76,13 @@ const Team = () => {
       education: "University of Oregon",
       languages: "English (fluent), Kyrgyz (native), Russian (fluent)",
       strengths: "Recommendation letter guidance, career coaching, early-to-mid career professionals, reference support, institutional advising, negotiation, international networking",
-      challenges: "Mentored hundreds of students and written countless recommendation letters across diverse contexts",
-      lessons: "The right recommenders and how you approach them can transform your application",
-      advice: "Build genuine relationships with mentors early—strong recommendations come from authentic connections"
+      advice: "Build genuine relationships with mentors early—strong recommendations come from authentic connections",
+      accomplishments: [
+        "University of Oregon graduate",
+        "Written 100+ recommendation letters",
+        "Mentored diverse international students",
+        "Expert in institutional navigation and career transitions"
+      ]
     }
   ];
 
@@ -165,7 +181,7 @@ const Team = () => {
                       </div>
                       <div className="space-y-3 w-full">
                         <h2 className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">{member.name}</h2>
-                        <p className="text-base font-medium text-gold">{member.title}</p>
+                        <p className="text-base font-medium bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent">{member.title}</p>
                         <div className="space-y-2 text-sm">
                           <p className="text-muted-foreground">
                             <span className="font-semibold text-gold">Hometown:</span> {member.hometown}
@@ -177,7 +193,6 @@ const Team = () => {
                             <span className="font-semibold text-gold">Languages:</span> {member.languages}
                           </p>
                         </div>
-                        <p className="text-xs text-primary/70 mt-4">Click to learn more</p>
                       </div>
                     </div>
                   </Card>
@@ -192,7 +207,7 @@ const Team = () => {
                       />
                       <div>
                         <DialogTitle className="text-2xl font-bold text-primary">{member.name}</DialogTitle>
-                        <p className="text-base font-medium text-gold mt-1">{member.title}</p>
+                        <p className="text-base font-medium bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mt-1">{member.title}</p>
                       </div>
                     </div>
                   </DialogHeader>
@@ -212,19 +227,22 @@ const Team = () => {
                       </div>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gold text-base mb-2">Strengths & Specializations</h3>
+                      <h3 className="font-semibold text-gold text-base mb-2">Key Accomplishments</h3>
+                      <ul className="space-y-1.5">
+                        {member.accomplishments.map((accomplishment, idx) => (
+                          <li key={idx} className="flex items-start gap-2 text-muted-foreground">
+                            <span className="text-gold mt-0.5">•</span>
+                            <span>{accomplishment}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gold text-base mb-2">Specialized in:</h3>
                       <p className="text-muted-foreground">{member.strengths}</p>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gold text-base mb-2">Challenges Overcome</h3>
-                      <p className="text-muted-foreground">{member.challenges}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gold text-base mb-2">Key Lessons</h3>
-                      <p className="text-muted-foreground italic">{member.lessons}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gold text-base mb-2">Advice for Applicants</h3>
+                      <h3 className="font-semibold text-gold text-base mb-2">One sentence advice:</h3>
                       <p className="text-muted-foreground italic font-medium">{member.advice}</p>
                     </div>
                   </div>

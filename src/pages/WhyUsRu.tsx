@@ -118,7 +118,7 @@ const WhyUsRu = () => {
             </div>
           </Card>
 
-          {/* Forbes Article Quote */}
+          {/* Forbes Article & Insight */}
           <Card className="p-8 bg-gradient-to-br from-accent/5 to-primary/5 border-accent/20">
             <div className="max-w-4xl mx-auto space-y-4">
               <p className="text-lg text-muted-foreground italic">
@@ -130,144 +130,106 @@ const WhyUsRu = () => {
             </div>
           </Card>
 
-          {/* Comparison Infographic */}
-          <div className="space-y-8">
+          {/* Comparison Table */}
+          <div className="space-y-6">
             <h2 className="text-3xl md:text-4xl font-bold text-center bg-gradient-to-r from-primary to-gold bg-clip-text text-transparent">
-              Как мы сравниваем
+              Разница TopUni
             </h2>
             
-            <div className="grid md:grid-cols-3 gap-6">
-              {/* Large Corporate Firms */}
-              <Card className="p-6 space-y-4 bg-destructive/5 border-destructive/20">
-                <h3 className="text-xl font-bold text-foreground text-center">Крупные корпоративные фирмы</h3>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-start gap-2">
-                    <span className="text-destructive font-bold">✗</span>
-                    <p className="text-muted-foreground">Высокие цены, ограниченное время ментора</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-destructive font-bold">✗</span>
-                    <p className="text-muted-foreground">Менторы часто недоплачены и перегружены</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-destructive font-bold">✗</span>
-                    <p className="text-muted-foreground">Шаблонный подход в масштабе</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-destructive font-bold">✗</span>
-                    <p className="text-muted-foreground">Завышенная статистика успеха—позволяют подавать только туда, где у вас уже высокие шансы</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-destructive font-bold">✗</span>
-                    <p className="text-muted-foreground">Трудно получить персонализированное внимание</p>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Us */}
-              <Card className="p-6 space-y-4 bg-gradient-to-br from-gold/10 to-primary/10 border-gold/40 shadow-xl scale-105">
-                <h3 className="text-xl font-bold text-primary text-center">TopUni Consulting</h3>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-start gap-2">
-                    <span className="text-gold font-bold">✓</span>
-                    <p className="text-foreground font-medium">Конкурентные цены, выделенное время</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-gold font-bold">✓</span>
-                    <p className="text-foreground font-medium">Каждый член команды сильно вовлечен</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-gold font-bold">✓</span>
-                    <p className="text-foreground font-medium">Персонализированные стратегии для вашей истории</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-gold font-bold">✓</span>
-                    <p className="text-foreground font-medium">Прямой доступ к опытным консультантам</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-gold font-bold">✓</span>
-                    <p className="text-foreground font-medium">Проверенный послужной список: $500K+ стипендий</p>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Small Local Consultants */}
-              <Card className="p-6 space-y-4 bg-muted/30 border-muted">
-                <h3 className="text-xl font-bold text-foreground text-center">Маленькие местные консультанты</h3>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-start gap-2">
-                    <span className="text-muted-foreground font-bold">~</span>
-                    <p className="text-muted-foreground">Часто не хватает глобального опыта</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-muted-foreground font-bold">~</span>
-                    <p className="text-muted-foreground">Возможно, не прошли через топовые процессы</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-muted-foreground font-bold">~</span>
-                    <p className="text-muted-foreground">Ограниченный послужной список стипендий</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-muted-foreground font-bold">~</span>
-                    <p className="text-muted-foreground">Качество может значительно варьироваться</p>
-                  </div>
-                </div>
-              </Card>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b-2 border-border">
+                    <th className="text-left p-4 text-muted-foreground font-medium w-2/5"></th>
+                    <th className="text-center p-4 text-muted-foreground font-medium">Крупные фирмы</th>
+                    <th className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
+                      <span className="text-gold font-bold">TopUni</span>
+                    </th>
+                    <th className="text-center p-4 text-muted-foreground font-medium">Местные</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-border">
+                    <td className="p-4 font-medium text-foreground">Глобальный опыт</td>
+                    <td className="text-center p-4">
+                      <span className="text-lg">✓</span>
+                    </td>
+                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
+                      <span className="text-gold text-lg font-bold">✓</span>
+                    </td>
+                    <td className="text-center p-4">
+                      <span className="text-muted-foreground text-lg">✗</span>
+                    </td>
+                  </tr>
+                  <tr className="border-b border-border">
+                    <td className="p-4 font-medium text-foreground">Персональное внимание</td>
+                    <td className="text-center p-4">
+                      <span className="text-destructive text-lg">✗</span>
+                    </td>
+                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
+                      <span className="text-gold text-lg font-bold">✓</span>
+                    </td>
+                    <td className="text-center p-4">
+                      <span className="text-lg">✓</span>
+                    </td>
+                  </tr>
+                  <tr className="border-b border-border">
+                    <td className="p-4 font-medium text-foreground">Доступные цены</td>
+                    <td className="text-center p-4">
+                      <span className="text-destructive text-lg">✗</span>
+                    </td>
+                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
+                      <span className="text-gold text-lg font-bold">✓</span>
+                    </td>
+                    <td className="text-center p-4">
+                      <span className="text-lg">✓</span>
+                    </td>
+                  </tr>
+                  <tr className="border-b border-border">
+                    <td className="p-4 font-medium text-foreground">Проверенный трек-рекорд</td>
+                    <td className="text-center p-4">
+                      <span className="text-lg">✓</span>
+                    </td>
+                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
+                      <span className="text-gold text-lg font-bold">✓</span>
+                    </td>
+                    <td className="text-center p-4">
+                      <span className="text-muted-foreground text-lg">✗</span>
+                    </td>
+                  </tr>
+                  <tr className="border-b border-border">
+                    <td className="p-4 font-medium text-foreground">Недавний личный опыт</td>
+                    <td className="text-center p-4">
+                      <span className="text-destructive text-lg">✗</span>
+                    </td>
+                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
+                      <span className="text-gold text-lg font-bold">✓</span>
+                    </td>
+                    <td className="text-center p-4">
+                      <span className="text-muted-foreground text-lg">✗</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="p-4 font-medium text-foreground">Прозрачная статистика</td>
+                    <td className="text-center p-4">
+                      <span className="text-destructive text-lg">✗</span>
+                      <p className="text-xs text-muted-foreground mt-1">Завышенные данные</p>
+                    </td>
+                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
+                      <span className="text-gold text-lg font-bold">✓</span>
+                      <p className="text-xs text-gold/80 mt-1 font-medium">Честный подход</p>
+                    </td>
+                    <td className="text-center p-4">
+                      <span className="text-lg">✓</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-          </div>
-
-          {/* Team Specializations Infographic */}
-          <div className="space-y-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-center bg-gradient-to-r from-primary to-gold bg-clip-text text-transparent">
-              Каждый член команды привносит уникальный опыт
-            </h2>
             
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card className="p-6 space-y-3 border-gold/30 hover:shadow-lg transition-all">
-                <h3 className="text-xl font-bold text-primary">Самуэль Хан</h3>
-                <p className="text-sm text-gold font-medium">Со-основатель</p>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p>• Стратегии обучения и поддержка СДВГ</p>
-                  <p>• Иммигранты и студенты третьей культуры</p>
-                  <p>• Специализация в естественных науках</p>
-                  <p>• Экспертиза культурной адаптации</p>
-                </div>
-              </Card>
-
-              <Card className="p-6 space-y-3 border-primary/30 hover:shadow-lg transition-all">
-                <h3 className="text-xl font-bold text-primary">Нурзада Абдивалиева</h3>
-                <p className="text-sm text-gold font-medium">Со-основатель</p>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p>• Стипендии и стратегии финансирования</p>
-                  <p>• Пути самофинансирования образования</p>
-                  <p>• Убедительное повествование</p>
-                  <p>• Фокус на социальных науках</p>
-                </div>
-              </Card>
-
-              <Card className="p-6 space-y-3 border-accent/30 hover:shadow-lg transition-all">
-                <h3 className="text-xl font-bold text-primary">Джош Хьюз</h3>
-                <p className="text-sm text-gold font-medium">Ведущий консультант</p>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p>• Заявки в магистратуру</p>
-                  <p>• Стратегии сдачи тестов</p>
-                  <p>• Академические исследования и доработка эссе</p>
-                  <p>• Экспертиза в языках и гуманитарных науках</p>
-                </div>
-              </Card>
-
-              <Card className="p-6 space-y-3 border-gold/30 hover:shadow-lg transition-all">
-                <h3 className="text-xl font-bold text-primary">Айгуль Абдубаетова</h3>
-                <p className="text-sm text-gold font-medium">Старший советник</p>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p>• Экспертиза рекомендательных писем</p>
-                  <p>• Карьерный коучинг и профессиональное развитие</p>
-                  <p>• Профессионалы ранней и средней карьеры</p>
-                  <p>• Институциональное консультирование и переговоры</p>
-                  <p>• Международный нетворкинг</p>
-                </div>
-              </Card>
-            </div>
+            <p className="text-center text-sm text-muted-foreground italic max-w-2xl mx-auto">
+              Наша команда привносит разнообразный опыт—от стратегий стипендий и различий в обучении до заявок в магистратуру и карьерного коучинга—всё адаптировано к вашим уникальным потребностям.
+            </p>
           </div>
 
           {/* CTA Section */}

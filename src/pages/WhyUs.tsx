@@ -118,7 +118,7 @@ const WhyUs = () => {
             </div>
           </Card>
 
-          {/* Forbes Article Quote */}
+          {/* Forbes Article & Insight */}
           <Card className="p-8 bg-gradient-to-br from-accent/5 to-primary/5 border-accent/20">
             <div className="max-w-4xl mx-auto space-y-4">
               <p className="text-lg text-muted-foreground italic">
@@ -130,144 +130,106 @@ const WhyUs = () => {
             </div>
           </Card>
 
-          {/* Comparison Infographic */}
-          <div className="space-y-8">
+          {/* Comparison Table */}
+          <div className="space-y-6">
             <h2 className="text-3xl md:text-4xl font-bold text-center bg-gradient-to-r from-primary to-gold bg-clip-text text-transparent">
-              How We Compare
+              The TopUni Difference
             </h2>
             
-            <div className="grid md:grid-cols-3 gap-6">
-              {/* Large Corporate Firms */}
-              <Card className="p-6 space-y-4 bg-destructive/5 border-destructive/20">
-                <h3 className="text-xl font-bold text-foreground text-center">Large Corporate Firms</h3>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-start gap-2">
-                    <span className="text-destructive font-bold">✗</span>
-                    <p className="text-muted-foreground">High prices, limited mentor time</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-destructive font-bold">✗</span>
-                    <p className="text-muted-foreground">Mentors often underpaid and overworked</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-destructive font-bold">✗</span>
-                    <p className="text-muted-foreground">Cookie-cutter approach at scale</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-destructive font-bold">✗</span>
-                    <p className="text-muted-foreground">Inflated success statistics—only let you apply where you already have high chances</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-destructive font-bold">✗</span>
-                    <p className="text-muted-foreground">Difficult to get personalized attention</p>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Us */}
-              <Card className="p-6 space-y-4 bg-gradient-to-br from-gold/10 to-primary/10 border-gold/40 shadow-xl scale-105">
-                <h3 className="text-xl font-bold text-primary text-center">TopUni Consulting</h3>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-start gap-2">
-                    <span className="text-gold font-bold">✓</span>
-                    <p className="text-foreground font-medium">Competitive pricing, dedicated time</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-gold font-bold">✓</span>
-                    <p className="text-foreground font-medium">Every team member is highly invested</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-gold font-bold">✓</span>
-                    <p className="text-foreground font-medium">Personalized strategies for your story</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-gold font-bold">✓</span>
-                    <p className="text-foreground font-medium">Direct access to experienced consultants</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-gold font-bold">✓</span>
-                    <p className="text-foreground font-medium">Proven track record: $500K+ scholarships</p>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Small Local Consultants */}
-              <Card className="p-6 space-y-4 bg-muted/30 border-muted">
-                <h3 className="text-xl font-bold text-foreground text-center">Small Local Consultants</h3>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-start gap-2">
-                    <span className="text-muted-foreground font-bold">~</span>
-                    <p className="text-muted-foreground">Often lack global experience</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-muted-foreground font-bold">~</span>
-                    <p className="text-muted-foreground">May not have been through top processes</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-muted-foreground font-bold">~</span>
-                    <p className="text-muted-foreground">Limited scholarship success track record</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-muted-foreground font-bold">~</span>
-                    <p className="text-muted-foreground">Quality can vary significantly</p>
-                  </div>
-                </div>
-              </Card>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b-2 border-border">
+                    <th className="text-left p-4 text-muted-foreground font-medium w-2/5"></th>
+                    <th className="text-center p-4 text-muted-foreground font-medium">Large Firms</th>
+                    <th className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
+                      <span className="text-gold font-bold">TopUni</span>
+                    </th>
+                    <th className="text-center p-4 text-muted-foreground font-medium">Small Local</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-border">
+                    <td className="p-4 font-medium text-foreground">Global Experience</td>
+                    <td className="text-center p-4">
+                      <span className="text-lg">✓</span>
+                    </td>
+                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
+                      <span className="text-gold text-lg font-bold">✓</span>
+                    </td>
+                    <td className="text-center p-4">
+                      <span className="text-muted-foreground text-lg">✗</span>
+                    </td>
+                  </tr>
+                  <tr className="border-b border-border">
+                    <td className="p-4 font-medium text-foreground">Personalized Attention</td>
+                    <td className="text-center p-4">
+                      <span className="text-destructive text-lg">✗</span>
+                    </td>
+                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
+                      <span className="text-gold text-lg font-bold">✓</span>
+                    </td>
+                    <td className="text-center p-4">
+                      <span className="text-lg">✓</span>
+                    </td>
+                  </tr>
+                  <tr className="border-b border-border">
+                    <td className="p-4 font-medium text-foreground">Affordable Pricing</td>
+                    <td className="text-center p-4">
+                      <span className="text-destructive text-lg">✗</span>
+                    </td>
+                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
+                      <span className="text-gold text-lg font-bold">✓</span>
+                    </td>
+                    <td className="text-center p-4">
+                      <span className="text-lg">✓</span>
+                    </td>
+                  </tr>
+                  <tr className="border-b border-border">
+                    <td className="p-4 font-medium text-foreground">Proven Track Record</td>
+                    <td className="text-center p-4">
+                      <span className="text-lg">✓</span>
+                    </td>
+                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
+                      <span className="text-gold text-lg font-bold">✓</span>
+                    </td>
+                    <td className="text-center p-4">
+                      <span className="text-muted-foreground text-lg">✗</span>
+                    </td>
+                  </tr>
+                  <tr className="border-b border-border">
+                    <td className="p-4 font-medium text-foreground">Recent Personal Experience</td>
+                    <td className="text-center p-4">
+                      <span className="text-destructive text-lg">✗</span>
+                    </td>
+                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
+                      <span className="text-gold text-lg font-bold">✓</span>
+                    </td>
+                    <td className="text-center p-4">
+                      <span className="text-muted-foreground text-lg">✗</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="p-4 font-medium text-foreground">Transparent Statistics</td>
+                    <td className="text-center p-4">
+                      <span className="text-destructive text-lg">✗</span>
+                      <p className="text-xs text-muted-foreground mt-1">Inflated stats</p>
+                    </td>
+                    <td className="text-center p-4 bg-gold/5 border-x-2 border-gold/20">
+                      <span className="text-gold text-lg font-bold">✓</span>
+                      <p className="text-xs text-gold/80 mt-1 font-medium">Honest approach</p>
+                    </td>
+                    <td className="text-center p-4">
+                      <span className="text-lg">✓</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-          </div>
-
-          {/* Team Specializations Infographic */}
-          <div className="space-y-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-center bg-gradient-to-r from-primary to-gold bg-clip-text text-transparent">
-              Each Team Member Brings Unique Expertise
-            </h2>
             
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card className="p-6 space-y-3 border-gold/30 hover:shadow-lg transition-all">
-                <h3 className="text-xl font-bold text-primary">Samuel Han</h3>
-                <p className="text-sm text-gold font-medium">Co-Founder</p>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p>• Learning strategies & ADHD support</p>
-                  <p>• Immigrants & third-culture kids</p>
-                  <p>• Natural sciences specialization</p>
-                  <p>• Cultural adaptation expertise</p>
-                </div>
-              </Card>
-
-              <Card className="p-6 space-y-3 border-primary/30 hover:shadow-lg transition-all">
-                <h3 className="text-xl font-bold text-primary">Nurzada Abdivalieva</h3>
-                <p className="text-sm text-gold font-medium">Co-Founder</p>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p>• Scholarships & funding strategies</p>
-                  <p>• Self-funded education pathways</p>
-                  <p>• Compelling storytelling</p>
-                  <p>• Social sciences focus</p>
-                </div>
-              </Card>
-
-              <Card className="p-6 space-y-3 border-accent/30 hover:shadow-lg transition-all">
-                <h3 className="text-xl font-bold text-primary">Josh Hughes</h3>
-                <p className="text-sm text-gold font-medium">Lead Consultant</p>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p>• Graduate program applications</p>
-                  <p>• Test-taking strategies</p>
-                  <p>• Academic research & essay refinement</p>
-                  <p>• Languages & humanities expertise</p>
-                </div>
-              </Card>
-
-              <Card className="p-6 space-y-3 border-gold/30 hover:shadow-lg transition-all">
-                <h3 className="text-xl font-bold text-primary">Aigul Abdoubaetova</h3>
-                <p className="text-sm text-gold font-medium">Senior Advisor</p>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p>• Recommendation letter expertise</p>
-                  <p>• Career coaching & professional development</p>
-                  <p>• Early-to-mid career professionals</p>
-                  <p>• Institutional advising & negotiation</p>
-                  <p>• International networking</p>
-                </div>
-              </Card>
-            </div>
+            <p className="text-center text-sm text-muted-foreground italic max-w-2xl mx-auto">
+              Our team brings diverse expertise—from scholarship strategies and learning differences to graduate applications and career coaching—all tailored to your unique needs.
+            </p>
           </div>
 
           {/* CTA Section */}
