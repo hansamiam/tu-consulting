@@ -10,60 +10,24 @@ const FAQ = () => {
 
   const faqs = [
     {
-      question: "Why choose TopUni Consulting?",
-      answer: "At TopUni Consulting, we bridge the gap between large corporate consulting firms and smaller local services. Large firms often charge premium prices but provide minimal personalized attention—their consultants are often underpaid, which affects the quality and dedication you receive. Meanwhile, smaller local services may lack the comprehensive global experience and proven track record needed for competitive applications. \n\nOur consultants are graduates from Yale, Harvard, Cambridge, and Tsinghua who have personally navigated these competitive processes, won prestigious scholarships, and succeeded across diverse disciplines. We combine personalized attention with world-class expertise at accessible prices. Our cohort-based model ensures you get the focused support you deserve."
+      question: "Why TopUni Consulting?",
+      answer: "We're different. Our consultants from Yale, Harvard, Cambridge, and Tsinghua didn't have perfect journeys—we faced setbacks, made mistakes, and learned from them. That's exactly why we can help you. We've been through the real struggles of the application process and know how to navigate them. Plus, we bridge the gap others can't: large firms give you minimal attention despite premium prices, while smaller services often lack global experience and proven results. We offer world-class expertise with genuine personal attention at accessible prices."
     },
     {
-      question: "What makes your consultants qualified?",
-      answer: "All our consultants are current students or recent graduates from top-tier universities including Yale, Harvard, Cambridge, and Tsinghua. They have successfully navigated the admissions process themselves, often securing prestigious scholarships and acceptances across multiple institutions. Beyond their own admissions success, they have diverse academic backgrounds spanning STEM, humanities, business, and the arts, allowing them to provide relevant guidance regardless of your intended field."
+      question: "Who are your consultants?",
+      answer: "Current students and recent graduates from top universities (Yale, Harvard, Cambridge, Tsinghua) who succeeded across diverse disciplines—STEM, humanities, business, and arts. They've personally won prestigious scholarships, navigated competitive admissions, and understand what it takes because they've done it themselves. More importantly, they remember the challenges and know how to guide you through yours."
     },
     {
-      question: "How does the cohort-based intake work?",
-      answer: "We accept students in cohorts to ensure each receives personalized attention and exceptional results. This controlled approach allows us to dedicate focused time to your unique journey rather than spreading ourselves thin across hundreds of students. When you apply, we'll assess whether we have availability in the current cohort. This model benefits you by ensuring your consultant has adequate time and energy to invest in your success."
+      question: "Do I need perfect grades to work with you?",
+      answer: "Absolutely not. We specialize in helping students from all backgrounds and circumstances—whether you're dealing with lower grades, unique challenges, non-traditional paths, or just need guidance to take your best shot. You don't need to be a straight-A student to benefit from expert consulting. Our job is to help you present the strongest possible application with whatever starting point you have. Every student deserves a chance to reach for their dreams."
     },
     {
-      question: "What's included in the consulting packages?",
-      answer: "Our packages include one-on-one consulting hours with your dedicated consultant, comprehensive application review, essay editing and feedback, interview preparation, and ongoing email support between sessions. The Standard and Premium packages offer progressively more hours and deeper support, including unlimited essay revisions and mock interview sessions. All services are tailored to your specific goals and target universities."
-    },
-    {
-      question: "How do consultations work?",
-      answer: "Our initial consultations (25 or 50 minutes) are designed as conversational sessions to get to know you, understand your goals, and explore which package would be the best fit for your needs. These sessions provide value through initial assessment and guidance, while allowing us to determine how we can best support your journey. Many students book a consultation before committing to a full package."
-    },
-    {
-      question: "Can you help with universities in any country?",
-      answer: "Yes! Our consultants have experience with applications to universities in the United States, United Kingdom, and China. We're particularly strong with US Ivy League schools, UK universities including Oxbridge, and top Chinese institutions. We also provide guidance for Canadian, European, and other international universities."
-    },
-    {
-      question: "Do you offer services in languages other than English?",
-      answer: "Yes, we offer all our services in both English and Russian. Our consultants are fluent in both languages and can work with you in whichever language you're most comfortable."
-    },
-    {
-      question: "When should I start working with a consultant?",
-      answer: "Ideally, students should begin working with us in their sophomore or junior year of high school (or equivalent) to allow time for strategic planning, test preparation, extracurricular development, and essay crafting. However, we also work with students who are closer to deadlines. The earlier you start, the more comprehensive our support can be."
-    },
-    {
-      question: "What is your success rate?",
-      answer: "While we cannot guarantee admissions (no ethical consultant can), our consultants have a strong track record of helping students gain acceptance to highly competitive institutions. Our personalized approach and experienced guidance significantly improve your application's competitiveness. We're happy to discuss specific outcomes during your initial consultation."
-    },
-    {
-      question: "How are sessions scheduled?",
-      answer: "After you select a package, we'll match you with a consultant whose background and expertise align with your goals. You'll then work directly with your consultant to schedule sessions at mutually convenient times. We offer flexible scheduling to accommodate different time zones and busy student schedules."
-    },
-    {
-      question: "What if I need to reschedule a session?",
-      answer: "We understand that schedules change. Sessions can be rescheduled with at least 24 hours notice. Last-minute cancellations (less than 24 hours) may count toward your total hours, so we encourage advance planning whenever possible."
-    },
-    {
-      question: "Can I upgrade my package later?",
-      answer: "Absolutely! If you start with a smaller package and decide you need more support, we can upgrade you to a larger package. You'll only pay the difference, and any unused hours from your original package will be credited toward the new one."
-    },
-    {
-      question: "What is the launch special offer?",
-      answer: "As we're launching TopUni Consulting, we're offering special discounted rates on all our packages. These launch prices represent significant savings compared to what these services typically cost. This offer is for a limited time, so we encourage interested students to book soon to lock in these rates."
+      question: "Is this just for Ivy League applications?",
+      answer: "No! While our consultants have Ivy League experience, we help students apply to top universities worldwide—US, UK, Canada, Europe, China, and beyond. Whether you're aiming for Harvard, Oxford, McGill, or Tsinghua, we have the expertise. We focus on finding the right fit for YOU, not just the most prestigious name."
     },
     {
       question: "How do I get started?",
-      answer: "The best way to start is by booking an initial consultation. This allows us to learn about your background, goals, and needs, while you get to ask questions and understand our approach. From there, we can recommend the package that best fits your situation. You can book a consultation directly on our Services & Pricing page."
+      answer: "Book a trial consultation (25 or 50 minutes) on our Services & Pricing page. This low-commitment session lets you meet us, discuss your situation, and see if we're the right fit. No pressure—just a conversation about your goals and how we can help you achieve them."
     }
   ];
 
