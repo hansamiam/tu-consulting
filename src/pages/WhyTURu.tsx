@@ -6,7 +6,7 @@ import { ArrowLeft, Users, Target, Award, Heart, TrendingUp, Sparkles } from "lu
 import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-library.jpg";
 
-const WhyUsRu = () => {
+const WhyTURu = () => {
   const navigate = useNavigate();
 
   return (
@@ -42,10 +42,10 @@ const WhyUsRu = () => {
           {/* Hero Section */}
           <div className="text-center space-y-6">
             <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent">
-              Почему TopUni Consulting?
+              Почему TU?
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Мы не просто еще одна консалтинговая компания. Мы небольшая, увлеченная команда, которая привносит реальный опыт и персонализированное внимание к каждому студенту.
+              Компактная команда. Реальный опыт. Личное внимание. Без корпоративной наценки.
             </p>
           </div>
 
@@ -57,7 +57,7 @@ const WhyUsRu = () => {
               </div>
               <h3 className="text-2xl font-bold text-primary">Маленькая команда, большое влияние</h3>
               <p className="text-muted-foreground">
-                В отличие от крупных корпоративных фирм, где вы просто еще один номер, наша намеренно небольшая команда гарантирует, что каждый участник привносит качество высшего уровня и уникальный опыт. Вы работаете напрямую с опытными консультантами, которые сами прошли через этот процесс.
+                В отличие от крупных фирм, где вы просто номер, наша небольшая команда означает, что каждый консультант обладает опытом высшего уровня. Вы работаете напрямую с тем, кто сам через это прошел—недавно.
               </p>
               <div className="pt-4 border-t border-border/50">
                 <p className="text-sm text-foreground font-medium">Каждый член команды отобран за превосходство</p>
@@ -68,9 +68,9 @@ const WhyUsRu = () => {
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
                 <Heart className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-2xl font-bold text-primary">Персонализированное внимание</h3>
+              <h3 className="text-2xl font-bold text-primary">Личное внимание</h3>
               <p className="text-muted-foreground">
-                Крупные фирмы берут высокие цены, но распыляют своих менторов слишком тонко. Мы поддерживаем управляемое количество клиентов, чтобы вы получали целенаправленную, персонализированную поддержку, которую заслуживаете—без корпоративной наценки.
+                Крупные фирмы берут высокие цены, но распыляют менторов. Мы держим нагрузку управляемой—вы получаете целенаправленную поддержку без наценки.
               </p>
               <div className="pt-4 border-t border-border/50">
                 <p className="text-sm text-foreground font-medium">Ваш успех—наша миссия, а не просто еще одна метрика</p>
@@ -81,9 +81,9 @@ const WhyUsRu = () => {
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-accent/20 to-gold/20 flex items-center justify-center">
                 <Award className="w-8 h-8 text-accent" />
               </div>
-              <h3 className="text-2xl font-bold text-primary">Настоящий глобальный опыт</h3>
+              <h3 className="text-2xl font-bold text-primary">Глобальный опыт</h3>
               <p className="text-muted-foreground">
-                Многим местным консультантам не хватает всестороннего международного опыта. Наша команда прошла через приемные комиссии на нескольких континентах, получила значительные стипендии и понимает разнообразные образовательные системы из первых рук.
+                Многим местным консультантам не хватает международного охвата. Наша команда прошла приемные комиссии на континентах, получила $500K+ стипендий и понимает разные системы из первых рук.
               </p>
               <div className="pt-4 border-t border-border/50">
                 <p className="text-sm text-foreground font-medium">Йель, Гарвард, Кембридж, Цинхуа—мы были там</p>
@@ -94,9 +94,9 @@ const WhyUsRu = () => {
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gold/20 to-primary/20 flex items-center justify-center">
                 <Target className="w-8 h-8 text-gold" />
               </div>
-              <h3 className="text-2xl font-bold text-primary">Реальный послужной список</h3>
+              <h3 className="text-2xl font-bold text-primary">Доказанные результаты</h3>
               <p className="text-muted-foreground">
-                Мы обеспечили более $500K стипендий и сами прошли через строгие процессы приема. Наш опыт не теоретический—он доказан нашими собственными успехами и неудачами.
+                Получено $500K+ стипендий через строгие процессы. Наш опыт не теоретический—он доказан реальными успехами и неудачами.
               </p>
               <div className="pt-4 border-t border-border/50">
                 <p className="text-sm text-foreground font-medium">Проверенные стратегии, которые действительно работают</p>
@@ -110,12 +110,12 @@ const WhyUsRu = () => {
               <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-gold/30 to-primary/30 flex items-center justify-center">
                 <Sparkles className="w-10 h-10 text-gold" />
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-primary">Вам не нужны идеальные оценки, чтобы работать с нами</h2>
+              <h2 className="text-3xl md:text-4xl font-bold text-primary">Идеальные оценки не требуются</h2>
               <p className="text-lg text-muted-foreground">
-                Топовые университеты не только для "идеальных" студентов. Наша команда столкнулась с трудностями—различия в обучении, культурные барьеры, финансовые ограничения, академические неудачи. Мы извлекли ценные уроки из этих трудностей, и мы здесь, чтобы вы не повторили те же ошибки.
+                Топовые университеты не только для "идеальных" студентов. Наша команда столкнулась с различиями в обучении, культурными барьерами, финансовыми ограничениями и неудачами. Мы учились на этих трудностях—теперь помогаем вам избежать тех же ошибок.
               </p>
               <p className="text-lg text-foreground font-medium">
-                Ваши уникальные обстоятельства—будь то более низкие оценки, необычное происхождение или специфические трудности—это именно то, что может сделать ваше заявление убедительным. Мы специализируемся на том, чтобы помочь студентам сделать лучший возможный шанс, независимо от того, с чего они начинают.
+                Низкие оценки? Необычное происхождение? Уникальные трудности? Это делает заявления убедительными. Мы помогаем студентам сделать их лучший шанс, откуда бы они ни начинали.
               </p>
             </div>
           </Card>
@@ -124,10 +124,10 @@ const WhyUsRu = () => {
           <Card className="p-8 bg-gradient-to-br from-accent/5 to-primary/5 border-accent/20">
             <div className="max-w-4xl mx-auto space-y-4">
               <p className="text-lg text-muted-foreground italic">
-                По данным <a href="https://www.forbes.com/sites/christopherrim/2025/05/02/how-the-explosion-of-private-consultants-has-changed-the-college-admissions-landscape/" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-medium">Forbes</a>, самый критический фактор успеха консалтинга по приему — это насколько хорошо менторы действительно понимают своих студентов.
+                <a href="https://www.forbes.com/sites/christopherrim/2025/05/02/how-the-explosion-of-private-consultants-has-changed-the-college-admissions-landscape/" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-medium">Forbes</a> утверждает: самый важный фактор успеха консалтинга—насколько хорошо менторы понимают студентов.
               </p>
               <p className="text-base text-foreground font-medium">
-                Мы молоды и только что вышли из процесса сами—мы помним точно, каково это, что работает и что нет. Наша близость к опыту означает, что мы искренне понимаем сегодняшние вызовы и можем относиться к вашим трудностям так, как отдаленные консультанты просто не могут.
+                Мы только что из процесса. Помним, каково это, что работает, что нет. Понимаем сегодняшние вызовы—не из учебников, из опыта.
               </p>
             </div>
           </Card>
@@ -160,11 +160,11 @@ const WhyUsRu = () => {
                       <span className="text-gold text-lg font-bold">✓</span>
                     </td>
                     <td className="text-center p-4">
-                      <span className="text-muted-foreground text-lg">✗</span>
+                      <span className="text-destructive text-lg">✗</span>
                     </td>
                   </tr>
                   <tr className="border-b border-border">
-                    <td className="p-4 font-medium text-foreground">Персональное внимание</td>
+                    <td className="p-4 font-medium text-foreground">Личное внимание</td>
                     <td className="text-center p-4">
                       <span className="text-destructive text-lg">✗</span>
                     </td>
@@ -188,7 +188,7 @@ const WhyUsRu = () => {
                     </td>
                   </tr>
                   <tr className="border-b border-border">
-                    <td className="p-4 font-medium text-foreground">Проверенный трек-рекорд</td>
+                    <td className="p-4 font-medium text-foreground">Доказанный трек-рекорд</td>
                     <td className="text-center p-4">
                       <span className="text-lg">✓</span>
                     </td>
@@ -196,11 +196,11 @@ const WhyUsRu = () => {
                       <span className="text-gold text-lg font-bold">✓</span>
                     </td>
                     <td className="text-center p-4">
-                      <span className="text-muted-foreground text-lg">✗</span>
+                      <span className="text-destructive text-lg">✗</span>
                     </td>
                   </tr>
                   <tr className="border-b border-border">
-                    <td className="p-4 font-medium text-foreground">Недавний личный опыт</td>
+                    <td className="p-4 font-medium text-foreground">Недавний опыт</td>
                     <td className="text-center p-4">
                       <span className="text-destructive text-lg">✗</span>
                     </td>
@@ -208,7 +208,7 @@ const WhyUsRu = () => {
                       <span className="text-gold text-lg font-bold">✓</span>
                     </td>
                     <td className="text-center p-4">
-                      <span className="text-muted-foreground text-lg">✗</span>
+                      <span className="text-destructive text-lg">✗</span>
                     </td>
                   </tr>
                   <tr>
@@ -229,8 +229,8 @@ const WhyUsRu = () => {
               </table>
             </div>
             
-            <p className="text-center text-sm text-muted-foreground italic max-w-2xl mx-auto">
-              Наша команда привносит разнообразный опыт—от стратегий стипендий и различий в обучении до заявок в магистратуру и карьерного коучинга—всё адаптировано к вашим уникальным потребностям.
+            <p className="text-center text-sm text-muted-foreground italic max-w-3xl mx-auto">
+              Крупные фирмы завышают статистику, разрешая клиентам подавать только туда, где высокие шансы—у нас нет таких ограничений. Наша команда предлагает стратегии стипендий, поддержку в учебе, заявки в магистратуру и карьерный коучинг под вас.
             </p>
           </div>
 
@@ -263,4 +263,4 @@ const WhyUsRu = () => {
   );
 };
 
-export default WhyUsRu;
+export default WhyTURu;

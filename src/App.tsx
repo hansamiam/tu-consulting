@@ -11,8 +11,8 @@ import Offerings from "./pages/Offerings";
 import OfferingsRu from "./pages/OfferingsRu";
 import FAQ from "./pages/FAQ";
 import FAQRu from "./pages/FAQRu";
-import WhyUs from "./pages/WhyUs";
-import WhyUsRu from "./pages/WhyUsRu";
+import WhyTU from "./pages/WhyTU";
+import WhyTURu from "./pages/WhyTURu";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,8 +32,11 @@ const App = () => (
           <Route path="/offerings/ru" element={<OfferingsRu />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/faq/ru" element={<FAQRu />} />
-          <Route path="/why-us" element={<WhyUs />} />
-          <Route path="/why-us/ru" element={<WhyUsRu />} />
+          <Route path="/why-tu" element={<WhyTU />} />
+          <Route path="/why-tu/ru" element={<WhyTURu />} />
+          {/* Legacy routes for backward compatibility */}
+          <Route path="/why-us" element={<WhyTU />} />
+          <Route path="/why-us/ru" element={<WhyTURu />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
