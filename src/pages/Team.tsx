@@ -28,7 +28,7 @@ const Team = () => {
       hometown: "Toronto, Canada",
       education: "Yale University",
       languages: "English, Korean (bilingual); Russian, Chinese (conversational)",
-      strengths: "Learning strategies, supporting students with ADHD, immigrants and third-culture kids, adjusting to new environments, natural sciences",
+      strengths: "Learning strategies, supporting students with ADHD, gap year students, immigrants and third-culture kids, adjusting to new environments, natural sciences",
       advice: "Don't hide your struggles; they make your story authentic and compelling",
       accomplishments: [
         "Research experience at Massachusetts General Hospital and Harvard Medical School",
@@ -99,7 +99,7 @@ const Team = () => {
       <Navigation language="en" />
       {/* Header */}
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 sticky top-16 z-40 shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-4">
           <Button
             variant="ghost"
             size="sm"
@@ -109,7 +109,6 @@ const Team = () => {
             <ArrowLeft className="h-4 w-4" />
             Back to Home
           </Button>
-          <LanguageSwitcher />
         </div>
       </header>
 

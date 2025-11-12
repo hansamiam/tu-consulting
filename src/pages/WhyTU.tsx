@@ -22,7 +22,7 @@ const WhyTU = () => {
       <Navigation language="en" />
       {/* Header */}
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 sticky top-16 z-40 shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-4">
           <Button
             variant="ghost"
             size="sm"
@@ -32,7 +32,6 @@ const WhyTU = () => {
             <ArrowLeft className="h-4 w-4" />
             Back to Home
           </Button>
-          <LanguageSwitcher />
         </div>
       </header>
 

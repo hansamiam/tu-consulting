@@ -46,7 +46,7 @@ const FAQRu = () => {
       <Navigation language="ru" />
       {/* Header */}
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 sticky top-16 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <Button
             variant="ghost"
             onClick={() => navigate("/ru")}
@@ -55,7 +55,6 @@ const FAQRu = () => {
             <ArrowLeft size={20} />
             Назад на главную
           </Button>
-          <LanguageSwitcher />
         </div>
       </header>
 

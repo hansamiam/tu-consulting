@@ -77,6 +77,7 @@ const Offerings = () => {
         "Application timeline planning",
         "University selection guidance",
         "Essay structure review (1 essay)",
+        "Mock admissions review & feedback",
         "Recommendation letter support",
         "Email support between sessions",
       ],
@@ -92,6 +93,7 @@ const Offerings = () => {
         "10 hours of comprehensive consulting",
         "Complete application review",
         "Essay editing & feedback (up to 3 essays)",
+        "Mock admissions review & feedback",
         "Recommendation letter strategy & review",
         "Interview preparation (1 session)",
         "Priority email support",
@@ -111,6 +113,7 @@ const Offerings = () => {
         "20 hours of comprehensive consulting",
         "Complete application management",
         "Unlimited essay revisions (all essays)",
+        "Mock admissions review & feedback",
         "Recommendation letter strategy & detailed review",
         "Mock interviews (3 sessions)",
         "Priority support with 24h response time",
@@ -164,7 +167,7 @@ const Offerings = () => {
       <Navigation language="en" />
       {/* Header */}
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 sticky top-16 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <Button
             variant="ghost"
             onClick={() => navigate("/")}
@@ -173,7 +176,6 @@ const Offerings = () => {
             <ArrowLeft size={20} />
             Back to Home
           </Button>
-          
         </div>
       </header>
 
@@ -181,7 +183,7 @@ const Offerings = () => {
         {/* Hero Section */}
         <div className="text-center mb-16">
           <div className="inline-block px-4 py-2 bg-accent/10 border border-accent/20 rounded-full mb-4">
-            <p className="text-accent font-semibold text-sm uppercase tracking-wide">First Cohort Special</p>
+            <p className="text-accent font-semibold text-sm uppercase tracking-wide">Launch Special</p>
           </div>
           <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mb-4">
             Our Services & Pricing
@@ -480,21 +482,23 @@ const Offerings = () => {
         </section>
 
         {/* Trust Section */}
-        <section className="mt-20 text-center">
-          <div className="max-w-2xl mx-auto space-y-4">
-            <p className="text-muted-foreground">
-              🎓 All consultations are led by consultants from top universities including Yale, Harvard, Cambridge, and Tsinghua
-            </p>
-            <p className="text-muted-foreground">
-              🌍 Available in Russian and English
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Questions? Email us at{" "}
-              <a href="mailto:team@topuniconsulting.com" className="text-accent hover:underline">
-                team@topuniconsulting.com
-              </a>
-            </p>
-          </div>
+        <section className="mt-20">
+          <Card className="border-gold/20 bg-card/50 backdrop-blur-sm">
+            <CardContent className="p-8 text-center space-y-4">
+              <p className="text-foreground font-medium">
+                Led by consultants from Yale, Harvard, Cambridge, and Tsinghua
+              </p>
+              <p className="text-muted-foreground">
+                Available in Russian and English
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Questions?{" "}
+                <a href="mailto:team@topuniconsulting.com" className="text-accent hover:underline font-medium">
+                  team@topuniconsulting.com
+                </a>
+              </p>
+            </CardContent>
+          </Card>
         </section>
       </main>
     </div>

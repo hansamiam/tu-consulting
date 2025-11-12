@@ -28,7 +28,7 @@ const TeamRu = () => {
       hometown: "Торонто, Канада",
       education: "Йельский университет",
       languages: "Английский, Корейский (двуязычный); Русский, Китайский (разговорный)",
-      strengths: "Стратегии обучения, поддержка студентов с СДВГ, иммигранты и студенты третьей культуры, адаптация к новой среде, естественные науки",
+      strengths: "Стратегии обучения, поддержка студентов с СДВГ, студенты gap year, иммигранты и студенты третьей культуры, адаптация к новой среде, естественные науки",
       advice: "Не скрывайте свои трудности — они делают вашу историю аутентичной и убедительной",
       accomplishments: [
         "Йельский университет (бакалавриат)",
@@ -100,7 +100,7 @@ const TeamRu = () => {
       <Navigation language="ru" />
       {/* Header */}
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 sticky top-16 z-40 shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-4">
           <Button
             variant="ghost"
             size="sm"
@@ -110,7 +110,6 @@ const TeamRu = () => {
             <ArrowLeft className="h-4 w-4" />
             Назад на главную
           </Button>
-          <LanguageSwitcher />
         </div>
       </header>
 

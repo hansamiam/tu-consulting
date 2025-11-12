@@ -47,10 +47,16 @@ All colors MUST be HSL.
     /* Gradients */
     --gradient-gold: linear-gradient(135deg, hsl(var(--gold)) 0%, hsl(var(--gold-light)) 100%);
     --gradient-overlay: linear-gradient(180deg, hsla(var(--navy), 0.8) 0%, hsla(var(--navy), 0.6) 100%);
+    --gradient-premium: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--gold)) 50%, hsl(var(--accent)) 100%);
+    
+    /* Shadows - Premium subtle elevation */
+    --shadow-premium: 0 8px 32px -8px hsl(var(--gold) / 0.15), 0 4px 16px -4px hsl(var(--primary) / 0.1);
+    --shadow-premium-hover: 0 12px 48px -12px hsl(var(--gold) / 0.25), 0 8px 24px -8px hsl(var(--primary) / 0.15);
     
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --transition-premium: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
     --sidebar-background: 0 0% 98%;
 
