@@ -48,6 +48,23 @@ const WhyTURu = () => {
             </p>
           </div>
 
+          {/* Forbes Section - Moved to top */}
+          <Card className="p-10 bg-gradient-to-br from-accent/10 to-primary/10 border-accent/30 shadow-xl">
+            <div className="max-w-4xl mx-auto space-y-6 text-center">
+              <p className="text-2xl md:text-3xl text-foreground leading-relaxed">
+                <a href="https://www.forbes.com/sites/christopherrim/2025/05/02/how-the-explosion-of-private-consultants-has-changed-the-college-admissions-landscape/" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-bold">Forbes</a> утверждает: самый важный фактор успеха консалтинга—<span className="font-bold">насколько хорошо менторы понимают студентов.</span>
+              </p>
+              <div className="border-t-2 border-accent/30 pt-6 mt-6">
+                <p className="text-xl md:text-2xl text-primary font-bold mb-3">
+                  Разница TopUni:
+                </p>
+                <p className="text-lg text-foreground">
+                  Мы <span className="font-semibold">только что из процесса</span>. Помним, каково это, что работает, что нет. Понимаем сегодняшние вызовы—<span className="font-semibold">не из учебников, из опыта.</span>
+                </p>
+              </div>
+            </div>
+          </Card>
+
           {/* Key Differentiators */}
           <div className="grid md:grid-cols-2 gap-8">
             <Card className="p-8 space-y-4 border-gold/30 bg-gradient-to-br from-card/80 to-accent/5 hover:shadow-xl transition-all">
@@ -73,7 +90,7 @@ const WhyTURu = () => {
             <Card className="p-8 space-y-4 border-accent/30 bg-gradient-to-br from-card/80 to-gold/5 hover:shadow-xl transition-all">
               <h3 className="text-2xl font-bold text-primary">Глобальный опыт</h3>
               <p className="text-muted-foreground">
-                Многим местным консультантам не хватает международного охвата. Наша команда прошла приемные комиссии на континентах, получила $500K+ стипендий и понимает разные системы из первых рук.
+                Многим местным консультантам не хватает международного охвата. Наша команда прошла приемные комиссии на континентах и понимает разные системы из первых рук с <span className="font-semibold">более чем 10-летним совокупным опытом работы с 150+ студентами</span>.
               </p>
               <div className="pt-4 border-t border-border/50">
                 <p className="text-sm text-foreground font-medium">Йель, Гарвард, Кембридж, Цинхуа—мы были там</p>
@@ -83,7 +100,7 @@ const WhyTURu = () => {
             <Card className="p-8 space-y-4 border-gold/30 bg-gradient-to-br from-card/80 to-accent/5 hover:shadow-xl transition-all">
               <h3 className="text-2xl font-bold text-primary">Доказанные результаты</h3>
               <p className="text-muted-foreground">
-                Получено $500K+ стипендий через строгие процессы. Наш опыт не теоретический—он доказан реальными успехами и неудачами.
+                Получено <span className="font-semibold">$500K+ стипендий</span> через строгие процессы. Наш опыт не теоретический—он доказан реальными успехами и неудачами.
               </p>
               <div className="pt-4 border-t border-border/50">
                 <p className="text-sm text-foreground font-medium">Проверенные стратегии, которые действительно работают</p>
@@ -91,57 +108,18 @@ const WhyTURu = () => {
             </Card>
           </div>
 
-          {/* Our Philosophy */}
-          <Card className="p-12 bg-gradient-to-br from-primary/5 via-accent/5 to-gold/5 border-primary/20">
-            <div className="max-w-4xl mx-auto space-y-6 text-center">
-              <h2 className="text-3xl md:text-4xl font-bold text-primary">Идеальные оценки не требуются</h2>
-              <p className="text-lg text-muted-foreground">
+          {/* Our Philosophy - made smaller */}
+          <Card className="p-8 bg-gradient-to-br from-primary/5 via-accent/5 to-gold/5 border-primary/20">
+            <div className="max-w-3xl mx-auto space-y-4 text-center">
+              <h2 className="text-2xl md:text-3xl font-bold text-primary">Идеальные оценки не требуются</h2>
+              <p className="text-base text-muted-foreground">
                 Топовые университеты не только для "идеальных" студентов. Наша команда столкнулась с различиями в обучении, культурными барьерами, финансовыми ограничениями и неудачами. Мы учились на этих трудностях—теперь помогаем вам избежать тех же ошибок.
               </p>
-              <p className="text-lg text-foreground font-medium">
+              <p className="text-base text-foreground font-medium">
                 Низкие оценки? Необычное происхождение? Уникальные трудности? Это делает заявления убедительными. Мы помогаем студентам сделать их лучший шанс, откуда бы они ни начинали.
               </p>
             </div>
           </Card>
-
-          {/* Forbes Article & Insight */}
-          <Card className="p-8 bg-gradient-to-br from-accent/5 to-primary/5 border-accent/20">
-            <div className="max-w-4xl mx-auto space-y-4">
-              <p className="text-lg text-muted-foreground italic">
-                <a href="https://www.forbes.com/sites/christopherrim/2025/05/02/how-the-explosion-of-private-consultants-has-changed-the-college-admissions-landscape/" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-medium">Forbes</a> утверждает: самый важный фактор успеха консалтинга—насколько хорошо менторы понимают студентов.
-              </p>
-              <p className="text-base text-foreground font-medium">
-                Мы только что из процесса. Помним, каково это, что работает, что нет. Понимаем сегодняшние вызовы—не из учебников, из опыта.
-              </p>
-            </div>
-          </Card>
-
-          {/* Разница TopUni — тезисы в карточках */}
-          <section className="space-y-6">
-            <h2 className="text-3xl md:text-4xl font-bold text-center bg-gradient-to-r from-primary to-gold bg-clip-text text-transparent">
-              Разница TopUni
-            </h2>
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card className="p-6 bg-card/60 border-border/60">
-                <p className="text-foreground"><strong>Личное внимание вместо объёма.</strong> Мы ограничиваем нагрузку, чтобы каждый студент получал фокус.</p>
-              </Card>
-              <Card className="p-6 bg-card/60 border-border/60">
-                <p className="text-foreground"><strong>Без ограничений по подачам.</strong> Мы не ограничиваем направления — вашу планку задают ваши цели.</p>
-              </Card>
-              <Card className="p-6 bg-card/60 border-border/60">
-                <p className="text-foreground"><strong>Недавний и релевантный опыт.</strong> Актуальные выпускники и студенты, которые помнят, что работает.</p>
-              </Card>
-              <Card className="p-6 bg-card/60 border-border/60">
-                <p className="text-foreground"><strong>Прозрачные результаты.</strong> Без завышенной статистики — честные процессы и итоги.</p>
-              </Card>
-              <Card className="p-6 bg-card/60 border-border/60">
-                <p className="text-foreground"><strong>Глобальный охват.</strong> США, Великобритания, Канада, Китай, Корея — опыт на континентах.</p>
-              </Card>
-              <Card className="p-6 bg-card/60 border-border/60">
-                <p className="text-foreground"><strong>Фокус на стипендиях.</strong> Более $500K грантов — стратегии максимизации финансирования.</p>
-              </Card>
-            </div>
-          </section>
 
           {/* CTA Section */}
           <Card className="p-12 bg-gradient-to-br from-primary/10 to-gold/10 border-primary/30 text-center space-y-6">
