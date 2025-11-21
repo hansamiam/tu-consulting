@@ -13,11 +13,11 @@ const FAQ = () => {
   const faqs = [
     {
       question: "Why TopUni Consulting?",
-      answer: "We're different. Our consultants from Yale, Harvard, Cambridge, and Tsinghua didn't have perfect journeys—we faced setbacks, made mistakes, and learned from them. That's exactly why we can help you. We've been through the real struggles of the application process and know how to navigate them. Plus, we bridge the gap others can't: large firms give you minimal attention despite premium prices, while smaller services often lack global experience and proven results. We offer world-class expertise with genuine personal attention at accessible prices."
+      answer: "We're different. It's true that our consultants from Yale, Harvard, Cambridge, and Tsinghua have seen a lot of success over the years—but just as much, we've faced our fair share of challenges, setbacks, made mistakes, and learned from them. That's exactly why we can help you. We've been through the real struggles of the application process, conquered them, and know how to navigate them. Plus, we bridge the gap others can't: large firms give you minimal attention despite premium prices, while smaller services often lack global experience and proven results. We offer world-class expertise with genuine personal attention at accessible prices."
     },
     {
       question: "Who are your consultants?",
-      answer: "Current students and recent graduates from top universities (Yale, Harvard, Cambridge, Tsinghua) who succeeded across diverse disciplines—STEM, humanities, business, and arts. They've personally won prestigious scholarships, navigated competitive admissions, and understand what it takes because they've done it themselves. More importantly, they remember the challenges and know how to guide you through yours."
+      answer: "Current students and recent graduates from top universities (Yale, Harvard, Cambridge, Tsinghua) who succeeded across natural sciences, social sciences, and the humanities. They've personally won prestigious scholarships, navigated competitive admissions, and understand what it takes because they've done it themselves. More importantly, they remember the challenges and know how to guide you through yours."
     },
     {
       question: "Who is this for?",
@@ -25,11 +25,11 @@ const FAQ = () => {
     },
     {
       question: "Do I need perfect grades to work with you?",
-      answer: "Absolutely not. We specialize in helping students from all backgrounds and circumstances—whether you're dealing with lower grades, unique challenges, non-traditional paths, or just need guidance to take your best shot. You don't need to be a straight-A student to benefit from expert consulting. Our job is to help you present the strongest possible application with whatever starting point you have. Every student deserves a chance to reach for their dreams."
+      answer: "Absolutely not. We specialize in helping students from all backgrounds and circumstances—whether you're dealing with lower grades, unique challenges, non-traditional paths, or just need guidance to take your best shot. You don't need to be a straight-A student to benefit from expert consulting. In fact, we welcome and encourage you—that much more of a comeback story is waiting to be written. Our job is to help you present the strongest possible application with whatever starting point you have. Every student deserves a chance to reach for their dreams."
     },
     {
-      question: "Is this just for Ivy League applications?",
-      answer: "No! While our consultants have Ivy League experience, we help students apply to top universities worldwide—US, UK, Canada, Europe, China, and beyond. Whether you're aiming for Harvard, Oxford, McGill, or Tsinghua, we have the expertise. We focus on finding the right fit for YOU, not just the most prestigious name."
+      question: "Is this just for Ivy League / Oxbridge applications?",
+      answer: "No! While our consultants have Ivy League and Oxbridge experience, we help students apply to top universities worldwide—US, UK, Canada, Europe, China, and beyond. Whether you're aiming for Harvard, Oxford, McGill, or Tsinghua, we have the expertise. We focus on finding the right fit for YOU, not just the most prestigious name."
     }
   ];
 
@@ -68,7 +68,7 @@ const FAQ = () => {
             <div className="h-1 w-32 bg-gradient-to-r from-primary to-gold mx-auto rounded-full mb-4"></div>
           </div>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Everything you need to know about TopUni Consulting
+            Everything you need to know
           </p>
         </div>
 

@@ -48,6 +48,23 @@ const WhyTU = () => {
             </p>
           </div>
 
+          {/* Forbes Section - Moved to top */}
+          <Card className="p-10 bg-gradient-to-br from-accent/10 to-primary/10 border-accent/30 shadow-xl">
+            <div className="max-w-4xl mx-auto space-y-6 text-center">
+              <p className="text-2xl md:text-3xl text-foreground leading-relaxed">
+                <a href="https://www.forbes.com/sites/christopherrim/2025/05/02/how-the-explosion-of-private-consultants-has-changed-the-college-admissions-landscape/" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-bold">Forbes</a> says the most critical factor in consulting success: <span className="font-bold">how well mentors understand their students.</span>
+              </p>
+              <div className="border-t-2 border-accent/30 pt-6 mt-6">
+                <p className="text-xl md:text-2xl text-primary font-bold mb-3">
+                  The TopUni Difference:
+                </p>
+                <p className="text-lg text-foreground">
+                  We're <span className="font-semibold">fresh out of the process</span>. We remember what it feels like, what works, what doesn't. We understand today's challenges—<span className="font-semibold">not from textbooks, from experience.</span>
+                </p>
+              </div>
+            </div>
+          </Card>
+
           {/* Key Differentiators */}
           <div className="grid md:grid-cols-2 gap-8">
             <Card className="p-8 space-y-4 border-gold/30 bg-gradient-to-br from-card/80 to-accent/5 hover:shadow-xl transition-all">
@@ -73,7 +90,7 @@ const WhyTU = () => {
             <Card className="p-8 space-y-4 border-accent/30 bg-gradient-to-br from-card/80 to-gold/5 hover:shadow-xl transition-all">
               <h3 className="text-2xl font-bold text-primary">Global Experience</h3>
               <p className="text-muted-foreground">
-                Many local consultants lack international reach. Our team navigated admissions across continents, secured $500K+ in scholarships, and understand diverse systems firsthand.
+                Many local consultants lack international reach. Our team navigated admissions across continents and understand diverse systems firsthand with <span className="font-semibold">over 10 years of combined experience working with 150+ students</span>.
               </p>
               <div className="pt-4 border-t border-border/50">
                 <p className="text-sm text-foreground font-medium">Yale, Harvard, Cambridge, Tsinghua—we've been there</p>
@@ -83,7 +100,7 @@ const WhyTU = () => {
             <Card className="p-8 space-y-4 border-gold/30 bg-gradient-to-br from-card/80 to-accent/5 hover:shadow-xl transition-all">
               <h3 className="text-2xl font-bold text-primary">Proven Results</h3>
               <p className="text-muted-foreground">
-                Secured $500K+ in scholarships through rigorous processes. Our expertise isn't theoretical—it's proven through real successes and setbacks.
+                Secured <span className="font-semibold">$500K+ in scholarships</span> through rigorous processes. Our expertise isn't theoretical—it's proven through real successes and setbacks.
               </p>
               <div className="pt-4 border-t border-border/50">
                 <p className="text-sm text-foreground font-medium">Tested strategies that actually work</p>
