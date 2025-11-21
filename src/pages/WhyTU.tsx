@@ -108,57 +108,19 @@ const WhyTU = () => {
             </Card>
           </div>
 
-          {/* Our Philosophy */}
-          <Card className="p-12 bg-gradient-to-br from-primary/5 via-accent/5 to-gold/5 border-primary/20">
-            <div className="max-w-4xl mx-auto space-y-6 text-center">
-              <h2 className="text-3xl md:text-4xl font-bold text-primary">Perfect Grades Not Required</h2>
-              <p className="text-lg text-muted-foreground">
+          {/* Our Philosophy - made smaller */}
+          <Card className="p-8 bg-gradient-to-br from-primary/5 via-accent/5 to-gold/5 border-primary/20">
+            <div className="max-w-3xl mx-auto space-y-4 text-center">
+              <h2 className="text-2xl md:text-3xl font-bold text-primary">Perfect Grades Not Required</h2>
+              <p className="text-base text-muted-foreground">
                 Top universities aren't just for "perfect" students. Our team faced learning differences, cultural barriers, financial constraints, and setbacks. We learned from those struggles—now we help you avoid the same mistakes.
               </p>
-              <p className="text-lg text-foreground font-medium">
+              <p className="text-base text-foreground font-medium">
                 Lower grades? Unusual background? Unique challenges? These make compelling applications. We help students make their best shot, wherever they start.
               </p>
             </div>
           </Card>
 
-          {/* Forbes Article & Insight */}
-          <Card className="p-8 bg-gradient-to-br from-accent/5 to-primary/5 border-accent/20">
-            <div className="max-w-4xl mx-auto space-y-4">
-              <p className="text-lg text-muted-foreground italic">
-                <a href="https://www.forbes.com/sites/christopherrim/2025/05/02/how-the-explosion-of-private-consultants-has-changed-the-college-admissions-landscape/" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-medium">Forbes</a> says the most critical factor in consulting success: how well mentors understand their students.
-              </p>
-              <p className="text-base text-foreground font-medium">
-                We're fresh out of the process. We remember what it feels like, what works, what doesn't. We understand today's challenges—not from textbooks, from experience.
-              </p>
-            </div>
-          </Card>
-
-          {/* The TopUni Difference - Boxed statements */}
-          <section className="space-y-6">
-            <h2 className="text-3xl md:text-4xl font-bold text-center bg-gradient-to-r from-primary to-gold bg-clip-text text-transparent">
-              The TopUni Difference
-            </h2>
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card className="p-6 bg-card/60 border-border/60">
-                <p className="text-foreground"><strong>Personal attention over volume.</strong> We cap client loads so every student gets focused support.</p>
-              </Card>
-              <Card className="p-6 bg-card/60 border-border/60">
-                <p className="text-foreground"><strong>No restrictive applications.</strong> We never limit where you can apply—your ambition sets the ceiling.</p>
-              </Card>
-              <Card className="p-6 bg-card/60 border-border/60">
-                <p className="text-foreground"><strong>Recent, relevant experience.</strong> Current and recent grads who remember the process—what works and what doesn’t.</p>
-              </Card>
-              <Card className="p-6 bg-card/60 border-border/60">
-                <p className="text-foreground"><strong>Transparent results.</strong> No inflated stats or cherry-picking—just honest guidance and outcomes.</p>
-              </Card>
-              <Card className="p-6 bg-card/60 border-border/60">
-                <p className="text-foreground"><strong>Global reach.</strong> US, UK, Canada, China, Korea—cross‑continental expertise for your goals.</p>
-              </Card>
-              <Card className="p-6 bg-card/60 border-border/60">
-                <p className="text-foreground"><strong>Scholarship-focused.</strong> Over $500K in awards—strategy to maximize funding opportunities.</p>
-              </Card>
-            </div>
-          </section>
 
           {/* CTA Section */}
           <Card className="p-12 bg-gradient-to-br from-primary/10 to-gold/10 border-primary/30 text-center space-y-6">
