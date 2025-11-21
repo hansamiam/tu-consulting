@@ -78,8 +78,6 @@ const Offerings = () => {
         "University selection guidance",
         "Essay structure review (1 essay)",
         "Mock admissions review & feedback",
-        "Recommendation letter support",
-        "Email support between sessions",
       ],
       popular: false,
     },
@@ -96,7 +94,7 @@ const Offerings = () => {
         "Mock admissions review & feedback",
         "Recommendation letter strategy & review",
         "Interview preparation (1 session)",
-        "Priority email support",
+        "Email support between sessions",
         "Application proofreading",
         "Scholarship guidance",
       ],
@@ -116,7 +114,7 @@ const Offerings = () => {
         "Mock admissions review & feedback",
         "Recommendation letter strategy & detailed review",
         "Mock interviews (3 sessions)",
-        "Priority support with 24h response time",
+        "Priority support throughout application cycle",
         "Personalized success strategy",
         "Post-application guidance",
         "Scholarship search assistance",
@@ -130,8 +128,8 @@ const Offerings = () => {
 
   const consultations = [
     {
-      name: "Quick Consultation",
-      price: "$60",
+      name: "Diagnostic Consultation",
+      price: "$50",
       duration: "25 minutes",
       description: "Perfect for initial conversation and questions",
       features: [
@@ -141,8 +139,8 @@ const Offerings = () => {
       ],
     },
     {
-      name: "In-Depth Consultation",
-      price: "$100",
+      name: "Strategy Consultation",
+      price: "$90",
       duration: "50 minutes",
       description: "Extended session to discuss your journey",
       features: [

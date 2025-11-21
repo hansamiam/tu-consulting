@@ -28,8 +28,7 @@ const Team = () => {
       hometown: "Toronto, Canada",
       education: "Yale University",
       languages: "English, Korean (bilingual); Russian, Chinese (conversational)",
-      strengths: "Learning strategies, supporting students with ADHD, gap year students, immigrants and third-culture kids, adjusting to new environments, natural sciences",
-      advice: "Don't hide your struggles; they make your story authentic and compelling",
+      strengths: "Learning strategies, gap year students, natural sciences, immigrants and third-culture kids, supporting students with ADHD",
       accomplishments: [
         "Research experience at Massachusetts General Hospital and Harvard Medical School",
         "Fully-funded programs in China (Tsinghua University) and Japan (Waseda University)",
@@ -44,7 +43,6 @@ const Team = () => {
       education: "American University of Central Asia | Korea Development Institute (KDI) | University of Cambridge | Tsinghua University",
       languages: "Russian (native), Kyrgyz (native), English (advanced)",
       strengths: "Scholarships and funding strategies, self-funded education pathways, cross-cultural adaptation, compelling storytelling, social sciences",
-      advice: "Your story matters more than perfect grades; learn to tell it powerfully",
       accomplishments: [
         "US Central Asia Education Fellowship — fully funded BA at AUCA",
         "Capstone Finalist — fully funded 3-month internship in Washington, DC",
@@ -60,8 +58,7 @@ const Team = () => {
       hometown: "North Augusta, South Carolina, USA",
       education: "University of South Carolina | Harvard University",
       languages: "English (native), Russian (advanced), Kyrgyz (lower intermediate)",
-      strengths: "Graduate program applications, test-taking strategies, academic research, essay refinement, presentation skills, languages and humanities",
-      advice: "Focus on clarity and authenticity in your writing—admissions committees read thousands of essays",
+      strengths: "Graduate program applications, academic research, essay refinement, languages and humanities, test-taking strategies",
       accomplishments: [
         "Foreign Language and Area Studies (FLAS) Fellow, 2024–2026",
         "Ethnographic research in Kyrgyzstan (2025)",
@@ -75,8 +72,7 @@ const Team = () => {
       hometown: "Bishkek, Kyrgyzstan",
       education: "University of Oregon",
       languages: "English (fluent), Kyrgyz (native), Russian (fluent)",
-      strengths: "Recommendation letter guidance, career coaching, early-to-mid career professionals, reference support, institutional advising, negotiation, international networking",
-      advice: "Build genuine relationships with mentors early—strong recommendations come from authentic connections",
+      strengths: "Recommendation letter guidance, career coaching, early-to-mid career professionals, institutional advising, international networking",
       accomplishments: [
         "American Association of University Women Fellowship (2002)",
         "Central Asia Research Fellow, Elliott School of International Affairs, GWU (2019)",
@@ -240,10 +236,6 @@ const Team = () => {
                     <div>
                       <h3 className="font-semibold text-gold text-base mb-2">Specialized in:</h3>
                       <p className="text-muted-foreground">{member.strengths}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gold text-base mb-2">One sentence advice:</h3>
-                      <p className="text-muted-foreground italic font-medium">{member.advice}</p>
                     </div>
                   </div>
                 </DialogContent>
