@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Check, Star, ArrowLeft } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import Navigation from "@/components/Navigation";
@@ -26,12 +27,15 @@ const OfferingsRu = () => {
     currentChallenges: "",
     goals: "",
   });
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedConsultation, setSelectedConsultation] = useState<string>("");
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleFormSubmit = (consultationType: string) => {
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!formData.name || !formData.email) {
       toast({
         title: "Необходимые поля не заполнены",
@@ -56,6 +60,7 @@ const OfferingsRu = () => {
       currentChallenges: "",
       goals: "",
     });
+    setIsDialogOpen(false);
   };
 
   const packages = [
@@ -66,7 +71,7 @@ const OfferingsRu = () => {
       discount: "Скидка 15%",
       hours: "5 часов",
       features: [
-        "5 часов комплексных консультаций",
+        "5 сессий комплексных консультаций",
         "Планирование сроков подачи",
         "Помощь в выборе университета",
         "Пробное рассмотрение заявки и обратная связь",
@@ -78,9 +83,9 @@ const OfferingsRu = () => {
       originalPrice: "$1,599",
       price: "$1,199",
       discount: "Скидка 25%",
-      hours: "10 часов",
+      hours: "10 сессий",
       features: [
-        "10 часов комплексных консультаций",
+        "10 сессий комплексных консультаций",
         "Полная проверка заявки",
         "Редактирование эссе",
         "Пробное рассмотрение заявки и обратная связь",
@@ -96,9 +101,9 @@ const OfferingsRu = () => {
       originalPrice: "$2,999",
       price: "$1,949",
       discount: "Скидка 35%",
-      hours: "20 часов",
+      hours: "20 сессий",
       features: [
-        "20 часов комплексных консультаций",
+        "20 сессий комплексных консультаций",
         "Полное управление заявкой",
         "Неограниченные правки эссе",
         "Пробное рассмотрение заявки и обратная связь",
@@ -271,10 +276,10 @@ const OfferingsRu = () => {
                   </ul>
                   <Button
                     variant="outline"
-                    className="w-full"
+                    className="w-full border-accent/30"
                     onClick={() => {
-                      const formSection = document.getElementById("consultation-form");
-                      formSection?.scrollIntoView({ behavior: "smooth" });
+                      setSelectedConsultation(consultation.name);
+                      setIsDialogOpen(true);
                     }}
                   >
                     Забронировать
@@ -285,17 +290,16 @@ const OfferingsRu = () => {
           </div>
         </section>
 
-        <section id="consultation-form" className="max-w-3xl mx-auto">
-          <Card className="border-accent/20 bg-gradient-to-br from-accent/5 to-transparent">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Максимизируйте вашу консультацию</CardTitle>
-              <CardDescription className="text-base">
-                Помогите нам подготовиться к вашей сессии, поделившись информацией. Чем больше деталей вы предоставите,
-                тем больше пользы вы получите от консультации.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form className="space-y-6">
+        {/* Consultation Dialog */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl">Максимизируйте вашу {selectedConsultation}</DialogTitle>
+              <DialogDescription className="text-base">
+                Помогите нам подготовиться к вашей сессии. Чем больше деталей вы предоставите, тем больше пользы вы получите от консультации.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleFormSubmit} className="space-y-6 mt-4">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="name">Полное имя *</Label>
@@ -392,28 +396,18 @@ const OfferingsRu = () => {
                   />
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                  <Button
-                    type="button"
-                    variant="gold"
-                    className="flex-1"
-                    onClick={() => handleFormSubmit("25min")}
-                  >
-                    Забронировать 25-мин ($60)
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="gold"
-                    className="flex-1"
-                    onClick={() => handleFormSubmit("50min")}
-                  >
-                    Забронировать 50-мин ($100)
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </section>
+              <div className="flex gap-4 pt-4">
+                <Button
+                  type="submit"
+                  variant="gold"
+                  className="flex-1"
+                >
+                  Отправить и забронировать
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+         </Dialog>
 
         {/* Cohort Intake Section */}
         <section id="cohort-section" className="mt-20">
