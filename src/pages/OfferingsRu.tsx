@@ -30,6 +30,9 @@ const OfferingsRu = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedConsultation, setSelectedConsultation] = useState<{name: string; price: string}>({name: "", price: ""});
+  const [selectedPackage, setSelectedPackage] = useState<{name: string; price: string}>({name: "", price: ""});
+  const [isPackageDialogOpen, setIsPackageDialogOpen] = useState(false);
+  const [isPackagePaymentOpen, setIsPackagePaymentOpen] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -49,6 +52,22 @@ const OfferingsRu = () => {
     // Close form dialog and open payment dialog
     setIsDialogOpen(false);
     setIsPaymentDialogOpen(true);
+  };
+
+  const handlePackageFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email) {
+      toast({
+        title: "Необходимые поля не заполнены",
+        description: "Пожалуйста, укажите ваше имя и email",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Close form dialog and open payment dialog
+    setIsPackageDialogOpen(false);
+    setIsPackagePaymentOpen(true);
   };
 
 
@@ -164,9 +183,12 @@ const OfferingsRu = () => {
         </div>
 
         <section className="mb-20">
-          <h2 className="font-heading text-3xl font-bold text-center mb-12 text-foreground">
+          <h2 className="font-heading text-3xl font-bold text-center mb-4 text-foreground">
             Консультационные пакеты
           </h2>
+          <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-12">
+            Хотя это не обязательно, мы настоятельно рекомендуем забронировать диагностическую или стратегическую консультацию, чтобы лучше понять, что мы предлагаем, прежде чем покупать пакет.
+          </p>
           <div className="grid md:grid-cols-3 gap-8">
             {packages.map((pkg, index) => (
               <Card
@@ -220,10 +242,8 @@ const OfferingsRu = () => {
                     variant={pkg.popular ? "gold" : "default"}
                     className="w-full"
                     onClick={() => {
-                      toast({
-                        title: "Скоро!",
-                        description: "Бронирование пакетов скоро будет доступно.",
-                      });
+                      setSelectedPackage({name: pkg.name, price: pkg.price});
+                      setIsPackageDialogOpen(true);
                     }}
                   >
                     Выбрать пакет
@@ -398,7 +418,7 @@ const OfferingsRu = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Payment Dialog */}
+        {/* Consultation Payment Dialog */}
         <PaymentDialog
           open={isPaymentDialogOpen}
           onOpenChange={setIsPaymentDialogOpen}
@@ -407,58 +427,133 @@ const OfferingsRu = () => {
           language="ru"
         />
 
-        {/* Cohort Intake Section */}
-        <section id="cohort-section" className="mt-20">
-          <Card className="border-accent/30 bg-gradient-to-br from-accent/10 via-gold/5 to-primary/5 backdrop-blur-sm shadow-xl">
-            <CardHeader className="text-center">
-              <div className="inline-block mx-auto px-4 py-2 bg-accent/20 border border-accent/30 rounded-full mb-2">
-                <p className="text-accent font-semibold text-sm">ПЕРВАЯ КОГОРТА - СКОРО ЗАПУСК</p>
+        {/* Package Form Dialog */}
+        <Dialog open={isPackageDialogOpen} onOpenChange={setIsPackageDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl">Забронируйте ваш {selectedPackage.name}</DialogTitle>
+              <DialogDescription className="text-base">
+                Помогите нам подготовиться к вашей программе. Чем больше деталей вы предоставите, тем лучше мы сможем адаптировать наши услуги к вашим потребностям.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handlePackageFormSubmit} className="space-y-6 mt-4">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Полное имя *</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    placeholder="Иван Иванов"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="ivan@example.com"
+                    required
+                  />
+                </div>
               </div>
-              <CardTitle className="text-3xl md:text-4xl bg-gradient-to-r from-gold to-primary bg-clip-text text-transparent">Присоединяйтесь к нашей первой когорте</CardTitle>
-              <CardDescription className="text-base max-w-2xl mx-auto mt-4">
-                Станьте частью нашей первой когорты и получите исключительное внимание на старте. 
-                <span className="block mt-2 text-accent font-medium">
-                  Члены первой когорты получают внимание премиум-уровня по стандартной цене.
-                </span>
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-center space-y-6">
-              <div className="bg-primary/5 border border-primary/20 rounded-lg p-6 max-w-2xl mx-auto">
-                <p className="text-foreground font-semibold text-lg mb-2">Почему присоединиться к первой когорте?</p>
-                <ul className="text-sm text-muted-foreground space-y-2 text-left max-w-lg mx-auto">
-                  <li className="flex items-start gap-2">
-                    <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
-                    <span>Скидка для первой когорты: 40%</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
-                    <span>Дополнительное внимание, пока мы совершенствуем процесс с первыми участниками</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
-                    <span>Приоритетное планирование и быстрая обработка</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
-                    <span>Ограниченные места обеспечивают персональное руководство для вашего цикла подачи</span>
-                  </li>
-                </ul>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Телефон</Label>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    placeholder="+7123456789"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="currentGrade">Текущий класс/курс</Label>
+                  <Input
+                    id="currentGrade"
+                    name="currentGrade"
+                    value={formData.currentGrade}
+                    onChange={handleInputChange}
+                    placeholder="например, 11 класс"
+                  />
+                </div>
               </div>
-              <Button
-                variant="gold"
-                size="lg"
-                onClick={() => {
-                  toast({
-                    title: "Скоро!",
-                    description: "Прием в когорту откроется в ближайшее время. Присоединяйтесь к списку ожидания на главной странице!",
-                  });
-                }}
-              >
-                Подать заявку в первую когорту
-              </Button>
-            </CardContent>
-          </Card>
-        </section>
+
+              <div className="space-y-2">
+                <Label htmlFor="targetUniversities">Целевые университеты</Label>
+                <Textarea
+                  id="targetUniversities"
+                  name="targetUniversities"
+                  value={formData.targetUniversities}
+                  onChange={handleInputChange}
+                  placeholder="Перечислите университеты, которые вас интересуют..."
+                  rows={3}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="intendedMajor">Планируемая специальность</Label>
+                <Input
+                  id="intendedMajor"
+                  name="intendedMajor"
+                  value={formData.intendedMajor}
+                  onChange={handleInputChange}
+                  placeholder="например, Компьютерные науки, Бизнес"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="currentChallenges">Текущие трудности</Label>
+                <Textarea
+                  id="currentChallenges"
+                  name="currentChallenges"
+                  value={formData.currentChallenges}
+                  onChange={handleInputChange}
+                  placeholder="Какие основные проблемы или трудности у вас с процессом подачи документов?"
+                  rows={4}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="goals">Чего вы хотите достичь от этой программы?</Label>
+                <Textarea
+                  id="goals"
+                  name="goals"
+                  value={formData.goals}
+                  onChange={handleInputChange}
+                  placeholder="Будьте конкретны в том, что вы хотите получить от нашей программы..."
+                  rows={4}
+                />
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <Button
+                  type="submit"
+                  variant="gold"
+                  className="flex-1"
+                >
+                  Продолжить к оплате
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Package Payment Dialog */}
+        <PaymentDialog
+          open={isPackagePaymentOpen}
+          onOpenChange={setIsPackagePaymentOpen}
+          consultationType={selectedPackage.name}
+          price={selectedPackage.price}
+          language="ru"
+        />
 
         {/* Trust Section */}
         <section className="mt-20 text-center">

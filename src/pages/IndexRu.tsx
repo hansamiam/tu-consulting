@@ -1,65 +1,12 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Instagram } from "lucide-react";
 import heroImage from "@/assets/hero-campus.jpg";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import Navigation from "@/components/Navigation";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 
 const IndexRu = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [email, setEmail] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleWaitlistSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!email.trim()) {
-      toast({
-        title: "Ошибка",
-        description: "Пожалуйста, введите действительный адрес электронной почты",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const { error } = await supabase
-        .from('waitlist_emails')
-        .insert([{ email: email.trim().toLowerCase() }]);
-
-      if (error) {
-        if (error.code === '23505') {
-          toast({
-            title: "Уже зарегистрирован!",
-            description: "Этот адрес уже в нашем списке ожидания. Мы уведомим вас о запуске!",
-          });
-        } else {
-          throw error;
-        }
-      } else {
-        toast({
-          title: "Успешно присоединились! 🎉",
-          description: "Спасибо за ваш интерес! Мы будем держать вас в курсе нашего запуска.",
-        });
-        setEmail("");
-      }
-    } catch (error) {
-      console.error('Error submitting to waitlist:', error);
-      toast({
-        title: "Ошибка",
-        description: "Что-то пошло не так. Пожалуйста, попробуйте еще раз.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
 
   return (
@@ -82,42 +29,29 @@ const IndexRu = () => {
             </h2>
             <div className="w-20 sm:w-24 h-1 bg-gold mx-auto rounded-full" />
           </div>
-          {/* Main Headline - First Cohort */}
+          {/* Main Headline */}
           <div className="mb-6 sm:mb-8 space-y-4">
             <div className="inline-block px-6 sm:px-8 py-3 sm:py-4 border-2 border-gold/30 rounded-lg backdrop-blur-sm">
               <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-gold leading-tight tracking-tight">
-                Запуск первой когорты
+                Открыто в Кыргызстане
               </h1>
             </div>
             <p className="text-primary-foreground/80 text-base sm:text-lg max-w-xl mx-auto">
-              Станьте частью нашей первой когорты—ограниченные места с преимуществами основателей
+              Премиальный консалтинг по поступлению в Центральной Азии—Скидка при запуске с кодом LAUNCH30
             </p>
           </div>
 
-
-          {/* Waitlist Form */}
-          <form onSubmit={handleWaitlistSubmit} className="max-w-md mx-auto mb-6 sm:mb-8 px-4">
-            <p className="text-primary-foreground/80 text-sm mb-3">Присоединяйтесь к списку ожидания—мы уведомим вас о запуске приема</p>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
-              <input
-                type="email"
-                placeholder="Введите свой email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full sm:flex-1 px-4 py-3 rounded-md bg-primary-foreground/10 border border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/50 focus:outline-none focus:border-gold focus:bg-primary-foreground/15 transition-all text-base"
-                required
-                disabled={isSubmitting}
-              />
-              <Button
-                type="submit"
-                variant="gold"
-                className="self-center px-8 py-3 sm:w-auto whitespace-nowrap"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Отправка..." : "Присоединиться"}
-              </Button>
-            </div>
-          </form>
+          {/* Call to Action */}
+          <div className="max-w-md mx-auto mb-6 sm:mb-8 px-4">
+            <Button 
+              variant="gold"
+              size="lg"
+              className="text-lg px-12 py-6"
+              onClick={() => navigate('/offerings-ru')}
+            >
+              Изучить наши услуги
+            </Button>
+          </div>
 
           {/* Social Links */}
           <div className="flex gap-6 justify-center mb-6 sm:mb-8">
