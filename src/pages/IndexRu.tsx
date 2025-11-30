@@ -75,7 +75,7 @@ const IndexRu = () => {
               variant="gold"
               size="lg"
               className="text-lg px-12 py-6 hover:scale-105 transition-transform duration-200"
-              onClick={() => navigate('/offerings-ru')}
+              onClick={() => navigate('/offerings/ru')}
             >
               Изучить наши услуги
             </Button>
