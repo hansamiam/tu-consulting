@@ -70,7 +70,7 @@ const WhyTU = () => {
             <Card className="p-8 space-y-4 border-gold/30 bg-gradient-to-br from-card/80 to-accent/5 hover:shadow-xl transition-all">
               <h3 className="text-2xl font-bold text-primary">Small Team, Big Impact</h3>
               <p className="text-muted-foreground">
-                Unlike large firms where you're just a number, our small team means every consultant brings top-tier expertise. You work directly with someone who's been through it themselves—recently.
+                Unlike large firms where you're just a number, our small team means every consultant brings top-tier expertise. We bring top-tier Western consulting methodology and resources directly to you—bilingual support in English and Russian means nothing gets lost in translation.
               </p>
               <div className="pt-4 border-t border-border/50">
                 <p className="text-sm text-foreground font-medium">Every team member is hand-picked for excellence</p>
@@ -80,7 +80,7 @@ const WhyTU = () => {
             <Card className="p-8 space-y-4 border-primary/30 bg-gradient-to-br from-card/80 to-primary/5 hover:shadow-xl transition-all">
               <h3 className="text-2xl font-bold text-primary">Personal Attention</h3>
               <p className="text-muted-foreground">
-                Large firms charge premium but spread mentors thin. We keep client loads manageable—you get dedicated support without the markup.
+                Large firms charge premium but spread mentors thin. We keep client loads manageable—you get dedicated support without the markup, with the same high-level approach used by premier Western consulting firms.
               </p>
               <div className="pt-4 border-t border-border/50">
                 <p className="text-sm text-foreground font-medium">Your success is our mission, not just another metric</p>
@@ -90,7 +90,7 @@ const WhyTU = () => {
             <Card className="p-8 space-y-4 border-accent/30 bg-gradient-to-br from-card/80 to-gold/5 hover:shadow-xl transition-all">
               <h3 className="text-2xl font-bold text-primary">Global Experience</h3>
               <p className="text-muted-foreground">
-                Many local consultants lack international reach. Our team navigated admissions across continents and understand diverse systems firsthand with <span className="font-semibold">over 10 years of combined experience working with 150+ students</span>.
+                Many local consultants lack international reach. Our team navigated admissions across continents and understand diverse systems firsthand with <span className="font-semibold">over 10 years of combined experience working with 150+ students</span>. We bridge global standards with local accessibility.
               </p>
               <div className="pt-4 border-t border-border/50">
                 <p className="text-sm text-foreground font-medium">Yale, Harvard, Cambridge, Tsinghua—we've been there</p>
@@ -104,26 +104,6 @@ const WhyTU = () => {
               </p>
               <div className="pt-4 border-t border-border/50">
                 <p className="text-sm text-foreground font-medium">Tested strategies that actually work</p>
-              </div>
-            </Card>
-
-            <Card className="p-8 space-y-4 border-primary/30 bg-gradient-to-br from-card/80 to-primary/5 hover:shadow-xl transition-all">
-              <h3 className="text-2xl font-bold text-primary">American Model, Local Context</h3>
-              <p className="text-muted-foreground">
-                We bring the premier American educational consulting model and resources to your local context—combining world-class methodology with cultural understanding and accessibility.
-              </p>
-              <div className="pt-4 border-t border-border/50">
-                <p className="text-sm text-foreground font-medium">Global standards, local support</p>
-              </div>
-            </Card>
-
-            <Card className="p-8 space-y-4 border-accent/30 bg-gradient-to-br from-card/80 to-gold/5 hover:shadow-xl transition-all">
-              <h3 className="text-2xl font-bold text-primary">Bilingual Support</h3>
-              <p className="text-muted-foreground">
-                Full service in English and Russian. Navigate the American system while communicating in the language you're most comfortable with—no meaning lost in translation.
-              </p>
-              <div className="pt-4 border-t border-border/50">
-                <p className="text-sm text-foreground font-medium">Speak freely, understand completely</p>
               </div>
             </Card>
           </div>
