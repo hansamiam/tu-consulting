@@ -4,6 +4,7 @@ import { Instagram } from "lucide-react";
 import heroImage from "@/assets/hero-campus.jpg";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import Navigation from "@/components/Navigation";
+import { WaitlistSection } from "@/components/WaitlistSection";
 
 const IndexRu = () => {
   const navigate = useNavigate();
@@ -35,12 +36,12 @@ const IndexRu = () => {
               <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-gold leading-tight tracking-tight">
                 Принимаем клиентов
               </h1>
-              <p className="text-primary-foreground/70 text-base sm:text-lg mt-2">
-                <span className="text-sm sm:text-base">(в Кыргызстане)</span>
-              </p>
             </div>
             <p className="text-primary-foreground/90 text-lg sm:text-xl font-medium max-w-2xl mx-auto">
               Не упустите цены раннего запуска и приоритетную поддержку
+            </p>
+            <p className="text-primary-foreground/60 text-sm sm:text-base italic max-w-xl mx-auto mt-2">
+              В настоящее время обслуживаем Кыргызстан
             </p>
           </div>
 
@@ -67,6 +68,11 @@ const IndexRu = () => {
             >
               <Instagram size={28} className="sm:w-8 sm:h-8" strokeWidth={1.5} />
             </a>
+          </div>
+
+          {/* Waitlist Section */}
+          <div className="mb-8 sm:mb-12 px-4">
+            <WaitlistSection language="ru" />
           </div>
 
           {/* Footer */}
