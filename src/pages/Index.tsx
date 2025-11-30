@@ -40,11 +40,14 @@ const Index = () => {
           <div className="mb-6 sm:mb-8 space-y-4">
             <div className="inline-block px-6 sm:px-8 py-3 sm:py-4 border-2 border-gold/30 rounded-lg backdrop-blur-sm">
               <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-gold leading-tight tracking-tight">
-                Now Open in Kyrgyzstan
+                Now Accepting Our First Clients
               </h1>
+              <p className="text-primary-foreground/70 text-base sm:text-lg mt-2">
+                <span className="text-sm sm:text-base">(in Kyrgyzstan)</span>
+              </p>
             </div>
             <p className="text-primary-foreground/80 text-base sm:text-lg max-w-xl mx-auto">
-              Central Asia's premier admissions consulting
+              Don't miss out on early-launch pricing and priority support
             </p>
           </div>
 
