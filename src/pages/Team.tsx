@@ -16,6 +16,12 @@ import caFlag from "@/assets/flags/ca.svg";
 import gbFlag from "@/assets/flags/gb.svg";
 import cnFlag from "@/assets/flags/cn.svg";
 import krFlag from "@/assets/flags/kr.svg";
+import { ScrollProgress } from "@/components/ScrollProgress";
+import { ScrollReveal } from "@/components/ScrollReveal";
+import { StaggerContainer, StaggerItem } from "@/hooks/use-stagger-animation";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
+import { motion, useInView } from "framer-motion";
+import { useRef, useEffect, useState as useCounterState } from "react";
 
 const Team = () => {
   const navigate = useNavigate();
@@ -92,6 +98,7 @@ const Team = () => {
         backgroundAttachment: 'fixed'
       }}
     >
+      <ScrollProgress />
       <Navigation language="en" />
       {/* Header */}
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 sticky top-16 z-40 shadow-sm">
@@ -120,20 +127,34 @@ const Team = () => {
             </div>
             
             {/* Stats Section */}
-            <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto animate-enter">
-              <div className="space-y-2">
-<div className="min-h-[40px] md:min-h-[56px] flex items-center justify-center">
-  <div className="text-4xl md:text-5xl font-bold text-gold">$500K+</div>
-</div>
-                <div className="text-sm md:text-base text-muted-foreground">in scholarships secured</div>
-              </div>
-              <div className="space-y-2">
-<div className="min-h-[40px] md:min-h-[56px] flex items-center justify-center">
-  <div className="text-4xl md:text-5xl font-bold text-gold">10+</div>
-</div>
-                <div className="text-sm md:text-base text-muted-foreground">years of collective experience</div>
-              </div>
-<div className="space-y-2">
+            <ScrollReveal delay={0.2}>
+              <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto animate-enter">
+                <motion.div 
+                  whileHover={{ scale: 1.05 }}
+                  className="space-y-2"
+                >
+                  <div className="min-h-[40px] md:min-h-[56px] flex items-center justify-center">
+                    <div className="text-4xl md:text-5xl font-bold text-gold">
+                      $<AnimatedNumber value={500} />K+
+                    </div>
+                  </div>
+                  <div className="text-sm md:text-base text-muted-foreground">in scholarships secured</div>
+                </motion.div>
+                <motion.div 
+                  whileHover={{ scale: 1.05 }}
+                  className="space-y-2"
+                >
+                  <div className="min-h-[40px] md:min-h-[56px] flex items-center justify-center">
+                    <div className="text-4xl md:text-5xl font-bold text-gold">
+                      <AnimatedNumber value={10} />+
+                    </div>
+                  </div>
+                  <div className="text-sm md:text-base text-muted-foreground">years of collective experience</div>
+                </motion.div>
+<motion.div 
+  whileHover={{ scale: 1.05 }}
+  className="space-y-2"
+>
   <div className="min-h-[40px] md:min-h-[56px] flex items-center justify-center">
     <div className="flex flex-nowrap gap-2 md:gap-3 items-center justify-center">
       <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5 md:p-1">
@@ -154,14 +175,16 @@ const Team = () => {
                   </div>
                 </div>
                 <div className="text-sm md:text-base text-muted-foreground">cross-continental expertise</div>
+              </motion.div>
               </div>
-            </div>
+            </ScrollReveal>
           </div>
 
           {/* Team Grid */}
-          <div className="grid md:grid-cols-2 gap-8 animate-fade-in">
+          <StaggerContainer className="grid md:grid-cols-2 gap-8 animate-fade-in">
             {teamMembers.map((member, index) => (
-              <Dialog key={index}>
+              <StaggerItem key={index}>
+                <Dialog>
                 <DialogTrigger asChild>
                   <Card 
                     className="group p-8 hover:shadow-2xl transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm hover:border-gold/30 hover:scale-[1.02] cursor-pointer"
@@ -240,8 +263,9 @@ const Team = () => {
                   </div>
                 </DialogContent>
               </Dialog>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
         </div>
       </main>
     </div>

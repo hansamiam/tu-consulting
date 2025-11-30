@@ -5,6 +5,9 @@ import heroImage from "@/assets/hero-campus.jpg";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import Navigation from "@/components/Navigation";
 import { WaitlistSection } from "@/components/WaitlistSection";
+import { ScrollProgress } from "@/components/ScrollProgress";
+import { FloatingBadge } from "@/components/FloatingBadge";
+import { motion } from "framer-motion";
 
 const IndexRu = () => {
   const navigate = useNavigate();
@@ -12,9 +15,13 @@ const IndexRu = () => {
 
   return (
     <div className="min-h-screen relative">
+      <ScrollProgress />
       <Navigation language="ru" />
       {/* Hero Section with Background Image */}
-      <div 
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
         className="min-h-screen relative flex items-center justify-center bg-cover bg-center"
         style={{
           backgroundImage: `linear-gradient(rgba(10, 35, 66, 0.75), rgba(10, 35, 66, 0.75)), url(${heroImage})`,
@@ -31,30 +38,48 @@ const IndexRu = () => {
             <div className="w-20 sm:w-24 h-1 bg-gold mx-auto rounded-full" />
           </div>
           {/* Main Headline */}
-          <div className="mb-6 sm:mb-8 space-y-4">
-            <div className="inline-block px-6 sm:px-8 py-3 sm:py-4 border-2 border-gold/30 rounded-lg backdrop-blur-sm">
-              <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-gold leading-tight tracking-tight animate-fade-in">
-                Принимаем наших
-                <br />
-                первых{"\u00a0"}клиентов
-              </h1>
-            </div>
-            <p className="text-primary-foreground/90 text-lg sm:text-xl font-medium max-w-2xl mx-auto">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="mb-6 sm:mb-8 space-y-4"
+          >
+            <FloatingBadge>
+              <div className="inline-block px-6 sm:px-8 py-3 sm:py-4 border-2 border-gold/30 rounded-lg backdrop-blur-sm relative">
+                <div className="absolute inset-0 bg-gold/5 animate-breathe-glow rounded-lg" />
+                <h1 className="relative font-heading text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-gold leading-tight tracking-tight">
+                  Принимаем наших
+                  <br />
+                  первых{"\u00a0"}клиентов
+                </h1>
+              </div>
+            </FloatingBadge>
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.6 }}
+              className="text-primary-foreground/90 text-lg sm:text-xl font-medium max-w-2xl mx-auto"
+            >
               Не упустите цены раннего запуска и приоритетную поддержку
-            </p>
-          </div>
+            </motion.p>
+          </motion.div>
 
           {/* Call to Action */}
-          <div className="max-w-md mx-auto mb-6 sm:mb-8 px-4 animate-enter">
-             <Button 
-               variant="gold"
-               size="lg"
-               className="text-lg px-12 py-6"
-               onClick={() => navigate('/offerings-ru')}
-             >
-               Изучить наши услуги
-             </Button>
-           </div>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6, duration: 0.6 }}
+            className="max-w-md mx-auto mb-6 sm:mb-8 px-4"
+          >
+            <Button 
+              variant="gold"
+              size="lg"
+              className="text-lg px-12 py-6 hover:scale-105 transition-transform duration-200"
+              onClick={() => navigate('/offerings-ru')}
+            >
+              Изучить наши услуги
+            </Button>
+          </motion.div>
 
           {/* Social Links */}
           <div className="flex gap-6 justify-center mb-6 sm:mb-8">
@@ -90,7 +115,7 @@ const IndexRu = () => {
             </div>
           </footer>
         </main>
-      </div>
+      </motion.div>
     </div>
   );
 };
