@@ -64,7 +64,7 @@ const FAQRu = () => {
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
         {/* Hero Section */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-12 animate-fade-in">
           <div className="inline-block">
             <h1 className="font-heading text-4xl md:text-5xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mb-2">
               Часто задаваемые вопросы
@@ -77,7 +77,7 @@ const FAQRu = () => {
         </div>
 
         {/* FAQ Accordion */}
-        <Card className="border-gold/20 bg-card/50 backdrop-blur-sm shadow-xl">
+        <Card className="border-gold/20 bg-card/50 backdrop-blur-sm shadow-xl animate-enter">
           <CardHeader>
             <CardTitle className="text-2xl text-primary">Быстрые ответы</CardTitle>
             <CardDescription className="text-base">
