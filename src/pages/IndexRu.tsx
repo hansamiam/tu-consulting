@@ -40,9 +40,6 @@ const IndexRu = () => {
             <p className="text-primary-foreground/90 text-lg sm:text-xl font-medium max-w-2xl mx-auto">
               Не упустите цены раннего запуска и приоритетную поддержку
             </p>
-            <p className="text-primary-foreground/60 text-sm sm:text-base italic max-w-xl mx-auto mt-2">
-              В настоящее время обслуживаем Кыргызстан
-            </p>
           </div>
 
           {/* Call to Action */}

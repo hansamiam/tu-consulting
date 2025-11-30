@@ -47,9 +47,6 @@ const Index = () => {
             <p className="text-primary-foreground/90 text-lg sm:text-xl font-medium max-w-2xl mx-auto">
               Don't miss out on early-launch pricing and priority support
             </p>
-            <p className="text-primary-foreground/60 text-sm sm:text-base italic max-w-xl mx-auto mt-2">
-              Currently serving Kyrgyzstan
-            </p>
           </div>
 
           {/* Call to Action */}
