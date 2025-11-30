@@ -40,8 +40,10 @@ const Index = () => {
           {/* Main Headline */}
           <div className="mb-6 sm:mb-8 space-y-4">
             <div className="inline-block px-6 sm:px-8 py-3 sm:py-4 border-2 border-gold/30 rounded-lg backdrop-blur-sm">
-              <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-gold leading-tight tracking-tight">
-                Now Accepting Our<br className="sm:hidden" /> First Clients
+              <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-gold leading-tight tracking-tight animate-fade-in">
+                Now Accepting Our
+                <br />
+                First{"\u00a0"}Clients
               </h1>
             </div>
             <p className="text-primary-foreground/90 text-lg sm:text-xl font-medium max-w-2xl mx-auto">
@@ -50,16 +52,16 @@ const Index = () => {
           </div>
 
           {/* Call to Action */}
-          <div className="max-w-md mx-auto mb-6 sm:mb-8 px-4">
-            <Button 
-              variant="gold"
-              size="lg"
-              className="text-lg px-12 py-6"
-              onClick={() => navigate('/offerings')}
-            >
-              Explore Our Services
-            </Button>
-          </div>
+          <div className="max-w-md mx-auto mb-6 sm:mb-8 px-4 animate-enter">
+             <Button 
+               variant="gold"
+               size="lg"
+               className="text-lg px-12 py-6"
+               onClick={() => navigate('/offerings')}
+             >
+               Explore Our Services
+             </Button>
+           </div>
 
           {/* Social Links */}
           <div className="flex gap-6 justify-center mb-6 sm:mb-8">
