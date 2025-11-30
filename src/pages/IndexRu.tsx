@@ -37,7 +37,7 @@ const IndexRu = () => {
               </h1>
             </div>
             <p className="text-primary-foreground/80 text-base sm:text-lg max-w-xl mx-auto">
-              Премиальный консалтинг по поступлению в Центральной Азии—Скидка при запуске с кодом LAUNCH30
+              Премиальный консалтинг по поступлению в Центральной Азии
             </p>
           </div>
 

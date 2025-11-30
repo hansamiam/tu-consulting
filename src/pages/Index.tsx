@@ -44,7 +44,7 @@ const Index = () => {
               </h1>
             </div>
             <p className="text-primary-foreground/80 text-base sm:text-lg max-w-xl mx-auto">
-              Central Asia's premier admissions consulting—Launch discount available with code LAUNCH30
+              Central Asia's premier admissions consulting
             </p>
           </div>
 
