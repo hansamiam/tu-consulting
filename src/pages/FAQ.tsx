@@ -28,6 +28,10 @@ const FAQ = () => {
       answer: "Absolutely not. We specialize in helping students from all backgrounds and circumstances—whether you're dealing with lower grades, unique challenges, non-traditional paths, or just need guidance to take your best shot. You don't need to be a straight-A student to benefit from expert consulting. In fact, we welcome and encourage you—that much more of a comeback story is waiting to be written. Our job is to help you present the strongest possible application with whatever starting point you have. Every student deserves a chance to reach for their dreams."
     },
     {
+      question: "Do you offer free consultations?",
+      answer: "No, and here's why: other firms offer \"free\" consultations that are actually 10-minute sales pitches with zero substance or value. They're designed to lure you into expensive packages without giving you anything useful. We believe our clients should be getting value from the very first minute. Every consultation we offer—even our introductory sessions—delivers real insights, actionable guidance, and genuine expertise. We take your time seriously and believe quality consulting requires preparation and focus. That's why all our consultations are paid, and that's why they actually help you."
+    },
+    {
       question: "Is this just for Ivy League / Oxbridge applications?",
       answer: "No! While our consultants have Ivy League and Oxbridge experience, we help students apply to top universities worldwide—US, UK, Canada, Europe, China, and beyond. Whether you're aiming for Harvard, Oxford, McGill, or Tsinghua, we have the expertise. We focus on finding the right fit for YOU, not just the most prestigious name."
     }

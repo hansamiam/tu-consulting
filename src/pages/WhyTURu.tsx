@@ -106,6 +106,26 @@ const WhyTURu = () => {
                 <p className="text-sm text-foreground font-medium">Проверенные стратегии, которые действительно работают</p>
               </div>
             </Card>
+
+            <Card className="p-8 space-y-4 border-primary/30 bg-gradient-to-br from-card/80 to-primary/5 hover:shadow-xl transition-all">
+              <h3 className="text-2xl font-bold text-primary">Американская модель, местный контекст</h3>
+              <p className="text-muted-foreground">
+                Мы приносим премиальную американскую модель образовательного консалтинга и ресурсы в ваш местный контекст—сочетая мировую методологию с культурным пониманием и доступностью.
+              </p>
+              <div className="pt-4 border-t border-border/50">
+                <p className="text-sm text-foreground font-medium">Глобальные стандарты, местная поддержка</p>
+              </div>
+            </Card>
+
+            <Card className="p-8 space-y-4 border-accent/30 bg-gradient-to-br from-card/80 to-gold/5 hover:shadow-xl transition-all">
+              <h3 className="text-2xl font-bold text-primary">Двуязычная поддержка</h3>
+              <p className="text-muted-foreground">
+                Полный сервис на английском и русском языках. Ориентируйтесь в американской системе, общаясь на языке, с которым вам наиболее комфортно—никакого смысла не теряется в переводе.
+              </p>
+              <div className="pt-4 border-t border-border/50">
+                <p className="text-sm text-foreground font-medium">Говорите свободно, понимайте полностью</p>
+              </div>
+            </Card>
           </div>
 
           {/* Our Philosophy - made smaller */}
