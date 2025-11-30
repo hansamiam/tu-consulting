@@ -2,14 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Check, Star, ArrowLeft } from "lucide-react";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 import Navigation from "@/components/Navigation";
 import { useToast } from "@/hooks/use-toast";
+import { PaymentDialog } from "@/components/PaymentDialog";
 import heroCampus from "@/assets/hero-campus.jpg";
 import heroLibrary from "@/assets/hero-library.jpg";
 import yaleCampus from "@/assets/yale-campus.jpg";
@@ -17,51 +13,9 @@ import yaleCampus from "@/assets/yale-campus.jpg";
 const OfferingsRu = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    currentGrade: "",
-    targetUniversities: "",
-    intendedMajor: "",
-    currentChallenges: "",
-    goals: "",
-  });
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedConsultation, setSelectedConsultation] = useState<string>("");
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [selectedConsultation, setSelectedConsultation] = useState<{name: string; price: string}>({name: "", price: ""});
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name || !formData.email) {
-      toast({
-        title: "Необходимые поля не заполнены",
-        description: "Пожалуйста, укажите ваше имя и email",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    toast({
-      title: "Форма отправлена!",
-      description: "Мы свяжемся с вами в ближайшее время для планирования консультации.",
-    });
-
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      currentGrade: "",
-      targetUniversities: "",
-      intendedMajor: "",
-      currentChallenges: "",
-      goals: "",
-    });
-    setIsDialogOpen(false);
-  };
 
   const packages = [
     {
@@ -278,8 +232,8 @@ const OfferingsRu = () => {
                     variant="outline"
                     className="w-full border-accent/30"
                     onClick={() => {
-                      setSelectedConsultation(consultation.name);
-                      setIsDialogOpen(true);
+                      setSelectedConsultation({name: consultation.name, price: consultation.price});
+                      setIsPaymentDialogOpen(true);
                     }}
                   >
                     Забронировать
@@ -290,124 +244,14 @@ const OfferingsRu = () => {
           </div>
         </section>
 
-        {/* Consultation Dialog */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl">Максимизируйте вашу {selectedConsultation}</DialogTitle>
-              <DialogDescription className="text-base">
-                Помогите нам подготовиться к вашей сессии. Чем больше деталей вы предоставите, тем больше пользы вы получите от консультации.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleFormSubmit} className="space-y-6 mt-4">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Полное имя *</Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      placeholder="Иван Иванов"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      placeholder="ivan@example.com"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Телефон</Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      placeholder="+7123456789"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="currentGrade">Текущий класс/курс</Label>
-                    <Input
-                      id="currentGrade"
-                      name="currentGrade"
-                      value={formData.currentGrade}
-                      onChange={handleInputChange}
-                      placeholder="например, 11 класс"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="targetUniversities">Целевые университеты</Label>
-                  <Textarea
-                    id="targetUniversities"
-                    name="targetUniversities"
-                    value={formData.targetUniversities}
-                    onChange={handleInputChange}
-                    placeholder="Перечислите университеты, которые вас интересуют..."
-                    rows={3}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="intendedMajor">Планируемая специальность</Label>
-                  <Input
-                    id="intendedMajor"
-                    name="intendedMajor"
-                    value={formData.intendedMajor}
-                    onChange={handleInputChange}
-                    placeholder="например, Компьютерные науки, Бизнес"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="currentChallenges">Текущие трудности</Label>
-                  <Textarea
-                    id="currentChallenges"
-                    name="currentChallenges"
-                    value={formData.currentChallenges}
-                    onChange={handleInputChange}
-                    placeholder="Какие основные проблемы или трудности у вас с процессом подачи документов?"
-                    rows={4}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="goals">Чего вы хотите достичь от этой консультации?</Label>
-                  <Textarea
-                    id="goals"
-                    name="goals"
-                    value={formData.goals}
-                    onChange={handleInputChange}
-                    placeholder="Будьте конкретны в том, что вы хотите получить от нашей сессии..."
-                    rows={4}
-                  />
-                </div>
-
-              <div className="flex gap-4 pt-4">
-                <Button
-                  type="submit"
-                  variant="gold"
-                  className="flex-1"
-                >
-                  Отправить и забронировать
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-         </Dialog>
+        {/* Payment Dialog */}
+        <PaymentDialog
+          open={isPaymentDialogOpen}
+          onOpenChange={setIsPaymentDialogOpen}
+          consultationType={selectedConsultation.name}
+          price={selectedConsultation.price}
+          language="ru"
+        />
 
         {/* Cohort Intake Section */}
         <section id="cohort-section" className="mt-20">
