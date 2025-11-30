@@ -29,7 +29,7 @@ const FAQ = () => {
     },
     {
       question: "Do you offer free consultations?",
-      answer: "No, and here's why: other firms offer \"free\" consultations that are actually 10-minute sales pitches with zero substance or value. They're designed to lure you into expensive packages without giving you anything useful. We believe our clients should be getting value from the very first minute. Every consultation we offer—even our introductory sessions—delivers real insights, actionable guidance, and genuine expertise. We take your time seriously and believe quality consulting requires preparation and focus. That's why all our consultations are paid, and that's why they actually help you."
+      answer: "No—we believe our clients should be getting value from the very first minute. Many firms offer \"free\" consultations, but these are often brief introductory calls focused on explaining packages rather than providing actionable guidance. We take a different approach: every consultation we offer, including our introductory sessions, delivers real insights and genuine expertise tailored to your situation. We take your time seriously and believe quality consulting requires preparation and focus. That's why all our consultations are paid—and that's why they deliver immediate value."
     },
     {
       question: "Is this just for Ivy League / Oxbridge applications?",
