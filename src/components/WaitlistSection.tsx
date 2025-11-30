@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface WaitlistSectionProps {
@@ -89,21 +88,20 @@ export const WaitlistSection = ({ language }: WaitlistSectionProps) => {
 
   return (
     <Card className="p-6 sm:p-8 bg-primary/5 border-primary/20 backdrop-blur-sm">
-      <div className="max-w-xl mx-auto text-center space-y-4">
-        <Mail className="w-8 h-8 text-gold mx-auto" />
-        <h3 className="text-xl sm:text-2xl font-bold text-primary-foreground">
+      <div className="max-w-xl mx-auto text-center space-y-3">
+        <h3 className="text-lg sm:text-xl font-semibold text-primary-foreground">
           {t.title}
         </h3>
-        <p className="text-sm sm:text-base text-primary-foreground/70">
+        <p className="text-xs sm:text-sm text-primary-foreground/60">
           {t.description}
         </p>
-        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 mt-4">
+        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2 mt-3 max-w-md mx-auto">
           <Input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder={t.placeholder}
-            className="flex-1 bg-background/50"
+            className="flex-1 bg-background/50 text-sm"
             disabled={isSubmitting}
           />
           <Button
@@ -111,6 +109,7 @@ export const WaitlistSection = ({ language }: WaitlistSectionProps) => {
             variant="gold"
             disabled={isSubmitting}
             className="whitespace-nowrap"
+            size="sm"
           >
             {t.button}
           </Button>
