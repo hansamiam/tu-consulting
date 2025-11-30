@@ -180,7 +180,7 @@ const OfferingsRu = () => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
         {/* Hero Section */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-16 animate-fade-in">
           <div className="inline-block px-4 py-2 bg-accent/10 border border-accent/20 rounded-full mb-4">
             <p className="text-accent font-semibold text-sm uppercase tracking-wide">Специальное предложение запуска</p>
           </div>
@@ -192,7 +192,7 @@ const OfferingsRu = () => {
           </p>
         </div>
 
-        <section className="mb-20">
+        <section className="mb-20 animate-enter">
           <h2 className="font-heading text-3xl font-bold text-center mb-4 text-foreground">
             Консультационные пакеты
           </h2>
@@ -264,7 +264,7 @@ const OfferingsRu = () => {
           </div>
         </section>
 
-        <section className="mb-20">
+        <section className="mb-20 animate-fade-in">
           <div className="text-center mb-12">
             <h2 className="font-heading text-3xl font-bold mb-4 text-foreground">
               Ещё не готовы?

@@ -39,7 +39,7 @@ const WhyTU = () => {
       <main className="container mx-auto px-4 py-16">
         <div className="max-w-6xl mx-auto space-y-16">
           {/* Hero Section */}
-          <div className="text-center space-y-6">
+          <div className="text-center space-y-6 animate-fade-in">
             <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent">
               Why Top Uni?
             </h1>
@@ -49,7 +49,7 @@ const WhyTU = () => {
           </div>
 
           {/* Forbes Section - Moved to top */}
-          <Card className="p-10 bg-gradient-to-br from-accent/10 to-primary/10 border-accent/30 shadow-xl">
+          <Card className="p-10 bg-gradient-to-br from-accent/10 to-primary/10 border-accent/30 shadow-xl animate-enter">
             <div className="max-w-4xl mx-auto space-y-6 text-center">
               <p className="text-2xl md:text-3xl text-foreground leading-relaxed">
                 <a href="https://www.forbes.com/sites/christopherrim/2025/05/02/how-the-explosion-of-private-consultants-has-changed-the-college-admissions-landscape/" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-bold">Forbes</a> says the most critical factor in consulting success: <span className="font-bold">how well mentors understand their students.</span>
@@ -66,7 +66,7 @@ const WhyTU = () => {
           </Card>
 
           {/* Key Differentiators */}
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-2 gap-8 animate-fade-in">
             <Card className="p-8 space-y-4 border-gold/30 bg-gradient-to-br from-card/80 to-accent/5 hover:shadow-xl transition-all">
               <h3 className="text-2xl font-bold text-primary">Small Team, Big Impact</h3>
               <p className="text-muted-foreground">

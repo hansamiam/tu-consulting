@@ -111,7 +111,7 @@ const Team = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-16">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16 space-y-8">
+          <div className="text-center mb-16 space-y-8 animate-fade-in">
             <div className="inline-block">
               <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mb-2">
                 Our Team
@@ -120,7 +120,7 @@ const Team = () => {
             </div>
             
             {/* Stats Section */}
-            <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto animate-enter">
               <div className="space-y-2">
 <div className="min-h-[40px] md:min-h-[56px] flex items-center justify-center">
   <div className="text-4xl md:text-5xl font-bold text-gold">$500K+</div>
@@ -159,7 +159,7 @@ const Team = () => {
           </div>
 
           {/* Team Grid */}
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-2 gap-8 animate-fade-in">
             {teamMembers.map((member, index) => (
               <Dialog key={index}>
                 <DialogTrigger asChild>
