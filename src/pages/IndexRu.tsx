@@ -34,7 +34,7 @@ const IndexRu = () => {
           <div className="mb-6 sm:mb-8 space-y-4">
             <div className="inline-block px-6 sm:px-8 py-3 sm:py-4 border-2 border-gold/30 rounded-lg backdrop-blur-sm">
               <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-gold leading-tight tracking-tight">
-                Принимаем наших первых клиентов
+                Принимаем наших<br className="sm:hidden" /> первых клиентов
               </h1>
             </div>
             <p className="text-primary-foreground/90 text-lg sm:text-xl font-medium max-w-2xl mx-auto">
