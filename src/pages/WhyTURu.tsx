@@ -121,19 +121,6 @@ const WhyTURu = () => {
             </div>
           </Card>
 
-          {/* No Restrictions Card */}
-          <Card className="p-8 bg-gradient-to-br from-accent/5 via-gold/5 to-primary/5 border-accent/20">
-            <div className="max-w-3xl mx-auto space-y-4 text-center">
-              <h2 className="text-2xl md:text-3xl font-bold text-primary">Ваша мечта, ваш выбор</h2>
-              <p className="text-base text-muted-foreground">
-                Многие консалтинговые фирмы ограничивают, куда студенты могут подавать заявки, чтобы завысить свою статистику поступлений. Мы не играем в эту игру.
-              </p>
-              <p className="text-base text-foreground font-medium">
-                Хотя мы посоветуем вам наилучший вариант, мы не накладываем абсолютно никаких ограничений на мечты, которые вы хотите преследовать. Подавайте в свои амбициозные школы. Мы здесь, чтобы помочь вам создать наиболее сильное заявление, куда бы вы ни решили стремиться.
-              </p>
-            </div>
-          </Card>
-
           {/* CTA Section */}
           <Card className="p-12 bg-gradient-to-br from-primary/10 to-gold/10 border-primary/30 text-center space-y-6">
             <h2 className="text-3xl md:text-4xl font-bold text-primary">Готовы начать свой путь?</h2>
