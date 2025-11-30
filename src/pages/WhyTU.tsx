@@ -106,6 +106,26 @@ const WhyTU = () => {
                 <p className="text-sm text-foreground font-medium">Tested strategies that actually work</p>
               </div>
             </Card>
+
+            <Card className="p-8 space-y-4 border-primary/30 bg-gradient-to-br from-card/80 to-primary/5 hover:shadow-xl transition-all">
+              <h3 className="text-2xl font-bold text-primary">American Model, Local Context</h3>
+              <p className="text-muted-foreground">
+                We bring the premier American educational consulting model and resources to your local context—combining world-class methodology with cultural understanding and accessibility.
+              </p>
+              <div className="pt-4 border-t border-border/50">
+                <p className="text-sm text-foreground font-medium">Global standards, local support</p>
+              </div>
+            </Card>
+
+            <Card className="p-8 space-y-4 border-accent/30 bg-gradient-to-br from-card/80 to-gold/5 hover:shadow-xl transition-all">
+              <h3 className="text-2xl font-bold text-primary">Bilingual Support</h3>
+              <p className="text-muted-foreground">
+                Full service in English and Russian. Navigate the American system while communicating in the language you're most comfortable with—no meaning lost in translation.
+              </p>
+              <div className="pt-4 border-t border-border/50">
+                <p className="text-sm text-foreground font-medium">Speak freely, understand completely</p>
+              </div>
+            </Card>
           </div>
 
           {/* Our Philosophy - made smaller */}
