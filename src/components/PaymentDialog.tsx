@@ -212,7 +212,7 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
           {/* Receipt Upload Section */}
           <div className="space-y-4">
             <Label htmlFor="receipt" className="text-base font-semibold">
-              {t.uploadReceipt}
+              {t.uploadReceipt} <span className="text-destructive">*</span>
             </Label>
             <div className="flex items-center gap-4">
               <Input
