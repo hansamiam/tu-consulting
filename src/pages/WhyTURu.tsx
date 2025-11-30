@@ -70,7 +70,7 @@ const WhyTURu = () => {
             <Card className="p-8 space-y-4 border-gold/30 bg-gradient-to-br from-card/80 to-accent/5 hover:shadow-xl transition-all">
               <h3 className="text-2xl font-bold text-primary">Маленькая команда, большое влияние</h3>
               <p className="text-muted-foreground">
-                В отличие от крупных фирм, где вы просто номер, наша небольшая команда означает, что каждый консультант обладает опытом высшего уровня. Мы приносим первоклассную западную методологию консалтинга и ресурсы непосредственно к вам—двуязычная поддержка на английском и русском означает, что ничего не теряется в переводе.
+                В отличие от крупных фирм, где вы просто номер, наша небольшая команда означает, что каждый консультант обладает опытом высшего уровня. Вы работаете напрямую с тем, кто сам через это прошел—недавно.
               </p>
               <div className="pt-4 border-t border-border/50">
                 <p className="text-sm text-foreground font-medium">Каждый член команды отобран за превосходство</p>
@@ -80,7 +80,7 @@ const WhyTURu = () => {
             <Card className="p-8 space-y-4 border-primary/30 bg-gradient-to-br from-card/80 to-primary/5 hover:shadow-xl transition-all">
               <h3 className="text-2xl font-bold text-primary">Личное внимание</h3>
               <p className="text-muted-foreground">
-                Крупные фирмы берут высокие цены, но распыляют менторов. Мы держим нагрузку управляемой—вы получаете целенаправленную поддержку без наценки, с тем же высоким подходом, который используют премиальные западные консалтинговые фирмы.
+                Крупные фирмы берут высокие цены, но распыляют менторов. Мы держим нагрузку управляемой—вы получаете целенаправленную поддержку без наценки.
               </p>
               <div className="pt-4 border-t border-border/50">
                 <p className="text-sm text-foreground font-medium">Ваш успех—наша миссия, а не просто еще одна метрика</p>
@@ -88,22 +88,22 @@ const WhyTURu = () => {
             </Card>
 
             <Card className="p-8 space-y-4 border-accent/30 bg-gradient-to-br from-card/80 to-gold/5 hover:shadow-xl transition-all">
-              <h3 className="text-2xl font-bold text-primary">Глобальный опыт</h3>
+              <h3 className="text-2xl font-bold text-primary">Глобальные стандарты, местный доступ</h3>
               <p className="text-muted-foreground">
-                Многим местным консультантам не хватает международного охвата. Наша команда прошла приемные комиссии на континентах и понимает разные системы из первых рук с <span className="font-semibold">более чем 10-летним совокупным опытом работы с 150+ студентами</span>. Мы объединяем глобальные стандарты с местной доступностью.
+                Мы приносим первоклассную западную методологию консалтинга и ресурсы непосредственно к вам. Полная двуязычная поддержка на английском и русском означает, что ничего не теряется в переводе.
               </p>
               <div className="pt-4 border-t border-border/50">
-                <p className="text-sm text-foreground font-medium">Йель, Гарвард, Кембридж, Цинхуа—мы были там</p>
+                <p className="text-sm text-foreground font-medium">Мировой подход, доступный и личный</p>
               </div>
             </Card>
 
             <Card className="p-8 space-y-4 border-gold/30 bg-gradient-to-br from-card/80 to-accent/5 hover:shadow-xl transition-all">
               <h3 className="text-2xl font-bold text-primary">Доказанные результаты</h3>
               <p className="text-muted-foreground">
-                Получено <span className="font-semibold">$500K+ стипендий</span> через строгие процессы. Наш опыт не теоретический—он доказан реальными успехами и неудачами.
+                Получено <span className="font-semibold">$500K+ стипендий</span> с <span className="font-semibold">более чем 10-летним совокупным опытом</span> в Йеле, Гарварде, Кембридже и Цинхуа. Реальные успехи, проверенные стратегии.
               </p>
               <div className="pt-4 border-t border-border/50">
-                <p className="text-sm text-foreground font-medium">Проверенные стратегии, которые действительно работают</p>
+                <p className="text-sm text-foreground font-medium">Опыт подтвержден реальными результатами</p>
               </div>
             </Card>
           </div>

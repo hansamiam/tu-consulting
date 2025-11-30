@@ -18,6 +18,9 @@ interface PaymentDialogProps {
 export const PaymentDialog = ({ open, onOpenChange, consultationType, price, language }: PaymentDialogProps) => {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [discount, setDiscount] = useState(0);
+  const [promoError, setPromoError] = useState("");
   const { toast } = useToast();
 
   const text = {
@@ -28,6 +31,14 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
       accountName: "Account Name: Samuel Seunghyun H.",
       phoneNumber: "Phone Number: +996 556 447 020",
       scanQR: "Scan QR code to pay",
+      promoCode: "Promo Code (Optional)",
+      promoPlaceholder: "Enter promo code",
+      applyPromo: "Apply",
+      promoSuccess: "Discount applied!",
+      promoInvalid: "Invalid promo code",
+      originalPrice: "Original Price",
+      discount: "Discount",
+      finalPrice: "Final Price",
       uploadReceipt: "Upload Payment Receipt",
       uploadButton: "Choose File",
       noFile: "No file chosen",
@@ -42,6 +53,14 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
       accountName: "Имя получателя: Samuel Seunghyun H.",
       phoneNumber: "Номер телефона: +996 556 447 020",
       scanQR: "Отсканируйте QR-код для оплаты",
+      promoCode: "Промокод (необязательно)",
+      promoPlaceholder: "Введите промокод",
+      applyPromo: "Применить",
+      promoSuccess: "Скидка применена!",
+      promoInvalid: "Неверный промокод",
+      originalPrice: "Начальная цена",
+      discount: "Скидка",
+      finalPrice: "Итоговая цена",
       uploadReceipt: "Загрузите квитанцию об оплате",
       uploadButton: "Выбрать файл",
       noFile: "Файл не выбран",
@@ -52,6 +71,29 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
   };
 
   const t = text[language];
+
+  const calculateFinalPrice = () => {
+    const numPrice = parseFloat(price.replace('$', ''));
+    return numPrice - (numPrice * discount);
+  };
+
+  const handlePromoApply = () => {
+    const code = promoCode.toUpperCase().trim();
+    if (code === "LAUNCH30") {
+      setDiscount(0.30);
+      setPromoError("");
+      toast({
+        title: t.promoSuccess,
+        description: language === "en" ? "30% discount applied!" : "Скидка 30% применена!",
+      });
+    } else if (code === "") {
+      setPromoError("");
+      setDiscount(0);
+    } else {
+      setPromoError(t.promoInvalid);
+      setDiscount(0);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -93,7 +135,7 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
         <DialogHeader>
           <DialogTitle className="text-2xl">{t.title}</DialogTitle>
           <div className="pt-2">
-            <p className="text-lg font-semibold text-accent">{consultationType} - {price}</p>
+            <p className="text-lg font-semibold text-accent">{consultationType}</p>
           </div>
           <DialogDescription className="text-base pt-2">
             {t.description}
@@ -101,6 +143,53 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
         </DialogHeader>
 
         <div className="space-y-6 mt-4">
+          {/* Promo Code Section */}
+          <div className="space-y-3 p-4 bg-gold/5 rounded-lg border border-gold/20">
+            <Label htmlFor="promoCode" className="text-base font-semibold">
+              {t.promoCode}
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                id="promoCode"
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
+                placeholder={t.promoPlaceholder}
+                className="flex-1"
+              />
+              <Button
+                variant="outline"
+                onClick={handlePromoApply}
+              >
+                {t.applyPromo}
+              </Button>
+            </div>
+            {promoError && <p className="text-sm text-destructive">{promoError}</p>}
+            {discount > 0 && (
+              <div className="text-sm space-y-1 pt-2 border-t border-gold/20">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t.originalPrice}:</span>
+                  <span className="line-through">{price}</span>
+                </div>
+                <div className="flex justify-between text-accent">
+                  <span>{t.discount}:</span>
+                  <span>-{(discount * 100).toFixed(0)}%</span>
+                </div>
+                <div className="flex justify-between font-bold text-lg">
+                  <span>{t.finalPrice}:</span>
+                  <span className="text-accent">${calculateFinalPrice().toFixed(0)}</span>
+                </div>
+              </div>
+            )}
+            {discount === 0 && (
+              <div className="text-sm pt-2 border-t border-gold/20">
+                <div className="flex justify-between font-semibold text-lg">
+                  <span>{t.finalPrice}:</span>
+                  <span className="text-accent">{price}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Payment Details Section */}
           <div className="space-y-4 p-6 bg-accent/5 rounded-lg border border-accent/20">
             <h3 className="font-semibold text-lg text-primary">{t.paymentDetails}</h3>

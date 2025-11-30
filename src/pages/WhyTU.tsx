@@ -70,7 +70,7 @@ const WhyTU = () => {
             <Card className="p-8 space-y-4 border-gold/30 bg-gradient-to-br from-card/80 to-accent/5 hover:shadow-xl transition-all">
               <h3 className="text-2xl font-bold text-primary">Small Team, Big Impact</h3>
               <p className="text-muted-foreground">
-                Unlike large firms where you're just a number, our small team means every consultant brings top-tier expertise. We bring top-tier Western consulting methodology and resources directly to you—bilingual support in English and Russian means nothing gets lost in translation.
+                Unlike large firms where you're just a number, our small team means every consultant brings top-tier expertise. You work directly with someone who's been through it themselves—recently.
               </p>
               <div className="pt-4 border-t border-border/50">
                 <p className="text-sm text-foreground font-medium">Every team member is hand-picked for excellence</p>
@@ -80,7 +80,7 @@ const WhyTU = () => {
             <Card className="p-8 space-y-4 border-primary/30 bg-gradient-to-br from-card/80 to-primary/5 hover:shadow-xl transition-all">
               <h3 className="text-2xl font-bold text-primary">Personal Attention</h3>
               <p className="text-muted-foreground">
-                Large firms charge premium but spread mentors thin. We keep client loads manageable—you get dedicated support without the markup, with the same high-level approach used by premier Western consulting firms.
+                Large firms charge premium but spread mentors thin. We keep client loads manageable—you get dedicated support without the markup.
               </p>
               <div className="pt-4 border-t border-border/50">
                 <p className="text-sm text-foreground font-medium">Your success is our mission, not just another metric</p>
@@ -88,22 +88,22 @@ const WhyTU = () => {
             </Card>
 
             <Card className="p-8 space-y-4 border-accent/30 bg-gradient-to-br from-card/80 to-gold/5 hover:shadow-xl transition-all">
-              <h3 className="text-2xl font-bold text-primary">Global Experience</h3>
+              <h3 className="text-2xl font-bold text-primary">Global Standards, Local Access</h3>
               <p className="text-muted-foreground">
-                Many local consultants lack international reach. Our team navigated admissions across continents and understand diverse systems firsthand with <span className="font-semibold">over 10 years of combined experience working with 150+ students</span>. We bridge global standards with local accessibility.
+                We bring top-tier Western consulting methodology and resources directly to you. Full bilingual support in English and Russian means nothing gets lost in translation.
               </p>
               <div className="pt-4 border-t border-border/50">
-                <p className="text-sm text-foreground font-medium">Yale, Harvard, Cambridge, Tsinghua—we've been there</p>
+                <p className="text-sm text-foreground font-medium">World-class approach, accessible and personal</p>
               </div>
             </Card>
 
             <Card className="p-8 space-y-4 border-gold/30 bg-gradient-to-br from-card/80 to-accent/5 hover:shadow-xl transition-all">
               <h3 className="text-2xl font-bold text-primary">Proven Results</h3>
               <p className="text-muted-foreground">
-                Secured <span className="font-semibold">$500K+ in scholarships</span> through rigorous processes. Our expertise isn't theoretical—it's proven through real successes and setbacks.
+                Secured <span className="font-semibold">$500K+ in scholarships</span> with <span className="font-semibold">10+ years combined experience</span> across Yale, Harvard, Cambridge, and Tsinghua. Real successes, tested strategies.
               </p>
               <div className="pt-4 border-t border-border/50">
-                <p className="text-sm text-foreground font-medium">Tested strategies that actually work</p>
+                <p className="text-sm text-foreground font-medium">Expertise proven through real outcomes</p>
               </div>
             </Card>
           </div>
