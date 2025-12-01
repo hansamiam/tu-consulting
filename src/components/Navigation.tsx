@@ -1,6 +1,9 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { Menu, X } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useState } from "react";
 
 interface NavigationProps {
   language?: "en" | "ru";
@@ -9,6 +12,7 @@ interface NavigationProps {
 const Navigation = ({ language = "en" }: NavigationProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isOpen, setIsOpen] = useState(false);
   
   const isRussian = language === "ru";
   const basePath = isRussian ? "/ru" : "/";
@@ -56,8 +60,8 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
             Top Uni Consulting
           </button>
           
-          {/* Navigation Links + Language */}
-          <div className="flex items-center gap-2">
+          {/* Desktop Navigation Links + Language */}
+          <div className="hidden md:flex items-center gap-2">
             <div className="flex items-center gap-1 sm:gap-2">
               {links.map((link) => (
                 <button
@@ -74,10 +78,48 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
                 </button>
               ))}
             </div>
-            <div className="hidden sm:block ml-1">
+            <div className="ml-1">
               <LanguageSwitcher />
             </div>
           </div>
+
+          {/* Mobile Hamburger Menu */}
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <SheetTrigger asChild className="md:hidden">
+              <button className="text-gold p-2">
+                <Menu size={24} />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right" className="bg-primary border-gold/20 w-[280px]">
+              <div className="flex flex-col gap-6 mt-8">
+                {/* Mobile Navigation Links */}
+                <div className="flex flex-col gap-2">
+                  {links.map((link) => (
+                    <button
+                      key={link.path}
+                      onClick={() => {
+                        navigate(link.path);
+                        setIsOpen(false);
+                      }}
+                      className={cn(
+                        "px-4 py-3 text-base font-medium rounded-md transition-all duration-200 text-left",
+                        isActive(link.path, link.exact)
+                          ? "text-gold bg-gold/10 border-l-4 border-gold"
+                          : "text-primary-foreground/80 hover:text-gold hover:bg-gold/5"
+                      )}
+                    >
+                      {link.label}
+                    </button>
+                  ))}
+                </div>
+                
+                {/* Language Switcher */}
+                <div className="pt-4 border-t border-gold/20">
+                  <LanguageSwitcher />
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </nav>
