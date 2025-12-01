@@ -13,6 +13,8 @@ import FAQ from "./pages/FAQ";
 import FAQRu from "./pages/FAQRu";
 import WhyTU from "./pages/WhyTU";
 import WhyTURu from "./pages/WhyTURu";
+import ThankYou from "./pages/ThankYou";
+import ThankYouRu from "./pages/ThankYouRu";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +36,8 @@ const App = () => (
           <Route path="/faq/ru" element={<FAQRu />} />
           <Route path="/why-tu" element={<WhyTU />} />
           <Route path="/why-tu/ru" element={<WhyTURu />} />
+          <Route path="/thank-you" element={<ThankYou />} />
+          <Route path="/thank-you/ru" element={<ThankYouRu />} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/why-us" element={<WhyTU />} />
           <Route path="/why-us/ru" element={<WhyTURu />} />

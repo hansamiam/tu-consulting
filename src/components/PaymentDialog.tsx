@@ -130,9 +130,10 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
       return;
     }
     
-    // Open Calendly in new tab
-    window.open("https://calendly.com/nurzada-abdivalieva88/interview", "_blank");
-    onOpenChange(false);
+    // Redirect to thank you page with Calendly embedded
+    const thankYouPath = language === "ru" ? "/thank-you/ru" : "/thank-you";
+    const consultationType = isConsultation ? "consultation" : "package";
+    window.location.href = `${thankYouPath}?type=${consultationType}`;
   };
 
   return (
