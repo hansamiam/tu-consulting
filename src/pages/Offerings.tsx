@@ -183,29 +183,29 @@ const Offerings = () => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-12">
         {/* Hero Section */}
-        <div className="text-center mb-16 animate-fade-in">
-          <div className="inline-block px-4 py-2 bg-accent/10 border border-accent/20 rounded-full mb-4">
-            <p className="text-accent font-semibold text-sm uppercase tracking-wide">Launch Special</p>
+        <div className="text-center mb-8 md:mb-16 animate-fade-in">
+          <div className="inline-block px-3 py-1.5 md:px-4 md:py-2 bg-accent/10 border border-accent/20 rounded-full mb-3 md:mb-4">
+            <p className="text-accent font-semibold text-xs md:text-sm uppercase tracking-wide">Launch Special</p>
           </div>
-          <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mb-4">
+          <h1 className="font-heading text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mb-3 md:mb-4 px-2">
             Our Services & Pricing
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-2">
+          <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto mb-2 px-4">
             Choose the perfect package to achieve your university admission goals
           </p>
         </div>
 
         {/* Package Pricing */}
-        <section className="mb-20 animate-enter">
-          <h2 className="font-heading text-3xl font-bold text-center mb-4 text-foreground">
+        <section className="mb-12 md:mb-20 animate-enter">
+          <h2 className="font-heading text-xl sm:text-2xl md:text-3xl font-bold text-center mb-3 md:mb-4 text-foreground px-4">
             Consulting Packages
           </h2>
-          <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-12">
+          <p className="text-center text-sm md:text-base text-muted-foreground max-w-2xl mx-auto mb-6 md:mb-12 px-4">
             While not mandatory, we highly advise you to book either a Diagnostic or Strategy Consultation to better understand what we offer before purchasing a package.
           </p>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-4 md:gap-8">
             {packages.map((pkg, index) => (
                 <Card
                 key={index}
@@ -228,29 +228,29 @@ const Offerings = () => {
                     </span>
                   </div>
                 )}
-                <CardHeader className="text-center pt-8">
-                  <CardTitle className="text-2xl mb-2">{pkg.name}</CardTitle>
-                  <div className="space-y-2">
+                <CardHeader className="text-center pt-6 md:pt-8 pb-4 md:pb-6">
+                  <CardTitle className="text-lg md:text-2xl mb-2">{pkg.name}</CardTitle>
+                  <div className="space-y-1 md:space-y-2">
                     <div className="flex items-center justify-center gap-2">
-                      <span className="text-sm text-muted-foreground line-through">
+                      <span className="text-xs md:text-sm text-muted-foreground line-through">
                         {pkg.originalPrice}
                       </span>
-                      <span className="bg-destructive text-destructive-foreground text-xs px-2 py-1 rounded">
+                      <span className="bg-destructive text-destructive-foreground text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded">
                         {pkg.discount}
                       </span>
                     </div>
-                    <div className="text-4xl font-bold text-accent">{pkg.price}</div>
+                    <div className="text-2xl md:text-4xl font-bold text-accent">{pkg.price}</div>
                   </div>
-                  <CardDescription className="text-base pt-2">
+                  <CardDescription className="text-sm md:text-base pt-1 md:pt-2">
                     {pkg.hours}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <ul className="space-y-3">
+                <CardContent className="space-y-3 md:space-y-4 pb-4 md:pb-6">
+                  <ul className="space-y-2 md:space-y-3">
                     {pkg.features.map((feature, idx) => (
                       <li key={idx} className="flex items-start gap-2">
-                        <Check className="text-accent flex-shrink-0 mt-0.5" size={20} />
-                        <span className="text-sm text-foreground">{feature}</span>
+                        <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
+                        <span className="text-xs md:text-sm text-foreground">{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -271,32 +271,32 @@ const Offerings = () => {
         </section>
 
         {/* Individual Consultations */}
-        <section className="mb-20 animate-fade-in">
-          <div className="text-center mb-8">
-            <h2 className="font-heading text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+        <section className="mb-12 md:mb-20 animate-fade-in">
+          <div className="text-center mb-6 md:mb-8">
+            <h2 className="font-heading text-xl sm:text-2xl md:text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent px-4">
               Not Ready Yet?
             </h2>
-            <p className="text-muted-foreground text-lg mb-4">
+            <p className="text-muted-foreground text-sm md:text-lg mb-2 md:mb-4 px-4">
               Start with a trial consultation to experience our service
             </p>
           </div>
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-4 md:gap-8 max-w-4xl mx-auto">
             {consultations.map((consultation, index) => (
               <Card key={index} className="border-gold/30 bg-card/50 backdrop-blur-sm hover:shadow-lg transition-all">
-                <CardHeader>
-                  <CardTitle className="text-xl">{consultation.name}</CardTitle>
-                  <div className="flex items-baseline gap-2 pt-2">
-                    <span className="text-3xl font-bold text-accent">{consultation.price}</span>
-                    <span className="text-muted-foreground">/ {consultation.duration}</span>
+                <CardHeader className="pb-4 md:pb-6">
+                  <CardTitle className="text-lg md:text-xl">{consultation.name}</CardTitle>
+                  <div className="flex items-baseline gap-2 pt-1 md:pt-2">
+                    <span className="text-2xl md:text-3xl font-bold text-accent">{consultation.price}</span>
+                    <span className="text-sm md:text-base text-muted-foreground">/ {consultation.duration}</span>
                   </div>
-                  <CardDescription className="pt-2">{consultation.description}</CardDescription>
+                  <CardDescription className="pt-1 md:pt-2 text-xs md:text-sm">{consultation.description}</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <ul className="space-y-2">
+                <CardContent className="space-y-3 md:space-y-4">
+                  <ul className="space-y-1.5 md:space-y-2">
                     {consultation.features.map((feature, idx) => (
                       <li key={idx} className="flex items-start gap-2">
-                        <Check className="text-accent flex-shrink-0 mt-0.5" size={18} />
-                        <span className="text-sm text-foreground">{feature}</span>
+                        <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
+                        <span className="text-xs md:text-sm text-foreground">{feature}</span>
                       </li>
                     ))}
                   </ul>
