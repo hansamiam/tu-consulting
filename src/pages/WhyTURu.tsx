@@ -36,29 +36,29 @@ const WhyTURu = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-16">
-        <div className="max-w-6xl mx-auto space-y-16">
+      <main className="container mx-auto px-4 py-8 md:py-16">
+        <div className="max-w-6xl mx-auto space-y-8 md:space-y-16">
           {/* Hero Section */}
-          <div className="text-center space-y-6 animate-fade-in">
-            <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent">
+          <div className="text-center space-y-3 md:space-y-6 animate-fade-in">
+            <h1 className="text-2xl sm:text-3xl md:text-6xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent px-2">
               Почему Top Uni?
             </h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            <p className="text-sm md:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
               Компактная команда. Реальный опыт. Личное внимание. Без корпоративной наценки.
             </p>
           </div>
 
-          {/* Forbes Section - Moved to top */}
-          <Card className="p-10 bg-gradient-to-br from-accent/10 to-primary/10 border-accent/30 shadow-xl animate-enter">
-            <div className="max-w-4xl mx-auto space-y-6 text-center">
-              <p className="text-2xl md:text-3xl text-foreground leading-relaxed">
+          {/* Forbes Section */}
+          <Card className="p-6 md:p-10 bg-gradient-to-br from-accent/10 to-primary/10 border-accent/30 shadow-xl animate-enter">
+            <div className="max-w-4xl mx-auto space-y-4 md:space-y-6 text-center">
+              <p className="text-base md:text-2xl lg:text-3xl text-foreground leading-relaxed">
                 <a href="https://www.forbes.com/sites/christopherrim/2025/05/02/how-the-explosion-of-private-consultants-has-changed-the-college-admissions-landscape/" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-bold">Forbes</a> утверждает: самый важный фактор успеха консалтинга—<span className="font-bold">насколько хорошо менторы понимают студентов.</span>
               </p>
-              <div className="border-t-2 border-accent/30 pt-6 mt-6">
-                <p className="text-xl md:text-2xl text-primary font-bold mb-3">
+              <div className="border-t-2 border-accent/30 pt-4 md:pt-6 mt-4 md:mt-6">
+                <p className="text-base md:text-xl lg:text-2xl text-primary font-bold mb-2 md:mb-3">
                   Разница TopUni:
                 </p>
-                <p className="text-lg text-foreground">
+                <p className="text-sm md:text-base lg:text-lg text-foreground">
                   Мы <span className="font-semibold">только что из процесса</span>. Помним, каково это, что работает, что нет. Понимаем сегодняшние вызовы—<span className="font-semibold">не из учебников, из опыта.</span>
                 </p>
               </div>
@@ -66,14 +66,14 @@ const WhyTURu = () => {
           </Card>
 
           {/* Key Differentiators */}
-          <div className="grid md:grid-cols-2 gap-8 animate-fade-in">
-            <Card className="p-8 space-y-4 border-gold/30 bg-gradient-to-br from-card/80 to-accent/5 hover:shadow-xl transition-all">
-              <h3 className="text-2xl font-bold text-primary">Маленькая команда, большое влияние</h3>
-              <p className="text-muted-foreground">
+          <div className="grid md:grid-cols-2 gap-4 md:gap-8 animate-fade-in">
+            <Card className="p-4 md:p-8 space-y-3 md:space-y-4 border-gold/30 bg-gradient-to-br from-card/80 to-accent/5 hover:shadow-xl transition-all">
+              <h3 className="text-lg md:text-2xl font-bold text-primary">Маленькая команда, большое влияние</h3>
+              <p className="text-xs md:text-base text-muted-foreground">
                 В отличие от крупных фирм, где вы просто номер, наша небольшая команда означает, что каждый консультант обладает опытом высшего уровня. Вы работаете напрямую с тем, кто сам через это прошел—недавно.
               </p>
-              <div className="pt-4 border-t border-border/50">
-                <p className="text-sm text-foreground font-medium">Каждый член команды отобран за превосходство</p>
+              <div className="pt-3 md:pt-4 border-t border-border/50">
+                <p className="text-xs md:text-sm text-foreground font-medium">Каждый член команды отобран за превосходство</p>
               </div>
             </Card>
 

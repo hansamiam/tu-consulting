@@ -62,39 +62,39 @@ const FAQ = () => {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 md:py-12">
         {/* Hero Section */}
-        <div className="text-center mb-12 animate-fade-in">
+        <div className="text-center mb-6 md:mb-12 animate-fade-in">
           <div className="inline-block">
-            <h1 className="font-heading text-4xl md:text-5xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mb-2">
+            <h1 className="font-heading text-2xl sm:text-3xl md:text-5xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mb-2 px-2">
               Frequently Asked Questions
             </h1>
-            <div className="h-1 w-32 bg-gradient-to-r from-primary to-gold mx-auto rounded-full mb-4"></div>
+            <div className="h-1 w-20 md:w-32 bg-gradient-to-r from-primary to-gold mx-auto rounded-full mb-3 md:mb-4"></div>
           </div>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
             Everything you need to know
           </p>
         </div>
 
         {/* FAQ Accordion */}
         <Card className="border-gold/20 bg-card/50 backdrop-blur-sm shadow-xl animate-enter">
-          <CardHeader>
-            <CardTitle className="text-2xl text-primary">Quick Answers</CardTitle>
-            <CardDescription className="text-base">
+          <CardHeader className="pb-4 md:pb-6">
+            <CardTitle className="text-lg md:text-2xl text-primary">Quick Answers</CardTitle>
+            <CardDescription className="text-xs md:text-base">
               Can't find what you're looking for? Email us at{" "}
               <a href="mailto:team@topuniconsulting.com" className="text-accent hover:underline">
                 team@topuniconsulting.com
               </a>
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <Accordion type="single" collapsible className="w-full">
               {faqs.map((faq, index) => (
                 <AccordionItem key={index} value={`item-${index}`}>
-                  <AccordionTrigger className="text-left">
+                  <AccordionTrigger className="text-left text-sm md:text-base">
                     {faq.question}
                   </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground whitespace-pre-line">
+                  <AccordionContent className="text-xs md:text-sm text-muted-foreground whitespace-pre-line">
                     {faq.answer}
                   </AccordionContent>
                 </AccordionItem>

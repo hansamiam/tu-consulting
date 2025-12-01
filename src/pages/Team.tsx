@@ -116,92 +116,92 @@ const Team = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-16">
+      <main className="container mx-auto px-4 py-8 md:py-16">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16 space-y-8 animate-fade-in">
+          <div className="text-center mb-8 md:mb-16 space-y-4 md:space-y-8 animate-fade-in">
             <div className="inline-block">
-              <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mb-2">
+              <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mb-2">
                 Our Team
               </h1>
-              <div className="h-1 w-24 bg-gradient-to-r from-primary to-gold mx-auto rounded-full"></div>
+              <div className="h-1 w-16 md:w-24 bg-gradient-to-r from-primary to-gold mx-auto rounded-full"></div>
             </div>
             
             {/* Stats Section */}
             <ScrollReveal delay={0.2}>
-              <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto animate-enter">
+              <div className="grid md:grid-cols-3 gap-4 md:gap-8 max-w-4xl mx-auto animate-enter">
                 <motion.div 
                   whileHover={{ scale: 1.05 }}
-                  className="space-y-2"
+                  className="space-y-1 md:space-y-2"
                 >
-                  <div className="min-h-[40px] md:min-h-[56px] flex items-center justify-center">
-                    <div className="text-4xl md:text-5xl font-bold text-gold">
+                  <div className="min-h-[32px] md:min-h-[56px] flex items-center justify-center">
+                    <div className="text-3xl md:text-5xl font-bold text-gold">
                       $<AnimatedNumber value={500} />K+
                     </div>
                   </div>
-                  <div className="text-sm md:text-base text-muted-foreground">in scholarships secured</div>
+                  <div className="text-xs md:text-base text-muted-foreground">in scholarships secured</div>
                 </motion.div>
                 <motion.div 
                   whileHover={{ scale: 1.05 }}
-                  className="space-y-2"
+                  className="space-y-1 md:space-y-2"
                 >
-                  <div className="min-h-[40px] md:min-h-[56px] flex items-center justify-center">
-                    <div className="text-4xl md:text-5xl font-bold text-gold">
+                  <div className="min-h-[32px] md:min-h-[56px] flex items-center justify-center">
+                    <div className="text-3xl md:text-5xl font-bold text-gold">
                       <AnimatedNumber value={10} />+
                     </div>
                   </div>
-                  <div className="text-sm md:text-base text-muted-foreground">years of collective experience</div>
+                  <div className="text-xs md:text-base text-muted-foreground">years of collective experience</div>
                 </motion.div>
 <motion.div 
   whileHover={{ scale: 1.05 }}
-  className="space-y-2"
+  className="space-y-1 md:space-y-2"
 >
-  <div className="min-h-[40px] md:min-h-[56px] flex items-center justify-center">
-    <div className="flex flex-nowrap gap-2 md:gap-3 items-center justify-center">
-      <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5 md:p-1">
+  <div className="min-h-[32px] md:min-h-[56px] flex items-center justify-center">
+    <div className="flex flex-nowrap gap-1.5 md:gap-3 items-center justify-center">
+      <div className="w-7 h-7 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
         <img src={usFlag} alt="USA flag" className="w-full h-full object-cover" loading="lazy" />
                     </div>
-                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0">
+                    <div className="w-7 h-7 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
                       <img src={caFlag} alt="Canada flag" className="w-full h-full object-cover" loading="lazy" />
                     </div>
-                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0">
+                    <div className="w-7 h-7 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
                       <img src={gbFlag} alt="United Kingdom flag" className="w-full h-full object-cover" loading="lazy" />
                     </div>
-                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0">
+                    <div className="w-7 h-7 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
 <img src={cnFlag} alt="China flag" className="w-full h-full object-cover object-left" loading="lazy" />
                     </div>
-                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0">
+                    <div className="w-7 h-7 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
                       <img src={krFlag} alt="South Korea flag" className="w-full h-full object-cover" loading="lazy" />
                     </div>
                   </div>
                 </div>
-                <div className="text-sm md:text-base text-muted-foreground">cross-continental expertise</div>
+                <div className="text-xs md:text-base text-muted-foreground">cross-continental expertise</div>
               </motion.div>
               </div>
             </ScrollReveal>
           </div>
 
           {/* Team Grid */}
-          <StaggerContainer className="grid md:grid-cols-2 gap-8 animate-fade-in">
+          <StaggerContainer className="grid md:grid-cols-2 gap-4 md:gap-8 animate-fade-in">
             {teamMembers.map((member, index) => (
               <StaggerItem key={index}>
                 <Dialog>
                 <DialogTrigger asChild>
                   <Card 
-                    className="group p-8 hover:shadow-2xl transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm hover:border-gold/30 hover:scale-[1.02] cursor-pointer"
+                    className="group p-4 md:p-8 hover:shadow-2xl transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm hover:border-gold/30 hover:scale-[1.02] cursor-pointer"
                   >
-                    <div className="flex flex-col items-center text-center space-y-6">
+                    <div className="flex flex-col items-center text-center space-y-3 md:space-y-6">
                       <div className="relative">
                         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-gold/20 rounded-full blur-xl group-hover:blur-2xl transition-all duration-300 opacity-0 group-hover:opacity-100"></div>
                         <img
                           src={member.photo}
                           alt={member.name}
-                          className="relative w-48 h-48 rounded-full object-cover border-4 border-primary/40 group-hover:border-primary/70 transition-all duration-300 shadow-lg"
+                          className="relative w-32 h-32 md:w-48 md:h-48 rounded-full object-cover border-4 border-primary/40 group-hover:border-primary/70 transition-all duration-300 shadow-lg"
                         />
                       </div>
-                      <div className="space-y-3 w-full">
-                        <h2 className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">{member.name}</h2>
-                        <p className="text-base font-medium bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent">{member.title}</p>
-                        <div className="space-y-2 text-sm">
+                      <div className="space-y-2 md:space-y-3 w-full">
+                        <h2 className="text-lg md:text-2xl font-bold text-foreground group-hover:text-primary transition-colors">{member.name}</h2>
+                        <p className="text-sm md:text-base font-medium bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent">{member.title}</p>
+                        <div className="space-y-1.5 md:space-y-2 text-xs md:text-sm">
                           <p className="text-muted-foreground">
                             <span className="font-semibold text-gold">Hometown:</span> {member.hometown}
                           </p>
