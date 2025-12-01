@@ -205,7 +205,7 @@ const OfferingsRu = () => {
                 key={index}
                 className={`relative ${
                   pkg.popular
-                    ? "border-accent shadow-lg scale-105 bg-gradient-to-br from-accent/5 to-transparent"
+                    ? "border-accent border-2 md:border-[3px] shadow-lg md:scale-105 bg-gradient-to-br from-accent/5 to-transparent ring-2 ring-accent/20"
                     : "border-border"
                 }`}
                 style={{
@@ -215,9 +215,9 @@ const OfferingsRu = () => {
                 }}
               >
                 {pkg.badge && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                    <span className="bg-accent text-accent-foreground px-4 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
-                      <Star size={14} fill="currentColor" />
+                  <div className="absolute -top-3 -right-2 md:-top-4 md:left-1/2 md:-translate-x-1/2 md:right-auto rotate-12 md:rotate-0">
+                    <span className="bg-accent text-accent-foreground px-3 py-1 md:px-4 rounded-full text-xs md:text-sm font-semibold flex items-center gap-1 shadow-lg">
+                      <Star size={12} className="md:w-[14px] md:h-[14px]" fill="currentColor" />
                       {pkg.badge}
                     </span>
                   </div>
