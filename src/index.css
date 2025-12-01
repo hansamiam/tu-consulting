@@ -9,61 +9,61 @@ All colors MUST be HSL.
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    --foreground: 210 74% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 210 74% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 210 74% 15%;
 
-    --primary: 222 47% 11%;
+    --primary: 210 70% 20%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 210 25% 95%;
+    --secondary-foreground: 210 74% 15%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 210 20% 96%;
+    --muted-foreground: 210 20% 45%;
 
-    --accent: 43 96% 56%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 46 64% 52%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 43 96% 56%;
+    --border: 210 20% 90%;
+    --input: 210 20% 90%;
+    --ring: 46 64% 52%;
 
     --radius: 0.75rem;
     
     /* Modern premium design tokens */
-    --navy: 222 47% 11%;
-    --navy-light: 222 47% 18%;
-    --gold: 43 96% 56%;
-    --gold-light: 43 96% 65%;
-    --gold-dark: 43 96% 45%;
+    --navy: 210 65% 22%;
+    --navy-light: 210 65% 28%;
+    --gold: 46 64% 52%;
+    --gold-light: 46 64% 65%;
+    --gold-dark: 46 64% 40%;
     
     /* Modern gradients with multiple stops */
-    --gradient-gold: linear-gradient(135deg, hsl(var(--gold)) 0%, hsl(43 96% 65%) 50%, hsl(43 96% 75%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(var(--gold)) 0%, hsl(var(--gold-light)) 50%, hsl(46 64% 70%) 100%);
     --gradient-overlay: linear-gradient(180deg, hsla(var(--navy), 0.95) 0%, hsla(var(--navy), 0.85) 50%, hsla(var(--navy), 0.75) 100%);
-    --gradient-premium: linear-gradient(135deg, hsl(222 47% 11%) 0%, hsl(222 47% 18%) 50%, hsl(43 96% 56%) 100%);
+    --gradient-premium: linear-gradient(135deg, hsl(var(--navy)) 0%, hsl(var(--navy-light)) 50%, hsl(var(--gold)) 100%);
     --gradient-shine: linear-gradient(90deg, transparent 0%, hsla(var(--gold), 0.3) 50%, transparent 100%);
-    --gradient-mesh: radial-gradient(at 40% 20%, hsla(43, 96%, 56%, 0.15) 0px, transparent 50%),
-                     radial-gradient(at 80% 0%, hsla(43, 96%, 65%, 0.1) 0px, transparent 50%),
-                     radial-gradient(at 0% 50%, hsla(222, 47%, 18%, 0.2) 0px, transparent 50%);
+    --gradient-mesh: radial-gradient(at 40% 20%, hsla(var(--gold), 0.15) 0px, transparent 50%),
+                     radial-gradient(at 80% 0%, hsla(var(--gold-light), 0.1) 0px, transparent 50%),
+                     radial-gradient(at 0% 50%, hsla(var(--navy-light), 0.2) 0px, transparent 50%);
     
     /* Layered premium shadows with depth */
     --shadow-glow: 0 0 20px hsla(var(--gold), 0.3), 0 0 40px hsla(var(--gold), 0.15);
-    --shadow-premium: 0 4px 6px -1px hsla(222, 47%, 11%, 0.1), 
-                      0 2px 4px -1px hsla(222, 47%, 11%, 0.06),
+    --shadow-premium: 0 4px 6px -1px hsla(var(--navy), 0.1), 
+                      0 2px 4px -1px hsla(var(--navy), 0.06),
                       0 0 0 1px hsla(var(--gold), 0.05);
-    --shadow-premium-hover: 0 10px 15px -3px hsla(222, 47%, 11%, 0.15), 
-                            0 4px 6px -2px hsla(222, 47%, 11%, 0.08),
+    --shadow-premium-hover: 0 10px 15px -3px hsla(var(--navy), 0.15), 
+                            0 4px 6px -2px hsla(var(--navy), 0.08),
                             0 0 0 1px hsla(var(--gold), 0.1),
                             0 0 30px hsla(var(--gold), 0.2);
-    --shadow-glass: 0 8px 32px hsla(222, 47%, 11%, 0.12),
+    --shadow-glass: 0 8px 32px hsla(var(--navy), 0.12),
                     inset 0 1px 0 0 hsla(0, 0%, 100%, 0.05);
     
     /* Sophisticated animations */
@@ -83,33 +83,33 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222 47% 8%;
+    --background: 210 74% 8%;
     --foreground: 0 0% 100%;
 
-    --card: 222 47% 11%;
+    --card: 210 74% 10%;
     --card-foreground: 0 0% 100%;
 
-    --popover: 222 47% 11%;
+    --popover: 210 74% 10%;
     --popover-foreground: 0 0% 100%;
 
     --primary: 0 0% 100%;
-    --primary-foreground: 222 47% 11%;
+    --primary-foreground: 210 74% 15%;
 
-    --secondary: 222 47% 15%;
+    --secondary: 210 50% 18%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 222 47% 15%;
-    --muted-foreground: 220 9% 70%;
+    --muted: 210 50% 18%;
+    --muted-foreground: 210 20% 70%;
 
-    --accent: 43 96% 56%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 46 64% 52%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 63% 31%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 222 47% 20%;
-    --input: 222 47% 20%;
-    --ring: 43 96% 56%;
+    --border: 210 50% 20%;
+    --input: 210 50% 20%;
+    --ring: 46 64% 52%;
   }
 }
 
@@ -208,6 +208,11 @@ All colors MUST be HSL.
   .hover-lift:hover {
     @apply shadow-premium-hover;
     transform: translateY(-4px);
+  }
+  
+  /* Gradient background mesh */
+  .bg-gradient-mesh {
+    background: var(--gradient-mesh);
   }
   
   /* Modern link with underline */
