@@ -442,6 +442,7 @@ const Offerings = () => {
           consultationType={selectedConsultation.name}
           price={selectedConsultation.price}
           language="en"
+          isConsultation={true}
         />
 
         {/* Package Form Dialog */}
@@ -570,6 +571,7 @@ const Offerings = () => {
           consultationType={selectedPackage.name}
           price={selectedPackage.price}
           language="en"
+          isConsultation={false}
         />
 
         {/* Trust Section */}

@@ -13,9 +13,10 @@ interface PaymentDialogProps {
   consultationType: string;
   price: string;
   language: "en" | "ru";
+  isConsultation: boolean;
 }
 
-export const PaymentDialog = ({ open, onOpenChange, consultationType, price, language }: PaymentDialogProps) => {
+export const PaymentDialog = ({ open, onOpenChange, consultationType, price, language, isConsultation }: PaymentDialogProps) => {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [promoCode, setPromoCode] = useState("");
@@ -73,13 +74,18 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
   const t = text[language];
 
   const calculateFinalPrice = () => {
-    const numPrice = parseFloat(price.replace('$', ''));
+    const numPrice = parseFloat(price.replace('$', '').replace(/,/g, ''));
     return numPrice - (numPrice * discount);
   };
 
   const handlePromoApply = () => {
     const code = promoCode.toUpperCase().trim();
     if (code === "LAUNCH30") {
+      if (!isConsultation) {
+        setPromoError(language === "en" ? "This promo code is only valid for consultations" : "Этот промокод действителен только для консультаций");
+        setDiscount(0);
+        return;
+      }
       setDiscount(0.30);
       setPromoError("");
       toast({
