@@ -205,7 +205,7 @@ const OfferingsRu = () => {
                 key={index}
                 className={`relative ${
                   pkg.popular
-                    ? "border-accent border-2 md:border-[3px] shadow-lg md:scale-105 bg-gradient-to-br from-accent/5 to-transparent ring-2 ring-accent/20"
+                    ? "border-accent/60 shadow-lg md:scale-105 bg-gradient-to-br from-accent/5 to-transparent ring-1 ring-accent/10"
                     : "border-border"
                 }`}
                 style={{

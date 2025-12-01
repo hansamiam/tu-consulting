@@ -211,7 +211,7 @@ const Offerings = () => {
                 key={index}
                 className={`relative border-gold/30 bg-card/60 backdrop-blur-sm hover:shadow-xl transition-all ${
                   pkg.popular
-                    ? "shadow-lg md:scale-105 border-accent border-2 md:border-[3px] ring-2 ring-accent/20"
+                    ? "shadow-lg md:scale-105 border-accent/60 ring-1 ring-accent/10"
                     : ""
                 }`}
                 style={{
