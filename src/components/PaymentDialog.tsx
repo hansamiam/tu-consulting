@@ -263,6 +263,16 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
           >
             {t.proceedButton}
           </Button>
+
+          {/* Contact Note */}
+          <p className="text-xs text-muted-foreground text-center">
+            {language === "en" 
+              ? "If you run into any issues processing payment or would like to discuss alternative methods, please get in touch with us at "
+              : "Если у вас возникли проблемы с оплатой или вы хотите обсудить альтернативные способы, свяжитесь с нами по адресу "}
+            <a href="mailto:team@topuniconsulting.com" className="text-accent hover:underline">
+              team@topuniconsulting.com
+            </a>
+          </p>
         </div>
       </DialogContent>
     </Dialog>
