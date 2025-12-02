@@ -48,7 +48,7 @@ const ThankYouRu = () => {
           <div className="bg-white rounded-lg shadow-xl p-2 mb-8">
             <div 
               className="calendly-inline-widget" 
-              data-url="https://calendly.com/topuniconsulting/consultation"
+              data-url="https://calendly.com/topuniconsulting"
               style={{ minWidth: "320px", height: "700px" }}
             />
           </div>
