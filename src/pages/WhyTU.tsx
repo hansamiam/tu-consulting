@@ -125,7 +125,7 @@ const WhyTU = () => {
           <Card className="p-12 bg-gradient-to-br from-primary/10 to-gold/10 border-primary/30 text-center space-y-6">
             <h2 className="text-3xl md:text-4xl font-bold text-primary">Ready to Start Your Journey?</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Join students who've chosen personalized expertise over corporate consulting mills.
+              Take the first step toward your dream university with expert guidance tailored to you.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
