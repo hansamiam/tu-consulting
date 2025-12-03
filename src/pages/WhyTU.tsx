@@ -77,7 +77,7 @@ const WhyTU = () => {
               </div>
             </Card>
 
-            <Card className="p-4 md:p-8 space-y-3 md:space-y-4 border-primary/30 bg-gradient-to-br from-card/80 to-primary/5 hover:shadow-xl transition-all">
+            <Card className="p-4 md:p-8 space-y-3 md:space-y-4 border-gold/30 bg-gradient-to-br from-card/80 to-accent/5 hover:shadow-xl transition-all">
               <h3 className="text-lg md:text-2xl font-bold text-primary">Personal Attention</h3>
               <p className="text-xs md:text-base text-muted-foreground">
                 Large firms charge premium but spread mentors thin. We keep client loads manageable—you get dedicated support without the markup.
@@ -87,7 +87,7 @@ const WhyTU = () => {
               </div>
             </Card>
 
-            <Card className="p-4 md:p-8 space-y-3 md:space-y-4 border-accent/30 bg-gradient-to-br from-card/80 to-gold/5 hover:shadow-xl transition-all">
+            <Card className="p-4 md:p-8 space-y-3 md:space-y-4 border-gold/30 bg-gradient-to-br from-card/80 to-accent/5 hover:shadow-xl transition-all">
               <h3 className="text-lg md:text-2xl font-bold text-primary">Global Standards, Local Access</h3>
               <p className="text-xs md:text-base text-muted-foreground">
                 We bring top-tier Western consulting methodology and resources directly to you. Full bilingual support in English and Russian means nothing gets lost in translation.
