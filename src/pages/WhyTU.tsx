@@ -5,30 +5,19 @@ import Navigation from "@/components/Navigation";
 import { ArrowLeft, Users, Target, Award, Heart, TrendingUp, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-library.jpg";
-
 const WhyTU = () => {
   const navigate = useNavigate();
-
-  return (
-    <div 
-      className="min-h-screen relative"
-      style={{
-        backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url(${heroImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed'
-      }}
-    >
+  return <div className="min-h-screen relative" style={{
+    backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url(${heroImage})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundAttachment: 'fixed'
+  }}>
       <Navigation language="en" />
       {/* Header */}
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 sticky top-16 z-40 shadow-sm">
         <div className="container mx-auto px-4 py-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/")}
-            className="gap-2 hover:text-primary transition-colors"
-          >
+          <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="gap-2 hover:text-primary transition-colors">
             <ArrowLeft className="h-4 w-4" />
             Back to Home
           </Button>
@@ -124,30 +113,18 @@ const WhyTU = () => {
           {/* CTA Section */}
           <Card className="p-12 bg-gradient-to-br from-primary/10 to-gold/10 border-primary/30 text-center space-y-6">
             <h2 className="text-3xl md:text-4xl font-bold text-primary">Ready to Start Your Journey?</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Take the first step toward your dream university with expert guidance tailored to you.
-            </p>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Take the first step toward your dream university with expert guidance.</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                size="lg" 
-                variant="gold"
-                onClick={() => navigate("/offerings")}
-              >
+              <Button size="lg" variant="gold" onClick={() => navigate("/offerings")}>
                 View Our Packages
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline"
-                onClick={() => navigate("/team")}
-              >
+              <Button size="lg" variant="outline" onClick={() => navigate("/team")}>
                 Meet Our Team
               </Button>
             </div>
           </Card>
         </div>
       </main>
-    </div>
-  );
+    </div>;
 };
-
 export default WhyTU;
