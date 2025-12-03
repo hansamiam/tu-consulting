@@ -125,7 +125,7 @@ const WhyTURu = () => {
           <Card className="p-12 bg-gradient-to-br from-primary/10 to-gold/10 border-primary/30 text-center space-y-6">
             <h2 className="text-3xl md:text-4xl font-bold text-primary">Готовы начать свой путь?</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Присоединяйтесь к студентам, которые выбрали персонализированную экспертизу вместо корпоративных консалтинговых фабрик.
+              Сделайте первый шаг к университету вашей мечты с экспертным сопровождением, адаптированным под вас.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
