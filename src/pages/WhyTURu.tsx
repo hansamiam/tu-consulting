@@ -77,23 +77,23 @@ const WhyTURu = () => {
               </div>
             </Card>
 
-            <Card className="p-8 space-y-4 border-primary/30 bg-gradient-to-br from-card/80 to-primary/5 hover:shadow-xl transition-all">
-              <h3 className="text-2xl font-bold text-primary">Личное внимание</h3>
-              <p className="text-muted-foreground">
+            <Card className="p-4 md:p-8 space-y-3 md:space-y-4 border-gold/30 bg-gradient-to-br from-card/80 to-accent/5 hover:shadow-xl transition-all">
+              <h3 className="text-lg md:text-2xl font-bold text-primary">Личное внимание</h3>
+              <p className="text-xs md:text-base text-muted-foreground">
                 Крупные фирмы берут высокие цены, но распыляют менторов. Мы держим нагрузку управляемой—вы получаете целенаправленную поддержку без наценки.
               </p>
-              <div className="pt-4 border-t border-border/50">
-                <p className="text-sm text-foreground font-medium">Ваш успех—наша миссия, а не просто еще одна метрика</p>
+              <div className="pt-3 md:pt-4 border-t border-border/50">
+                <p className="text-xs md:text-sm text-foreground font-medium">Ваш успех—наша миссия, а не просто еще одна метрика</p>
               </div>
             </Card>
 
-            <Card className="p-8 space-y-4 border-accent/30 bg-gradient-to-br from-card/80 to-gold/5 hover:shadow-xl transition-all">
-              <h3 className="text-2xl font-bold text-primary">Глобальные стандарты, местный доступ</h3>
-              <p className="text-muted-foreground">
+            <Card className="p-4 md:p-8 space-y-3 md:space-y-4 border-gold/30 bg-gradient-to-br from-card/80 to-accent/5 hover:shadow-xl transition-all">
+              <h3 className="text-lg md:text-2xl font-bold text-primary">Глобальные стандарты, местный доступ</h3>
+              <p className="text-xs md:text-base text-muted-foreground">
                 Мы приносим первоклассную западную методологию консалтинга и ресурсы непосредственно к вам. Полная двуязычная поддержка на английском и русском означает, что ничего не теряется в переводе.
               </p>
-              <div className="pt-4 border-t border-border/50">
-                <p className="text-sm text-foreground font-medium">Мировой подход, доступный и личный</p>
+              <div className="pt-3 md:pt-4 border-t border-border/50">
+                <p className="text-xs md:text-sm text-foreground font-medium">Мировой подход, доступный и личный</p>
               </div>
             </Card>
 
