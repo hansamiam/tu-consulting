@@ -261,10 +261,11 @@ const TeamRu = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 bg-background/80 backdrop-blur-md py-8">
+      <footer className="border-t border-border/30 bg-background/80 backdrop-blur-sm py-6 mt-12">
         <div className="container mx-auto px-4 text-center space-y-2">
-          <p className="text-sm text-muted-foreground">Ведущая консалтинговая компания по поступлению в Центральной Азии</p>
-          <p className="text-xs text-muted-foreground">© 2025 Top Uni Consulting | Все права защищены</p>
+          <p className="text-sm text-muted-foreground">Под руководством консультантов из Йеля, Гарварда, Кембриджа и Цинхуа</p>
+          <p className="text-sm text-muted-foreground">Ведущая консалтинговая фирма по поступлению в Центральной Азии</p>
+          <p className="text-xs text-muted-foreground mt-2">© 2025 Top Uni Consulting | Все права защищены</p>
         </div>
       </footer>
     </div>
