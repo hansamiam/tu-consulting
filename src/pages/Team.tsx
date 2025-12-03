@@ -270,10 +270,11 @@ const Team = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 bg-background/80 backdrop-blur-md py-8">
+      <footer className="border-t border-border/30 bg-background/80 backdrop-blur-sm py-6 mt-12">
         <div className="container mx-auto px-4 text-center space-y-2">
+          <p className="text-sm text-muted-foreground">Led by consultants from Yale, Harvard, Cambridge, and Tsinghua</p>
           <p className="text-sm text-muted-foreground">Central Asia's leading admissions consulting firm</p>
-          <p className="text-xs text-muted-foreground">© 2025 Top Uni Consulting | All Rights Reserved</p>
+          <p className="text-xs text-muted-foreground mt-2">© 2025 Top Uni Consulting | All Rights Reserved</p>
         </div>
       </footer>
     </div>
