@@ -74,10 +74,12 @@ const OfferingsRu = () => {
   const packages = [
     {
       name: "Стартовый пакет",
-      originalPrice: "$899",
-      price: "$764",
+      originalPrice: "78 000 сом",
+      originalPriceUsd: "≈ $899",
+      price: "66 300 сом",
+      priceUsd: "≈ $764",
       discount: "Скидка 15%",
-      hours: "5 часов",
+      hours: "5 сессий",
       features: [
         "5 сессий комплексных консультаций",
         "Планирование сроков подачи",
@@ -88,8 +90,10 @@ const OfferingsRu = () => {
     },
     {
       name: "Стандартный пакет",
-      originalPrice: "$1,599",
-      price: "$1,199",
+      originalPrice: "138 700 сом",
+      originalPriceUsd: "≈ $1 599",
+      price: "104 000 сом",
+      priceUsd: "≈ $1 199",
       discount: "Скидка 25%",
       hours: "10 сессий",
       features: [
@@ -106,8 +110,10 @@ const OfferingsRu = () => {
     {
       name: "Премиум пакет",
       badge: "Максимальная поддержка",
-      originalPrice: "$2,999",
-      price: "$1,949",
+      originalPrice: "260 100 сом",
+      originalPriceUsd: "≈ $2 999",
+      price: "169 100 сом",
+      priceUsd: "≈ $1 949",
       discount: "Скидка 35%",
       hours: "20 сессий",
       features: [
@@ -130,7 +136,8 @@ const OfferingsRu = () => {
   const consultations = [
     {
       name: "Диагностическая консультация",
-      price: "$50",
+      price: "4 350 сом",
+      priceUsd: "≈ $50",
       duration: "25 минут",
       description: "Идеально для первого разговора и вопросов",
       features: [
@@ -141,7 +148,8 @@ const OfferingsRu = () => {
     },
     {
       name: "Стратегическая консультация",
-      price: "$90",
+      price: "7 800 сом",
+      priceUsd: "≈ $90",
       duration: "50 минут",
       description: "Расширенная сессия для обсуждения вашего пути",
       features: [
@@ -225,15 +233,19 @@ const OfferingsRu = () => {
                 <CardHeader className="text-center pt-6 md:pt-8 pb-4 md:pb-6">
                   <CardTitle className="text-lg md:text-2xl mb-2">{pkg.name}</CardTitle>
                   <div className="space-y-1 md:space-y-2">
-                    <div className="flex items-center justify-center gap-2">
+                    <div className="flex items-center justify-center gap-2 flex-wrap">
                       <span className="text-xs md:text-sm text-muted-foreground line-through">
                         {pkg.originalPrice}
+                      </span>
+                      <span className="text-xs text-muted-foreground/70">
+                        ({pkg.originalPriceUsd})
                       </span>
                       <span className="bg-destructive text-destructive-foreground text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded">
                         {pkg.discount}
                       </span>
                     </div>
-                    <div className="text-2xl md:text-4xl font-bold text-accent">{pkg.price}</div>
+                    <div className="text-xl md:text-3xl font-bold text-accent">{pkg.price}</div>
+                    <div className="text-sm text-muted-foreground">({pkg.priceUsd})</div>
                   </div>
                   <CardDescription className="text-sm md:text-base pt-1 md:pt-2">
                     {pkg.hours}
@@ -278,9 +290,12 @@ const OfferingsRu = () => {
               <Card key={index} className="border-border">
                 <CardHeader className="pb-4 md:pb-6">
                   <CardTitle className="text-lg md:text-xl">{consultation.name}</CardTitle>
-                  <div className="flex items-baseline gap-2 pt-1 md:pt-2">
-                    <span className="text-2xl md:text-3xl font-bold text-accent">{consultation.price}</span>
-                    <span className="text-sm md:text-base text-muted-foreground">/ {consultation.duration}</span>
+                  <div className="pt-1 md:pt-2">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl md:text-3xl font-bold text-accent">{consultation.price}</span>
+                      <span className="text-sm md:text-base text-muted-foreground">/ {consultation.duration}</span>
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-1">({consultation.priceUsd})</div>
                   </div>
                   <CardDescription className="pt-1 md:pt-2 text-xs md:text-sm">{consultation.description}</CardDescription>
                 </CardHeader>
