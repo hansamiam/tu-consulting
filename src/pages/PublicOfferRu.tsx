@@ -219,7 +219,7 @@ const PublicOfferRu = () => {
                 <ul className="list-none text-muted-foreground space-y-2">
                   <li><strong>Название компании:</strong> Top Uni Consulting</li>
                   <li><strong>Адрес:</strong> г. Бишкек, Кыргызская Республика</li>
-                  <li><strong>Email:</strong> topuniconsulting@gmail.com</li>
+                  <li><strong>Email:</strong> team@topuniconsulting.com</li>
                   <li><strong>Веб-сайт:</strong> topuniconsulting.com</li>
                 </ul>
               </section>

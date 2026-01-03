@@ -210,7 +210,7 @@ const PrivacyPolicyRu = () => {
                   Если у вас есть вопросы о настоящей Политике конфиденциальности или вы хотите реализовать свои права на данные, пожалуйста, свяжитесь с нами:
                 </p>
                 <ul className="list-none text-muted-foreground space-y-2">
-                  <li><strong>Email:</strong> topuniconsulting@gmail.com</li>
+                  <li><strong>Email:</strong> team@topuniconsulting.com</li>
                   <li><strong>Адрес:</strong> г. Бишкек, Кыргызская Республика</li>
                 </ul>
               </section>

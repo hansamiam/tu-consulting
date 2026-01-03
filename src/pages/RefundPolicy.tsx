@@ -124,7 +124,7 @@ const RefundPolicy = () => {
                   To request a refund, please follow these steps:
                 </p>
                 <ol className="list-decimal pl-6 text-muted-foreground space-y-2">
-                  <li>Send an email to <strong>topuniconsulting@gmail.com</strong> with the subject line "Refund Request"</li>
+                  <li>Send an email to <strong>team@topuniconsulting.com</strong> with the subject line "Refund Request"</li>
                   <li>Include in your email:
                     <ul className="list-disc pl-6 mt-2 space-y-1">
                       <li>Your full name</li>
@@ -162,7 +162,7 @@ const RefundPolicy = () => {
                   If you disagree with our refund decision, you may:
                 </p>
                 <ol className="list-decimal pl-6 text-muted-foreground space-y-2">
-                  <li><strong>Request a review:</strong> Send a detailed explanation to topuniconsulting@gmail.com. A senior member of our team will review your case within 14 business days.</li>
+                  <li><strong>Request a review:</strong> Send a detailed explanation to team@topuniconsulting.com. A senior member of our team will review your case within 14 business days.</li>
                   <li><strong>Formal complaint:</strong> If still unsatisfied, you may file a formal complaint with consumer protection authorities in the Kyrgyz Republic.</li>
                   <li><strong>Legal recourse:</strong> As a last resort, disputes may be resolved through the courts of the Kyrgyz Republic in accordance with applicable law.</li>
                 </ol>
@@ -203,7 +203,7 @@ const RefundPolicy = () => {
                   For refund requests or questions about this policy, please contact us:
                 </p>
                 <ul className="list-none text-muted-foreground space-y-2">
-                  <li><strong>Email:</strong> topuniconsulting@gmail.com</li>
+                  <li><strong>Email:</strong> team@topuniconsulting.com</li>
                   <li><strong>Address:</strong> Bishkek, Kyrgyz Republic</li>
                 </ul>
               </section>

@@ -219,7 +219,7 @@ const PublicOffer = () => {
                 <ul className="list-none text-muted-foreground space-y-2">
                   <li><strong>Company Name:</strong> Top Uni Consulting</li>
                   <li><strong>Address:</strong> Bishkek, Kyrgyz Republic</li>
-                  <li><strong>Email:</strong> topuniconsulting@gmail.com</li>
+                  <li><strong>Email:</strong> team@topuniconsulting.com</li>
                   <li><strong>Website:</strong> topuniconsulting.com</li>
                 </ul>
               </section>
