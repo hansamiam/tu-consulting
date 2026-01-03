@@ -2,11 +2,11 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Instagram } from "lucide-react";
 import heroImage from "@/assets/hero-campus.jpg";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 import Navigation from "@/components/Navigation";
 import { WaitlistSection } from "@/components/WaitlistSection";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { FloatingBadge } from "@/components/FloatingBadge";
+import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
 
 const IndexRu = () => {
@@ -100,20 +100,7 @@ const IndexRu = () => {
           </div>
 
           {/* Footer */}
-          <footer className="text-primary-foreground/50 text-xs sm:text-sm space-y-3 px-4">
-            <p>
-              <a 
-                href="mailto:team@topuniconsulting.com" 
-                className="text-gold hover:text-gold-light transition-colors duration-300 break-all"
-              >
-                team@topuniconsulting.com
-              </a>
-            </p>
-            <div className="border-t border-gold/20 pt-3 space-y-2">
-              <p className="text-primary-foreground/60 text-xs sm:text-sm">Ведущая консалтинговая компания Центральной Азии по поступлению</p>
-              <p className="text-primary-foreground/50 text-xs">© 2025 Top Uni Consulting | Все права защищены</p>
-            </div>
-          </footer>
+          <Footer language="ru" variant="dark" />
         </main>
       </motion.div>
     </div>

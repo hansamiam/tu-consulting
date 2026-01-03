@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 import Navigation from "@/components/Navigation";
+import { Footer } from "@/components/Footer";
 import { ArrowLeft, Users, Target, Award, Heart, TrendingUp, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-library.jpg";
@@ -149,9 +149,8 @@ const WhyTURu = () => {
 
       {/* Footer */}
       <footer className="border-t border-border/30 bg-background/80 backdrop-blur-sm py-6 mt-12">
-        <div className="container mx-auto px-4 text-center space-y-2">
-          <p className="text-sm text-muted-foreground">Под руководством консультантов из Йеля, Гарварда, Кембриджа и Цинхуа</p>
-          <p className="text-xs text-muted-foreground mt-2">© 2025 Top Uni Consulting | Все права защищены</p>
+        <div className="container mx-auto px-4 text-center">
+          <Footer language="ru" variant="light" />
         </div>
       </footer>
     </div>

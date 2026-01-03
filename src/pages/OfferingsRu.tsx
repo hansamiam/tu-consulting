@@ -10,6 +10,7 @@ import { Check, Star, ArrowLeft } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { useToast } from "@/hooks/use-toast";
 import { PaymentDialog } from "@/components/PaymentDialog";
+import { Footer } from "@/components/Footer";
 import heroCampus from "@/assets/hero-campus.jpg";
 import heroLibrary from "@/assets/hero-library.jpg";
 import yaleCampus from "@/assets/yale-campus.jpg";
@@ -591,13 +592,12 @@ const OfferingsRu = () => {
             <p className="text-muted-foreground">
               🌍 Доступно на русском и английском языках
             </p>
-            <p className="text-sm text-muted-foreground">
-              Вопросы? Напишите нам:{" "}
-              <a href="mailto:team@topuniconsulting.com" className="text-accent hover:underline">
-                team@topuniconsulting.com
-              </a>
-            </p>
           </div>
+        </section>
+
+        {/* Footer */}
+        <section className="mt-12 pb-8">
+          <Footer language="ru" variant="light" />
         </section>
       </main>
     </div>
