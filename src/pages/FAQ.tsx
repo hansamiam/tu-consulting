@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ArrowLeft } from "lucide-react";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 import Navigation from "@/components/Navigation";
+import { Footer } from "@/components/Footer";
 import heroImage from "@/assets/hero-campus.jpg";
 
 const FAQ = () => {
@@ -128,9 +128,8 @@ const FAQ = () => {
 
       {/* Footer */}
       <footer className="border-t border-border/30 bg-background/80 backdrop-blur-sm py-6 mt-12">
-        <div className="container mx-auto px-4 text-center space-y-2">
-          <p className="text-sm text-muted-foreground">Led by consultants from Yale, Harvard, Cambridge, and Tsinghua</p>
-          <p className="text-xs text-muted-foreground mt-2">© 2025 Top Uni Consulting | All Rights Reserved</p>
+        <div className="container mx-auto px-4 text-center">
+          <Footer language="en" variant="light" />
         </div>
       </footer>
     </div>
