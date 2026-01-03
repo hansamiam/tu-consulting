@@ -124,7 +124,7 @@ const RefundPolicyRu = () => {
                   Для запроса возврата выполните следующие действия:
                 </p>
                 <ol className="list-decimal pl-6 text-muted-foreground space-y-2">
-                  <li>Отправьте письмо на <strong>topuniconsulting@gmail.com</strong> с темой «Запрос на возврат»</li>
+                  <li>Отправьте письмо на <strong>team@topuniconsulting.com</strong> с темой «Запрос на возврат»</li>
                   <li>Укажите в письме:
                     <ul className="list-disc pl-6 mt-2 space-y-1">
                       <li>Ваше полное имя</li>
@@ -162,7 +162,7 @@ const RefundPolicyRu = () => {
                   Если вы не согласны с нашим решением о возврате, вы можете:
                 </p>
                 <ol className="list-decimal pl-6 text-muted-foreground space-y-2">
-                  <li><strong>Запросить пересмотр:</strong> Отправьте подробное объяснение на topuniconsulting@gmail.com. Старший сотрудник нашей команды рассмотрит ваше дело в течение 14 рабочих дней.</li>
+                  <li><strong>Запросить пересмотр:</strong> Отправьте подробное объяснение на team@topuniconsulting.com. Старший сотрудник нашей команды рассмотрит ваше дело в течение 14 рабочих дней.</li>
                   <li><strong>Официальная жалоба:</strong> Если вы по-прежнему не удовлетворены, вы можете подать официальную жалобу в органы защиты прав потребителей Кыргызской Республики.</li>
                   <li><strong>Судебное обращение:</strong> В крайнем случае споры могут быть разрешены через суды Кыргызской Республики в соответствии с применимым законодательством.</li>
                 </ol>
@@ -203,7 +203,7 @@ const RefundPolicyRu = () => {
                   Для запросов на возврат или вопросов о настоящих правилах свяжитесь с нами:
                 </p>
                 <ul className="list-none text-muted-foreground space-y-2">
-                  <li><strong>Email:</strong> topuniconsulting@gmail.com</li>
+                  <li><strong>Email:</strong> team@topuniconsulting.com</li>
                   <li><strong>Адрес:</strong> г. Бишкек, Кыргызская Республика</li>
                 </ul>
               </section>

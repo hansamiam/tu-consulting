@@ -210,7 +210,7 @@ const PrivacyPolicy = () => {
                   If you have questions about this Privacy Policy or wish to exercise your data rights, please contact us:
                 </p>
                 <ul className="list-none text-muted-foreground space-y-2">
-                  <li><strong>Email:</strong> topuniconsulting@gmail.com</li>
+                  <li><strong>Email:</strong> team@topuniconsulting.com</li>
                   <li><strong>Address:</strong> Bishkek, Kyrgyz Republic</li>
                 </ul>
               </section>
