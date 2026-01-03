@@ -15,6 +15,14 @@ import WhyTU from "./pages/WhyTU";
 import WhyTURu from "./pages/WhyTURu";
 import ThankYou from "./pages/ThankYou";
 import ThankYouRu from "./pages/ThankYouRu";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import PrivacyPolicyRu from "./pages/PrivacyPolicyRu";
+import PublicOffer from "./pages/PublicOffer";
+import PublicOfferRu from "./pages/PublicOfferRu";
+import RefundPolicy from "./pages/RefundPolicy";
+import RefundPolicyRu from "./pages/RefundPolicyRu";
+import PaymentInfo from "./pages/PaymentInfo";
+import PaymentInfoRu from "./pages/PaymentInfoRu";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +46,14 @@ const App = () => (
           <Route path="/why-tu/ru" element={<WhyTURu />} />
           <Route path="/thank-you" element={<ThankYou />} />
           <Route path="/thank-you/ru" element={<ThankYouRu />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/privacy-policy/ru" element={<PrivacyPolicyRu />} />
+          <Route path="/public-offer" element={<PublicOffer />} />
+          <Route path="/public-offer/ru" element={<PublicOfferRu />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
+          <Route path="/refund-policy/ru" element={<RefundPolicyRu />} />
+          <Route path="/payment-info" element={<PaymentInfo />} />
+          <Route path="/payment-info/ru" element={<PaymentInfoRu />} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/why-us" element={<WhyTU />} />
           <Route path="/why-us/ru" element={<WhyTURu />} />
