@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Check, Star, ArrowLeft } from "lucide-react";
+import { Check, Star, ArrowLeft, Info } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { useToast } from "@/hooks/use-toast";
 import { PaymentDialog } from "@/components/PaymentDialog";
+import { PackageDetailDialog } from "@/components/PackageDetailDialog";
 import { Footer } from "@/components/Footer";
 import heroImage from "@/assets/hero-campus.jpg";
 import heroLibrary from "@/assets/hero-library.jpg";
@@ -31,9 +32,10 @@ const Offerings = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedConsultation, setSelectedConsultation] = useState<{name: string; price: string}>({name: "", price: ""});
-  const [selectedPackage, setSelectedPackage] = useState<{name: string; price: string}>({name: "", price: ""});
+  const [selectedPackage, setSelectedPackage] = useState<any>(null);
   const [isPackageDialogOpen, setIsPackageDialogOpen] = useState(false);
   const [isPackagePaymentOpen, setIsPackagePaymentOpen] = useState(false);
+  const [isPackageDetailOpen, setIsPackageDetailOpen] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -80,7 +82,7 @@ const Offerings = () => {
       price: "66,300 KGS",
       priceUsd: "≈ $764",
       discount: "15% OFF",
-      hours: "5 Sessions",
+      sessions: "5 Sessions",
       features: [
         "5 sessions of comprehensive consulting",
         "Application timeline planning",
@@ -88,6 +90,9 @@ const Offerings = () => {
         "Essay structure review (1 essay)",
         "Mock admissions review & feedback",
       ],
+      fullDescription: "The Starter Package is designed for students who need foundational guidance in their university application journey. This package provides essential support to help you understand the application process, select the right universities, and begin crafting compelling application materials. Ideal for students starting their preparation early or those who need focused help on specific aspects of their application.",
+      format: "Online / Remote consultation via video call (Zoom or Google Meet). All sessions are conducted one-on-one with your dedicated consultant.",
+      timeline: "Sessions can be scheduled flexibly over 2-4 months. Each session lasts approximately 50-60 minutes. Total package duration depends on your application timeline.",
       popular: false,
     },
     {
@@ -97,7 +102,7 @@ const Offerings = () => {
       price: "104,000 KGS",
       priceUsd: "≈ $1,199",
       discount: "25% OFF",
-      hours: "10 Sessions",
+      sessions: "10 Sessions",
       features: [
         "10 sessions of comprehensive consulting",
         "Complete application review",
@@ -109,6 +114,9 @@ const Offerings = () => {
         "Application proofreading",
         "Scholarship guidance",
       ],
+      fullDescription: "Our most popular choice, the Standard Package offers comprehensive support throughout your entire application process. This package covers everything from initial planning to final submission, including multiple essay reviews, interview preparation, and ongoing support. Perfect for students applying to competitive universities who want thorough guidance at every step.",
+      format: "Online / Remote consultation via video call (Zoom or Google Meet). All sessions are conducted one-on-one with your dedicated consultant. Includes email support for questions between sessions.",
+      timeline: "Sessions typically span 4-8 months to cover the full application cycle. Each session lasts 50-60 minutes. Flexible scheduling to accommodate your school schedule and deadlines.",
       popular: true,
     },
     {
@@ -119,7 +127,7 @@ const Offerings = () => {
       price: "169,100 KGS",
       priceUsd: "≈ $1,949",
       discount: "35% OFF",
-      hours: "20 Sessions",
+      sessions: "20 Sessions",
       features: [
         "20 sessions of comprehensive consulting",
         "Complete application management",
@@ -133,6 +141,9 @@ const Offerings = () => {
         "Scholarship search assistance",
         "Networking introduction support",
       ],
+      fullDescription: "The Premium Package is our most comprehensive offering, providing end-to-end support for students aiming for the world's top universities. With priority support, unlimited essay revisions, and extensive interview preparation, this package ensures you have every advantage in your application. Includes personalized strategy sessions, post-application guidance, and networking opportunities to maximize your success.",
+      format: "Online / Remote consultation via video call (Zoom or Google Meet). All sessions are conducted one-on-one with your dedicated consultant. Priority email and messaging support with faster response times.",
+      timeline: "Sessions span 6-12 months for complete application cycle coverage. Each session lasts 50-60 minutes. Includes post-application support and guidance through decision phase. Flexible scheduling with priority booking.",
       popular: false,
     },
   ];
@@ -255,28 +266,46 @@ const Offerings = () => {
                     <div className="text-sm text-muted-foreground">({pkg.priceUsd})</div>
                   </div>
                   <CardDescription className="text-sm md:text-base pt-1 md:pt-2">
-                    {pkg.hours}
+                    {pkg.sessions}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3 md:space-y-4 pb-4 md:pb-6">
                   <ul className="space-y-2 md:space-y-3">
-                    {pkg.features.map((feature, idx) => (
+                    {pkg.features.slice(0, 5).map((feature, idx) => (
                       <li key={idx} className="flex items-start gap-2">
                         <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
                         <span className="text-xs md:text-sm text-foreground">{feature}</span>
                       </li>
                     ))}
+                    {pkg.features.length > 5 && (
+                      <li className="text-xs md:text-sm text-muted-foreground italic">
+                        +{pkg.features.length - 5} more features...
+                      </li>
+                    )}
                   </ul>
-                  <Button
-                    variant={pkg.popular ? "gold" : "default"}
-                    className="w-full"
-                    onClick={() => {
-                      setSelectedPackage({name: pkg.name, price: pkg.price});
-                      setIsPackageDialogOpen(true);
-                    }}
-                  >
-                    Select Package
-                  </Button>
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      className="w-full border-accent/30"
+                      onClick={() => {
+                        setSelectedPackage(pkg);
+                        setIsPackageDetailOpen(true);
+                      }}
+                    >
+                      <Info size={16} className="mr-2" />
+                      View Details
+                    </Button>
+                    <Button
+                      variant={pkg.popular ? "gold" : "default"}
+                      className="w-full"
+                      onClick={() => {
+                        setSelectedPackage(pkg);
+                        setIsPackageDialogOpen(true);
+                      }}
+                    >
+                      Select Package
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -584,10 +613,22 @@ const Offerings = () => {
         <PaymentDialog
           open={isPackagePaymentOpen}
           onOpenChange={setIsPackagePaymentOpen}
-          consultationType={selectedPackage.name}
-          price={selectedPackage.price}
+          consultationType={selectedPackage?.name || ""}
+          price={selectedPackage?.price || ""}
           language="en"
           isConsultation={false}
+        />
+
+        {/* Package Detail Dialog */}
+        <PackageDetailDialog
+          isOpen={isPackageDetailOpen}
+          onClose={() => setIsPackageDetailOpen(false)}
+          package={selectedPackage}
+          onProceedToPayment={() => {
+            setIsPackageDetailOpen(false);
+            setIsPackageDialogOpen(true);
+          }}
+          language="en"
         />
 
         {/* Trust Section */}
