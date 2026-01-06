@@ -494,7 +494,7 @@ const Offerings = () => {
         <Dialog open={isPackageDialogOpen} onOpenChange={setIsPackageDialogOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-2xl">Book Your {selectedPackage.name}</DialogTitle>
+              <DialogTitle className="text-2xl">Book Your {selectedPackage?.name}</DialogTitle>
               <DialogDescription className="text-base">
                 Help us prepare for your program. The more details you provide, the better we can tailor our services to your needs.
               </DialogDescription>
