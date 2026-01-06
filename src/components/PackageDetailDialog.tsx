@@ -39,8 +39,6 @@ export const PackageDetailDialog = ({
   onProceedToPayment,
   language,
 }: PackageDetailDialogProps) => {
-  if (!pkg) return null;
-
   const isRu = language === "ru";
 
   const labels = {
@@ -69,14 +67,14 @@ export const PackageDetailDialog = ({
   const publicOfferLink = isRu ? "/public-offer/ru" : "/public-offer";
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen && pkg !== null} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl md:text-3xl font-bold">
-            {pkg.name}
+            {pkg?.name}
           </DialogTitle>
           <DialogDescription className="text-base">
-            {pkg.sessions}
+            {pkg?.sessions}
           </DialogDescription>
         </DialogHeader>
 
@@ -89,19 +87,19 @@ export const PackageDetailDialog = ({
             </div>
             <div className="flex flex-wrap items-baseline gap-3">
               <span className="text-2xl md:text-3xl font-bold text-accent">
-                {pkg.price}
+                {pkg?.price}
               </span>
-              <span className="text-muted-foreground">({pkg.priceUsd})</span>
+              <span className="text-muted-foreground">({pkg?.priceUsd})</span>
             </div>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               <span className="text-sm text-muted-foreground line-through">
-                {pkg.originalPrice}
+                {pkg?.originalPrice}
               </span>
               <span className="text-xs text-muted-foreground">
-                ({pkg.originalPriceUsd})
+                ({pkg?.originalPriceUsd})
               </span>
               <span className="bg-destructive text-destructive-foreground text-xs px-2 py-0.5 rounded">
-                {pkg.discount}
+                {pkg?.discount}
               </span>
             </div>
           </div>
@@ -110,7 +108,7 @@ export const PackageDetailDialog = ({
           <div>
             <h3 className="font-semibold text-lg mb-2">{labels.fullDescription}</h3>
             <p className="text-muted-foreground leading-relaxed">
-              {pkg.fullDescription}
+              {pkg?.fullDescription}
             </p>
           </div>
 
@@ -119,7 +117,7 @@ export const PackageDetailDialog = ({
             <Globe className="text-accent flex-shrink-0 mt-1" size={20} />
             <div>
               <h3 className="font-semibold">{labels.serviceFormat}</h3>
-              <p className="text-muted-foreground">{pkg.format}</p>
+              <p className="text-muted-foreground">{pkg?.format}</p>
             </div>
           </div>
 
@@ -128,7 +126,7 @@ export const PackageDetailDialog = ({
             <Clock className="text-accent flex-shrink-0 mt-1" size={20} />
             <div>
               <h3 className="font-semibold">{labels.timeline}</h3>
-              <p className="text-muted-foreground">{pkg.timeline}</p>
+              <p className="text-muted-foreground">{pkg?.timeline}</p>
             </div>
           </div>
 
@@ -136,7 +134,7 @@ export const PackageDetailDialog = ({
           <div>
             <h3 className="font-semibold text-lg mb-3">{labels.whatsIncluded}</h3>
             <ul className="space-y-2 grid md:grid-cols-2 gap-2">
-              {pkg.features.map((feature, idx) => (
+              {pkg?.features?.map((feature, idx) => (
                 <li key={idx} className="flex items-start gap-2">
                   <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
                   <span className="text-sm">{feature}</span>
