@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Check, Star, ArrowLeft } from "lucide-react";
+import { Check, Star, ArrowLeft, Info } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { useToast } from "@/hooks/use-toast";
 import { PaymentDialog } from "@/components/PaymentDialog";
+import { PackageDetailDialog } from "@/components/PackageDetailDialog";
 import { Footer } from "@/components/Footer";
 import heroCampus from "@/assets/hero-campus.jpg";
 import heroLibrary from "@/assets/hero-library.jpg";
@@ -31,9 +32,10 @@ const OfferingsRu = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedConsultation, setSelectedConsultation] = useState<{name: string; price: string}>({name: "", price: ""});
-  const [selectedPackage, setSelectedPackage] = useState<{name: string; price: string}>({name: "", price: ""});
+  const [selectedPackage, setSelectedPackage] = useState<any>(null);
   const [isPackageDialogOpen, setIsPackageDialogOpen] = useState(false);
   const [isPackagePaymentOpen, setIsPackagePaymentOpen] = useState(false);
+  const [isPackageDetailOpen, setIsPackageDetailOpen] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -80,13 +82,17 @@ const OfferingsRu = () => {
       price: "66 300 сом",
       priceUsd: "≈ $764",
       discount: "Скидка 15%",
-      hours: "5 сессий",
+      sessions: "5 сессий",
       features: [
         "5 сессий комплексных консультаций",
         "Планирование сроков подачи",
         "Помощь в выборе университета",
+        "Обзор структуры эссе (1 эссе)",
         "Пробное рассмотрение заявки и обратная связь",
       ],
+      fullDescription: "Стартовый пакет предназначен для студентов, которым нужна базовая поддержка в процессе поступления в университет. Этот пакет предоставляет необходимую помощь для понимания процесса подачи заявки, выбора подходящих университетов и начала создания убедительных материалов заявки. Идеально подходит для студентов, начинающих подготовку заранее или нуждающихся в целенаправленной помощи по конкретным аспектам заявки.",
+      format: "Онлайн / Дистанционная консультация через видеозвонок (Zoom или Google Meet). Все сессии проводятся индивидуально с вашим персональным консультантом.",
+      timeline: "Сессии можно планировать гибко в течение 2-4 месяцев. Каждая сессия длится примерно 50-60 минут. Общая продолжительность пакета зависит от сроков вашей заявки.",
       popular: false,
     },
     {
@@ -96,16 +102,21 @@ const OfferingsRu = () => {
       price: "104 000 сом",
       priceUsd: "≈ $1 199",
       discount: "Скидка 25%",
-      hours: "10 сессий",
+      sessions: "10 сессий",
       features: [
         "10 сессий комплексных консультаций",
         "Полная проверка заявки",
-        "Редактирование эссе",
+        "Редактирование эссе (до 3 эссе)",
         "Пробное рассмотрение заявки и обратная связь",
-        "Поддержка с рекомендательными письмами",
-        "Подготовка к интервью",
+        "Стратегия и проверка рекомендательных писем",
+        "Подготовка к интервью (1 сессия)",
         "Поддержка по email между сессиями",
+        "Корректура заявки",
+        "Консультации по стипендиям",
       ],
+      fullDescription: "Наш самый популярный выбор — Стандартный пакет предлагает всестороннюю поддержку на протяжении всего процесса подачи заявки. Этот пакет охватывает всё: от первоначального планирования до финальной подачи, включая многократные проверки эссе, подготовку к интервью и постоянную поддержку. Идеально подходит для студентов, поступающих в конкурентные университеты, которые хотят получить тщательное руководство на каждом этапе.",
+      format: "Онлайн / Дистанционная консультация через видеозвонок (Zoom или Google Meet). Все сессии проводятся индивидуально с вашим персональным консультантом. Включает поддержку по email для вопросов между сессиями.",
+      timeline: "Сессии обычно охватывают 4-8 месяцев для полного цикла подачи заявки. Каждая сессия длится 50-60 минут. Гибкое расписание с учётом вашего школьного графика и дедлайнов.",
       popular: true,
     },
     {
@@ -116,18 +127,23 @@ const OfferingsRu = () => {
       price: "169 100 сом",
       priceUsd: "≈ $1 949",
       discount: "Скидка 35%",
-      hours: "20 сессий",
+      sessions: "20 сессий",
       features: [
         "20 сессий комплексных консультаций",
         "Полное управление заявкой",
-        "Неограниченные правки эссе",
+        "Неограниченные правки эссе (все эссе)",
         "Пробное рассмотрение заявки и обратная связь",
-        "Стратегия и проверка рекомендательных писем",
+        "Стратегия и детальная проверка рекомендательных писем",
         "Пробные интервью (3 сессии)",
-        "Приоритетная поддержка на протяжении всего цикла подачи заявок",
+        "Приоритетная поддержка на протяжении всего цикла",
         "Персональная стратегия успеха",
-        "Поддержка после подачи",
+        "Поддержка после подачи заявки",
+        "Помощь в поиске стипендий",
+        "Поддержка в установлении контактов",
       ],
+      fullDescription: "Премиум пакет — наше самое полное предложение, обеспечивающее сквозную поддержку для студентов, стремящихся в лучшие университеты мира. С приоритетной поддержкой, неограниченными правками эссе и обширной подготовкой к интервью, этот пакет гарантирует вам все преимущества в вашей заявке. Включает персонализированные стратегические сессии, поддержку после подачи заявки и возможности для нетворкинга.",
+      format: "Онлайн / Дистанционная консультация через видеозвонок (Zoom или Google Meet). Все сессии проводятся индивидуально с вашим персональным консультантом. Приоритетная поддержка по email и мессенджерам с ускоренным временем ответа.",
+      timeline: "Сессии охватывают 6-12 месяцев для полного цикла подачи заявки. Каждая сессия длится 50-60 минут. Включает поддержку после подачи и помощь на этапе принятия решений. Гибкое расписание с приоритетным бронированием.",
       popular: false,
     },
   ];
@@ -249,28 +265,46 @@ const OfferingsRu = () => {
                     <div className="text-sm text-muted-foreground">({pkg.priceUsd})</div>
                   </div>
                   <CardDescription className="text-sm md:text-base pt-1 md:pt-2">
-                    {pkg.hours}
+                    {pkg.sessions}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3 md:space-y-4 pb-4 md:pb-6">
                   <ul className="space-y-2 md:space-y-3">
-                    {pkg.features.map((feature, idx) => (
+                    {pkg.features.slice(0, 5).map((feature, idx) => (
                       <li key={idx} className="flex items-start gap-2">
                         <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
                         <span className="text-xs md:text-sm text-foreground">{feature}</span>
                       </li>
                     ))}
+                    {pkg.features.length > 5 && (
+                      <li className="text-xs md:text-sm text-muted-foreground italic">
+                        +{pkg.features.length - 5} ещё функций...
+                      </li>
+                    )}
                   </ul>
-                  <Button
-                    variant={pkg.popular ? "gold" : "default"}
-                    className="w-full"
-                    onClick={() => {
-                      setSelectedPackage({name: pkg.name, price: pkg.price});
-                      setIsPackageDialogOpen(true);
-                    }}
-                  >
-                    Выбрать пакет
-                  </Button>
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      className="w-full border-accent/30"
+                      onClick={() => {
+                        setSelectedPackage(pkg);
+                        setIsPackageDetailOpen(true);
+                      }}
+                    >
+                      <Info size={16} className="mr-2" />
+                      Подробнее
+                    </Button>
+                    <Button
+                      variant={pkg.popular ? "gold" : "default"}
+                      className="w-full"
+                      onClick={() => {
+                        setSelectedPackage(pkg);
+                        setIsPackageDialogOpen(true);
+                      }}
+                    >
+                      Выбрать пакет
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -577,10 +611,22 @@ const OfferingsRu = () => {
         <PaymentDialog
           open={isPackagePaymentOpen}
           onOpenChange={setIsPackagePaymentOpen}
-          consultationType={selectedPackage.name}
-          price={selectedPackage.price}
+          consultationType={selectedPackage?.name || ""}
+          price={selectedPackage?.price || ""}
           language="ru"
           isConsultation={false}
+        />
+
+        {/* Package Detail Dialog */}
+        <PackageDetailDialog
+          isOpen={isPackageDetailOpen}
+          onClose={() => setIsPackageDetailOpen(false)}
+          package={selectedPackage}
+          onProceedToPayment={() => {
+            setIsPackageDetailOpen(false);
+            setIsPackageDialogOpen(true);
+          }}
+          language="ru"
         />
 
         {/* Trust Section */}
