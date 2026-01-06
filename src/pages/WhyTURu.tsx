@@ -121,6 +121,19 @@ const WhyTURu = () => {
             </div>
           </Card>
 
+          {/* Testimonials Placeholder */}
+          <Card className="p-8 md:p-12 bg-gradient-to-br from-muted/30 to-muted/10 border-border/50">
+            <div className="max-w-3xl mx-auto space-y-4 text-center">
+              <h2 className="text-2xl md:text-3xl font-bold text-primary">Отзывы наших студентов</h2>
+              <p className="text-base md:text-lg text-muted-foreground">
+                Отзывы студентов будут добавлены здесь в ближайшее время. Сейчас мы собираем обратную связь от наших студентов, чтобы поделиться их опытом.
+              </p>
+              <p className="text-sm text-muted-foreground/70 italic">
+                Загляните позже, чтобы увидеть реальные истории студентов, которые достигли своих университетских целей с нашей помощью.
+              </p>
+            </div>
+          </Card>
+
           {/* CTA Section */}
           <Card className="p-12 bg-gradient-to-br from-primary/10 to-gold/10 border-primary/30 text-center space-y-6">
             <h2 className="text-3xl md:text-4xl font-bold text-primary">Готовы начать свой путь?</h2>
