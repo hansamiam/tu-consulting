@@ -492,7 +492,7 @@ const OfferingsRu = () => {
         <Dialog open={isPackageDialogOpen} onOpenChange={setIsPackageDialogOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-2xl">Забронируйте ваш {selectedPackage.name}</DialogTitle>
+              <DialogTitle className="text-2xl">Забронируйте ваш {selectedPackage?.name}</DialogTitle>
               <DialogDescription className="text-base">
                 Помогите нам подготовиться к вашей программе. Чем больше деталей вы предоставите, тем лучше мы сможем адаптировать наши услуги к вашим потребностям.
               </DialogDescription>
