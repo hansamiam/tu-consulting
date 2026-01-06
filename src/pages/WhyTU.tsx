@@ -110,6 +110,19 @@ const WhyTU = () => {
             </div>
           </Card>
 
+          {/* Testimonials Placeholder */}
+          <Card className="p-8 md:p-12 bg-gradient-to-br from-muted/30 to-muted/10 border-border/50">
+            <div className="max-w-3xl mx-auto space-y-4 text-center">
+              <h2 className="text-2xl md:text-3xl font-bold text-primary">What Our Students Say</h2>
+              <p className="text-base md:text-lg text-muted-foreground">
+                Student testimonials will be added here soon. We are currently collecting feedback from our students to share their experiences.
+              </p>
+              <p className="text-sm text-muted-foreground/70 italic">
+                Check back later for real stories from students who achieved their university goals with our guidance.
+              </p>
+            </div>
+          </Card>
+
           {/* CTA Section */}
           <Card className="p-12 bg-gradient-to-br from-primary/10 to-gold/10 border-primary/30 text-center space-y-6">
             <h2 className="text-3xl md:text-4xl font-bold text-primary">Ready to Start Your Journey?</h2>
