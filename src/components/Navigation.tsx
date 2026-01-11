@@ -36,6 +36,10 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
       path: isRussian ? "/why-tu/ru" : "/why-tu" 
     },
     { 
+      label: isRussian ? "Блог" : "Blog", 
+      path: isRussian ? "/blog/ru" : "/blog" 
+    },
+    { 
       label: isRussian ? "Вопросы" : "FAQ", 
       path: isRussian ? "/faq/ru" : "/faq" 
     },

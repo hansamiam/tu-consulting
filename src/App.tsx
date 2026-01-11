@@ -13,6 +13,8 @@ import FAQ from "./pages/FAQ";
 import FAQRu from "./pages/FAQRu";
 import WhyTU from "./pages/WhyTU";
 import WhyTURu from "./pages/WhyTURu";
+import Blog from "./pages/Blog";
+import BlogRu from "./pages/BlogRu";
 import ThankYou from "./pages/ThankYou";
 import ThankYouRu from "./pages/ThankYouRu";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -44,6 +46,8 @@ const App = () => (
           <Route path="/faq/ru" element={<FAQRu />} />
           <Route path="/why-tu" element={<WhyTU />} />
           <Route path="/why-tu/ru" element={<WhyTURu />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/ru" element={<BlogRu />} />
           <Route path="/thank-you" element={<ThankYou />} />
           <Route path="/thank-you/ru" element={<ThankYouRu />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
