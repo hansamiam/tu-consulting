@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Instagram } from "lucide-react";
 import heroImage from "@/assets/hero-campus.jpg";
 import Navigation from "@/components/Navigation";
-import { WaitlistSection } from "@/components/WaitlistSection";
 import { shouldRedirectToRussian } from "@/utils/languageDetection";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { FloatingBadge } from "@/components/FloatingBadge";
@@ -99,11 +98,6 @@ const Index = () => {
             >
               <Instagram size={28} className="sm:w-8 sm:h-8" strokeWidth={1.5} />
             </a>
-          </div>
-
-          {/* Waitlist Section */}
-          <div className="mb-8 sm:mb-12 px-4">
-            <WaitlistSection language="en" />
           </div>
 
           {/* Footer */}
