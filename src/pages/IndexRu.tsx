@@ -80,6 +80,54 @@ const IndexRu = () => {
             </Button>
           </motion.div>
 
+          {/* Courses Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8, duration: 0.7 }}
+            className="mb-10 sm:mb-14 px-4"
+          >
+            <div className="max-w-3xl mx-auto">
+              <h2 className="font-heading text-2xl sm:text-3xl font-semibold text-gold mb-2">
+                Наши курсы
+              </h2>
+              <p className="text-primary-foreground/70 text-sm sm:text-base mb-8">
+                Структурированная подготовка с опытными преподавателями
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                {/* IELTS */}
+                <div className="border border-gold/20 rounded-lg p-5 sm:p-6 backdrop-blur-sm bg-primary/30 text-left">
+                  <h3 className="text-gold font-heading text-lg font-semibold mb-2">Подготовка к IELTS</h3>
+                  <p className="text-primary-foreground/80 text-sm leading-relaxed">
+                    Для студентов, планирующих обучение за рубежом. Уверенная подготовка по всем четырём разделам — Listening, Reading, Writing и Speaking.
+                  </p>
+                </div>
+                {/* SAT */}
+                <div className="border border-gold/20 rounded-lg p-5 sm:p-6 backdrop-blur-sm bg-primary/30 text-left">
+                  <h3 className="text-gold font-heading text-lg font-semibold mb-2">Подготовка к SAT</h3>
+                  <p className="text-primary-foreground/80 text-sm leading-relaxed">
+                    Для старшеклассников, нацеленных на ведущие университеты. Освойте математику и вербальное мышление для конкурентного результата.
+                  </p>
+                </div>
+                {/* General English */}
+                <div className="border border-gold/20 rounded-lg p-5 sm:p-6 backdrop-blur-sm bg-primary/30 text-left">
+                  <h3 className="text-gold font-heading text-lg font-semibold mb-2">Общий английский</h3>
+                  <p className="text-primary-foreground/80 text-sm leading-relaxed">
+                    Для учащихся любого уровня. Укрепите грамматику, словарный запас и беглость речи для академического и профессионального роста.
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="gold"
+                size="lg"
+                className="mt-8 text-base px-10 py-5 hover:scale-105 transition-transform duration-200"
+                onClick={() => navigate('/offerings/ru')}
+              >
+                Записаться на консультацию
+              </Button>
+            </div>
+          </motion.div>
+
           {/* Social Links */}
           <div className="flex gap-6 justify-center mb-6 sm:mb-8">
             <a
