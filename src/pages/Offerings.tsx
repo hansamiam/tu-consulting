@@ -361,6 +361,99 @@ const Offerings = () => {
           </div>
         </section>
 
+        {/* Courses Section */}
+        <section className="mb-12 md:mb-20 animate-fade-in">
+          <div className="text-center mb-6 md:mb-10">
+            <div className="inline-block px-3 py-1.5 md:px-4 md:py-2 bg-accent/10 border border-accent/20 rounded-full mb-3 md:mb-4">
+              <p className="text-accent font-semibold text-xs md:text-sm uppercase tracking-wide">New</p>
+            </div>
+            <h2 className="font-heading text-xl sm:text-2xl md:text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent px-4">
+              Academic Courses
+            </h2>
+            <p className="text-muted-foreground text-sm md:text-base max-w-2xl mx-auto px-4">
+              Rigorous, results-driven preparation designed by experienced educators
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-4 md:gap-8 max-w-5xl mx-auto">
+            <Card className="border-gold/30 bg-card/50 backdrop-blur-sm hover:shadow-lg transition-all">
+              <CardHeader className="pb-3 md:pb-4">
+                <div className="inline-block px-2.5 py-1 bg-primary/10 border border-primary/20 rounded-full mb-2 w-fit">
+                  <span className="text-primary font-semibold text-xs uppercase tracking-wide">Language</span>
+                </div>
+                <CardTitle className="text-lg md:text-xl">IELTS Preparation</CardTitle>
+                <CardDescription className="text-xs md:text-sm pt-1">
+                  For students planning to study at English-speaking universities
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-xs md:text-sm text-foreground/80 leading-relaxed">
+                  Build confidence across all four IELTS sections — Listening, Reading, Writing, and Speaking. Our structured curriculum targets band 6.5–8.0 with timed practice, personalized feedback, and proven test-taking strategies.
+                </p>
+                <ul className="space-y-1.5">
+                  <li className="flex items-start gap-2"><Check className="text-accent flex-shrink-0 mt-0.5" size={14} /><span className="text-xs md:text-sm text-foreground">Full-length mock exams with scoring</span></li>
+                  <li className="flex items-start gap-2"><Check className="text-accent flex-shrink-0 mt-0.5" size={14} /><span className="text-xs md:text-sm text-foreground">Essay correction & speaking drills</span></li>
+                  <li className="flex items-start gap-2"><Check className="text-accent flex-shrink-0 mt-0.5" size={14} /><span className="text-xs md:text-sm text-foreground">Personalized study plan</span></li>
+                </ul>
+              </CardContent>
+            </Card>
+            <Card className="border-gold/30 bg-card/50 backdrop-blur-sm hover:shadow-lg transition-all">
+              <CardHeader className="pb-3 md:pb-4">
+                <div className="inline-block px-2.5 py-1 bg-primary/10 border border-primary/20 rounded-full mb-2 w-fit">
+                  <span className="text-primary font-semibold text-xs uppercase tracking-wide">Test Prep</span>
+                </div>
+                <CardTitle className="text-lg md:text-xl">SAT Preparation</CardTitle>
+                <CardDescription className="text-xs md:text-sm pt-1">
+                  For high school students targeting competitive U.S. universities
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-xs md:text-sm text-foreground/80 leading-relaxed">
+                  Master the math and evidence-based reading & writing sections with a curriculum built around the Digital SAT format. Targeted drills, score diagnostics, and strategies to achieve a 1400+ score.
+                </p>
+                <ul className="space-y-1.5">
+                  <li className="flex items-start gap-2"><Check className="text-accent flex-shrink-0 mt-0.5" size={14} /><span className="text-xs md:text-sm text-foreground">Digital SAT–aligned practice tests</span></li>
+                  <li className="flex items-start gap-2"><Check className="text-accent flex-shrink-0 mt-0.5" size={14} /><span className="text-xs md:text-sm text-foreground">Section-by-section score analysis</span></li>
+                  <li className="flex items-start gap-2"><Check className="text-accent flex-shrink-0 mt-0.5" size={14} /><span className="text-xs md:text-sm text-foreground">Timed drills & test-day strategies</span></li>
+                </ul>
+              </CardContent>
+            </Card>
+            <Card className="border-gold/30 bg-card/50 backdrop-blur-sm hover:shadow-lg transition-all">
+              <CardHeader className="pb-3 md:pb-4">
+                <div className="inline-block px-2.5 py-1 bg-primary/10 border border-primary/20 rounded-full mb-2 w-fit">
+                  <span className="text-primary font-semibold text-xs uppercase tracking-wide">Fluency</span>
+                </div>
+                <CardTitle className="text-lg md:text-xl">General English</CardTitle>
+                <CardDescription className="text-xs md:text-sm pt-1">
+                  For learners at any level seeking academic or professional fluency
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-xs md:text-sm text-foreground/80 leading-relaxed">
+                  Strengthen your grammar, expand your vocabulary, and develop speaking confidence for academic, professional, and everyday contexts. Tailored lessons ensure you progress at your own pace toward measurable fluency goals.
+                </p>
+                <ul className="space-y-1.5">
+                  <li className="flex items-start gap-2"><Check className="text-accent flex-shrink-0 mt-0.5" size={14} /><span className="text-xs md:text-sm text-foreground">Adaptive curriculum (A2–C1)</span></li>
+                  <li className="flex items-start gap-2"><Check className="text-accent flex-shrink-0 mt-0.5" size={14} /><span className="text-xs md:text-sm text-foreground">Conversational practice & grammar drills</span></li>
+                  <li className="flex items-start gap-2"><Check className="text-accent flex-shrink-0 mt-0.5" size={14} /><span className="text-xs md:text-sm text-foreground">Progress tracking & assessments</span></li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="text-center mt-8">
+            <Button
+              variant="gold"
+              size="lg"
+              className="text-base px-10 py-5 hover:scale-105 transition-transform duration-200"
+              onClick={() => {
+                setSelectedConsultation({name: "Course Consultation", price: ""});
+                setIsDialogOpen(true);
+              }}
+            >
+              Book a Consultation
+            </Button>
+          </div>
+        </section>
+
         {/* Consultation Form Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
