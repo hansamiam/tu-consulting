@@ -61,6 +61,17 @@ const IndexRu = () => {
             >
               Не упустите цены раннего запуска и приоритетную поддержку
             </motion.p>
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.55, duration: 0.5 }}
+              className="space-y-1"
+            >
+              <p className="text-primary-foreground/80 text-sm sm:text-base font-medium tracking-wide">
+                Консультанты из <span className="text-accent font-semibold">Йеля, Гарварда, Кембриджа и Цинхуа</span>
+              </p>
+              <p className="text-primary-foreground/50 text-xs tracking-widest uppercase">Доступно на русском и английском</p>
+            </motion.div>
           </motion.div>
 
           {/* Call to Action */}
