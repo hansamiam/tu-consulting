@@ -104,13 +104,9 @@ const TopUniAI = () => {
                 <h1 className="text-5xl md:text-6xl font-heading font-bold text-foreground tracking-tight">
                   TopUni <span className="text-accent">AI</span>
                 </h1>
-                 <p className="text-lg md:text-xl text-muted-foreground max-w-lg mx-auto leading-relaxed">
+                <p className="text-lg md:text-xl text-muted-foreground max-w-lg mx-auto leading-relaxed">
                   Intelligent pathway planning for ambitious students.
                 </p>
-                <p className="text-sm font-medium text-foreground/70 tracking-wide mt-3">
-                  Led by consultants from <span className="text-accent font-semibold">Yale, Harvard, Cambridge, and Tsinghua</span>
-                </p>
-                <p className="text-xs text-muted-foreground tracking-widest uppercase">Available in Russian and English</p>
               </div>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Button variant="gold" size="lg" className="text-base px-8" onClick={() => setScreen("intake")}>

@@ -68,6 +68,17 @@ const Index = () => {
             >
               Don't miss out on early-launch pricing and priority support
             </motion.p>
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.55, duration: 0.5 }}
+              className="space-y-1"
+            >
+              <p className="text-primary-foreground/80 text-sm sm:text-base font-medium tracking-wide">
+                Led by consultants from <span className="text-accent font-semibold">Yale, Harvard, Cambridge, and Tsinghua</span>
+              </p>
+              <p className="text-primary-foreground/50 text-xs tracking-widest uppercase">Available in Russian and English</p>
+            </motion.div>
           </motion.div>
 
           {/* Call to Action */}
