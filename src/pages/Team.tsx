@@ -62,7 +62,7 @@ const Team = () => {
     {
       name: "Josh Hughes",
       title: "Lead Consultant",
-      tagline: "Harvard Student",
+      tagline: "Harvard Student (Graduate)",
       photo: joshPhoto,
       hometown: "North Augusta, South Carolina, USA",
       education: "University of South Carolina | Harvard University",
