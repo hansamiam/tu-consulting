@@ -29,7 +29,8 @@ const Team = () => {
   const teamMembers = [
     {
       name: "Samuel Han",
-      title: "Co-Founder",
+      title: "Founder & CEO",
+      tagline: "Yale Alum",
       photo: samuelPhoto,
       hometown: "Toronto, Canada",
       education: "Yale University",
@@ -43,7 +44,8 @@ const Team = () => {
     },
     {
       name: "Nurzada Abdivalieva",
-      title: "Co-Founder",
+      title: "Co-Founder & COO",
+      tagline: "Schwarzman Scholar",
       photo: nurzadaPhoto,
       hometown: "Bishkek, Kyrgyzstan",
       education: "American University of Central Asia | Korea Development Institute (KDI) | University of Cambridge | Tsinghua University",
@@ -60,6 +62,7 @@ const Team = () => {
     {
       name: "Josh Hughes",
       title: "Lead Consultant",
+      tagline: "Harvard Student",
       photo: joshPhoto,
       hometown: "North Augusta, South Carolina, USA",
       education: "University of South Carolina | Harvard University",
@@ -74,6 +77,7 @@ const Team = () => {
     {
       name: "Aigul Abdoubaetova",
       title: "Senior Advisor",
+      tagline: "Ex-Head at OSCE Academy",
       photo: aigulPhoto,
       hometown: "Bishkek, Kyrgyzstan",
       education: "University of Oregon",
@@ -200,7 +204,8 @@ const Team = () => {
                       </div>
                       <div className="space-y-2 md:space-y-3 w-full">
                         <h2 className="text-lg md:text-2xl font-bold text-foreground group-hover:text-primary transition-colors">{member.name}</h2>
-                        <p className="text-sm md:text-base font-medium bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent">{member.title}</p>
+                        <p className="text-sm md:text-base font-bold text-gold tracking-wide">{member.tagline}</p>
+                        <p className="text-xs md:text-sm font-medium bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent">{member.title}</p>
                         <div className="space-y-1.5 md:space-y-2 text-xs md:text-sm">
                           <p className="text-muted-foreground">
                             <span className="font-semibold text-gold">Hometown:</span> {member.hometown}

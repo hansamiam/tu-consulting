@@ -77,11 +77,7 @@ const OfferingsRu = () => {
   const packages = [
     {
       name: "Стартовый пакет",
-      originalPrice: "78 000 сом",
-      originalPriceUsd: "≈ $899",
-      price: "66 300 сом",
-      priceUsd: "≈ $764",
-      discount: "Скидка 15%",
+      discount: "Скидка 25% при запуске",
       sessions: "5 сессий",
       features: [
         "5 сессий комплексных консультаций",
@@ -97,11 +93,7 @@ const OfferingsRu = () => {
     },
     {
       name: "Стандартный пакет",
-      originalPrice: "138 700 сом",
-      originalPriceUsd: "≈ $1 599",
-      price: "104 000 сом",
-      priceUsd: "≈ $1 199",
-      discount: "Скидка 25%",
+      discount: "Скидка 25% при запуске",
       sessions: "10 сессий",
       features: [
         "10 сессий комплексных консультаций",
@@ -122,11 +114,7 @@ const OfferingsRu = () => {
     {
       name: "Премиум пакет",
       badge: "Максимальная поддержка",
-      originalPrice: "260 100 сом",
-      originalPriceUsd: "≈ $2 999",
-      price: "169 100 сом",
-      priceUsd: "≈ $1 949",
-      discount: "Скидка 35%",
+      discount: "Скидка 25% при запуске",
       sessions: "20 сессий",
       features: [
         "20 сессий комплексных консультаций",
@@ -152,10 +140,9 @@ const OfferingsRu = () => {
 
   const consultations = [
     {
-      name: "Диагностическая консультация",
-      price: "4 350 сом",
-      priceUsd: "≈ $50",
-      duration: "25 минут",
+      name: "Бесплатная консультация",
+      price: "Бесплатно",
+      duration: "20 минут",
       description: "Идеально для первого разговора и вопросов",
       features: [
         "Узнать о вашем опыте",
@@ -165,8 +152,6 @@ const OfferingsRu = () => {
     },
     {
       name: "Стратегическая консультация",
-      price: "7 800 сом",
-      priceUsd: "≈ $90",
       duration: "50 минут",
       description: "Расширенная сессия для обсуждения вашего пути",
       features: [
@@ -210,7 +195,7 @@ const OfferingsRu = () => {
             <p className="text-accent font-semibold text-xs md:text-sm uppercase tracking-wide">Специальное предложение запуска</p>
           </div>
           <h1 className="font-heading text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mb-3 md:mb-4 px-2">
-            Наши услуги и цены
+            Наши услуги
           </h1>
           <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto mb-2 px-4">
             Выберите идеальный пакет для достижения ваших целей при поступлении в университет
@@ -250,19 +235,9 @@ const OfferingsRu = () => {
                 <CardHeader className="text-center pt-6 md:pt-8 pb-4 md:pb-6">
                   <CardTitle className="text-lg md:text-2xl mb-2">{pkg.name}</CardTitle>
                   <div className="space-y-1 md:space-y-2">
-                    <div className="flex items-center justify-center gap-2 flex-wrap">
-                      <span className="text-xs md:text-sm text-muted-foreground line-through">
-                        {pkg.originalPrice}
-                      </span>
-                      <span className="text-xs text-muted-foreground/70">
-                        ({pkg.originalPriceUsd})
-                      </span>
-                      <span className="bg-destructive text-destructive-foreground text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded">
-                        {pkg.discount}
-                      </span>
-                    </div>
-                    <div className="text-xl md:text-3xl font-bold text-accent">{pkg.price}</div>
-                    <div className="text-sm text-muted-foreground">({pkg.priceUsd})</div>
+                    <span className="inline-block bg-accent text-accent-foreground text-xs px-2.5 py-1 rounded-full font-semibold">
+                      {pkg.discount}
+                    </span>
                   </div>
                   <CardDescription className="text-sm md:text-base pt-1 md:pt-2">
                     {pkg.sessions}
@@ -330,7 +305,6 @@ const OfferingsRu = () => {
                       <span className="text-2xl md:text-3xl font-bold text-accent">{consultation.price}</span>
                       <span className="text-sm md:text-base text-muted-foreground">/ {consultation.duration}</span>
                     </div>
-                    <div className="text-sm text-muted-foreground mt-1">({consultation.priceUsd})</div>
                   </div>
                   <CardDescription className="pt-1 md:pt-2 text-xs md:text-sm">{consultation.description}</CardDescription>
                 </CardHeader>
