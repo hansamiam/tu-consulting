@@ -79,29 +79,11 @@ export const PackageDetailDialog = ({
         </DialogHeader>
 
         <div className="space-y-6 mt-4">
-          {/* Pricing Section */}
-          <div className="bg-accent/10 rounded-lg p-4 md:p-6">
-            <div className="flex items-center gap-2 mb-2">
-              <CreditCard className="text-accent" size={20} />
-              <h3 className="font-semibold text-lg">{labels.pricing}</h3>
-            </div>
-            <div className="flex flex-wrap items-baseline gap-3">
-              <span className="text-2xl md:text-3xl font-bold text-accent">
-                {pkg?.price}
-              </span>
-              <span className="text-muted-foreground">({pkg?.priceUsd})</span>
-            </div>
-            <div className="flex items-center gap-2 mt-2 flex-wrap">
-              <span className="text-sm text-muted-foreground line-through">
-                {pkg?.originalPrice}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                ({pkg?.originalPriceUsd})
-              </span>
-              <span className="bg-destructive text-destructive-foreground text-xs px-2 py-0.5 rounded">
-                {pkg?.discount}
-              </span>
-            </div>
+          {/* Launch Discount Badge */}
+          <div className="flex justify-center">
+            <span className="inline-block bg-accent text-accent-foreground text-sm px-4 py-1.5 rounded-full font-semibold">
+              {isRu ? "Скидка 25% при запуске" : "25% Launch Discount"}
+            </span>
           </div>
 
           {/* Full Description */}

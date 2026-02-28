@@ -28,7 +28,8 @@ const TeamRu = () => {
   const teamMembers = [
     {
       name: "Самуэль Хан",
-      title: "Со-основатель",
+      title: "Основатель и CEO",
+      tagline: "Выпускник Йеля",
       photo: samuelPhoto,
       hometown: "Торонто, Канада",
       education: "Йельский университет",
@@ -43,7 +44,8 @@ const TeamRu = () => {
     },
     {
       name: "Нурзада Абдивалиева",
-      title: "Со-основатель",
+      title: "Со-основатель и COO",
+      tagline: "Schwarzman Scholar",
       photo: nurzadaPhoto,
       hometown: "Бишкек, Кыргызстан",
       education: "Американский университет Центральной Азии | Корейский институт развития (KDI) | Кембриджский университет | Университет Цинхуа",
@@ -59,6 +61,7 @@ const TeamRu = () => {
     {
       name: "Джош Хьюз",
       title: "Ведущий консультант",
+      tagline: "Студент Гарварда",
       photo: joshPhoto,
       hometown: "Норт-Огаста, Южная Каролина, США",
       education: "Университет Южной Каролины | Гарвардский университет",
@@ -74,6 +77,7 @@ const TeamRu = () => {
     {
       name: "Айгуль Абдубаетова",
       title: "Старший советник",
+      tagline: "Экс-глава в Академии ОБСЕ",
       photo: aigulPhoto,
       hometown: "Бишкек, Кыргызстан",
       education: "Университет Орегона",
@@ -191,7 +195,8 @@ const TeamRu = () => {
                       </div>
                       <div className="space-y-2 md:space-y-3 w-full">
                         <h2 className="text-lg md:text-2xl font-bold text-foreground group-hover:text-primary transition-colors">{member.name}</h2>
-                        <p className="text-sm md:text-base font-medium bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent">{member.title}</p>
+                        <p className="text-sm md:text-base font-bold text-gold tracking-wide">{member.tagline}</p>
+                        <p className="text-xs md:text-sm font-medium bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent">{member.title}</p>
                         <div className="space-y-1.5 md:space-y-2 text-xs md:text-sm">
                           <p className="text-muted-foreground">
                             <span className="font-semibold text-gold">Родной город:</span> {member.hometown}
