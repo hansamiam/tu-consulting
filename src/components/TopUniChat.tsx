@@ -10,14 +10,27 @@ type Msg = { role: "user" | "assistant"; content: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/topuni-chat`;
 
-const SUGGESTED_QUESTIONS = [
+const SUGGESTED_QUESTIONS_EN = [
   "What universities can I get into with a 3.5 GPA?",
   "How do I get a scholarship in the US?",
   "What IELTS score do I need for UK universities?",
   "Best countries for studying CS on a budget?",
 ];
 
-const TopUniChat = () => {
+const SUGGESTED_QUESTIONS_RU = [
+  "В какие университеты я могу поступить с GPA 3.5?",
+  "Как получить стипендию в США?",
+  "Какой балл IELTS нужен для университетов Великобритании?",
+  "Лучшие страны для изучения IT с ограниченным бюджетом?",
+];
+
+interface TopUniChatProps {
+  language?: "en" | "ru";
+}
+
+const TopUniChat = ({ language = "en" }: TopUniChatProps) => {
+  const isRu = language === "ru";
+  const SUGGESTED_QUESTIONS = isRu ? SUGGESTED_QUESTIONS_RU : SUGGESTED_QUESTIONS_EN;
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -58,7 +71,7 @@ const TopUniChat = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: allMessages }),
+        body: JSON.stringify({ messages: allMessages, language }),
       });
 
       if (!resp.ok || !resp.body) {
@@ -158,7 +171,7 @@ const TopUniChat = () => {
                   <Sparkles className="w-5 h-5 text-accent" />
                   <div>
                     <p className="font-heading font-semibold text-sm">TopUni AI Navigator</p>
-                    <p className="text-[11px] text-primary-foreground/60">Ask anything about admissions</p>
+                    <p className="text-[11px] text-primary-foreground/60">{isRu ? "Спросите о поступлении" : "Ask anything about admissions"}</p>
                   </div>
                 </div>
                 <button onClick={() => setIsOpen(false)} className="text-primary-foreground/60 hover:text-primary-foreground transition-colors">
@@ -171,8 +184,8 @@ const TopUniChat = () => {
                 {messages.length === 0 && (
                   <div className="space-y-3">
                     <div className="bg-accent/10 rounded-lg p-3 text-sm text-muted-foreground">
-                      <p className="font-semibold text-foreground mb-1">👋 Hi! I'm your TopUni Navigator.</p>
-                      <p>Ask me anything about university admissions, scholarships, or study abroad planning.</p>
+                    <p className="font-semibold text-foreground mb-1">{isRu ? "👋 Привет! Я ваш навигатор TopUni." : "👋 Hi! I'm your TopUni Navigator."}</p>
+                      <p>{isRu ? "Задайте любой вопрос о поступлении, стипендиях или планировании учёбы за рубежом." : "Ask me anything about university admissions, scholarships, or study abroad planning."}</p>
                     </div>
                     <div className="space-y-2">
                       {SUGGESTED_QUESTIONS.map((q, i) => (
@@ -219,7 +232,7 @@ const TopUniChat = () => {
                   <Input
                     value={input}
                     onChange={e => setInput(e.target.value)}
-                    placeholder="Ask about universities..."
+                    placeholder={isRu ? "Спросите об университетах..." : "Ask about universities..."}
                     className="text-sm"
                     disabled={isLoading}
                   />

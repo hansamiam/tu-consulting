@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages } = await req.json();
+    const { messages, language } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -32,7 +32,7 @@ Guidelines:
 - When students share their profile (GPA, test scores, budget), give honest assessment of their competitiveness.
 - Always encourage students but be realistic about reach vs target vs safety schools.
 - If asked about services, mention that Top Uni Consulting offers comprehensive packages including essay editing, interview prep, and application management.
-- Respond in the same language the student writes in (English or Russian).
+- IMPORTANT: The user's interface language is "${language || "en"}". If language is "ru", you MUST respond in Russian by default. Otherwise respond in English. If the student writes in a different language, match their language.
 - Keep responses concise but substantive — aim for 2-4 paragraphs max unless they ask for detailed info.
 - If you don't know something specific (like exact current deadlines), say so and recommend they verify.`;
 
