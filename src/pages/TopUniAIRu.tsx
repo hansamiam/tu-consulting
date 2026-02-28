@@ -222,7 +222,7 @@ const TopUniAIRu = () => {
               </CardContent>
             </Card>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <Button variant="gold" size="lg" onClick={() => window.open("https://wa.me/996555123456", "_blank")}><Phone className="mr-2 w-5 h-5" /> Записаться на консультацию</Button>
+              <Button variant="gold" size="lg" onClick={() => window.open("https://wa.me/77025281538", "_blank")}><Phone className="mr-2 w-5 h-5" /> Записаться на консультацию</Button>
               <Button variant="outline" size="lg"><Download className="mr-2 w-5 h-5" /> Скачать отчёт (PDF)</Button>
             </div>
             <div className="text-center"><button onClick={() => { setScreen("landing"); setStep(1); }} className="text-sm text-muted-foreground hover:text-accent underline underline-offset-4">← Начать заново</button></div>

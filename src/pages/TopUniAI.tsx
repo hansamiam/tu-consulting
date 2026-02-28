@@ -323,7 +323,7 @@ const TopUniAI = () => {
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <Button variant="gold" size="lg" onClick={() => window.open("https://wa.me/996555123456", "_blank")}>
+              <Button variant="gold" size="lg" onClick={() => window.open("https://wa.me/77025281538", "_blank")}>
                 <Phone className="mr-2 w-5 h-5" /> Book Strategy Call
               </Button>
               <Button variant="outline" size="lg">
