@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import topuniBg from "@/assets/topuni-bg.jpg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,7 +68,9 @@ const TopUniAIRu = () => {
   const fadeIn = { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -20 }, transition: { duration: 0.4 } };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <div className="fixed inset-0 z-0 opacity-30" style={{ backgroundImage: `url(${topuniBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+      <div className="relative z-10">
       <Navigation language="ru" />
       <div className="bg-primary text-primary-foreground text-center py-2 text-sm font-medium tracking-wide">
         <Sparkles className="inline-block w-4 h-4 mr-2 text-accent" />
@@ -230,6 +233,7 @@ const TopUniAIRu = () => {
         )}
       </AnimatePresence>
       <Footer language="ru" />
+      </div>
     </div>
   );
 };
