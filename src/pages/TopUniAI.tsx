@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import topuniBg from "@/assets/topuni-bg.jpg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -82,7 +83,9 @@ const TopUniAI = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <div className="fixed inset-0 z-0 opacity-30" style={{ backgroundImage: `url(${topuniBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+      <div className="relative z-10">
       <Navigation language="en" />
 
       {/* Coming Soon Banner */}
@@ -340,6 +343,7 @@ const TopUniAI = () => {
       </AnimatePresence>
 
       <Footer language="en" />
+      </div>
     </div>
   );
 };
