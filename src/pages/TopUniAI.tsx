@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import topuniBg from "@/assets/topuni-bg.jpg";
+import TopUniChat from "@/components/TopUniChat";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -84,7 +85,7 @@ const TopUniAI = () => {
 
   return (
     <div className="min-h-screen bg-background relative">
-      <div className="fixed inset-0 z-0 opacity-30" style={{ backgroundImage: `url(${topuniBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+      <div className="fixed inset-0 z-0 opacity-20" style={{ backgroundImage: `url(${topuniBg})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(2px)' }} />
       <div className="relative z-10">
       <Navigation language="en" />
 
@@ -343,6 +344,7 @@ const TopUniAI = () => {
       </AnimatePresence>
 
       <Footer language="en" />
+      <TopUniChat />
       </div>
     </div>
   );
