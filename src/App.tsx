@@ -25,6 +25,10 @@ import RefundPolicy from "./pages/RefundPolicy";
 import RefundPolicyRu from "./pages/RefundPolicyRu";
 import PaymentInfo from "./pages/PaymentInfo";
 import PaymentInfoRu from "./pages/PaymentInfoRu";
+import TopUniAI from "./pages/TopUniAI";
+import TopUniAIRu from "./pages/TopUniAIRu";
+import TopUniAIPartners from "./pages/TopUniAIPartners";
+import TopUniAIPartnersRu from "./pages/TopUniAIPartnersRu";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,6 +62,10 @@ const App = () => (
           <Route path="/refund-policy/ru" element={<RefundPolicyRu />} />
           <Route path="/payment-info" element={<PaymentInfo />} />
           <Route path="/payment-info/ru" element={<PaymentInfoRu />} />
+          <Route path="/topuni-ai" element={<TopUniAI />} />
+          <Route path="/topuni-ai/ru" element={<TopUniAIRu />} />
+          <Route path="/topuni-ai/partners" element={<TopUniAIPartners />} />
+          <Route path="/topuni-ai/partners/ru" element={<TopUniAIPartnersRu />} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/why-us" element={<WhyTU />} />
           <Route path="/why-us/ru" element={<WhyTURu />} />
