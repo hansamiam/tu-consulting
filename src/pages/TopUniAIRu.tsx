@@ -234,7 +234,7 @@ const TopUniAIRu = () => {
         )}
       </AnimatePresence>
       <Footer language="ru" />
-      <TopUniChat />
+      <TopUniChat language="ru" />
       </div>
     </div>
   );
