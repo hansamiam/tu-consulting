@@ -86,6 +86,8 @@ const TopUniAIRu = () => {
               <div className="space-y-2">
                 <h1 className="text-5xl md:text-6xl font-heading font-bold text-foreground tracking-tight">TopUni <span className="text-accent">AI</span></h1>
                 <p className="text-lg md:text-xl text-muted-foreground max-w-lg mx-auto leading-relaxed">Интеллектуальное планирование пути для амбициозных студентов.</p>
+                <p className="text-sm font-medium text-foreground/70 tracking-wide mt-3">Консультанты из <span className="text-accent font-semibold">Йеля, Гарварда, Кембриджа и Цинхуа</span></p>
+                <p className="text-xs text-muted-foreground tracking-widest uppercase">Доступно на русском и английском</p>
               </div>
               <Button variant="gold" size="lg" className="text-base px-8" onClick={() => setScreen("intake")}>Начать планирование <ArrowRight className="ml-2 w-5 h-5" /></Button>
               <br />

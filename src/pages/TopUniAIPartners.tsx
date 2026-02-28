@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import topuniBg from "@/assets/topuni-bg.jpg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,7 +35,9 @@ const TopUniAIPartners = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <div className="fixed inset-0 z-0 opacity-20" style={{ backgroundImage: `url(${topuniBg})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(2px)' }} />
+      <div className="relative z-10">
       <Navigation language="en" />
       <div className="bg-primary text-primary-foreground text-center py-2 text-sm font-medium tracking-wide">
         <Sparkles className="inline-block w-4 h-4 mr-2 text-accent" />Launching Soon — Early Access Prototype<Sparkles className="inline-block w-4 h-4 ml-2 text-accent" />
@@ -83,6 +86,7 @@ const TopUniAIPartners = () => {
         </motion.div>
       </div>
       <Footer language="en" />
+      </div>
     </div>
   );
 };
