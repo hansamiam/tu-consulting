@@ -16,7 +16,7 @@ const TopUniAIPartners = () => {
   const [institutionName, setInstitutionName] = useState("");
   const [region, setRegion] = useState("");
   const [contact, setContact] = useState("");
-  const [commission, setCommission] = useState("");
+  
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
@@ -74,12 +74,6 @@ const TopUniAIPartners = () => {
                   <div className="space-y-2"><Label>Institution Name *</Label><Input required value={institutionName} onChange={e => setInstitutionName(e.target.value)} placeholder="e.g. University of Example" /></div>
                   <div className="space-y-2"><Label>Region *</Label><Input required value={region} onChange={e => setRegion(e.target.value)} placeholder="e.g. United Kingdom" /></div>
                   <div className="space-y-2"><Label>Admissions Contact Email *</Label><Input required type="email" value={contact} onChange={e => setContact(e.target.value)} placeholder="admissions@university.edu" /></div>
-                  <div className="space-y-2">
-                    <Label>Commission-based partnership?</Label>
-                    <Select value={commission} onValueChange={setCommission}><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent><SelectItem value="yes">Yes</SelectItem><SelectItem value="no">No</SelectItem><SelectItem value="discuss">Open to discussion</SelectItem></SelectContent>
-                    </Select>
-                  </div>
                   <div className="space-y-2"><Label>Message</Label><Textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Tell us about your institution and goals..." rows={4} /></div>
                   <Button type="submit" variant="gold" size="lg" className="w-full">Request Partnership Discussion</Button>
                 </form>
