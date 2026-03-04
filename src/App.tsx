@@ -29,6 +29,9 @@ import TopUniAI from "./pages/TopUniAI";
 import TopUniAIRu from "./pages/TopUniAIRu";
 import TopUniAIPartners from "./pages/TopUniAIPartners";
 import TopUniAIPartnersRu from "./pages/TopUniAIPartnersRu";
+import Discover from "./pages/Discover";
+import DiscoverRu from "./pages/DiscoverRu";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,6 +69,9 @@ const App = () => (
           <Route path="/topuni-ai/ru" element={<TopUniAIRu />} />
           <Route path="/topuni-ai/partners" element={<TopUniAIPartners />} />
           <Route path="/topuni-ai/partners/ru" element={<TopUniAIPartnersRu />} />
+          <Route path="/discover" element={<Discover />} />
+          <Route path="/discover/ru" element={<DiscoverRu />} />
+          <Route path="/admin" element={<Admin />} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/why-us" element={<WhyTU />} />
           <Route path="/why-us/ru" element={<WhyTURu />} />

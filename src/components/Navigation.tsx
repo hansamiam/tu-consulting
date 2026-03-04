@@ -47,6 +47,10 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
       label: "TopUni AI", 
       path: isRussian ? "/topuni-ai/ru" : "/topuni-ai" 
     },
+    { 
+      label: isRussian ? "Поиск" : "Discover", 
+      path: isRussian ? "/discover/ru" : "/discover" 
+    },
   ];
 
   const isActive = (path: string, exact?: boolean) => {
