@@ -33,6 +33,13 @@ import Discover from "./pages/Discover";
 import DiscoverRu from "./pages/DiscoverRu";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
+import PrepLayout from "./components/prep/PrepLayout";
+import PrepDashboard from "./pages/prep/PrepDashboard";
+import Diagnostic from "./pages/prep/Diagnostic";
+import StudyPlan from "./pages/prep/StudyPlan";
+import Practice from "./pages/prep/Practice";
+import Tutor from "./pages/prep/Tutor";
+import Analytics from "./pages/prep/Analytics";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +79,12 @@ const App = () => (
           <Route path="/discover" element={<Discover />} />
           <Route path="/discover/ru" element={<DiscoverRu />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/prep" element={<PrepLayout><PrepDashboard /></PrepLayout>} />
+          <Route path="/prep/diagnostic" element={<PrepLayout><Diagnostic /></PrepLayout>} />
+          <Route path="/prep/study-plan" element={<PrepLayout><StudyPlan /></PrepLayout>} />
+          <Route path="/prep/practice" element={<PrepLayout><Practice /></PrepLayout>} />
+          <Route path="/prep/tutor" element={<PrepLayout><Tutor /></PrepLayout>} />
+          <Route path="/prep/analytics" element={<PrepLayout><Analytics /></PrepLayout>} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/why-us" element={<WhyTU />} />
           <Route path="/why-us/ru" element={<WhyTURu />} />

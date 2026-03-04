@@ -51,6 +51,10 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
       label: isRussian ? "Поиск" : "Discover", 
       path: isRussian ? "/discover/ru" : "/discover" 
     },
+    { 
+      label: isRussian ? "Подготовка" : "Prep", 
+      path: "/prep" 
+    },
   ];
 
   const isActive = (path: string, exact?: boolean) => {
