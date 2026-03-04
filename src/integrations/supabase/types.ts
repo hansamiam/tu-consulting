@@ -14,6 +14,203 @@ export type Database = {
   }
   public: {
     Tables: {
+      admission_requirements: {
+        Row: {
+          application_deadline: string | null
+          created_at: string | null
+          gpa_min: number | null
+          ielts_required: boolean | null
+          ielts_score_min: number | null
+          program_id: string
+          requirement_id: string
+          sat_required: boolean | null
+          sat_score_min: number | null
+        }
+        Insert: {
+          application_deadline?: string | null
+          created_at?: string | null
+          gpa_min?: number | null
+          ielts_required?: boolean | null
+          ielts_score_min?: number | null
+          program_id: string
+          requirement_id?: string
+          sat_required?: boolean | null
+          sat_score_min?: number | null
+        }
+        Update: {
+          application_deadline?: string | null
+          created_at?: string | null
+          gpa_min?: number | null
+          ielts_required?: boolean | null
+          ielts_score_min?: number | null
+          program_id?: string
+          requirement_id?: string
+          sat_required?: boolean | null
+          sat_score_min?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admission_requirements_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["program_id"]
+          },
+        ]
+      }
+      applications: {
+        Row: {
+          acceptance_rate: number | null
+          application_id: string
+          created_at: string | null
+          portal_url: string | null
+          program_id: string
+          visa_difficulty_score: number | null
+        }
+        Insert: {
+          acceptance_rate?: number | null
+          application_id?: string
+          created_at?: string | null
+          portal_url?: string | null
+          program_id: string
+          visa_difficulty_score?: number | null
+        }
+        Update: {
+          acceptance_rate?: number | null
+          application_id?: string
+          created_at?: string | null
+          portal_url?: string | null
+          program_id?: string
+          visa_difficulty_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applications_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["program_id"]
+          },
+        ]
+      }
+      programs: {
+        Row: {
+          created_at: string | null
+          degree_level: string
+          duration_years: number | null
+          field_of_study: string
+          program_id: string
+          program_name: string
+          university_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          degree_level: string
+          duration_years?: number | null
+          field_of_study: string
+          program_id?: string
+          program_name: string
+          university_id: string
+        }
+        Update: {
+          created_at?: string | null
+          degree_level?: string
+          duration_years?: number | null
+          field_of_study?: string
+          program_id?: string
+          program_name?: string
+          university_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programs_university_id_fkey"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "universities"
+            referencedColumns: ["university_id"]
+          },
+        ]
+      }
+      scholarships: {
+        Row: {
+          application_deadline: string | null
+          coverage_type: string
+          created_at: string | null
+          eligibility_requirements: string | null
+          scholarship_id: string
+          scholarship_name: string
+          stipend_amount: number | null
+          university_id: string
+        }
+        Insert: {
+          application_deadline?: string | null
+          coverage_type: string
+          created_at?: string | null
+          eligibility_requirements?: string | null
+          scholarship_id?: string
+          scholarship_name: string
+          stipend_amount?: number | null
+          university_id: string
+        }
+        Update: {
+          application_deadline?: string | null
+          coverage_type?: string
+          created_at?: string | null
+          eligibility_requirements?: string | null
+          scholarship_id?: string
+          scholarship_name?: string
+          stipend_amount?: number | null
+          university_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scholarships_university_id_fkey"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "universities"
+            referencedColumns: ["university_id"]
+          },
+        ]
+      }
+      universities: {
+        Row: {
+          city: string
+          cost_of_living_index: number | null
+          country: string
+          created_at: string | null
+          global_ranking: number | null
+          language_of_instruction: string | null
+          tuition_usd_per_year: number | null
+          university_id: string
+          university_name: string
+          website_url: string | null
+        }
+        Insert: {
+          city: string
+          cost_of_living_index?: number | null
+          country: string
+          created_at?: string | null
+          global_ranking?: number | null
+          language_of_instruction?: string | null
+          tuition_usd_per_year?: number | null
+          university_id?: string
+          university_name: string
+          website_url?: string | null
+        }
+        Update: {
+          city?: string
+          cost_of_living_index?: number | null
+          country?: string
+          created_at?: string | null
+          global_ranking?: number | null
+          language_of_instruction?: string | null
+          tuition_usd_per_year?: number | null
+          university_id?: string
+          university_name?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
