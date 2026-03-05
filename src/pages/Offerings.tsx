@@ -77,6 +77,10 @@ const Offerings = () => {
   const packages = [
     {
       name: "Starter Package",
+      price: "33,750 KGS",
+      priceUsd: "≈ $390 USD",
+      originalPrice: "45,000 KGS",
+      originalPriceUsd: "≈ $520 USD",
       discount: "25% Launch Discount",
       sessions: "5 Sessions",
       features: [
@@ -93,6 +97,10 @@ const Offerings = () => {
     },
     {
       name: "Standard Package",
+      price: "60,000 KGS",
+      priceUsd: "≈ $690 USD",
+      originalPrice: "80,000 KGS",
+      originalPriceUsd: "≈ $920 USD",
       discount: "25% Launch Discount",
       sessions: "10 Sessions",
       features: [
@@ -113,6 +121,10 @@ const Offerings = () => {
     },
     {
       name: "Premium Package",
+      price: "112,500 KGS",
+      priceUsd: "≈ $1,300 USD",
+      originalPrice: "150,000 KGS",
+      originalPriceUsd: "≈ $1,730 USD",
       badge: "Most Comprehensive",
       discount: "25% Launch Discount",
       sessions: "20 Sessions",
@@ -152,6 +164,7 @@ const Offerings = () => {
     },
     {
       name: "Strategy Consultation",
+      price: "5,000 KGS (≈ $58 USD)",
       duration: "50 minutes",
       description: "Extended session to discuss your journey",
       features: [
@@ -235,10 +248,17 @@ const Offerings = () => {
                 )}
                 <CardHeader className="text-center pt-6 md:pt-8 pb-4 md:pb-6">
                   <CardTitle className="text-lg md:text-2xl mb-2">{pkg.name}</CardTitle>
-                  <div className="space-y-1 md:space-y-2">
-                    <span className="inline-block bg-accent text-accent-foreground text-xs px-2.5 py-1 rounded-full font-semibold">
-                      {pkg.discount}
-                    </span>
+                  <div className="space-y-1">
+                    <div className="flex items-baseline justify-center gap-2">
+                      <span className="text-2xl md:text-3xl font-bold text-accent">{pkg.price}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{pkg.priceUsd}</p>
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-sm text-muted-foreground line-through">{pkg.originalPrice}</span>
+                      <span className="inline-block bg-accent text-accent-foreground text-xs px-2.5 py-1 rounded-full font-semibold">
+                        {pkg.discount}
+                      </span>
+                    </div>
                   </div>
                   <CardDescription className="text-sm md:text-base pt-1 md:pt-2">
                     {pkg.sessions}
