@@ -44,7 +44,7 @@ const TeamRu = () => {
     },
     {
       name: "Нурзада Абдивалиева",
-      title: "Со-основатель и COO",
+      title: "Со-основатель и глава консалтинга",
       tagline: "Schwarzman Scholar",
       photo: nurzadaPhoto,
       hometown: "Бишкек, Кыргызстан",
