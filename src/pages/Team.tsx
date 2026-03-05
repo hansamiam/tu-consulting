@@ -44,7 +44,7 @@ const Team = () => {
     },
     {
       name: "Nurzada Abdivalieva",
-      title: "Co-Founder & COO",
+      title: "Co-Founder & Head of Consulting",
       tagline: "Schwarzman Scholar",
       photo: nurzadaPhoto,
       hometown: "Bishkek, Kyrgyzstan",
