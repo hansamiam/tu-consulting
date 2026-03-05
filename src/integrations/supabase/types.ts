@@ -178,6 +178,8 @@ export type Database = {
           cost_of_living_index: number | null
           country: string
           created_at: string | null
+          foundation_year_available: boolean | null
+          gap_year_accepted: boolean | null
           global_ranking: number | null
           language_of_instruction: string | null
           tuition_usd_per_year: number | null
@@ -190,6 +192,8 @@ export type Database = {
           cost_of_living_index?: number | null
           country: string
           created_at?: string | null
+          foundation_year_available?: boolean | null
+          gap_year_accepted?: boolean | null
           global_ranking?: number | null
           language_of_instruction?: string | null
           tuition_usd_per_year?: number | null
@@ -202,6 +206,8 @@ export type Database = {
           cost_of_living_index?: number | null
           country?: string
           created_at?: string | null
+          foundation_year_available?: boolean | null
+          gap_year_accepted?: boolean | null
           global_ranking?: number | null
           language_of_instruction?: string | null
           tuition_usd_per_year?: number | null
