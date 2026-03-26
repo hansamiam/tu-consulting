@@ -24,7 +24,7 @@ const MockExam = () => {
   const [currentCorrect, setCurrentCorrect] = useState(0);
   const [finished, setFinished] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef(0);
 
   const sections = useMemo(() => examType ? getMockExamQuestions(examType) : [], [examType]);
