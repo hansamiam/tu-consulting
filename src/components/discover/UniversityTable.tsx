@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   ExternalLink, ChevronDown, ChevronUp, GraduationCap, BookOpen, Shield,
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
@@ -16,6 +17,8 @@ import { UniversityResult } from "./types";
 interface UniversityTableProps {
   universities: UniversityResult[];
   language: "en" | "ru";
+  compareIds?: Set<string>;
+  onToggleCompare?: (id: string) => void;
 }
 
 const labels = {
@@ -127,7 +130,7 @@ const ContactCard = ({ contact }: { contact: UniversityResult["university_contac
 
 const PAGE_SIZES = [25, 50, 100];
 
-export const UniversityTable = ({ universities, language }: UniversityTableProps) => {
+export const UniversityTable = ({ universities, language, compareIds, onToggleCompare }: UniversityTableProps) => {
   const l = labels[language];
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -207,6 +210,7 @@ export const UniversityTable = ({ universities, language }: UniversityTableProps
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
+                {onToggleCompare && <TableHead className="w-10"></TableHead>}
                 <SortableHead col="name" className="min-w-[200px]">{l.university}</SortableHead>
                 <SortableHead col="country">{l.location}</SortableHead>
                 <SortableHead col="tuition">{l.tuition}</SortableHead>
@@ -234,6 +238,14 @@ export const UniversityTable = ({ universities, language }: UniversityTableProps
                       className={`cursor-pointer hover:bg-muted/30 transition-colors ${isOpen ? "bg-muted/20 border-b-0" : ""}`}
                       onClick={() => setExpandedId(isOpen ? null : uni.university_id)}
                     >
+                      {onToggleCompare && (
+                        <TableCell className="w-10" onClick={e => e.stopPropagation()}>
+                          <Checkbox
+                            checked={compareIds?.has(uni.university_id) || false}
+                            onCheckedChange={() => onToggleCompare(uni.university_id)}
+                          />
+                        </TableCell>
+                      )}
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
@@ -291,7 +303,7 @@ export const UniversityTable = ({ universities, language }: UniversityTableProps
 
                     {isOpen && (
                       <TableRow key={`${uni.university_id}-detail`} className="bg-muted/10 hover:bg-muted/10">
-                        <TableCell colSpan={8} className="p-0">
+                        <TableCell colSpan={onToggleCompare ? 9 : 8} className="p-0">
                           <div className="p-5 border-t border-border">
                             <Tabs defaultValue="programs" className="w-full">
                               <TabsList className="mb-4 bg-muted/60 h-9">

@@ -13,6 +13,8 @@ interface DiscoverFiltersProps {
   setCountryFilter: (v: string) => void;
   degreeFilter: string;
   setDegreeFilter: (v: string) => void;
+  fieldFilter: string;
+  setFieldFilter: (v: string) => void;
   fullyFunded: boolean;
   setFullyFunded: (v: boolean) => void;
   ieltsOptional: boolean;
@@ -22,6 +24,7 @@ interface DiscoverFiltersProps {
   maxTuition: string;
   setMaxTuition: (v: string) => void;
   countries: string[];
+  fields: string[];
   resultCount: number;
   language: "en" | "ru";
 }
@@ -37,6 +40,8 @@ const t = {
     bachelor: "Bachelor",
     master: "Master",
     phd: "PhD",
+    field: "Field of Study",
+    allFields: "All fields",
     maxTuition: "Max Tuition (USD/year)",
     fullyFunded: "Fully funded only",
     ieltsOptional: "IELTS optional",
@@ -53,6 +58,8 @@ const t = {
     bachelor: "Бакалавриат",
     master: "Магистратура",
     phd: "PhD",
+    field: "Направление",
+    allFields: "Все направления",
     maxTuition: "Макс. стоимость (USD/год)",
     fullyFunded: "Только полное финансирование",
     ieltsOptional: "IELTS не обязателен",
@@ -65,14 +72,15 @@ export const DiscoverFilters = ({
   showFilters, setShowFilters,
   countryFilter, setCountryFilter,
   degreeFilter, setDegreeFilter,
+  fieldFilter, setFieldFilter,
   fullyFunded, setFullyFunded,
   ieltsOptional, setIeltsOptional,
   foundationYear, setFoundationYear,
   maxTuition, setMaxTuition,
-  countries, resultCount, language,
+  countries, fields, resultCount, language,
 }: DiscoverFiltersProps) => {
   const l = t[language];
-  const activeFilterCount = [countryFilter !== "all", degreeFilter !== "all", fullyFunded, ieltsOptional, foundationYear, !!maxTuition].filter(Boolean).length;
+  const activeFilterCount = [countryFilter !== "all", degreeFilter !== "all", fieldFilter !== "all", fullyFunded, ieltsOptional, foundationYear, !!maxTuition].filter(Boolean).length;
 
   return (
     <>
@@ -126,6 +134,16 @@ export const DiscoverFilters = ({
                 </Select>
               </div>
               <div>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">{l.field}</Label>
+                <Select value={fieldFilter} onValueChange={setFieldFilter}>
+                  <SelectTrigger><SelectValue placeholder={l.allFields} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{l.allFields}</SelectItem>
+                    {fields.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
                 <Label className="text-xs text-muted-foreground mb-1.5 block">{l.maxTuition}</Label>
                 <Input type="number" placeholder="e.g. 20000" value={maxTuition} onChange={(e) => setMaxTuition(e.target.value)} />
               </div>
@@ -145,7 +163,7 @@ export const DiscoverFilters = ({
                 <div className="flex items-center">
                   <button
                     onClick={() => {
-                      setCountryFilter("all"); setDegreeFilter("all");
+                      setCountryFilter("all"); setDegreeFilter("all"); setFieldFilter("all");
                       setFullyFunded(false); setIeltsOptional(false);
                       setFoundationYear(false); setMaxTuition("");
                     }}
