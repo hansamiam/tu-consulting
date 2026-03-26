@@ -210,6 +210,7 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
+                {onToggleCompare && <TableHead className="w-10"></TableHead>}
                 <SortableHead col="name" className="min-w-[200px]">{l.university}</SortableHead>
                 <SortableHead col="country">{l.location}</SortableHead>
                 <SortableHead col="tuition">{l.tuition}</SortableHead>
