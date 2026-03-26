@@ -40,6 +40,8 @@ import StudyPlan from "./pages/prep/StudyPlan";
 import Practice from "./pages/prep/Practice";
 import Tutor from "./pages/prep/Tutor";
 import Analytics from "./pages/prep/Analytics";
+import MockExam from "./pages/prep/MockExam";
+import Achievements from "./pages/prep/Achievements";
 
 const queryClient = new QueryClient();
 
