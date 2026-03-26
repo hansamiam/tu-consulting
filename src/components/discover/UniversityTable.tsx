@@ -303,7 +303,7 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
 
                     {isOpen && (
                       <TableRow key={`${uni.university_id}-detail`} className="bg-muted/10 hover:bg-muted/10">
-                        <TableCell colSpan={8} className="p-0">
+                        <TableCell colSpan={onToggleCompare ? 9 : 8} className="p-0">
                           <div className="p-5 border-t border-border">
                             <Tabs defaultValue="programs" className="w-full">
                               <TabsList className="mb-4 bg-muted/60 h-9">
