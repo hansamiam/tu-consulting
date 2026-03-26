@@ -163,7 +163,7 @@ export const DiscoverFilters = ({
                 <div className="flex items-center">
                   <button
                     onClick={() => {
-                      setCountryFilter("all"); setDegreeFilter("all");
+                      setCountryFilter("all"); setDegreeFilter("all"); setFieldFilter("all");
                       setFullyFunded(false); setIeltsOptional(false);
                       setFoundationYear(false); setMaxTuition("");
                     }}
