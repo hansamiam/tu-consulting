@@ -13,6 +13,8 @@ interface DiscoverFiltersProps {
   setCountryFilter: (v: string) => void;
   degreeFilter: string;
   setDegreeFilter: (v: string) => void;
+  fieldFilter: string;
+  setFieldFilter: (v: string) => void;
   fullyFunded: boolean;
   setFullyFunded: (v: boolean) => void;
   ieltsOptional: boolean;
@@ -22,6 +24,7 @@ interface DiscoverFiltersProps {
   maxTuition: string;
   setMaxTuition: (v: string) => void;
   countries: string[];
+  fields: string[];
   resultCount: number;
   language: "en" | "ru";
 }
