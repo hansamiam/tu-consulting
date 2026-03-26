@@ -1,11 +1,13 @@
 import { usePrep } from "@/contexts/PrepContext";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import {
   ClipboardCheck, BookOpen, Bot, BarChart3, Zap, Flame,
-  Target, Calendar, Trophy, ArrowRight, CheckCircle2,
+  Target, Calendar, Trophy, ArrowRight, CheckCircle2, FileText,
+  ArrowUpRight, Sparkles,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -14,19 +16,23 @@ const PrepDashboard = () => {
   const {
     xp, streak, targetExam, targetScore, examDate,
     diagnosticResults, practiceSessions, completedToday, language,
+    level, xpToNextLevel, unlockedAchievements, achievements,
+    mockExamResults, skillProfile, totalStudyMinutes, essaysSubmitted,
   } = usePrep();
 
   const t = (en: string, ru: string) => language === "ru" ? ru : en;
-  const level = Math.floor(xp / 100) + 1;
-  const xpProgress = (xp % 100);
   const totalSessions = practiceSessions.length;
   const hasDiagnostic = diagnosticResults.length > 0;
 
+  const recentAchievements = achievements
+    .filter(a => unlockedAchievements.includes(a.id))
+    .slice(-3);
+
   const quickActions = [
-    { icon: ClipboardCheck, label: t("Take Diagnostic", "Пройти тест"), path: "/prep/diagnostic", color: "text-blue-500", desc: t("Assess your level", "Оцените свой уровень") },
-    { icon: BookOpen, label: t("Practice", "Практика"), path: "/prep/practice", color: "text-green-500", desc: t("Start a module", "Начать модуль") },
-    { icon: Bot, label: t("AI Tutor", "AI Репетитор"), path: "/prep/tutor", color: "text-purple-500", desc: t("Ask anything", "Задайте вопрос") },
-    { icon: BarChart3, label: t("Analytics", "Аналитика"), path: "/prep/analytics", color: "text-accent", desc: t("Track progress", "Отслеживайте прогресс") },
+    { icon: ClipboardCheck, label: t("Diagnostic", "Диагностика"), path: "/prep/diagnostic", color: "text-blue-500", desc: t("Assess your level", "Оцените уровень") },
+    { icon: BookOpen, label: t("Practice", "Практика"), path: "/prep/practice", color: "text-green-500", desc: t("110+ questions", "110+ вопросов") },
+    { icon: FileText, label: t("Mock Exam", "Пробный"), path: "/prep/mock-exam", color: "text-purple-500", desc: t("Full simulation", "Полная симуляция") },
+    { icon: Bot, label: t("AI Tutor", "AI Репетитор"), path: "/prep/tutor", color: "text-accent", desc: t("Ask anything", "Задайте вопрос") },
   ];
 
   return (
@@ -39,34 +45,40 @@ const PrepDashboard = () => {
         <p className="text-muted-foreground">
           {completedToday
             ? t("Great job! You've practiced today.", "Отлично! Вы уже позанимались сегодня.")
-            : t("Ready to study? Let's build your skills.", "Готовы заниматься? Давайте улучшим ваши навыки.")}
+            : t("Ready to study? Let's build your skills.", "Готовы заниматься?")}
         </p>
       </motion.div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Card className="border-accent/20">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-accent/10"><Zap className="h-5 w-5 text-accent" /></div>
-            <div><p className="text-2xl font-bold text-foreground">{xp}</p><p className="text-xs text-muted-foreground">XP {t("Points", "Очки")}</p></div>
+            <div><p className="text-2xl font-bold text-foreground">{xp}</p><p className="text-xs text-muted-foreground">XP</p></div>
           </CardContent>
         </Card>
         <Card className="border-orange-500/20">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-orange-500/10"><Flame className="h-5 w-5 text-orange-500" /></div>
-            <div><p className="text-2xl font-bold text-foreground">{streak}</p><p className="text-xs text-muted-foreground">{t("Day Streak", "Дн. подряд")}</p></div>
+            <div><p className="text-2xl font-bold text-foreground">{streak}</p><p className="text-xs text-muted-foreground">{t("Streak", "Дн.")}</p></div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-blue-500/10"><Trophy className="h-5 w-5 text-blue-500" /></div>
-            <div><p className="text-2xl font-bold text-foreground">{t("Lvl", "Ур.")} {level}</p><p className="text-xs text-muted-foreground">{xpProgress}/100 XP</p></div>
+            <div><p className="text-2xl font-bold text-foreground">{t("Lvl", "Ур.")} {level}</p><p className="text-xs text-muted-foreground">{100 - xpToNextLevel}/100</p></div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-green-500/10"><CheckCircle2 className="h-5 w-5 text-green-500" /></div>
             <div><p className="text-2xl font-bold text-foreground">{totalSessions}</p><p className="text-xs text-muted-foreground">{t("Sessions", "Сессий")}</p></div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-purple-500/10"><FileText className="h-5 w-5 text-purple-500" /></div>
+            <div><p className="text-2xl font-bold text-foreground">{mockExamResults.length}</p><p className="text-xs text-muted-foreground">{t("Mock Exams", "Пробные")}</p></div>
           </CardContent>
         </Card>
       </div>
@@ -76,11 +88,28 @@ const PrepDashboard = () => {
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">{t("Level", "Уровень")} {level}</span>
-            <span className="text-xs text-muted-foreground">{xpProgress}/100 XP</span>
+            <span className="text-xs text-muted-foreground">{100 - xpToNextLevel}/100 XP</span>
           </div>
-          <Progress value={xpProgress} className="h-2" />
+          <Progress value={100 - xpToNextLevel} className="h-2" />
         </CardContent>
       </Card>
+
+      {/* Recent achievements */}
+      {recentAchievements.length > 0 && (
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-muted-foreground">{t("Recent:", "Последние:")}</span>
+          <div className="flex gap-2 flex-1 overflow-x-auto">
+            {recentAchievements.map(a => (
+              <Badge key={a.id} variant="outline" className="border-accent/30 text-accent shrink-0 gap-1">
+                {a.icon} {language === "ru" ? a.nameRu : a.name}
+              </Badge>
+            ))}
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/prep/achievements")} className="text-accent text-xs shrink-0">
+            {unlockedAchievements.length}/{achievements.length} →
+          </Button>
+        </div>
+      )}
 
       {/* Setup prompt if no target */}
       {!targetExam && (
@@ -90,11 +119,11 @@ const PrepDashboard = () => {
               <Target className="h-8 w-8 text-accent" />
               <div>
                 <p className="font-semibold text-foreground">{t("Set your goal", "Установите цель")}</p>
-                <p className="text-sm text-muted-foreground">{t("Take a diagnostic to personalize your plan.", "Пройдите диагностику для персонального плана.")}</p>
+                <p className="text-sm text-muted-foreground">{t("Take a diagnostic to personalize your plan.", "Пройдите диагностику.")}</p>
               </div>
             </div>
             <Button onClick={() => navigate("/prep/diagnostic")} className="bg-accent text-accent-foreground hover:bg-accent/90">
-              {t("Start Diagnostic", "Начать диагностику")} <ArrowRight className="ml-2 h-4 w-4" />
+              {t("Start Diagnostic", "Начать")} <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </CardContent>
         </Card>
@@ -118,7 +147,7 @@ const PrepDashboard = () => {
       )}
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {quickActions.map((action, i) => (
           <motion.div key={action.path} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
             <Card className="cursor-pointer hover:shadow-md transition-shadow group" onClick={() => navigate(action.path)}>
@@ -131,6 +160,27 @@ const PrepDashboard = () => {
           </motion.div>
         ))}
       </div>
+
+      {/* Service Funnel CTA */}
+      <Card className="border-accent/20 bg-gradient-to-r from-accent/5 to-transparent">
+        <CardContent className="p-5 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Sparkles className="h-8 w-8 text-accent shrink-0" />
+            <div>
+              <p className="font-semibold text-foreground">{t("Ready for expert guidance?", "Готовы к экспертной помощи?")}</p>
+              <p className="text-sm text-muted-foreground">{t("Book a free consultation with our IELTS/SAT specialists for a personalized strategy.", "Запишитесь на бесплатную консультацию к нашим специалистам IELTS/SAT.")}</p>
+            </div>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <Button variant="outline" onClick={() => navigate("/offerings")} className="gap-1">
+              {t("View Plans", "Тарифы")} <ArrowUpRight className="h-3 w-3" />
+            </Button>
+            <Button onClick={() => navigate("/discover")} className="bg-accent text-accent-foreground gap-1">
+              {t("Find Universities", "Найти вузы")} <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
