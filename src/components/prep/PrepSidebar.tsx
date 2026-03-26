@@ -24,8 +24,10 @@ const PrepSidebar = () => {
     { title: t("Diagnostic", "Диагностика"), path: "/prep/diagnostic", icon: ClipboardCheck },
     { title: t("Study Plan", "План"), path: "/prep/study-plan", icon: Calendar },
     { title: t("Practice", "Практика"), path: "/prep/practice", icon: BookOpen },
+    { title: t("Mock Exam", "Пробный экзамен"), path: "/prep/mock-exam", icon: FileText },
     { title: t("AI Tutor", "AI Репетитор"), path: "/prep/tutor", icon: Bot },
     { title: t("Analytics", "Аналитика"), path: "/prep/analytics", icon: BarChart3 },
+    { title: t("Achievements", "Достижения"), path: "/prep/achievements", icon: Trophy },
   ];
 
   const isActive = (path: string, exact?: boolean) =>

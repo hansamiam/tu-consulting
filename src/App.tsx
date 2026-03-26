@@ -87,6 +87,8 @@ const App = () => (
           <Route path="/prep/practice" element={<PrepLayout><Practice /></PrepLayout>} />
           <Route path="/prep/tutor" element={<PrepLayout><Tutor /></PrepLayout>} />
           <Route path="/prep/analytics" element={<PrepLayout><Analytics /></PrepLayout>} />
+          <Route path="/prep/mock-exam" element={<PrepLayout><MockExam /></PrepLayout>} />
+          <Route path="/prep/achievements" element={<PrepLayout><Achievements /></PrepLayout>} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/why-us" element={<WhyTU />} />
           <Route path="/why-us/ru" element={<WhyTURu />} />
