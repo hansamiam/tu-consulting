@@ -1,14 +1,20 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Instagram } from "lucide-react";
+import { Instagram, GraduationCap, Brain, Search, Users, ArrowRight, Sparkles, BookOpen, Globe, Trophy, Target } from "lucide-react";
 import heroImage from "@/assets/hero-campus.jpg";
 import Navigation from "@/components/Navigation";
 import { shouldRedirectToRussian } from "@/utils/languageDetection";
 import { ScrollProgress } from "@/components/ScrollProgress";
-import { FloatingBadge } from "@/components/FloatingBadge";
 import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
+
+const fadeUp = (delay = 0) => ({
+  initial: { opacity: 0, y: 30 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-50px" },
+  transition: { delay, duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] as const },
+});
 
 const Index = () => {
   const navigate = useNavigate();
@@ -20,149 +26,313 @@ const Index = () => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative bg-background">
       <ScrollProgress />
       <Navigation language="en" />
-      {/* Hero Section with Background Image */}
-      <motion.div 
+
+      {/* ── HERO ── */}
+      <motion.section
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
-        className="min-h-screen relative flex items-center justify-center bg-cover bg-center"
+        className="relative min-h-[92vh] flex items-center justify-center bg-cover bg-center"
         style={{
-          backgroundImage: `linear-gradient(rgba(10, 35, 66, 0.75), rgba(10, 35, 66, 0.75)), url(${heroImage})`,
+          backgroundImage: `linear-gradient(160deg, rgba(10,35,66,0.88) 0%, rgba(10,35,66,0.65) 100%), url(${heroImage})`,
         }}
       >
-        <main className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-20 text-center">
-          {/* Language Switcher */}
-          
-          {/* Logo/Brand Name */}
-          <div className="mb-8 sm:mb-12 animate-fade-in">
-            <h2 className="text-primary-foreground font-heading text-xl sm:text-2xl md:text-3xl font-semibold tracking-wide mb-2">
-              Top Uni Consulting
-            </h2>
-            <div className="w-20 sm:w-24 h-1 bg-gold mx-auto rounded-full" />
-          </div>
-          {/* Main Headline */}
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2, duration: 0.6 }}
-            className="mb-6 sm:mb-8 space-y-4"
-          >
-            <FloatingBadge>
-              <div className="inline-block px-6 sm:px-8 py-3 sm:py-4 border-2 border-gold/30 rounded-lg backdrop-blur-sm relative">
-                <div className="absolute inset-0 bg-gold/5 animate-breathe-glow rounded-lg" />
-                <h1 className="relative font-heading text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-gold leading-tight tracking-tight">
-                  Now Accepting Our
-                  <br />
-                  First{"\u00a0"}Clients
-                </h1>
-              </div>
-            </FloatingBadge>
-            <motion.p 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-              className="text-primary-foreground/90 text-lg sm:text-xl font-medium max-w-2xl mx-auto"
-            >
-              Don't miss out on early-launch pricing and priority support
-            </motion.p>
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.55, duration: 0.5 }}
-              className="space-y-1"
-            >
-              <p className="text-primary-foreground/80 text-sm sm:text-base font-medium tracking-wide">
-                Led by consultants from <span className="text-accent font-semibold">Yale, Harvard, Cambridge, and Tsinghua</span>
-              </p>
-              <p className="text-primary-foreground/50 text-xs tracking-widest uppercase">Available in Russian and English</p>
-            </motion.div>
+        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
+          <motion.div {...fadeUp(0.1)} className="mb-4">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold/30 bg-gold/10 text-gold text-xs sm:text-sm font-medium tracking-wide uppercase">
+              <Sparkles className="h-3.5 w-3.5" /> Central Asia's #1 Education Platform
+            </span>
           </motion.div>
 
-          {/* Call to Action */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.6 }}
-            className="max-w-md mx-auto mb-6 sm:mb-8 px-4"
+          <motion.h1
+            {...fadeUp(0.2)}
+            className="font-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-primary-foreground leading-[1.1] tracking-tight mb-6"
           >
-            <Button 
+            Your Future.{" "}
+            <span className="text-gold">Our Mission.</span>
+          </motion.h1>
+
+          <motion.p
+            {...fadeUp(0.35)}
+            className="text-primary-foreground/85 text-lg sm:text-xl md:text-2xl max-w-3xl mx-auto mb-3 font-light leading-relaxed"
+          >
+            AI‑powered university discovery, adaptive test prep, and expert consulting — all in one place.
+          </motion.p>
+
+          <motion.p
+            {...fadeUp(0.45)}
+            className="text-primary-foreground/50 text-xs sm:text-sm tracking-widest uppercase mb-10"
+          >
+            Led by consultants from Yale, Harvard, Cambridge & Tsinghua · Available in Russian & English
+          </motion.p>
+
+          <motion.div {...fadeUp(0.55)} className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button
               variant="gold"
               size="lg"
-              className="text-lg px-12 py-6 hover:scale-105 transition-transform duration-200"
+              className="text-lg px-10 py-6 hover:scale-105 transition-transform duration-200 gap-2"
+              onClick={() => navigate('/discover')}
+            >
+              <Search className="h-5 w-5" /> Explore Universities
+            </Button>
+            <Button
+              size="lg"
+              className="text-lg px-10 py-6 border-2 border-gold/40 bg-transparent text-gold hover:bg-gold/10 transition-all duration-200 gap-2"
               onClick={() => navigate('/offerings')}
             >
-              Explore Our Services
+              Our Services <ArrowRight className="h-5 w-5" />
             </Button>
           </motion.div>
+        </div>
 
-          {/* Courses Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8, duration: 0.7 }}
-            className="mb-10 sm:mb-14 px-4"
-          >
-            <div className="max-w-3xl mx-auto">
-              <h2 className="font-heading text-2xl sm:text-3xl font-semibold text-gold mb-2">
-                Our Courses
-              </h2>
-              <p className="text-primary-foreground/70 text-sm sm:text-base mb-8">
-                Structured preparation taught by experienced instructors
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-                {/* IELTS */}
-                <div className="border border-gold/20 rounded-lg p-5 sm:p-6 backdrop-blur-sm bg-primary/30 text-left">
-                  <h3 className="text-gold font-heading text-lg font-semibold mb-2">IELTS Preparation</h3>
-                  <p className="text-primary-foreground/80 text-sm leading-relaxed">
-                    For students aiming to study abroad. Build confidence across all four sections — Listening, Reading, Writing, and Speaking.
-                  </p>
-                </div>
-                {/* SAT */}
-                <div className="border border-gold/20 rounded-lg p-5 sm:p-6 backdrop-blur-sm bg-primary/30 text-left">
-                  <h3 className="text-gold font-heading text-lg font-semibold mb-2">SAT Preparation</h3>
-                  <p className="text-primary-foreground/80 text-sm leading-relaxed">
-                    For high school students targeting top universities. Master the math and verbal reasoning skills needed for a competitive score.
-                  </p>
-                </div>
-                {/* General English */}
-                <div className="border border-gold/20 rounded-lg p-5 sm:p-6 backdrop-blur-sm bg-primary/30 text-left">
-                  <h3 className="text-gold font-heading text-lg font-semibold mb-2">General English</h3>
-                  <p className="text-primary-foreground/80 text-sm leading-relaxed">
-                    For learners at any level. Strengthen your grammar, vocabulary, and fluency for academic and professional success.
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="gold"
-                size="lg"
-                className="mt-8 text-base px-10 py-5 hover:scale-105 transition-transform duration-200"
-                onClick={() => navigate('/offerings')}
-              >
-                Book a Consultation
-              </Button>
-            </div>
+        {/* Scroll hint */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.2, duration: 0.8 }}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2"
+        >
+          <div className="w-6 h-10 rounded-full border-2 border-gold/40 flex justify-center pt-2">
+            <motion.div
+              animate={{ y: [0, 12, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="w-1.5 h-1.5 rounded-full bg-gold"
+            />
+          </div>
+        </motion.div>
+      </motion.section>
+
+      {/* ── PLATFORM PILLARS ── */}
+      <section className="py-20 sm:py-28 bg-background">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <motion.div {...fadeUp()} className="text-center mb-16">
+            <h2 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4">
+              One Platform. <span className="text-accent">Every Advantage.</span>
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              From finding your dream university to acing your exams and securing admission — we've built every tool you need.
+            </p>
           </motion.div>
 
-          {/* Social Links */}
-          <div className="flex gap-6 justify-center mb-6 sm:mb-8">
-            <a
-              href="https://www.instagram.com/top_uni_consulting/?g=5"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gold hover:text-gold-light transition-all duration-200 p-2"
-              aria-label="Follow us on Instagram"
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            {/* Discover */}
+            <motion.div
+              {...fadeUp(0.1)}
+              className="group relative rounded-2xl border border-border bg-card p-8 hover:border-accent/40 hover:shadow-[var(--shadow-premium)] transition-all duration-300 cursor-pointer"
+              onClick={() => navigate('/discover')}
             >
-              <Instagram size={28} className="sm:w-8 sm:h-8" strokeWidth={1.5} />
-            </a>
+              <div className="h-14 w-14 rounded-xl bg-accent/10 flex items-center justify-center mb-6 group-hover:bg-accent/20 transition-colors">
+                <Globe className="h-7 w-7 text-accent" />
+              </div>
+              <h3 className="font-heading text-xl font-bold text-foreground mb-3">Discover</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed mb-4">
+                Search 500+ universities worldwide. Compare tuition, rankings, visa info, and scholarships — all in one smart database.
+              </p>
+              <ul className="space-y-2 text-sm text-muted-foreground mb-6">
+                <li className="flex items-center gap-2"><Target className="h-4 w-4 text-accent" /> "Can I Get In?" match scoring</li>
+                <li className="flex items-center gap-2"><Search className="h-4 w-4 text-accent" /> Side-by-side comparisons</li>
+                <li className="flex items-center gap-2"><GraduationCap className="h-4 w-4 text-accent" /> Real cost calculator</li>
+              </ul>
+              <span className="inline-flex items-center gap-1 text-accent font-medium text-sm group-hover:gap-2 transition-all">
+                Explore Universities <ArrowRight className="h-4 w-4" />
+              </span>
+            </motion.div>
+
+            {/* Prep */}
+            <motion.div
+              {...fadeUp(0.2)}
+              className="group relative rounded-2xl border border-border bg-card p-8 hover:border-accent/40 hover:shadow-[var(--shadow-premium)] transition-all duration-300 cursor-pointer"
+              onClick={() => navigate('/prep')}
+            >
+              <div className="absolute -top-3 right-6">
+                <span className="px-3 py-1 rounded-full bg-accent text-accent-foreground text-xs font-bold uppercase tracking-wider">
+                  Popular
+                </span>
+              </div>
+              <div className="h-14 w-14 rounded-xl bg-accent/10 flex items-center justify-center mb-6 group-hover:bg-accent/20 transition-colors">
+                <BookOpen className="h-7 w-7 text-accent" />
+              </div>
+              <h3 className="font-heading text-xl font-bold text-foreground mb-3">Prep</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed mb-4">
+                Adaptive IELTS & SAT preparation with AI tutoring, full mock exams, and a gamified learning engine that keeps you going.
+              </p>
+              <ul className="space-y-2 text-sm text-muted-foreground mb-6">
+                <li className="flex items-center gap-2"><Brain className="h-4 w-4 text-accent" /> AI-powered adaptive practice</li>
+                <li className="flex items-center gap-2"><Trophy className="h-4 w-4 text-accent" /> Timed mock exams with scoring</li>
+                <li className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-accent" /> AI essay feedback & band scores</li>
+              </ul>
+              <span className="inline-flex items-center gap-1 text-accent font-medium text-sm group-hover:gap-2 transition-all">
+                Start Practicing <ArrowRight className="h-4 w-4" />
+              </span>
+            </motion.div>
+
+            {/* Consulting */}
+            <motion.div
+              {...fadeUp(0.3)}
+              className="group relative rounded-2xl border border-border bg-card p-8 hover:border-accent/40 hover:shadow-[var(--shadow-premium)] transition-all duration-300 cursor-pointer"
+              onClick={() => navigate('/offerings')}
+            >
+              <div className="h-14 w-14 rounded-xl bg-accent/10 flex items-center justify-center mb-6 group-hover:bg-accent/20 transition-colors">
+                <Users className="h-7 w-7 text-accent" />
+              </div>
+              <h3 className="font-heading text-xl font-bold text-foreground mb-3">Consulting</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed mb-4">
+                Personalized admission strategy from mentors who've been there. Essays, interviews, applications — handled with care.
+              </p>
+              <ul className="space-y-2 text-sm text-muted-foreground mb-6">
+                <li className="flex items-center gap-2"><GraduationCap className="h-4 w-4 text-accent" /> Ivy League & Oxbridge mentors</li>
+                <li className="flex items-center gap-2"><Target className="h-4 w-4 text-accent" /> Essay & interview coaching</li>
+                <li className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-accent" /> Full application management</li>
+              </ul>
+              <span className="inline-flex items-center gap-1 text-accent font-medium text-sm group-hover:gap-2 transition-all">
+                View Packages <ArrowRight className="h-4 w-4" />
+              </span>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── AI SECTION ── */}
+      <section className="py-20 sm:py-28 bg-primary text-primary-foreground">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <motion.div {...fadeUp()} className="text-center mb-12">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold/30 bg-gold/10 text-gold text-xs sm:text-sm font-medium tracking-wide uppercase mb-6">
+              <Brain className="h-3.5 w-3.5" /> Powered by AI
+            </span>
+            <h2 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
+              TopUni <span className="text-gold">AI</span>
+            </h2>
+            <p className="text-primary-foreground/70 text-lg max-w-2xl mx-auto">
+              Your personal AI counselor that analyzes your profile, matches you with universities, generates strategies, and tracks deadlines — 24/7.
+            </p>
+          </motion.div>
+
+          <motion.div {...fadeUp(0.2)} className="grid grid-cols-2 sm:grid-cols-4 gap-6 mb-12">
+            {[
+              { num: "500+", label: "Universities" },
+              { num: "24/7", label: "AI Counselor" },
+              { num: "95%", label: "Match Accuracy" },
+              { num: "2 min", label: "Full Strategy" },
+            ].map((stat) => (
+              <div key={stat.label} className="text-center">
+                <div className="font-heading text-3xl sm:text-4xl font-bold text-gold mb-1">{stat.num}</div>
+                <div className="text-primary-foreground/60 text-sm">{stat.label}</div>
+              </div>
+            ))}
+          </motion.div>
+
+          <motion.div {...fadeUp(0.3)} className="text-center">
+            <Button
+              variant="gold"
+              size="lg"
+              className="text-lg px-10 py-6 hover:scale-105 transition-transform gap-2"
+              onClick={() => navigate('/topuni-ai')}
+            >
+              <Brain className="h-5 w-5" /> Try TopUni AI
+            </Button>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── COURSES ── */}
+      <section className="py-20 sm:py-28 bg-background">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <motion.div {...fadeUp()} className="text-center mb-14">
+            <h2 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4">
+              Courses & <span className="text-accent">Test Prep</span>
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Structured preparation taught by experienced instructors — online and in-person.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {[
+              {
+                title: "IELTS Preparation",
+                desc: "Build confidence across Listening, Reading, Writing, and Speaking. Adaptive practice with AI-scored essays.",
+                icon: BookOpen,
+              },
+              {
+                title: "SAT Preparation",
+                desc: "Master math and verbal reasoning for a competitive score. Full-length timed mock exams included.",
+                icon: Target,
+              },
+              {
+                title: "General English",
+                desc: "Strengthen grammar, vocabulary, and fluency for academic and professional success at any level.",
+                icon: Globe,
+              },
+            ].map((course, i) => (
+              <motion.div
+                key={course.title}
+                {...fadeUp(0.1 * (i + 1))}
+                className="rounded-2xl border border-border bg-card p-6 sm:p-8 hover:border-accent/30 hover:shadow-[var(--shadow-premium)] transition-all duration-300"
+              >
+                <course.icon className="h-8 w-8 text-accent mb-4" />
+                <h3 className="font-heading text-lg font-bold text-foreground mb-2">{course.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{course.desc}</p>
+              </motion.div>
+            ))}
           </div>
 
-          {/* Footer */}
-          <Footer language="en" variant="dark" />
-        </main>
-      </motion.div>
+          <motion.div {...fadeUp(0.4)} className="text-center mt-10">
+            <Button
+              variant="gold"
+              size="lg"
+              className="text-base px-10 py-5 hover:scale-105 transition-transform"
+              onClick={() => navigate('/offerings')}
+            >
+              View All Programs
+            </Button>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── CTA BANNER ── */}
+      <section className="py-16 sm:py-20 bg-accent/5 border-y border-accent/10">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+          <motion.div {...fadeUp()}>
+            <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Ready to start your journey?
+            </h2>
+            <p className="text-muted-foreground text-lg mb-8 max-w-xl mx-auto">
+              Book a free 20-minute consultation. No commitment, no pressure — just clarity.
+            </p>
+            <Button
+              variant="gold"
+              size="lg"
+              className="text-lg px-12 py-6 hover:scale-105 transition-transform"
+              onClick={() => navigate('/offerings')}
+            >
+              Book Free Consultation
+            </Button>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── FOOTER ── */}
+      <footer className="bg-primary text-primary-foreground py-12">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col items-center gap-6">
+            <div className="flex gap-6">
+              <a
+                href="https://www.instagram.com/top_uni_consulting/?g=5"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gold hover:text-gold-light transition-colors p-2"
+                aria-label="Follow us on Instagram"
+              >
+                <Instagram size={28} strokeWidth={1.5} />
+              </a>
+            </div>
+            <Footer language="en" variant="dark" />
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
