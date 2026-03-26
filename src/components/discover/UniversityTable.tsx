@@ -238,6 +238,14 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
                       className={`cursor-pointer hover:bg-muted/30 transition-colors ${isOpen ? "bg-muted/20 border-b-0" : ""}`}
                       onClick={() => setExpandedId(isOpen ? null : uni.university_id)}
                     >
+                      {onToggleCompare && (
+                        <TableCell className="w-10" onClick={e => e.stopPropagation()}>
+                          <Checkbox
+                            checked={compareIds?.has(uni.university_id) || false}
+                            onCheckedChange={() => onToggleCompare(uni.university_id)}
+                          />
+                        </TableCell>
+                      )}
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
