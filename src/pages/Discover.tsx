@@ -28,7 +28,7 @@ const Discover = () => {
     setLoading(true);
     const { data: unis, error } = await supabase
       .from("universities")
-      .select(`*, programs (*, admission_requirements (*), applications (*)), scholarships (*)`)
+      .select(`*, programs (*, admission_requirements (*), applications (*)), scholarships (*), university_contacts (*), university_insights (*)`)
       .order("university_name", { ascending: true });
 
     if (!error && unis) {
