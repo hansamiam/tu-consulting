@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   ExternalLink, ChevronDown, ChevronUp, GraduationCap, BookOpen, Shield,
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
@@ -16,6 +17,8 @@ import { UniversityResult } from "./types";
 interface UniversityTableProps {
   universities: UniversityResult[];
   language: "en" | "ru";
+  compareIds?: Set<string>;
+  onToggleCompare?: (id: string) => void;
 }
 
 const labels = {
