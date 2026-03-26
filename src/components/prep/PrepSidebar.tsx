@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/sidebar";
 import {
   LayoutDashboard, ClipboardCheck, Calendar, BookOpen,
-  Bot, BarChart3, Flame, Zap, ArrowLeft, Globe,
+  Bot, BarChart3, Flame, Zap, ArrowLeft, Globe, Trophy, FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
