@@ -134,6 +134,16 @@ export const DiscoverFilters = ({
                 </Select>
               </div>
               <div>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">{l.field}</Label>
+                <Select value={fieldFilter} onValueChange={setFieldFilter}>
+                  <SelectTrigger><SelectValue placeholder={l.allFields} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{l.allFields}</SelectItem>
+                    {fields.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
                 <Label className="text-xs text-muted-foreground mb-1.5 block">{l.maxTuition}</Label>
                 <Input type="number" placeholder="e.g. 20000" value={maxTuition} onChange={(e) => setMaxTuition(e.target.value)} />
               </div>
