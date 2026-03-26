@@ -72,14 +72,15 @@ export const DiscoverFilters = ({
   showFilters, setShowFilters,
   countryFilter, setCountryFilter,
   degreeFilter, setDegreeFilter,
+  fieldFilter, setFieldFilter,
   fullyFunded, setFullyFunded,
   ieltsOptional, setIeltsOptional,
   foundationYear, setFoundationYear,
   maxTuition, setMaxTuition,
-  countries, resultCount, language,
+  countries, fields, resultCount, language,
 }: DiscoverFiltersProps) => {
   const l = t[language];
-  const activeFilterCount = [countryFilter !== "all", degreeFilter !== "all", fullyFunded, ieltsOptional, foundationYear, !!maxTuition].filter(Boolean).length;
+  const activeFilterCount = [countryFilter !== "all", degreeFilter !== "all", fieldFilter !== "all", fullyFunded, ieltsOptional, foundationYear, !!maxTuition].filter(Boolean).length;
 
   return (
     <>
