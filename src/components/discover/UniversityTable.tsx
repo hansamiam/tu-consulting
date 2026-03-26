@@ -130,7 +130,7 @@ const ContactCard = ({ contact }: { contact: UniversityResult["university_contac
 
 const PAGE_SIZES = [25, 50, 100];
 
-export const UniversityTable = ({ universities, language }: UniversityTableProps) => {
+export const UniversityTable = ({ universities, language, compareIds, onToggleCompare }: UniversityTableProps) => {
   const l = labels[language];
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
