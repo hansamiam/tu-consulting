@@ -58,6 +58,8 @@ const t = {
     bachelor: "Бакалавриат",
     master: "Магистратура",
     phd: "PhD",
+    field: "Направление",
+    allFields: "Все направления",
     maxTuition: "Макс. стоимость (USD/год)",
     fullyFunded: "Только полное финансирование",
     ieltsOptional: "IELTS не обязателен",
