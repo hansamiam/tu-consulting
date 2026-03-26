@@ -1,3 +1,38 @@
+export interface UniversityContact {
+  contact_id: string;
+  contact_type: string;
+  contact_name: string | null;
+  contact_title: string | null;
+  email: string | null;
+  phone: string | null;
+  office_hours: string | null;
+  response_time: string | null;
+  linkedin_url: string | null;
+  whatsapp: string | null;
+  telegram: string | null;
+  notes: string | null;
+}
+
+export interface UniversityInsight {
+  insight_id: string;
+  employment_rate_6months: number | null;
+  average_starting_salary_usd: number | null;
+  student_satisfaction_score: number | null;
+  international_student_percent: number | null;
+  campus_safety_score: number | null;
+  housing_available: boolean | null;
+  housing_cost_monthly_usd: number | null;
+  alumni_network_strength: string | null;
+  notable_alumni: string | null;
+  student_clubs_count: number | null;
+  research_output_score: number | null;
+  industry_partnerships: string | null;
+  internship_opportunities: string | null;
+  post_grad_work_visa: string | null;
+  application_tips: string | null;
+  common_mistakes: string | null;
+}
+
 export interface UniversityResult {
   university_id: string;
   university_name: string;
@@ -37,4 +72,6 @@ export interface UniversityResult {
     eligibility_requirements: string | null;
     application_deadline: string | null;
   }[];
+  university_contacts: UniversityContact[];
+  university_insights: UniversityInsight[];
 }
