@@ -40,6 +40,8 @@ const t = {
     bachelor: "Bachelor",
     master: "Master",
     phd: "PhD",
+    field: "Field of Study",
+    allFields: "All fields",
     maxTuition: "Max Tuition (USD/year)",
     fullyFunded: "Fully funded only",
     ieltsOptional: "IELTS optional",
