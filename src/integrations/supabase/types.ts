@@ -217,6 +217,139 @@ export type Database = {
         }
         Relationships: []
       }
+      university_contacts: {
+        Row: {
+          contact_id: string
+          contact_name: string | null
+          contact_title: string | null
+          contact_type: string
+          created_at: string | null
+          email: string | null
+          linkedin_url: string | null
+          notes: string | null
+          office_hours: string | null
+          phone: string | null
+          response_time: string | null
+          telegram: string | null
+          university_id: string
+          whatsapp: string | null
+        }
+        Insert: {
+          contact_id?: string
+          contact_name?: string | null
+          contact_title?: string | null
+          contact_type?: string
+          created_at?: string | null
+          email?: string | null
+          linkedin_url?: string | null
+          notes?: string | null
+          office_hours?: string | null
+          phone?: string | null
+          response_time?: string | null
+          telegram?: string | null
+          university_id: string
+          whatsapp?: string | null
+        }
+        Update: {
+          contact_id?: string
+          contact_name?: string | null
+          contact_title?: string | null
+          contact_type?: string
+          created_at?: string | null
+          email?: string | null
+          linkedin_url?: string | null
+          notes?: string | null
+          office_hours?: string | null
+          phone?: string | null
+          response_time?: string | null
+          telegram?: string | null
+          university_id?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "university_contacts_university_id_fkey"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "universities"
+            referencedColumns: ["university_id"]
+          },
+        ]
+      }
+      university_insights: {
+        Row: {
+          alumni_network_strength: string | null
+          application_tips: string | null
+          average_starting_salary_usd: number | null
+          campus_safety_score: number | null
+          common_mistakes: string | null
+          created_at: string | null
+          employment_rate_6months: number | null
+          housing_available: boolean | null
+          housing_cost_monthly_usd: number | null
+          industry_partnerships: string | null
+          insight_id: string
+          international_student_percent: number | null
+          internship_opportunities: string | null
+          notable_alumni: string | null
+          post_grad_work_visa: string | null
+          research_output_score: number | null
+          student_clubs_count: number | null
+          student_satisfaction_score: number | null
+          university_id: string
+        }
+        Insert: {
+          alumni_network_strength?: string | null
+          application_tips?: string | null
+          average_starting_salary_usd?: number | null
+          campus_safety_score?: number | null
+          common_mistakes?: string | null
+          created_at?: string | null
+          employment_rate_6months?: number | null
+          housing_available?: boolean | null
+          housing_cost_monthly_usd?: number | null
+          industry_partnerships?: string | null
+          insight_id?: string
+          international_student_percent?: number | null
+          internship_opportunities?: string | null
+          notable_alumni?: string | null
+          post_grad_work_visa?: string | null
+          research_output_score?: number | null
+          student_clubs_count?: number | null
+          student_satisfaction_score?: number | null
+          university_id: string
+        }
+        Update: {
+          alumni_network_strength?: string | null
+          application_tips?: string | null
+          average_starting_salary_usd?: number | null
+          campus_safety_score?: number | null
+          common_mistakes?: string | null
+          created_at?: string | null
+          employment_rate_6months?: number | null
+          housing_available?: boolean | null
+          housing_cost_monthly_usd?: number | null
+          industry_partnerships?: string | null
+          insight_id?: string
+          international_student_percent?: number | null
+          internship_opportunities?: string | null
+          notable_alumni?: string | null
+          post_grad_work_visa?: string | null
+          research_output_score?: number | null
+          student_clubs_count?: number | null
+          student_satisfaction_score?: number | null
+          university_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "university_insights_university_id_fkey"
+            columns: ["university_id"]
+            isOneToOne: true
+            referencedRelation: "universities"
+            referencedColumns: ["university_id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
