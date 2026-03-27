@@ -35,7 +35,7 @@ const IndexRu = () => {
         <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
           <motion.div {...fadeUp(0.1)} className="mb-4">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold/30 bg-gold/10 text-gold text-xs sm:text-sm font-medium tracking-wide uppercase">
-              <Sparkles className="h-3.5 w-3.5" /> №1 образовательная платформа в Центральной Азии
+              <Sparkles className="h-3.5 w-3.5" /> Discover · Prep · Succeed
             </span>
           </motion.div>
 
@@ -136,11 +136,6 @@ const IndexRu = () => {
               className="group relative rounded-2xl border border-border bg-card p-8 hover:border-accent/40 hover:shadow-[var(--shadow-premium)] transition-all duration-300 cursor-pointer"
               onClick={() => navigate('/prep')}
             >
-              <div className="absolute -top-3 right-6">
-                <span className="px-3 py-1 rounded-full bg-accent text-accent-foreground text-xs font-bold uppercase tracking-wider">
-                  Популярно
-                </span>
-              </div>
               <div className="h-14 w-14 rounded-xl bg-accent/10 flex items-center justify-center mb-6 group-hover:bg-accent/20 transition-colors">
                 <BookOpen className="h-7 w-7 text-accent" />
               </div>
@@ -194,7 +189,7 @@ const IndexRu = () => {
               TopUni <span className="text-gold">AI</span>
             </h2>
             <p className="text-primary-foreground/70 text-lg max-w-2xl mx-auto">
-              Ваш персональный AI-консультант, который анализирует профиль, подбирает университеты, строит стратегию и отслеживает дедлайны — 24/7.
+              Начните с AI — исследуйте университеты, получите подбор и сформируйте шорт-лист. Когда будете готовы к полной стратегии — наши эксперты возьмут дело в свои руки.
             </p>
           </motion.div>
 
@@ -220,83 +215,6 @@ const IndexRu = () => {
               onClick={() => navigate('/topuni-ai/ru')}
             >
               <Brain className="h-5 w-5" /> Попробовать TopUni AI
-            </Button>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── COURSES ── */}
-      <section className="py-20 sm:py-28 bg-background">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <motion.div {...fadeUp()} className="text-center mb-14">
-            <h2 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4">
-              Курсы и <span className="text-accent">подготовка</span>
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Структурированная подготовка с опытными преподавателями — онлайн и офлайн.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {[
-              {
-                title: "Подготовка к IELTS",
-                desc: "Уверенная подготовка по всем разделам — Listening, Reading, Writing и Speaking. Адаптивная практика с AI-оценкой эссе.",
-                icon: BookOpen,
-              },
-              {
-                title: "Подготовка к SAT",
-                desc: "Освойте математику и вербальное мышление для конкурентного результата. Полные пробные экзамены с таймером.",
-                icon: Target,
-              },
-              {
-                title: "Общий английский",
-                desc: "Грамматика, словарный запас и беглость для академического и профессионального роста — для любого уровня.",
-                icon: Globe,
-              },
-            ].map((course, i) => (
-              <motion.div
-                key={course.title}
-                {...fadeUp(0.1 * (i + 1))}
-                className="rounded-2xl border border-border bg-card p-6 sm:p-8 hover:border-accent/30 hover:shadow-[var(--shadow-premium)] transition-all duration-300"
-              >
-                <course.icon className="h-8 w-8 text-accent mb-4" />
-                <h3 className="font-heading text-lg font-bold text-foreground mb-2">{course.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{course.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-
-          <motion.div {...fadeUp(0.4)} className="text-center mt-10">
-            <Button
-              variant="gold"
-              size="lg"
-              className="text-base px-10 py-5 hover:scale-105 transition-transform"
-              onClick={() => navigate('/offerings/ru')}
-            >
-              Все программы
-            </Button>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── CTA BANNER ── */}
-      <section className="py-16 sm:py-20 bg-accent/5 border-y border-accent/10">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <motion.div {...fadeUp()}>
-            <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Готовы начать свой путь?
-            </h2>
-            <p className="text-muted-foreground text-lg mb-8 max-w-xl mx-auto">
-              Бесплатная 20-минутная консультация. Без обязательств — только ясность.
-            </p>
-            <Button
-              variant="gold"
-              size="lg"
-              className="text-lg px-12 py-6 hover:scale-105 transition-transform"
-              onClick={() => navigate('/offerings/ru')}
-            >
-              Записаться на консультацию
             </Button>
           </motion.div>
         </div>

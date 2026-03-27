@@ -13,7 +13,7 @@ export const Footer = ({ language, variant = "dark" }: FooterProps) => {
       publicOffer: "Public Offer",
       refundPolicy: "Refund Policy",
       paymentInfo: "Payment by Card",
-      tagline: "Central Asia's leading admissions consulting firm",
+      tagline: "Central Asia's leading education firm",
       copyright: "© 2025 Top Uni Consulting | All Rights Reserved",
     },
     ru: {
@@ -22,7 +22,7 @@ export const Footer = ({ language, variant = "dark" }: FooterProps) => {
       publicOffer: "Публичная оферта",
       refundPolicy: "Правила возврата",
       paymentInfo: "Оплата банковской картой",
-      tagline: "Ведущая консалтинговая компания Центральной Азии по поступлению",
+      tagline: "Ведущая образовательная компания Центральной Азии",
       copyright: "© 2025 Top Uni Consulting | Все права защищены",
     },
   };
