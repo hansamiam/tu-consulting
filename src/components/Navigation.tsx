@@ -90,7 +90,7 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
               className={cn(
                 "px-3.5 py-1.5 text-sm font-bold rounded-md border transition-all duration-200",
                 isActive(primaryLinks[0].path)
-                  ? "text-primary bg-gold border-gold shadow-sm"
+                  ? "text-gold bg-gold/10 border-gold/60"
                   : "text-gold border-gold/40 hover:bg-gold/15 hover:border-gold/70"
               )}
             >
