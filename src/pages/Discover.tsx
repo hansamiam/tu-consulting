@@ -5,8 +5,7 @@ import { Footer } from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Scale, Map, Table2, Clock, Sparkles } from "lucide-react";
+import { Search, Scale } from "lucide-react";
 import { motion } from "framer-motion";
 import { UniversityResult } from "@/components/discover/types";
 import { DiscoverFilters } from "@/components/discover/DiscoverFilters";
@@ -15,8 +14,8 @@ import { CompareDrawer } from "@/components/discover/CompareDrawer";
 import { CanIGetInDialog } from "@/components/discover/CanIGetInDialog";
 import { CostCalculatorDialog } from "@/components/discover/CostCalculatorDialog";
 import { DiscoverProfileGate, getStoredProfile, DiscoverProfile, LockedOverlay } from "@/components/discover/DiscoverProfileGate";
-import { UniversityMap } from "@/components/discover/UniversityMap";
-import { DeadlineTracker } from "@/components/discover/DeadlineTracker";
+// import { UniversityMap } from "@/components/discover/UniversityMap"; // Hidden for now
+// import { DeadlineTracker } from "@/components/discover/DeadlineTracker"; // Hidden for now
 import { WatchlistDrawer } from "@/components/discover/Watchlist";
 import { SmartRecommendations } from "@/components/discover/SmartRecommendations";
 
@@ -38,7 +37,7 @@ const Discover = () => {
   const [compareOpen, setCompareOpen] = useState(false);
   const [profile, setProfile] = useState<DiscoverProfile | null>(getStoredProfile());
   const [showProfileGate, setShowProfileGate] = useState(!getStoredProfile());
-  const [viewMode, setViewMode] = useState<"table" | "map">("table");
+  // const [viewMode, setViewMode] = useState<"table" | "map">("table");
 
   const isLocked = !profile;
 
@@ -127,18 +126,8 @@ const Discover = () => {
           <SmartRecommendations universities={universities} profile={profile} language="en" />
         )}
 
-        {/* View Toggle + Filters */}
+        {/* Filters */}
         <div className="flex items-center gap-3">
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "table" | "map")} className="flex-shrink-0">
-            <TabsList className="h-9">
-              <TabsTrigger value="table" className="text-xs gap-1.5">
-                <Table2 className="h-3.5 w-3.5" /> Table
-              </TabsTrigger>
-              <TabsTrigger value="map" className="text-xs gap-1.5">
-                <Map className="h-3.5 w-3.5" /> Map
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
           <div className="flex-1">
             <DiscoverFilters
               showFilters={showFilters} setShowFilters={setShowFilters}
@@ -166,11 +155,7 @@ const Discover = () => {
         )}
 
         {/* Main Content */}
-        {viewMode === "map" ? (
-          <LockedOverlay isLocked={isLocked}>
-            <UniversityMap universities={filtered} language="en" />
-          </LockedOverlay>
-        ) : loading ? (
+        {loading ? (
           <div className="space-y-2">
             {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="bg-card border border-border rounded-lg p-4 animate-pulse flex gap-4">
@@ -184,11 +169,6 @@ const Discover = () => {
         ) : (
           <UniversityTable universities={filtered} language="en" compareIds={compareIds} onToggleCompare={toggleCompare} />
         )}
-
-        {/* Deadline Tracker */}
-        <LockedOverlay isLocked={isLocked}>
-          <DeadlineTracker universities={filtered} language="en" />
-        </LockedOverlay>
       </div>
 
       <CompareDrawer open={compareOpen} onClose={() => setCompareOpen(false)} universities={compareUnis} onRemove={(id) => toggleCompare(id)} language="en" />
