@@ -323,11 +323,6 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
                                 <TabsTrigger value="scholarships" className="text-xs gap-1 data-[state=active]:bg-background">
                                   <Shield className="h-3 w-3" /> {l.scholarships} ({uni.scholarships?.length || 0})
                                 </TabsTrigger>
-                                {contacts.length > 0 && (
-                                  <TabsTrigger value="contacts" className="text-xs gap-1 data-[state=active]:bg-background">
-                                    <Building2 className="h-3 w-3" /> {l.contacts} ({contacts.length})
-                                  </TabsTrigger>
-                                )}
                                 {insight && (
                                   <TabsTrigger value="insights" className="text-xs gap-1 data-[state=active]:bg-background">
                                     <TrendingUp className="h-3 w-3" /> {l.insights}
