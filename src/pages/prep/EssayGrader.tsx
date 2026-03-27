@@ -456,7 +456,4 @@ Be detailed but fair. Use ${language === "ru" ? "Russian" : "English"} for all t
   );
 };
 
-// Need Target imported for the tips tab
-import { Target } from "lucide-react";
-
 export default EssayGrader;

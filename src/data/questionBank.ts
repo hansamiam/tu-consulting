@@ -170,6 +170,8 @@ export const questionBank: BankQuestion[] = [
   ...vocab, ...reading, ...grammar, ...math, ...listening, ...writing, ...speaking,
 ];
 
+export const allQuestions = questionBank;
+
 export const getQuestionsBySection = (section: string, exam?: "ielts" | "sat") =>
   questionBank.filter(q => q.section === section && (!exam || q.exam === exam || q.exam === "both"));
 
