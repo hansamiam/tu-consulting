@@ -7,6 +7,7 @@ import {
 import {
   LayoutDashboard, ClipboardCheck, Calendar, BookOpen,
   Bot, BarChart3, Flame, Zap, ArrowLeft, Globe, Trophy, FileText,
+  Brain, PenTool, Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
