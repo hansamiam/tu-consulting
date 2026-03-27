@@ -69,6 +69,8 @@ const App = () => (
           <Route path="/why-tu/ru" element={<WhyTURu />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/ru" element={<BlogRu />} />
+          <Route path="/blog/:id" element={<BlogArticle language="en" />} />
+          <Route path="/blog/:id/ru" element={<BlogArticle language="ru" />} />
           <Route path="/thank-you" element={<ThankYou />} />
           <Route path="/thank-you/ru" element={<ThankYouRu />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
