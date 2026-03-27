@@ -11,13 +11,15 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRight, ArrowLeft, Sparkles, GraduationCap, Target, Shield, CheckCircle2, Bot, MessageCircle } from "lucide-react";
+import { ArrowRight, ArrowLeft, Sparkles, GraduationCap, Target, Shield, CheckCircle2, Bot, Search, BookOpen, PenTool } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-type Screen = "landing" | "intake" | "dashboard" | "chat-only";
+type Screen = "landing" | "intake" | "dashboard";
 
 const COUNTRIES = ["United States", "United Kingdom", "Canada", "Germany", "South Korea", "China", "Netherlands", "Czech Republic", "Turkey", "Malaysia", "Hungary", "Italy", "Poland", "Sweden", "Estonia"];
 
 const TopUniAI = () => {
+  const navigate = useNavigate();
   const [screen, setScreen] = useState<Screen>("landing");
   const [step, setStep] = useState(1);
 
@@ -57,11 +59,6 @@ const TopUniAI = () => {
       <div className="fixed inset-0 z-0 opacity-20" style={{ backgroundImage: `url(${topuniBg})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(2px)' }} />
       <div className="relative z-10">
         <Navigation language="en" />
-        <div className="bg-primary text-primary-foreground text-center py-2 text-sm font-medium tracking-wide">
-          <Sparkles className="inline-block w-4 h-4 mr-2 text-accent" />
-          Launching Soon — Early Access Prototype
-          <Sparkles className="inline-block w-4 h-4 ml-2 text-accent" />
-        </div>
 
         <AnimatePresence mode="wait">
           {screen === "landing" && (
@@ -75,34 +72,48 @@ const TopUniAI = () => {
                     Intelligent pathway planning for ambitious students.
                   </p>
                 </div>
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                  <Button variant="gold" size="lg" className="text-base px-8" onClick={() => setScreen("intake")}>
-                    <GraduationCap className="mr-2 w-5 h-5" /> Start Your Plan <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
-                  <Button variant="outline" size="lg" className="text-base px-8" onClick={() => setScreen("chat-only")}>
-                    <Bot className="mr-2 w-5 h-5" /> Chat with Counselor
-                  </Button>
-                </div>
+
+                {/* Primary CTA */}
+                <Button variant="gold" size="lg" className="text-base px-8" onClick={() => setScreen("intake")}>
+                  <GraduationCap className="mr-2 w-5 h-5" /> Start Your Plan <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+
                 <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                  Get a personalized AI pathway plan with university matches from our database, or chat directly with our AI counselor.
+                  Get a personalized AI pathway plan with university matches, essay tools, interview prep, and more.
                 </p>
+
+                {/* Product funnel CTAs */}
+                <div className="grid sm:grid-cols-3 gap-3 max-w-xl mx-auto pt-4">
+                  <button
+                    onClick={() => navigate("/discover")}
+                    className="group p-4 rounded-xl border border-border hover:border-accent/40 bg-background/80 backdrop-blur-sm transition-all text-left space-y-1.5"
+                  >
+                    <Search className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
+                    <p className="text-sm font-semibold text-foreground">Discover</p>
+                    <p className="text-[11px] text-muted-foreground leading-snug">Browse 500+ universities with filters, rankings & costs</p>
+                  </button>
+                  <button
+                    onClick={() => navigate("/prep")}
+                    className="group p-4 rounded-xl border border-border hover:border-accent/40 bg-background/80 backdrop-blur-sm transition-all text-left space-y-1.5"
+                  >
+                    <PenTool className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
+                    <p className="text-sm font-semibold text-foreground">Prep</p>
+                    <p className="text-[11px] text-muted-foreground leading-snug">IELTS, SAT & English courses with AI tutoring</p>
+                  </button>
+                  <button
+                    onClick={() => navigate("/offerings")}
+                    className="group p-4 rounded-xl border border-border hover:border-accent/40 bg-background/80 backdrop-blur-sm transition-all text-left space-y-1.5"
+                  >
+                    <BookOpen className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
+                    <p className="text-sm font-semibold text-foreground">Consulting</p>
+                    <p className="text-[11px] text-muted-foreground leading-snug">1-on-1 expert guidance for your application journey</p>
+                  </button>
+                </div>
+
                 <a href="/topuni-ai/partners" className="text-sm text-muted-foreground hover:text-accent transition-colors underline underline-offset-4 cursor-pointer inline-block">
                   For University Partners →
                 </a>
               </div>
-            </motion.div>
-          )}
-
-          {screen === "chat-only" && (
-            <motion.div key="chat-only" {...fadeIn} className="max-w-3xl mx-auto px-4 py-8">
-              <button onClick={() => setScreen("landing")} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6">
-                <ArrowLeft className="w-4 h-4" /> Back
-              </button>
-              <TopUniDashboard
-                profile={{ ...profile, fullName: fullName || "Student" }}
-                language="en"
-                onBack={() => setScreen("landing")}
-              />
             </motion.div>
           )}
 
@@ -149,7 +160,8 @@ const TopUniAI = () => {
                         <div className="space-y-2"><Label>SAT Score</Label><Input value={sat} onChange={e => setSat(e.target.value)} placeholder="Optional" /></div>
                       </div>
                     </div>
-                    <div className="flex justify-end pt-4">
+                    <div className="flex justify-between pt-4">
+                      <Button variant="outline" onClick={() => setScreen("landing")}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
                       <Button variant="gold" onClick={() => setStep(2)}>Next <ArrowRight className="ml-2 w-4 h-4" /></Button>
                     </div>
                   </motion.div>
@@ -262,7 +274,7 @@ const TopUniAI = () => {
           )}
         </AnimatePresence>
 
-        {screen !== "dashboard" && screen !== "chat-only" && <Footer language="en" />}
+        {screen !== "dashboard" && <Footer language="en" />}
         {screen === "landing" && <TopUniChat />}
       </div>
     </div>
