@@ -75,12 +75,9 @@ export const DiscoverProfileGate = ({ open, onComplete, language }: Props) => {
   };
 
   const features = [
-    { icon: "🎯", text: "Personalized university match scores" },
-    { icon: "💰", text: "True cost calculator with scholarship data" },
-    { icon: "📊", text: "Side-by-side comparison of 17+ metrics" },
-    { icon: "🗺️", text: "Interactive university map explorer" },
-    { icon: "⏰", text: "Application deadline tracker" },
-    { icon: "🔔", text: "Smart recommendations based on your profile" },
+    { icon: "🎯", text: "Personalized university recommendations" },
+    { icon: "💰", text: "Cost calculator with scholarship data" },
+    { icon: "📊", text: "Side-by-side university comparison" },
   ];
 
   return (
