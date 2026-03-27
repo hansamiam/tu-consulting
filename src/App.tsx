@@ -82,7 +82,8 @@ const App = () => (
           <Route path="/discover" element={<Discover />} />
           <Route path="/discover/ru" element={<DiscoverRu />} />
           <Route path="/admin" element={<Admin />} />
-          <Route path="/prep" element={<PrepLayout><PrepDashboard /></PrepLayout>} />
+          <Route path="/prep" element={<PrepLanding />} />
+          <Route path="/prep/dashboard" element={<PrepLayout><PrepDashboard /></PrepLayout>} />
           <Route path="/prep/diagnostic" element={<PrepLayout><Diagnostic /></PrepLayout>} />
           <Route path="/prep/study-plan" element={<PrepLayout><StudyPlan /></PrepLayout>} />
           <Route path="/prep/practice" element={<PrepLayout><Practice /></PrepLayout>} />
