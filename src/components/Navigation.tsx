@@ -38,16 +38,16 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
 
   const secondaryLinks = [
     {
+      label: isRussian ? "Блог" : "Blog",
+      path: isRussian ? "/blog/ru" : "/blog",
+    },
+    {
       label: isRussian ? "Почему мы" : "Why Us",
       path: isRussian ? "/why-tu/ru" : "/why-tu",
     },
     {
       label: isRussian ? "Команда" : "Team",
       path: isRussian ? "/team/ru" : "/team",
-    },
-    {
-      label: isRussian ? "Блог" : "Blog",
-      path: isRussian ? "/blog/ru" : "/blog",
     },
   ];
 

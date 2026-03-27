@@ -34,6 +34,7 @@ import DiscoverRu from "./pages/DiscoverRu";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import PrepLayout from "./components/prep/PrepLayout";
+import PrepLanding from "./pages/PrepLanding";
 import PrepDashboard from "./pages/prep/PrepDashboard";
 import Diagnostic from "./pages/prep/Diagnostic";
 import StudyPlan from "./pages/prep/StudyPlan";
@@ -81,7 +82,8 @@ const App = () => (
           <Route path="/discover" element={<Discover />} />
           <Route path="/discover/ru" element={<DiscoverRu />} />
           <Route path="/admin" element={<Admin />} />
-          <Route path="/prep" element={<PrepLayout><PrepDashboard /></PrepLayout>} />
+          <Route path="/prep" element={<PrepLanding />} />
+          <Route path="/prep/dashboard" element={<PrepLayout><PrepDashboard /></PrepLayout>} />
           <Route path="/prep/diagnostic" element={<PrepLayout><Diagnostic /></PrepLayout>} />
           <Route path="/prep/study-plan" element={<PrepLayout><StudyPlan /></PrepLayout>} />
           <Route path="/prep/practice" element={<PrepLayout><Practice /></PrepLayout>} />
