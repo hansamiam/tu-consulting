@@ -84,8 +84,24 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
             {/* Divider */}
             <div className="w-px h-5 bg-gold/20 mx-1" />
 
-            {/* Primary product links — bold gold emphasis */}
-            {primaryLinks.map((link) => (
+            {/* TopUni AI — standalone with distinct styling */}
+            <button
+              onClick={() => navigate(primaryLinks[0].path)}
+              className={cn(
+                "px-3.5 py-1.5 text-sm font-bold rounded-md border transition-all duration-200",
+                isActive(primaryLinks[0].path)
+                  ? "text-primary bg-gold border-gold shadow-sm"
+                  : "text-gold border-gold/40 hover:bg-gold/15 hover:border-gold/70"
+              )}
+            >
+              {primaryLinks[0].label}
+            </button>
+
+            {/* Divider */}
+            <div className="w-px h-5 bg-gold/20 mx-1" />
+
+            {/* Other product links — bold gold emphasis */}
+            {primaryLinks.slice(1).map((link) => (
               <button
                 key={link.path}
                 onClick={() => navigate(link.path)}
