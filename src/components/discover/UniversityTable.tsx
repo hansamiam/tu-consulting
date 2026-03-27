@@ -381,13 +381,6 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
                                 ) : <p className="text-sm text-muted-foreground">No scholarships listed yet.</p>}
                               </TabsContent>
 
-                              {contacts.length > 0 && (
-                                <TabsContent value="contacts" className="mt-0">
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                    {contacts.map((c) => <ContactCard key={c.contact_id} contact={c} />)}
-                                  </div>
-                                </TabsContent>
-                              )}
 
                               {insight && (
                                 <TabsContent value="insights" className="mt-0">
