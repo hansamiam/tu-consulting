@@ -13,7 +13,7 @@ export const Footer = ({ language, variant = "dark" }: FooterProps) => {
       publicOffer: "Public Offer",
       refundPolicy: "Refund Policy",
       paymentInfo: "Payment by Card",
-      tagline: "Central Asia's leading admissions consulting firm",
+      tagline: "Central Asia's leading education firm",
       copyright: "© 2025 Top Uni Consulting | All Rights Reserved",
     },
     ru: {
