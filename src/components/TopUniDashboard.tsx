@@ -275,35 +275,34 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
 
       {/* Dashboard Tabs */}
       <Tabs defaultValue={isProfileFilled ? "pathway" : "counselor"} className="space-y-6">
-        <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
-          {/* AI Counselor - visually distinct, always first */}
-          <TabsTrigger value="counselor" className="flex items-center gap-1.5 text-xs sm:text-sm py-2 bg-accent/10 border border-accent/30 data-[state=active]:bg-accent data-[state=active]:text-accent-foreground font-semibold">
-            <Bot className="w-4 h-4" /> {t("AI Counselor", "AI Советник")}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* TopUni AI - standalone, outside the tab group */}
+          <TabsTrigger value="counselor" className="flex items-center gap-1.5 text-xs sm:text-sm py-2 px-4 rounded-lg border-2 border-accent bg-accent/10 data-[state=active]:bg-accent data-[state=active]:text-accent-foreground font-bold shadow-sm hover:shadow-md transition-all">
+            <Bot className="w-4 h-4" /> TopUni AI
           </TabsTrigger>
 
-          {/* Separator */}
-          <div className="w-px h-6 bg-border mx-1 self-center hidden sm:block" />
-
-          {/* Tool tabs */}
-          <TabsTrigger value="pathway" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-            <GraduationCap className="w-4 h-4" /> {t("Pathway", "Путь")}
-          </TabsTrigger>
-          <TabsTrigger value="predictor" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-            <BarChart3 className="w-4 h-4" /> {t("Chances", "Шансы")}
-          </TabsTrigger>
-          <TabsTrigger value="essays" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-            <PenTool className="w-4 h-4" /> {t("Essays", "Эссе")}
-          </TabsTrigger>
-          <TabsTrigger value="documents" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-            <FileText className="w-4 h-4" /> {t("Documents", "Документы")}
-          </TabsTrigger>
-          <TabsTrigger value="interview" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-            <Mic className="w-4 h-4" /> {t("Interview", "Интервью")}
-          </TabsTrigger>
-          <TabsTrigger value="tracker" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-            <ClipboardList className="w-4 h-4" /> {t("Tracker", "Трекер")}
-          </TabsTrigger>
-        </TabsList>
+          {/* Platform tools group */}
+          <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
+            <TabsTrigger value="pathway" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+              <GraduationCap className="w-4 h-4" /> {t("Pathway", "Путь")}
+            </TabsTrigger>
+            <TabsTrigger value="predictor" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+              <BarChart3 className="w-4 h-4" /> {t("Chances", "Шансы")}
+            </TabsTrigger>
+            <TabsTrigger value="essays" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+              <PenTool className="w-4 h-4" /> {t("Essays", "Эссе")}
+            </TabsTrigger>
+            <TabsTrigger value="documents" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+              <FileText className="w-4 h-4" /> {t("Documents", "Документы")}
+            </TabsTrigger>
+            <TabsTrigger value="interview" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+              <Mic className="w-4 h-4" /> {t("Interview", "Интервью")}
+            </TabsTrigger>
+            <TabsTrigger value="tracker" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+              <ClipboardList className="w-4 h-4" /> {t("Tracker", "Трекер")}
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* MY PATHWAY TAB */}
         <TabsContent value="pathway">
