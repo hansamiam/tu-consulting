@@ -361,12 +361,6 @@ const Offerings = () => {
           }
         }} />
 
-        {/* FEATURE 2: Live Social Proof Ticker */}
-        <SocialProofTicker />
-
-        {/* FEATURE 3: Outcome Guarantee + ROI Calculator */}
-        <ROICalculator />
-
         {/* Package Pricing */}
         <section className="mb-12 md:mb-20 animate-enter">
           <h2 className="font-heading text-xl sm:text-2xl md:text-3xl font-bold text-center mb-3 md:mb-4 text-foreground px-4">
