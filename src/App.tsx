@@ -15,6 +15,7 @@ import WhyTU from "./pages/WhyTU";
 import WhyTURu from "./pages/WhyTURu";
 import Blog from "./pages/Blog";
 import BlogRu from "./pages/BlogRu";
+import BlogArticle from "./pages/BlogArticle";
 import ThankYou from "./pages/ThankYou";
 import ThankYouRu from "./pages/ThankYouRu";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -35,6 +36,7 @@ import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import PrepLayout from "./components/prep/PrepLayout";
 import PrepLanding from "./pages/PrepLanding";
+import PrepLandingRu from "./pages/PrepLandingRu";
 import PrepDashboard from "./pages/prep/PrepDashboard";
 import Diagnostic from "./pages/prep/Diagnostic";
 import StudyPlan from "./pages/prep/StudyPlan";
@@ -68,6 +70,8 @@ const App = () => (
           <Route path="/why-tu/ru" element={<WhyTURu />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/ru" element={<BlogRu />} />
+          <Route path="/blog/:id" element={<BlogArticle language="en" />} />
+          <Route path="/blog/:id/ru" element={<BlogArticle language="ru" />} />
           <Route path="/thank-you" element={<ThankYou />} />
           <Route path="/thank-you/ru" element={<ThankYouRu />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
@@ -86,6 +90,7 @@ const App = () => (
           <Route path="/discover/ru" element={<DiscoverRu />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/prep" element={<PrepLanding />} />
+          <Route path="/prep/ru" element={<PrepLandingRu />} />
           <Route path="/prep/dashboard" element={<PrepLayout><PrepDashboard /></PrepLayout>} />
           <Route path="/prep/diagnostic" element={<PrepLayout><Diagnostic /></PrepLayout>} />
           <Route path="/prep/study-plan" element={<PrepLayout><StudyPlan /></PrepLayout>} />

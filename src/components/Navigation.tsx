@@ -27,8 +27,8 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
       path: isRussian ? "/discover/ru" : "/discover",
     },
     {
-      label: "Prep",
-      path: "/prep",
+      label: isRussian ? "Подготовка" : "Prep",
+      path: isRussian ? "/prep/ru" : "/prep",
     },
     {
       label: isRussian ? "Консалтинг" : "Consulting",
