@@ -27,19 +27,19 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
 
   const platformLinks = [
     {
-      label: isRussian ? "Поиск университетов" : "Discover Universities",
+      label: "TopUni AI",
+      path: isRussian ? "/topuni-ai/ru" : "/topuni-ai",
+      desc: isRussian ? "AI-консультант 24/7" : "AI counselor 24/7",
+    },
+    {
+      label: isRussian ? "Discover" : "Discover",
       path: isRussian ? "/discover/ru" : "/discover",
       desc: isRussian ? "500+ университетов мира" : "500+ universities worldwide",
     },
     {
-      label: isRussian ? "Подготовка к экзаменам" : "Test Prep",
+      label: isRussian ? "Prep" : "Prep",
       path: "/prep",
       desc: isRussian ? "IELTS, SAT, английский" : "IELTS, SAT, English",
-    },
-    {
-      label: "TopUni AI",
-      path: isRussian ? "/topuni-ai/ru" : "/topuni-ai",
-      desc: isRussian ? "AI-консультант 24/7" : "AI counselor 24/7",
     },
   ];
 
@@ -50,7 +50,7 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
       exact: true,
     },
     {
-      label: isRussian ? "Услуги" : "Services",
+      label: isRussian ? "Консалтинг" : "Consulting",
       path: isRussian ? "/offerings/ru" : "/offerings",
     },
     {
@@ -58,16 +58,12 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
       path: isRussian ? "/team/ru" : "/team",
     },
     {
-      label: isRussian ? "Почему мы" : "Why Us",
+      label: isRussian ? "О нас" : "About",
       path: isRussian ? "/why-tu/ru" : "/why-tu",
     },
     {
       label: isRussian ? "Блог" : "Blog",
       path: isRussian ? "/blog/ru" : "/blog",
-    },
-    {
-      label: isRussian ? "Вопросы" : "FAQ",
-      path: isRussian ? "/faq/ru" : "/faq",
     },
   ];
 
