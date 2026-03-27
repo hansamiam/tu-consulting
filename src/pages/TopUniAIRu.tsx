@@ -63,11 +63,6 @@ const TopUniAIRu = () => {
       <div className="fixed inset-0 z-0 opacity-20" style={{ backgroundImage: `url(${topuniBg})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(2px)' }} />
       <div className="relative z-10">
         <Navigation language="ru" />
-        <div className="bg-primary text-primary-foreground text-center py-2 text-sm font-medium tracking-wide">
-          <Sparkles className="inline-block w-4 h-4 mr-2 text-accent" />
-          Скоро запуск — Прототип раннего доступа
-          <Sparkles className="inline-block w-4 h-4 ml-2 text-accent" />
-        </div>
 
         <AnimatePresence mode="wait">
           {screen === "landing" && (
