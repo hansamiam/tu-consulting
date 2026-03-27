@@ -201,7 +201,7 @@ const Index = () => {
               TopUni <span className="text-gold">AI</span>
             </h2>
             <p className="text-primary-foreground/70 text-lg max-w-2xl mx-auto">
-              Your personal AI counselor that analyzes your profile, matches you with universities, generates strategies, and tracks deadlines — 24/7.
+              Start your journey with our AI — explore universities, get matched, and build your shortlist. When you're ready for the full strategy, our expert consultants take it from there.
             </p>
           </motion.div>
 
