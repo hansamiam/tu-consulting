@@ -69,7 +69,7 @@ const getVisaDifficulty = (uni: UniversityResult) => {
     .filter((s): s is number => s != null);
   if (!scores || scores.length === 0) return null;
   const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-  const en = ["Easy", "Moderate", "Hard", "Very Hard", "Extreme"];
+  const en = ["Easy", "Moderate", "Hard", "Hard", "Hard"];
   return { value: avg, label: en[avg - 1] || `${avg}/5` };
 };
 
