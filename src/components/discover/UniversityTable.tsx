@@ -500,7 +500,7 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
                               {uni.language_of_instruction && <span>🗣 {uni.language_of_instruction}</span>}
                               {uni.cost_of_living_index != null && <span>💰 Cost of living: {uni.cost_of_living_index}</span>}
                               {uni.gap_year_accepted && <span>📅 {l.gapYear}</span>}
-                              {contacts.length > 0 && <span className="text-accent font-medium">📧 {contacts.length} contact{contacts.length > 1 ? "s" : ""}</span>}
+                              
                             </div>
                           </div>
                         </TableCell>

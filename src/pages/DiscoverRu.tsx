@@ -89,9 +89,10 @@ const DiscoverRu = () => {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
             <Input placeholder="Поиск по университету, стране или городу..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-12 h-14 text-base bg-card border-border rounded-xl shadow-lg" />
           </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex items-center justify-center gap-3 mt-5">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex items-center justify-center gap-3 mt-5 flex-wrap">
             <CanIGetInDialog universities={filtered} language="ru" />
             <CostCalculatorDialog universities={filtered} language="ru" />
+            <WatchlistDrawer universities={universities} language="ru" />
           </motion.div>
         </div>
       </section>
