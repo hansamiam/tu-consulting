@@ -15,6 +15,7 @@ import WhyTU from "./pages/WhyTU";
 import WhyTURu from "./pages/WhyTURu";
 import Blog from "./pages/Blog";
 import BlogRu from "./pages/BlogRu";
+import BlogArticle from "./pages/BlogArticle";
 import ThankYou from "./pages/ThankYou";
 import ThankYouRu from "./pages/ThankYouRu";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
