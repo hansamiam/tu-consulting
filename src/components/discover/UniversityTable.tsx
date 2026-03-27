@@ -266,7 +266,7 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
                                 <ExternalLink className="h-3 w-3 text-muted-foreground hover:text-accent shrink-0" />
                               </a>
                             )}
-                            {contacts.length > 0 && <Mail className="h-3 w-3 text-accent shrink-0" />}
+                            
                           </div>
                         </div>
                       </TableCell>
@@ -323,11 +323,6 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
                                 <TabsTrigger value="scholarships" className="text-xs gap-1 data-[state=active]:bg-background">
                                   <Shield className="h-3 w-3" /> {l.scholarships} ({uni.scholarships?.length || 0})
                                 </TabsTrigger>
-                                {contacts.length > 0 && (
-                                  <TabsTrigger value="contacts" className="text-xs gap-1 data-[state=active]:bg-background">
-                                    <Building2 className="h-3 w-3" /> {l.contacts} ({contacts.length})
-                                  </TabsTrigger>
-                                )}
                                 {insight && (
                                   <TabsTrigger value="insights" className="text-xs gap-1 data-[state=active]:bg-background">
                                     <TrendingUp className="h-3 w-3" /> {l.insights}
@@ -386,13 +381,6 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
                                 ) : <p className="text-sm text-muted-foreground">No scholarships listed yet.</p>}
                               </TabsContent>
 
-                              {contacts.length > 0 && (
-                                <TabsContent value="contacts" className="mt-0">
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                    {contacts.map((c) => <ContactCard key={c.contact_id} contact={c} />)}
-                                  </div>
-                                </TabsContent>
-                              )}
 
                               {insight && (
                                 <TabsContent value="insights" className="mt-0">
@@ -512,7 +500,7 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
                               {uni.language_of_instruction && <span>🗣 {uni.language_of_instruction}</span>}
                               {uni.cost_of_living_index != null && <span>💰 Cost of living: {uni.cost_of_living_index}</span>}
                               {uni.gap_year_accepted && <span>📅 {l.gapYear}</span>}
-                              {contacts.length > 0 && <span className="text-accent font-medium">📧 {contacts.length} contact{contacts.length > 1 ? "s" : ""}</span>}
+                              
                             </div>
                           </div>
                         </TableCell>
