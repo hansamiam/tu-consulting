@@ -12,8 +12,8 @@ import {
   AlertTriangle, Plane, TrendingUp, Heart, Lightbulb
 } from "lucide-react";
 import { useState, useMemo } from "react";
-import { WatchlistButton } from "./Watchlist";
 import { UniversityResult } from "./types";
+import { WatchlistButton } from "./Watchlist";
 
 interface UniversityTableProps {
   universities: UniversityResult[];
