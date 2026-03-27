@@ -45,7 +45,7 @@ const TopUniAIPartners = () => {
 
       <div className="max-w-5xl mx-auto px-4 py-16 space-y-16">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-3xl mx-auto space-y-4">
-          <h1 className="text-4xl md:text-5xl font-heading font-bold text-foreground">Partner With TopUni AI as a <span className="text-accent">Pathways Sponsor</span></h1>
+          <h1 className="text-4xl md:text-5xl font-heading font-bold text-foreground">Partner With TopUni as a <span className="text-accent">Pathways Sponsor</span></h1>
           <p className="text-lg text-muted-foreground leading-relaxed">We connect pre-qualified, data-profiled students from Central Asia to aligned institutions worldwide.</p>
         </motion.div>
 
