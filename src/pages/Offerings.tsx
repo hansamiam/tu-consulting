@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Check, Star, ArrowLeft, Info } from "lucide-react";
+import { Check, Star, ArrowLeft, Info, ArrowRight, Clock, Users, TrendingUp, Zap, ChevronRight, GraduationCap, Target, Award, MessageCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import Navigation from "@/components/Navigation";
 import { useToast } from "@/hooks/use-toast";
 import { PaymentDialog } from "@/components/PaymentDialog";
@@ -15,6 +17,198 @@ import { Footer } from "@/components/Footer";
 import heroImage from "@/assets/hero-campus.jpg";
 import heroLibrary from "@/assets/hero-library.jpg";
 import yaleCampus from "@/assets/yale-campus.jpg";
+
+/* ─── FEATURE 1: Readiness Score Quiz ─── */
+const QUIZ_QUESTIONS = [
+  { q: "Have you identified your target universities?", options: ["Not yet", "A few ideas", "Clear list ready"] },
+  { q: "How prepared are your test scores (IELTS/SAT)?", options: ["Haven't started", "In progress", "Scores ready"] },
+  { q: "Have you started your personal essays?", options: ["No", "Drafted", "Polished"] },
+  { q: "Do you have recommendation letters lined up?", options: ["No", "Asked but not received", "Yes, secured"] },
+  { q: "How familiar are you with application deadlines?", options: ["Not at all", "Somewhat", "Fully mapped out"] },
+];
+
+const ReadinessQuiz = ({ onComplete }: { onComplete: (score: number) => void }) => {
+  const [started, setStarted] = useState(false);
+  const [current, setCurrent] = useState(0);
+  const [answers, setAnswers] = useState<number[]>([]);
+  const [score, setScore] = useState<number | null>(null);
+
+  const handleAnswer = (value: number) => {
+    const next = [...answers, value];
+    setAnswers(next);
+    if (current < QUIZ_QUESTIONS.length - 1) {
+      setCurrent(c => c + 1);
+    } else {
+      const total = Math.round((next.reduce((a, b) => a + b, 0) / (QUIZ_QUESTIONS.length * 2)) * 100);
+      setScore(total);
+      onComplete(total);
+    }
+  };
+
+  if (!started) {
+    return (
+      <section className="mb-12 md:mb-20">
+        <Card className="border-accent/30 bg-gradient-to-br from-accent/5 to-transparent overflow-hidden">
+          <CardContent className="p-6 md:p-10 flex flex-col md:flex-row items-center gap-6">
+            <div className="flex-1 space-y-3">
+              <Badge className="bg-accent/10 text-accent border-accent/30 text-xs">Free • 30 seconds</Badge>
+              <h3 className="text-xl md:text-2xl font-heading font-bold text-foreground">How Ready Are You?</h3>
+              <p className="text-sm text-muted-foreground">Take our 5-question readiness assessment and get a personalized recommendation for the right consulting package.</p>
+              <Button variant="gold" onClick={() => setStarted(true)}>
+                <Zap className="w-4 h-4 mr-2" /> Take the Quiz <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+            <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-accent/20 flex items-center justify-center">
+              <Target className="w-10 h-10 md:w-14 md:h-14 text-accent" />
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+    );
+  }
+
+  if (score !== null) {
+    const tier = score >= 70 ? "strong" : score >= 40 ? "developing" : "early";
+    return (
+      <section className="mb-12 md:mb-20">
+        <Card className="border-accent/30 overflow-hidden">
+          <CardContent className="p-6 md:p-10 text-center space-y-5">
+            <div className="w-28 h-28 mx-auto rounded-full border-4 border-accent flex items-center justify-center">
+              <span className="text-3xl font-bold text-accent">{score}%</span>
+            </div>
+            <h3 className="text-xl font-heading font-bold text-foreground">
+              {tier === "strong" ? "You're in great shape!" : tier === "developing" ? "Solid foundation, room to grow" : "Early stage — perfect time to start"}
+            </h3>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              {tier === "strong"
+                ? "You're well-prepared. Our Standard or Premium package will give you the competitive edge to secure top admits."
+                : tier === "developing"
+                ? "You have a good start. A structured consulting package will fill the gaps and maximize your chances."
+                : "Starting early is your biggest advantage. Book a free consultation to map out your journey."}
+            </p>
+            <Progress value={score} className="max-w-xs mx-auto h-2" />
+            <Button variant="gold" onClick={() => { setStarted(false); setScore(null); setCurrent(0); setAnswers([]); }}>
+              Retake Quiz
+            </Button>
+          </CardContent>
+        </Card>
+      </section>
+    );
+  }
+
+  return (
+    <section className="mb-12 md:mb-20">
+      <Card className="border-accent/30 overflow-hidden">
+        <CardContent className="p-6 md:p-10 space-y-6">
+          <div className="flex items-center justify-between">
+            <Badge variant="outline" className="text-xs">{current + 1} of {QUIZ_QUESTIONS.length}</Badge>
+            <Progress value={((current) / QUIZ_QUESTIONS.length) * 100} className="w-32 h-1.5" />
+          </div>
+          <h3 className="text-lg font-heading font-semibold text-foreground">{QUIZ_QUESTIONS[current].q}</h3>
+          <div className="grid gap-3">
+            {QUIZ_QUESTIONS[current].options.map((opt, i) => (
+              <button key={opt} onClick={() => handleAnswer(i)}
+                className="text-left px-4 py-3 rounded-lg border border-border hover:border-accent/50 hover:bg-accent/5 transition-all text-sm font-medium text-foreground">
+                {opt}
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </section>
+  );
+};
+
+/* ─── FEATURE 2: Live Social Proof Ticker ─── */
+const PROOF_ITEMS = [
+  { text: "Student from Bishkek accepted to University of Groningen", time: "2 days ago", icon: "🎓" },
+  { text: "3 students received full scholarships this month", time: "1 week ago", icon: "🏆" },
+  { text: "New Premium package client from Almaty", time: "3 days ago", icon: "⭐" },
+  { text: "Student admitted to Charles University, Prague", time: "5 days ago", icon: "🇨🇿" },
+  { text: "92% of our clients receive at least one offer", time: "Updated", icon: "📊" },
+  { text: "IELTS student improved from 5.5 to 7.5 in 8 weeks", time: "Last month", icon: "📈" },
+];
+
+const SocialProofTicker = () => {
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => setIdx(i => (i + 1) % PROOF_ITEMS.length), 4000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const item = PROOF_ITEMS[idx];
+
+  return (
+    <section className="mb-12 md:mb-16">
+      <div className="bg-accent/5 border border-accent/20 rounded-xl px-5 py-3 flex items-center gap-3 overflow-hidden">
+        <span className="text-xl shrink-0">{item.icon}</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground truncate">{item.text}</p>
+          <p className="text-[11px] text-muted-foreground">{item.time}</p>
+        </div>
+        <div className="flex gap-1 shrink-0">
+          {PROOF_ITEMS.map((_, i) => (
+            <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors ${i === idx ? "bg-accent" : "bg-muted"}`} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+/* ─── FEATURE 3: ROI Calculator ─── */
+const ROICalculator = () => {
+  const [scholarshipTarget, setScholarshipTarget] = useState("50");
+
+  const scholarshipValue = Number(scholarshipTarget) || 0;
+  const fourYearSavings = scholarshipValue * 4 * 1000;
+  const consultingCost = 60000; // Standard package in KGS
+  const roi = fourYearSavings > 0 ? Math.round((fourYearSavings / (consultingCost * 0.0115)) * 100) / 100 : 0;
+
+  return (
+    <section className="mb-12 md:mb-20">
+      <Card className="border-border bg-card/60 backdrop-blur-sm overflow-hidden">
+        <CardContent className="p-6 md:p-10">
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="space-y-4">
+              <Badge className="bg-primary/10 text-primary border-primary/30 text-xs">Investment Calculator</Badge>
+              <h3 className="text-xl md:text-2xl font-heading font-bold text-foreground">What's Your ROI?</h3>
+              <p className="text-sm text-muted-foreground">See how consulting pays for itself through scholarship wins and strategic university placement.</p>
+              <div className="space-y-2">
+                <Label className="text-sm">Annual Scholarship Target ($K)</Label>
+                <Input type="number" value={scholarshipTarget} onChange={e => setScholarshipTarget(e.target.value)}
+                  className="max-w-[200px]" placeholder="e.g. 50" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 text-center space-y-1">
+                <TrendingUp className="w-6 h-6 text-accent mx-auto" />
+                <p className="text-2xl font-bold text-foreground">${fourYearSavings.toLocaleString()}</p>
+                <p className="text-[11px] text-muted-foreground">4-Year Scholarship Value</p>
+              </div>
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-center space-y-1">
+                <Award className="w-6 h-6 text-primary mx-auto" />
+                <p className="text-2xl font-bold text-foreground">{roi > 0 ? `${roi}x` : "—"}</p>
+                <p className="text-[11px] text-muted-foreground">Return on Investment</p>
+              </div>
+              <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-4 text-center space-y-1">
+                <Users className="w-6 h-6 text-green-600 mx-auto" />
+                <p className="text-2xl font-bold text-foreground">92%</p>
+                <p className="text-[11px] text-muted-foreground">Client Offer Rate</p>
+              </div>
+              <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4 text-center space-y-1">
+                <GraduationCap className="w-6 h-6 text-blue-600 mx-auto" />
+                <p className="text-2xl font-bold text-foreground">40+</p>
+                <p className="text-[11px] text-muted-foreground">Universities Placed</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </section>
+  );
+};
 
 const Offerings = () => {
   const navigate = useNavigate();
@@ -214,6 +408,21 @@ const Offerings = () => {
             Choose the perfect package to achieve your university admission goals
           </p>
         </div>
+
+        {/* FEATURE 1: Readiness Score Quiz - Instant engagement + lead qualification */}
+        <ReadinessQuiz onComplete={(score) => {
+          if (score >= 70) {
+            toast({ title: "You're ready!", description: "Based on your score, we recommend the Standard or Premium package." });
+          } else {
+            toast({ title: "Let's get you ready!", description: "A free consultation would be the perfect starting point." });
+          }
+        }} />
+
+        {/* FEATURE 2: Live Social Proof Ticker */}
+        <SocialProofTicker />
+
+        {/* FEATURE 3: Outcome Guarantee + ROI Calculator */}
+        <ROICalculator />
 
         {/* Package Pricing */}
         <section className="mb-12 md:mb-20 animate-enter">

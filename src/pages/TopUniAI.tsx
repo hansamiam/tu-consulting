@@ -73,10 +73,15 @@ const TopUniAI = () => {
                   </p>
                 </div>
 
-                {/* Primary CTA */}
-                <Button variant="gold" size="lg" className="text-base px-8" onClick={() => setScreen("intake")}>
-                  <GraduationCap className="mr-2 w-5 h-5" /> Start Your Plan <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
+                {/* Primary CTAs */}
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <Button variant="gold" size="lg" className="text-base px-8" onClick={() => setScreen("intake")}>
+                    <GraduationCap className="mr-2 w-5 h-5" /> Start Your Plan <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                  <Button variant="outline" size="lg" className="text-base px-6 border-accent/40 hover:bg-accent/10" onClick={() => setScreen("dashboard")}>
+                    <Bot className="mr-2 w-5 h-5 text-accent" /> Chat with AI Counselor
+                  </Button>
+                </div>
 
                 <p className="text-xs text-muted-foreground max-w-md mx-auto">
                   Get a personalized AI pathway plan with university matches, essay tools, interview prep, and more.

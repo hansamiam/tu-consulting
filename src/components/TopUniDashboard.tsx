@@ -276,6 +276,15 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       {/* Dashboard Tabs */}
       <Tabs defaultValue={isProfileFilled ? "pathway" : "counselor"} className="space-y-6">
         <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
+          {/* AI Counselor - visually distinct, always first */}
+          <TabsTrigger value="counselor" className="flex items-center gap-1.5 text-xs sm:text-sm py-2 bg-accent/10 border border-accent/30 data-[state=active]:bg-accent data-[state=active]:text-accent-foreground font-semibold">
+            <Bot className="w-4 h-4" /> {t("AI Counselor", "AI Советник")}
+          </TabsTrigger>
+
+          {/* Separator */}
+          <div className="w-px h-6 bg-border mx-1 self-center hidden sm:block" />
+
+          {/* Tool tabs */}
           <TabsTrigger value="pathway" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
             <GraduationCap className="w-4 h-4" /> {t("Pathway", "Путь")}
           </TabsTrigger>
@@ -293,9 +302,6 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           </TabsTrigger>
           <TabsTrigger value="tracker" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
             <ClipboardList className="w-4 h-4" /> {t("Tracker", "Трекер")}
-          </TabsTrigger>
-          <TabsTrigger value="counselor" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-            <Bot className="w-4 h-4" /> {t("AI Counselor", "AI Советник")}
           </TabsTrigger>
         </TabsList>
 
