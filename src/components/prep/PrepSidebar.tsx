@@ -20,7 +20,7 @@ const PrepSidebar = () => {
   const t = (en: string, ru: string) => language === "ru" ? ru : en;
 
   const items = [
-    { title: t("Dashboard", "Панель"), path: "/prep", icon: LayoutDashboard, exact: true },
+    { title: t("Dashboard", "Панель"), path: "/prep/dashboard", icon: LayoutDashboard, exact: true },
     { title: t("Diagnostic", "Диагностика"), path: "/prep/diagnostic", icon: ClipboardCheck },
     { title: t("Study Plan", "План"), path: "/prep/study-plan", icon: Calendar },
     { title: t("Practice", "Практика"), path: "/prep/practice", icon: BookOpen },
