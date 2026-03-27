@@ -90,7 +90,7 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
               className={cn(
                 "px-3.5 py-1.5 text-sm font-bold rounded-md border transition-all duration-200",
                 isActive(primaryLinks[0].path)
-                  ? "text-primary bg-gold border-gold shadow-sm"
+                  ? "text-gold bg-gold/10 border-gold/60"
                   : "text-gold border-gold/40 hover:bg-gold/15 hover:border-gold/70"
               )}
             >
@@ -162,13 +162,26 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
                   {isRussian ? "Главная" : "Home"}
                 </button>
 
-                {/* Primary products */}
+                {/* TopUni AI — standalone */}
+                <button
+                  onClick={() => { navigate(primaryLinks[0].path); setIsOpen(false); }}
+                  className={cn(
+                    "px-4 py-3 text-base font-bold rounded-md border transition-all duration-200 text-left",
+                    isActive(primaryLinks[0].path)
+                      ? "text-gold bg-gold/10 border-gold/60"
+                      : "text-gold border-gold/40 hover:bg-gold/15"
+                  )}
+                >
+                  {primaryLinks[0].label}
+                </button>
+
+                {/* Other products */}
                 <div>
                   <p className="px-4 text-xs text-gold/50 uppercase tracking-wider font-medium mb-2">
                     {isRussian ? "Платформа" : "Platform"}
                   </p>
                   <div className="flex flex-col gap-1">
-                    {primaryLinks.map((link) => (
+                    {primaryLinks.slice(1).map((link) => (
                       <button
                         key={link.path}
                         onClick={() => { navigate(link.path); setIsOpen(false); }}
