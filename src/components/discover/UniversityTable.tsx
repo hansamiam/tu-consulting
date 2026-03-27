@@ -252,6 +252,7 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
                           <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span className="text-sm font-semibold text-foreground truncate">{uni.university_name}</span>
+                            <WatchlistButton universityId={uni.university_id} />
                             {uni.website_url && (
                               <a href={uni.website_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
                                 <ExternalLink className="h-3 w-3 text-muted-foreground hover:text-accent shrink-0" />
