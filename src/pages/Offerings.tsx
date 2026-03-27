@@ -69,27 +69,59 @@ const ReadinessQuiz = ({ onComplete }: { onComplete: (score: number) => void }) 
 
   if (score !== null) {
     const tier = score >= 70 ? "strong" : score >= 40 ? "developing" : "early";
+    const scholarshipValue = tier === "strong" ? 50 : tier === "developing" ? 30 : 15;
+    const fourYearSavings = scholarshipValue * 4 * 1000;
+    const consultingCost = tier === "strong" ? 1300 : tier === "developing" ? 690 : 390;
+    const roi = Math.round((fourYearSavings / consultingCost) * 10) / 10;
+
     return (
       <section className="mb-12 md:mb-20">
         <Card className="border-accent/30 overflow-hidden">
-          <CardContent className="p-6 md:p-10 text-center space-y-5">
-            <div className="w-28 h-28 mx-auto rounded-full border-4 border-accent flex items-center justify-center">
-              <span className="text-3xl font-bold text-accent">{score}%</span>
+          <CardContent className="p-6 md:p-10 space-y-6">
+            <div className="text-center space-y-4">
+              <div className="w-28 h-28 mx-auto rounded-full border-4 border-accent flex items-center justify-center">
+                <span className="text-3xl font-bold text-accent">{score}%</span>
+              </div>
+              <h3 className="text-xl font-heading font-bold text-foreground">
+                {tier === "strong" ? "You're in great shape!" : tier === "developing" ? "Solid foundation, room to grow" : "Early stage — perfect time to start"}
+              </h3>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                {tier === "strong"
+                  ? "You're well-prepared. Our Standard or Premium package will give you the competitive edge to secure top admits."
+                  : tier === "developing"
+                  ? "You have a good start. A structured consulting package will fill the gaps and maximize your chances."
+                  : "Starting early is your biggest advantage. Book a free consultation to map out your journey."}
+              </p>
+              <Progress value={score} className="max-w-xs mx-auto h-2" />
             </div>
-            <h3 className="text-xl font-heading font-bold text-foreground">
-              {tier === "strong" ? "You're in great shape!" : tier === "developing" ? "Solid foundation, room to grow" : "Early stage — perfect time to start"}
-            </h3>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              {tier === "strong"
-                ? "You're well-prepared. Our Standard or Premium package will give you the competitive edge to secure top admits."
-                : tier === "developing"
-                ? "You have a good start. A structured consulting package will fill the gaps and maximize your chances."
-                : "Starting early is your biggest advantage. Book a free consultation to map out your journey."}
-            </p>
-            <Progress value={score} className="max-w-xs mx-auto h-2" />
-            <Button variant="gold" onClick={() => { setStarted(false); setScore(null); setCurrent(0); setAnswers([]); }}>
-              Retake Quiz
-            </Button>
+
+            {/* ROI Calculator integrated */}
+            <div className="border-t border-border pt-6">
+              <p className="text-xs text-muted-foreground text-center mb-4 uppercase tracking-wider font-medium">Your potential return on investment</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 text-center space-y-1">
+                  <TrendingUp className="w-5 h-5 text-accent mx-auto" />
+                  <p className="text-xl font-bold text-foreground">${fourYearSavings.toLocaleString()}</p>
+                  <p className="text-[11px] text-muted-foreground">4-Year Scholarship Value</p>
+                </div>
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-center space-y-1">
+                  <Award className="w-5 h-5 text-primary mx-auto" />
+                  <p className="text-xl font-bold text-foreground">{roi}x</p>
+                  <p className="text-[11px] text-muted-foreground">Return on Investment</p>
+                </div>
+                <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-4 text-center space-y-1">
+                  <GraduationCap className="w-5 h-5 text-green-600 mx-auto" />
+                  <p className="text-xl font-bold text-foreground">${consultingCost}</p>
+                  <p className="text-[11px] text-muted-foreground">Consulting Investment</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <Button variant="gold" onClick={() => { setStarted(false); setScore(null); setCurrent(0); setAnswers([]); }}>
+                Retake Quiz
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </section>
@@ -119,96 +151,7 @@ const ReadinessQuiz = ({ onComplete }: { onComplete: (score: number) => void }) 
   );
 };
 
-/* ─── FEATURE 2: Live Social Proof Ticker ─── */
-const PROOF_ITEMS = [
-  { text: "Student from Bishkek accepted to University of Groningen", time: "2 days ago", icon: "🎓" },
-  { text: "3 students received full scholarships this month", time: "1 week ago", icon: "🏆" },
-  { text: "New Premium package client from Almaty", time: "3 days ago", icon: "⭐" },
-  { text: "Student admitted to Charles University, Prague", time: "5 days ago", icon: "🇨🇿" },
-  { text: "92% of our clients receive at least one offer", time: "Updated", icon: "📊" },
-  { text: "IELTS student improved from 5.5 to 7.5 in 8 weeks", time: "Last month", icon: "📈" },
-];
 
-const SocialProofTicker = () => {
-  const [idx, setIdx] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => setIdx(i => (i + 1) % PROOF_ITEMS.length), 4000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const item = PROOF_ITEMS[idx];
-
-  return (
-    <section className="mb-12 md:mb-16">
-      <div className="bg-accent/5 border border-accent/20 rounded-xl px-5 py-3 flex items-center gap-3 overflow-hidden">
-        <span className="text-xl shrink-0">{item.icon}</span>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground truncate">{item.text}</p>
-          <p className="text-[11px] text-muted-foreground">{item.time}</p>
-        </div>
-        <div className="flex gap-1 shrink-0">
-          {PROOF_ITEMS.map((_, i) => (
-            <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors ${i === idx ? "bg-accent" : "bg-muted"}`} />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
-
-/* ─── FEATURE 3: ROI Calculator ─── */
-const ROICalculator = () => {
-  const [scholarshipTarget, setScholarshipTarget] = useState("50");
-
-  const scholarshipValue = Number(scholarshipTarget) || 0;
-  const fourYearSavings = scholarshipValue * 4 * 1000;
-  const consultingCost = 60000; // Standard package in KGS
-  const roi = fourYearSavings > 0 ? Math.round((fourYearSavings / (consultingCost * 0.0115)) * 100) / 100 : 0;
-
-  return (
-    <section className="mb-12 md:mb-20">
-      <Card className="border-border bg-card/60 backdrop-blur-sm overflow-hidden">
-        <CardContent className="p-6 md:p-10">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div className="space-y-4">
-              <Badge className="bg-primary/10 text-primary border-primary/30 text-xs">Investment Calculator</Badge>
-              <h3 className="text-xl md:text-2xl font-heading font-bold text-foreground">What's Your ROI?</h3>
-              <p className="text-sm text-muted-foreground">See how consulting pays for itself through scholarship wins and strategic university placement.</p>
-              <div className="space-y-2">
-                <Label className="text-sm">Annual Scholarship Target ($K)</Label>
-                <Input type="number" value={scholarshipTarget} onChange={e => setScholarshipTarget(e.target.value)}
-                  className="max-w-[200px]" placeholder="e.g. 50" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 text-center space-y-1">
-                <TrendingUp className="w-6 h-6 text-accent mx-auto" />
-                <p className="text-2xl font-bold text-foreground">${fourYearSavings.toLocaleString()}</p>
-                <p className="text-[11px] text-muted-foreground">4-Year Scholarship Value</p>
-              </div>
-              <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-center space-y-1">
-                <Award className="w-6 h-6 text-primary mx-auto" />
-                <p className="text-2xl font-bold text-foreground">{roi > 0 ? `${roi}x` : "—"}</p>
-                <p className="text-[11px] text-muted-foreground">Return on Investment</p>
-              </div>
-              <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-4 text-center space-y-1">
-                <Users className="w-6 h-6 text-green-600 mx-auto" />
-                <p className="text-2xl font-bold text-foreground">92%</p>
-                <p className="text-[11px] text-muted-foreground">Client Offer Rate</p>
-              </div>
-              <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4 text-center space-y-1">
-                <GraduationCap className="w-6 h-6 text-blue-600 mx-auto" />
-                <p className="text-2xl font-bold text-foreground">40+</p>
-                <p className="text-[11px] text-muted-foreground">Universities Placed</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </section>
-  );
-};
 
 const Offerings = () => {
   const navigate = useNavigate();
@@ -417,12 +360,6 @@ const Offerings = () => {
             toast({ title: "Let's get you ready!", description: "A free consultation would be the perfect starting point." });
           }
         }} />
-
-        {/* FEATURE 2: Live Social Proof Ticker */}
-        <SocialProofTicker />
-
-        {/* FEATURE 3: Outcome Guarantee + ROI Calculator */}
-        <ROICalculator />
 
         {/* Package Pricing */}
         <section className="mb-12 md:mb-20 animate-enter">
