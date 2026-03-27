@@ -33,6 +33,9 @@ const PrepDashboard = () => {
     { icon: BookOpen, label: t("Practice", "Практика"), path: "/prep/practice", color: "text-green-500", desc: t("110+ questions", "110+ вопросов") },
     { icon: FileText, label: t("Mock Exam", "Пробный"), path: "/prep/mock-exam", color: "text-purple-500", desc: t("Full simulation", "Полная симуляция") },
     { icon: Bot, label: t("AI Tutor", "AI Репетитор"), path: "/prep/tutor", color: "text-accent", desc: t("Ask anything", "Задайте вопрос") },
+    { icon: Brain, label: t("Spaced Review", "Интервал"), path: "/prep/spaced-review", color: "text-cyan-500", desc: t("SM-2 algorithm", "Алгоритм SM-2") },
+    { icon: PenTool, label: t("Essay Grader", "Оценка эссе"), path: "/prep/essay-grader", color: "text-pink-500", desc: t("4-criteria rubric", "4 критерия") },
+    { icon: Activity, label: t("Skill Radar", "Радар"), path: "/prep/skill-radar", color: "text-orange-500", desc: t("Deep analytics", "Глубокая аналитика") },
   ];
 
   return (
