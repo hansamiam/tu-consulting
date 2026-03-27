@@ -22,7 +22,7 @@ export const Footer = ({ language, variant = "dark" }: FooterProps) => {
       publicOffer: "Публичная оферта",
       refundPolicy: "Правила возврата",
       paymentInfo: "Оплата банковской картой",
-      tagline: "Ведущая консалтинговая компания Центральной Азии по поступлению",
+      tagline: "Ведущая образовательная компания Центральной Азии",
       copyright: "© 2025 Top Uni Consulting | Все права защищены",
     },
   };
