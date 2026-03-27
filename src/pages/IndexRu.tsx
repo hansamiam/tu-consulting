@@ -136,11 +136,6 @@ const IndexRu = () => {
               className="group relative rounded-2xl border border-border bg-card p-8 hover:border-accent/40 hover:shadow-[var(--shadow-premium)] transition-all duration-300 cursor-pointer"
               onClick={() => navigate('/prep')}
             >
-              <div className="absolute -top-3 right-6">
-                <span className="px-3 py-1 rounded-full bg-accent text-accent-foreground text-xs font-bold uppercase tracking-wider">
-                  Популярно
-                </span>
-              </div>
               <div className="h-14 w-14 rounded-xl bg-accent/10 flex items-center justify-center mb-6 group-hover:bg-accent/20 transition-colors">
                 <BookOpen className="h-7 w-7 text-accent" />
               </div>
