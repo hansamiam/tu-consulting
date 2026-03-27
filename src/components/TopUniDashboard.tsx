@@ -5,13 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Sparkles, GraduationCap, Award, BookOpen, ClipboardList,
-  Bot, Loader2, Send, ArrowLeft, Calendar, Target,
-  CheckCircle2, Circle, Plus, Trash2,
+  Sparkles, GraduationCap, Award, ClipboardList,
+  Bot, Loader2, Send, ArrowLeft, Target,
+  CheckCircle2, Plus, Trash2, PenTool, Mic, BarChart3, FileText,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import EssayTools from "@/components/topuni/EssayTools";
+import InterviewSimulator from "@/components/topuni/InterviewSimulator";
+import AdmissionPredictor from "@/components/topuni/AdmissionPredictor";
+import DocumentBuilder from "@/components/topuni/DocumentBuilder";
 
 interface StudentProfile {
   fullName: string;
@@ -86,9 +89,11 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     }
   }, [chatMessages]);
 
-  // Generate pathway on first load
+  // Only generate pathway if profile is actually filled
+  const isProfileFilled = profile.fullName && profile.fullName !== "Student" && profile.gpa && profile.targetCountries.length > 0;
+
   useEffect(() => {
-    if (!pathwayGenerated) {
+    if (!pathwayGenerated && isProfileFilled) {
       generatePathway();
     }
   }, []);
@@ -248,29 +253,43 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           </Badge>
         </div>
         <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground">
-          {t(`Welcome, ${profile.fullName.split(" ")[0]}`, `Добро пожаловать, ${profile.fullName.split(" ")[0]}`)}
+          {isProfileFilled
+            ? t(`Welcome, ${profile.fullName.split(" ")[0]}`, `Добро пожаловать, ${profile.fullName.split(" ")[0]}`)
+            : t("Your Dashboard", "Ваша панель")
+          }
         </h1>
         <p className="text-muted-foreground mt-1">
           {t("Your personalized university pathway dashboard", "Ваша персональная панель планирования")}
         </p>
-        <div className="flex flex-wrap gap-2 mt-3">
-          {profile.targetCountries.map(c => (
-            <Badge key={c} variant="outline" className="text-xs">{c}</Badge>
-          ))}
-          {profile.major && <Badge variant="outline" className="text-xs">{profile.major}</Badge>}
-          {profile.gpa && <Badge variant="outline" className="text-xs">GPA: {profile.gpa}</Badge>}
-          {profile.ielts && <Badge variant="outline" className="text-xs">IELTS: {profile.ielts}</Badge>}
-        </div>
+        {isProfileFilled && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {profile.targetCountries.map(c => (
+              <Badge key={c} variant="outline" className="text-xs">{c}</Badge>
+            ))}
+            {profile.major && <Badge variant="outline" className="text-xs">{profile.major}</Badge>}
+            {profile.gpa && <Badge variant="outline" className="text-xs">GPA: {profile.gpa}</Badge>}
+            {profile.ielts && <Badge variant="outline" className="text-xs">IELTS: {profile.ielts}</Badge>}
+          </div>
+        )}
       </motion.div>
 
       {/* Dashboard Tabs */}
-      <Tabs defaultValue="pathway" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto gap-1 bg-muted/50 p-1">
+      <Tabs defaultValue={isProfileFilled ? "pathway" : "counselor"} className="space-y-6">
+        <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
           <TabsTrigger value="pathway" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-            <GraduationCap className="w-4 h-4" /> {t("My Pathway", "Мой путь")}
+            <GraduationCap className="w-4 h-4" /> {t("Pathway", "Путь")}
           </TabsTrigger>
-          <TabsTrigger value="scholarships" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-            <Award className="w-4 h-4" /> {t("Scholarships", "Стипендии")}
+          <TabsTrigger value="predictor" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+            <BarChart3 className="w-4 h-4" /> {t("Chances", "Шансы")}
+          </TabsTrigger>
+          <TabsTrigger value="essays" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+            <PenTool className="w-4 h-4" /> {t("Essays", "Эссе")}
+          </TabsTrigger>
+          <TabsTrigger value="documents" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+            <FileText className="w-4 h-4" /> {t("Documents", "Документы")}
+          </TabsTrigger>
+          <TabsTrigger value="interview" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+            <Mic className="w-4 h-4" /> {t("Interview", "Интервью")}
           </TabsTrigger>
           <TabsTrigger value="tracker" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
             <ClipboardList className="w-4 h-4" /> {t("Tracker", "Трекер")}
@@ -295,6 +314,15 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
               )}
             </CardHeader>
             <CardContent>
+              {!isProfileFilled && !pathwayContent && (
+                <div className="text-center py-12 space-y-4">
+                  <GraduationCap className="w-10 h-10 mx-auto text-muted-foreground/40" />
+                  <p className="text-muted-foreground text-sm">{t("Complete your profile to generate a personalized pathway.", "Заполните профиль для персонального плана.")}</p>
+                  <Button variant="gold" onClick={onBack}>
+                    <Sparkles className="w-4 h-4 mr-2" /> {t("Start Your Plan", "Начать план")}
+                  </Button>
+                </div>
+              )}
               {pathwayLoading && !pathwayContent && (
                 <div className="flex flex-col items-center justify-center py-16 space-y-4">
                   <Loader2 className="w-8 h-8 animate-spin text-accent" />
@@ -311,65 +339,36 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           </Card>
         </TabsContent>
 
-        {/* SCHOLARSHIPS TAB */}
-        <TabsContent value="scholarships">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Award className="w-5 h-5 text-accent" />
-                {t("Scholarship Finder", "Поиск стипендий")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-muted-foreground text-sm">
-                {t(
-                  "Based on your profile, ask the AI Counselor for detailed scholarship recommendations, or explore our Discover page for the full database.",
-                  "На основании вашего профиля, спросите AI Советника о стипендиях или посетите страницу Discover для полной базы данных."
-                )}
-              </p>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <Card className="border-accent/20 bg-accent/5">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Target className="w-4 h-4 text-accent" />
-                      <span className="font-semibold text-sm text-foreground">{t("Quick Tips", "Быстрые советы")}</span>
-                    </div>
-                    <ul className="space-y-1.5 text-xs text-muted-foreground">
-                      <li className="flex items-start gap-1.5"><CheckCircle2 className="w-3 h-3 mt-0.5 text-accent shrink-0" />{t("Apply to scholarships 6-12 months before deadlines", "Подавайте на стипендии за 6-12 месяцев до дедлайна")}</li>
-                      <li className="flex items-start gap-1.5"><CheckCircle2 className="w-3 h-3 mt-0.5 text-accent shrink-0" />{t("Many government scholarships cover tuition + living", "Многие гос. стипендии покрывают обучение и проживание")}</li>
-                      <li className="flex items-start gap-1.5"><CheckCircle2 className="w-3 h-3 mt-0.5 text-accent shrink-0" />{t("Need-based aid often requires CSS Profile or equivalent", "Финансовая помощь часто требует CSS Profile")}</li>
-                    </ul>
-                  </CardContent>
-                </Card>
-                <Card className="border-green-500/20 bg-green-500/5">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Award className="w-4 h-4 text-green-600" />
-                      <span className="font-semibold text-sm text-foreground">{t("Your Match Profile", "Ваш профиль")}</span>
-                    </div>
-                    <ul className="space-y-1.5 text-xs text-muted-foreground">
-                      <li>GPA: <strong className="text-foreground">{profile.gpa || "N/A"}</strong></li>
-                      <li>IELTS: <strong className="text-foreground">{profile.ielts || t("Not taken", "Не сдан")}</strong></li>
-                      <li>{t("Budget", "Бюджет")}: <strong className="text-foreground">{profile.budget || t("Not specified", "Не указан")}</strong></li>
-                      <li>{t("Scholarship priority", "Приоритет стипендии")}: <strong className="text-foreground">{profile.scholarship}/5</strong></li>
-                    </ul>
-                  </CardContent>
-                </Card>
-              </div>
-              <div className="flex gap-3">
-                <Button variant="gold" size="sm" onClick={() => {
-                  const tab = document.querySelector('[data-value="counselor"]') as HTMLElement;
-                  tab?.click();
-                  setTimeout(() => setChatInput(isRu ? "Какие стипендии подходят для моего профиля?" : "What scholarships match my profile?"), 100);
-                }}>
-                  <Bot className="w-4 h-4 mr-1.5" /> {t("Ask AI Counselor", "Спросить AI")}
+        {/* ADMISSION PREDICTOR TAB */}
+        <TabsContent value="predictor">
+          {isProfileFilled ? (
+            <AdmissionPredictor profile={profile} language={language} />
+          ) : (
+            <Card>
+              <CardContent className="text-center py-12 space-y-4">
+                <BarChart3 className="w-10 h-10 mx-auto text-muted-foreground/40" />
+                <p className="text-muted-foreground text-sm">{t("Complete your profile to see admission predictions.", "Заполните профиль для прогнозов.")}</p>
+                <Button variant="gold" onClick={onBack}>
+                  <Sparkles className="w-4 h-4 mr-2" /> {t("Start Your Plan", "Начать план")}
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => window.open(isRu ? "/discover/ru" : "/discover", "_blank")}>
-                  <BookOpen className="w-4 h-4 mr-1.5" /> {t("Browse Discover", "Открыть Discover")}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* ESSAY TOOLS TAB */}
+        <TabsContent value="essays">
+          <EssayTools profile={profile} language={language} />
+        </TabsContent>
+
+        {/* DOCUMENT BUILDER TAB */}
+        <TabsContent value="documents">
+          <DocumentBuilder profile={profile} language={language} />
+        </TabsContent>
+
+        {/* INTERVIEW SIMULATOR TAB */}
+        <TabsContent value="interview">
+          <InterviewSimulator profile={profile} language={language} />
         </TabsContent>
 
         {/* APPLICATION TRACKER TAB */}
@@ -467,10 +466,28 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                 <div className="space-y-3 pt-4">
                   <div className="bg-accent/10 rounded-lg p-3 text-sm text-muted-foreground">
                     <p className="font-semibold text-foreground mb-1">
-                      {isRu ? `👋 Привет, ${profile.fullName.split(" ")[0]}! Я ваш AI-советник.` : `👋 Hi ${profile.fullName.split(" ")[0]}! I'm your AI counselor.`}
+                      {isProfileFilled
+                        ? (isRu ? `👋 Привет, ${profile.fullName.split(" ")[0]}! Я ваш AI-советник.` : `👋 Hi ${profile.fullName.split(" ")[0]}! I'm your AI counselor.`)
+                        : (isRu ? "👋 Привет! Я ваш AI-советник по поступлению." : "👋 Hi! I'm your AI admissions counselor.")
+                      }
                     </p>
-                    <p>{isRu ? "Я знаю ваш профиль и могу помочь с выбором университетов, стипендий, стратегией поступления и многим другим." : "I know your profile and can help with university selection, scholarships, application strategy, and more."}</p>
+                    <p>{isRu ? "Задайте любой вопрос о поступлении, стипендиях или планировании." : "Ask me anything about admissions, scholarships, or study planning."}</p>
                   </div>
+
+                  {!isProfileFilled && (
+                    <div className="bg-accent/5 border border-accent/20 rounded-lg p-4 space-y-3">
+                      <p className="text-sm text-foreground font-medium">
+                        {t("💡 Want personalized advice?", "💡 Хотите персональные советы?")}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("Complete your profile for tailored university matches, admission predictions, and more.", "Заполните профиль для персональных рекомендаций.")}
+                      </p>
+                      <Button variant="gold" size="sm" onClick={onBack}>
+                        <Sparkles className="w-4 h-4 mr-1" /> {t("Start Your Plan", "Начать план")}
+                      </Button>
+                    </div>
+                  )}
+
                   <div className="grid sm:grid-cols-2 gap-2">
                     {[
                       t("What are my chances at my top choice?", "Каковы мои шансы в топ-выборе?"),
