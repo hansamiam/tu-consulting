@@ -5,6 +5,7 @@ import { Footer } from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Scale } from "lucide-react";
+import { WatchlistDrawer } from "@/components/discover/Watchlist";
 import { motion } from "framer-motion";
 import { UniversityResult } from "@/components/discover/types";
 import { DiscoverFilters } from "@/components/discover/DiscoverFilters";
