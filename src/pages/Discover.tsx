@@ -5,7 +5,8 @@ import { Footer } from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Scale } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Search, Scale, Map, Table2, Clock, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { UniversityResult } from "@/components/discover/types";
 import { DiscoverFilters } from "@/components/discover/DiscoverFilters";
@@ -13,6 +14,11 @@ import { UniversityTable } from "@/components/discover/UniversityTable";
 import { CompareDrawer } from "@/components/discover/CompareDrawer";
 import { CanIGetInDialog } from "@/components/discover/CanIGetInDialog";
 import { CostCalculatorDialog } from "@/components/discover/CostCalculatorDialog";
+import { DiscoverProfileGate, getStoredProfile, DiscoverProfile, LockedOverlay } from "@/components/discover/DiscoverProfileGate";
+import { UniversityMap } from "@/components/discover/UniversityMap";
+import { DeadlineTracker } from "@/components/discover/DeadlineTracker";
+import { WatchlistDrawer } from "@/components/discover/Watchlist";
+import { SmartRecommendations } from "@/components/discover/SmartRecommendations";
 
 const Discover = () => {
   const [universities, setUniversities] = useState<UniversityResult[]>([]);
@@ -30,6 +36,11 @@ const Discover = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [compareIds, setCompareIds] = useState<Set<string>>(new Set());
   const [compareOpen, setCompareOpen] = useState(false);
+  const [profile, setProfile] = useState<DiscoverProfile | null>(getStoredProfile());
+  const [showProfileGate, setShowProfileGate] = useState(!getStoredProfile());
+  const [viewMode, setViewMode] = useState<"table" | "map">("table");
+
+  const isLocked = !profile;
 
   useEffect(() => { fetchUniversities(); }, []);
 
@@ -77,6 +88,15 @@ const Discover = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation language="en" />
+
+      {/* Profile Gate */}
+      <DiscoverProfileGate
+        open={showProfileGate}
+        onComplete={(p) => { setProfile(p); setShowProfileGate(false); }}
+        language="en"
+      />
+
+      {/* Hero */}
       <section className="bg-primary py-12 sm:py-16">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-3xl sm:text-5xl font-heading font-bold text-primary-foreground mb-4">
@@ -89,28 +109,53 @@ const Discover = () => {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
             <Input placeholder="Search by university, country, or city..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-12 h-14 text-base bg-card border-border rounded-xl shadow-lg" />
           </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex items-center justify-center gap-3 mt-5">
-            <CanIGetInDialog universities={filtered} language="en" />
-            <CostCalculatorDialog universities={filtered} language="en" />
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex items-center justify-center gap-3 mt-5 flex-wrap">
+            <LockedOverlay isLocked={isLocked}>
+              <div className="flex gap-3">
+                <CanIGetInDialog universities={filtered} language="en" />
+                <CostCalculatorDialog universities={filtered} language="en" />
+              </div>
+            </LockedOverlay>
+            <WatchlistDrawer universities={universities} language="en" />
           </motion.div>
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <DiscoverFilters
-          showFilters={showFilters} setShowFilters={setShowFilters}
-          countryFilter={countryFilter} setCountryFilter={setCountryFilter}
-          degreeFilter={degreeFilter} setDegreeFilter={setDegreeFilter}
-          fieldFilter={fieldFilter} setFieldFilter={setFieldFilter}
-          fullyFunded={fullyFunded} setFullyFunded={setFullyFunded}
-          ieltsOptional={ieltsOptional} setIeltsOptional={setIeltsOptional}
-          foundationYear={foundationYear} setFoundationYear={setFoundationYear}
-          maxTuition={maxTuition} setMaxTuition={setMaxTuition}
-          countries={countries} fields={fields} resultCount={filtered.length} language="en"
-        />
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+        {/* Smart Recommendations */}
+        {profile && (
+          <SmartRecommendations universities={universities} profile={profile} language="en" />
+        )}
+
+        {/* View Toggle + Filters */}
+        <div className="flex items-center gap-3">
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "table" | "map")} className="flex-shrink-0">
+            <TabsList className="h-9">
+              <TabsTrigger value="table" className="text-xs gap-1.5">
+                <Table2 className="h-3.5 w-3.5" /> Table
+              </TabsTrigger>
+              <TabsTrigger value="map" className="text-xs gap-1.5">
+                <Map className="h-3.5 w-3.5" /> Map
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <div className="flex-1">
+            <DiscoverFilters
+              showFilters={showFilters} setShowFilters={setShowFilters}
+              countryFilter={countryFilter} setCountryFilter={setCountryFilter}
+              degreeFilter={degreeFilter} setDegreeFilter={setDegreeFilter}
+              fieldFilter={fieldFilter} setFieldFilter={setFieldFilter}
+              fullyFunded={fullyFunded} setFullyFunded={setFullyFunded}
+              ieltsOptional={ieltsOptional} setIeltsOptional={setIeltsOptional}
+              foundationYear={foundationYear} setFoundationYear={setFoundationYear}
+              maxTuition={maxTuition} setMaxTuition={setMaxTuition}
+              countries={countries} fields={fields} resultCount={filtered.length} language="en"
+            />
+          </div>
+        </div>
 
         {compareIds.size > 0 && (
-          <div className="flex items-center gap-3 mb-4 p-3 bg-accent/10 border border-accent/30 rounded-lg">
+          <div className="flex items-center gap-3 p-3 bg-accent/10 border border-accent/30 rounded-lg">
             <Scale className="h-4 w-4 text-accent" />
             <span className="text-sm font-medium">{compareIds.size} selected</span>
             <Button size="sm" variant="default" className="ml-auto gap-1.5" onClick={() => setCompareOpen(true)} disabled={compareIds.size < 2}>
@@ -120,7 +165,12 @@ const Discover = () => {
           </div>
         )}
 
-        {loading ? (
+        {/* Main Content */}
+        {viewMode === "map" ? (
+          <LockedOverlay isLocked={isLocked}>
+            <UniversityMap universities={filtered} language="en" />
+          </LockedOverlay>
+        ) : loading ? (
           <div className="space-y-2">
             {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="bg-card border border-border rounded-lg p-4 animate-pulse flex gap-4">
@@ -134,6 +184,11 @@ const Discover = () => {
         ) : (
           <UniversityTable universities={filtered} language="en" compareIds={compareIds} onToggleCompare={toggleCompare} />
         )}
+
+        {/* Deadline Tracker */}
+        <LockedOverlay isLocked={isLocked}>
+          <DeadlineTracker universities={filtered} language="en" />
+        </LockedOverlay>
       </div>
 
       <CompareDrawer open={compareOpen} onClose={() => setCompareOpen(false)} universities={compareUnis} onRemove={(id) => toggleCompare(id)} language="en" />
