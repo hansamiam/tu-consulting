@@ -155,11 +155,7 @@ const Discover = () => {
         )}
 
         {/* Main Content */}
-        {viewMode === "map" ? (
-          <LockedOverlay isLocked={isLocked}>
-            <UniversityMap universities={filtered} language="en" />
-          </LockedOverlay>
-        ) : loading ? (
+        {loading ? (
           <div className="space-y-2">
             {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="bg-card border border-border rounded-lg p-4 animate-pulse flex gap-4">
@@ -173,11 +169,6 @@ const Discover = () => {
         ) : (
           <UniversityTable universities={filtered} language="en" compareIds={compareIds} onToggleCompare={toggleCompare} />
         )}
-
-        {/* Deadline Tracker */}
-        <LockedOverlay isLocked={isLocked}>
-          <DeadlineTracker universities={filtered} language="en" />
-        </LockedOverlay>
       </div>
 
       <CompareDrawer open={compareOpen} onClose={() => setCompareOpen(false)} universities={compareUnis} onRemove={(id) => toggleCompare(id)} language="en" />
