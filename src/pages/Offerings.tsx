@@ -69,27 +69,59 @@ const ReadinessQuiz = ({ onComplete }: { onComplete: (score: number) => void }) 
 
   if (score !== null) {
     const tier = score >= 70 ? "strong" : score >= 40 ? "developing" : "early";
+    const scholarshipValue = tier === "strong" ? 50 : tier === "developing" ? 30 : 15;
+    const fourYearSavings = scholarshipValue * 4 * 1000;
+    const consultingCost = tier === "strong" ? 1300 : tier === "developing" ? 690 : 390;
+    const roi = Math.round((fourYearSavings / consultingCost) * 10) / 10;
+
     return (
       <section className="mb-12 md:mb-20">
         <Card className="border-accent/30 overflow-hidden">
-          <CardContent className="p-6 md:p-10 text-center space-y-5">
-            <div className="w-28 h-28 mx-auto rounded-full border-4 border-accent flex items-center justify-center">
-              <span className="text-3xl font-bold text-accent">{score}%</span>
+          <CardContent className="p-6 md:p-10 space-y-6">
+            <div className="text-center space-y-4">
+              <div className="w-28 h-28 mx-auto rounded-full border-4 border-accent flex items-center justify-center">
+                <span className="text-3xl font-bold text-accent">{score}%</span>
+              </div>
+              <h3 className="text-xl font-heading font-bold text-foreground">
+                {tier === "strong" ? "You're in great shape!" : tier === "developing" ? "Solid foundation, room to grow" : "Early stage — perfect time to start"}
+              </h3>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                {tier === "strong"
+                  ? "You're well-prepared. Our Standard or Premium package will give you the competitive edge to secure top admits."
+                  : tier === "developing"
+                  ? "You have a good start. A structured consulting package will fill the gaps and maximize your chances."
+                  : "Starting early is your biggest advantage. Book a free consultation to map out your journey."}
+              </p>
+              <Progress value={score} className="max-w-xs mx-auto h-2" />
             </div>
-            <h3 className="text-xl font-heading font-bold text-foreground">
-              {tier === "strong" ? "You're in great shape!" : tier === "developing" ? "Solid foundation, room to grow" : "Early stage — perfect time to start"}
-            </h3>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              {tier === "strong"
-                ? "You're well-prepared. Our Standard or Premium package will give you the competitive edge to secure top admits."
-                : tier === "developing"
-                ? "You have a good start. A structured consulting package will fill the gaps and maximize your chances."
-                : "Starting early is your biggest advantage. Book a free consultation to map out your journey."}
-            </p>
-            <Progress value={score} className="max-w-xs mx-auto h-2" />
-            <Button variant="gold" onClick={() => { setStarted(false); setScore(null); setCurrent(0); setAnswers([]); }}>
-              Retake Quiz
-            </Button>
+
+            {/* ROI Calculator integrated */}
+            <div className="border-t border-border pt-6">
+              <p className="text-xs text-muted-foreground text-center mb-4 uppercase tracking-wider font-medium">Your potential return on investment</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 text-center space-y-1">
+                  <TrendingUp className="w-5 h-5 text-accent mx-auto" />
+                  <p className="text-xl font-bold text-foreground">${fourYearSavings.toLocaleString()}</p>
+                  <p className="text-[11px] text-muted-foreground">4-Year Scholarship Value</p>
+                </div>
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-center space-y-1">
+                  <Award className="w-5 h-5 text-primary mx-auto" />
+                  <p className="text-xl font-bold text-foreground">{roi}x</p>
+                  <p className="text-[11px] text-muted-foreground">Return on Investment</p>
+                </div>
+                <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-4 text-center space-y-1">
+                  <GraduationCap className="w-5 h-5 text-green-600 mx-auto" />
+                  <p className="text-xl font-bold text-foreground">${consultingCost}</p>
+                  <p className="text-[11px] text-muted-foreground">Consulting Investment</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <Button variant="gold" onClick={() => { setStarted(false); setScore(null); setCurrent(0); setAnswers([]); }}>
+                Retake Quiz
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </section>
