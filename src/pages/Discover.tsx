@@ -14,8 +14,8 @@ import { CompareDrawer } from "@/components/discover/CompareDrawer";
 import { CanIGetInDialog } from "@/components/discover/CanIGetInDialog";
 import { CostCalculatorDialog } from "@/components/discover/CostCalculatorDialog";
 import { DiscoverProfileGate, getStoredProfile, DiscoverProfile, LockedOverlay } from "@/components/discover/DiscoverProfileGate";
-import { UniversityMap } from "@/components/discover/UniversityMap";
-import { DeadlineTracker } from "@/components/discover/DeadlineTracker";
+// import { UniversityMap } from "@/components/discover/UniversityMap"; // Hidden for now
+// import { DeadlineTracker } from "@/components/discover/DeadlineTracker"; // Hidden for now
 import { WatchlistDrawer } from "@/components/discover/Watchlist";
 import { SmartRecommendations } from "@/components/discover/SmartRecommendations";
 
