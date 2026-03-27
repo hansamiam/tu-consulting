@@ -187,19 +187,6 @@ const OfferingsRu = () => {
       }}
     >
       <Navigation language="ru" />
-      {/* Header */}
-      <header className="border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 sticky top-16 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/ru")}
-            className="flex items-center gap-2 text-foreground hover:text-accent"
-          >
-            <ArrowLeft size={20} />
-            На главную
-          </Button>
-        </div>
-      </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-12">
         {/* Hero Section */}
