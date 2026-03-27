@@ -23,7 +23,7 @@ const PrepLanding = () => {
       tagRu: "Тесты",
       title: "Test Preparation",
       titleRu: "Подготовка к экзаменам",
-      desc: "Master both IELTS and SAT with a unified adaptive curriculum. Build confidence across all IELTS sections (Listening, Reading, Writing, Speaking) targeting band 6.5–8.0, and conquer Digital SAT math and verbal sections aiming for 1400+. One program, two exams, complete coverage.",
+      desc: "Master IELTS and SAT with an adaptive curriculum. Build confidence across all IELTS sections (Listening, Reading, Writing, Speaking) targeting band 6.5–8.0, and conquer Digital SAT math and verbal sections aiming for 1400+.",
       features: ["Full-length IELTS & SAT mock exams with scoring", "AI essay correction & speaking drills", "Adaptive difficulty that grows with you"],
       icon: Target,
     },
