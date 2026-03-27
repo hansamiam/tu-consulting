@@ -1,17 +1,9 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { Menu, ChevronDown } from "lucide-react";
+import { Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from "@/components/ui/dropdown-menu";
 
 interface NavigationProps {
   language?: "en" | "ru";
@@ -25,41 +17,33 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
   const isRussian = language === "ru";
   const basePath = isRussian ? "/ru" : "/";
 
-  const platformLinks = [
+  const primaryLinks = [
     {
       label: "TopUni AI",
       path: isRussian ? "/topuni-ai/ru" : "/topuni-ai",
-      desc: isRussian ? "AI-консультант 24/7" : "AI counselor 24/7",
     },
     {
-      label: isRussian ? "Discover" : "Discover",
+      label: "Discover",
       path: isRussian ? "/discover/ru" : "/discover",
-      desc: isRussian ? "500+ университетов мира" : "500+ universities worldwide",
     },
     {
-      label: isRussian ? "Prep" : "Prep",
+      label: "Prep",
       path: "/prep",
-      desc: isRussian ? "IELTS, SAT, английский" : "IELTS, SAT, English",
-    },
-  ];
-
-  const mainLinks = [
-    {
-      label: isRussian ? "Главная" : "Home",
-      path: basePath,
-      exact: true,
     },
     {
       label: isRussian ? "Консалтинг" : "Consulting",
       path: isRussian ? "/offerings/ru" : "/offerings",
     },
+  ];
+
+  const secondaryLinks = [
+    {
+      label: isRussian ? "Почему мы" : "Why Us",
+      path: isRussian ? "/why-tu/ru" : "/why-tu",
+    },
     {
       label: isRussian ? "Команда" : "Team",
       path: isRussian ? "/team/ru" : "/team",
-    },
-    {
-      label: isRussian ? "О нас" : "About",
-      path: isRussian ? "/why-tu/ru" : "/why-tu",
     },
     {
       label: isRussian ? "Блог" : "Blog",
@@ -69,8 +53,6 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
 
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname === path;
-
-  const isPlatformActive = platformLinks.some((l) => location.pathname === l.path || location.pathname.startsWith(l.path.replace(/\/ru$/, '')));
 
   return (
     <nav className="bg-primary/95 backdrop-blur-sm border-b border-gold/20 sticky top-0 z-50">
@@ -85,47 +67,52 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
           </button>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center gap-1">
-            {/* Platform dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger
+          <div className="hidden lg:flex items-center gap-0.5">
+            {/* Home */}
+            <button
+              onClick={() => navigate(basePath)}
+              className={cn(
+                "px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
+                isActive(basePath, true)
+                  ? "text-gold bg-gold/10"
+                  : "text-primary-foreground/60 hover:text-primary-foreground/80 hover:bg-gold/5"
+              )}
+            >
+              {isRussian ? "Главная" : "Home"}
+            </button>
+
+            {/* Divider */}
+            <div className="w-px h-5 bg-gold/20 mx-1" />
+
+            {/* Primary product links — bold gold emphasis */}
+            {primaryLinks.map((link) => (
+              <button
+                key={link.path}
+                onClick={() => navigate(link.path)}
                 className={cn(
-                  "px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 flex items-center gap-1 outline-none",
-                  isPlatformActive
-                    ? "text-gold bg-gold/10"
-                    : "text-primary-foreground/80 hover:text-gold hover:bg-gold/5"
+                  "px-3 py-2 text-sm font-semibold rounded-md transition-all duration-200",
+                  isActive(link.path)
+                    ? "text-gold bg-gold/15"
+                    : "text-gold/80 hover:text-gold hover:bg-gold/10"
                 )}
               >
-                {isRussian ? "Платформа" : "Platform"}
-                <ChevronDown className="h-3.5 w-3.5" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-64 bg-card border-border">
-                <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider">
-                  {isRussian ? "Продукты" : "Products"}
-                </DropdownMenuLabel>
-                {platformLinks.map((link) => (
-                  <DropdownMenuItem
-                    key={link.path}
-                    onClick={() => navigate(link.path)}
-                    className="cursor-pointer flex flex-col items-start gap-0.5 py-2.5"
-                  >
-                    <span className="font-medium text-foreground">{link.label}</span>
-                    <span className="text-xs text-muted-foreground">{link.desc}</span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                {link.label}
+              </button>
+            ))}
 
-            {/* Main links */}
-            {mainLinks.map((link) => (
+            {/* Divider */}
+            <div className="w-px h-5 bg-gold/20 mx-1" />
+
+            {/* Secondary links — subtler style */}
+            {secondaryLinks.map((link) => (
               <button
                 key={link.path}
                 onClick={() => navigate(link.path)}
                 className={cn(
                   "px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
-                  isActive(link.path, link.exact)
-                    ? "text-gold bg-gold/10 border-b-2 border-gold"
-                    : "text-primary-foreground/80 hover:text-gold hover:bg-gold/5"
+                  isActive(link.path)
+                    ? "text-gold bg-gold/10"
+                    : "text-primary-foreground/50 hover:text-primary-foreground/80 hover:bg-gold/5"
                 )}
               >
                 {link.label}
@@ -146,21 +133,34 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
             </SheetTrigger>
             <SheetContent side="right" className="bg-primary border-gold/20 w-[280px]">
               <div className="flex flex-col gap-6 mt-8">
-                {/* Platform section */}
+                {/* Home */}
+                <button
+                  onClick={() => { navigate(basePath); setIsOpen(false); }}
+                  className={cn(
+                    "px-4 py-3 text-base font-medium rounded-md transition-all duration-200 text-left",
+                    isActive(basePath, true)
+                      ? "text-gold bg-gold/10 border-l-4 border-gold"
+                      : "text-primary-foreground/70 hover:text-gold hover:bg-gold/5"
+                  )}
+                >
+                  {isRussian ? "Главная" : "Home"}
+                </button>
+
+                {/* Primary products */}
                 <div>
-                  <p className="px-4 text-xs text-gold/60 uppercase tracking-wider font-medium mb-2">
+                  <p className="px-4 text-xs text-gold/50 uppercase tracking-wider font-medium mb-2">
                     {isRussian ? "Платформа" : "Platform"}
                   </p>
                   <div className="flex flex-col gap-1">
-                    {platformLinks.map((link) => (
+                    {primaryLinks.map((link) => (
                       <button
                         key={link.path}
                         onClick={() => { navigate(link.path); setIsOpen(false); }}
                         className={cn(
-                          "px-4 py-3 text-base font-medium rounded-md transition-all duration-200 text-left",
+                          "px-4 py-3 text-base font-semibold rounded-md transition-all duration-200 text-left",
                           isActive(link.path)
                             ? "text-gold bg-gold/10 border-l-4 border-gold"
-                            : "text-primary-foreground/80 hover:text-gold hover:bg-gold/5"
+                            : "text-gold/70 hover:text-gold hover:bg-gold/5"
                         )}
                       >
                         {link.label}
@@ -169,18 +169,18 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
                   </div>
                 </div>
 
-                {/* Main links */}
+                {/* Secondary links */}
                 <div className="border-t border-gold/20 pt-4">
                   <div className="flex flex-col gap-1">
-                    {mainLinks.map((link) => (
+                    {secondaryLinks.map((link) => (
                       <button
                         key={link.path}
                         onClick={() => { navigate(link.path); setIsOpen(false); }}
                         className={cn(
                           "px-4 py-3 text-base font-medium rounded-md transition-all duration-200 text-left",
-                          isActive(link.path, link.exact)
+                          isActive(link.path)
                             ? "text-gold bg-gold/10 border-l-4 border-gold"
-                            : "text-primary-foreground/80 hover:text-gold hover:bg-gold/5"
+                            : "text-primary-foreground/50 hover:text-primary-foreground/80 hover:bg-gold/5"
                         )}
                       >
                         {link.label}
