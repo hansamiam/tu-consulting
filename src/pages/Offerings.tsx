@@ -217,6 +217,21 @@ const Offerings = () => {
           </p>
         </div>
 
+        {/* FEATURE 1: Readiness Score Quiz - Instant engagement + lead qualification */}
+        <ReadinessQuiz onComplete={(score) => {
+          if (score >= 70) {
+            toast({ title: "You're ready!", description: "Based on your score, we recommend the Standard or Premium package." });
+          } else {
+            toast({ title: "Let's get you ready!", description: "A free consultation would be the perfect starting point." });
+          }
+        }} />
+
+        {/* FEATURE 2: Live Social Proof Ticker */}
+        <SocialProofTicker />
+
+        {/* FEATURE 3: Outcome Guarantee + ROI Calculator */}
+        <ROICalculator />
+
         {/* Package Pricing */}
         <section className="mb-12 md:mb-20 animate-enter">
           <h2 className="font-heading text-xl sm:text-2xl md:text-3xl font-bold text-center mb-3 md:mb-4 text-foreground px-4">
