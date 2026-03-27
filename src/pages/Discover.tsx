@@ -37,7 +37,7 @@ const Discover = () => {
   const [compareOpen, setCompareOpen] = useState(false);
   const [profile, setProfile] = useState<DiscoverProfile | null>(getStoredProfile());
   const [showProfileGate, setShowProfileGate] = useState(!getStoredProfile());
-  const [viewMode, setViewMode] = useState<"table" | "map">("table");
+  // const [viewMode, setViewMode] = useState<"table" | "map">("table");
 
   const isLocked = !profile;
 
