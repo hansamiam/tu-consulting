@@ -43,6 +43,9 @@ import Tutor from "./pages/prep/Tutor";
 import Analytics from "./pages/prep/Analytics";
 import MockExam from "./pages/prep/MockExam";
 import Achievements from "./pages/prep/Achievements";
+import SpacedReview from "./pages/prep/SpacedReview";
+import SkillRadar from "./pages/prep/SkillRadar";
+import EssayGrader from "./pages/prep/EssayGrader";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +94,9 @@ const App = () => (
           <Route path="/prep/analytics" element={<PrepLayout><Analytics /></PrepLayout>} />
           <Route path="/prep/mock-exam" element={<PrepLayout><MockExam /></PrepLayout>} />
           <Route path="/prep/achievements" element={<PrepLayout><Achievements /></PrepLayout>} />
+          <Route path="/prep/spaced-review" element={<PrepLayout><SpacedReview /></PrepLayout>} />
+          <Route path="/prep/skill-radar" element={<PrepLayout><SkillRadar /></PrepLayout>} />
+          <Route path="/prep/essay-grader" element={<PrepLayout><EssayGrader /></PrepLayout>} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/why-us" element={<WhyTU />} />
           <Route path="/why-us/ru" element={<WhyTURu />} />

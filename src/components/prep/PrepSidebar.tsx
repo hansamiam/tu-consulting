@@ -7,6 +7,7 @@ import {
 import {
   LayoutDashboard, ClipboardCheck, Calendar, BookOpen,
   Bot, BarChart3, Flame, Zap, ArrowLeft, Globe, Trophy, FileText,
+  Brain, PenTool, Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,9 @@ const PrepSidebar = () => {
     { title: t("Practice", "Практика"), path: "/prep/practice", icon: BookOpen },
     { title: t("Mock Exam", "Пробный экзамен"), path: "/prep/mock-exam", icon: FileText },
     { title: t("AI Tutor", "AI Репетитор"), path: "/prep/tutor", icon: Bot },
+    { title: t("Essay Grader", "Оценка эссе"), path: "/prep/essay-grader", icon: PenTool },
+    { title: t("Spaced Review", "Интервал"), path: "/prep/spaced-review", icon: Brain },
+    { title: t("Skill Radar", "Радар"), path: "/prep/skill-radar", icon: Activity },
     { title: t("Analytics", "Аналитика"), path: "/prep/analytics", icon: BarChart3 },
     { title: t("Achievements", "Достижения"), path: "/prep/achievements", icon: Trophy },
   ];
