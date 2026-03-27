@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FileText, Sparkles, Loader2, RotateCcw, Zap, CheckCircle2,
-  AlertTriangle, ArrowUpRight, PenTool, BookOpen, Type, Link2,
+  AlertTriangle, ArrowUpRight, PenTool, BookOpen, Type, Link2, Target,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { essayPrompts } from "@/data/questionBank";
