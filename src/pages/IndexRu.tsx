@@ -35,7 +35,7 @@ const IndexRu = () => {
         <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
           <motion.div {...fadeUp(0.1)} className="mb-4">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold/30 bg-gold/10 text-gold text-xs sm:text-sm font-medium tracking-wide uppercase">
-              <Sparkles className="h-3.5 w-3.5" /> №1 образовательная платформа в Центральной Азии
+              <Sparkles className="h-3.5 w-3.5" /> Discover · Prep · Succeed
             </span>
           </motion.div>
 
