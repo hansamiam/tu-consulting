@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { UniversityResult } from "./types";
+import { WatchlistButton } from "./Watchlist";
 
 interface UniversityTableProps {
   universities: UniversityResult[];
@@ -69,7 +70,7 @@ const getVisaDifficulty = (uni: UniversityResult) => {
     .filter((s): s is number => s != null);
   if (!scores || scores.length === 0) return null;
   const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-  const en = ["Easy", "Moderate", "Hard", "Very Hard", "Extreme"];
+  const en = ["Easy", "Moderate", "Hard", "Hard", "Hard"];
   return { value: avg, label: en[avg - 1] || `${avg}/5` };
 };
 
@@ -251,6 +252,7 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
                           <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span className="text-sm font-semibold text-foreground truncate">{uni.university_name}</span>
+                            <WatchlistButton universityId={uni.university_id} />
                             {uni.website_url && (
                               <a href={uni.website_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
                                 <ExternalLink className="h-3 w-3 text-muted-foreground hover:text-accent shrink-0" />
