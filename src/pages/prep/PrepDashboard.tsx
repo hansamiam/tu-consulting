@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   ClipboardCheck, BookOpen, Bot, BarChart3, Zap, Flame,
   Target, Calendar, Trophy, ArrowRight, CheckCircle2, FileText,
-  ArrowUpRight, Sparkles,
+  ArrowUpRight, Sparkles, Brain, PenTool, Activity,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
