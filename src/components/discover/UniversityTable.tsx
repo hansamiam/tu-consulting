@@ -250,6 +250,14 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+                          {uni.website_url && (
+                            <img
+                              src={`https://logo.clearbit.com/${new URL(uni.website_url).hostname}`}
+                              alt=""
+                              className="h-6 w-6 rounded-sm object-contain shrink-0 bg-white"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                          )}
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span className="text-sm font-semibold text-foreground truncate">{uni.university_name}</span>
                             <WatchlistButton universityId={uni.university_id} />
