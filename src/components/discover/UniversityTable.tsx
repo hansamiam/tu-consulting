@@ -266,7 +266,7 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
                                 <ExternalLink className="h-3 w-3 text-muted-foreground hover:text-accent shrink-0" />
                               </a>
                             )}
-                            {contacts.length > 0 && <Mail className="h-3 w-3 text-accent shrink-0" />}
+                            
                           </div>
                         </div>
                       </TableCell>
