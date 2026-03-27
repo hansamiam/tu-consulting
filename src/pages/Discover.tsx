@@ -126,18 +126,8 @@ const Discover = () => {
           <SmartRecommendations universities={universities} profile={profile} language="en" />
         )}
 
-        {/* View Toggle + Filters */}
+        {/* Filters */}
         <div className="flex items-center gap-3">
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "table" | "map")} className="flex-shrink-0">
-            <TabsList className="h-9">
-              <TabsTrigger value="table" className="text-xs gap-1.5">
-                <Table2 className="h-3.5 w-3.5" /> Table
-              </TabsTrigger>
-              <TabsTrigger value="map" className="text-xs gap-1.5">
-                <Map className="h-3.5 w-3.5" /> Map
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
           <div className="flex-1">
             <DiscoverFilters
               showFilters={showFilters} setShowFilters={setShowFilters}
