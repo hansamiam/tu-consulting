@@ -43,7 +43,7 @@ const labels = {
   },
 };
 
-type SortKey = "name" | "country" | "tuition" | "ielts" | "admit" | "visa" | "scholarships";
+type SortKey = "name" | "country" | "ranking" | "tuition" | "ielts" | "admit" | "visa" | "scholarships";
 type SortDir = "asc" | "desc";
 
 const getIeltsRange = (uni: UniversityResult) => {

@@ -38,6 +38,7 @@ export interface UniversityResult {
   university_name: string;
   country: string;
   city: string;
+  global_ranking: number | null;
   tuition_usd_per_year: number | null;
   cost_of_living_index: number | null;
   language_of_instruction: string | null;
