@@ -152,6 +152,7 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
       switch (sortKey) {
         case "name": return dir * a.university_name.localeCompare(b.university_name);
         case "country": return dir * (`${a.country}${a.city}`).localeCompare(`${b.country}${b.city}`);
+        case "ranking": return dir * ((a.global_ranking ?? 9999) - (b.global_ranking ?? 9999));
         case "tuition": return dir * ((a.tuition_usd_per_year ?? 999999) - (b.tuition_usd_per_year ?? 999999));
         case "ielts": return dir * ((getIeltsRange(a)?.min ?? 99) - (getIeltsRange(b)?.min ?? 99));
         case "admit": return dir * ((getAdmitRate(a) ?? 999) - (getAdmitRate(b) ?? 999));
