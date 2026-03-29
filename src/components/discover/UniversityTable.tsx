@@ -272,6 +272,11 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
                           </div>
                         </div>
                       </TableCell>
+                      <TableCell className="text-sm whitespace-nowrap text-center">
+                        {uni.global_ranking ? (
+                          <Badge variant="outline" className="text-xs font-semibold">#{uni.global_ranking}</Badge>
+                        ) : <span className="text-muted-foreground text-xs">—</span>}
+                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{uni.city}, {uni.country}</TableCell>
                       <TableCell className="text-sm whitespace-nowrap">
                         {uni.tuition_usd_per_year != null ? (
