@@ -24,7 +24,7 @@ interface UniversityTableProps {
 
 const labels = {
   en: {
-    university: "University", location: "Location", tuition: "Tuition/yr",
+    university: "University", location: "Location", ranking: "Ranking", tuition: "Tuition/yr",
     ielts: "IELTS", scholarships: "Scholarships", programs: "Programs",
     foundation: "Foundation", noResults: "No universities found",
     noResultsSub: "Try adjusting your search or filters.", admitRate: "Admit Rate",
@@ -33,7 +33,7 @@ const labels = {
     contacts: "Contacts", insights: "Insights & Stats", applicationTips: "Tips",
   },
   ru: {
-    university: "Университет", location: "Город", tuition: "Стоимость/год",
+    university: "Университет", location: "Город", ranking: "Рейтинг", tuition: "Стоимость/год",
     ielts: "IELTS", scholarships: "Стипендии", programs: "Программы",
     foundation: "Подг. год", noResults: "Университеты не найдены",
     noResultsSub: "Попробуйте изменить параметры поиска.", admitRate: "Приём",
