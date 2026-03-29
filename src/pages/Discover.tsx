@@ -14,10 +14,11 @@ import { CompareDrawer } from "@/components/discover/CompareDrawer";
 import { CanIGetInDialog } from "@/components/discover/CanIGetInDialog";
 import { CostCalculatorDialog } from "@/components/discover/CostCalculatorDialog";
 import { DiscoverProfileGate, getStoredProfile, DiscoverProfile, LockedOverlay } from "@/components/discover/DiscoverProfileGate";
-// import { UniversityMap } from "@/components/discover/UniversityMap"; // Hidden for now
-// import { DeadlineTracker } from "@/components/discover/DeadlineTracker"; // Hidden for now
 import { WatchlistDrawer } from "@/components/discover/Watchlist";
 import { SmartRecommendations } from "@/components/discover/SmartRecommendations";
+import { DiscoverStats } from "@/components/discover/DiscoverStats";
+import { ScholarshipSpotlight } from "@/components/discover/ScholarshipSpotlight";
+import { ExportButton } from "@/components/discover/ExportButton";
 
 const Discover = () => {
   const [universities, setUniversities] = useState<UniversityResult[]>([]);
@@ -37,7 +38,6 @@ const Discover = () => {
   const [compareOpen, setCompareOpen] = useState(false);
   const [profile, setProfile] = useState<DiscoverProfile | null>(getStoredProfile());
   const [showProfileGate, setShowProfileGate] = useState(!getStoredProfile());
-  // const [viewMode, setViewMode] = useState<"table" | "map">("table");
 
   const isLocked = !profile;
 
@@ -60,9 +60,11 @@ const Discover = () => {
   };
 
   const filtered = universities.filter((uni) => {
-    if (search && !uni.university_name.toLowerCase().includes(search.toLowerCase()) &&
-        !uni.country.toLowerCase().includes(search.toLowerCase()) &&
-        !uni.city.toLowerCase().includes(search.toLowerCase())) return false;
+    const q = search.toLowerCase();
+    if (q && !uni.university_name.toLowerCase().includes(q) &&
+        !uni.country.toLowerCase().includes(q) &&
+        !uni.city.toLowerCase().includes(q) &&
+        !uni.programs?.some(p => p.program_name.toLowerCase().includes(q) || p.field_of_study.toLowerCase().includes(q))) return false;
     if (countryFilter !== "all" && uni.country !== countryFilter) return false;
     if (maxTuition && uni.tuition_usd_per_year && uni.tuition_usd_per_year > Number(maxTuition)) return false;
     if (fullyFunded && !uni.scholarships?.some((s) => s.coverage_type === "full_ride")) return false;
@@ -88,7 +90,6 @@ const Discover = () => {
     <div className="min-h-screen bg-background">
       <Navigation language="en" />
 
-      {/* Profile Gate */}
       <DiscoverProfileGate
         open={showProfileGate}
         onComplete={(p) => { setProfile(p); setShowProfileGate(false); }}
@@ -106,7 +107,7 @@ const Discover = () => {
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="max-w-2xl mx-auto relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
-            <Input placeholder="Search by university, country, or city..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-12 h-14 text-base bg-card border-border rounded-xl shadow-lg" />
+            <Input placeholder="Search by university, country, city, or program..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-12 h-14 text-base bg-card border-border rounded-xl shadow-lg" />
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex items-center justify-center gap-3 mt-5 flex-wrap">
             <LockedOverlay isLocked={isLocked}>
@@ -116,15 +117,22 @@ const Discover = () => {
               </div>
             </LockedOverlay>
             <WatchlistDrawer universities={universities} language="en" />
+            <ExportButton universities={filtered} language="en" />
           </motion.div>
         </div>
       </section>
 
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+        {/* Stats Dashboard */}
+        {!loading && <DiscoverStats universities={filtered} language="en" />}
+
         {/* Smart Recommendations */}
         {profile && (
           <SmartRecommendations universities={universities} profile={profile} language="en" />
         )}
+
+        {/* Scholarship Spotlight */}
+        {!loading && <ScholarshipSpotlight universities={filtered} language="en" />}
 
         {/* Filters */}
         <div className="flex items-center gap-3">

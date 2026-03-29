@@ -24,7 +24,7 @@ interface UniversityTableProps {
 
 const labels = {
   en: {
-    university: "University", location: "Location", tuition: "Tuition/yr",
+    university: "University", location: "Location", ranking: "Ranking", tuition: "Tuition/yr",
     ielts: "IELTS", scholarships: "Scholarships", programs: "Programs",
     foundation: "Foundation", noResults: "No universities found",
     noResultsSub: "Try adjusting your search or filters.", admitRate: "Admit Rate",
@@ -33,7 +33,7 @@ const labels = {
     contacts: "Contacts", insights: "Insights & Stats", applicationTips: "Tips",
   },
   ru: {
-    university: "Университет", location: "Город", tuition: "Стоимость/год",
+    university: "Университет", location: "Город", ranking: "Рейтинг", tuition: "Стоимость/год",
     ielts: "IELTS", scholarships: "Стипендии", programs: "Программы",
     foundation: "Подг. год", noResults: "Университеты не найдены",
     noResultsSub: "Попробуйте изменить параметры поиска.", admitRate: "Приём",
@@ -43,7 +43,7 @@ const labels = {
   },
 };
 
-type SortKey = "name" | "country" | "tuition" | "ielts" | "admit" | "visa" | "scholarships";
+type SortKey = "name" | "country" | "ranking" | "tuition" | "ielts" | "admit" | "visa" | "scholarships";
 type SortDir = "asc" | "desc";
 
 const getIeltsRange = (uni: UniversityResult) => {
@@ -152,6 +152,7 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
       switch (sortKey) {
         case "name": return dir * a.university_name.localeCompare(b.university_name);
         case "country": return dir * (`${a.country}${a.city}`).localeCompare(`${b.country}${b.city}`);
+        case "ranking": return dir * ((a.global_ranking ?? 9999) - (b.global_ranking ?? 9999));
         case "tuition": return dir * ((a.tuition_usd_per_year ?? 999999) - (b.tuition_usd_per_year ?? 999999));
         case "ielts": return dir * ((getIeltsRange(a)?.min ?? 99) - (getIeltsRange(b)?.min ?? 99));
         case "admit": return dir * ((getAdmitRate(a) ?? 999) - (getAdmitRate(b) ?? 999));
@@ -213,6 +214,7 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
               <TableRow className="bg-muted/50">
                 {onToggleCompare && <TableHead className="w-10"></TableHead>}
                 <SortableHead col="name" className="min-w-[200px]">{l.university}</SortableHead>
+                <SortableHead col="ranking">{l.ranking}</SortableHead>
                 <SortableHead col="country">{l.location}</SortableHead>
                 <SortableHead col="tuition">{l.tuition}</SortableHead>
                 <SortableHead col="ielts">{l.ielts}</SortableHead>
@@ -270,6 +272,11 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
                           </div>
                         </div>
                       </TableCell>
+                      <TableCell className="text-sm whitespace-nowrap text-center">
+                        {uni.global_ranking ? (
+                          <Badge variant="outline" className="text-xs font-semibold">#{uni.global_ranking}</Badge>
+                        ) : <span className="text-muted-foreground text-xs">—</span>}
+                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{uni.city}, {uni.country}</TableCell>
                       <TableCell className="text-sm whitespace-nowrap">
                         {uni.tuition_usd_per_year != null ? (
@@ -313,7 +320,7 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
 
                     {isOpen && (
                       <TableRow key={`${uni.university_id}-detail`} className="bg-muted/10 hover:bg-muted/10">
-                        <TableCell colSpan={onToggleCompare ? 9 : 8} className="p-0">
+                        <TableCell colSpan={onToggleCompare ? 10 : 9} className="p-0">
                           <div className="p-5 border-t border-border">
                             <Tabs defaultValue="programs" className="w-full">
                               <TabsList className="mb-4 bg-muted/60 h-9">

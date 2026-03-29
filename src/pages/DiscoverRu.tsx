@@ -13,6 +13,11 @@ import { UniversityTable } from "@/components/discover/UniversityTable";
 import { CompareDrawer } from "@/components/discover/CompareDrawer";
 import { CanIGetInDialog } from "@/components/discover/CanIGetInDialog";
 import { CostCalculatorDialog } from "@/components/discover/CostCalculatorDialog";
+import { DiscoverProfileGate, getStoredProfile, DiscoverProfile, LockedOverlay } from "@/components/discover/DiscoverProfileGate";
+import { SmartRecommendations } from "@/components/discover/SmartRecommendations";
+import { DiscoverStats } from "@/components/discover/DiscoverStats";
+import { ScholarshipSpotlight } from "@/components/discover/ScholarshipSpotlight";
+import { ExportButton } from "@/components/discover/ExportButton";
 
 const DiscoverRu = () => {
   const [universities, setUniversities] = useState<UniversityResult[]>([]);
@@ -30,6 +35,10 @@ const DiscoverRu = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [compareIds, setCompareIds] = useState<Set<string>>(new Set());
   const [compareOpen, setCompareOpen] = useState(false);
+  const [profile, setProfile] = useState<DiscoverProfile | null>(getStoredProfile());
+  const [showProfileGate, setShowProfileGate] = useState(!getStoredProfile());
+
+  const isLocked = !profile;
 
   useEffect(() => { fetchUniversities(); }, []);
 
@@ -50,9 +59,11 @@ const DiscoverRu = () => {
   };
 
   const filtered = universities.filter((uni) => {
-    if (search && !uni.university_name.toLowerCase().includes(search.toLowerCase()) &&
-        !uni.country.toLowerCase().includes(search.toLowerCase()) &&
-        !uni.city.toLowerCase().includes(search.toLowerCase())) return false;
+    const q = search.toLowerCase();
+    if (q && !uni.university_name.toLowerCase().includes(q) &&
+        !uni.country.toLowerCase().includes(q) &&
+        !uni.city.toLowerCase().includes(q) &&
+        !uni.programs?.some(p => p.program_name.toLowerCase().includes(q) || p.field_of_study.toLowerCase().includes(q))) return false;
     if (countryFilter !== "all" && uni.country !== countryFilter) return false;
     if (maxTuition && uni.tuition_usd_per_year && uni.tuition_usd_per_year > Number(maxTuition)) return false;
     if (fullyFunded && !uni.scholarships?.some((s) => s.coverage_type === "full_ride")) return false;
@@ -77,6 +88,13 @@ const DiscoverRu = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation language="ru" />
+
+      <DiscoverProfileGate
+        open={showProfileGate}
+        onComplete={(p) => { setProfile(p); setShowProfileGate(false); }}
+        language="ru"
+      />
+
       <section className="bg-primary py-12 sm:py-16">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-3xl sm:text-5xl font-heading font-bold text-primary-foreground mb-4">
@@ -87,17 +105,33 @@ const DiscoverRu = () => {
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="max-w-2xl mx-auto relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
-            <Input placeholder="Поиск по университету, стране или городу..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-12 h-14 text-base bg-card border-border rounded-xl shadow-lg" />
+            <Input placeholder="Поиск по университету, стране, городу или программе..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-12 h-14 text-base bg-card border-border rounded-xl shadow-lg" />
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex items-center justify-center gap-3 mt-5 flex-wrap">
-            <CanIGetInDialog universities={filtered} language="ru" />
-            <CostCalculatorDialog universities={filtered} language="ru" />
+            <LockedOverlay isLocked={isLocked}>
+              <div className="flex gap-3">
+                <CanIGetInDialog universities={filtered} language="ru" />
+                <CostCalculatorDialog universities={filtered} language="ru" />
+              </div>
+            </LockedOverlay>
             <WatchlistDrawer universities={universities} language="ru" />
+            <ExportButton universities={filtered} language="ru" />
           </motion.div>
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+        {/* Stats Dashboard */}
+        {!loading && <DiscoverStats universities={filtered} language="ru" />}
+
+        {/* Smart Recommendations */}
+        {profile && (
+          <SmartRecommendations universities={universities} profile={profile} language="ru" />
+        )}
+
+        {/* Scholarship Spotlight */}
+        {!loading && <ScholarshipSpotlight universities={filtered} language="ru" />}
+
         <DiscoverFilters
           showFilters={showFilters} setShowFilters={setShowFilters}
           countryFilter={countryFilter} setCountryFilter={setCountryFilter}
@@ -111,7 +145,7 @@ const DiscoverRu = () => {
         />
 
         {compareIds.size > 0 && (
-          <div className="flex items-center gap-3 mb-4 p-3 bg-accent/10 border border-accent/30 rounded-lg">
+          <div className="flex items-center gap-3 p-3 bg-accent/10 border border-accent/30 rounded-lg">
             <Scale className="h-4 w-4 text-accent" />
             <span className="text-sm font-medium">{compareIds.size} выбрано</span>
             <Button size="sm" variant="default" className="ml-auto gap-1.5" onClick={() => setCompareOpen(true)} disabled={compareIds.size < 2}>
