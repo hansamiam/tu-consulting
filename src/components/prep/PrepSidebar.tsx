@@ -36,6 +36,9 @@ const PrepSidebar = () => {
     { title: t("XP Store", "Магазин XP"), path: "/prep/xp-store", icon: ShoppingBag },
     { title: t("Challenges", "Задания"), path: "/prep/challenges", icon: Swords },
     { title: t("Leaderboard", "Рейтинг"), path: "/prep/leaderboard", icon: Users },
+    { title: t("Focus Timer", "Таймер"), path: "/prep/focus-timer", icon: Timer },
+    { title: t("Mistake Journal", "Журнал ошибок"), path: "/prep/mistake-journal", icon: BookX },
+    { title: t("Progress Report", "Отчёт"), path: "/prep/progress-report", icon: FileBarChart },
   ];
 
   const ieltsTools = [
