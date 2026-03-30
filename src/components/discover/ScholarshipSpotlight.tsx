@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Award, DollarSign, Calendar, ChevronRight } from "lucide-react";
+import { Award, DollarSign, Calendar, ShieldCheck, ShieldAlert } from "lucide-react";
 import { UniversityResult } from "./types";
 import { motion } from "framer-motion";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Props {
   universities: UniversityResult[];
