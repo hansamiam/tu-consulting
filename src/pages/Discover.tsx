@@ -19,6 +19,9 @@ import { SmartRecommendations } from "@/components/discover/SmartRecommendations
 import { DiscoverStats } from "@/components/discover/DiscoverStats";
 import { ScholarshipSpotlight } from "@/components/discover/ScholarshipSpotlight";
 import { ExportButton } from "@/components/discover/ExportButton";
+import { ApplicationTimeline } from "@/components/discover/ApplicationTimeline";
+import { TuitionHeatmap } from "@/components/discover/TuitionHeatmap";
+import { QuickFacts } from "@/components/discover/QuickFacts";
 
 const Discover = () => {
   const [universities, setUniversities] = useState<UniversityResult[]>([]);
