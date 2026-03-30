@@ -85,6 +85,32 @@ const ScoreBar = ({ value, max = 5, label }: { value: number; max?: number; labe
   </div>
 );
 
+const UnverifiedBadge = ({ language }: { language: "en" | "ru" }) => (
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <ShieldAlert className="h-3 w-3 text-amber-500 inline ml-0.5 shrink-0" />
+      </TooltipTrigger>
+      <TooltipContent className="max-w-[200px]">
+        <p className="text-xs">{language === "ru" ? "Не проверено — данные могут быть неточными" : "Unverified — data may be inaccurate"}</p>
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
+
+const VerifiedBadge = () => (
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <ShieldCheck className="h-3 w-3 text-green-500 inline ml-0.5 shrink-0" />
+      </TooltipTrigger>
+      <TooltipContent>
+        <p className="text-xs">Verified</p>
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
+
 const ContactCard = ({ contact }: { contact: UniversityResult["university_contacts"][0] }) => (
   <div className="bg-card border border-border rounded-lg p-4 space-y-3">
     <div className="flex items-start gap-3">
