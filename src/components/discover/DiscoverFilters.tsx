@@ -186,6 +186,27 @@ export const DiscoverFilters = ({
                 <Switch checked={foundationYear} onCheckedChange={setFoundationYear} id="foundation-year" />
                 <Label htmlFor="foundation-year" className="text-sm cursor-pointer">{l.foundationYear}</Label>
               </div>
+              {setGapYearOnly && (
+                <div className="flex items-center gap-3">
+                  <Switch checked={gapYearOnly || false} onCheckedChange={setGapYearOnly} id="gap-year" />
+                  <Label htmlFor="gap-year" className="text-sm cursor-pointer">{l.gapYear}</Label>
+                </div>
+              )}
+              {setRankingFilter && (
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1.5 block">{l.ranking}</Label>
+                  <Select value={rankingFilter || "all"} onValueChange={setRankingFilter}>
+                    <SelectTrigger><SelectValue placeholder={l.allRankings} /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{l.allRankings}</SelectItem>
+                      <SelectItem value="50">{l.top50}</SelectItem>
+                      <SelectItem value="100">{l.top100}</SelectItem>
+                      <SelectItem value="200">{l.top200}</SelectItem>
+                      <SelectItem value="500">{l.top500}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               {activeFilterCount > 0 && (
                 <div className="flex items-center">
                   <button
@@ -193,6 +214,8 @@ export const DiscoverFilters = ({
                       setCountryFilter("all"); setDegreeFilter("all"); setFieldFilter("all");
                       setFullyFunded(false); setIeltsOptional(false);
                       setFoundationYear(false); setMaxTuition("");
+                      setGapYearOnly?.(false); setRankingFilter?.("all");
+                      setLanguageFilter?.("all");
                     }}
                     className="text-sm text-destructive hover:underline flex items-center gap-1"
                   >
