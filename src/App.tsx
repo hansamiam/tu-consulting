@@ -112,6 +112,9 @@ const App = () => (
           <Route path="/prep/writing-templates" element={<PrepLayout><WritingTemplates /></PrepLayout>} />
           <Route path="/prep/sat-words" element={<PrepLayout><SATWordList /></PrepLayout>} />
           <Route path="/prep/formula-sheet" element={<PrepLayout><FormulaSheet /></PrepLayout>} />
+          <Route path="/prep/xp-store" element={<PrepLayout><XPStore /></PrepLayout>} />
+          <Route path="/prep/challenges" element={<PrepLayout><DailyChallenges /></PrepLayout>} />
+          <Route path="/prep/leaderboard" element={<PrepLayout><Leaderboard /></PrepLayout>} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/why-us" element={<WhyTU />} />
           <Route path="/why-us/ru" element={<WhyTURu />} />

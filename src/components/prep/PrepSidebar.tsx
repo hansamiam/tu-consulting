@@ -33,6 +33,9 @@ const PrepSidebar = () => {
     { title: t("Skill Radar", "Радар"), path: "/prep/skill-radar", icon: Activity },
     { title: t("Analytics", "Аналитика"), path: "/prep/analytics", icon: BarChart3 },
     { title: t("Achievements", "Достижения"), path: "/prep/achievements", icon: Trophy },
+    { title: t("XP Store", "Магазин XP"), path: "/prep/xp-store", icon: ShoppingBag },
+    { title: t("Challenges", "Задания"), path: "/prep/challenges", icon: Swords },
+    { title: t("Leaderboard", "Рейтинг"), path: "/prep/leaderboard", icon: Users },
   ];
 
   const ieltsTools = [
