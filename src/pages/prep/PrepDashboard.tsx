@@ -8,7 +8,7 @@ import {
   ClipboardCheck, BookOpen, Bot, BarChart3, Zap, Flame,
   Target, Calendar, Trophy, ArrowRight, CheckCircle2, FileText,
   ArrowUpRight, Sparkles, Brain, PenTool, Activity, Languages, Calculator, BookMarked, FileEdit,
-  ShoppingBag, Swords, Users,
+  ShoppingBag, Swords, Users, Timer, BookX, FileBarChart, BookOpenCheck,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -44,6 +44,10 @@ const PrepDashboard = () => {
     { icon: ShoppingBag, label: t("XP Store", "Магазин XP"), path: "/prep/xp-store", color: "text-accent", desc: t("Spend XP on rewards", "Трать XP на награды") },
     { icon: Swords, label: t("Challenges", "Задания"), path: "/prep/challenges", color: "text-red-500", desc: t("Bonus XP missions", "Бонусные миссии") },
     { icon: Users, label: t("Leaderboard", "Рейтинг"), path: "/prep/leaderboard", color: "text-indigo-500", desc: t("Compete & climb", "Соревнуйтесь") },
+    { icon: Timer, label: t("Focus Timer", "Таймер"), path: "/prep/focus-timer", color: "text-teal-500", desc: t("Pomodoro + XP", "Помодоро + XP") },
+    { icon: BookX, label: t("Mistake Journal", "Журнал ошибок"), path: "/prep/mistake-journal", color: "text-rose-600", desc: t("Track & review", "Отслеживай ошибки") },
+    { icon: FileBarChart, label: t("Progress Report", "Отчёт"), path: "/prep/progress-report", color: "text-sky-500", desc: t("Weekly insights", "Недельная сводка") },
+    { icon: BookOpenCheck, label: t("Reading Analyzer", "Анализ текста"), path: "/prep/reading-analyzer", color: "text-lime-600", desc: t("Timed passages", "Тексты на время") },
   ];
 
   return (

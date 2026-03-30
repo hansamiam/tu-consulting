@@ -8,7 +8,7 @@ import {
   LayoutDashboard, ClipboardCheck, Calendar, BookOpen,
   Bot, BarChart3, Flame, Zap, ArrowLeft, Globe, Trophy, FileText,
   Brain, PenTool, Activity, Languages, Calculator, BookMarked, FileEdit,
-  ShoppingBag, Swords, Users,
+  ShoppingBag, Swords, Users, Timer, BookX, FileBarChart, BookOpenCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -36,11 +36,15 @@ const PrepSidebar = () => {
     { title: t("XP Store", "Магазин XP"), path: "/prep/xp-store", icon: ShoppingBag },
     { title: t("Challenges", "Задания"), path: "/prep/challenges", icon: Swords },
     { title: t("Leaderboard", "Рейтинг"), path: "/prep/leaderboard", icon: Users },
+    { title: t("Focus Timer", "Таймер"), path: "/prep/focus-timer", icon: Timer },
+    { title: t("Mistake Journal", "Журнал ошибок"), path: "/prep/mistake-journal", icon: BookX },
+    { title: t("Progress Report", "Отчёт"), path: "/prep/progress-report", icon: FileBarChart },
   ];
 
   const ieltsTools = [
     { title: t("IELTS Flashcards", "IELTS Карточки"), path: "/prep/ielts-flashcards", icon: Languages },
     { title: t("Writing Templates", "Шаблоны письма"), path: "/prep/writing-templates", icon: FileEdit },
+    { title: t("Reading Analyzer", "Анализ текста"), path: "/prep/reading-analyzer", icon: BookOpenCheck },
   ];
 
   const satTools = [
