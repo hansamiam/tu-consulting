@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   ClipboardCheck, BookOpen, Bot, BarChart3, Zap, Flame,
   Target, Calendar, Trophy, ArrowRight, CheckCircle2, FileText,
-  ArrowUpRight, Sparkles, Brain, PenTool, Activity,
+  ArrowUpRight, Sparkles, Brain, PenTool, Activity, Languages, Calculator, BookMarked, FileEdit,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -36,6 +36,10 @@ const PrepDashboard = () => {
     { icon: Brain, label: t("Spaced Review", "Интервал"), path: "/prep/spaced-review", color: "text-cyan-500", desc: t("SM-2 algorithm", "Алгоритм SM-2") },
     { icon: PenTool, label: t("Essay Grader", "Оценка эссе"), path: "/prep/essay-grader", color: "text-pink-500", desc: t("4-criteria rubric", "4 критерия") },
     { icon: Activity, label: t("Skill Radar", "Радар"), path: "/prep/skill-radar", color: "text-orange-500", desc: t("Deep analytics", "Глубокая аналитика") },
+    { icon: Languages, label: t("IELTS Flashcards", "IELTS Карточки"), path: "/prep/ielts-flashcards", color: "text-emerald-500", desc: t("30 academic words", "30 акад. слов") },
+    { icon: FileEdit, label: t("Writing Templates", "Шаблоны"), path: "/prep/writing-templates", color: "text-rose-500", desc: t("Task 1 & 2", "Task 1 и 2") },
+    { icon: BookMarked, label: t("SAT Vocabulary", "SAT Словарь"), path: "/prep/sat-words", color: "text-violet-500", desc: t("40 SAT words", "40 SAT слов") },
+    { icon: Calculator, label: t("Formula Sheet", "Формулы"), path: "/prep/formula-sheet", color: "text-amber-500", desc: t("35+ formulas", "35+ формул") },
   ];
 
   return (

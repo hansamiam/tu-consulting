@@ -7,7 +7,7 @@ import {
 import {
   LayoutDashboard, ClipboardCheck, Calendar, BookOpen,
   Bot, BarChart3, Flame, Zap, ArrowLeft, Globe, Trophy, FileText,
-  Brain, PenTool, Activity,
+  Brain, PenTool, Activity, Languages, Calculator, BookMarked, FileEdit,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +32,16 @@ const PrepSidebar = () => {
     { title: t("Skill Radar", "Радар"), path: "/prep/skill-radar", icon: Activity },
     { title: t("Analytics", "Аналитика"), path: "/prep/analytics", icon: BarChart3 },
     { title: t("Achievements", "Достижения"), path: "/prep/achievements", icon: Trophy },
+  ];
+
+  const ieltsTools = [
+    { title: t("IELTS Flashcards", "IELTS Карточки"), path: "/prep/ielts-flashcards", icon: Languages },
+    { title: t("Writing Templates", "Шаблоны письма"), path: "/prep/writing-templates", icon: FileEdit },
+  ];
+
+  const satTools = [
+    { title: t("SAT Vocabulary", "SAT Словарь"), path: "/prep/sat-words", icon: BookMarked },
+    { title: t("Formula Sheet", "Формулы"), path: "/prep/formula-sheet", icon: Calculator },
   ];
 
   const isActive = (path: string, exact?: boolean) =>
@@ -84,6 +94,56 @@ const PrepSidebar = () => {
                       isActive(item.path, item.exact)
                         ? "bg-accent/15 text-accent font-medium"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    )}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {!collapsed && <span>{item.title}</span>}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* IELTS Tools */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-muted-foreground text-xs uppercase tracking-wider">
+            {t("IELTS Tools", "IELTS")}
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {ieltsTools.map((item) => (
+                <SidebarMenuItem key={item.path}>
+                  <SidebarMenuButton
+                    onClick={() => navigate(item.path)}
+                    className={cn(
+                      "transition-colors",
+                      isActive(item.path) ? "bg-accent/15 text-accent font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    )}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {!collapsed && <span>{item.title}</span>}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* SAT Tools */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-muted-foreground text-xs uppercase tracking-wider">
+            {t("SAT Tools", "SAT")}
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {satTools.map((item) => (
+                <SidebarMenuItem key={item.path}>
+                  <SidebarMenuButton
+                    onClick={() => navigate(item.path)}
+                    className={cn(
+                      "transition-colors",
+                      isActive(item.path) ? "bg-accent/15 text-accent font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     )}
                   >
                     <item.icon className="h-4 w-4" />
