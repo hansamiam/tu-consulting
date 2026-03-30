@@ -8,6 +8,7 @@ import {
   ClipboardCheck, BookOpen, Bot, BarChart3, Zap, Flame,
   Target, Calendar, Trophy, ArrowRight, CheckCircle2, FileText,
   ArrowUpRight, Sparkles, Brain, PenTool, Activity, Languages, Calculator, BookMarked, FileEdit,
+  ShoppingBag, Swords, Users,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
