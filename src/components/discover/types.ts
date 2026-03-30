@@ -40,6 +40,7 @@ export interface UniversityResult {
   city: string;
   global_ranking: number | null;
   tuition_usd_per_year: number | null;
+  tuition_verified: boolean | null;
   cost_of_living_index: number | null;
   language_of_instruction: string | null;
   website_url: string | null;
@@ -58,6 +59,7 @@ export interface UniversityResult {
       sat_score_min: number | null;
       gpa_min: number | null;
       application_deadline: string | null;
+      verified: boolean | null;
     }[];
     applications: {
       acceptance_rate: number | null;
@@ -72,6 +74,7 @@ export interface UniversityResult {
     stipend_amount: number | null;
     eligibility_requirements: string | null;
     application_deadline: string | null;
+    verified: boolean | null;
   }[];
   university_contacts: UniversityContact[];
   university_insights: UniversityInsight[];

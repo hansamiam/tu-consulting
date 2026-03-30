@@ -9,8 +9,9 @@ import {
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
   Mail, Linkedin, MessageCircle, Send, Clock, User, Building2,
   Briefcase, DollarSign, Star, Users, Home,
-  AlertTriangle, Plane, TrendingUp, Heart, Lightbulb
+  AlertTriangle, Plane, TrendingUp, Heart, Lightbulb, ShieldCheck, ShieldAlert,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState, useMemo } from "react";
 import { UniversityResult } from "./types";
 import { WatchlistButton } from "./Watchlist";
