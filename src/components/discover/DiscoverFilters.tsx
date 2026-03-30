@@ -23,6 +23,12 @@ interface DiscoverFiltersProps {
   setFoundationYear: (v: boolean) => void;
   maxTuition: string;
   setMaxTuition: (v: string) => void;
+  gapYearOnly?: boolean;
+  setGapYearOnly?: (v: boolean) => void;
+  rankingFilter?: string;
+  setRankingFilter?: (v: string) => void;
+  languageFilter?: string;
+  setLanguageFilter?: (v: string) => void;
   countries: string[];
   fields: string[];
   resultCount: number;
