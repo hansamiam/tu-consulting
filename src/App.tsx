@@ -55,6 +55,10 @@ import FormulaSheet from "./pages/prep/FormulaSheet";
 import XPStore from "./pages/prep/XPStore";
 import DailyChallenges from "./pages/prep/DailyChallenges";
 import Leaderboard from "./pages/prep/Leaderboard";
+import FocusTimer from "./pages/prep/FocusTimer";
+import MistakeJournal from "./pages/prep/MistakeJournal";
+import ProgressReport from "./pages/prep/ProgressReport";
+import ReadingAnalyzer from "./pages/prep/ReadingAnalyzer";
 const queryClient = new QueryClient();
 
 const App = () => (
