@@ -22,6 +22,10 @@ import { ExportButton } from "@/components/discover/ExportButton";
 import { ApplicationTimeline } from "@/components/discover/ApplicationTimeline";
 import { TuitionHeatmap } from "@/components/discover/TuitionHeatmap";
 import { QuickFacts } from "@/components/discover/QuickFacts";
+import { ProgramFinderDialog } from "@/components/discover/ProgramFinderDialog";
+import { CountryProfileDialog } from "@/components/discover/CountryProfileDialog";
+import { UniversityWorldMap } from "@/components/discover/UniversityWorldMap";
+import { FieldAnalytics } from "@/components/discover/FieldAnalytics";
 
 const Discover = () => {
   const [universities, setUniversities] = useState<UniversityResult[]>([]);
