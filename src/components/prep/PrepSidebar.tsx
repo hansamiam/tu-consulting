@@ -34,6 +34,16 @@ const PrepSidebar = () => {
     { title: t("Achievements", "Достижения"), path: "/prep/achievements", icon: Trophy },
   ];
 
+  const ieltsTools = [
+    { title: t("IELTS Flashcards", "IELTS Карточки"), path: "/prep/ielts-flashcards", icon: Languages },
+    { title: t("Writing Templates", "Шаблоны письма"), path: "/prep/writing-templates", icon: FileEdit },
+  ];
+
+  const satTools = [
+    { title: t("SAT Vocabulary", "SAT Словарь"), path: "/prep/sat-words", icon: BookMarked },
+    { title: t("Formula Sheet", "Формулы"), path: "/prep/formula-sheet", icon: Calculator },
+  ];
+
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);
 
