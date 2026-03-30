@@ -148,6 +148,17 @@ const Discover = () => {
         {/* Scholarship Spotlight */}
         {!loading && <ScholarshipSpotlight universities={filtered} language="en" />}
 
+        {/* Quick Facts + Timeline + Heatmap */}
+        {!loading && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <QuickFacts universities={filtered} language="en" />
+            <ApplicationTimeline universities={filtered} language="en" />
+          </div>
+        )}
+
+        {/* Tuition Heatmap */}
+        {!loading && <TuitionHeatmap universities={filtered} language="en" />}
+
         {/* Filters */}
         <div className="flex items-center gap-3">
           <div className="flex-1">
