@@ -123,6 +123,17 @@ const Discover = () => {
       </section>
 
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+        {/* Data Accuracy Notice */}
+        <div className="flex items-start gap-3 p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl text-sm">
+          <ShieldAlert className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold text-foreground">Data Accuracy Notice</p>
+            <p className="text-muted-foreground text-xs mt-1">
+              University names, countries, and websites are verified. Tuition, scholarship amounts, and admission requirements marked with ⚠️ are estimates pending manual verification.
+              Always confirm details on the official university website before making decisions.
+            </p>
+          </div>
+        </div>
         {/* Stats Dashboard */}
         {!loading && <DiscoverStats universities={filtered} language="en" />}
 
