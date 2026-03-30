@@ -43,6 +43,9 @@ const Discover = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [compareIds, setCompareIds] = useState<Set<string>>(new Set());
   const [compareOpen, setCompareOpen] = useState(false);
+  const [gapYearOnly, setGapYearOnly] = useState(false);
+  const [rankingFilter, setRankingFilter] = useState("all");
+  const [languageFilter, setLanguageFilter] = useState("all");
   const [profile, setProfile] = useState<DiscoverProfile | null>(getStoredProfile());
   const [showProfileGate, setShowProfileGate] = useState(!getStoredProfile());
 
