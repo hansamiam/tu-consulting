@@ -5,7 +5,7 @@ import { Footer } from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Scale, ShieldAlert } from "lucide-react";
+import { Search, Scale, ShieldAlert, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { UniversityResult } from "@/components/discover/types";
 import { DiscoverFilters } from "@/components/discover/DiscoverFilters";
@@ -22,6 +22,10 @@ import { ExportButton } from "@/components/discover/ExportButton";
 import { ApplicationTimeline } from "@/components/discover/ApplicationTimeline";
 import { TuitionHeatmap } from "@/components/discover/TuitionHeatmap";
 import { QuickFacts } from "@/components/discover/QuickFacts";
+import { ProgramFinderDialog } from "@/components/discover/ProgramFinderDialog";
+import { CountryProfileDialog } from "@/components/discover/CountryProfileDialog";
+import { UniversityWorldMap } from "@/components/discover/UniversityWorldMap";
+import { FieldAnalytics } from "@/components/discover/FieldAnalytics";
 
 const Discover = () => {
   const [universities, setUniversities] = useState<UniversityResult[]>([]);
@@ -39,6 +43,9 @@ const Discover = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [compareIds, setCompareIds] = useState<Set<string>>(new Set());
   const [compareOpen, setCompareOpen] = useState(false);
+  const [gapYearOnly, setGapYearOnly] = useState(false);
+  const [rankingFilter, setRankingFilter] = useState("all");
+  const [languageFilter, setLanguageFilter] = useState("all");
   const [profile, setProfile] = useState<DiscoverProfile | null>(getStoredProfile());
   const [showProfileGate, setShowProfileGate] = useState(!getStoredProfile());
 
@@ -75,6 +82,9 @@ const Discover = () => {
     if (fieldFilter !== "all" && !uni.programs?.some((p) => p.field_of_study === fieldFilter)) return false;
     if (ieltsOptional && !uni.programs?.some((p) => p.admission_requirements?.some((a) => !a.ielts_required))) return false;
     if (foundationYear && !uni.foundation_year_available) return false;
+    if (gapYearOnly && !uni.gap_year_accepted) return false;
+    if (rankingFilter !== "all" && (!uni.global_ranking || uni.global_ranking > Number(rankingFilter))) return false;
+    if (languageFilter !== "all" && uni.language_of_instruction !== languageFilter) return false;
     return true;
   });
 
@@ -121,6 +131,8 @@ const Discover = () => {
             </LockedOverlay>
             <WatchlistDrawer universities={universities} language="en" />
             <ExportButton universities={filtered} language="en" />
+            <ProgramFinderDialog universities={filtered} language="en" />
+            <CountryProfileDialog universities={filtered} language="en" />
           </motion.div>
         </div>
       </section>
@@ -156,8 +168,16 @@ const Discover = () => {
           </div>
         )}
 
-        {/* Tuition Heatmap */}
-        {!loading && <TuitionHeatmap universities={filtered} language="en" />}
+        {/* Tuition Heatmap + Field Analytics */}
+        {!loading && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <TuitionHeatmap universities={filtered} language="en" />
+            <FieldAnalytics universities={filtered} language="en" />
+          </div>
+        )}
+
+        {/* World Map */}
+        {!loading && <UniversityWorldMap universities={filtered} language="en" />}
 
         {/* Filters */}
         <div className="flex items-center gap-3">
@@ -171,6 +191,9 @@ const Discover = () => {
               ieltsOptional={ieltsOptional} setIeltsOptional={setIeltsOptional}
               foundationYear={foundationYear} setFoundationYear={setFoundationYear}
               maxTuition={maxTuition} setMaxTuition={setMaxTuition}
+              gapYearOnly={gapYearOnly} setGapYearOnly={setGapYearOnly}
+              rankingFilter={rankingFilter} setRankingFilter={setRankingFilter}
+              languageFilter={languageFilter} setLanguageFilter={setLanguageFilter}
               countries={countries} fields={fields} resultCount={filtered.length} language="en"
             />
           </div>
