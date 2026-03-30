@@ -307,8 +307,11 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
                       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{uni.city}, {uni.country}</TableCell>
                       <TableCell className="text-sm whitespace-nowrap">
                         {uni.tuition_usd_per_year != null ? (
-                          <span className={uni.tuition_usd_per_year === 0 ? "text-green-600 font-semibold" : "text-foreground"}>
-                            {uni.tuition_usd_per_year === 0 ? "Free" : `$${uni.tuition_usd_per_year.toLocaleString()}`}
+                          <span className="inline-flex items-center gap-0.5">
+                            <span className={uni.tuition_usd_per_year === 0 ? "text-green-600 font-semibold" : "text-foreground"}>
+                              {uni.tuition_usd_per_year === 0 ? "Free" : `$${uni.tuition_usd_per_year.toLocaleString()}`}
+                            </span>
+                            {uni.tuition_verified ? <VerifiedBadge /> : <UnverifiedBadge language={language} />}
                           </span>
                         ) : <span className="text-muted-foreground">{l.na}</span>}
                       </TableCell>
