@@ -105,6 +105,56 @@ const PrepSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {/* IELTS Tools */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-muted-foreground text-xs uppercase tracking-wider">
+            {t("IELTS Tools", "IELTS")}
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {ieltsTools.map((item) => (
+                <SidebarMenuItem key={item.path}>
+                  <SidebarMenuButton
+                    onClick={() => navigate(item.path)}
+                    className={cn(
+                      "transition-colors",
+                      isActive(item.path) ? "bg-accent/15 text-accent font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    )}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {!collapsed && <span>{item.title}</span>}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* SAT Tools */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-muted-foreground text-xs uppercase tracking-wider">
+            {t("SAT Tools", "SAT")}
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {satTools.map((item) => (
+                <SidebarMenuItem key={item.path}>
+                  <SidebarMenuButton
+                    onClick={() => navigate(item.path)}
+                    className={cn(
+                      "transition-colors",
+                      isActive(item.path) ? "bg-accent/15 text-accent font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    )}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {!collapsed && <span>{item.title}</span>}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         {/* Language toggle */}
         <div className="mt-auto p-3">
           <button
