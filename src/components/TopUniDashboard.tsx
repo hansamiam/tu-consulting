@@ -9,6 +9,7 @@ import {
   Sparkles, GraduationCap, Award, ClipboardList,
   Bot, Loader2, Send, ArrowLeft, Target,
   CheckCircle2, Plus, Trash2, PenTool, Mic, BarChart3, FileText,
+  Calendar, Plane, GitCompare,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import EssayTools from "@/components/topuni/EssayTools";
