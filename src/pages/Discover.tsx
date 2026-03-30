@@ -125,6 +125,8 @@ const Discover = () => {
             </LockedOverlay>
             <WatchlistDrawer universities={universities} language="en" />
             <ExportButton universities={filtered} language="en" />
+            <ProgramFinderDialog universities={filtered} language="en" />
+            <CountryProfileDialog universities={filtered} language="en" />
           </motion.div>
         </div>
       </section>
