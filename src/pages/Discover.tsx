@@ -5,7 +5,7 @@ import { Footer } from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Scale } from "lucide-react";
+import { Search, Scale, ShieldAlert } from "lucide-react";
 import { motion } from "framer-motion";
 import { UniversityResult } from "@/components/discover/types";
 import { DiscoverFilters } from "@/components/discover/DiscoverFilters";
@@ -19,6 +19,9 @@ import { SmartRecommendations } from "@/components/discover/SmartRecommendations
 import { DiscoverStats } from "@/components/discover/DiscoverStats";
 import { ScholarshipSpotlight } from "@/components/discover/ScholarshipSpotlight";
 import { ExportButton } from "@/components/discover/ExportButton";
+import { ApplicationTimeline } from "@/components/discover/ApplicationTimeline";
+import { TuitionHeatmap } from "@/components/discover/TuitionHeatmap";
+import { QuickFacts } from "@/components/discover/QuickFacts";
 
 const Discover = () => {
   const [universities, setUniversities] = useState<UniversityResult[]>([]);
@@ -123,6 +126,17 @@ const Discover = () => {
       </section>
 
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+        {/* Data Accuracy Notice */}
+        <div className="flex items-start gap-3 p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl text-sm">
+          <ShieldAlert className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold text-foreground">Data Accuracy Notice</p>
+            <p className="text-muted-foreground text-xs mt-1">
+              University names, countries, and websites are verified. Tuition, scholarship amounts, and admission requirements marked with ⚠️ are estimates pending manual verification.
+              Always confirm details on the official university website before making decisions.
+            </p>
+          </div>
+        </div>
         {/* Stats Dashboard */}
         {!loading && <DiscoverStats universities={filtered} language="en" />}
 
@@ -133,6 +147,17 @@ const Discover = () => {
 
         {/* Scholarship Spotlight */}
         {!loading && <ScholarshipSpotlight universities={filtered} language="en" />}
+
+        {/* Quick Facts + Timeline + Heatmap */}
+        {!loading && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <QuickFacts universities={filtered} language="en" />
+            <ApplicationTimeline universities={filtered} language="en" />
+          </div>
+        )}
+
+        {/* Tuition Heatmap */}
+        {!loading && <TuitionHeatmap universities={filtered} language="en" />}
 
         {/* Filters */}
         <div className="flex items-center gap-3">

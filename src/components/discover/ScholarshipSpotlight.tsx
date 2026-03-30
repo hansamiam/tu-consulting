@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Award, DollarSign, Calendar, ChevronRight } from "lucide-react";
+import { Award, DollarSign, Calendar, ShieldCheck, ShieldAlert } from "lucide-react";
 import { UniversityResult } from "./types";
 import { motion } from "framer-motion";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Props {
   universities: UniversityResult[];
@@ -79,9 +80,16 @@ export const ScholarshipSpotlight = ({ universities, language }: Props) => {
           >
             <div className="flex items-start justify-between gap-2">
               <p className="font-semibold text-sm text-foreground leading-tight">{item.scholarship.scholarship_name}</p>
-              {item.scholarship.coverage_type === "full_ride" && (
-                <Badge className="bg-amber-500 text-white text-[10px] shrink-0">{l.fullRide}</Badge>
-              )}
+              <div className="flex items-center gap-1 shrink-0">
+                {item.scholarship.verified ? (
+                  <TooltipProvider><Tooltip><TooltipTrigger><ShieldCheck className="h-3 w-3 text-green-500" /></TooltipTrigger><TooltipContent><p className="text-xs">Verified</p></TooltipContent></Tooltip></TooltipProvider>
+                ) : (
+                  <TooltipProvider><Tooltip><TooltipTrigger><ShieldAlert className="h-3 w-3 text-amber-500" /></TooltipTrigger><TooltipContent><p className="text-xs">Unverified</p></TooltipContent></Tooltip></TooltipProvider>
+                )}
+                {item.scholarship.coverage_type === "full_ride" && (
+                  <Badge className="bg-amber-500 text-white text-[10px]">{l.fullRide}</Badge>
+                )}
+              </div>
             </div>
             <p className="text-xs text-muted-foreground">{l.at} {item.uniName}</p>
             <div className="flex flex-wrap gap-1.5">

@@ -9,8 +9,9 @@ import {
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
   Mail, Linkedin, MessageCircle, Send, Clock, User, Building2,
   Briefcase, DollarSign, Star, Users, Home,
-  AlertTriangle, Plane, TrendingUp, Heart, Lightbulb
+  AlertTriangle, Plane, TrendingUp, Heart, Lightbulb, ShieldCheck, ShieldAlert,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState, useMemo } from "react";
 import { UniversityResult } from "./types";
 import { WatchlistButton } from "./Watchlist";
@@ -82,6 +83,32 @@ const ScoreBar = ({ value, max = 5, label }: { value: number; max?: number; labe
     </div>
     <Progress value={(value / max) * 100} className="h-1.5" />
   </div>
+);
+
+const UnverifiedBadge = ({ language }: { language: "en" | "ru" }) => (
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <ShieldAlert className="h-3 w-3 text-amber-500 inline ml-0.5 shrink-0" />
+      </TooltipTrigger>
+      <TooltipContent className="max-w-[200px]">
+        <p className="text-xs">{language === "ru" ? "Не проверено — данные могут быть неточными" : "Unverified — data may be inaccurate"}</p>
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
+
+const VerifiedBadge = () => (
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <ShieldCheck className="h-3 w-3 text-green-500 inline ml-0.5 shrink-0" />
+      </TooltipTrigger>
+      <TooltipContent>
+        <p className="text-xs">Verified</p>
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
 );
 
 const ContactCard = ({ contact }: { contact: UniversityResult["university_contacts"][0] }) => (
@@ -280,8 +307,11 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
                       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{uni.city}, {uni.country}</TableCell>
                       <TableCell className="text-sm whitespace-nowrap">
                         {uni.tuition_usd_per_year != null ? (
-                          <span className={uni.tuition_usd_per_year === 0 ? "text-green-600 font-semibold" : "text-foreground"}>
-                            {uni.tuition_usd_per_year === 0 ? "Free" : `$${uni.tuition_usd_per_year.toLocaleString()}`}
+                          <span className="inline-flex items-center gap-0.5">
+                            <span className={uni.tuition_usd_per_year === 0 ? "text-green-600 font-semibold" : "text-foreground"}>
+                              {uni.tuition_usd_per_year === 0 ? "Free" : `$${uni.tuition_usd_per_year.toLocaleString()}`}
+                            </span>
+                            {uni.tuition_verified ? <VerifiedBadge /> : <UnverifiedBadge language={language} />}
                           </span>
                         ) : <span className="text-muted-foreground">{l.na}</span>}
                       </TableCell>
@@ -374,8 +404,11 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
                                 {uni.scholarships?.length > 0 ? (
                                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                                     {uni.scholarships.map((s) => (
-                                      <div key={s.scholarship_id} className="bg-card border border-border rounded-lg p-3 text-xs space-y-1.5">
-                                        <p className="font-medium text-foreground">{s.scholarship_name}</p>
+                                      <div key={s.scholarship_id} className={`bg-card border rounded-lg p-3 text-xs space-y-1.5 ${s.verified ? 'border-green-500/20' : 'border-amber-500/20'}`}>
+                                        <div className="flex items-start justify-between gap-1">
+                                          <p className="font-medium text-foreground">{s.scholarship_name}</p>
+                                          {s.verified ? <VerifiedBadge /> : <UnverifiedBadge language={language} />}
+                                        </div>
                                         <Badge variant="outline" className={s.coverage_type === "full_ride" ? "border-accent text-accent text-[10px]" : "text-[10px]"}>
                                           {s.coverage_type.replace("_", " ")}
                                         </Badge>
