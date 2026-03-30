@@ -52,6 +52,9 @@ import IELTSFlashcards from "./pages/prep/IELTSFlashcards";
 import WritingTemplates from "./pages/prep/WritingTemplates";
 import SATWordList from "./pages/prep/SATWordList";
 import FormulaSheet from "./pages/prep/FormulaSheet";
+import XPStore from "./pages/prep/XPStore";
+import DailyChallenges from "./pages/prep/DailyChallenges";
+import Leaderboard from "./pages/prep/Leaderboard";
 const queryClient = new QueryClient();
 
 const App = () => (
