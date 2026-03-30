@@ -48,7 +48,10 @@ import Achievements from "./pages/prep/Achievements";
 import SpacedReview from "./pages/prep/SpacedReview";
 import SkillRadar from "./pages/prep/SkillRadar";
 import EssayGrader from "./pages/prep/EssayGrader";
-
+import IELTSFlashcards from "./pages/prep/IELTSFlashcards";
+import WritingTemplates from "./pages/prep/WritingTemplates";
+import SATWordList from "./pages/prep/SATWordList";
+import FormulaSheet from "./pages/prep/FormulaSheet";
 const queryClient = new QueryClient();
 
 const App = () => (
