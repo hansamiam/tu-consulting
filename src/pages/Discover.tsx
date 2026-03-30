@@ -162,8 +162,16 @@ const Discover = () => {
           </div>
         )}
 
-        {/* Tuition Heatmap */}
-        {!loading && <TuitionHeatmap universities={filtered} language="en" />}
+        {/* Tuition Heatmap + Field Analytics */}
+        {!loading && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <TuitionHeatmap universities={filtered} language="en" />
+            <FieldAnalytics universities={filtered} language="en" />
+          </div>
+        )}
+
+        {/* World Map */}
+        {!loading && <UniversityWorldMap universities={filtered} language="en" />}
 
         {/* Filters */}
         <div className="flex items-center gap-3">
