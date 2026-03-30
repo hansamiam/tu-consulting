@@ -8,6 +8,7 @@ import {
   ClipboardCheck, BookOpen, Bot, BarChart3, Zap, Flame,
   Target, Calendar, Trophy, ArrowRight, CheckCircle2, FileText,
   ArrowUpRight, Sparkles, Brain, PenTool, Activity, Languages, Calculator, BookMarked, FileEdit,
+  ShoppingBag, Swords, Users,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -40,6 +41,9 @@ const PrepDashboard = () => {
     { icon: FileEdit, label: t("Writing Templates", "Шаблоны"), path: "/prep/writing-templates", color: "text-rose-500", desc: t("Task 1 & 2", "Task 1 и 2") },
     { icon: BookMarked, label: t("SAT Vocabulary", "SAT Словарь"), path: "/prep/sat-words", color: "text-violet-500", desc: t("40 SAT words", "40 SAT слов") },
     { icon: Calculator, label: t("Formula Sheet", "Формулы"), path: "/prep/formula-sheet", color: "text-amber-500", desc: t("35+ formulas", "35+ формул") },
+    { icon: ShoppingBag, label: t("XP Store", "Магазин XP"), path: "/prep/xp-store", color: "text-accent", desc: t("Spend XP on rewards", "Трать XP на награды") },
+    { icon: Swords, label: t("Challenges", "Задания"), path: "/prep/challenges", color: "text-red-500", desc: t("Bonus XP missions", "Бонусные миссии") },
+    { icon: Users, label: t("Leaderboard", "Рейтинг"), path: "/prep/leaderboard", color: "text-indigo-500", desc: t("Compete & climb", "Соревнуйтесь") },
   ];
 
   return (
