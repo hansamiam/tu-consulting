@@ -15,6 +15,10 @@ import EssayTools from "@/components/topuni/EssayTools";
 import InterviewSimulator from "@/components/topuni/InterviewSimulator";
 import AdmissionPredictor from "@/components/topuni/AdmissionPredictor";
 import DocumentBuilder from "@/components/topuni/DocumentBuilder";
+import ScholarshipMatcher from "@/components/topuni/ScholarshipMatcher";
+import DeadlineCalendar from "@/components/topuni/DeadlineCalendar";
+import VisaGuide from "@/components/topuni/VisaGuide";
+import UniCompare from "@/components/topuni/UniCompare";
 
 interface StudentProfile {
   fullName: string;
