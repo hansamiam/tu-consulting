@@ -306,6 +306,18 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             <TabsTrigger value="tracker" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
               <ClipboardList className="w-4 h-4" /> {t("Tracker", "Трекер")}
             </TabsTrigger>
+            <TabsTrigger value="scholarships" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+              <Award className="w-4 h-4" /> {t("Scholarships", "Стипендии")}
+            </TabsTrigger>
+            <TabsTrigger value="deadlines" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+              <Calendar className="w-4 h-4" /> {t("Deadlines", "Дедлайны")}
+            </TabsTrigger>
+            <TabsTrigger value="visa" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+              <Plane className="w-4 h-4" /> {t("Visa", "Виза")}
+            </TabsTrigger>
+            <TabsTrigger value="compare" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+              <GitCompare className="w-4 h-4" /> {t("Compare", "Сравнить")}
+            </TabsTrigger>
           </TabsList>
         </div>
 
