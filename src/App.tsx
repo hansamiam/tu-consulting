@@ -105,6 +105,10 @@ const App = () => (
           <Route path="/prep/spaced-review" element={<PrepLayout><SpacedReview /></PrepLayout>} />
           <Route path="/prep/skill-radar" element={<PrepLayout><SkillRadar /></PrepLayout>} />
           <Route path="/prep/essay-grader" element={<PrepLayout><EssayGrader /></PrepLayout>} />
+          <Route path="/prep/ielts-flashcards" element={<PrepLayout><IELTSFlashcards /></PrepLayout>} />
+          <Route path="/prep/writing-templates" element={<PrepLayout><WritingTemplates /></PrepLayout>} />
+          <Route path="/prep/sat-words" element={<PrepLayout><SATWordList /></PrepLayout>} />
+          <Route path="/prep/formula-sheet" element={<PrepLayout><FormulaSheet /></PrepLayout>} />
           {/* Legacy routes for backward compatibility */}
           <Route path="/why-us" element={<WhyTU />} />
           <Route path="/why-us/ru" element={<WhyTURu />} />
