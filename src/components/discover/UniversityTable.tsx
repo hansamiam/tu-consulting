@@ -404,8 +404,11 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
                                 {uni.scholarships?.length > 0 ? (
                                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                                     {uni.scholarships.map((s) => (
-                                      <div key={s.scholarship_id} className="bg-card border border-border rounded-lg p-3 text-xs space-y-1.5">
-                                        <p className="font-medium text-foreground">{s.scholarship_name}</p>
+                                      <div key={s.scholarship_id} className={`bg-card border rounded-lg p-3 text-xs space-y-1.5 ${s.verified ? 'border-green-500/20' : 'border-amber-500/20'}`}>
+                                        <div className="flex items-start justify-between gap-1">
+                                          <p className="font-medium text-foreground">{s.scholarship_name}</p>
+                                          {s.verified ? <VerifiedBadge /> : <UnverifiedBadge language={language} />}
+                                        </div>
                                         <Badge variant="outline" className={s.coverage_type === "full_ride" ? "border-accent text-accent text-[10px]" : "text-[10px]"}>
                                           {s.coverage_type.replace("_", " ")}
                                         </Badge>
