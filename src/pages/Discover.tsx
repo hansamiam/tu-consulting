@@ -191,6 +191,9 @@ const Discover = () => {
               ieltsOptional={ieltsOptional} setIeltsOptional={setIeltsOptional}
               foundationYear={foundationYear} setFoundationYear={setFoundationYear}
               maxTuition={maxTuition} setMaxTuition={setMaxTuition}
+              gapYearOnly={gapYearOnly} setGapYearOnly={setGapYearOnly}
+              rankingFilter={rankingFilter} setRankingFilter={setRankingFilter}
+              languageFilter={languageFilter} setLanguageFilter={setLanguageFilter}
               countries={countries} fields={fields} resultCount={filtered.length} language="en"
             />
           </div>
