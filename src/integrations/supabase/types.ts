@@ -25,6 +25,7 @@ export type Database = {
           requirement_id: string
           sat_required: boolean | null
           sat_score_min: number | null
+          verified: boolean
         }
         Insert: {
           application_deadline?: string | null
@@ -36,6 +37,7 @@ export type Database = {
           requirement_id?: string
           sat_required?: boolean | null
           sat_score_min?: number | null
+          verified?: boolean
         }
         Update: {
           application_deadline?: string | null
@@ -47,6 +49,7 @@ export type Database = {
           requirement_id?: string
           sat_required?: boolean | null
           sat_score_min?: number | null
+          verified?: boolean
         }
         Relationships: [
           {
@@ -141,6 +144,7 @@ export type Database = {
           scholarship_name: string
           stipend_amount: number | null
           university_id: string
+          verified: boolean
         }
         Insert: {
           application_deadline?: string | null
@@ -151,6 +155,7 @@ export type Database = {
           scholarship_name: string
           stipend_amount?: number | null
           university_id: string
+          verified?: boolean
         }
         Update: {
           application_deadline?: string | null
@@ -161,6 +166,7 @@ export type Database = {
           scholarship_name?: string
           stipend_amount?: number | null
           university_id?: string
+          verified?: boolean
         }
         Relationships: [
           {
@@ -183,6 +189,7 @@ export type Database = {
           global_ranking: number | null
           language_of_instruction: string | null
           tuition_usd_per_year: number | null
+          tuition_verified: boolean
           university_id: string
           university_name: string
           website_url: string | null
@@ -197,6 +204,7 @@ export type Database = {
           global_ranking?: number | null
           language_of_instruction?: string | null
           tuition_usd_per_year?: number | null
+          tuition_verified?: boolean
           university_id?: string
           university_name: string
           website_url?: string | null
@@ -211,6 +219,7 @@ export type Database = {
           global_ranking?: number | null
           language_of_instruction?: string | null
           tuition_usd_per_year?: number | null
+          tuition_verified?: boolean
           university_id?: string
           university_name?: string
           website_url?: string | null
@@ -297,6 +306,7 @@ export type Database = {
           student_clubs_count: number | null
           student_satisfaction_score: number | null
           university_id: string
+          verified: boolean
         }
         Insert: {
           alumni_network_strength?: string | null
@@ -318,6 +328,7 @@ export type Database = {
           student_clubs_count?: number | null
           student_satisfaction_score?: number | null
           university_id: string
+          verified?: boolean
         }
         Update: {
           alumni_network_strength?: string | null
@@ -339,6 +350,7 @@ export type Database = {
           student_clubs_count?: number | null
           student_satisfaction_score?: number | null
           university_id?: string
+          verified?: boolean
         }
         Relationships: [
           {
