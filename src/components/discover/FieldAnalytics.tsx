@@ -81,7 +81,7 @@ export const FieldAnalytics = ({ universities, language }: Props) => {
         avgTuition: data.tuitions.length ? Math.round(data.tuitions.reduce((a, b) => a + b, 0) / data.tuitions.length) : 0,
         avgIelts: data.ielts.length ? Math.round(data.ielts.reduce((a, b) => a + b, 0) / data.ielts.length * 10) / 10 : null,
         scholarshipCount: data.scholarships,
-        demand: data.programs > 50 ? "high" : data.programs > 20 ? "medium" : "low",
+        demand: (data.programs > 50 ? "high" : data.programs > 20 ? "medium" : "low") as "high" | "medium" | "low",
       }))
       .sort((a, b) => b.programCount - a.programCount);
   }, [universities]);
