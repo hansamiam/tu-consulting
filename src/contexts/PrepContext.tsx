@@ -33,8 +33,8 @@ export interface Achievement {
 
 export interface SkillProfile {
   [section: string]: {
-    level: number; // 0-100
-    subSkills: Record<string, number>; // 0-100 per sub-skill
+    level: number;
+    subSkills: Record<string, number>;
     totalAttempts: number;
     totalCorrect: number;
   };
@@ -48,7 +48,7 @@ export interface MockExamResult {
   totalScore: number;
   totalMax: number;
   estimatedBand?: string;
-  duration: number; // seconds
+  duration: number;
 }
 
 export interface PrepState {
@@ -67,6 +67,9 @@ export interface PrepState {
   completedToday: boolean;
   totalStudyMinutes: number;
   essaysSubmitted: number;
+  // New: XP economy
+  redeemedItems: string[];
+  dailyChallengesClaimed: string[];
 }
 
 interface PrepContextType extends PrepState {
@@ -83,14 +86,13 @@ interface PrepContextType extends PrepState {
   addStudyMinutes: (mins: number) => void;
   setLanguage: (lang: "en" | "ru") => void;
   resetProgress: () => void;
+  redeemItem: (itemId: string, xpCost: number) => void;
+  claimChallenge: (challengeId: string, xpReward: number) => void;
   achievements: Achievement[];
   level: number;
   xpToNextLevel: number;
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ACHIEVEMENTS DEFINITIONS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const achievementDefs: Achievement[] = [
   { id: "first-diagnostic", name: "First Assessment", nameRu: "Первый тест", description: "Complete your first diagnostic test", descriptionRu: "Пройдите первый диагностический тест", icon: "🎯", condition: (s) => s.diagnosticResults.length >= 1, xpReward: 50 },
   { id: "first-practice", name: "Getting Started", nameRu: "Начало пути", description: "Complete your first practice session", descriptionRu: "Завершите первую практику", icon: "🚀", condition: (s) => s.practiceSessions.length >= 1, xpReward: 25 },
@@ -108,6 +110,10 @@ const achievementDefs: Achievement[] = [
   { id: "essay-5", name: "Wordsmith", nameRu: "Мастер слова", description: "Submit 5 essays", descriptionRu: "Отправьте 5 эссе", icon: "✍️", condition: (s) => s.essaysSubmitted >= 5, xpReward: 100 },
   { id: "study-hours-10", name: "Time Invested", nameRu: "Вложенное время", description: "Study for 10 hours total", descriptionRu: "10 часов учёбы", icon: "⏰", condition: (s) => s.totalStudyMinutes >= 600, xpReward: 200 },
   { id: "all-sections", name: "Well-Rounded", nameRu: "Всесторонний", description: "Practice in all 7 sections", descriptionRu: "Практика во всех 7 разделах", icon: "🌟", condition: (s) => { const sections = new Set(s.practiceSessions.map(p => p.module)); return sections.size >= 7; }, xpReward: 150 },
+  // New achievements for XP economy
+  { id: "first-redeem", name: "First Purchase", nameRu: "Первая покупка", description: "Redeem your first item from the XP Store", descriptionRu: "Обменяйте первый предмет в магазине XP", icon: "🛍️", condition: (s) => s.redeemedItems.length >= 1, xpReward: 30 },
+  { id: "challenge-5", name: "Challenge Accepted", nameRu: "Вызов принят", description: "Complete 5 daily challenges", descriptionRu: "Выполните 5 ежедневных заданий", icon: "⚡", condition: (s) => s.dailyChallengesClaimed.length >= 5, xpReward: 75 },
+  { id: "challenge-20", name: "Challenge Master", nameRu: "Мастер заданий", description: "Complete 20 challenges", descriptionRu: "Выполните 20 заданий", icon: "🏅", condition: (s) => s.dailyChallengesClaimed.length >= 20, xpReward: 250 },
 ];
 
 const defaultState: PrepState = {
@@ -118,6 +124,7 @@ const defaultState: PrepState = {
   skillProfile: {},
   language: "en", completedToday: false,
   totalStudyMinutes: 0, essaysSubmitted: 0,
+  redeemedItems: [], dailyChallengesClaimed: [],
 };
 
 const PrepContext = createContext<PrepContextType | null>(null);
@@ -140,7 +147,6 @@ export const PrepProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.setItem("topuni-prep", JSON.stringify(state));
   }, [state]);
 
-  // Check streak on mount
   useEffect(() => {
     const today = new Date().toDateString();
     if (state.lastPracticeDate) {
@@ -154,28 +160,17 @@ export const PrepProvider = ({ children }: { children: React.ReactNode }) => {
     setState(s => ({ ...s, completedToday: s.lastPracticeDate === today }));
   }, []);
 
-  // Check achievements whenever state changes
   useEffect(() => {
     const newUnlocks = achievementDefs
       .filter(a => !state.unlockedAchievements.includes(a.id) && a.condition(state))
       .map(a => a.id);
-
     if (newUnlocks.length > 0) {
-      const bonusXP = achievementDefs
-        .filter(a => newUnlocks.includes(a.id))
-        .reduce((sum, a) => sum + a.xpReward, 0);
-
-      setState(s => ({
-        ...s,
-        unlockedAchievements: [...s.unlockedAchievements, ...newUnlocks],
-        xp: s.xp + bonusXP,
-      }));
+      const bonusXP = achievementDefs.filter(a => newUnlocks.includes(a.id)).reduce((sum, a) => sum + a.xpReward, 0);
+      setState(s => ({ ...s, unlockedAchievements: [...s.unlockedAchievements, ...newUnlocks], xp: s.xp + bonusXP }));
     }
-  }, [state.diagnosticResults.length, state.practiceSessions.length, state.streak, state.xp, state.mockExamResults.length, state.essaysSubmitted, state.totalStudyMinutes]);
+  }, [state.diagnosticResults.length, state.practiceSessions.length, state.streak, state.xp, state.mockExamResults.length, state.essaysSubmitted, state.totalStudyMinutes, state.redeemedItems.length, state.dailyChallengesClaimed.length]);
 
-  const addXP = useCallback((amount: number) => {
-    setState(s => ({ ...s, xp: s.xp + amount }));
-  }, []);
+  const addXP = useCallback((amount: number) => setState(s => ({ ...s, xp: s.xp + amount })), []);
 
   const updateStreak = useCallback(() => {
     const today = new Date().toDateString();
@@ -205,31 +200,37 @@ export const PrepProvider = ({ children }: { children: React.ReactNode }) => {
   const updateSkillProfile = useCallback((section: string, subSkill: string, correct: boolean) => {
     setState(s => {
       const profile = { ...s.skillProfile };
-      if (!profile[section]) {
-        profile[section] = { level: 50, subSkills: {}, totalAttempts: 0, totalCorrect: 0 };
-      }
+      if (!profile[section]) profile[section] = { level: 50, subSkills: {}, totalAttempts: 0, totalCorrect: 0 };
       const sec = { ...profile[section] };
       sec.totalAttempts++;
       if (correct) sec.totalCorrect++;
       sec.level = Math.round((sec.totalCorrect / sec.totalAttempts) * 100);
-
       const subSkills = { ...sec.subSkills };
       if (!subSkills[subSkill]) subSkills[subSkill] = 50;
-      // Moving average toward correct/incorrect
       subSkills[subSkill] = Math.round(subSkills[subSkill] * 0.8 + (correct ? 100 : 0) * 0.2);
       sec.subSkills = subSkills;
       profile[section] = sec;
-
       return { ...s, skillProfile: profile };
     });
   }, []);
 
-  const incrementEssays = useCallback(() => {
-    setState(s => ({ ...s, essaysSubmitted: s.essaysSubmitted + 1 }));
+  const incrementEssays = useCallback(() => setState(s => ({ ...s, essaysSubmitted: s.essaysSubmitted + 1 })), []);
+  const addStudyMinutes = useCallback((mins: number) => setState(s => ({ ...s, totalStudyMinutes: s.totalStudyMinutes + mins })), []);
+
+  const redeemItem = useCallback((itemId: string, xpCost: number) => {
+    setState(s => ({
+      ...s,
+      xp: Math.max(0, s.xp - xpCost),
+      redeemedItems: [...s.redeemedItems, itemId],
+    }));
   }, []);
 
-  const addStudyMinutes = useCallback((mins: number) => {
-    setState(s => ({ ...s, totalStudyMinutes: s.totalStudyMinutes + mins }));
+  const claimChallenge = useCallback((challengeId: string, xpReward: number) => {
+    setState(s => ({
+      ...s,
+      xp: s.xp + xpReward,
+      dailyChallengesClaimed: [...s.dailyChallengesClaimed, challengeId],
+    }));
   }, []);
 
   const level = useMemo(() => Math.floor(state.xp / 100) + 1, [state.xp]);
@@ -239,14 +240,14 @@ export const PrepProvider = ({ children }: { children: React.ReactNode }) => {
     ...state,
     addXP, updateStreak, addDiagnosticResult, addPracticeSession,
     addMockExamResult, updateSkillProfile, incrementEssays, addStudyMinutes,
+    redeemItem, claimChallenge,
     setTargetExam: (exam) => setState(s => ({ ...s, targetExam: exam })),
     setTargetScore: (score) => setState(s => ({ ...s, targetScore: score })),
     setExamDate: (date) => setState(s => ({ ...s, examDate: date })),
     setLanguage: (lang) => setState(s => ({ ...s, language: lang })),
     resetProgress: () => setState(defaultState),
     achievements: achievementDefs,
-    level,
-    xpToNextLevel,
+    level, xpToNextLevel,
   };
 
   return <PrepContext.Provider value={value}>{children}</PrepContext.Provider>;
