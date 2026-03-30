@@ -44,6 +44,7 @@ const PrepSidebar = () => {
   const ieltsTools = [
     { title: t("IELTS Flashcards", "IELTS Карточки"), path: "/prep/ielts-flashcards", icon: Languages },
     { title: t("Writing Templates", "Шаблоны письма"), path: "/prep/writing-templates", icon: FileEdit },
+    { title: t("Reading Analyzer", "Анализ текста"), path: "/prep/reading-analyzer", icon: BookOpenCheck },
   ];
 
   const satTools = [
