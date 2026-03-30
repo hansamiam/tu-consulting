@@ -82,6 +82,9 @@ const Discover = () => {
     if (fieldFilter !== "all" && !uni.programs?.some((p) => p.field_of_study === fieldFilter)) return false;
     if (ieltsOptional && !uni.programs?.some((p) => p.admission_requirements?.some((a) => !a.ielts_required))) return false;
     if (foundationYear && !uni.foundation_year_available) return false;
+    if (gapYearOnly && !uni.gap_year_accepted) return false;
+    if (rankingFilter !== "all" && (!uni.global_ranking || uni.global_ranking > Number(rankingFilter))) return false;
+    if (languageFilter !== "all" && uni.language_of_instruction !== languageFilter) return false;
     return true;
   });
 
