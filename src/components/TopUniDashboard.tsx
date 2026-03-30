@@ -470,6 +470,26 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           </Card>
         </TabsContent>
 
+        {/* SCHOLARSHIP MATCHER TAB */}
+        <TabsContent value="scholarships">
+          <ScholarshipMatcher profile={profile} language={language} />
+        </TabsContent>
+
+        {/* DEADLINE CALENDAR TAB */}
+        <TabsContent value="deadlines">
+          <DeadlineCalendar profile={profile} language={language} />
+        </TabsContent>
+
+        {/* VISA GUIDE TAB */}
+        <TabsContent value="visa">
+          <VisaGuide profile={profile} language={language} />
+        </TabsContent>
+
+        {/* UNIVERSITY COMPARE TAB */}
+        <TabsContent value="compare">
+          <UniCompare profile={profile} language={language} />
+        </TabsContent>
+
         {/* AI COUNSELOR TAB */}
         <TabsContent value="counselor">
           <Card className="h-[600px] flex flex-col">
