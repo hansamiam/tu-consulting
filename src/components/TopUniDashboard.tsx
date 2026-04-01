@@ -281,13 +281,10 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       {/* Dashboard Tabs */}
       <Tabs defaultValue={isProfileFilled ? "pathway" : "counselor"} className="space-y-6">
         <div className="flex flex-wrap items-center gap-3">
-          {/* TopUni AI - standalone, outside the tab group */}
-          <TabsTrigger value="counselor" className="flex items-center gap-1.5 text-xs sm:text-sm py-2 px-4 rounded-lg border-2 border-accent bg-accent/10 data-[state=active]:bg-accent data-[state=active]:text-accent-foreground font-bold shadow-sm hover:shadow-md transition-all">
-            <Bot className="w-4 h-4" /> TopUni AI
-          </TabsTrigger>
-
-          {/* Platform tools group */}
           <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
+            <TabsTrigger value="counselor" className="flex items-center gap-1.5 text-xs sm:text-sm py-2 px-4 border-2 border-accent bg-accent/10 data-[state=active]:bg-accent data-[state=active]:text-accent-foreground font-bold shadow-sm hover:shadow-md transition-all">
+              <Bot className="w-4 h-4" /> TopUni AI
+            </TabsTrigger>
             <TabsTrigger value="pathway" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
               <GraduationCap className="w-4 h-4" /> {t("Pathway", "Путь")}
             </TabsTrigger>
