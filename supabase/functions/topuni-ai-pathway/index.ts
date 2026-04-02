@@ -10,7 +10,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { profile, language } = await req.json();
+    const { profile, language, reportGrade } = await req.json();
+    const grade = reportGrade || "basic";
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -58,7 +59,80 @@ serve(async (req) => {
     }).join("\n\n");
 
     const lang = language === "ru" ? "Russian" : "English";
-    const systemPrompt = `You are TopUni AI Pathway Advisor. You create detailed, personalized university application strategies for students from Central Asia.
+    
+    const basicSections = `Generate a pathway analysis with these sections (use markdown headers):
+
+## Strategy Summary
+A personalized overview of their competitiveness and recommended approach.
+
+## Recommended Universities
+Categorize into Stretch, Target, and Safety tiers. For each university, explain WHY it's a good fit. Include specific programs from the database.
+
+## Scholarship Opportunities
+List specific scholarships that match their profile. Include deadlines.
+
+## Test Prep Recommendations
+Based on their current scores, recommend target scores and prep strategy.
+
+## Application Timeline
+A month-by-month action plan.
+
+## Key Risks & Mitigation
+Honest assessment of challenges.
+
+Be specific, use real data from the database, and be honest about competitiveness.`;
+
+    const premiumSections = `Generate an EXHAUSTIVE, DEEPLY PERSONALIZED hyper-intelligence report. This is our PREMIUM tier — go significantly deeper than a standard report. Cover ALL of the following sections in comprehensive detail:
+
+## Executive Summary
+Detailed competitive analysis including percentile positioning among international applicants.
+
+## University Matches (15-20 universities)
+For EACH university, provide:
+- Fit percentage (0-100%) with justification
+- Tier classification: Safety / Target / Reach / Dream
+- Specific program recommendations with admission requirements
+- Historical acceptance rate context
+- Unique selling points for THIS student specifically
+
+## Career ROI Analysis
+For each recommended university:
+- Average starting salary for their target field
+- Employment rate within 6 months
+- Industry connections and notable employers
+- Long-term career trajectory projection
+
+## Scholarship Deep Dive
+- Probability assessment for each scholarship (Low/Medium/High)
+- Application strategy and timeline for EACH scholarship
+- Combined funding scenarios (multiple scholarships)
+- Alternative funding sources (government grants, private foundations)
+
+## Visa & Immigration Pathway
+- Post-graduation work visa details per country
+- Path to permanent residency timeline
+- Visa difficulty score and mitigation strategies
+
+## Personalized Essay Angles
+- 3-5 unique essay topic suggestions tailored to their background
+- How to differentiate from other Central Asian applicants
+- University-specific supplemental essay guidance
+
+## Monthly Budget Breakdown
+For top 5 recommended cities:
+- Rent, food, transport, insurance, entertainment
+- Part-time work opportunities and typical earnings
+
+## Risk Matrix
+Detailed risk assessment with probability and impact ratings.
+Mitigation strategy for each identified risk.
+
+## 90-Day Action Plan
+Week-by-week actionable steps starting from TODAY.
+
+Be exceptionally thorough. This report should feel like it was written by a team of 5 expert advisors who spent 3 hours analyzing this student's profile.`;
+
+    const systemPrompt = `You are TopUni AI — the world's most advanced university pathway intelligence system. You create ${grade === "premium" ? "exhaustive, deeply personalized hyper-intelligence reports" : "focused, actionable pathway analyses"} for students from Central Asia.
 
 You MUST respond in ${lang}.
 
@@ -80,27 +154,7 @@ STUDENT PROFILE:
 - Timeline: ${profile.timeline || 'Flexible'}
 - Priorities: Prestige ${profile.prestige}/5, Scholarship ${profile.scholarship}/5, Career ROI ${profile.careerRoi}/5, Visa Access ${profile.visaAccess}/5, Location ${profile.locationPref}/5
 
-Generate a comprehensive pathway analysis with these sections (use markdown headers):
-
-## Strategy Summary
-A personalized overview of their competitiveness and recommended approach.
-
-## Recommended Universities
-Categorize into Stretch, Target, and Safety tiers. For each university, explain WHY it's a good fit based on their profile. Include specific programs from the database.
-
-## Scholarship Opportunities
-List specific scholarships from the database that match their profile. Include deadlines and coverage details.
-
-## Test Prep Recommendations
-Based on their current scores, recommend target scores and preparation strategy.
-
-## Application Timeline
-A month-by-month action plan based on their exam date/timeline.
-
-## Key Risks & Mitigation
-Honest assessment of challenges and how to address them.
-
-Be specific, use real data from the database, and be honest about competitiveness.`;
+${grade === "premium" ? premiumSections : basicSections}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

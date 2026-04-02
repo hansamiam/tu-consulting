@@ -61,6 +61,33 @@ export type Database = {
           },
         ]
       }
+      aggregated_insights: {
+        Row: {
+          computed_at: string
+          dimension: string | null
+          id: string
+          metric_name: string
+          metric_value: number | null
+          period: string | null
+        }
+        Insert: {
+          computed_at?: string
+          dimension?: string | null
+          id?: string
+          metric_name: string
+          metric_value?: number | null
+          period?: string | null
+        }
+        Update: {
+          computed_at?: string
+          dimension?: string | null
+          id?: string
+          metric_name?: string
+          metric_value?: number | null
+          period?: string | null
+        }
+        Relationships: []
+      }
       applications: {
         Row: {
           acceptance_rate: number | null
@@ -177,6 +204,36 @@ export type Database = {
             referencedColumns: ["university_id"]
           },
         ]
+      }
+      student_interactions: {
+        Row: {
+          country_hint: string | null
+          created_at: string
+          device_type: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          session_id: string | null
+        }
+        Insert: {
+          country_hint?: string | null
+          created_at?: string
+          device_type?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          session_id?: string | null
+        }
+        Update: {
+          country_hint?: string | null
+          created_at?: string
+          device_type?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          session_id?: string | null
+        }
+        Relationships: []
       }
       universities: {
         Row: {

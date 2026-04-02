@@ -9,9 +9,10 @@ import {
   Sparkles, GraduationCap, Award, ClipboardList,
   Bot, Loader2, Send, ArrowLeft, Target,
   CheckCircle2, Plus, Trash2, PenTool, Mic, BarChart3, FileText,
-  Calendar, Plane, GitCompare,
+  Calendar, Plane, GitCompare, Crown,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import HyperReport from "@/components/topuni/HyperReport";
 import EssayTools from "@/components/topuni/EssayTools";
 import InterviewSimulator from "@/components/topuni/InterviewSimulator";
 import AdmissionPredictor from "@/components/topuni/AdmissionPredictor";
@@ -315,6 +316,9 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             <TabsTrigger value="compare" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
               <GitCompare className="w-4 h-4" /> {t("Compare", "Сравнить")}
             </TabsTrigger>
+            <TabsTrigger value="reports" className="flex items-center gap-1.5 text-xs sm:text-sm py-2 px-4 border border-gold/40 bg-gold/5 data-[state=active]:bg-gold data-[state=active]:text-primary font-semibold">
+              <Crown className="w-4 h-4" /> {t("AI Reports", "AI Отчёты")}
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -577,6 +581,21 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                 </Button>
               </form>
             </div>
+          </Card>
+        </TabsContent>
+
+        {/* AI REPORTS TAB */}
+        <TabsContent value="reports">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Crown className="w-5 h-5 text-gold" />
+                {t("AI Intelligence Reports", "AI Интеллект-отчёты")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <HyperReport profile={profile} language={language} />
+            </CardContent>
           </Card>
         </TabsContent>
       </Tabs>

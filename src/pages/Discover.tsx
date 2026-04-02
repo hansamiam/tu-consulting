@@ -150,49 +150,8 @@ const Discover = () => {
             </p>
           </div>
         </div>
-        {/* Stats Dashboard */}
-        {!loading && (
-          <BetaGate>
-            <DiscoverStats universities={filtered} language="en" />
-          </BetaGate>
-        )}
 
-        {/* Smart Recommendations */}
-        {profile && (
-          <SmartRecommendations universities={universities} profile={profile} language="en" />
-        )}
-
-        {/* Scholarship Spotlight */}
-        {!loading && <ScholarshipSpotlight universities={filtered} language="en" />}
-
-        {/* Quick Facts + Timeline + Heatmap */}
-        {!loading && (
-          <BetaGate>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <QuickFacts universities={filtered} language="en" />
-              <ApplicationTimeline universities={filtered} language="en" />
-            </div>
-          </BetaGate>
-        )}
-
-        {/* Tuition Heatmap + Field Analytics */}
-        {!loading && (
-          <BetaGate>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <TuitionHeatmap universities={filtered} language="en" />
-              <FieldAnalytics universities={filtered} language="en" />
-            </div>
-          </BetaGate>
-        )}
-
-        {/* World Map */}
-        {!loading && (
-          <BetaGate>
-            <UniversityWorldMap universities={filtered} language="en" />
-          </BetaGate>
-        )}
-
-        {/* Filters */}
+        {/* Filters — RIGHT UP TOP */}
         <div className="flex items-center gap-3">
           <div className="flex-1">
             <DiscoverFilters
@@ -223,7 +182,7 @@ const Discover = () => {
           </div>
         )}
 
-        {/* Main Content */}
+        {/* University Table — PRIMARY CONTENT */}
         {loading ? (
           <div className="space-y-2">
             {[1, 2, 3, 4, 5].map((i) => (
@@ -237,6 +196,35 @@ const Discover = () => {
           </div>
         ) : (
           <UniversityTable universities={filtered} language="en" compareIds={compareIds} onToggleCompare={toggleCompare} />
+        )}
+
+        {/* Smart Recommendations */}
+        {profile && (
+          <SmartRecommendations universities={universities} profile={profile} language="en" />
+        )}
+
+        {/* Scholarship Spotlight */}
+        {!loading && <ScholarshipSpotlight universities={filtered} language="en" />}
+
+        {/* ═══ BETA FEATURES BELOW ═══ */}
+        {!loading && (
+          <BetaGate>
+            <div className="space-y-6">
+              <DiscoverStats universities={filtered} language="en" />
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <QuickFacts universities={filtered} language="en" />
+                <ApplicationTimeline universities={filtered} language="en" />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <TuitionHeatmap universities={filtered} language="en" />
+                <FieldAnalytics universities={filtered} language="en" />
+              </div>
+
+              <UniversityWorldMap universities={filtered} language="en" />
+            </div>
+          </BetaGate>
         )}
       </div>
 
