@@ -26,6 +26,7 @@ import { ProgramFinderDialog } from "@/components/discover/ProgramFinderDialog";
 import { CountryProfileDialog } from "@/components/discover/CountryProfileDialog";
 import { UniversityWorldMap } from "@/components/discover/UniversityWorldMap";
 import { FieldAnalytics } from "@/components/discover/FieldAnalytics";
+import { BetaGate } from "@/components/discover/BetaGate";
 
 const Discover = () => {
   const [universities, setUniversities] = useState<UniversityResult[]>([]);
@@ -150,7 +151,11 @@ const Discover = () => {
           </div>
         </div>
         {/* Stats Dashboard */}
-        {!loading && <DiscoverStats universities={filtered} language="en" />}
+        {!loading && (
+          <BetaGate>
+            <DiscoverStats universities={filtered} language="en" />
+          </BetaGate>
+        )}
 
         {/* Smart Recommendations */}
         {profile && (
@@ -162,22 +167,30 @@ const Discover = () => {
 
         {/* Quick Facts + Timeline + Heatmap */}
         {!loading && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <QuickFacts universities={filtered} language="en" />
-            <ApplicationTimeline universities={filtered} language="en" />
-          </div>
+          <BetaGate>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <QuickFacts universities={filtered} language="en" />
+              <ApplicationTimeline universities={filtered} language="en" />
+            </div>
+          </BetaGate>
         )}
 
         {/* Tuition Heatmap + Field Analytics */}
         {!loading && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <TuitionHeatmap universities={filtered} language="en" />
-            <FieldAnalytics universities={filtered} language="en" />
-          </div>
+          <BetaGate>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <TuitionHeatmap universities={filtered} language="en" />
+              <FieldAnalytics universities={filtered} language="en" />
+            </div>
+          </BetaGate>
         )}
 
         {/* World Map */}
-        {!loading && <UniversityWorldMap universities={filtered} language="en" />}
+        {!loading && (
+          <BetaGate>
+            <UniversityWorldMap universities={filtered} language="en" />
+          </BetaGate>
+        )}
 
         {/* Filters */}
         <div className="flex items-center gap-3">

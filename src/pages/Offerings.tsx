@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Check, Star, ArrowLeft, Info, ArrowRight, Clock, Users, TrendingUp, Zap, ChevronRight, GraduationCap, Target, Award, MessageCircle } from "lucide-react";
+import { Check, Star, ArrowLeft, Info, ArrowRight, Clock, Users, TrendingUp, Zap, ChevronRight, GraduationCap, Target, Award, MessageCircle, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import Navigation from "@/components/Navigation";
@@ -770,8 +770,32 @@ const Offerings = () => {
           language="en"
         />
 
-        {/* Trust Section */}
+        {/* Academy CTA */}
         <section className="mt-20">
+          <Card className="border-gold/30 bg-gradient-to-br from-primary/5 to-gold/5 overflow-hidden">
+            <CardContent className="p-8 text-center space-y-4">
+              <Badge className="bg-gold/15 text-gold border-gold/30 text-xs">
+                <Sparkles className="w-3 h-3 mr-1" /> New
+              </Badge>
+              <h3 className="text-2xl font-bold text-foreground">TopUni Academy</h3>
+              <p className="text-muted-foreground max-w-lg mx-auto">
+                Access recorded workshops, guides, templates, and a growing library of resources — 
+                learn at your own pace alongside expert consulting.
+              </p>
+              <Button
+                variant="gold"
+                size="lg"
+                className="text-lg px-10 py-6 hover:scale-105 transition-transform gap-2"
+                onClick={() => navigate('/academy')}
+              >
+                <Zap className="h-5 w-5" /> Launch Academy
+              </Button>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Trust Section */}
+        <section className="mt-12">
           <Card className="border-gold/20 bg-card/50 backdrop-blur-sm">
             <CardContent className="p-8 text-center space-y-4">
               <p className="text-foreground font-medium">
