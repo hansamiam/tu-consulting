@@ -316,6 +316,9 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             <TabsTrigger value="compare" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
               <GitCompare className="w-4 h-4" /> {t("Compare", "Сравнить")}
             </TabsTrigger>
+            <TabsTrigger value="reports" className="flex items-center gap-1.5 text-xs sm:text-sm py-2 px-4 border border-gold/40 bg-gold/5 data-[state=active]:bg-gold data-[state=active]:text-primary font-semibold">
+              <Crown className="w-4 h-4" /> {t("AI Reports", "AI Отчёты")}
+            </TabsTrigger>
           </TabsList>
         </div>
 
