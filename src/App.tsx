@@ -33,6 +33,7 @@ import TopUniAIPartnersRu from "./pages/TopUniAIPartnersRu";
 import Discover from "./pages/Discover";
 import DiscoverRu from "./pages/DiscoverRu";
 import Admin from "./pages/Admin";
+import Academy from "./pages/Academy";
 import NotFound from "./pages/NotFound";
 import PrepLayout from "./components/prep/PrepLayout";
 import PrepLanding from "./pages/PrepLanding";
@@ -99,6 +100,7 @@ const App = () => (
           <Route path="/discover" element={<Discover />} />
           <Route path="/discover/ru" element={<DiscoverRu />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/academy" element={<Academy />} />
           <Route path="/prep" element={<PrepLanding />} />
           <Route path="/prep/ru" element={<PrepLandingRu />} />
           <Route path="/prep/dashboard" element={<PrepLayout><PrepDashboard /></PrepLayout>} />

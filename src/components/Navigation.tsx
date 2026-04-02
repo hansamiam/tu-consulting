@@ -34,6 +34,10 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
       label: isRussian ? "Консалтинг" : "Consulting",
       path: isRussian ? "/offerings/ru" : "/offerings",
     },
+    {
+      label: isRussian ? "Академия" : "Academy",
+      path: isRussian ? "/academy/ru" : "/academy",
+    },
   ];
 
   const secondaryLinks = [
