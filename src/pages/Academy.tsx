@@ -10,6 +10,8 @@ import { SubscriptionBanner } from "@/components/academy/SubscriptionBanner";
 import { CommunityTeaser } from "@/components/academy/CommunityTeaser";
 import { ACADEMY_CONTENT } from "@/data/academyContent";
 import type { ContentItem } from "@/components/academy/ContentCard";
+import { Badge } from "@/components/ui/badge";
+import { Info } from "lucide-react";
 
 const Academy = () => {
   const [search, setSearch] = useState("");
@@ -48,15 +50,28 @@ const Academy = () => {
       <AcademyHero onExplore={scrollToContent} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        {/* Featured Section */}
-        <section className="py-12">
-          <h2 className="text-2xl font-bold text-foreground mb-6">⭐ Featured</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {featuredContent.map((item) => (
-              <ContentCard key={item.id} item={item} onOpen={setPreviewItem} />
-            ))}
+        {/* Early Access Notice */}
+        <div className="mt-8 flex items-start gap-3 p-4 bg-gold/5 border border-gold/20 rounded-xl text-sm">
+          <Info className="h-5 w-5 text-gold shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold text-foreground">Early Preview</p>
+            <p className="text-muted-foreground text-xs mt-1">
+              TopUni Academy is in early development. Content shown below is placeholder — real workshops and materials will be uploaded as they are recorded and reviewed. No fabricated or AI-generated content will ever be published here.
+            </p>
           </div>
-        </section>
+        </div>
+
+        {/* Featured Section */}
+        {featuredContent.length > 0 && (
+          <section className="py-12">
+            <h2 className="text-2xl font-bold text-foreground mb-6">⭐ Featured</h2>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {featuredContent.map((item) => (
+                <ContentCard key={item.id} item={item} onOpen={setPreviewItem} />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Learning Paths */}
         <LearningPaths />
