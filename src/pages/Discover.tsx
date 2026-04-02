@@ -26,6 +26,7 @@ import { ProgramFinderDialog } from "@/components/discover/ProgramFinderDialog";
 import { CountryProfileDialog } from "@/components/discover/CountryProfileDialog";
 import { UniversityWorldMap } from "@/components/discover/UniversityWorldMap";
 import { FieldAnalytics } from "@/components/discover/FieldAnalytics";
+import { BetaGate } from "@/components/discover/BetaGate";
 
 const Discover = () => {
   const [universities, setUniversities] = useState<UniversityResult[]>([]);
