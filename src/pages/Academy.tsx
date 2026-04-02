@@ -98,7 +98,7 @@ const Academy = () => {
         <CommunityTeaser />
       </div>
 
-      <Footer />
+      <Footer language="en" />
 
       <ContentPreviewDialog
         item={previewItem}
