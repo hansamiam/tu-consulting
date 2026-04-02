@@ -340,17 +340,79 @@ const Offerings = () => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-12">
         {/* Hero Section */}
-        <div className="text-center mb-8 md:mb-16 animate-fade-in">
+        <div className="text-center mb-8 md:mb-12 animate-fade-in">
           <div className="inline-block px-3 py-1.5 md:px-4 md:py-2 bg-accent/10 border border-accent/20 rounded-full mb-3 md:mb-4">
-            <p className="text-accent font-semibold text-xs md:text-sm uppercase tracking-wide">Launch Special</p>
+            <p className="text-accent font-semibold text-xs md:text-sm uppercase tracking-wide">Launch Special — 25% Off All Packages</p>
           </div>
           <h1 className="font-heading text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mb-3 md:mb-4 px-2">
-            Our Services
+            Your Path to Top Universities
           </h1>
-          <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto mb-2 px-4">
-            Choose the perfect package to achieve your university admission goals
+          <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto mb-6 px-4">
+            Expert consulting + AI-powered tools + a growing academy of resources. Choose your approach.
           </p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Button
+              variant="gold"
+              size="lg"
+              className="text-base px-8 gap-2 hover:scale-105 transition-transform"
+              onClick={() => navigate('/academy')}
+            >
+              <Sparkles className="w-5 h-5" /> Explore Academy
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="text-base px-8 border-accent/30"
+              onClick={() => document.getElementById('packages')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              View Packages <ArrowRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
         </div>
+
+        {/* Academy CTA — Near the top */}
+        <section className="mb-12 md:mb-16">
+          <Card className="border-gold/30 bg-gradient-to-br from-primary/5 via-gold/5 to-transparent overflow-hidden">
+            <CardContent className="p-6 md:p-10">
+              <div className="grid md:grid-cols-2 gap-8 items-center">
+                <div className="space-y-4">
+                  <Badge className="bg-gold/15 text-gold border-gold/30 text-xs">
+                    <Sparkles className="w-3 h-3 mr-1" /> New — TopUni Academy
+                  </Badge>
+                  <h2 className="text-2xl md:text-3xl font-heading font-bold text-foreground">
+                    Learn at your own pace
+                  </h2>
+                  <p className="text-muted-foreground text-sm">
+                    Recorded workshops, downloadable templates, real application case studies, 
+                    and a growing library of expert resources — complementing our 1-on-1 consulting.
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    <Button variant="gold" onClick={() => navigate('/academy')} className="gap-2">
+                      <Zap className="w-4 h-4" /> Launch Academy
+                    </Button>
+                    <Badge variant="outline" className="text-xs text-muted-foreground">
+                      Free preview available
+                    </Badge>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { icon: Target, label: "Recorded Workshops", desc: "Expert sessions on demand" },
+                    { icon: GraduationCap, label: "Case Studies", desc: "Real accepted materials" },
+                    { icon: Award, label: "Templates", desc: "SOPs, CVs, checklists" },
+                    { icon: Users, label: "Community", desc: "Peer support network" },
+                  ].map((item) => (
+                    <div key={item.label} className="bg-background/60 border border-border/50 rounded-lg p-3 text-center space-y-1">
+                      <item.icon className="w-5 h-5 text-gold mx-auto" />
+                      <p className="text-xs font-medium text-foreground">{item.label}</p>
+                      <p className="text-[10px] text-muted-foreground">{item.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
 
         {/* FEATURE 1: Readiness Score Quiz - Instant engagement + lead qualification */}
         <ReadinessQuiz onComplete={(score) => {
