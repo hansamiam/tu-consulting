@@ -583,6 +583,21 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             </div>
           </Card>
         </TabsContent>
+
+        {/* AI REPORTS TAB */}
+        <TabsContent value="reports">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Crown className="w-5 h-5 text-gold" />
+                {t("AI Intelligence Reports", "AI Интеллект-отчёты")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <HyperReport profile={profile} language={language} />
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );
