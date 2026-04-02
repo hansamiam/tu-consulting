@@ -12,6 +12,7 @@ import {
   Calendar, Plane, GitCompare,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import HyperReport from "@/components/topuni/HyperReport";
 import EssayTools from "@/components/topuni/EssayTools";
 import InterviewSimulator from "@/components/topuni/InterviewSimulator";
 import AdmissionPredictor from "@/components/topuni/AdmissionPredictor";
