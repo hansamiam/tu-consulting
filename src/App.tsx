@@ -34,6 +34,7 @@ import Discover from "./pages/Discover";
 import DiscoverRu from "./pages/DiscoverRu";
 import Admin from "./pages/Admin";
 import Academy from "./pages/Academy";
+import AcademyPrototype from "./pages/AcademyPrototype";
 import NotFound from "./pages/NotFound";
 import PrepLayout from "./components/prep/PrepLayout";
 import PrepLanding from "./pages/PrepLanding";
