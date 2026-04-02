@@ -424,7 +424,7 @@ const Offerings = () => {
         }} />
 
         {/* Package Pricing */}
-        <section className="mb-12 md:mb-20 animate-enter">
+        <section id="packages" className="mb-12 md:mb-20 animate-enter">
           <h2 className="font-heading text-xl sm:text-2xl md:text-3xl font-bold text-center mb-3 md:mb-4 text-foreground px-4">
             Consulting Packages
           </h2>
