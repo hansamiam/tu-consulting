@@ -58,7 +58,7 @@ export const trackEvent = async (
 
     await supabase.from("student_interactions").insert([{
       event_type: eventType,
-      event_data: eventData || {},
+      event_data: (eventData || {}) as Json,
       session_id: getSessionId(),
       device_type: getDeviceType(),
       country_hint: getCountryHint(),
