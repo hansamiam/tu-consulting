@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 
 // Lightweight anonymized analytics tracker
 // Logs events to student_interactions table for internal intelligence
@@ -37,7 +38,7 @@ const DEBOUNCE_MS = 2000;
 
 export const trackEvent = async (
   eventType: string,
-  eventData?: Record<string, unknown>
+  eventData?: Record<string, string | number | boolean | null>
 ) => {
   try {
     // Debounce: skip if same event type fired within 2s
