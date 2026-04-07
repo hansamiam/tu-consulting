@@ -17,8 +17,6 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
   const isRussian = language === "ru";
   const basePath = isRussian ? "/ru" : "/";
 
-  const betaProducts = new Set(["TopUni AI", "Discover", "Prep", isRussian ? "Подготовка" : "Prep"]);
-
   const primaryLinks = [
     {
       label: "TopUni AI",
@@ -90,14 +88,13 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
             <button
               onClick={() => navigate(primaryLinks[0].path)}
               className={cn(
-                "px-3.5 py-1.5 text-sm font-bold rounded-md border transition-all duration-200 flex items-center gap-1.5",
+                "px-3.5 py-1.5 text-sm font-bold rounded-md border transition-all duration-200",
                 isActive(primaryLinks[0].path)
                   ? "text-gold bg-gold/10 border-gold/60"
                   : "text-gold border-gold/40 hover:bg-gold/15 hover:border-gold/70"
               )}
             >
               {primaryLinks[0].label}
-              <span className="text-[9px] font-semibold bg-gold/20 text-gold px-1.5 py-0.5 rounded-full leading-none">β</span>
             </button>
 
             {/* Divider */}
@@ -109,16 +106,13 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
                 key={link.path}
                 onClick={() => navigate(link.path)}
                 className={cn(
-                  "px-3 py-2 text-sm font-semibold rounded-md transition-all duration-200 flex items-center gap-1.5",
+                  "px-3 py-2 text-sm font-semibold rounded-md transition-all duration-200",
                   isActive(link.path)
                     ? "text-gold bg-gold/15"
                     : "text-gold/80 hover:text-gold hover:bg-gold/10"
                 )}
               >
                 {link.label}
-                {betaProducts.has(link.label) && (
-                  <span className="text-[9px] font-semibold bg-gold/20 text-gold px-1.5 py-0.5 rounded-full leading-none">β</span>
-                )}
               </button>
             ))}
 
@@ -192,16 +186,13 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
                         key={link.path}
                         onClick={() => { navigate(link.path); setIsOpen(false); }}
                         className={cn(
-                          "px-4 py-3 text-base font-semibold rounded-md transition-all duration-200 text-left flex items-center gap-2",
+                          "px-4 py-3 text-base font-semibold rounded-md transition-all duration-200 text-left",
                           isActive(link.path)
                             ? "text-gold bg-gold/10 border-l-4 border-gold"
                             : "text-gold/70 hover:text-gold hover:bg-gold/5"
                         )}
                       >
                         {link.label}
-                        {betaProducts.has(link.label) && (
-                          <span className="text-[9px] font-semibold bg-gold/20 text-gold px-1.5 py-0.5 rounded-full leading-none">β</span>
-                        )}
                       </button>
                     ))}
                   </div>
