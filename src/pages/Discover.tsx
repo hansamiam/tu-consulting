@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { trackPageView, trackSearch, trackFilterUsage, trackUniversityView } from "@/utils/analytics";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
@@ -52,7 +53,7 @@ const Discover = () => {
 
   const isLocked = !profile;
 
-  useEffect(() => { fetchUniversities(); }, []);
+  useEffect(() => { fetchUniversities(); trackPageView("/discover"); }, []);
 
   const fetchUniversities = async () => {
     setLoading(true);
