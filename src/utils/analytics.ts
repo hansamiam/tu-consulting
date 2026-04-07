@@ -55,13 +55,13 @@ export const trackEvent = async (
       }
     }
 
-    await supabase.from("student_interactions").insert({
+    await supabase.from("student_interactions").insert([{
       event_type: eventType,
       event_data: eventData || {},
       session_id: getSessionId(),
       device_type: getDeviceType(),
       country_hint: getCountryHint(),
-    });
+    }]);
   } catch {
     // Silent fail — analytics should never break the app
   }
