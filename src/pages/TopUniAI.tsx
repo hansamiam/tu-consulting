@@ -24,6 +24,8 @@ const TopUniAI = () => {
   const [screen, setScreen] = useState<Screen>("landing");
   const [step, setStep] = useState(1);
 
+  useEffect(() => { trackPageView("/topuni-ai"); }, []);
+
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
