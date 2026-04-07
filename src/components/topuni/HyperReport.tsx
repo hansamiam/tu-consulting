@@ -96,6 +96,7 @@ const HyperReport = ({ profile, language }: HyperReportProps) => {
   const generateBasicReport = async () => {
     setBasicLoading(true);
     setBasicReport("");
+    trackReportGenerated("basic");
     let soFar = "";
     await streamSSE(
       REPORT_URL,
@@ -108,6 +109,7 @@ const HyperReport = ({ profile, language }: HyperReportProps) => {
   const generatePremiumReport = async () => {
     setPremiumLoading(true);
     setPremiumReport("");
+    trackReportGenerated("premium");
     let soFar = "";
     await streamSSE(
       REPORT_URL,
