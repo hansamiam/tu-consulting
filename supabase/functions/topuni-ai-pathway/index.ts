@@ -156,6 +156,9 @@ STUDENT PROFILE:
 
 ${grade === "premium" ? premiumSections : basicSections}`;
 
+    // Use stronger model for premium reports
+    const model = grade === "premium" ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview";
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -163,12 +166,13 @@ ${grade === "premium" ? premiumSections : basicSections}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Generate my personalized university pathway plan.` },
         ],
         stream: true,
+        ...(grade === "premium" ? { reasoning: { effort: "high" } } : {}),
       }),
     });
 

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { trackPageView, trackToolUsage } from "@/utils/analytics";
 import { motion, AnimatePresence } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
@@ -22,6 +23,8 @@ const TopUniAI = () => {
   const navigate = useNavigate();
   const [screen, setScreen] = useState<Screen>("landing");
   const [step, setStep] = useState(1);
+
+  useEffect(() => { trackPageView("/topuni-ai"); }, []);
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");

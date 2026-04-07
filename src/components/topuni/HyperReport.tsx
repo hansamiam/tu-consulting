@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { trackReportGenerated, trackAIInteraction } from "@/utils/analytics";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -95,6 +96,7 @@ const HyperReport = ({ profile, language }: HyperReportProps) => {
   const generateBasicReport = async () => {
     setBasicLoading(true);
     setBasicReport("");
+    trackReportGenerated("basic");
     let soFar = "";
     await streamSSE(
       REPORT_URL,
@@ -107,6 +109,7 @@ const HyperReport = ({ profile, language }: HyperReportProps) => {
   const generatePremiumReport = async () => {
     setPremiumLoading(true);
     setPremiumReport("");
+    trackReportGenerated("premium");
     let soFar = "";
     await streamSSE(
       REPORT_URL,
