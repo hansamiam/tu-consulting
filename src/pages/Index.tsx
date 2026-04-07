@@ -129,7 +129,7 @@ const Index = () => {
               </div>
               <h3 className="font-heading text-xl font-bold text-foreground mb-3">Discover</h3>
               <p className="text-muted-foreground text-sm leading-relaxed mb-4">
-                Search 500+ universities worldwide. Compare tuition, rankings, visa info, and scholarships — all in one smart database.
+                Search 200+ universities worldwide. Compare tuition, rankings, visa info, and scholarships — all in one smart database.
               </p>
               <ul className="space-y-2 text-sm text-muted-foreground mb-6">
                 <li className="flex items-center gap-2"><Target className="h-4 w-4 text-accent" /> "Can I Get In?" match scoring</li>
@@ -207,7 +207,7 @@ const Index = () => {
 
           <motion.div {...fadeUp(0.2)} className="grid grid-cols-2 sm:grid-cols-4 gap-6 mb-12">
             {[
-              { num: "500+", label: "Universities" },
+              { num: "200+", label: "Universities" },
               { num: "24/7", label: "AI Counselor" },
               { num: "95%", label: "Match Accuracy" },
               { num: "2 min", label: "Full Strategy" },
