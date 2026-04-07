@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { trackPageView, trackSearch, trackFilterUsage, trackUniversityView } from "@/utils/analytics";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
+import { BetaBanner } from "@/components/BetaBanner";
 import { Footer } from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -104,6 +105,7 @@ const Discover = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation language="en" />
+      <BetaBanner />
 
       <DiscoverProfileGate
         open={showProfileGate}

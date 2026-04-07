@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import { BetaBanner } from "@/components/BetaBanner";
 import { AcademyHero } from "@/components/academy/AcademyHero";
 
 
@@ -14,6 +15,7 @@ const Academy = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
+      <BetaBanner />
       <AcademyHero onExplore={scrollToContent} />
 
       <div ref={contentRef} />
