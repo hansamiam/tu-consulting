@@ -49,17 +49,17 @@ const ReadinessQuiz = ({ onComplete }: { onComplete: (score: number) => void }) 
     return (
       <section className="mb-12 md:mb-20">
         <Card className="border-accent/30 bg-gradient-to-br from-accent/5 to-transparent overflow-hidden">
-          <CardContent className="p-6 md:p-10 flex flex-col md:flex-row items-center gap-6">
-            <div className="flex-1 space-y-3">
+          <CardContent className="p-8 md:p-12 flex flex-col md:flex-row items-center gap-8">
+            <div className="flex-1 space-y-4">
               <Badge className="bg-accent/10 text-accent border-accent/30 text-xs">Free • 30 seconds</Badge>
-              <h3 className="text-xl md:text-2xl font-heading font-bold text-foreground">How Ready Are You?</h3>
-              <p className="text-sm text-muted-foreground">Take our 5-question readiness assessment and get a personalized recommendation for the right consulting package.</p>
-              <Button variant="gold" onClick={() => setStarted(true)}>
+              <h3 className="text-2xl md:text-3xl font-heading font-bold text-foreground">How Ready Are You?</h3>
+              <p className="text-base text-muted-foreground leading-relaxed">Take our 5-question readiness assessment and get a personalized recommendation for the right consulting package.</p>
+              <Button variant="gold" size="lg" onClick={() => setStarted(true)}>
                 <Zap className="w-4 h-4 mr-2" /> Take the Quiz <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
-            <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-accent/20 flex items-center justify-center">
-              <Target className="w-10 h-10 md:w-14 md:h-14 text-accent" />
+            <div className="w-28 h-28 md:w-36 md:h-36 rounded-full border-4 border-accent/20 flex items-center justify-center">
+              <Target className="w-12 h-12 md:w-16 md:h-16 text-accent" />
             </div>
           </CardContent>
         </Card>
@@ -370,49 +370,6 @@ const Offerings = () => {
           </div>
         </div>
 
-        {/* Academy CTA — Near the top */}
-        <section className="mb-12 md:mb-16">
-          <Card className="border-gold/30 bg-gradient-to-br from-primary/5 via-gold/5 to-transparent overflow-hidden">
-            <CardContent className="p-6 md:p-10">
-              <div className="grid md:grid-cols-2 gap-8 items-center">
-                <div className="space-y-4">
-                  <Badge className="bg-gold/15 text-gold border-gold/30 text-xs">
-                    <Sparkles className="w-3 h-3 mr-1" /> New — TopUni Academy
-                  </Badge>
-                  <h2 className="text-2xl md:text-3xl font-heading font-bold text-foreground">
-                    Learn at your own pace
-                  </h2>
-                  <p className="text-muted-foreground text-sm">
-                    Recorded workshops, downloadable templates, real application case studies, 
-                    and a growing library of expert resources — complementing our 1-on-1 consulting.
-                  </p>
-                  <div className="flex flex-wrap gap-3">
-                    <Button variant="gold" onClick={() => navigate('/academy')} className="gap-2">
-                      <Zap className="w-4 h-4" /> Launch Academy
-                    </Button>
-                    <Badge variant="outline" className="text-xs text-muted-foreground">
-                      Free preview available
-                    </Badge>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { icon: Target, label: "Recorded Workshops", desc: "Expert sessions on demand" },
-                    { icon: GraduationCap, label: "Case Studies", desc: "Real accepted materials" },
-                    { icon: Award, label: "Templates", desc: "SOPs, CVs, checklists" },
-                    { icon: Users, label: "Community", desc: "Peer support network" },
-                  ].map((item) => (
-                    <div key={item.label} className="bg-background/60 border border-border/50 rounded-lg p-3 text-center space-y-1">
-                      <item.icon className="w-5 h-5 text-gold mx-auto" />
-                      <p className="text-xs font-medium text-foreground">{item.label}</p>
-                      <p className="text-[10px] text-muted-foreground">{item.desc}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
 
         {/* FEATURE 1: Readiness Score Quiz - Instant engagement + lead qualification */}
         <ReadinessQuiz onComplete={(score) => {

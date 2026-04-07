@@ -17,6 +17,8 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
   const isRussian = language === "ru";
   const basePath = isRussian ? "/ru" : "/";
 
+  const betaProducts = new Set(["TopUni AI", "Discover", "Prep", isRussian ? "Подготовка" : "Prep"]);
+
   const primaryLinks = [
     {
       label: "TopUni AI",

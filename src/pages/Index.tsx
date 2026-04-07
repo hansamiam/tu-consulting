@@ -209,7 +209,7 @@ const Index = () => {
             {[
               { num: "200+", label: "Universities" },
               { num: "24/7", label: "AI Counselor" },
-              { num: "95%", label: "Match Accuracy" },
+              { num: "Smart", label: "AI Matching" },
               { num: "2 min", label: "Full Strategy" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
