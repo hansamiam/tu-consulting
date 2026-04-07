@@ -205,11 +205,10 @@ const Index = () => {
             </p>
           </motion.div>
 
-          <motion.div {...fadeUp(0.2)} className="grid grid-cols-2 sm:grid-cols-4 gap-6 mb-12">
+          <motion.div {...fadeUp(0.2)} className="grid grid-cols-3 gap-6 max-w-lg mx-auto mb-12">
             {[
               { num: "200+", label: "Universities" },
               { num: "24/7", label: "AI Counselor" },
-              { num: "Smart", label: "AI Matching" },
               { num: "2 min", label: "Full Strategy" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
