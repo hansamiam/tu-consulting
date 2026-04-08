@@ -119,7 +119,7 @@ const IndexRu = () => {
               </div>
               <h3 className="font-heading text-xl font-bold text-foreground mb-3">Discover</h3>
               <p className="text-muted-foreground text-sm leading-relaxed mb-4">
-                Поиск по 500+ университетам мира. Сравнение стоимости, рейтингов, виз и стипендий — в одной базе данных.
+                Поиск по 200+ университетам мира. Сравнение стоимости, рейтингов, виз и стипендий — в одной базе данных.
               </p>
               <ul className="space-y-2 text-sm text-muted-foreground mb-6">
                 <li className="flex items-center gap-2"><Target className="h-4 w-4 text-accent" /> Шанс поступления</li>
@@ -193,11 +193,10 @@ const IndexRu = () => {
             </p>
           </motion.div>
 
-          <motion.div {...fadeUp(0.2)} className="grid grid-cols-2 sm:grid-cols-4 gap-6 mb-12">
+          <motion.div {...fadeUp(0.2)} className="grid grid-cols-3 gap-6 max-w-lg mx-auto mb-12">
             {[
-              { num: "500+", label: "Университетов" },
+              { num: "200+", label: "Университетов" },
               { num: "24/7", label: "AI-консультант" },
-              { num: "95%", label: "Точность подбора" },
               { num: "2 мин", label: "Полная стратегия" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">

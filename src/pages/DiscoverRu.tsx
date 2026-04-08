@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
+import { BetaBanner } from "@/components/BetaBanner";
 import { Footer } from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Scale } from "lucide-react";
+import { Search, Scale, ShieldAlert } from "lucide-react";
 import { WatchlistDrawer } from "@/components/discover/Watchlist";
 import { motion } from "framer-motion";
 import { UniversityResult } from "@/components/discover/types";
@@ -18,6 +19,14 @@ import { SmartRecommendations } from "@/components/discover/SmartRecommendations
 import { DiscoverStats } from "@/components/discover/DiscoverStats";
 import { ScholarshipSpotlight } from "@/components/discover/ScholarshipSpotlight";
 import { ExportButton } from "@/components/discover/ExportButton";
+import { ApplicationTimeline } from "@/components/discover/ApplicationTimeline";
+import { TuitionHeatmap } from "@/components/discover/TuitionHeatmap";
+import { QuickFacts } from "@/components/discover/QuickFacts";
+import { ProgramFinderDialog } from "@/components/discover/ProgramFinderDialog";
+import { CountryProfileDialog } from "@/components/discover/CountryProfileDialog";
+import { UniversityWorldMap } from "@/components/discover/UniversityWorldMap";
+import { FieldAnalytics } from "@/components/discover/FieldAnalytics";
+import { BetaGate } from "@/components/discover/BetaGate";
 
 const DiscoverRu = () => {
   const [universities, setUniversities] = useState<UniversityResult[]>([]);
@@ -35,6 +44,9 @@ const DiscoverRu = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [compareIds, setCompareIds] = useState<Set<string>>(new Set());
   const [compareOpen, setCompareOpen] = useState(false);
+  const [gapYearOnly, setGapYearOnly] = useState(false);
+  const [rankingFilter, setRankingFilter] = useState("all");
+  const [languageFilter, setLanguageFilter] = useState("all");
   const [profile, setProfile] = useState<DiscoverProfile | null>(getStoredProfile());
   const [showProfileGate, setShowProfileGate] = useState(!getStoredProfile());
 
@@ -71,6 +83,9 @@ const DiscoverRu = () => {
     if (fieldFilter !== "all" && !uni.programs?.some((p) => p.field_of_study === fieldFilter)) return false;
     if (ieltsOptional && !uni.programs?.some((p) => p.admission_requirements?.some((a) => !a.ielts_required))) return false;
     if (foundationYear && !uni.foundation_year_available) return false;
+    if (gapYearOnly && !uni.gap_year_accepted) return false;
+    if (rankingFilter !== "all" && (!uni.global_ranking || uni.global_ranking > Number(rankingFilter))) return false;
+    if (languageFilter !== "all" && uni.language_of_instruction !== languageFilter) return false;
     return true;
   });
 
@@ -88,6 +103,7 @@ const DiscoverRu = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation language="ru" />
+      <BetaBanner />
 
       <DiscoverProfileGate
         open={showProfileGate}
@@ -95,6 +111,7 @@ const DiscoverRu = () => {
         language="ru"
       />
 
+      {/* Hero */}
       <section className="bg-primary py-12 sm:py-16">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-3xl sm:text-5xl font-heading font-bold text-primary-foreground mb-4">
@@ -116,33 +133,44 @@ const DiscoverRu = () => {
             </LockedOverlay>
             <WatchlistDrawer universities={universities} language="ru" />
             <ExportButton universities={filtered} language="ru" />
+            <ProgramFinderDialog universities={filtered} language="ru" />
+            <CountryProfileDialog universities={filtered} language="ru" />
           </motion.div>
         </div>
       </section>
 
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
-        {/* Stats Dashboard */}
-        {!loading && <DiscoverStats universities={filtered} language="ru" />}
+        {/* Data Accuracy Notice */}
+        <div className="flex items-start gap-3 p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl text-sm">
+          <ShieldAlert className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold text-foreground">Точность данных</p>
+            <p className="text-muted-foreground text-xs mt-1">
+              Названия университетов, страны и сайты проверены. Стоимость обучения, суммы стипендий и вступительные требования, отмеченные ⚠️, являются приблизительными и ожидают ручной проверки.
+              Всегда уточняйте детали на официальном сайте университета перед принятием решений.
+            </p>
+          </div>
+        </div>
 
-        {/* Smart Recommendations */}
-        {profile && (
-          <SmartRecommendations universities={universities} profile={profile} language="ru" />
-        )}
-
-        {/* Scholarship Spotlight */}
-        {!loading && <ScholarshipSpotlight universities={filtered} language="ru" />}
-
-        <DiscoverFilters
-          showFilters={showFilters} setShowFilters={setShowFilters}
-          countryFilter={countryFilter} setCountryFilter={setCountryFilter}
-          degreeFilter={degreeFilter} setDegreeFilter={setDegreeFilter}
-          fieldFilter={fieldFilter} setFieldFilter={setFieldFilter}
-          fullyFunded={fullyFunded} setFullyFunded={setFullyFunded}
-          ieltsOptional={ieltsOptional} setIeltsOptional={setIeltsOptional}
-          foundationYear={foundationYear} setFoundationYear={setFoundationYear}
-          maxTuition={maxTuition} setMaxTuition={setMaxTuition}
-          countries={countries} fields={fields} resultCount={filtered.length} language="ru"
-        />
+        {/* Filters */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1">
+            <DiscoverFilters
+              showFilters={showFilters} setShowFilters={setShowFilters}
+              countryFilter={countryFilter} setCountryFilter={setCountryFilter}
+              degreeFilter={degreeFilter} setDegreeFilter={setDegreeFilter}
+              fieldFilter={fieldFilter} setFieldFilter={setFieldFilter}
+              fullyFunded={fullyFunded} setFullyFunded={setFullyFunded}
+              ieltsOptional={ieltsOptional} setIeltsOptional={setIeltsOptional}
+              foundationYear={foundationYear} setFoundationYear={setFoundationYear}
+              maxTuition={maxTuition} setMaxTuition={setMaxTuition}
+              gapYearOnly={gapYearOnly} setGapYearOnly={setGapYearOnly}
+              rankingFilter={rankingFilter} setRankingFilter={setRankingFilter}
+              languageFilter={languageFilter} setLanguageFilter={setLanguageFilter}
+              countries={countries} fields={fields} resultCount={filtered.length} language="ru"
+            />
+          </div>
+        </div>
 
         {compareIds.size > 0 && (
           <div className="flex items-center gap-3 p-3 bg-accent/10 border border-accent/30 rounded-lg">
@@ -155,6 +183,7 @@ const DiscoverRu = () => {
           </div>
         )}
 
+        {/* University Table */}
         {loading ? (
           <div className="space-y-2">
             {[1, 2, 3, 4, 5].map((i) => (
@@ -162,11 +191,41 @@ const DiscoverRu = () => {
                 <div className="h-4 bg-muted rounded w-1/4" />
                 <div className="h-4 bg-muted rounded w-1/6" />
                 <div className="h-4 bg-muted rounded w-1/8" />
+                <div className="h-4 bg-muted rounded w-1/8" />
               </div>
             ))}
           </div>
         ) : (
           <UniversityTable universities={filtered} language="ru" compareIds={compareIds} onToggleCompare={toggleCompare} />
+        )}
+
+        {/* Smart Recommendations */}
+        {profile && (
+          <SmartRecommendations universities={universities} profile={profile} language="ru" />
+        )}
+
+        {/* Scholarship Spotlight */}
+        {!loading && <ScholarshipSpotlight universities={filtered} language="ru" />}
+
+        {/* Beta Features */}
+        {!loading && (
+          <BetaGate>
+            <div className="space-y-6">
+              <DiscoverStats universities={filtered} language="ru" />
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <QuickFacts universities={filtered} language="ru" />
+                <ApplicationTimeline universities={filtered} language="ru" />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <TuitionHeatmap universities={filtered} language="ru" />
+                <FieldAnalytics universities={filtered} language="ru" />
+              </div>
+
+              <UniversityWorldMap universities={filtered} language="ru" />
+            </div>
+          </BetaGate>
         )}
       </div>
 

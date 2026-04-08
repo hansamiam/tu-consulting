@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, BookOpen, Target, Globe, Brain, ArrowRight, Sparkles, Trophy, BarChart3, Zap } from "lucide-react";
 import Navigation from "@/components/Navigation";
+import { BetaBanner } from "@/components/BetaBanner";
 import { Footer } from "@/components/Footer";
 import heroImage from "@/assets/hero-campus.jpg";
 import { motion } from "framer-motion";
@@ -53,6 +54,7 @@ const PrepLandingRu = () => {
   return (
     <div className="min-h-screen relative bg-background">
       <Navigation language="ru" />
+      <BetaBanner />
 
       {/* Hero */}
       <motion.section
