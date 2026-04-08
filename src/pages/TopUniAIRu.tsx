@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Navigation from "@/components/Navigation";
+import { BetaBanner } from "@/components/BetaBanner";
 import { Footer } from "@/components/Footer";
 import topuniBg from "@/assets/topuni-bg.jpg";
 import TopUniChat from "@/components/TopUniChat";
@@ -63,6 +64,7 @@ const TopUniAIRu = () => {
       <div className="fixed inset-0 z-0 opacity-20" style={{ backgroundImage: `url(${topuniBg})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(2px)' }} />
       <div className="relative z-10">
         <Navigation language="ru" />
+        <BetaBanner />
 
         <AnimatePresence mode="wait">
           {screen === "landing" && (
