@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { trackPageView, trackSearch, trackFilterUsage, trackUniversityView } from "@/utils/analytics";
+import { useDebounce } from "@/hooks/use-debounce";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import { BetaBanner } from "@/components/BetaBanner";
