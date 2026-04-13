@@ -73,8 +73,10 @@ const Discover = () => {
     setLoading(false);
   };
 
+  const debouncedSearch = useDebounce(search, 250);
+
   const filtered = universities.filter((uni) => {
-    const q = search.toLowerCase();
+    const q = debouncedSearch.toLowerCase();
     if (q && !uni.university_name.toLowerCase().includes(q) &&
         !uni.country.toLowerCase().includes(q) &&
         !uni.city.toLowerCase().includes(q) &&
