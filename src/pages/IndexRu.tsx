@@ -5,6 +5,7 @@ import heroImage from "@/assets/hero-campus.jpg";
 import Navigation from "@/components/Navigation";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { Footer } from "@/components/Footer";
+import { StickyCTA } from "@/components/StickyCTA";
 import { motion } from "framer-motion";
 
 const fadeUp = (delay = 0) => ({
@@ -21,6 +22,7 @@ const IndexRu = () => {
     <div className="min-h-screen relative bg-background">
       <ScrollProgress />
       <Navigation language="ru" />
+      <StickyCTA language="ru" />
 
       {/* ── HERO ── */}
       <motion.section

@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, User, Loader2, Sparkles } from "lucide-react";
+import { Bot, Send, User, Loader2, Sparkles, RotateCcw } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { motion } from "framer-motion";
 
@@ -41,6 +41,9 @@ const Tutor = () => {
       hasEarnedXP.current = true;
     }
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
     try {
       const context = {
         targetExam,
@@ -54,7 +57,10 @@ const Tutor = () => {
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({ messages: newMessages, language, context }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
 
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({}));
@@ -94,9 +100,22 @@ const Tutor = () => {
         }
       }
     } catch (e: any) {
-      setMessages(prev => [...prev, { role: "assistant", content: `⚠️ ${e.message || "Something went wrong"}` }]);
+      clearTimeout(timeout);
+      const isAbort = e.name === "AbortError";
+      const errorMsg = isAbort
+        ? (language === "ru" ? "⏱ Время ожидания истекло. Нажмите ↻ чтобы повторить." : "⏱ Request timed out. Tap ↻ to retry.")
+        : `⚠️ ${e.message || (language === "ru" ? "Что-то пошло не так. Нажмите ↻." : "Something went wrong. Tap ↻ to retry.")}`;
+      setMessages(prev => [...prev, { role: "assistant", content: errorMsg }]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const retryLast = () => {
+    const lastUserMsg = [...messages].reverse().find(m => m.role === "user");
+    if (lastUserMsg) {
+      setMessages(prev => prev[prev.length - 1]?.role === "assistant" ? prev.slice(0, -1) : prev);
+      send(lastUserMsg.content);
     }
   };
 
@@ -149,6 +168,11 @@ const Tutor = () => {
         <div className="p-4 border-t border-border">
           <form onSubmit={e => { e.preventDefault(); send(input); }} className="flex gap-2">
             <Input value={input} onChange={e => setInput(e.target.value)} placeholder={t("Ask about test prep...", "Спросите о подготовке к экзаменам...")} disabled={loading} className="flex-1" />
+            {messages.length > 0 && messages[messages.length - 1]?.content?.includes("↻") && !loading && (
+              <Button type="button" variant="outline" size="icon" onClick={retryLast} title={t("Retry", "Повторить")}>
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            )}
             <Button type="submit" disabled={!input.trim() || loading} className="bg-accent text-accent-foreground hover:bg-accent/90">
               <Send className="h-4 w-4" />
             </Button>

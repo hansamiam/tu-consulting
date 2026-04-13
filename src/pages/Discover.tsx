@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { trackPageView, trackSearch, trackFilterUsage, trackUniversityView } from "@/utils/analytics";
+import { useDebounce } from "@/hooks/use-debounce";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import { BetaBanner } from "@/components/BetaBanner";
@@ -72,8 +73,10 @@ const Discover = () => {
     setLoading(false);
   };
 
+  const debouncedSearch = useDebounce(search, 250);
+
   const filtered = universities.filter((uni) => {
-    const q = search.toLowerCase();
+    const q = debouncedSearch.toLowerCase();
     if (q && !uni.university_name.toLowerCase().includes(q) &&
         !uni.country.toLowerCase().includes(q) &&
         !uni.city.toLowerCase().includes(q) &&
@@ -196,6 +199,15 @@ const Discover = () => {
                 <div className="h-4 bg-muted rounded w-1/8" />
               </div>
             ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-16 space-y-3">
+            <Search className="h-10 w-10 text-muted-foreground/40 mx-auto" />
+            <h3 className="text-lg font-heading font-semibold text-foreground">No universities found</h3>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">Try adjusting your filters or search term to see more results.</p>
+            <Button variant="outline" size="sm" onClick={() => { setSearch(""); setCountryFilter("all"); setDegreeFilter("all"); setFieldFilter("all"); setFullyFunded(false); setIeltsOptional(false); setFoundationYear(false); setMaxTuition(""); setGapYearOnly(false); setRankingFilter("all"); setLanguageFilter("all"); }}>
+              Clear All Filters
+            </Button>
           </div>
         ) : (
           <UniversityTable universities={filtered} language="en" compareIds={compareIds} onToggleCompare={toggleCompare} />

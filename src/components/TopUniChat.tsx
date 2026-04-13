@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { MessageCircle, X, Send, Sparkles, Loader2 } from "lucide-react";
+import { MessageCircle, X, Send, Sparkles, Loader2, RotateCcw } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 type Msg = { role: "user" | "assistant"; content: string };
@@ -64,6 +64,9 @@ const TopUniChat = ({ language = "en" }: TopUniChatProps) => {
       });
     };
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
     try {
       const resp = await fetch(CHAT_URL, {
         method: "POST",
@@ -72,11 +75,14 @@ const TopUniChat = ({ language = "en" }: TopUniChatProps) => {
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({ messages: allMessages, language }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
 
       if (!resp.ok || !resp.body) {
         const errData = await resp.json().catch(() => ({}));
-        upsertAssistant(errData.error || "Sorry, something went wrong. Please try again.");
+        upsertAssistant(errData.error || (isRu ? "Произошла ошибка. Попробуйте снова." : "Sorry, something went wrong. Please try again."));
         setIsLoading(false);
         return;
       }
@@ -129,12 +135,28 @@ const TopUniChat = ({ language = "en" }: TopUniChatProps) => {
           } catch { /* ignore */ }
         }
       }
-    } catch (e) {
-      console.error("Chat error:", e);
-      upsertAssistant("Sorry, I couldn't connect. Please try again in a moment.");
+    } catch (e: any) {
+      clearTimeout(timeout);
+      const isTimeout = e.name === "AbortError";
+      const errorMsg = isTimeout
+        ? (isRu ? "⏱ Время ожидания истекло. Нажмите «↻» чтобы повторить." : "⏱ Request timed out. Tap ↻ to retry.")
+        : (isRu ? "⚠️ Не удалось подключиться. Нажмите «↻» чтобы повторить." : "⚠️ Couldn't connect. Tap ↻ to retry.");
+      upsertAssistant(errorMsg);
     }
 
     setIsLoading(false);
+  };
+
+  const retryLast = () => {
+    const lastUserMsg = [...messages].reverse().find(m => m.role === "user");
+    if (lastUserMsg) {
+      setMessages(prev => {
+        const lastAssistant = prev[prev.length - 1];
+        if (lastAssistant?.role === "assistant") return prev.slice(0, -1);
+        return prev;
+      });
+      sendMessage(lastUserMsg.content);
+    }
   };
 
   return (
@@ -162,7 +184,7 @@ const TopUniChat = ({ language = "en" }: TopUniChatProps) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-6rem)] flex flex-col"
+            className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[380px] h-[70vh] sm:h-[520px] max-h-[calc(100vh-6rem)] flex flex-col"
           >
             <Card className="flex flex-col h-full border-accent/30 shadow-2xl overflow-hidden">
               {/* Header */}
@@ -236,6 +258,11 @@ const TopUniChat = ({ language = "en" }: TopUniChatProps) => {
                     className="text-sm"
                     disabled={isLoading}
                   />
+                  {messages.length > 0 && messages[messages.length - 1]?.content?.includes("↻") && !isLoading && (
+                    <Button type="button" size="icon" variant="outline" onClick={retryLast} title={isRu ? "Повторить" : "Retry"}>
+                      <RotateCcw className="w-4 h-4" />
+                    </Button>
+                  )}
                   <Button type="submit" size="icon" variant="gold" disabled={isLoading || !input.trim()}>
                     <Send className="w-4 h-4" />
                   </Button>
