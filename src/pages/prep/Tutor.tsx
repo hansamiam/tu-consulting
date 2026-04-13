@@ -168,6 +168,11 @@ const Tutor = () => {
         <div className="p-4 border-t border-border">
           <form onSubmit={e => { e.preventDefault(); send(input); }} className="flex gap-2">
             <Input value={input} onChange={e => setInput(e.target.value)} placeholder={t("Ask about test prep...", "Спросите о подготовке к экзаменам...")} disabled={loading} className="flex-1" />
+            {messages.length > 0 && messages[messages.length - 1]?.content?.includes("↻") && !loading && (
+              <Button type="button" variant="outline" size="icon" onClick={retryLast} title={t("Retry", "Повторить")}>
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            )}
             <Button type="submit" disabled={!input.trim() || loading} className="bg-accent text-accent-foreground hover:bg-accent/90">
               <Send className="h-4 w-4" />
             </Button>
