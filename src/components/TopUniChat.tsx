@@ -258,6 +258,11 @@ const TopUniChat = ({ language = "en" }: TopUniChatProps) => {
                     className="text-sm"
                     disabled={isLoading}
                   />
+                  {messages.length > 0 && messages[messages.length - 1]?.content?.includes("↻") && !isLoading && (
+                    <Button type="button" size="icon" variant="outline" onClick={retryLast} title={isRu ? "Повторить" : "Retry"}>
+                      <RotateCcw className="w-4 h-4" />
+                    </Button>
+                  )}
                   <Button type="submit" size="icon" variant="gold" disabled={isLoading || !input.trim()}>
                     <Send className="w-4 h-4" />
                   </Button>
