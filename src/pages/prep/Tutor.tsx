@@ -41,6 +41,9 @@ const Tutor = () => {
       hasEarnedXP.current = true;
     }
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
     try {
       const context = {
         targetExam,
@@ -54,7 +57,10 @@ const Tutor = () => {
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({ messages: newMessages, language, context }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
 
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({}));
@@ -94,9 +100,22 @@ const Tutor = () => {
         }
       }
     } catch (e: any) {
-      setMessages(prev => [...prev, { role: "assistant", content: `⚠️ ${e.message || "Something went wrong"}` }]);
+      clearTimeout(timeout);
+      const isAbort = e.name === "AbortError";
+      const errorMsg = isAbort
+        ? (language === "ru" ? "⏱ Время ожидания истекло. Нажмите ↻ чтобы повторить." : "⏱ Request timed out. Tap ↻ to retry.")
+        : `⚠️ ${e.message || (language === "ru" ? "Что-то пошло не так. Нажмите ↻." : "Something went wrong. Tap ↻ to retry.")}`;
+      setMessages(prev => [...prev, { role: "assistant", content: errorMsg }]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const retryLast = () => {
+    const lastUserMsg = [...messages].reverse().find(m => m.role === "user");
+    if (lastUserMsg) {
+      setMessages(prev => prev[prev.length - 1]?.role === "assistant" ? prev.slice(0, -1) : prev);
+      send(lastUserMsg.content);
     }
   };
 
