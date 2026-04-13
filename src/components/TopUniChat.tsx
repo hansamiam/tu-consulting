@@ -64,6 +64,9 @@ const TopUniChat = ({ language = "en" }: TopUniChatProps) => {
       });
     };
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
     try {
       const resp = await fetch(CHAT_URL, {
         method: "POST",
@@ -72,11 +75,14 @@ const TopUniChat = ({ language = "en" }: TopUniChatProps) => {
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({ messages: allMessages, language }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
 
       if (!resp.ok || !resp.body) {
         const errData = await resp.json().catch(() => ({}));
-        upsertAssistant(errData.error || "Sorry, something went wrong. Please try again.");
+        upsertAssistant(errData.error || (isRu ? "Произошла ошибка. Попробуйте снова." : "Sorry, something went wrong. Please try again."));
         setIsLoading(false);
         return;
       }
@@ -129,12 +135,28 @@ const TopUniChat = ({ language = "en" }: TopUniChatProps) => {
           } catch { /* ignore */ }
         }
       }
-    } catch (e) {
-      console.error("Chat error:", e);
-      upsertAssistant("Sorry, I couldn't connect. Please try again in a moment.");
+    } catch (e: any) {
+      clearTimeout(timeout);
+      const isTimeout = e.name === "AbortError";
+      const errorMsg = isTimeout
+        ? (isRu ? "⏱ Время ожидания истекло. Нажмите «↻» чтобы повторить." : "⏱ Request timed out. Tap ↻ to retry.")
+        : (isRu ? "⚠️ Не удалось подключиться. Нажмите «↻» чтобы повторить." : "⚠️ Couldn't connect. Tap ↻ to retry.");
+      upsertAssistant(errorMsg);
     }
 
     setIsLoading(false);
+  };
+
+  const retryLast = () => {
+    const lastUserMsg = [...messages].reverse().find(m => m.role === "user");
+    if (lastUserMsg) {
+      setMessages(prev => {
+        const lastAssistant = prev[prev.length - 1];
+        if (lastAssistant?.role === "assistant") return prev.slice(0, -1);
+        return prev;
+      });
+      sendMessage(lastUserMsg.content);
+    }
   };
 
   return (
