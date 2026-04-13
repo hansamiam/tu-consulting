@@ -184,7 +184,7 @@ const TopUniChat = ({ language = "en" }: TopUniChatProps) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-6rem)] flex flex-col"
+            className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[380px] h-[70vh] sm:h-[520px] max-h-[calc(100vh-6rem)] flex flex-col"
           >
             <Card className="flex flex-col h-full border-accent/30 shadow-2xl overflow-hidden">
               {/* Header */}
