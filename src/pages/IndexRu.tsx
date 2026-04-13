@@ -22,6 +22,7 @@ const IndexRu = () => {
     <div className="min-h-screen relative bg-background">
       <ScrollProgress />
       <Navigation language="ru" />
+      <StickyCTA language="ru" />
 
       {/* ── HERO ── */}
       <motion.section
