@@ -224,6 +224,14 @@ const TopUniChat = ({ language = "en" }: TopUniChatProps) => {
                   <X className="w-5 h-5" />
                 </button>
               </div>
+              {messages.length > 0 && (
+                <div className="px-4 py-1.5 bg-muted/30 border-b border-border flex items-center justify-between text-[11px] text-muted-foreground shrink-0">
+                  <span>{isRu ? "История сохраняется на этом устройстве" : "History saved on this device"}</span>
+                  <button onClick={clearHistory} className="flex items-center gap-1 hover:text-foreground transition-colors" title={isRu ? "Очистить историю" : "Clear history"}>
+                    <Trash2 className="w-3 h-3" /> {isRu ? "Очистить" : "Clear"}
+                  </button>
+                </div>
+              )}
 
               {/* Messages */}
               <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-background">
