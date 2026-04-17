@@ -4,25 +4,47 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, User, Loader2, Sparkles, RotateCcw } from "lucide-react";
+import { Bot, Send, User, Loader2, Sparkles, RotateCcw, Trash2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { motion } from "framer-motion";
 
 interface Msg { role: "user" | "assistant"; content: string; }
 
 const PREP_TUTOR_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/prep-tutor`;
+const TUTOR_STORAGE_KEY = "prep_tutor_history_v1";
 
 const Tutor = () => {
   const { language, targetExam, diagnosticResults, addXP, updateStreak } = usePrep();
   const t = (en: string, ru: string) => language === "ru" ? ru : en;
 
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const [messages, setMessages] = useState<Msg[]>(() => {
+    try {
+      const stored = localStorage.getItem(TUTOR_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed.slice(-30);
+      }
+    } catch { /* ignore */ }
+    return [];
+  });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const hasEarnedXP = useRef(false);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  useEffect(() => {
+    try {
+      if (messages.length === 0) localStorage.removeItem(TUTOR_STORAGE_KEY);
+      else localStorage.setItem(TUTOR_STORAGE_KEY, JSON.stringify(messages.slice(-30)));
+    } catch { /* ignore */ }
+  }, [messages]);
+
+  const clearHistory = () => {
+    setMessages([]);
+    try { localStorage.removeItem(TUTOR_STORAGE_KEY); } catch { /* ignore */ }
+  };
 
   const suggestedQuestions = language === "ru"
     ? ["Как улучшить балл IELTS Writing?", "Объясни стратегию SAT Math", "Помоги с грамматикой", "Как написать сильное эссе?"]
@@ -121,11 +143,18 @@ const Tutor = () => {
 
   return (
     <div className="max-w-3xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
-      <div className="space-y-1 mb-4">
-        <h2 className="text-2xl font-heading font-bold flex items-center gap-2">
-          <Bot className="h-6 w-6 text-accent" /> {t("AI Tutor", "AI Репетитор")}
-        </h2>
-        <p className="text-sm text-muted-foreground">{t("Ask about grammar, essays, exam strategies, and more", "Спрашивайте о грамматике, эссе, стратегиях экзаменов")}</p>
+      <div className="flex items-start justify-between mb-4">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-heading font-bold flex items-center gap-2">
+            <Bot className="h-6 w-6 text-accent" /> {t("AI Tutor", "AI Репетитор")}
+          </h2>
+          <p className="text-sm text-muted-foreground">{t("Ask about grammar, essays, exam strategies, and more", "Спрашивайте о грамматике, эссе, стратегиях экзаменов")}</p>
+        </div>
+        {messages.length > 0 && (
+          <Button variant="ghost" size="sm" onClick={clearHistory} className="gap-1.5 text-muted-foreground">
+            <Trash2 className="h-3.5 w-3.5" /> {t("Clear", "Очистить")}
+          </Button>
+        )}
       </div>
 
       <Card className="flex-1 flex flex-col overflow-hidden">

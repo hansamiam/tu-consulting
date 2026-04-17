@@ -31,25 +31,38 @@ import { UniversityWorldMap } from "@/components/discover/UniversityWorldMap";
 import { FieldAnalytics } from "@/components/discover/FieldAnalytics";
 import { BetaGate } from "@/components/discover/BetaGate";
 
+const UNIS_CACHE_KEY = "discover_unis_cache_v1";
+const UNIS_CACHE_TTL_MS = 10 * 60 * 1000; // 10 min
+const FILTERS_KEY = "discover_filters_v1";
+
+const loadFilters = () => {
+  try {
+    const raw = sessionStorage.getItem(FILTERS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return null;
+};
+
 const Discover = () => {
+  const savedFilters = loadFilters();
   const [universities, setUniversities] = useState<UniversityResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [countryFilter, setCountryFilter] = useState("all");
-  const [degreeFilter, setDegreeFilter] = useState("all");
-  const [fieldFilter, setFieldFilter] = useState("all");
-  const [fullyFunded, setFullyFunded] = useState(false);
-  const [ieltsOptional, setIeltsOptional] = useState(false);
-  const [foundationYear, setFoundationYear] = useState(false);
-  const [maxTuition, setMaxTuition] = useState("");
+  const [search, setSearch] = useState(savedFilters?.search ?? "");
+  const [countryFilter, setCountryFilter] = useState(savedFilters?.countryFilter ?? "all");
+  const [degreeFilter, setDegreeFilter] = useState(savedFilters?.degreeFilter ?? "all");
+  const [fieldFilter, setFieldFilter] = useState(savedFilters?.fieldFilter ?? "all");
+  const [fullyFunded, setFullyFunded] = useState<boolean>(savedFilters?.fullyFunded ?? false);
+  const [ieltsOptional, setIeltsOptional] = useState<boolean>(savedFilters?.ieltsOptional ?? false);
+  const [foundationYear, setFoundationYear] = useState<boolean>(savedFilters?.foundationYear ?? false);
+  const [maxTuition, setMaxTuition] = useState(savedFilters?.maxTuition ?? "");
   const [countries, setCountries] = useState<string[]>([]);
   const [fields, setFields] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [compareIds, setCompareIds] = useState<Set<string>>(new Set());
   const [compareOpen, setCompareOpen] = useState(false);
-  const [gapYearOnly, setGapYearOnly] = useState(false);
-  const [rankingFilter, setRankingFilter] = useState("all");
-  const [languageFilter, setLanguageFilter] = useState("all");
+  const [gapYearOnly, setGapYearOnly] = useState<boolean>(savedFilters?.gapYearOnly ?? false);
+  const [rankingFilter, setRankingFilter] = useState(savedFilters?.rankingFilter ?? "all");
+  const [languageFilter, setLanguageFilter] = useState(savedFilters?.languageFilter ?? "all");
   const [profile, setProfile] = useState<DiscoverProfile | null>(getStoredProfile());
   const [showProfileGate, setShowProfileGate] = useState(!getStoredProfile());
 
@@ -57,18 +70,47 @@ const Discover = () => {
 
   useEffect(() => { fetchUniversities(); trackPageView("/discover"); }, []);
 
+  // Persist filters to sessionStorage
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(FILTERS_KEY, JSON.stringify({
+        search, countryFilter, degreeFilter, fieldFilter, fullyFunded, ieltsOptional,
+        foundationYear, maxTuition, gapYearOnly, rankingFilter, languageFilter,
+      }));
+    } catch { /* ignore */ }
+  }, [search, countryFilter, degreeFilter, fieldFilter, fullyFunded, ieltsOptional, foundationYear, maxTuition, gapYearOnly, rankingFilter, languageFilter]);
+
+  const hydrateFromUnis = (unis: UniversityResult[]) => {
+    setUniversities(unis);
+    setCountries([...new Set(unis.map((u) => u.country))].sort());
+    const allFields = unis.flatMap((u: any) => u.programs?.map((p: any) => p.field_of_study) || []);
+    setFields([...new Set(allFields)].sort());
+  };
+
   const fetchUniversities = async () => {
-    setLoading(true);
+    // Try cache first for instant render
+    try {
+      const cached = sessionStorage.getItem(UNIS_CACHE_KEY);
+      if (cached) {
+        const { ts, data } = JSON.parse(cached);
+        if (Date.now() - ts < UNIS_CACHE_TTL_MS && Array.isArray(data)) {
+          hydrateFromUnis(data);
+          setLoading(false);
+          // still revalidate in background
+        }
+      }
+    } catch { /* ignore */ }
+
     const { data: unis, error } = await supabase
       .from("universities")
       .select(`*, programs (*, admission_requirements (*), applications (*)), scholarships (*), university_contacts (*), university_insights (*)`)
       .order("university_name", { ascending: true });
 
     if (!error && unis) {
-      setUniversities(unis as unknown as UniversityResult[]);
-      setCountries([...new Set(unis.map((u) => u.country))].sort());
-      const allFields = unis.flatMap((u: any) => u.programs?.map((p: any) => p.field_of_study) || []);
-      setFields([...new Set(allFields)].sort());
+      hydrateFromUnis(unis as unknown as UniversityResult[]);
+      try {
+        sessionStorage.setItem(UNIS_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: unis }));
+      } catch { /* quota — ignore */ }
     }
     setLoading(false);
   };
