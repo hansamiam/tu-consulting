@@ -136,6 +136,11 @@ const Discover = () => {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="max-w-2xl mx-auto relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
             <Input placeholder="Search by university, country, city, or program..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-12 h-14 text-base bg-card border-border rounded-xl shadow-lg" />
+            {!loading && (debouncedSearch || countryFilter !== "all" || degreeFilter !== "all" || fieldFilter !== "all" || fullyFunded || ieltsOptional || foundationYear || maxTuition || gapYearOnly || rankingFilter !== "all" || languageFilter !== "all") && (
+              <p className="text-primary-foreground/60 text-xs mt-2">
+                {filtered.length} of {universities.length} universities match
+              </p>
+            )}
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex items-center justify-center gap-3 mt-5 flex-wrap">
             <LockedOverlay isLocked={isLocked}>
