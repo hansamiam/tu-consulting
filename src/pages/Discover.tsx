@@ -75,35 +75,43 @@ const Discover = () => {
 
   const debouncedSearch = useDebounce(search, 250);
 
-  const filtered = universities.filter((uni) => {
-    const q = debouncedSearch.toLowerCase();
-    if (q && !uni.university_name.toLowerCase().includes(q) &&
-        !uni.country.toLowerCase().includes(q) &&
-        !uni.city.toLowerCase().includes(q) &&
-        !uni.programs?.some(p => p.program_name.toLowerCase().includes(q) || p.field_of_study.toLowerCase().includes(q))) return false;
-    if (countryFilter !== "all" && uni.country !== countryFilter) return false;
-    if (maxTuition && uni.tuition_usd_per_year && uni.tuition_usd_per_year > Number(maxTuition)) return false;
-    if (fullyFunded && !uni.scholarships?.some((s) => s.coverage_type === "full_ride")) return false;
-    if (degreeFilter !== "all" && !uni.programs?.some((p) => p.degree_level === degreeFilter)) return false;
-    if (fieldFilter !== "all" && !uni.programs?.some((p) => p.field_of_study === fieldFilter)) return false;
-    if (ieltsOptional && !uni.programs?.some((p) => p.admission_requirements?.some((a) => !a.ielts_required))) return false;
-    if (foundationYear && !uni.foundation_year_available) return false;
-    if (gapYearOnly && !uni.gap_year_accepted) return false;
-    if (rankingFilter !== "all" && (!uni.global_ranking || uni.global_ranking > Number(rankingFilter))) return false;
-    if (languageFilter !== "all" && uni.language_of_instruction !== languageFilter) return false;
-    return true;
-  });
+  const filtered = useMemo(() => {
+    const q = debouncedSearch.toLowerCase().trim();
+    const maxT = maxTuition ? Number(maxTuition) : null;
+    const maxRank = rankingFilter !== "all" ? Number(rankingFilter) : null;
 
-  const toggleCompare = (id: string) => {
+    return universities.filter((uni) => {
+      if (q && !uni.university_name.toLowerCase().includes(q) &&
+          !uni.country.toLowerCase().includes(q) &&
+          !uni.city.toLowerCase().includes(q) &&
+          !uni.programs?.some(p => p.program_name.toLowerCase().includes(q) || p.field_of_study.toLowerCase().includes(q))) return false;
+      if (countryFilter !== "all" && uni.country !== countryFilter) return false;
+      if (maxT !== null && uni.tuition_usd_per_year && uni.tuition_usd_per_year > maxT) return false;
+      if (fullyFunded && !uni.scholarships?.some((s) => s.coverage_type === "full_ride")) return false;
+      if (degreeFilter !== "all" && !uni.programs?.some((p) => p.degree_level === degreeFilter)) return false;
+      if (fieldFilter !== "all" && !uni.programs?.some((p) => p.field_of_study === fieldFilter)) return false;
+      if (ieltsOptional && !uni.programs?.some((p) => p.admission_requirements?.some((a) => !a.ielts_required))) return false;
+      if (foundationYear && !uni.foundation_year_available) return false;
+      if (gapYearOnly && !uni.gap_year_accepted) return false;
+      if (maxRank !== null && (!uni.global_ranking || uni.global_ranking > maxRank)) return false;
+      if (languageFilter !== "all" && uni.language_of_instruction !== languageFilter) return false;
+      return true;
+    });
+  }, [universities, debouncedSearch, countryFilter, degreeFilter, fieldFilter, fullyFunded, ieltsOptional, foundationYear, maxTuition, gapYearOnly, rankingFilter, languageFilter]);
+
+  const toggleCompare = useCallback((id: string) => {
     setCompareIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else if (next.size < 4) next.add(id);
       return next;
     });
-  };
+  }, []);
 
-  const compareUnis = universities.filter(u => compareIds.has(u.university_id));
+  const compareUnis = useMemo(
+    () => universities.filter(u => compareIds.has(u.university_id)),
+    [universities, compareIds]
+  );
 
   return (
     <div className="min-h-screen bg-background">
