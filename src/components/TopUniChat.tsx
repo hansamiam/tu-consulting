@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { MessageCircle, X, Send, Sparkles, Loader2, RotateCcw } from "lucide-react";
+import { MessageCircle, X, Send, Sparkles, Loader2, RotateCcw, Trash2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 type Msg = { role: "user" | "assistant"; content: string };
