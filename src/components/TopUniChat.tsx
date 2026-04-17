@@ -28,11 +28,22 @@ interface TopUniChatProps {
   language?: "en" | "ru";
 }
 
+const STORAGE_KEY = "topuni_chat_history_v1";
+
 const TopUniChat = ({ language = "en" }: TopUniChatProps) => {
   const isRu = language === "ru";
   const SUGGESTED_QUESTIONS = isRu ? SUGGESTED_QUESTIONS_RU : SUGGESTED_QUESTIONS_EN;
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const [messages, setMessages] = useState<Msg[]>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed.slice(-30); // cap at 30 msgs
+      }
+    } catch { /* ignore */ }
+    return [];
+  });
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -42,6 +53,19 @@ const TopUniChat = ({ language = "en" }: TopUniChatProps) => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Persist messages to localStorage (debounced via effect)
+  useEffect(() => {
+    try {
+      if (messages.length === 0) localStorage.removeItem(STORAGE_KEY);
+      else localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-30)));
+    } catch { /* quota or private mode — ignore */ }
+  }, [messages]);
+
+  const clearHistory = () => {
+    setMessages([]);
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+  };
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
