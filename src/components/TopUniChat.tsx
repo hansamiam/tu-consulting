@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { MessageCircle, X, Send, Sparkles, Loader2, RotateCcw } from "lucide-react";
+import { MessageCircle, X, Send, Sparkles, Loader2, RotateCcw, Trash2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 type Msg = { role: "user" | "assistant"; content: string };
@@ -28,11 +28,22 @@ interface TopUniChatProps {
   language?: "en" | "ru";
 }
 
+const STORAGE_KEY = "topuni_chat_history_v1";
+
 const TopUniChat = ({ language = "en" }: TopUniChatProps) => {
   const isRu = language === "ru";
   const SUGGESTED_QUESTIONS = isRu ? SUGGESTED_QUESTIONS_RU : SUGGESTED_QUESTIONS_EN;
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const [messages, setMessages] = useState<Msg[]>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed.slice(-30); // cap at 30 msgs
+      }
+    } catch { /* ignore */ }
+    return [];
+  });
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -42,6 +53,19 @@ const TopUniChat = ({ language = "en" }: TopUniChatProps) => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Persist messages to localStorage (debounced via effect)
+  useEffect(() => {
+    try {
+      if (messages.length === 0) localStorage.removeItem(STORAGE_KEY);
+      else localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-30)));
+    } catch { /* quota or private mode — ignore */ }
+  }, [messages]);
+
+  const clearHistory = () => {
+    setMessages([]);
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+  };
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
@@ -200,6 +224,14 @@ const TopUniChat = ({ language = "en" }: TopUniChatProps) => {
                   <X className="w-5 h-5" />
                 </button>
               </div>
+              {messages.length > 0 && (
+                <div className="px-4 py-1.5 bg-muted/30 border-b border-border flex items-center justify-between text-[11px] text-muted-foreground shrink-0">
+                  <span>{isRu ? "История сохраняется на этом устройстве" : "History saved on this device"}</span>
+                  <button onClick={clearHistory} className="flex items-center gap-1 hover:text-foreground transition-colors" title={isRu ? "Очистить историю" : "Clear history"}>
+                    <Trash2 className="w-3 h-3" /> {isRu ? "Очистить" : "Clear"}
+                  </button>
+                </div>
+              )}
 
               {/* Messages */}
               <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-background">
