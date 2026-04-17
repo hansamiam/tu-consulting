@@ -143,11 +143,18 @@ const Tutor = () => {
 
   return (
     <div className="max-w-3xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
-      <div className="space-y-1 mb-4">
-        <h2 className="text-2xl font-heading font-bold flex items-center gap-2">
-          <Bot className="h-6 w-6 text-accent" /> {t("AI Tutor", "AI Репетитор")}
-        </h2>
-        <p className="text-sm text-muted-foreground">{t("Ask about grammar, essays, exam strategies, and more", "Спрашивайте о грамматике, эссе, стратегиях экзаменов")}</p>
+      <div className="flex items-start justify-between mb-4">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-heading font-bold flex items-center gap-2">
+            <Bot className="h-6 w-6 text-accent" /> {t("AI Tutor", "AI Репетитор")}
+          </h2>
+          <p className="text-sm text-muted-foreground">{t("Ask about grammar, essays, exam strategies, and more", "Спрашивайте о грамматике, эссе, стратегиях экзаменов")}</p>
+        </div>
+        {messages.length > 0 && (
+          <Button variant="ghost" size="sm" onClick={clearHistory} className="gap-1.5 text-muted-foreground">
+            <Trash2 className="h-3.5 w-3.5" /> {t("Clear", "Очистить")}
+          </Button>
+        )}
       </div>
 
       <Card className="flex-1 flex flex-col overflow-hidden">
