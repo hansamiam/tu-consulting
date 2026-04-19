@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { trackPaymentFunnel } from "@/utils/analytics";
 import paymentQR from "@/assets/payment-qr.jpg";
 
 interface PaymentDialogProps {
@@ -18,14 +19,56 @@ interface PaymentDialogProps {
   isConsultation: boolean;
 }
 
+const STORAGE_KEY = "tu_payment_dialog_state";
+
 export const PaymentDialog = ({ open, onOpenChange, consultationType, price, language, isConsultation }: PaymentDialogProps) => {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptName, setReceiptName] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [discount, setDiscount] = useState(0);
   const [promoError, setPromoError] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const { toast } = useToast();
+  const openedRef = useRef(false);
+
+  // Restore state on mount (so refresh / accidental close doesn't kill the booking)
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (s.promoCode) setPromoCode(s.promoCode);
+        if (typeof s.discount === "number") setDiscount(s.discount);
+        if (s.termsAccepted) setTermsAccepted(s.termsAccepted);
+        if (s.receiptName) setReceiptName(s.receiptName);
+      }
+    } catch {/* ignore */}
+  }, []);
+
+  // Persist on change
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+        promoCode, discount, termsAccepted, receiptName: receiptFile?.name || receiptName,
+      }));
+    } catch {/* ignore */}
+  }, [promoCode, discount, termsAccepted, receiptFile, receiptName]);
+
+  // Track open/close for funnel analytics — see where users drop off
+  useEffect(() => {
+    if (open && !openedRef.current) {
+      openedRef.current = true;
+      trackPaymentFunnel("dialog_opened", { type: consultationType, price, is_consultation: isConsultation });
+    } else if (!open && openedRef.current) {
+      openedRef.current = false;
+      trackPaymentFunnel("dialog_closed", {
+        had_promo: discount > 0,
+        had_receipt: !!receiptFile,
+        accepted_terms: termsAccepted,
+      });
+    }
+  }, [open, consultationType, price, isConsultation, discount, receiptFile, termsAccepted]);
 
   const langSuffix = language === "ru" ? "/ru" : "";
 
@@ -107,10 +150,12 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
       if (!isConsultation) {
         setPromoError(language === "en" ? "This promo code is only valid for consultations" : "Этот промокод действителен только для консультаций");
         setDiscount(0);
+        trackPaymentFunnel("promo_invalid", { code, reason: "not_consultation" });
         return;
       }
       setDiscount(0.30);
       setPromoError("");
+      trackPaymentFunnel("promo_applied", { code, discount: 0.30 });
       toast({
         title: t.promoSuccess,
         description: language === "en" ? "30% discount applied!" : "Скидка 30% применена!",
@@ -121,6 +166,7 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
     } else {
       setPromoError(t.promoInvalid);
       setDiscount(0);
+      trackPaymentFunnel("promo_invalid", { code });
     }
   };
 
@@ -128,11 +174,13 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
     const file = e.target.files?.[0];
     if (file) {
       setReceiptFile(file);
+      setReceiptName(file.name);
       setIsUploading(true);
-      
+
       // Simulate upload
       setTimeout(() => {
         setIsUploading(false);
+        trackPaymentFunnel("receipt_uploaded", { filename: file.name, size_kb: Math.round(file.size / 1024) });
         toast({
           title: t.uploadSuccess,
           description: t.note,
@@ -153,18 +201,28 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
     if (!receiptFile) {
       toast({
         title: language === "en" ? "Receipt required" : "Требуется квитанция",
-        description: language === "en" 
-          ? "Please upload your payment receipt first" 
+        description: language === "en"
+          ? "Please upload your payment receipt first"
           : "Пожалуйста, сначала загрузите квитанцию об оплате",
         variant: "destructive",
       });
       return;
     }
-    
+
+    trackPaymentFunnel("proceeded", {
+      type: consultationType,
+      price,
+      discount,
+      final_price: calculateFinalPrice(),
+    });
+
+    // Clear persisted state on successful submit
+    try { sessionStorage.removeItem(STORAGE_KEY); } catch {/* ignore */}
+
     // Redirect to thank you page with Calendly embedded
     const thankYouPath = language === "ru" ? "/thank-you/ru" : "/thank-you";
-    const consultationType = isConsultation ? "consultation" : "package";
-    window.location.href = `${thankYouPath}?type=${consultationType}`;
+    const ctype = isConsultation ? "consultation" : "package";
+    window.location.href = `${thankYouPath}?type=${ctype}`;
   };
 
   return (
@@ -274,6 +332,10 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
                     <CheckCircle2 size={18} className="text-accent" />
                     {receiptFile.name}
                   </>
+                ) : receiptName ? (
+                  <span className="italic">
+                    {language === "en" ? "Previously: " : "Ранее: "}{receiptName} — {language === "en" ? "please re-upload" : "загрузите снова"}
+                  </span>
                 ) : (
                   t.noFile
                 )}
