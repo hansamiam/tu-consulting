@@ -150,10 +150,12 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
       if (!isConsultation) {
         setPromoError(language === "en" ? "This promo code is only valid for consultations" : "Этот промокод действителен только для консультаций");
         setDiscount(0);
+        trackPaymentFunnel("promo_invalid", { code, reason: "not_consultation" });
         return;
       }
       setDiscount(0.30);
       setPromoError("");
+      trackPaymentFunnel("promo_applied", { code, discount: 0.30 });
       toast({
         title: t.promoSuccess,
         description: language === "en" ? "30% discount applied!" : "Скидка 30% применена!",
@@ -164,6 +166,7 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
     } else {
       setPromoError(t.promoInvalid);
       setDiscount(0);
+      trackPaymentFunnel("promo_invalid", { code });
     }
   };
 
@@ -171,11 +174,13 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
     const file = e.target.files?.[0];
     if (file) {
       setReceiptFile(file);
+      setReceiptName(file.name);
       setIsUploading(true);
-      
+
       // Simulate upload
       setTimeout(() => {
         setIsUploading(false);
+        trackPaymentFunnel("receipt_uploaded", { filename: file.name, size_kb: Math.round(file.size / 1024) });
         toast({
           title: t.uploadSuccess,
           description: t.note,
@@ -196,18 +201,28 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
     if (!receiptFile) {
       toast({
         title: language === "en" ? "Receipt required" : "Требуется квитанция",
-        description: language === "en" 
-          ? "Please upload your payment receipt first" 
+        description: language === "en"
+          ? "Please upload your payment receipt first"
           : "Пожалуйста, сначала загрузите квитанцию об оплате",
         variant: "destructive",
       });
       return;
     }
-    
+
+    trackPaymentFunnel("proceeded", {
+      type: consultationType,
+      price,
+      discount,
+      final_price: calculateFinalPrice(),
+    });
+
+    // Clear persisted state on successful submit
+    try { sessionStorage.removeItem(STORAGE_KEY); } catch {/* ignore */}
+
     // Redirect to thank you page with Calendly embedded
     const thankYouPath = language === "ru" ? "/thank-you/ru" : "/thank-you";
-    const consultationType = isConsultation ? "consultation" : "package";
-    window.location.href = `${thankYouPath}?type=${consultationType}`;
+    const ctype = isConsultation ? "consultation" : "package";
+    window.location.href = `${thankYouPath}?type=${ctype}`;
   };
 
   return (
