@@ -89,3 +89,9 @@ export const trackUniversityView = (universityId: string, universityName: string
 
 export const trackReportGenerated = (grade: "basic" | "premium") =>
   trackEvent("report_generated", { grade });
+
+// Payment funnel — tracks drop-off at each step so we can fix conversion leaks
+export const trackPaymentFunnel = (
+  step: "dialog_opened" | "promo_applied" | "promo_invalid" | "receipt_uploaded" | "terms_accepted" | "proceeded" | "dialog_closed",
+  data?: Record<string, string | number | boolean | null>
+) => trackEvent("payment_funnel", { step, ...(data || {}) });
