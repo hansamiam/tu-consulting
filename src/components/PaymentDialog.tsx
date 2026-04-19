@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { trackPaymentFunnel } from "@/utils/analytics";
 import paymentQR from "@/assets/payment-qr.jpg";
 
 interface PaymentDialogProps {
@@ -18,14 +19,56 @@ interface PaymentDialogProps {
   isConsultation: boolean;
 }
 
+const STORAGE_KEY = "tu_payment_dialog_state";
+
 export const PaymentDialog = ({ open, onOpenChange, consultationType, price, language, isConsultation }: PaymentDialogProps) => {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptName, setReceiptName] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [discount, setDiscount] = useState(0);
   const [promoError, setPromoError] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const { toast } = useToast();
+  const openedRef = useRef(false);
+
+  // Restore state on mount (so refresh / accidental close doesn't kill the booking)
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (s.promoCode) setPromoCode(s.promoCode);
+        if (typeof s.discount === "number") setDiscount(s.discount);
+        if (s.termsAccepted) setTermsAccepted(s.termsAccepted);
+        if (s.receiptName) setReceiptName(s.receiptName);
+      }
+    } catch {/* ignore */}
+  }, []);
+
+  // Persist on change
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+        promoCode, discount, termsAccepted, receiptName: receiptFile?.name || receiptName,
+      }));
+    } catch {/* ignore */}
+  }, [promoCode, discount, termsAccepted, receiptFile, receiptName]);
+
+  // Track open/close for funnel analytics — see where users drop off
+  useEffect(() => {
+    if (open && !openedRef.current) {
+      openedRef.current = true;
+      trackPaymentFunnel("dialog_opened", { type: consultationType, price, is_consultation: isConsultation });
+    } else if (!open && openedRef.current) {
+      openedRef.current = false;
+      trackPaymentFunnel("dialog_closed", {
+        had_promo: discount > 0,
+        had_receipt: !!receiptFile,
+        accepted_terms: termsAccepted,
+      });
+    }
+  }, [open, consultationType, price, isConsultation, discount, receiptFile, termsAccepted]);
 
   const langSuffix = language === "ru" ? "/ru" : "";
 
