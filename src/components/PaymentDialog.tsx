@@ -332,6 +332,10 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
                     <CheckCircle2 size={18} className="text-accent" />
                     {receiptFile.name}
                   </>
+                ) : receiptName ? (
+                  <span className="italic">
+                    {language === "en" ? "Previously: " : "Ранее: "}{receiptName} — {language === "en" ? "please re-upload" : "загрузите снова"}
+                  </span>
                 ) : (
                   t.noFile
                 )}
