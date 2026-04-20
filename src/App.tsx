@@ -33,6 +33,8 @@ import TopUniAIPartnersRu from "./pages/TopUniAIPartnersRu";
 import Discover from "./pages/Discover";
 import DiscoverRu from "./pages/DiscoverRu";
 import Admin from "./pages/Admin";
+import FunnelDashboard from "./pages/FunnelDashboard";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import Academy from "./pages/Academy";
 import AcademyPrototype from "./pages/AcademyPrototype";
 import NotFound from "./pages/NotFound";
@@ -69,6 +71,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <ErrorBoundary>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/ru" element={<IndexRu />} />
@@ -101,6 +104,7 @@ const App = () => (
           <Route path="/discover" element={<Discover />} />
           <Route path="/discover/ru" element={<DiscoverRu />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/funnel" element={<FunnelDashboard />} />
           <Route path="/academy" element={<Academy />} />
           <Route path="/academy-prototype" element={<AcademyPrototype />} />
           <Route path="/prep" element={<PrepLanding />} />
@@ -133,6 +137,7 @@ const App = () => (
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </ErrorBoundary>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
