@@ -182,22 +182,51 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setReceiptFile(file);
-      setReceiptName(file.name);
-      setIsUploading(true);
+    if (!file) return;
 
-      // Simulate upload
-      setTimeout(() => {
-        setIsUploading(false);
-        trackPaymentFunnel("receipt_uploaded", { filename: file.name, size_kb: Math.round(file.size / 1024) });
-        toast({
-          title: t.uploadSuccess,
-          description: t.note,
-        });
-      }, 1000);
+    // 10MB cap
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: language === "en" ? "File too large" : "Файл слишком большой",
+        description: language === "en" ? "Max 10MB. Please compress or use a different file." : "Максимум 10МБ. Сожмите файл или используйте другой.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setReceiptFile(file);
+    setReceiptName(file.name);
+    setIsUploading(true);
+
+    const ext = file.name.split(".").pop() || "bin";
+    const path = `${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.${ext}`;
+
+    try {
+      const { error } = await supabase.storage
+        .from("payment-receipts")
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (error) throw error;
+
+      setReceiptPath(path);
+      setIsUploading(false);
+      trackPaymentFunnel("receipt_uploaded", { filename: file.name, size_kb: Math.round(file.size / 1024), path });
+      toast({
+        title: t.uploadSuccess,
+        description: t.note,
+      });
+    } catch (err) {
+      setIsUploading(false);
+      setReceiptPath("");
+      trackPaymentFunnel("receipt_upload_failed", { error: String(err).slice(0, 200) });
+      toast({
+        title: language === "en" ? "Upload failed" : "Ошибка загрузки",
+        description: language === "en"
+          ? "Couldn't upload receipt. Please try again or contact us on WhatsApp."
+          : "Не удалось загрузить квитанцию. Попробуйте ещё раз или напишите нам в WhatsApp.",
+        variant: "destructive",
+      });
     }
   };
 
