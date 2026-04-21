@@ -49,6 +49,9 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
         if (typeof s.discount === "number") setDiscount(s.discount);
         if (s.termsAccepted) setTermsAccepted(s.termsAccepted);
         if (s.receiptName) setReceiptName(s.receiptName);
+        if (s.receiptPath) setReceiptPath(s.receiptPath);
+        if (s.contactEmail) setContactEmail(s.contactEmail);
+        if (s.contactName) setContactName(s.contactName);
       }
     } catch {/* ignore */}
   }, []);
@@ -57,10 +60,12 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
   useEffect(() => {
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
-        promoCode, discount, termsAccepted, receiptName: receiptFile?.name || receiptName,
+        promoCode, discount, termsAccepted,
+        receiptName: receiptFile?.name || receiptName,
+        receiptPath, contactEmail, contactName,
       }));
     } catch {/* ignore */}
-  }, [promoCode, discount, termsAccepted, receiptFile, receiptName]);
+  }, [promoCode, discount, termsAccepted, receiptFile, receiptName, receiptPath, contactEmail, contactName]);
 
   // Track open/close for funnel analytics — see where users drop off
   useEffect(() => {
