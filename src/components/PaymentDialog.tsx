@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Upload, CheckCircle2 } from "lucide-react";
+import { Upload, CheckCircle2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { trackPaymentFunnel } from "@/utils/analytics";
+import { supabase } from "@/integrations/supabase/client";
+import { ExitIntentRecovery } from "@/components/ExitIntentRecovery";
 import paymentQR from "@/assets/payment-qr.jpg";
 
 interface PaymentDialogProps {
