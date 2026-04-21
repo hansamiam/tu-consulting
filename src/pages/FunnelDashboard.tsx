@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { TrendingDown, TrendingUp, Users, MousePointerClick, ArrowDown, AlertCircle, RefreshCw } from "lucide-react";
+import { TrendingDown, TrendingUp, Users, MousePointerClick, ArrowDown, AlertCircle, RefreshCw, Receipt, ExternalLink } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 interface InteractionRow {
@@ -33,6 +33,7 @@ const FunnelDashboard = () => {
   const [authChecking, setAuthChecking] = useState(true);
   const [loading, setLoading] = useState(false);
   const [interactions, setInteractions] = useState<InteractionRow[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
   const [days, setDays] = useState("7");
 
   useEffect(() => {
@@ -59,17 +60,35 @@ const FunnelDashboard = () => {
   const loadData = async () => {
     setLoading(true);
     const since = new Date(Date.now() - Number(days) * 86400000).toISOString();
-    const { data, error } = await supabase
-      .from("student_interactions")
-      .select("id, event_type, event_data, session_id, device_type, created_at")
-      .gte("created_at", since)
-      .in("event_type", ["payment_funnel", "page_view", "tool_used", "ai_interaction", "client_error"])
-      .order("created_at", { ascending: false })
-      .limit(5000);
-
-    if (!error && data) setInteractions(data as InteractionRow[]);
+    const [interactionsRes, bookingsRes] = await Promise.all([
+      supabase
+        .from("student_interactions")
+        .select("id, event_type, event_data, session_id, device_type, created_at")
+        .gte("created_at", since)
+        .in("event_type", ["payment_funnel", "page_view", "tool_used", "ai_interaction", "client_error", "booking_completed"])
+        .order("created_at", { ascending: false })
+        .limit(5000),
+      supabase
+        .from("bookings")
+        .select("*")
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .limit(200),
+    ]);
+    if (!interactionsRes.error && interactionsRes.data) setInteractions(interactionsRes.data as InteractionRow[]);
+    if (!bookingsRes.error && bookingsRes.data) setBookings(bookingsRes.data);
     setLoading(false);
   };
+
+  const openReceipt = async (path: string) => {
+    if (!path) return;
+    const { data, error } = await supabase.storage
+      .from("payment-receipts")
+      .createSignedUrl(path, 60 * 10); // 10 min
+    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+    else alert("Couldn't open receipt: " + (error?.message || "unknown"));
+  };
+
 
   // ===== ANALYTICS COMPUTATIONS =====
   const funnelEvents = interactions.filter((i) => i.event_type === "payment_funnel");
