@@ -92,6 +92,10 @@ export const trackReportGenerated = (grade: "basic" | "premium") =>
 
 // Payment funnel — tracks drop-off at each step so we can fix conversion leaks
 export const trackPaymentFunnel = (
-  step: "dialog_opened" | "promo_applied" | "promo_invalid" | "receipt_uploaded" | "terms_accepted" | "proceeded" | "dialog_closed",
+  step:
+    | "dialog_opened" | "promo_applied" | "promo_invalid" | "receipt_uploaded"
+    | "terms_accepted" | "proceeded" | "dialog_closed"
+    | "receipt_upload_failed" | "booking_saved" | "booking_save_failed"
+    | "exit_intent_shown" | "exit_intent_resumed" | "exit_intent_whatsapp" | "exit_intent_dismissed",
   data?: Record<string, string | number | boolean | null>
 ) => trackEvent("payment_funnel", { step, ...(data || {}) });

@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Upload, CheckCircle2 } from "lucide-react";
+import { Upload, CheckCircle2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { trackPaymentFunnel } from "@/utils/analytics";
+import { supabase } from "@/integrations/supabase/client";
+import { ExitIntentRecovery } from "@/components/ExitIntentRecovery";
 import paymentQR from "@/assets/payment-qr.jpg";
 
 interface PaymentDialogProps {
@@ -24,11 +26,16 @@ const STORAGE_KEY = "tu_payment_dialog_state";
 export const PaymentDialog = ({ open, onOpenChange, consultationType, price, language, isConsultation }: PaymentDialogProps) => {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptName, setReceiptName] = useState<string>("");
+  const [receiptPath, setReceiptPath] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [discount, setDiscount] = useState(0);
   const [promoError, setPromoError] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactName, setContactName] = useState("");
+  const [showExitIntent, setShowExitIntent] = useState(false);
   const { toast } = useToast();
   const openedRef = useRef(false);
 
@@ -42,6 +49,9 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
         if (typeof s.discount === "number") setDiscount(s.discount);
         if (s.termsAccepted) setTermsAccepted(s.termsAccepted);
         if (s.receiptName) setReceiptName(s.receiptName);
+        if (s.receiptPath) setReceiptPath(s.receiptPath);
+        if (s.contactEmail) setContactEmail(s.contactEmail);
+        if (s.contactName) setContactName(s.contactName);
       }
     } catch {/* ignore */}
   }, []);
@@ -50,10 +60,12 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
   useEffect(() => {
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
-        promoCode, discount, termsAccepted, receiptName: receiptFile?.name || receiptName,
+        promoCode, discount, termsAccepted,
+        receiptName: receiptFile?.name || receiptName,
+        receiptPath, contactEmail, contactName,
       }));
     } catch {/* ignore */}
-  }, [promoCode, discount, termsAccepted, receiptFile, receiptName]);
+  }, [promoCode, discount, termsAccepted, receiptFile, receiptName, receiptPath, contactEmail, contactName]);
 
   // Track open/close for funnel analytics — see where users drop off
   useEffect(() => {
@@ -170,35 +182,60 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setReceiptFile(file);
-      setReceiptName(file.name);
-      setIsUploading(true);
+    if (!file) return;
 
-      // Simulate upload
-      setTimeout(() => {
-        setIsUploading(false);
-        trackPaymentFunnel("receipt_uploaded", { filename: file.name, size_kb: Math.round(file.size / 1024) });
-        toast({
-          title: t.uploadSuccess,
-          description: t.note,
-        });
-      }, 1000);
-    }
-  };
-
-  const handleProceed = () => {
-    if (!termsAccepted) {
+    // 10MB cap
+    if (file.size > 10 * 1024 * 1024) {
       toast({
-        title: t.checkboxRequired,
+        title: language === "en" ? "File too large" : "Файл слишком большой",
+        description: language === "en" ? "Max 10MB. Please compress or use a different file." : "Максимум 10МБ. Сожмите файл или используйте другой.",
         variant: "destructive",
       });
       return;
     }
 
-    if (!receiptFile) {
+    setReceiptFile(file);
+    setReceiptName(file.name);
+    setIsUploading(true);
+
+    const ext = file.name.split(".").pop() || "bin";
+    const path = `${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.${ext}`;
+
+    try {
+      const { error } = await supabase.storage
+        .from("payment-receipts")
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (error) throw error;
+
+      setReceiptPath(path);
+      setIsUploading(false);
+      trackPaymentFunnel("receipt_uploaded", { filename: file.name, size_kb: Math.round(file.size / 1024), path });
+      toast({
+        title: t.uploadSuccess,
+        description: t.note,
+      });
+    } catch (err) {
+      setIsUploading(false);
+      setReceiptPath("");
+      trackPaymentFunnel("receipt_upload_failed", { error: String(err).slice(0, 200) });
+      toast({
+        title: language === "en" ? "Upload failed" : "Ошибка загрузки",
+        description: language === "en"
+          ? "Couldn't upload receipt. Please try again or contact us on WhatsApp."
+          : "Не удалось загрузить квитанцию. Попробуйте ещё раз или напишите нам в WhatsApp.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleProceed = async () => {
+    if (!termsAccepted) {
+      toast({ title: t.checkboxRequired, variant: "destructive" });
+      return;
+    }
+    if (!receiptPath) {
       toast({
         title: language === "en" ? "Receipt required" : "Требуется квитанция",
         description: language === "en"
@@ -208,25 +245,72 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
       });
       return;
     }
+    if (!contactEmail.trim()) {
+      toast({
+        title: language === "en" ? "Email required" : "Требуется email",
+        description: language === "en"
+          ? "We need your email to confirm the booking"
+          : "Нам нужен ваш email для подтверждения бронирования",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    trackPaymentFunnel("proceeded", {
-      type: consultationType,
-      price,
-      discount,
-      final_price: calculateFinalPrice(),
-    });
+    setIsSubmitting(true);
+    const finalPrice = calculateFinalPrice();
+    trackPaymentFunnel("proceeded", { type: consultationType, price, discount, final_price: finalPrice });
 
-    // Clear persisted state on successful submit
+    // Save booking server-side so it's not lost if Calendly is skipped
+    try {
+      const { error } = await supabase.functions.invoke("booking-notify", {
+        body: {
+          consultation_type: consultationType,
+          is_consultation: isConsultation,
+          original_price: price,
+          discount,
+          final_price: finalPrice,
+          promo_code: promoCode || null,
+          language,
+          receipt_path: receiptPath,
+          contact_email: contactEmail.trim(),
+          contact_name: contactName.trim() || null,
+        },
+      });
+      if (error) throw error;
+      trackPaymentFunnel("booking_saved", { final_price: finalPrice });
+    } catch (err) {
+      trackPaymentFunnel("booking_save_failed", { error: String(err).slice(0, 200) });
+      console.error("Booking save failed:", err);
+      // Don't block — receipt is already in storage, user can still complete on Calendly
+    }
+
     try { sessionStorage.removeItem(STORAGE_KEY); } catch {/* ignore */}
 
-    // Redirect to thank you page with Calendly embedded
     const thankYouPath = language === "ru" ? "/thank-you/ru" : "/thank-you";
     const ctype = isConsultation ? "consultation" : "package";
     window.location.href = `${thankYouPath}?type=${ctype}`;
   };
 
+  // Exit-intent: if user tries to close mid-flow with progress, intercept once
+  const exitShownRef = useRef(false);
+  const handleOpenChange = (next: boolean) => {
+    if (!next && !exitShownRef.current && !isSubmitting) {
+      const hasProgress = !!receiptPath || discount > 0 || !!contactEmail.trim();
+      if (hasProgress) {
+        exitShownRef.current = true;
+        trackPaymentFunnel("exit_intent_shown", {
+          had_receipt: !!receiptPath, had_promo: discount > 0, had_email: !!contactEmail.trim(),
+        });
+        setShowExitIntent(true);
+        return;
+      }
+    }
+    onOpenChange(next);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">{t.title}</DialogTitle>
@@ -420,15 +504,36 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
             </div>
           </div>
 
+          {/* Contact info — required so we can confirm the booking */}
+          <div className="space-y-3 p-4 border border-border rounded-lg">
+            <Label className="text-base font-semibold">
+              {language === "en" ? "Your contact info" : "Ваши контактные данные"} <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              type="email"
+              required
+              value={contactEmail}
+              onChange={(e) => setContactEmail(e.target.value)}
+              placeholder="Email *"
+            />
+            <Input
+              value={contactName}
+              onChange={(e) => setContactName(e.target.value)}
+              placeholder={language === "en" ? "Full name (optional)" : "Полное имя (необязательно)"}
+            />
+          </div>
+
           {/* Proceed Button */}
           <Button
             variant="gold"
             className="w-full"
             size="lg"
             onClick={handleProceed}
-            disabled={isUploading || !termsAccepted}
+            disabled={isUploading || isSubmitting || !termsAccepted || !receiptPath}
           >
-            {t.proceedButton}
+            {isSubmitting ? (
+              <><Loader2 size={18} className="mr-2 animate-spin" />{language === "en" ? "Saving booking..." : "Сохранение..."}</>
+            ) : t.proceedButton}
           </Button>
 
           {/* Contact Note */}
@@ -443,5 +548,15 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
         </div>
       </DialogContent>
     </Dialog>
+    <ExitIntentRecovery
+      open={showExitIntent}
+      onOpenChange={(o) => {
+        setShowExitIntent(o);
+        if (!o) onOpenChange(false);
+      }}
+      onResume={() => setShowExitIntent(false)}
+      language={language}
+    />
+    </>
   );
 };
