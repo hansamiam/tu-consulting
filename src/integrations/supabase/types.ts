@@ -123,6 +123,60 @@ export type Database = {
           },
         ]
       }
+      bookings: {
+        Row: {
+          consultation_type: string
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          discount: number | null
+          final_price: number | null
+          id: string
+          is_consultation: boolean
+          language: string
+          notes: string | null
+          original_price: string | null
+          promo_code: string | null
+          receipt_path: string | null
+          status: string
+        }
+        Insert: {
+          consultation_type: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          discount?: number | null
+          final_price?: number | null
+          id?: string
+          is_consultation?: boolean
+          language?: string
+          notes?: string | null
+          original_price?: string | null
+          promo_code?: string | null
+          receipt_path?: string | null
+          status?: string
+        }
+        Update: {
+          consultation_type?: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          discount?: number | null
+          final_price?: number | null
+          id?: string
+          is_consultation?: boolean
+          language?: string
+          notes?: string | null
+          original_price?: string | null
+          promo_code?: string | null
+          receipt_path?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       programs: {
         Row: {
           created_at: string | null
