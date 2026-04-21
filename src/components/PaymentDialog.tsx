@@ -26,11 +26,16 @@ const STORAGE_KEY = "tu_payment_dialog_state";
 export const PaymentDialog = ({ open, onOpenChange, consultationType, price, language, isConsultation }: PaymentDialogProps) => {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptName, setReceiptName] = useState<string>("");
+  const [receiptPath, setReceiptPath] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [discount, setDiscount] = useState(0);
   const [promoError, setPromoError] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactName, setContactName] = useState("");
+  const [showExitIntent, setShowExitIntent] = useState(false);
   const { toast } = useToast();
   const openedRef = useRef(false);
 
