@@ -309,7 +309,8 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">{t.title}</DialogTitle>
