@@ -504,15 +504,36 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
             </div>
           </div>
 
+          {/* Contact info — required so we can confirm the booking */}
+          <div className="space-y-3 p-4 border border-border rounded-lg">
+            <Label className="text-base font-semibold">
+              {language === "en" ? "Your contact info" : "Ваши контактные данные"} <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              type="email"
+              required
+              value={contactEmail}
+              onChange={(e) => setContactEmail(e.target.value)}
+              placeholder="Email *"
+            />
+            <Input
+              value={contactName}
+              onChange={(e) => setContactName(e.target.value)}
+              placeholder={language === "en" ? "Full name (optional)" : "Полное имя (необязательно)"}
+            />
+          </div>
+
           {/* Proceed Button */}
           <Button
             variant="gold"
             className="w-full"
             size="lg"
             onClick={handleProceed}
-            disabled={isUploading || !termsAccepted}
+            disabled={isUploading || isSubmitting || !termsAccepted || !receiptPath}
           >
-            {t.proceedButton}
+            {isSubmitting ? (
+              <><Loader2 size={18} className="mr-2 animate-spin" />{language === "en" ? "Saving booking..." : "Сохранение..."}</>
+            ) : t.proceedButton}
           </Button>
 
           {/* Contact Note */}
@@ -527,5 +548,15 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
         </div>
       </DialogContent>
     </Dialog>
+    <ExitIntentRecovery
+      open={showExitIntent}
+      onOpenChange={(o) => {
+        setShowExitIntent(o);
+        if (!o) onOpenChange(false);
+      }}
+      onResume={() => setShowExitIntent(false)}
+      language={language}
+    />
+    </>
   );
 };
