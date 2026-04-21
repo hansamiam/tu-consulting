@@ -230,16 +230,12 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
     }
   };
 
-  const handleProceed = () => {
+  const handleProceed = async () => {
     if (!termsAccepted) {
-      toast({
-        title: t.checkboxRequired,
-        variant: "destructive",
-      });
+      toast({ title: t.checkboxRequired, variant: "destructive" });
       return;
     }
-
-    if (!receiptFile) {
+    if (!receiptPath) {
       toast({
         title: language === "en" ? "Receipt required" : "Требуется квитанция",
         description: language === "en"
@@ -249,21 +245,67 @@ export const PaymentDialog = ({ open, onOpenChange, consultationType, price, lan
       });
       return;
     }
+    if (!contactEmail.trim()) {
+      toast({
+        title: language === "en" ? "Email required" : "Требуется email",
+        description: language === "en"
+          ? "We need your email to confirm the booking"
+          : "Нам нужен ваш email для подтверждения бронирования",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    trackPaymentFunnel("proceeded", {
-      type: consultationType,
-      price,
-      discount,
-      final_price: calculateFinalPrice(),
-    });
+    setIsSubmitting(true);
+    const finalPrice = calculateFinalPrice();
+    trackPaymentFunnel("proceeded", { type: consultationType, price, discount, final_price: finalPrice });
 
-    // Clear persisted state on successful submit
+    // Save booking server-side so it's not lost if Calendly is skipped
+    try {
+      const { error } = await supabase.functions.invoke("booking-notify", {
+        body: {
+          consultation_type: consultationType,
+          is_consultation: isConsultation,
+          original_price: price,
+          discount,
+          final_price: finalPrice,
+          promo_code: promoCode || null,
+          language,
+          receipt_path: receiptPath,
+          contact_email: contactEmail.trim(),
+          contact_name: contactName.trim() || null,
+        },
+      });
+      if (error) throw error;
+      trackPaymentFunnel("booking_saved", { final_price: finalPrice });
+    } catch (err) {
+      trackPaymentFunnel("booking_save_failed", { error: String(err).slice(0, 200) });
+      console.error("Booking save failed:", err);
+      // Don't block — receipt is already in storage, user can still complete on Calendly
+    }
+
     try { sessionStorage.removeItem(STORAGE_KEY); } catch {/* ignore */}
 
-    // Redirect to thank you page with Calendly embedded
     const thankYouPath = language === "ru" ? "/thank-you/ru" : "/thank-you";
     const ctype = isConsultation ? "consultation" : "package";
     window.location.href = `${thankYouPath}?type=${ctype}`;
+  };
+
+  // Exit-intent: if user tries to close mid-flow with progress, intercept once
+  const exitShownRef = useRef(false);
+  const handleOpenChange = (next: boolean) => {
+    if (!next && !exitShownRef.current && !isSubmitting) {
+      const hasProgress = !!receiptPath || discount > 0 || !!contactEmail.trim();
+      if (hasProgress) {
+        exitShownRef.current = true;
+        trackPaymentFunnel("exit_intent_shown", {
+          had_receipt: !!receiptPath, had_promo: discount > 0, had_email: !!contactEmail.trim(),
+        });
+        setShowExitIntent(true);
+        return;
+      }
+    }
+    onOpenChange(next);
   };
 
   return (
