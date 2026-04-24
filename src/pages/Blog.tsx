@@ -2,10 +2,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import { ArrowLeft, BookOpen, Clock, ArrowRight } from "lucide-react";
+import { ArrowLeft, BookOpen, Clock, ArrowRight, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-library.jpg";
 import { blogArticles } from "@/data/blogArticles";
+import { countryGuides } from "@/data/countryGuides";
 
 const Blog = () => {
   const navigate = useNavigate();
@@ -48,6 +49,35 @@ const Blog = () => {
           </div>
 
           <div className="grid gap-6 md:gap-8">
+            {countryGuides.map((g) => (
+              <Card
+                key={`guide-${g.slug}`}
+                className="overflow-hidden border-border/50 hover:border-accent/30 hover:shadow-lg transition-all duration-300 cursor-pointer group"
+                onClick={() => navigate(`/blog/guide/${g.slug}`)}
+              >
+                <div className="flex flex-col sm:flex-row">
+                  <div className="sm:w-64 md:w-80 h-32 sm:h-auto shrink-0 bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+                    <span className="text-7xl">{g.flag}</span>
+                  </div>
+                  <div className="p-6 md:p-8 flex flex-col justify-center">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="px-2.5 py-0.5 rounded-full bg-gold/15 text-gold text-xs font-medium inline-flex items-center gap-1">
+                        <Globe className="h-3 w-3" /> Country Guide
+                      </span>
+                      <span className="text-xs text-muted-foreground">{g.popularCities.slice(0, 2).join(" · ")}</span>
+                    </div>
+                    <h2 className="text-lg md:text-xl font-bold text-foreground mb-2 group-hover:text-accent transition-colors">
+                      Study in {g.country}
+                    </h2>
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{g.tagline}</p>
+                    <span className="inline-flex items-center gap-1 text-accent text-sm font-medium group-hover:gap-2 transition-all">
+                      Read guide <ArrowRight className="h-4 w-4" />
+                    </span>
+                  </div>
+                </div>
+              </Card>
+            ))}
+
             {blogArticles.map((article) => (
               <Card
                 key={article.id}

@@ -55,7 +55,7 @@ const CountryGuide = ({ language = "en" }: Props) => {
     );
   }
 
-  const indexPath = isRu ? "/guides/ru" : "/guides";
+  const indexPath = isRu ? "/blog/ru" : "/blog";
 
   const Section = ({
     icon: Icon, title, children,
@@ -82,7 +82,7 @@ const CountryGuide = ({ language = "en" }: Props) => {
               className="inline-flex items-center gap-1 text-xs text-primary-foreground/70 hover:text-gold mb-5"
             >
               <ArrowLeft className="w-3 h-3" />
-              {isRu ? "Все гайды" : "All guides"}
+              {isRu ? "Назад к блогу" : "Back to Blog"}
             </Link>
             <div className="flex items-center gap-4 mb-4">
               <span className="text-5xl">{guide.flag}</span>
