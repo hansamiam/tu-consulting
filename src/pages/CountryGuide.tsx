@@ -55,7 +55,7 @@ const CountryGuide = ({ language = "en" }: Props) => {
     );
   }
 
-  const indexPath = isRu ? "/guides/ru" : "/guides";
+  const indexPath = isRu ? "/blog/ru" : "/blog";
 
   const Section = ({
     icon: Icon, title, children,
