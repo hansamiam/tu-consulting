@@ -37,6 +37,8 @@ import FunnelDashboard from "./pages/FunnelDashboard";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import Academy from "./pages/Academy";
 import AcademyPrototype from "./pages/AcademyPrototype";
+import CountryGuides from "./pages/CountryGuides";
+import CountryGuide from "./pages/CountryGuide";
 import NotFound from "./pages/NotFound";
 import PrepLayout from "./components/prep/PrepLayout";
 import PrepLanding from "./pages/PrepLanding";
@@ -107,6 +109,10 @@ const App = () => (
           <Route path="/admin/funnel" element={<FunnelDashboard />} />
           <Route path="/academy" element={<Academy />} />
           <Route path="/academy-prototype" element={<AcademyPrototype />} />
+          <Route path="/guides" element={<CountryGuides language="en" />} />
+          <Route path="/guides/ru" element={<CountryGuides language="ru" />} />
+          <Route path="/guides/:slug" element={<CountryGuide language="en" />} />
+          <Route path="/guides/:slug/ru" element={<CountryGuide language="ru" />} />
           <Route path="/prep" element={<PrepLanding />} />
           <Route path="/prep/ru" element={<PrepLandingRu />} />
           <Route path="/prep/dashboard" element={<PrepLayout><PrepDashboard /></PrepLayout>} />
