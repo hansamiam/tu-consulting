@@ -66,6 +66,10 @@ import MistakeJournal from "./pages/prep/MistakeJournal";
 import ProgressReport from "./pages/prep/ProgressReport";
 import ReadingAnalyzer from "./pages/prep/ReadingAnalyzer";
 import Unsubscribe from "./pages/Unsubscribe";
+import Pricing from "./pages/Pricing";
+import AuthCallback from "./pages/AuthCallback";
+import Account from "./pages/Account";
+import { AuthProvider } from "./contexts/AuthContext";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -74,6 +78,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <AuthProvider>
         <ErrorBoundary>
         <Routes>
           <Route path="/" element={<Index />} />
@@ -142,10 +147,14 @@ const App = () => (
           <Route path="/why-us" element={<WhyTU />} />
           <Route path="/why-us/ru" element={<WhyTURu />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/account" element={<Account />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
         </ErrorBoundary>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
