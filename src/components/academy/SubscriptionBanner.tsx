@@ -20,6 +20,7 @@ export const SubscriptionBanner = () => {
   const navigate = useNavigate();
   const { subscription } = useAuth();
   if (subscription.is_active) return null;
+  return (
     <section className="py-16">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
