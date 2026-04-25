@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Home, Calendar, Mail, MessageCircle, ShieldCheck, Loader2, AlertTriangle, ArrowRight } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { supabase } from "@/integrations/supabase/client";
+import PreCallIntake from "@/components/PreCallIntake";
 
 interface VerifyResult {
   paid: boolean;
@@ -24,6 +25,7 @@ export default function ThankYou() {
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [verifying, setVerifying] = useState(!!sessionId);
   const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [intakeDone, setIntakeDone] = useState(false);
 
   useEffect(() => {
     document.title = "Payment Confirmed — Top Uni Consulting";
@@ -108,21 +110,34 @@ export default function ThankYou() {
             )}
           </div>
 
-          {/* Step 1: Schedule */}
-          <div className="bg-white rounded-2xl shadow-2xl p-3 md:p-4 mb-6">
-            <div className="flex items-center gap-2 px-3 pt-2 pb-3">
-              <span className="bg-accent text-accent-foreground rounded-full h-7 w-7 inline-flex items-center justify-center text-sm font-bold">1</span>
-              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-accent" />
-                {isConsultation ? "Schedule your consultation" : "Book your kickoff session"}
-              </h2>
-            </div>
-            <div
-              className="calendly-inline-widget"
-              data-url="https://calendly.com/topuniconsulting"
-              style={{ minWidth: "320px", height: "660px" }}
+          {/* Step 1: Pre-call intake (gates Calendly) */}
+          {result?.paid && sessionId && !intakeDone && (
+            <PreCallIntake
+              sessionId={sessionId}
+              email={result?.customer_email}
+              onComplete={() => setIntakeDone(true)}
             />
-          </div>
+          )}
+
+          {/* Step 2: Schedule (revealed after intake, or immediately if no session to gate on) */}
+          {(intakeDone || !result?.paid || !sessionId) && (
+            <div className="bg-white rounded-2xl shadow-2xl p-3 md:p-4 mb-6">
+              <div className="flex items-center gap-2 px-3 pt-2 pb-3">
+                <span className="bg-accent text-accent-foreground rounded-full h-7 w-7 inline-flex items-center justify-center text-sm font-bold">
+                  {result?.paid && sessionId ? "2" : "1"}
+                </span>
+                <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-accent" />
+                  {isConsultation ? "Pick a time" : "Book your kickoff session"}
+                </h2>
+              </div>
+              <div
+                className="calendly-inline-widget"
+                data-url="https://calendly.com/topuniconsulting"
+                style={{ minWidth: "320px", height: "660px" }}
+              />
+            </div>
+          )}
 
           {/* Next steps */}
           <div className="grid md:grid-cols-3 gap-4 mb-8">
