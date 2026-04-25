@@ -65,6 +65,7 @@ import FocusTimer from "./pages/prep/FocusTimer";
 import MistakeJournal from "./pages/prep/MistakeJournal";
 import ProgressReport from "./pages/prep/ProgressReport";
 import ReadingAnalyzer from "./pages/prep/ReadingAnalyzer";
+import Unsubscribe from "./pages/Unsubscribe";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -140,6 +141,7 @@ const App = () => (
           {/* Legacy routes for backward compatibility */}
           <Route path="/why-us" element={<WhyTU />} />
           <Route path="/why-us/ru" element={<WhyTURu />} />
+          <Route path="/unsubscribe" element={<Unsubscribe />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

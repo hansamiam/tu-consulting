@@ -86,6 +86,38 @@ Deno.serve(async (req: Request) => {
       if (error) throw error;
     }
 
+    // Fire transactional emails (don't block on failure)
+    try {
+      const SITE = "https://topuni.org";
+      if (event === "invitee.created") {
+        await supabase.functions.invoke("send-transactional-email", {
+          body: {
+            templateName: "booking-confirmation",
+            recipientEmail: inviteeEmail,
+            idempotencyKey: `booking-confirm-${target.id}`,
+            templateData: {
+              name: p?.name,
+              consultationType: "consultation",
+              bookingUrl: `${SITE}/offerings`,
+              intakeUrl: `${SITE}/thank-you?booking=${target.id}`,
+            },
+          },
+        });
+      } else if (event === "invitee_no_show.created") {
+        await supabase.functions.invoke("send-transactional-email", {
+          body: {
+            templateName: "no-show-recovery",
+            recipientEmail: inviteeEmail,
+            idempotencyKey: `no-show-${target.id}`,
+            templateData: { name: p?.name, rebookUrl: `${SITE}/offerings` },
+          },
+        });
+        await supabase.from("bookings").update({ rebook_email_sent_at: new Date().toISOString() }).eq("id", target.id);
+      }
+    } catch (e) {
+      console.error("[calendly-webhook] email send failed", e);
+    }
+
     return new Response(JSON.stringify({ ok: true, booking_id: target.id, event }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
