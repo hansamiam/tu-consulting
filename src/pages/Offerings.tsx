@@ -214,10 +214,10 @@ const Offerings = () => {
   const packages = [
     {
       name: "Starter Package",
-      price: "33,750 KGS",
-      priceUsd: "≈ $390 USD",
-      originalPrice: "45,000 KGS",
-      originalPriceUsd: "≈ $520 USD",
+      price: "$390",
+      priceUsd: "USD · billed once",
+      originalPrice: "$520",
+      originalPriceUsd: "",
       discount: "25% Launch Discount",
       sessions: "5 Sessions",
       features: [
@@ -234,10 +234,10 @@ const Offerings = () => {
     },
     {
       name: "Standard Package",
-      price: "60,000 KGS",
-      priceUsd: "≈ $690 USD",
-      originalPrice: "80,000 KGS",
-      originalPriceUsd: "≈ $920 USD",
+      price: "$690",
+      priceUsd: "USD · billed once",
+      originalPrice: "$920",
+      originalPriceUsd: "",
       discount: "25% Launch Discount",
       sessions: "10 Sessions",
       features: [
@@ -258,10 +258,10 @@ const Offerings = () => {
     },
     {
       name: "Premium Package",
-      price: "112,500 KGS",
-      priceUsd: "≈ $1,300 USD",
-      originalPrice: "150,000 KGS",
-      originalPriceUsd: "≈ $1,730 USD",
+      price: "$1,300",
+      priceUsd: "USD · billed once",
+      originalPrice: "$1,730",
+      originalPriceUsd: "",
       badge: "Most Comprehensive",
       discount: "25% Launch Discount",
       sessions: "20 Sessions",
@@ -301,7 +301,7 @@ const Offerings = () => {
     },
     {
       name: "Strategy Consultation",
-      price: "5,000 KGS (≈ $58 USD)",
+      price: "$58",
       duration: "50 minutes",
       description: "Extended session to discuss your journey",
       features: [
