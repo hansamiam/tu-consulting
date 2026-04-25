@@ -68,6 +68,8 @@ const AdaptiveQuizRunner = ({ section, exam, moduleName, xpReward }: {
         duration: Math.round(questions.length * 1.5), difficulty: q?.difficulty,
       });
       setDone(true);
+      // Engagement milestone: first quiz completion (idempotent)
+      trackMilestone("first_quiz", { module: moduleName, score: correct, max: questions.length });
     }
   };
 
