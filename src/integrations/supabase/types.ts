@@ -125,6 +125,12 @@ export type Database = {
       }
       bookings: {
         Row: {
+          calendly_canceled_at: string | null
+          calendly_event_uri: string | null
+          calendly_invitee_uri: string | null
+          calendly_meeting_url: string | null
+          calendly_scheduled_at: string | null
+          calendly_status: string | null
           consultation_type: string
           contact_email: string | null
           contact_name: string | null
@@ -134,18 +140,34 @@ export type Database = {
           discount: number | null
           final_price: number | null
           id: string
+          intake_biggest_blocker: string | null
+          intake_budget_usd: string | null
+          intake_completed_at: string | null
+          intake_goals: string | null
+          intake_grade_year: string | null
+          intake_target_countries: string | null
           is_consultation: boolean
           language: string
+          no_show_at: string | null
           notes: string | null
           original_price: string | null
           paid_at: string | null
           promo_code: string | null
+          rebook_email_sent_at: string | null
           receipt_path: string | null
+          reminder_1h_sent_at: string | null
+          reminder_24h_sent_at: string | null
           status: string
           stripe_payment_intent: string | null
           stripe_session_id: string | null
         }
         Insert: {
+          calendly_canceled_at?: string | null
+          calendly_event_uri?: string | null
+          calendly_invitee_uri?: string | null
+          calendly_meeting_url?: string | null
+          calendly_scheduled_at?: string | null
+          calendly_status?: string | null
           consultation_type: string
           contact_email?: string | null
           contact_name?: string | null
@@ -155,18 +177,34 @@ export type Database = {
           discount?: number | null
           final_price?: number | null
           id?: string
+          intake_biggest_blocker?: string | null
+          intake_budget_usd?: string | null
+          intake_completed_at?: string | null
+          intake_goals?: string | null
+          intake_grade_year?: string | null
+          intake_target_countries?: string | null
           is_consultation?: boolean
           language?: string
+          no_show_at?: string | null
           notes?: string | null
           original_price?: string | null
           paid_at?: string | null
           promo_code?: string | null
+          rebook_email_sent_at?: string | null
           receipt_path?: string | null
+          reminder_1h_sent_at?: string | null
+          reminder_24h_sent_at?: string | null
           status?: string
           stripe_payment_intent?: string | null
           stripe_session_id?: string | null
         }
         Update: {
+          calendly_canceled_at?: string | null
+          calendly_event_uri?: string | null
+          calendly_invitee_uri?: string | null
+          calendly_meeting_url?: string | null
+          calendly_scheduled_at?: string | null
+          calendly_status?: string | null
           consultation_type?: string
           contact_email?: string | null
           contact_name?: string | null
@@ -176,13 +214,23 @@ export type Database = {
           discount?: number | null
           final_price?: number | null
           id?: string
+          intake_biggest_blocker?: string | null
+          intake_budget_usd?: string | null
+          intake_completed_at?: string | null
+          intake_goals?: string | null
+          intake_grade_year?: string | null
+          intake_target_countries?: string | null
           is_consultation?: boolean
           language?: string
+          no_show_at?: string | null
           notes?: string | null
           original_price?: string | null
           paid_at?: string | null
           promo_code?: string | null
+          rebook_email_sent_at?: string | null
           receipt_path?: string | null
+          reminder_1h_sent_at?: string | null
+          reminder_24h_sent_at?: string | null
           status?: string
           stripe_payment_intent?: string | null
           stripe_session_id?: string | null
