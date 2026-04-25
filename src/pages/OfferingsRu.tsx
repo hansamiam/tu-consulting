@@ -77,7 +77,7 @@ const OfferingsRu = () => {
   const packages = [
     {
       name: "Стартовый пакет",
-      price: "33 750 сом",
+      
       price: "$390",
       priceUsd: "USD · разовая оплата",
       originalPrice: "$520",
@@ -98,7 +98,7 @@ const OfferingsRu = () => {
     },
     {
       name: "Стандартный пакет",
-      price: "60 000 сом",
+      
       price: "$690",
       priceUsd: "USD · разовая оплата",
       originalPrice: "$920",
@@ -123,7 +123,7 @@ const OfferingsRu = () => {
     },
     {
       name: "Премиум пакет",
-      price: "112 500 сом",
+      
       price: "$1,300",
       priceUsd: "USD · разовая оплата",
       originalPrice: "$1,730",
@@ -167,7 +167,7 @@ const OfferingsRu = () => {
     },
     {
       name: "Стратегическая консультация",
-      price: "5 000 сом (≈ $58 USD)",
+      price: "$58",
       duration: "50 минут",
       description: "Расширенная сессия для обсуждения вашего пути",
       features: [

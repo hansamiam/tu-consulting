@@ -39,6 +39,7 @@ import Academy from "./pages/Academy";
 import AcademyPrototype from "./pages/AcademyPrototype";
 import CountryGuide from "./pages/CountryGuide";
 import NotFound from "./pages/NotFound";
+import PaymentCanceled from "./pages/PaymentCanceled";
 import PrepLayout from "./components/prep/PrepLayout";
 import PrepLanding from "./pages/PrepLanding";
 import PrepLandingRu from "./pages/PrepLandingRu";
@@ -90,6 +91,8 @@ const App = () => (
           <Route path="/blog/:id/ru" element={<BlogArticle language="ru" />} />
           <Route path="/thank-you" element={<ThankYou />} />
           <Route path="/thank-you/ru" element={<ThankYouRu />} />
+          <Route path="/payment-canceled" element={<PaymentCanceled language="en" />} />
+          <Route path="/payment-canceled/ru" element={<PaymentCanceled language="ru" />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/privacy-policy/ru" element={<PrivacyPolicyRu />} />
           <Route path="/public-offer" element={<PublicOffer />} />
