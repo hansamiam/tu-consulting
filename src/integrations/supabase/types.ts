@@ -324,6 +324,96 @@ export type Database = {
         }
         Relationships: []
       }
+      engagement_milestones: {
+        Row: {
+          achieved_at: string
+          id: string
+          metadata: Json | null
+          milestone_key: string
+          user_id: string
+        }
+        Insert: {
+          achieved_at?: string
+          id?: string
+          metadata?: Json | null
+          milestone_key: string
+          user_id: string
+        }
+        Update: {
+          achieved_at?: string
+          id?: string
+          metadata?: Json | null
+          milestone_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      founding_member_counter: {
+        Row: {
+          cap: number
+          claimed_count: number
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          cap?: number
+          claimed_count?: number
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          cap?: number
+          claimed_count?: number
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          country_hint: string | null
+          created_at: string
+          earned_trial_expires_at: string | null
+          earned_trial_started_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          language: string
+          onboarding_completed_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          country_hint?: string | null
+          created_at?: string
+          earned_trial_expires_at?: string | null
+          earned_trial_started_at?: string | null
+          email: string
+          full_name?: string | null
+          id?: string
+          language?: string
+          onboarding_completed_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          country_hint?: string | null
+          created_at?: string
+          earned_trial_expires_at?: string | null
+          earned_trial_started_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          language?: string
+          onboarding_completed_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       programs: {
         Row: {
           created_at: string | null
@@ -433,6 +523,72 @@ export type Database = {
           event_type?: string
           id?: string
           session_id?: string | null
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          billing_interval: string | null
+          cancel_at_period_end: boolean
+          canceled_at: string | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          email: string
+          founding_member_number: number | null
+          id: string
+          is_founding_member: boolean
+          metadata: Json | null
+          status: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id: string | null
+          stripe_price_id: string | null
+          stripe_subscription_id: string | null
+          tier: Database["public"]["Enums"]["subscription_tier"]
+          trial_end: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          billing_interval?: string | null
+          cancel_at_period_end?: boolean
+          canceled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          email: string
+          founding_member_number?: number | null
+          id?: string
+          is_founding_member?: boolean
+          metadata?: Json | null
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: Database["public"]["Enums"]["subscription_tier"]
+          trial_end?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          billing_interval?: string | null
+          cancel_at_period_end?: boolean
+          canceled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          email?: string
+          founding_member_number?: number | null
+          id?: string
+          is_founding_member?: boolean
+          metadata?: Json | null
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: Database["public"]["Enums"]["subscription_tier"]
+          trial_end?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -688,6 +844,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_founding_member_slot: { Args: never; Returns: number }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -696,6 +853,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      has_active_subscription: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -723,6 +881,16 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      subscription_status:
+        | "active"
+        | "trialing"
+        | "past_due"
+        | "canceled"
+        | "incomplete"
+        | "incomplete_expired"
+        | "unpaid"
+        | "paused"
+      subscription_tier: "free" | "pro" | "founding"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -851,6 +1019,17 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      subscription_status: [
+        "active",
+        "trialing",
+        "past_due",
+        "canceled",
+        "incomplete",
+        "incomplete_expired",
+        "unpaid",
+        "paused",
+      ],
+      subscription_tier: ["free", "pro", "founding"],
     },
   },
 } as const
