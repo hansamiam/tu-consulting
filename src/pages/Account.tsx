@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Crown, Sparkles, ExternalLink, Loader2, LogOut, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { ProfileCompletionCard } from "@/components/auth/ProfileCompletionCard";
 
 const Account = () => {
   const { user, loading, subscription, signOut, refreshSubscription } = useAuth();
@@ -76,6 +77,8 @@ const Account = () => {
           <h1 className="text-3xl font-bold">Your Account</h1>
           <p className="text-muted-foreground mt-1">{user.email}</p>
         </div>
+
+        <ProfileCompletionCard />
 
         <Card className="p-6 space-y-5">
           <div className="flex items-start justify-between flex-wrap gap-3">

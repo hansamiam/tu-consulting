@@ -17,12 +17,14 @@ import {
   getAdaptiveQuestions, getQuestionsBySection, BankQuestion,
   essayPrompts, speakingCueCards, sectionMeta,
 } from "@/data/questionBank";
+import { useTrackMilestone } from "@/hooks/use-track-milestone";
 
 // ── Adaptive Quiz Runner ──
 const AdaptiveQuizRunner = ({ section, exam, moduleName, xpReward }: {
   section: string; exam?: "ielts" | "sat"; moduleName: string; xpReward: number;
 }) => {
   const { addXP, updateStreak, addPracticeSession, addStudyMinutes, updateSkillProfile, skillProfile, language } = usePrep();
+  const { track: trackMilestone } = useTrackMilestone();
   const t = (en: string, ru: string) => language === "ru" ? ru : en;
 
   const userLevel = skillProfile[section]?.level ?? 50;
@@ -68,6 +70,8 @@ const AdaptiveQuizRunner = ({ section, exam, moduleName, xpReward }: {
         duration: Math.round(questions.length * 1.5), difficulty: q?.difficulty,
       });
       setDone(true);
+      // Engagement milestone: first quiz completion (idempotent)
+      trackMilestone("first_quiz", { module: moduleName, score: correct, max: questions.length });
     }
   };
 
