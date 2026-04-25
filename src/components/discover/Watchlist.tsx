@@ -4,8 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Heart, Trash2, ExternalLink, DollarSign, GraduationCap } from "lucide-react";
 import { UniversityResult } from "./types";
+import { useTrackMilestone } from "@/hooks/use-track-milestone";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const WATCHLIST_KEY = "topuni_watchlist";
+const SAVED_3_PROMPT_KEY = "tu_saved3_prompt_shown";
 
 export const getWatchlist = (): string[] => {
   try {
@@ -33,6 +38,9 @@ interface WatchlistButtonProps {
 
 export const WatchlistButton = ({ universityId, onToggle }: WatchlistButtonProps) => {
   const [saved, setSaved] = useState(false);
+  const { track } = useTrackMilestone();
+  const { subscription } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     setSaved(isInWatchlist(universityId));
@@ -40,9 +48,21 @@ export const WatchlistButton = ({ universityId, onToggle }: WatchlistButtonProps
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-    toggleWatchlist(universityId);
+    const list = toggleWatchlist(universityId);
     setSaved(s => !s);
     onToggle?.();
+
+    if (list.length >= 3) {
+      track("saved_3_universities", { count: list.length });
+      if (!subscription.is_active && !localStorage.getItem(SAVED_3_PROMPT_KEY)) {
+        localStorage.setItem(SAVED_3_PROMPT_KEY, "1");
+        toast("🎯 You've saved 3 universities!", {
+          description: "Unlock the full admissions strategy with TopUni Pro.",
+          action: { label: "See plans", onClick: () => navigate("/pricing") },
+          duration: 9000,
+        });
+      }
+    }
   };
 
   return (
