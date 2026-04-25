@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
       status: "all",
       limit: 5,
     });
-    const active = subs.data.find((s) => ["active", "trialing", "past_due"].includes(s.status));
+    const active = subs.data.find((s: Stripe.Subscription) => ["active", "trialing", "past_due"].includes(s.status));
 
     if (!active) {
       // Sync to free
