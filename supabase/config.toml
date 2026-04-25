@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.booking-notify]
 verify_jwt = false
+
+[functions.calendly-webhook]
+verify_jwt = false
