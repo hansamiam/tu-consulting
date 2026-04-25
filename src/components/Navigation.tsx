@@ -1,9 +1,11 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { Menu } from "lucide-react";
+import { Menu, Sparkles, Crown, User as UserIcon } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { AuthDialog } from "@/components/auth/AuthDialog";
 
 interface NavigationProps {
   language?: "en" | "ru";
@@ -13,6 +15,8 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const { user, subscription } = useAuth();
 
   const isRussian = language === "ru";
   const basePath = isRussian ? "/ru" : "/";
@@ -135,6 +139,41 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
               </button>
             ))}
 
+            {/* Membership / Account */}
+            {user ? (
+              <button
+                onClick={() => navigate("/account")}
+                className={cn(
+                  "ml-1 px-3 py-1.5 text-sm font-medium rounded-md flex items-center gap-1.5 transition-all",
+                  subscription.tier === "founding"
+                    ? "bg-gold/15 text-gold border border-gold/40"
+                    : subscription.tier === "pro"
+                    ? "bg-gold/10 text-gold border border-gold/30"
+                    : "text-primary-foreground/70 hover:bg-gold/10 border border-transparent"
+                )}
+              >
+                {subscription.tier === "founding" ? <Crown className="w-3.5 h-3.5" /> : subscription.tier === "pro" ? <Sparkles className="w-3.5 h-3.5" /> : <UserIcon className="w-3.5 h-3.5" />}
+                <span className="hidden xl:inline">
+                  {subscription.tier === "founding" ? "Founding" : subscription.tier === "pro" ? "Pro" : "Account"}
+                </span>
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => navigate("/pricing")}
+                  className="ml-1 px-3 py-1.5 text-sm font-semibold rounded-md text-gold border border-gold/40 hover:bg-gold/15 transition-all"
+                >
+                  Pricing
+                </button>
+                <button
+                  onClick={() => setAuthOpen(true)}
+                  className="ml-1 px-3 py-1.5 text-sm font-medium text-primary-foreground/70 hover:text-gold transition"
+                >
+                  Sign in
+                </button>
+              </>
+            )}
+
             <div className="ml-1">
               <LanguageSwitcher />
             </div>
@@ -218,7 +257,31 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-gold/20">
+                <div className="pt-4 border-t border-gold/20 flex flex-col gap-2">
+                  {user ? (
+                    <button
+                      onClick={() => { navigate("/account"); setIsOpen(false); }}
+                      className="px-4 py-3 text-base font-semibold rounded-md text-gold bg-gold/10 border border-gold/40 text-left flex items-center gap-2"
+                    >
+                      {subscription.tier === "founding" ? <Crown className="w-4 h-4" /> : <UserIcon className="w-4 h-4" />}
+                      {subscription.tier === "founding" ? "Founding Member" : subscription.tier === "pro" ? "Pro Account" : "My Account"}
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => { navigate("/pricing"); setIsOpen(false); }}
+                        className="px-4 py-3 text-base font-semibold rounded-md text-gold border border-gold/40 text-left"
+                      >
+                        Pricing & Membership
+                      </button>
+                      <button
+                        onClick={() => { setIsOpen(false); setAuthOpen(true); }}
+                        className="px-4 py-3 text-base font-medium rounded-md text-primary-foreground/70 hover:text-gold text-left"
+                      >
+                        Sign in
+                      </button>
+                    </>
+                  )}
                   <LanguageSwitcher />
                 </div>
               </div>
@@ -226,6 +289,7 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
           </Sheet>
         </div>
       </div>
+      <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
     </nav>
   );
 };
