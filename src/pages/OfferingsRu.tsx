@@ -77,10 +77,11 @@ const OfferingsRu = () => {
   const packages = [
     {
       name: "Стартовый пакет",
-      price: "33 750 сом",
-      priceUsd: "≈ $390 USD",
-      originalPrice: "45 000 сом",
-      originalPriceUsd: "≈ $520 USD",
+      
+      price: "$390",
+      priceUsd: "USD · разовая оплата",
+      originalPrice: "$520",
+      originalPriceUsd: "",
       discount: "Скидка 25% при запуске",
       sessions: "5 сессий",
       features: [
@@ -97,10 +98,11 @@ const OfferingsRu = () => {
     },
     {
       name: "Стандартный пакет",
-      price: "60 000 сом",
-      priceUsd: "≈ $690 USD",
-      originalPrice: "80 000 сом",
-      originalPriceUsd: "≈ $920 USD",
+      
+      price: "$690",
+      priceUsd: "USD · разовая оплата",
+      originalPrice: "$920",
+      originalPriceUsd: "",
       discount: "Скидка 25% при запуске",
       sessions: "10 сессий",
       features: [
@@ -121,10 +123,11 @@ const OfferingsRu = () => {
     },
     {
       name: "Премиум пакет",
-      price: "112 500 сом",
-      priceUsd: "≈ $1 300 USD",
-      originalPrice: "150 000 сом",
-      originalPriceUsd: "≈ $1 730 USD",
+      
+      price: "$1,300",
+      priceUsd: "USD · разовая оплата",
+      originalPrice: "$1,730",
+      originalPriceUsd: "",
       badge: "Максимальная поддержка",
       discount: "Скидка 25% при запуске",
       sessions: "20 сессий",
@@ -164,7 +167,7 @@ const OfferingsRu = () => {
     },
     {
       name: "Стратегическая консультация",
-      price: "5 000 сом (≈ $58 USD)",
+      price: "$58",
       duration: "50 минут",
       description: "Расширенная сессия для обсуждения вашего пути",
       features: [

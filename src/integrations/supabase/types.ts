@@ -130,6 +130,7 @@ export type Database = {
           contact_name: string | null
           contact_phone: string | null
           created_at: string
+          currency: string
           discount: number | null
           final_price: number | null
           id: string
@@ -137,9 +138,12 @@ export type Database = {
           language: string
           notes: string | null
           original_price: string | null
+          paid_at: string | null
           promo_code: string | null
           receipt_path: string | null
           status: string
+          stripe_payment_intent: string | null
+          stripe_session_id: string | null
         }
         Insert: {
           consultation_type: string
@@ -147,6 +151,7 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string
+          currency?: string
           discount?: number | null
           final_price?: number | null
           id?: string
@@ -154,9 +159,12 @@ export type Database = {
           language?: string
           notes?: string | null
           original_price?: string | null
+          paid_at?: string | null
           promo_code?: string | null
           receipt_path?: string | null
           status?: string
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
         }
         Update: {
           consultation_type?: string
@@ -164,6 +172,7 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string
+          currency?: string
           discount?: number | null
           final_price?: number | null
           id?: string
@@ -171,9 +180,12 @@ export type Database = {
           language?: string
           notes?: string | null
           original_price?: string | null
+          paid_at?: string | null
           promo_code?: string | null
           receipt_path?: string | null
           status?: string
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
         }
         Relationships: []
       }
