@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Sparkles, Zap, Crown } from "lucide-react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const features = [
   "Full workshop & masterclass library",
@@ -15,7 +17,9 @@ const features = [
 ];
 
 export const SubscriptionBanner = () => {
-  return (
+  const navigate = useNavigate();
+  const { subscription } = useAuth();
+  if (subscription.is_active) return null;
     <section className="py-16">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -45,12 +49,12 @@ export const SubscriptionBanner = () => {
             </p>
 
             <div className="flex flex-wrap gap-3">
-              <Button variant="gold" size="lg" className="gap-2">
-                <Zap className="w-4 h-4" /> Start Free Trial
+              <Button variant="gold" size="lg" className="gap-2" onClick={() => navigate("/pricing")}>
+                <Zap className="w-4 h-4" /> See plans
               </Button>
               <div className="flex items-center gap-2 text-sm text-primary-foreground/50">
-                <span className="text-2xl font-bold text-gold">$19</span>
-                <span>/month</span>
+                <span className="text-2xl font-bold text-gold">$29</span>
+                <span>/mo or $290/yr</span>
               </div>
             </div>
           </div>
