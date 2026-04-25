@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Sparkles, Crown, FileText, Lock, ArrowRight, BarChart3, Globe, BookOpen, Target, Users, Briefcase } from "lucide-react";
-import { BetaGate } from "@/components/discover/BetaGate";
+import { PaywallGate } from "@/components/auth/PaywallGate";
 import ReactMarkdown from "react-markdown";
 
 interface StudentProfile {
@@ -176,8 +176,12 @@ const HyperReport = ({ profile, language }: HyperReportProps) => {
           </CardContent>
         </Card>
 
-        {/* Premium Report — Beta Gated */}
-        <BetaGate>
+        {/* Premium Report — Pro/Founding members only */}
+        <PaywallGate
+          feature="Hyper Intelligence Report"
+          description="Deep AI-powered admissions analysis: 15-20 university matches with fit scores, ROI projections, scholarship probability, and personalized essay angles."
+          showPreview={false}
+        >
           <Card className="border-gold/30 bg-gradient-to-br from-gold/5 to-transparent hover:border-gold/50 transition-all">
             <CardContent className="p-6 space-y-4">
               <div className="flex items-center gap-3">
@@ -227,7 +231,7 @@ const HyperReport = ({ profile, language }: HyperReportProps) => {
               </Button>
             </CardContent>
           </Card>
-        </BetaGate>
+        </PaywallGate>
       </div>
 
       {/* Report Display */}
