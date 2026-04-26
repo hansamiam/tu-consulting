@@ -1,18 +1,15 @@
-// PaywallGate — wraps premium content with a soft preview + upgrade CTA for free users.
+// PaywallGate — wraps premium content with a soft preview + Founding upgrade CTA.
 import { ReactNode, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthDialog } from "@/components/auth/AuthDialog";
-import { Lock, Sparkles, Crown } from "lucide-react";
+import { Lock, Crown } from "lucide-react";
 
 type Props = {
   children: ReactNode;
-  /** Short label shown on the lock card */
   feature: string;
-  /** Longer description for context */
   description?: string;
-  /** If true, render children blurred underneath */
   showPreview?: boolean;
 };
 
@@ -40,23 +37,18 @@ export const PaywallGate = ({ children, feature, description, showPreview = true
         </div>
       )}
       <div className={`${showPreview ? "absolute inset-0" : ""} flex items-center justify-center p-6`}>
-        <div className="bg-background/95 backdrop-blur-md border border-border rounded-2xl p-6 sm:p-8 max-w-md w-full text-center shadow-xl">
-          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-            <Lock className="w-5 h-5 text-primary" />
+        <div className="bg-background/95 backdrop-blur-md border border-gold/30 rounded-2xl p-6 sm:p-8 max-w-md w-full text-center shadow-xl">
+          <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center mx-auto mb-4">
+            <Lock className="w-5 h-5 text-gold" />
           </div>
-          <h3 className="font-bold text-lg mb-1">{feature} is a Pro feature</h3>
+          <h3 className="font-bold text-lg mb-1">{feature} is a Founding Member feature</h3>
           <p className="text-sm text-muted-foreground mb-5">
             {description ||
-              "Upgrade to TopUni Pro to unlock this and every other premium tool — Discover Pro, Academy, Hyper Reports, and Prep Premium."}
+              "Founding members lock in $9/mo forever and unlock everything as it ships — Scholarship Finder, Academy, Prep Premium, and monthly office hours."}
           </p>
-          <div className="flex flex-col gap-2">
-            <Button onClick={handleUpgrade} className="w-full gap-2">
-              <Sparkles className="w-4 h-4" /> Start Pro — $29/mo
-            </Button>
-            <Button onClick={handleUpgrade} variant="outline" className="w-full gap-2">
-              <Crown className="w-4 h-4 text-gold" /> See Founding Member ($19/mo)
-            </Button>
-          </div>
+          <Button onClick={handleUpgrade} variant="gold" className="w-full gap-2">
+            <Crown className="w-4 h-4" /> Become a Founding Member — $9/mo
+          </Button>
           {!user && (
             <p className="text-xs text-muted-foreground mt-3">
               Already a member?{" "}
@@ -68,7 +60,7 @@ export const PaywallGate = ({ children, feature, description, showPreview = true
       <AuthDialog
         open={authOpen}
         onOpenChange={setAuthOpen}
-        title="Sign in to unlock Pro"
+        title="Sign in to continue"
         description="One-tap sign in. We'll redirect you to membership options."
       />
     </div>

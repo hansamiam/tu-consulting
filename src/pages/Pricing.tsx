@@ -1,4 +1,5 @@
-// Pricing page — Free / Pro / Founding tiers
+// Pricing page — single Founding Membership offer ($9/mo or $90/yr, capped at 100).
+// Honest framing: price-lock is the offer; we're early; group office hours included.
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navigation from "@/components/Navigation";
@@ -9,35 +10,27 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthDialog } from "@/components/auth/AuthDialog";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, Crown, Sparkles, Zap, Loader2 } from "lucide-react";
+import { Check, Crown, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
 type Plan = "monthly" | "yearly";
 
-const FEATURES_FREE = [
-  "Browse Discover (10 universities/day)",
-  "Prep basics + 1 mock exam/month",
-  "Academy intro library",
-  "AI tools (limited daily uses)",
-];
-
-const FEATURES_PRO = [
-  "Unlimited Discover Pro filters & saved lists",
-  "Full Academy library + new content weekly",
-  "Hyper Reports unlocked (university deep-dives)",
-  "Prep Premium: essay grader, unlimited mocks, SRS",
-  "Application Vault — real accepted essays & SOPs",
-  "Monthly group office hours with consultants",
-  "Priority email support",
-  "$200 off any consulting package",
+const FOUNDING_BENEFITS = [
+  "Full Scholarship Finder (free tier limited to 10 results / filter)",
+  "Academy access at launch — first to receive every new course, vault essay, and country guide",
+  "All Prep Premium tools as they ship — for free, forever",
+  "Monthly 60-minute group office hours with founders Nurzada & Samuel",
+  "Lifetime price lock — even after public launch raises to $29/mo",
+  "Founding Member badge + name in our credits",
+  "Direct line to founders for product input",
 ];
 
 const Pricing = () => {
-  const { user, subscription, refreshSubscription } = useAuth();
+  const { user, subscription } = useAuth();
   const [plan, setPlan] = useState<Plan>("yearly");
   const [authOpen, setAuthOpen] = useState(false);
-  const [loadingTier, setLoadingTier] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [foundingLeft, setFoundingLeft] = useState<number | null>(null);
   const navigate = useNavigate();
 
@@ -52,17 +45,17 @@ const Pricing = () => {
       });
   }, []);
 
-  const startCheckout = async (tier: "pro" | "founding") => {
+  const startCheckout = async () => {
     if (!user) {
       sessionStorage.setItem("post_auth_redirect", "/pricing");
       setAuthOpen(true);
       return;
     }
-    setLoadingTier(tier);
+    setLoading(true);
     const { data, error } = await supabase.functions.invoke("create-subscription-checkout", {
-      body: { tier, interval: plan === "yearly" ? "year" : "month" },
+      body: { tier: "founding", interval: plan === "yearly" ? "year" : "month" },
     });
-    setLoadingTier(null);
+    setLoading(false);
     if (error || !data?.url) {
       toast.error(data?.error || "Couldn't start checkout. Please try again.");
       return;
@@ -70,38 +63,42 @@ const Pricing = () => {
     window.location.href = data.url;
   };
 
-  const proPriceMonthly = plan === "yearly" ? 24 : 29; // $290/yr ≈ $24/mo equiv
-  const proPriceTotal = plan === "yearly" ? 290 : 29;
-  const foundingPriceTotal = plan === "yearly" ? 190 : 19;
-
-  const isCurrentTier = (t: "free" | "pro" | "founding") => subscription.tier === t;
+  const monthlyEquiv = plan === "yearly" ? "$7.50" : "$9";
+  const totalLine = plan === "yearly" ? "$90 billed yearly · save 17%" : "Billed monthly";
+  const isFounding = subscription.tier === "founding";
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-16">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-16">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center max-w-2xl mx-auto mb-12"
+          className="text-center max-w-2xl mx-auto mb-10"
         >
-          <Badge className="mb-4 bg-gold/15 text-gold border-gold/30">Membership</Badge>
+          <Badge className="mb-4 bg-gold/15 text-gold border-gold/30">Founding Membership · 100 spots</Badge>
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
-            Build your application,<br />
-            <span className="text-gold">on your own terms.</span>
+            Get in early.<br />
+            <span className="text-gold">Pay $9 forever.</span>
           </h1>
-          <p className="text-muted-foreground mt-4">
-            One membership unlocks every TopUni tool — Discover Pro, Academy, Prep Premium, and Hyper Reports.
-            Built for self-driven students, with consulting available when you need it.
+          <p className="text-muted-foreground mt-4 text-base">
+            We're building TopUni in public. The first 100 members lock in <strong>$9/mo for life</strong> —
+            even after we raise to $29 at public launch. You shape what we build next.
           </p>
         </motion.div>
 
+        {/* Honesty note */}
+        <div className="max-w-2xl mx-auto mb-10 p-4 rounded-xl bg-muted/40 border border-border text-sm text-muted-foreground text-center">
+          <strong className="text-foreground">Real talk:</strong> we're shipping fast. Some tools are live (Scholarship Finder, Diagnostic, Essay Grader),
+          others are <em>coming soon</em>. As a founding member you get everything as it lands — and your price never moves.
+        </div>
+
         {/* Billing toggle */}
-        <div className="flex justify-center mb-10">
+        <div className="flex justify-center mb-8">
           <div className="inline-flex bg-muted p-1 rounded-full">
             <button
               onClick={() => setPlan("monthly")}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition ${
+              className={`px-6 py-2 rounded-full text-sm font-medium transition ${
                 plan === "monthly" ? "bg-background shadow-sm" : "text-muted-foreground"
               }`}
             >
@@ -109,7 +106,7 @@ const Pricing = () => {
             </button>
             <button
               onClick={() => setPlan("yearly")}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition flex items-center gap-2 ${
+              className={`px-6 py-2 rounded-full text-sm font-medium transition flex items-center gap-2 ${
                 plan === "yearly" ? "bg-background shadow-sm" : "text-muted-foreground"
               }`}
             >
@@ -119,157 +116,71 @@ const Pricing = () => {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {/* FREE */}
-          <Card className="p-6 flex flex-col">
-            <div className="space-y-1">
-              <h3 className="text-lg font-semibold">Free</h3>
-              <p className="text-sm text-muted-foreground">For exploring TopUni</p>
-            </div>
-            <div className="mt-5 mb-6">
-              <span className="text-4xl font-bold">$0</span>
-              <span className="text-muted-foreground"> forever</span>
-            </div>
-            <ul className="space-y-2.5 text-sm flex-1">
-              {FEATURES_FREE.map((f) => (
-                <li key={f} className="flex items-start gap-2">
-                  <Check className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
-                  <span>{f}</span>
-                </li>
-              ))}
-            </ul>
-            <Button
-              variant="outline"
-              className="mt-6 w-full"
-              disabled={isCurrentTier("free")}
-              onClick={() => navigate("/")}
-            >
-              {isCurrentTier("free") ? "Current plan" : "Get started"}
-            </Button>
-          </Card>
-
-          {/* PRO */}
-          <Card className="p-6 flex flex-col border-primary/40 ring-1 ring-primary/20 shadow-lg relative">
-            <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground">
-              Most popular
+        {/* Single founding card */}
+        <Card className="max-w-xl mx-auto p-8 sm:p-10 bg-gradient-to-br from-background via-background to-gold/5 border-gold/40 shadow-xl relative">
+          {foundingLeft !== null && foundingLeft > 0 && (
+            <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gold text-primary border-0">
+              {foundingLeft} of 100 spots left
             </Badge>
-            <div className="space-y-1">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary" /> Pro
-              </h3>
-              <p className="text-sm text-muted-foreground">For serious applicants</p>
-            </div>
-            <div className="mt-5 mb-6">
-              <span className="text-4xl font-bold">${proPriceMonthly}</span>
-              <span className="text-muted-foreground">/mo</span>
-              {plan === "yearly" && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  ${proPriceTotal} billed yearly
-                </p>
-              )}
-            </div>
-            <ul className="space-y-2.5 text-sm flex-1">
-              {FEATURES_PRO.map((f) => (
-                <li key={f} className="flex items-start gap-2">
-                  <Check className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-                  <span>{f}</span>
-                </li>
-              ))}
-            </ul>
-            <Button
-              className="mt-6 w-full gap-2"
-              disabled={loadingTier === "pro" || isCurrentTier("pro")}
-              onClick={() => startCheckout("pro")}
-            >
-              {loadingTier === "pro" ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : isCurrentTier("pro") ? (
-                "Current plan"
-              ) : (
-                <>
-                  <Zap className="w-4 h-4" /> Start Pro
-                </>
-              )}
-            </Button>
-            <p className="text-xs text-muted-foreground text-center mt-2">
-              7-day money-back guarantee
-            </p>
-          </Card>
+          )}
 
-          {/* FOUNDING */}
-          <Card className="p-6 flex flex-col bg-gradient-to-br from-background via-background to-gold/5 border-gold/30 relative">
-            {foundingLeft !== null && foundingLeft > 0 && (
-              <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gold text-primary border-0">
-                {foundingLeft} of 100 spots left
-              </Badge>
+          <div className="flex items-center gap-2 mb-2">
+            <Crown className="w-5 h-5 text-gold" />
+            <h2 className="text-xl font-semibold">Founding Member</h2>
+          </div>
+
+          <div className="flex items-baseline gap-2 mt-4 mb-1">
+            <span className="text-5xl font-bold">{monthlyEquiv}</span>
+            <span className="text-muted-foreground">/month</span>
+            <span className="ml-2 text-sm text-muted-foreground line-through">$29</span>
+          </div>
+          <p className="text-xs text-muted-foreground mb-6">{totalLine} · cancel anytime</p>
+
+          <ul className="space-y-3 mb-8">
+            {FOUNDING_BENEFITS.map((b) => (
+              <li key={b} className="flex items-start gap-2.5 text-sm">
+                <Check className="w-4 h-4 mt-0.5 text-gold shrink-0" />
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
+
+          <Button
+            variant="gold"
+            size="lg"
+            className="w-full gap-2 text-base"
+            disabled={loading || foundingLeft === 0 || isFounding}
+            onClick={startCheckout}
+          >
+            {loading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : isFounding ? (
+              <>
+                <Crown className="w-4 h-4" /> You're a Founding Member
+              </>
+            ) : foundingLeft === 0 ? (
+              "Sold out — join waitlist"
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" /> Claim my founding spot
+              </>
             )}
-            <div className="space-y-1">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Crown className="w-4 h-4 text-gold" /> Founding Member
-              </h3>
-              <p className="text-sm text-muted-foreground">Locked-in price, forever</p>
-            </div>
-            <div className="mt-5 mb-6">
-              <span className="text-4xl font-bold">${plan === "yearly" ? 16 : 19}</span>
-              <span className="text-muted-foreground">/mo</span>
-              {plan === "yearly" && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  ${foundingPriceTotal} billed yearly
-                </p>
-              )}
-            </div>
-            <ul className="space-y-2.5 text-sm flex-1">
-              <li className="flex items-start gap-2">
-                <Check className="w-4 h-4 mt-0.5 text-gold shrink-0" />
-                <span className="font-medium">Everything in Pro</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="w-4 h-4 mt-0.5 text-gold shrink-0" />
-                <span>Founding Member badge on your profile</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="w-4 h-4 mt-0.5 text-gold shrink-0" />
-                <span>Price locked forever — never goes up</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="w-4 h-4 mt-0.5 text-gold shrink-0" />
-                <span>Direct line to the founders for product input</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="w-4 h-4 mt-0.5 text-gold shrink-0" />
-                <span>Name listed in our credits</span>
-              </li>
-            </ul>
-            <Button
-              variant="gold"
-              className="mt-6 w-full gap-2"
-              disabled={loadingTier === "founding" || foundingLeft === 0 || isCurrentTier("founding")}
-              onClick={() => startCheckout("founding")}
-            >
-              {loadingTier === "founding" ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : foundingLeft === 0 ? (
-                "Sold out"
-              ) : isCurrentTier("founding") ? (
-                "Current plan"
-              ) : (
-                <>
-                  <Crown className="w-4 h-4" /> Claim founding spot
-                </>
-              )}
-            </Button>
-            <p className="text-xs text-muted-foreground text-center mt-2">
-              Limited to first 100 members
-            </p>
-          </Card>
-        </div>
+          </Button>
+          <p className="text-xs text-muted-foreground text-center mt-3">
+            7-day money-back guarantee · Stripe secure checkout
+          </p>
+        </Card>
 
-        {/* Comparison note */}
-        <div className="text-center mt-12 max-w-2xl mx-auto">
+        {/* Free tier blurb */}
+        <div className="text-center mt-12 max-w-2xl mx-auto space-y-2">
           <p className="text-sm text-muted-foreground">
-            Need 1:1 consulting? Members get <strong>$200 off</strong> any package and priority booking.{" "}
-            <button onClick={() => navigate("/offerings")} className="underline">
-              See packages →
+            Not ready? <strong className="text-foreground">Free</strong> still gets you the Scholarship Finder (top 10 results),
+            Diagnostic test, and TopUni AI chat.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Need 1:1 help instead?{" "}
+            <button onClick={() => navigate("/offerings")} className="underline text-foreground">
+              See consulting →
             </button>
           </p>
         </div>
@@ -279,7 +190,7 @@ const Pricing = () => {
         open={authOpen}
         onOpenChange={setAuthOpen}
         title="Create your account"
-        description="Sign in to start your membership. Magic link or Google — no password needed."
+        description="One-tap sign in. We'll redirect you to checkout."
       />
     </div>
   );
