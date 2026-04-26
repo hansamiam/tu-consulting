@@ -9,31 +9,31 @@
   :root {
     /* Editorial off-white base — solves harsh-white clash */
     --background: 40 20% 98%;
-    --foreground: 215 35% 12%;
+    --foreground: 210 74% 15%;
 
     --canvas: 36 18% 96%;
     --canvas-soft: 40 25% 99%;
     --surface: 0 0% 100%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 35% 12%;
+    --card-foreground: 210 74% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 35% 12%;
+    --popover-foreground: 210 74% 15%;
 
     /* Refined navy primary */
-    --primary: 222 64% 28%;
+    --primary: 210 70% 20%;
     --primary-foreground: 0 0% 100%;
-    --primary-bright: 224 76% 48%;
+    --primary-bright: 210 70% 32%;
 
     --secondary: 220 16% 94%;
-    --secondary-foreground: 215 35% 12%;
+    --secondary-foreground: 210 74% 15%;
 
     --muted: 40 15% 94%;
     --muted-foreground: 215 16% 42%;
 
     --accent: 42 70% 50%;
-    --accent-foreground: 215 35% 12%;
+    --accent-foreground: 210 74% 15%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
@@ -43,13 +43,13 @@
 
     --border: 220 15% 90%;
     --input: 220 15% 90%;
-    --ring: 224 76% 48%;
+    --ring: 210 70% 28%;
 
     --radius: 0.75rem;
 
     /* Brand tokens */
-    --navy: 222 64% 28%;
-    --navy-deep: 222 70% 18%;
+    --navy: 210 70% 20%;
+    --navy-deep: 210 74% 13%;
     --gold: 42 70% 50%;
     --gold-light: 42 80% 65%;
     --gold-dark: 38 70% 40%;
@@ -76,13 +76,13 @@
     --transition-premium: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
     --sidebar-background: 40 20% 97%;
-    --sidebar-foreground: 215 25% 26%;
-    --sidebar-primary: 222 64% 28%;
+    --sidebar-foreground: 210 25% 26%;
+    --sidebar-primary: 210 70% 20%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 40 15% 93%;
-    --sidebar-accent-foreground: 215 35% 12%;
+    --sidebar-accent-foreground: 210 74% 15%;
     --sidebar-border: 220 15% 88%;
-    --sidebar-ring: 224 76% 48%;
+    --sidebar-ring: 210 70% 28%;
   }
 
   .dark {
