@@ -448,21 +448,6 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           <ScholarshipMatcher profile={profile} language={language} />
         </TabsContent>
 
-        {/* DEADLINE CALENDAR TAB */}
-        <TabsContent value="deadlines">
-          <DeadlineCalendar profile={profile} language={language} />
-        </TabsContent>
-
-        {/* VISA GUIDE TAB */}
-        <TabsContent value="visa">
-          <VisaGuide profile={profile} language={language} />
-        </TabsContent>
-
-        {/* UNIVERSITY COMPARE TAB */}
-        <TabsContent value="compare">
-          <UniCompare profile={profile} language={language} />
-        </TabsContent>
-
         {/* AI COUNSELOR TAB */}
         <TabsContent value="counselor">
           <Card className="h-[600px] flex flex-col">
@@ -556,20 +541,6 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           </Card>
         </TabsContent>
 
-        {/* AI REPORTS TAB */}
-        <TabsContent value="reports">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Crown className="w-5 h-5 text-gold" />
-                {t("AI Intelligence Reports", "AI Интеллект-отчёты")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <HyperReport profile={profile} language={language} />
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   );
