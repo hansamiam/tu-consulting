@@ -28,12 +28,16 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
       path: isRussian ? "/topuni-ai/ru" : "/topuni-ai",
     },
     {
-      label: "Discover",
-      path: isRussian ? "/discover/ru" : "/discover",
+      label: isRussian ? "Стипендии" : "Scholarships",
+      path: isRussian ? "/scholarships/ru" : "/scholarships",
     },
     {
       label: isRussian ? "Подготовка" : "Prep",
       path: isRussian ? "/prep/ru" : "/prep",
+    },
+    {
+      label: isRussian ? "Академия" : "Academy",
+      path: "/academy",
     },
     {
       label: isRussian ? "Консалтинг" : "Consulting",
