@@ -8,32 +8,32 @@
 @layer base {
   :root {
     /* Editorial off-white base — solves harsh-white clash */
-    --background: 40 20% 98%;
-    --foreground: 215 35% 12%;
+    --background: 220 20% 98.5%;
+    --foreground: 210 74% 15%;
 
-    --canvas: 36 18% 96%;
-    --canvas-soft: 40 25% 99%;
+    --canvas: 220 16% 96.5%;
+    --canvas-soft: 220 25% 99%;
     --surface: 0 0% 100%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 35% 12%;
+    --card-foreground: 210 74% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 35% 12%;
+    --popover-foreground: 210 74% 15%;
 
     /* Refined navy primary */
-    --primary: 222 64% 28%;
+    --primary: 210 70% 20%;
     --primary-foreground: 0 0% 100%;
-    --primary-bright: 224 76% 48%;
+    --primary-bright: 210 70% 32%;
 
     --secondary: 220 16% 94%;
-    --secondary-foreground: 215 35% 12%;
+    --secondary-foreground: 210 74% 15%;
 
-    --muted: 40 15% 94%;
-    --muted-foreground: 215 16% 42%;
+    --muted: 220 14% 95%;
+    --muted-foreground: 220 12% 46%;
 
     --accent: 42 70% 50%;
-    --accent-foreground: 215 35% 12%;
+    --accent-foreground: 210 74% 15%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
@@ -41,15 +41,15 @@
     --success: 152 55% 38%;
     --warning: 30 90% 50%;
 
-    --border: 220 15% 90%;
-    --input: 220 15% 90%;
-    --ring: 224 76% 48%;
+    --border: 220 14% 91%;
+    --input: 220 14% 91%;
+    --ring: 210 70% 28%;
 
-    --radius: 0.75rem;
+    --radius: 0.625rem;
 
     /* Brand tokens */
-    --navy: 222 64% 28%;
-    --navy-deep: 222 70% 18%;
+    --navy: 210 70% 20%;
+    --navy-deep: 210 74% 13%;
     --gold: 42 70% 50%;
     --gold-light: 42 80% 65%;
     --gold-dark: 38 70% 40%;
@@ -76,13 +76,13 @@
     --transition-premium: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
     --sidebar-background: 40 20% 97%;
-    --sidebar-foreground: 215 25% 26%;
-    --sidebar-primary: 222 64% 28%;
+    --sidebar-foreground: 210 25% 26%;
+    --sidebar-primary: 210 70% 20%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 40 15% 93%;
-    --sidebar-accent-foreground: 215 35% 12%;
+    --sidebar-accent-foreground: 210 74% 15%;
     --sidebar-border: 220 15% 88%;
-    --sidebar-ring: 224 76% 48%;
+    --sidebar-ring: 210 70% 28%;
   }
 
   .dark {
@@ -129,13 +129,42 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', sans-serif;
-    font-size: 15px;
-    font-feature-settings: "ss01", "cv11";
+    font-size: 14.5px;
+    line-height: 1.55;
+    font-feature-settings: "ss01", "cv11", "tnum";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Montserrat', sans-serif;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
+  }
+
+  h1 { letter-spacing: -0.035em; }
+
+  /* Sleeker scrollbars — 2026 product feel */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 8px;
+    border: 2px solid hsl(var(--background));
+  }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.4); }
+
+  /* Crisp focus rings */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Selection */
+  ::selection {
+    background: hsl(var(--accent) / 0.25);
+    color: hsl(var(--foreground));
   }
 }
 
