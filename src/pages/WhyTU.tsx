@@ -1,250 +1,182 @@
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { useNavigate } from "react-router-dom";
-import { Compass, Brain, Globe2, Sparkles, Target, BookOpen, Users } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
+// Editorial, dense, YC-grade. Four sections only. No fluff.
 const WhyTU = () => {
   const navigate = useNavigate();
-
-  const differences = [
-    {
-      icon: Compass,
-      title: "Strategy before search",
-      body: "We do not just show options. We help you understand which universities and scholarships fit your grades, budget, goals, country, timeline, and application strength.",
-    },
-    {
-      icon: Brain,
-      title: "AI tools with human judgment",
-      body: "Our tools help you move faster, but the logic comes from real admissions experience. We combine structured data, personalized recommendations, and expert review where needed.",
-    },
-    {
-      icon: Globe2,
-      title: "Built for international students",
-      body: "Many admissions platforms are built around U.S. or U.K. assumptions. Top Uni is designed for students applying across borders, especially from Central Asia and other underrepresented markets.",
-    },
-    {
-      icon: Sparkles,
-      title: "Premium guidance without the corporate markup",
-      body: "Large firms can be expensive and impersonal. We keep the model lean: useful tools first, expert support when it matters, and no unnecessary layers.",
-    },
-  ];
-
-  const productCards = [
-    {
-      icon: Target,
-      title: "Find realistic scholarship matches",
-      body: "Get ranked scholarship options based on eligibility, funding value, deadline urgency, effort level, and fit.",
-    },
-    {
-      icon: BookOpen,
-      title: "Build an admissions plan",
-      body: "Understand which schools are reach, target, and safer options, and what you need to strengthen before applying.",
-    },
-    {
-      icon: Users,
-      title: "Use expert support when needed",
-      body: "Book consultation support for essays, school lists, scholarship strategy, interviews, and final application decisions.",
-    },
-  ];
-
-  const faqs = [
-    {
-      question: "Why Top Uni?",
-      answer: "Because we combine three things students usually have to find separately: structured scholarship data, AI-powered admissions planning, and expert guidance from people who have successfully navigated top university applications.",
-    },
-    {
-      question: "Who is this for?",
-      answer: "High school students, university students, graduate applicants, and professionals applying to universities, scholarships, summer programs, or international opportunities.",
-    },
-    {
-      question: "Do I need perfect grades?",
-      answer: "No. Strong grades help, but they are not the only factor. We help students understand where they are competitive, where they are stretching, and how to present their background honestly and strategically.",
-    },
-    {
-      question: "Is this only for Ivy League or Oxbridge?",
-      answer: "No. We help students apply to universities and scholarships across the U.S., U.K., Canada, Europe, Asia, and other regions. The goal is fit, funding, and long-term opportunity, not prestige alone.",
-    },
-    {
-      question: "Do you offer free consultations?",
-      answer: "We focus on paid consultations because they are designed to give real, personalized value from the first session, not function as sales calls. Students can still explore tools and resources before booking.",
-    },
-    {
-      question: "Is Top Uni an AI tool or a consulting service?",
-      answer: "Both. The platform helps students move faster with structured recommendations, while consulting is available for higher-stakes decisions that need expert judgment.",
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
 
-      {/* 1. Hero */}
-      <section className="bg-primary py-20 sm:py-28">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <h1 className="text-4xl sm:text-6xl font-heading font-bold text-primary-foreground mb-5 tracking-tight">
-            Why <span className="text-gold">Top Uni</span>?
-          </h1>
-          <p className="text-base sm:text-lg text-primary-foreground/75 max-w-2xl mx-auto leading-relaxed">
-            Most students do not need more random university lists. They need a clear strategy:
-            where to apply, which scholarships are realistic, and how to make their profile stronger.
-          </p>
-          <div className="flex flex-wrap gap-3 justify-center mt-8">
-            <Button variant="gold" size="lg" onClick={() => navigate("/discover")}>
-              Get your admissions plan
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => navigate("/discover")}
-              className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
-            >
-              Explore scholarships
-            </Button>
+      {/* Hero — editorial, asymmetric */}
+      <section className="border-b border-border bg-background">
+        <div className="max-w-6xl mx-auto px-6 lg:px-10 pt-20 pb-16 lg:pt-32 lg:pb-24">
+          <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-end">
+            <div className="lg:col-span-8">
+              <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-6">
+                Why Top Uni
+              </p>
+              <h1 className="font-heading text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.02] tracking-tight">
+                Most students do not need <span className="text-muted-foreground/50">more lists.</span>
+                <br />
+                They need <span className="text-accent">a strategy.</span>
+              </h1>
+            </div>
+            <div className="lg:col-span-4">
+              <p className="text-base text-muted-foreground leading-relaxed mb-6">
+                Where to apply, which scholarships are realistic, and how to make
+                your profile stronger. That's the real question.
+              </p>
+              <div className="flex flex-wrap gap-2.5">
+                <Button variant="gold" size="lg" onClick={() => navigate("/discover")} className="gap-2">
+                  Get your plan <ArrowRight className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="lg" onClick={() => navigate("/discover")}>
+                  Browse scholarships
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 2. Core argument */}
-      <section className="py-16 sm:py-20 bg-background">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-5 tracking-tight">
-            The problem is not ambition. It is unclear guidance.
-          </h2>
-          <p className="text-muted-foreground text-base leading-relaxed mb-4">
-            Many students are capable but lose months because they do not know:
-          </p>
-          <ul className="space-y-2 text-foreground/85 text-base">
-            <li>— which universities are realistic</li>
-            <li>— which scholarships are worth applying to</li>
-            <li>— how to position their background</li>
-            <li>— when to aim higher and when to be strategic</li>
-            <li>— how to avoid wasting months on poor-fit options</li>
-          </ul>
+      {/* The four differences — single dense block, numbered */}
+      <section className="py-20 lg:py-28">
+        <div className="max-w-6xl mx-auto px-6 lg:px-10">
+          <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 mb-14">
+            <div className="lg:col-span-5">
+              <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-4">
+                01 — The difference
+              </p>
+              <h2 className="font-heading text-3xl lg:text-4xl font-bold leading-tight tracking-tight">
+                Not a directory. Not a chatbot. A decision engine with humans behind it.
+              </h2>
+            </div>
+            <div className="lg:col-span-7 lg:pt-10">
+              <p className="text-base text-muted-foreground leading-relaxed">
+                Generic databases give you everything. Generic AI gives you anything.
+                Top Uni gives you the four things you can actually use:
+                a ranked shortlist, a realistic scholarship plan, a sequence to follow,
+                and an expert when the stakes go up.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-px bg-border border border-border rounded-lg overflow-hidden">
+            {[
+              {
+                n: "01",
+                t: "Strategy before search",
+                b: "Ranked by your grades, budget, country, and timeline — not alphabet order.",
+              },
+              {
+                n: "02",
+                t: "AI tools, human judgment",
+                b: "Structured data and recommendations, with expert review where the call matters.",
+              },
+              {
+                n: "03",
+                t: "Built for cross-border applicants",
+                b: "Designed around Central Asian and emerging-market realities, not U.S.-only assumptions.",
+              },
+              {
+                n: "04",
+                t: "Premium without the markup",
+                b: "Useful tools first, expert support when needed, no consulting overhead baked in.",
+              },
+            ].map((d) => (
+              <div key={d.n} className="bg-background p-7 lg:p-9 hover:bg-muted/30 transition-colors">
+                <div className="flex items-baseline gap-3 mb-3">
+                  <span className="font-mono text-xs text-accent">{d.n}</span>
+                  <h3 className="font-heading font-semibold text-lg tracking-tight">{d.t}</h3>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">{d.b}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* 3. The Top Uni difference */}
-      <section className="py-16 sm:py-20 bg-muted/30 border-y border-border">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-10 tracking-tight">
-            The Top Uni difference
-          </h2>
-          <div className="grid sm:grid-cols-2 gap-5">
-            {differences.map((d) => {
-              const Icon = d.icon;
-              return (
-                <Card key={d.title} className="p-6 sm:p-7 hover:border-accent/40 transition-colors">
-                  <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
-                    <Icon className="h-5 w-5 text-accent" />
+      {/* Credibility — inline editorial stats */}
+      <section className="border-y border-border bg-muted/20 py-20 lg:py-24">
+        <div className="max-w-6xl mx-auto px-6 lg:px-10">
+          <div className="grid lg:grid-cols-12 gap-10 lg:gap-16">
+            <div className="lg:col-span-5">
+              <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-4">
+                02 — Credibility
+              </p>
+              <h2 className="font-heading text-3xl lg:text-4xl font-bold leading-tight tracking-tight">
+                Real experience. Not recycled advice.
+              </h2>
+              <p className="text-sm text-muted-foreground mt-4 leading-relaxed">
+                We don't promise admission. We help you build the strongest, most
+                realistic case for the targets that actually fit you.
+              </p>
+            </div>
+            <div className="lg:col-span-7 grid grid-cols-2 gap-x-8 gap-y-10">
+              {[
+                { k: "$500K+", v: "Scholarships secured by students we've advised" },
+                { k: "Yale · Harvard · Cambridge · Tsinghua", v: "Where our team has studied and graduated" },
+                { k: "EN · RU", v: "Bilingual support for Central Asian students" },
+                { k: "UG · Grad · Summer · Scholarship", v: "Application types we've helped students win" },
+              ].map((s) => (
+                <div key={s.v} className="border-l-2 border-accent/40 pl-5">
+                  <div className="font-heading font-bold text-xl lg:text-2xl tracking-tight leading-tight">
+                    {s.k}
                   </div>
-                  <h3 className="font-heading font-semibold text-lg mb-2">{d.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{d.body}</p>
-                </Card>
-              );
-            })}
+                  <div className="text-xs text-muted-foreground mt-2 leading-relaxed">{s.v}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 4. Credibility */}
-      <section className="py-16 sm:py-20">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-6 tracking-tight">
-            Real experience, not recycled advice
-          </h2>
-          <ul className="space-y-3 text-foreground/85 text-base">
-            <li className="flex gap-3">
-              <span className="text-gold">·</span>
-              <span>Team experience across Yale, Harvard, Cambridge, Tsinghua, and other leading universities.</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="text-gold">·</span>
-              <span>Over $500K in scholarships secured by students we have advised.</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="text-gold">·</span>
-              <span>Experience across undergraduate, graduate, scholarship, summer program, and international applications.</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="text-gold">·</span>
-              <span>Bilingual support in English and Russian.</span>
-            </li>
-          </ul>
-          <p className="text-xs text-muted-foreground mt-6 italic">
-            We do not guarantee acceptance. We help you build the strongest, most realistic case for the targets that fit you.
+      {/* You don't need a perfect profile — single statement */}
+      <section className="py-20 lg:py-28">
+        <div className="max-w-3xl mx-auto px-6 lg:px-10">
+          <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-6">
+            03 — For students who aren't perfect on paper
           </p>
-        </div>
-      </section>
-
-      {/* 5. You do not need a perfect profile */}
-      <section className="py-16 sm:py-20 bg-muted/30 border-y border-border">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-5 tracking-tight">
-            You do not need perfect grades to build a strong application.
+          <h2 className="font-heading text-3xl lg:text-5xl font-bold leading-[1.1] tracking-tight mb-6">
+            Strong applications come from <span className="text-accent">non-linear stories.</span>
           </h2>
-          <p className="text-muted-foreground text-base leading-relaxed mb-6">
-            Top universities and scholarships are competitive, but they are not only for students with flawless records.
-            Many strong applications come from students with uneven grades, financial constraints, unusual backgrounds,
-            learning differences, or non-linear stories. The key is knowing how to choose the right targets and explain
-            your record clearly.
+          <p className="text-base lg:text-lg text-muted-foreground leading-relaxed mb-10">
+            Top universities and scholarships are competitive — but not reserved for
+            flawless transcripts. Uneven grades, financial constraints, unusual backgrounds,
+            learning differences, gap years. The real work is choosing the right targets and
+            telling your story without apology.
           </p>
-          <Button variant="gold" size="lg" onClick={() => navigate("/discover")}>
-            Find your best-fit options
+          <Button variant="gold" size="lg" onClick={() => navigate("/discover")} className="gap-2">
+            Find your best-fit options <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
       </section>
 
-      {/* 6. Product-led */}
-      <section className="py-16 sm:py-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-10 tracking-tight">
-            What you can do with Top Uni
+      {/* Final CTA — minimal */}
+      <section className="border-t border-border bg-primary py-20 lg:py-24">
+        <div className="max-w-4xl mx-auto px-6 lg:px-10 text-center">
+          <h2 className="font-heading text-3xl lg:text-4xl font-bold text-primary-foreground tracking-tight mb-4">
+            Ready to stop guessing?
           </h2>
-          <div className="grid md:grid-cols-3 gap-5">
-            {productCards.map((c) => {
-              const Icon = c.icon;
-              return (
-                <Card key={c.title} className="p-6 sm:p-7 hover:border-accent/40 transition-colors">
-                  <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center mb-4">
-                    <Icon className="h-5 w-5 text-gold" />
-                  </div>
-                  <h3 className="font-heading font-semibold text-lg mb-2">{c.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{c.body}</p>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* 7. FAQ */}
-      <section className="py-16 sm:py-20 bg-muted/30 border-t border-border">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-8 tracking-tight">
-            Frequently asked
-          </h2>
-          <Accordion type="single" collapsible className="w-full">
-            {faqs.map((f, i) => (
-              <AccordionItem key={i} value={`item-${i}`}>
-                <AccordionTrigger className="text-left text-base font-medium">
-                  {f.question}
-                </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground text-sm leading-relaxed">
-                  {f.answer}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-
-          <div className="mt-12 flex flex-wrap gap-3">
-            <Button variant="gold" size="lg" onClick={() => navigate("/discover")}>
-              Get your admissions plan
+          <p className="text-primary-foreground/70 mb-8 max-w-xl mx-auto">
+            Build your shortlist in minutes. Add expert support only when you need it.
+          </p>
+          <div className="flex flex-wrap gap-3 justify-center">
+            <Button variant="gold" size="lg" onClick={() => navigate("/discover")} className="gap-2">
+              Get your plan <ArrowRight className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="lg" onClick={() => navigate("/offerings")}>
-              See consulting options
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => navigate("/offerings")}
+              className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+            >
+              See consulting
             </Button>
           </div>
         </div>

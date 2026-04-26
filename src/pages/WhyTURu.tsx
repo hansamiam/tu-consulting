@@ -1,230 +1,156 @@
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { useNavigate } from "react-router-dom";
-import { Compass, Brain, Globe2, Sparkles, Target, BookOpen, Users } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 const WhyTURu = () => {
   const navigate = useNavigate();
-
-  const differences = [
-    {
-      icon: Compass,
-      title: "Стратегия до поиска",
-      body: "Мы не просто показываем варианты. Мы помогаем понять, какие университеты и стипендии подходят под твои оценки, бюджет, цели, страну, сроки и силу профиля.",
-    },
-    {
-      icon: Brain,
-      title: "AI-инструменты с экспертной логикой",
-      body: "Наши инструменты ускоряют работу, но логика — от реального опыта поступления. Мы соединяем структурированные данные, персональные рекомендации и экспертную проверку, когда это нужно.",
-    },
-    {
-      icon: Globe2,
-      title: "Создано для международных студентов",
-      body: "Большинство платформ построены под США или Великобританию. Top Uni спроектирован для тех, кто поступает через границы — особенно из Центральной Азии и других регионов с ограниченным доступом.",
-    },
-    {
-      icon: Sparkles,
-      title: "Премиум-помощь без корпоративной наценки",
-      body: "Большие фирмы дороги и обезличены. Мы держим модель компактной: сначала полезные инструменты, экспертная поддержка — там, где это важно, и никаких лишних слоёв.",
-    },
-  ];
-
-  const productCards = [
-    {
-      icon: Target,
-      title: "Реалистичные стипендии",
-      body: "Получи ранжированный список стипендий по критериям: подходишь ли, размер финансирования, срочность дедлайна, усилия и фит.",
-    },
-    {
-      icon: BookOpen,
-      title: "Построй план поступления",
-      body: "Пойми, какие университеты — амбиция, цель, и страховка, и что нужно усилить до подачи.",
-    },
-    {
-      icon: Users,
-      title: "Экспертная помощь, когда нужно",
-      body: "Записывайся на консультации по эссе, выбору школ, стратегии стипендий, интервью и финальным решениям.",
-    },
-  ];
-
-  const faqs = [
-    {
-      question: "Почему Top Uni?",
-      answer: "Потому что мы соединяем три вещи, которые студентам обычно приходится искать раздельно: структурированные данные о стипендиях, AI-планирование поступления и экспертные советы от тех, кто сам прошёл топовые университеты.",
-    },
-    {
-      question: "Для кого это?",
-      answer: "Школьники, студенты бакалавриата, магистры, аспиранты и профессионалы, которые подают на университеты, стипендии, летние программы или международные возможности.",
-    },
-    {
-      question: "Нужны ли идеальные оценки?",
-      answer: "Нет. Сильные оценки помогают, но это не единственный фактор. Мы помогаем понять, где ты конкурентен, где тянешься, и как честно и стратегически представить свой профиль.",
-    },
-    {
-      question: "Это только для Лиги Плюща и Оксбриджа?",
-      answer: "Нет. Мы помогаем подавать в университеты и на стипендии в США, Великобритании, Канаде, Европе, Азии и других регионах. Цель — фит, финансирование и долгосрочные возможности, а не только престиж.",
-    },
-    {
-      question: "Есть ли бесплатные консультации?",
-      answer: "Мы делаем платные консультации, потому что они дают реальную, персонализированную пользу с первой встречи, а не работают как продажа. До бронирования можно изучать инструменты и материалы.",
-    },
-    {
-      question: "Top Uni — это AI-инструмент или консалтинг?",
-      answer: "И то, и другое. Платформа помогает двигаться быстрее со структурированными рекомендациями, а консалтинг доступен для решений, которым нужна экспертная оценка.",
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation language="ru" />
 
-      <section className="bg-primary py-20 sm:py-28">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <h1 className="text-4xl sm:text-6xl font-heading font-bold text-primary-foreground mb-5 tracking-tight">
-            Почему <span className="text-gold">Top Uni</span>?
-          </h1>
-          <p className="text-base sm:text-lg text-primary-foreground/75 max-w-2xl mx-auto leading-relaxed">
-            Большинству студентов не нужны очередные списки университетов. Им нужна понятная стратегия:
-            куда подавать, какие стипендии реальны и как усилить свой профиль.
-          </p>
-          <div className="flex flex-wrap gap-3 justify-center mt-8">
-            <Button variant="gold" size="lg" onClick={() => navigate("/discover/ru")}>
-              Получить план поступления
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => navigate("/discover/ru")}
-              className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
-            >
-              Смотреть стипендии
-            </Button>
+      <section className="border-b border-border bg-background">
+        <div className="max-w-6xl mx-auto px-6 lg:px-10 pt-20 pb-16 lg:pt-32 lg:pb-24">
+          <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-end">
+            <div className="lg:col-span-8">
+              <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-6">
+                Почему Top Uni
+              </p>
+              <h1 className="font-heading text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.02] tracking-tight">
+                Большинству нужны не <span className="text-muted-foreground/50">списки.</span>
+                <br />
+                А <span className="text-accent">стратегия.</span>
+              </h1>
+            </div>
+            <div className="lg:col-span-4">
+              <p className="text-base text-muted-foreground leading-relaxed mb-6">
+                Куда подавать, какие стипендии реальны, и как усилить профиль.
+                Вот настоящий вопрос.
+              </p>
+              <div className="flex flex-wrap gap-2.5">
+                <Button variant="gold" size="lg" onClick={() => navigate("/discover/ru")} className="gap-2">
+                  Получить план <ArrowRight className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="lg" onClick={() => navigate("/discover/ru")}>
+                  Смотреть стипендии
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="py-16 sm:py-20 bg-background">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-5 tracking-tight">
-            Проблема не в амбициях. Проблема — в отсутствии чёткой стратегии.
-          </h2>
-          <p className="text-muted-foreground text-base leading-relaxed mb-4">
-            Многие студенты способны, но теряют месяцы, потому что не знают:
-          </p>
-          <ul className="space-y-2 text-foreground/85 text-base">
-            <li>— какие университеты реалистичны</li>
-            <li>— какие стипендии стоят подачи</li>
-            <li>— как позиционировать свой бэкграунд</li>
-            <li>— когда целиться выше, а когда быть стратегом</li>
-            <li>— как не потратить месяцы на неподходящие варианты</li>
-          </ul>
-        </div>
-      </section>
+      <section className="py-20 lg:py-28">
+        <div className="max-w-6xl mx-auto px-6 lg:px-10">
+          <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 mb-14">
+            <div className="lg:col-span-5">
+              <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-4">
+                01 — В чём отличие
+              </p>
+              <h2 className="font-heading text-3xl lg:text-4xl font-bold leading-tight tracking-tight">
+                Не каталог. Не чат-бот. Решающий движок с экспертами.
+              </h2>
+            </div>
+            <div className="lg:col-span-7 lg:pt-10">
+              <p className="text-base text-muted-foreground leading-relaxed">
+                Базы дают всё подряд. Универсальный AI — что угодно. Top Uni даёт четыре вещи,
+                которые реально работают: ранжированный шорт-лист, реалистичный план по стипендиям,
+                последовательность шагов и эксперта, когда ставки высоки.
+              </p>
+            </div>
+          </div>
 
-      <section className="py-16 sm:py-20 bg-muted/30 border-y border-border">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-10 tracking-tight">
-            В чём отличие Top Uni
-          </h2>
-          <div className="grid sm:grid-cols-2 gap-5">
-            {differences.map((d) => {
-              const Icon = d.icon;
-              return (
-                <Card key={d.title} className="p-6 sm:p-7 hover:border-accent/40 transition-colors">
-                  <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
-                    <Icon className="h-5 w-5 text-accent" />
-                  </div>
-                  <h3 className="font-heading font-semibold text-lg mb-2">{d.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{d.body}</p>
-                </Card>
-              );
-            })}
+          <div className="grid sm:grid-cols-2 gap-px bg-border border border-border rounded-lg overflow-hidden">
+            {[
+              { n: "01", t: "Стратегия до поиска", b: "Ранжирование по твоим оценкам, бюджету, стране и срокам — а не по алфавиту." },
+              { n: "02", t: "AI-инструменты, экспертная логика", b: "Структурированные данные и рекомендации, плюс эксперт там, где это важно." },
+              { n: "03", t: "Создано для международников", b: "Учитывает реалии Центральной Азии и других регионов, а не только США." },
+              { n: "04", t: "Премиум без наценки", b: "Сначала полезные инструменты, поддержка по запросу, без лишних слоёв." },
+            ].map((d) => (
+              <div key={d.n} className="bg-background p-7 lg:p-9 hover:bg-muted/30 transition-colors">
+                <div className="flex items-baseline gap-3 mb-3">
+                  <span className="font-mono text-xs text-accent">{d.n}</span>
+                  <h3 className="font-heading font-semibold text-lg tracking-tight">{d.t}</h3>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">{d.b}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="py-16 sm:py-20">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-6 tracking-tight">
-            Реальный опыт, а не пересказанные советы
-          </h2>
-          <ul className="space-y-3 text-foreground/85 text-base">
-            <li className="flex gap-3"><span className="text-gold">·</span><span>Команда с опытом в Yale, Harvard, Cambridge, Tsinghua и других ведущих университетах.</span></li>
-            <li className="flex gap-3"><span className="text-gold">·</span><span>Более $500K стипендий выиграно нашими студентами.</span></li>
-            <li className="flex gap-3"><span className="text-gold">·</span><span>Опыт по бакалавриату, магистратуре, стипендиям, летним программам и международным заявкам.</span></li>
-            <li className="flex gap-3"><span className="text-gold">·</span><span>Поддержка на английском и русском.</span></li>
-          </ul>
-          <p className="text-xs text-muted-foreground mt-6 italic">
-            Мы не гарантируем поступление. Мы помогаем построить максимально сильную и реалистичную заявку для подходящих целей.
-          </p>
+      <section className="border-y border-border bg-muted/20 py-20 lg:py-24">
+        <div className="max-w-6xl mx-auto px-6 lg:px-10">
+          <div className="grid lg:grid-cols-12 gap-10 lg:gap-16">
+            <div className="lg:col-span-5">
+              <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-4">
+                02 — Доверие
+              </p>
+              <h2 className="font-heading text-3xl lg:text-4xl font-bold leading-tight tracking-tight">
+                Реальный опыт. Не пересказанные советы.
+              </h2>
+              <p className="text-sm text-muted-foreground mt-4 leading-relaxed">
+                Мы не обещаем поступление. Мы помогаем построить максимально сильный
+                и реалистичный профиль для подходящих целей.
+              </p>
+            </div>
+            <div className="lg:col-span-7 grid grid-cols-2 gap-x-8 gap-y-10">
+              {[
+                { k: "$500K+", v: "Стипендий, выигранных нашими студентами" },
+                { k: "Yale · Harvard · Cambridge · Tsinghua", v: "Где училась и выпустилась наша команда" },
+                { k: "EN · RU", v: "Двуязычная поддержка" },
+                { k: "UG · Магистр · Лето · Стипендии", v: "Типы заявок, с которыми мы работали" },
+              ].map((s) => (
+                <div key={s.v} className="border-l-2 border-accent/40 pl-5">
+                  <div className="font-heading font-bold text-xl lg:text-2xl tracking-tight leading-tight">{s.k}</div>
+                  <div className="text-xs text-muted-foreground mt-2 leading-relaxed">{s.v}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="py-16 sm:py-20 bg-muted/30 border-y border-border">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-5 tracking-tight">
-            Идеальные оценки не нужны для сильной заявки.
-          </h2>
-          <p className="text-muted-foreground text-base leading-relaxed mb-6">
-            Топовые университеты и стипендии конкурентны, но они не только для отличников.
-            Сильные заявки часто приходят от студентов с неровными оценками, финансовыми ограничениями,
-            необычным бэкграундом, особенностями обучения или нелинейной историей.
-            Главное — выбрать правильные цели и понятно объяснить свой путь.
+      <section className="py-20 lg:py-28">
+        <div className="max-w-3xl mx-auto px-6 lg:px-10">
+          <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-6">
+            03 — Для тех, кто не идеален на бумаге
           </p>
-          <Button variant="gold" size="lg" onClick={() => navigate("/discover/ru")}>
-            Найти подходящие варианты
+          <h2 className="font-heading text-3xl lg:text-5xl font-bold leading-[1.1] tracking-tight mb-6">
+            Сильные заявки рождаются из <span className="text-accent">нелинейных историй.</span>
+          </h2>
+          <p className="text-base lg:text-lg text-muted-foreground leading-relaxed mb-10">
+            Топовые университеты и стипендии конкурентны — но не зарезервированы для
+            идеальных аттестатов. Неровные оценки, финансовые ограничения, необычный бэкграунд,
+            особенности обучения, gap year. Главное — выбрать правильные цели и рассказать свою
+            историю без извинений.
+          </p>
+          <Button variant="gold" size="lg" onClick={() => navigate("/discover/ru")} className="gap-2">
+            Найти подходящие варианты <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
       </section>
 
-      <section className="py-16 sm:py-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-10 tracking-tight">
-            Что можно сделать с Top Uni
+      <section className="border-t border-border bg-primary py-20 lg:py-24">
+        <div className="max-w-4xl mx-auto px-6 lg:px-10 text-center">
+          <h2 className="font-heading text-3xl lg:text-4xl font-bold text-primary-foreground tracking-tight mb-4">
+            Хватит гадать.
           </h2>
-          <div className="grid md:grid-cols-3 gap-5">
-            {productCards.map((c) => {
-              const Icon = c.icon;
-              return (
-                <Card key={c.title} className="p-6 sm:p-7 hover:border-accent/40 transition-colors">
-                  <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center mb-4">
-                    <Icon className="h-5 w-5 text-gold" />
-                  </div>
-                  <h3 className="font-heading font-semibold text-lg mb-2">{c.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{c.body}</p>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 sm:py-20 bg-muted/30 border-t border-border">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-8 tracking-tight">
-            Частые вопросы
-          </h2>
-          <Accordion type="single" collapsible className="w-full">
-            {faqs.map((f, i) => (
-              <AccordionItem key={i} value={`item-${i}`}>
-                <AccordionTrigger className="text-left text-base font-medium">
-                  {f.question}
-                </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground text-sm leading-relaxed">
-                  {f.answer}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-
-          <div className="mt-12 flex flex-wrap gap-3">
-            <Button variant="gold" size="lg" onClick={() => navigate("/discover/ru")}>
-              Получить план поступления
+          <p className="text-primary-foreground/70 mb-8 max-w-xl mx-auto">
+            Построй свой шорт-лист за минуты. Добавляй экспертную поддержку только когда нужно.
+          </p>
+          <div className="flex flex-wrap gap-3 justify-center">
+            <Button variant="gold" size="lg" onClick={() => navigate("/discover/ru")} className="gap-2">
+              Получить план <ArrowRight className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="lg" onClick={() => navigate("/offerings/ru")}>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => navigate("/offerings/ru")}
+              className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+            >
               Смотреть консалтинг
             </Button>
           </div>
