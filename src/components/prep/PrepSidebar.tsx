@@ -85,14 +85,13 @@ const PrepSidebar = () => {
           </div>
         )}
 
-        {/* Navigation */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-muted-foreground text-xs uppercase tracking-wider">
-            {t("Prep", "Подготовка")}
+            {t("Available Now", "Доступно")}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {liveItems.map((item) => (
                 <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton
                     onClick={() => navigate(item.path)}
@@ -112,49 +111,30 @@ const PrepSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* IELTS Tools */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-muted-foreground text-xs uppercase tracking-wider">
-            {t("IELTS Tools", "IELTS")}
+            {t("Coming Soon", "Скоро")}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {ieltsTools.map((item) => (
+              {soonItems.map((item) => (
                 <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton
                     onClick={() => navigate(item.path)}
                     className={cn(
-                      "transition-colors",
-                      isActive(item.path) ? "bg-accent/15 text-accent font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                      "transition-colors opacity-60",
+                      isActive(item.path)
+                        ? "bg-accent/15 text-accent font-medium opacity-100"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted hover:opacity-100"
                     )}
                   >
                     <item.icon className="h-4 w-4" />
-                    {!collapsed && <span>{item.title}</span>}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* SAT Tools */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-muted-foreground text-xs uppercase tracking-wider">
-            {t("SAT Tools", "SAT")}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {satTools.map((item) => (
-                <SidebarMenuItem key={item.path}>
-                  <SidebarMenuButton
-                    onClick={() => navigate(item.path)}
-                    className={cn(
-                      "transition-colors",
-                      isActive(item.path) ? "bg-accent/15 text-accent font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    {!collapsed && (
+                      <span className="flex items-center gap-1.5">
+                        {item.title}
+                        <span className="text-[9px] uppercase tracking-wider text-gold/70 border border-gold/30 rounded px-1">soon</span>
+                      </span>
                     )}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {!collapsed && <span>{item.title}</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
