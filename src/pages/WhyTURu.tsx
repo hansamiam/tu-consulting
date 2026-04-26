@@ -78,39 +78,65 @@ const WhyTURu = () => {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="border-y border-border bg-muted/20 py-20 lg:py-24">
+        <div className="max-w-6xl mx-auto px-6 lg:px-10">
+          <div className="grid lg:grid-cols-12 gap-10 lg:gap-16">
+            <div className="lg:col-span-5">
+              <p className="label-mono text-accent mb-4">02 — Track record</p>
+              <h2 className="font-heading text-3xl lg:text-4xl font-bold leading-tight tracking-tight">
+                Цифры, а не прилагательные.
+              </h2>
+              <p className="text-sm text-muted-foreground mt-4 leading-relaxed">
+                Мы не обещаем поступление. Помогаем выбрать школы, где твоя заявка реально конкурентна.
+              </p>
+            </div>
+            <div className="lg:col-span-7 grid grid-cols-2 gap-x-8 gap-y-10">
+              {[
+                { k: "$500K+", v: "Стипендий, выигранных нашими студентами" },
+                { k: "Yale · Harvard · Cambridge · Tsinghua", v: "Где училась команда" },
+                { k: "EN · RU", v: "Двуязычная поддержка" },
+                { k: "UG · Магистр · Стипендии · Лето", v: "Типы заявок" },
+              ].map((s) => (
+                <div key={s.v} className="border-l-2 border-accent/40 pl-5">
+                  <div className="font-heading font-bold text-xl lg:text-2xl tracking-tight leading-tight">{s.k}</div>
+                  <div className="text-xs text-muted-foreground mt-2 leading-relaxed">{s.v}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       <section className="py-20 lg:py-28">
         <div className="max-w-3xl mx-auto px-6 lg:px-10">
-          <p className="label-mono text-accent mb-6">
-            03 — Если профиль не идеален
-          </p>
+          <p className="label-mono text-accent mb-6">03 — Если профиль не идеален</p>
           <h2 className="font-heading text-3xl lg:text-5xl font-bold leading-[1.1] tracking-tight mb-6">
             Топовые стипендии не зарезервированы за <span className="text-accent">идеальными аттестатами.</span>
           </h2>
           <p className="text-base lg:text-lg text-muted-foreground leading-relaxed mb-10">
             Неровные оценки, ограниченный бюджет, gap year, нестандартный бэкграунд — всё это
-            часто встречается у победителей. Главное — выбрать правильные цели и чётко
-            сформулировать историю.
+            часто встречается у победителей. Главное — выбрать правильные цели и чётко сформулировать историю.
           </p>
           <Button variant="gold" size="lg" onClick={() => navigate("/discover/ru")} className="gap-2">
             Смотреть матчи <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
+      </section>
 
       <section className="border-t border-border bg-primary py-20 lg:py-24">
         <div className="max-w-4xl mx-auto px-6 lg:px-10 text-center">
           <h2 className="font-heading text-3xl lg:text-4xl font-bold text-primary-foreground tracking-tight mb-4">
-            Хватит гадать.
+            Начни с шорт-листа.
           </h2>
           <p className="text-primary-foreground/70 mb-8 max-w-xl mx-auto">
-            Построй свой шорт-лист за минуты. Добавляй экспертную поддержку только когда нужно.
+            Бесплатно. Поддержка 1:1 — только если нужна.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
             <Button variant="gold" size="lg" onClick={() => navigate("/discover/ru")} className="gap-2">
-              Получить план <ArrowRight className="h-4 w-4" />
+              Смотреть стипендии <ArrowRight className="h-4 w-4" />
             </Button>
             <Button
               variant="outline"

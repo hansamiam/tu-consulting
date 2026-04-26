@@ -68,13 +68,12 @@ const Pricing = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center max-w-2xl mx-auto mb-10"
         >
-          <Badge className="mb-4 bg-gold/15 text-gold border-gold/30">Founding Pro · 100 spots</Badge>
+          <Badge className="mb-4 bg-gold/15 text-gold border-gold/30">Founding · 100 spots</Badge>
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
-            Lock in <span className="text-gold">$19/mo forever</span>.
+            $19/mo. <span className="text-gold">Locked for life.</span>
           </h1>
           <p className="text-muted-foreground mt-4 text-base">
-            We're in early access. The first 100 members get every tool we ship — Discover, Prep, Academy —
-            at $19/mo for life.
+            For the first 100 members. Includes Discover, Prep, and Academy as they ship.
           </p>
         </motion.div>
 
