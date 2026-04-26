@@ -53,39 +53,32 @@ const Index = () => {
             {...fadeUp(0.2)}
             className="font-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-primary-foreground leading-[1.1] tracking-tight mb-6"
           >
-            Your Future.{" "}
-            <span className="text-gold">Our Mission.</span>
+            Find your best-fit universities and{" "}
+            <span className="text-gold">admissions strategy</span> in minutes.
           </motion.h1>
 
           <motion.p
             {...fadeUp(0.35)}
             className="text-primary-foreground/85 text-lg sm:text-xl md:text-2xl max-w-3xl mx-auto mb-3 font-light leading-relaxed"
           >
-            AI‑powered university discovery, adaptive test prep, and expert consulting — all in one place.
+            Personalized scholarship matches, university shortlists, and a clear next step — built by consultants from Yale, Harvard, Cambridge & Tsinghua.
           </motion.p>
 
           <motion.p
             {...fadeUp(0.45)}
             className="text-primary-foreground/50 text-xs sm:text-sm tracking-widest uppercase mb-10"
           >
-            Led by consultants from Yale, Harvard, Cambridge & Tsinghua · Available in Russian & English
+            Free to start · No credit card · EN & RU
           </motion.p>
 
-          <motion.div {...fadeUp(0.55)} className="flex flex-col sm:flex-row gap-4 justify-center">
+          <motion.div {...fadeUp(0.55)} className="flex justify-center">
             <Button
               variant="gold"
               size="lg"
               className="text-lg px-10 py-6 hover:scale-105 transition-transform duration-200 gap-2"
               onClick={() => navigate('/discover')}
             >
-              <Search className="h-5 w-5" /> Explore Universities
-            </Button>
-            <Button
-              size="lg"
-              className="text-lg px-10 py-6 border-2 border-gold/40 bg-transparent text-gold hover:bg-gold/10 transition-all duration-200 gap-2"
-              onClick={() => navigate('/offerings')}
-            >
-              Our Services <ArrowRight className="h-5 w-5" />
+              <Search className="h-5 w-5" /> Get your admissions plan
             </Button>
           </motion.div>
         </div>

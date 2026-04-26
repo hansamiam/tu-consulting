@@ -12,10 +12,15 @@ const corsHeaders = {
 
 // Reverse-lookup price → (tier, interval)
 const PRICE_MAP: Record<string, { tier: "pro" | "founding"; interval: "month" | "year" }> = {
+  // Legacy Pro prices (kept for back-compat with any older test subs)
   price_1TQ2ZJQVirFUxpBgzaY5UYF0: { tier: "pro", interval: "month" },
   price_1TQ2ZKQVirFUxpBgz4Od1J5C: { tier: "pro", interval: "year" },
+  // Legacy Founding prices
   price_1TQ2ZMQVirFUxpBgviQFJwkF: { tier: "founding", interval: "month" },
   price_1TQ2ZNQVirFUxpBgoFdRKYSs: { tier: "founding", interval: "year" },
+  // CURRENT Founding prices ($9/mo · $90/yr) — must match create-subscription-checkout
+  price_1TQRdvQVirFUxpBgcYeYbhDr: { tier: "founding", interval: "month" },
+  price_1TQRdxQVirFUxpBgCBDWbNfI: { tier: "founding", interval: "year" },
 };
 
 Deno.serve(async (req) => {
