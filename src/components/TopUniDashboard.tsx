@@ -7,20 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   Sparkles, GraduationCap, Award, ClipboardList,
-  Bot, Loader2, Send, ArrowLeft, Target,
-  CheckCircle2, Plus, Trash2, PenTool, Mic, BarChart3, FileText,
-  Calendar, Plane, GitCompare, Crown,
+  Bot, Loader2, Send, ArrowLeft,
+  Plus, Trash2, PenTool, BarChart3,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import HyperReport from "@/components/topuni/HyperReport";
 import EssayTools from "@/components/topuni/EssayTools";
-import InterviewSimulator from "@/components/topuni/InterviewSimulator";
 import AdmissionPredictor from "@/components/topuni/AdmissionPredictor";
-import DocumentBuilder from "@/components/topuni/DocumentBuilder";
 import ScholarshipMatcher from "@/components/topuni/ScholarshipMatcher";
-import DeadlineCalendar from "@/components/topuni/DeadlineCalendar";
-import VisaGuide from "@/components/topuni/VisaGuide";
-import UniCompare from "@/components/topuni/UniCompare";
 
 interface StudentProfile {
   fullName: string;
