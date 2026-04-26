@@ -342,30 +342,30 @@ const Offerings = () => {
         {/* Hero Section */}
         <div className="text-center mb-8 md:mb-12 animate-fade-in">
           <div className="inline-block px-3 py-1.5 md:px-4 md:py-2 bg-accent/10 border border-accent/20 rounded-full mb-3 md:mb-4">
-            <p className="text-accent font-semibold text-xs md:text-sm uppercase tracking-wide">Launch Special — 25% Off All Packages</p>
+            <p className="text-accent font-semibold text-xs md:text-sm uppercase tracking-wide">Founding Members · $9/mo · 100 spots</p>
           </div>
           <h1 className="font-heading text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mb-3 md:mb-4 px-2">
-            Your Path to Top Universities
+            Talk to a real consultant
           </h1>
           <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto mb-6 px-4">
-            Expert consulting + AI-powered tools + a growing academy of resources. Choose your approach.
+            Start free. We'll diagnose where you are, where you want to go, and exactly what's standing in the way. No upsell.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Button
               variant="gold"
               size="lg"
               className="text-base px-8 gap-2 hover:scale-105 transition-transform"
-              onClick={() => navigate('/academy')}
+              onClick={() => document.getElementById('consultations')?.scrollIntoView({ behavior: 'smooth' })}
             >
-              <Sparkles className="w-5 h-5" /> Explore Academy
+              <Sparkles className="w-5 h-5" /> Book a free call
             </Button>
             <Button
               variant="outline"
               size="lg"
               className="text-base px-8 border-accent/30"
-              onClick={() => document.getElementById('packages')?.scrollIntoView({ behavior: 'smooth' })}
+              onClick={() => navigate('/pricing')}
             >
-              View Packages <ArrowRight className="w-4 h-4 ml-1" />
+              See Founding Member <ArrowRight className="w-4 h-4 ml-1" />
             </Button>
           </div>
         </div>
