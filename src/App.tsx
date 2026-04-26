@@ -70,7 +70,7 @@ import Pricing from "./pages/Pricing";
 import AuthCallback from "./pages/AuthCallback";
 import Account from "./pages/Account";
 import { AuthProvider } from "./contexts/AuthContext";
-import { EarnedTrialBanner } from "./components/auth/EarnedTrialBanner";
+// EarnedTrialBanner archived — single Founding tier, no earned trial mechanic
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -80,7 +80,6 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-        <EarnedTrialBanner />
         <ErrorBoundary>
         <Routes>
           <Route path="/" element={<Index />} />
