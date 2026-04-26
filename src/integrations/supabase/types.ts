@@ -454,37 +454,178 @@ export type Database = {
       }
       scholarships: {
         Row: {
+          age_limit: string | null
           application_deadline: string | null
+          application_fee_text: string | null
+          application_platform: string | null
+          award_amount_text: string | null
+          award_type: string[] | null
+          best_for_tags: string[] | null
+          citizenship_requirements: string | null
+          common_rejection_reasons: string | null
           coverage_type: string
           created_at: string | null
+          deadline_type: string | null
+          duration_text: string | null
+          effort_level: string | null
+          effort_reason: string | null
           eligibility_requirements: string | null
+          eligible_countries: string[] | null
+          essay_required: boolean | null
+          estimated_total_value_usd: number | null
+          extracurricular_required: boolean | null
+          financial_need_required: boolean | null
+          gpa_scale: number | null
+          host_country: string | null
+          how_to_win: string | null
+          ideal_candidate_profile: string | null
+          interview_required: boolean | null
+          language_requirements: string | null
+          last_verified_date: string | null
+          leadership_required: boolean | null
+          min_act: number | null
+          min_gpa: number | null
+          min_ielts: number | null
+          min_sat: number | null
+          min_toefl: number | null
+          next_step: string | null
+          official_url: string | null
+          partner_universities: string[] | null
+          priority_level: string | null
+          provider_name: string | null
+          recommendation_letters_required: number | null
+          renewable: boolean | null
+          required_documents: string[] | null
+          risk_note: string | null
           scholarship_id: string
           scholarship_name: string
+          selectivity_level: string | null
+          separate_application_required: boolean | null
           stipend_amount: number | null
+          strategy_notes: string | null
+          target_degree_level: string[] | null
+          target_fields: string[] | null
           university_id: string
           verified: boolean
+          weak_candidate_warning: string | null
+          what_to_prepare_first: string | null
+          why_this_fits: string | null
         }
         Insert: {
+          age_limit?: string | null
           application_deadline?: string | null
+          application_fee_text?: string | null
+          application_platform?: string | null
+          award_amount_text?: string | null
+          award_type?: string[] | null
+          best_for_tags?: string[] | null
+          citizenship_requirements?: string | null
+          common_rejection_reasons?: string | null
           coverage_type: string
           created_at?: string | null
+          deadline_type?: string | null
+          duration_text?: string | null
+          effort_level?: string | null
+          effort_reason?: string | null
           eligibility_requirements?: string | null
+          eligible_countries?: string[] | null
+          essay_required?: boolean | null
+          estimated_total_value_usd?: number | null
+          extracurricular_required?: boolean | null
+          financial_need_required?: boolean | null
+          gpa_scale?: number | null
+          host_country?: string | null
+          how_to_win?: string | null
+          ideal_candidate_profile?: string | null
+          interview_required?: boolean | null
+          language_requirements?: string | null
+          last_verified_date?: string | null
+          leadership_required?: boolean | null
+          min_act?: number | null
+          min_gpa?: number | null
+          min_ielts?: number | null
+          min_sat?: number | null
+          min_toefl?: number | null
+          next_step?: string | null
+          official_url?: string | null
+          partner_universities?: string[] | null
+          priority_level?: string | null
+          provider_name?: string | null
+          recommendation_letters_required?: number | null
+          renewable?: boolean | null
+          required_documents?: string[] | null
+          risk_note?: string | null
           scholarship_id?: string
           scholarship_name: string
+          selectivity_level?: string | null
+          separate_application_required?: boolean | null
           stipend_amount?: number | null
+          strategy_notes?: string | null
+          target_degree_level?: string[] | null
+          target_fields?: string[] | null
           university_id: string
           verified?: boolean
+          weak_candidate_warning?: string | null
+          what_to_prepare_first?: string | null
+          why_this_fits?: string | null
         }
         Update: {
+          age_limit?: string | null
           application_deadline?: string | null
+          application_fee_text?: string | null
+          application_platform?: string | null
+          award_amount_text?: string | null
+          award_type?: string[] | null
+          best_for_tags?: string[] | null
+          citizenship_requirements?: string | null
+          common_rejection_reasons?: string | null
           coverage_type?: string
           created_at?: string | null
+          deadline_type?: string | null
+          duration_text?: string | null
+          effort_level?: string | null
+          effort_reason?: string | null
           eligibility_requirements?: string | null
+          eligible_countries?: string[] | null
+          essay_required?: boolean | null
+          estimated_total_value_usd?: number | null
+          extracurricular_required?: boolean | null
+          financial_need_required?: boolean | null
+          gpa_scale?: number | null
+          host_country?: string | null
+          how_to_win?: string | null
+          ideal_candidate_profile?: string | null
+          interview_required?: boolean | null
+          language_requirements?: string | null
+          last_verified_date?: string | null
+          leadership_required?: boolean | null
+          min_act?: number | null
+          min_gpa?: number | null
+          min_ielts?: number | null
+          min_sat?: number | null
+          min_toefl?: number | null
+          next_step?: string | null
+          official_url?: string | null
+          partner_universities?: string[] | null
+          priority_level?: string | null
+          provider_name?: string | null
+          recommendation_letters_required?: number | null
+          renewable?: boolean | null
+          required_documents?: string[] | null
+          risk_note?: string | null
           scholarship_id?: string
           scholarship_name?: string
+          selectivity_level?: string | null
+          separate_application_required?: boolean | null
           stipend_amount?: number | null
+          strategy_notes?: string | null
+          target_degree_level?: string[] | null
+          target_fields?: string[] | null
           university_id?: string
           verified?: boolean
+          weak_candidate_warning?: string | null
+          what_to_prepare_first?: string | null
+          why_this_fits?: string | null
         }
         Relationships: [
           {
