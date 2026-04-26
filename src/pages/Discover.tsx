@@ -172,8 +172,8 @@ interface Props { language?: "en" | "ru" }
 
 const Discover = ({ language = "en" }: Props) => {
   const isRu = language === "ru";
-  const { user, hasActiveSubscription } = useAuth();
-  const isPro = hasActiveSubscription;
+  const { user, subscription } = useAuth();
+  const isPro = ["pro", "founding"].includes(subscription.tier);
 
   const [rows, setRows] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(true);
