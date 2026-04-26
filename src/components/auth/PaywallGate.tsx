@@ -41,13 +41,13 @@ export const PaywallGate = ({ children, feature, description, showPreview = true
           <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center mx-auto mb-4">
             <Lock className="w-5 h-5 text-gold" />
           </div>
-          <h3 className="font-bold text-lg mb-1">{feature} is a Founding Pro feature</h3>
+          <h3 className="font-bold text-lg mb-1">{feature} is a Pro feature</h3>
           <p className="text-sm text-muted-foreground mb-5">
             {description ||
-              "Founding Pro members lock in $19/mo for life — full Discover ranked matches, all Prep tools, and Academy as it ships."}
+              "Pro unlocks the full Discover ranked matches, every Prep tool, and Academy as it ships."}
           </p>
           <Button onClick={handleUpgrade} variant="gold" className="w-full gap-2">
-            <Crown className="w-4 h-4" /> Become Founding Pro — $19/mo
+            <Crown className="w-4 h-4" /> Unlock full access
           </Button>
           {!user && (
             <p className="text-xs text-muted-foreground mt-3">

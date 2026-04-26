@@ -7,20 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   Sparkles, GraduationCap, Award, ClipboardList,
-  Bot, Loader2, Send, ArrowLeft, Target,
-  CheckCircle2, Plus, Trash2, PenTool, Mic, BarChart3, FileText,
-  Calendar, Plane, GitCompare, Crown,
+  Bot, Loader2, Send, ArrowLeft,
+  Plus, Trash2, PenTool, BarChart3,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import HyperReport from "@/components/topuni/HyperReport";
 import EssayTools from "@/components/topuni/EssayTools";
-import InterviewSimulator from "@/components/topuni/InterviewSimulator";
 import AdmissionPredictor from "@/components/topuni/AdmissionPredictor";
-import DocumentBuilder from "@/components/topuni/DocumentBuilder";
 import ScholarshipMatcher from "@/components/topuni/ScholarshipMatcher";
-import DeadlineCalendar from "@/components/topuni/DeadlineCalendar";
-import VisaGuide from "@/components/topuni/VisaGuide";
-import UniCompare from "@/components/topuni/UniCompare";
 
 interface StudentProfile {
   fullName: string;
@@ -295,29 +288,11 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             <TabsTrigger value="essays" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
               <PenTool className="w-4 h-4" /> {t("Essays", "Эссе")}
             </TabsTrigger>
-            <TabsTrigger value="documents" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-              <FileText className="w-4 h-4" /> {t("Documents", "Документы")}
-            </TabsTrigger>
-            <TabsTrigger value="interview" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-              <Mic className="w-4 h-4" /> {t("Interview", "Интервью")}
-            </TabsTrigger>
-            <TabsTrigger value="tracker" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-              <ClipboardList className="w-4 h-4" /> {t("Tracker", "Трекер")}
-            </TabsTrigger>
             <TabsTrigger value="scholarships" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
               <Award className="w-4 h-4" /> {t("Scholarships", "Стипендии")}
             </TabsTrigger>
-            <TabsTrigger value="deadlines" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-              <Calendar className="w-4 h-4" /> {t("Deadlines", "Дедлайны")}
-            </TabsTrigger>
-            <TabsTrigger value="visa" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-              <Plane className="w-4 h-4" /> {t("Visa", "Виза")}
-            </TabsTrigger>
-            <TabsTrigger value="compare" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-              <GitCompare className="w-4 h-4" /> {t("Compare", "Сравнить")}
-            </TabsTrigger>
-            <TabsTrigger value="reports" className="flex items-center gap-1.5 text-xs sm:text-sm py-2 px-4 border border-gold/40 bg-gold/5 data-[state=active]:bg-gold data-[state=active]:text-primary font-semibold">
-              <Crown className="w-4 h-4" /> {t("AI Reports", "AI Отчёты")}
+            <TabsTrigger value="tracker" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+              <ClipboardList className="w-4 h-4" /> {t("Tracker", "Трекер")}
             </TabsTrigger>
           </TabsList>
         </div>
@@ -382,16 +357,6 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         {/* ESSAY TOOLS TAB */}
         <TabsContent value="essays">
           <EssayTools profile={profile} language={language} />
-        </TabsContent>
-
-        {/* DOCUMENT BUILDER TAB */}
-        <TabsContent value="documents">
-          <DocumentBuilder profile={profile} language={language} />
-        </TabsContent>
-
-        {/* INTERVIEW SIMULATOR TAB */}
-        <TabsContent value="interview">
-          <InterviewSimulator profile={profile} language={language} />
         </TabsContent>
 
         {/* APPLICATION TRACKER TAB */}
@@ -474,21 +439,6 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         {/* SCHOLARSHIP MATCHER TAB */}
         <TabsContent value="scholarships">
           <ScholarshipMatcher profile={profile} language={language} />
-        </TabsContent>
-
-        {/* DEADLINE CALENDAR TAB */}
-        <TabsContent value="deadlines">
-          <DeadlineCalendar profile={profile} language={language} />
-        </TabsContent>
-
-        {/* VISA GUIDE TAB */}
-        <TabsContent value="visa">
-          <VisaGuide profile={profile} language={language} />
-        </TabsContent>
-
-        {/* UNIVERSITY COMPARE TAB */}
-        <TabsContent value="compare">
-          <UniCompare profile={profile} language={language} />
         </TabsContent>
 
         {/* AI COUNSELOR TAB */}
@@ -584,20 +534,6 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           </Card>
         </TabsContent>
 
-        {/* AI REPORTS TAB */}
-        <TabsContent value="reports">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Crown className="w-5 h-5 text-gold" />
-                {t("AI Intelligence Reports", "AI Интеллект-отчёты")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <HyperReport profile={profile} language={language} />
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   );
