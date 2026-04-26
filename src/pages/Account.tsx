@@ -25,7 +25,28 @@ const Account = () => {
   }, [loading, user]);
 
   useEffect(() => {
-    if (user) refreshSubscription();
+    if (!user) return;
+    const params = new URLSearchParams(window.location.search);
+    const justSubscribed = params.get("subscribed") === "1";
+    (async () => {
+      if (justSubscribed) {
+        // Force Stripe→DB sync, then refresh local state. Retry briefly in case Stripe lags.
+        for (let i = 0; i < 3; i++) {
+          try {
+            await supabase.functions.invoke("check-subscription");
+            await refreshSubscription();
+            break;
+          } catch {
+            await new Promise((r) => setTimeout(r, 1500));
+          }
+        }
+        toast.success("Welcome aboard! Your Founding Membership is active.");
+        // Clean URL
+        window.history.replaceState({}, "", "/account");
+      } else {
+        refreshSubscription();
+      }
+    })();
   }, [user, refreshSubscription]);
 
   const openPortal = async () => {
