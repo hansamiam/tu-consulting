@@ -16,8 +16,6 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { MatchRing } from "@/components/discover/MatchRing";
-import { Sparkle, Zap, Users, BarChart3, Filter } from "lucide-react";
 
 interface Scholarship {
   scholarship_id: string;
@@ -213,99 +211,38 @@ const Discover = ({ language = "en" }: Props) => {
     <div className="min-h-screen bg-background">
       <Navigation language={language} />
 
-      {/* Hero — editorial AI-product */}
-      <section className="relative border-b border-border overflow-hidden">
-        <div className="absolute inset-0 bg-hero-soft" aria-hidden />
-        <div className="absolute inset-0 bg-dot-grid opacity-50" aria-hidden />
-        {/* faint gradient orbs */}
-        <div className="absolute -top-32 -right-32 w-[500px] h-[500px] bg-accent/8 rounded-full blur-3xl" aria-hidden />
-        <div className="absolute -top-20 -left-20 w-[400px] h-[400px] bg-primary/8 rounded-full blur-3xl" aria-hidden />
-
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 pt-16 pb-12 lg:pt-24 lg:pb-16">
-          <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-end">
-            <div className="lg:col-span-7">
-              {/* Live status chip */}
-              <div className="inline-flex items-center gap-2 bg-surface border border-border px-3 py-1.5 rounded-full text-xs mb-6 shadow-xs">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-60" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
-                </span>
-                <span className="label-mono text-muted-foreground">Engine live</span>
-                <span className="text-muted-foreground/50">·</span>
-                <span className="text-foreground/80 font-medium">{rows.length} scholarships indexed</span>
-              </div>
-
-              <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.05] tracking-tight">
-                {isRu ? "Не список. " : "Not a list. "}
-                <span className="text-muted-foreground/40">{isRu ? "Не догадки." : "Not a guess."}</span>
-                <br />
-                {isRu ? "А " : "A "}
-                <span className="text-accent">{isRu ? "ранжированный план" : "ranked plan"}</span>.
-              </h1>
-              <p className="text-base text-muted-foreground mt-5 max-w-xl leading-relaxed">
-                {isRu
-                  ? "Расскажи о себе — движок покажет стипендии, которые ты реально можешь выиграть, с матч-скором и точным первым шагом."
-                  : "Tell us about you. The engine surfaces scholarships you can actually win — with match scores, eligibility checks, and the exact first step."}
-              </p>
-            </div>
-
-            {/* Live stats panel */}
-            <div className="lg:col-span-5">
-              <div className="bg-surface border border-border rounded-xl shadow-md p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="label-mono text-muted-foreground">Coverage snapshot</div>
-                  <BarChart3 className="h-3.5 w-3.5 text-muted-foreground" />
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <div className="text-2xl font-bold tabular-nums">{rows.length}</div>
-                    <div className="text-[11px] text-muted-foreground mt-0.5">Scholarships</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold tabular-nums">
-                      {new Set(rows.map(r => r.host_country).filter(Boolean)).size}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground mt-0.5">Countries</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold tabular-nums text-accent">
-                      ${Math.round(rows.reduce((a, r) => a + (r.estimated_total_value_usd || 0), 0) / 1_000_000)}M+
-                    </div>
-                    <div className="text-[11px] text-muted-foreground mt-0.5">Total funding</div>
-                  </div>
-                </div>
-                <div className="mt-4 pt-4 border-t border-border/70 flex items-center gap-2 text-[11px] text-muted-foreground">
-                  <Zap className="h-3 w-3 text-accent" />
-                  Updated daily · ranked by your profile
-                </div>
-              </div>
-            </div>
+      {/* Hero */}
+      <section className="bg-primary py-14">
+        <div className="max-w-6xl mx-auto px-4 text-center">
+          <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/30 px-3 py-1 rounded-full text-gold text-xs font-medium mb-4">
+            <Compass className="h-3.5 w-3.5" /> {isRu ? "Поиск стипендий" : "Scholarship Decision Engine"}
           </div>
+          <h1 className="text-3xl sm:text-5xl font-heading font-bold text-primary-foreground mb-3">
+            {isRu ? "Не список — а " : "Not a list — a "}
+            <span className="text-gold">{isRu ? "ранжированные рекомендации" : "ranked recommendation"}</span>
+          </h1>
+          <p className="text-primary-foreground/70 max-w-2xl mx-auto">
+            {isRu
+              ? "Расскажи о себе — мы покажем, к каким стипендиям ты реально подходишь, насколько силён твой шанс и что делать первым."
+              : "Tell us about you — we surface scholarships you can actually win, how strong your fit is, and exactly what to do next."}
+          </p>
         </div>
       </section>
 
       <div className="max-w-6xl mx-auto px-4 py-10 space-y-8">
-        {/* Profile form — command-bar style */}
-        <Card className="border-border shadow-sm overflow-hidden">
-          <div className="bg-canvas-soft border-b border-border px-5 py-3 flex items-center justify-between">
+        {/* Profile form */}
+        <Card>
+          <CardHeader>
             <div className="flex items-center gap-2">
-              <div className="h-6 w-6 rounded-md bg-accent/15 border border-accent/30 flex items-center justify-center">
-                <Filter className="h-3 w-3 text-accent" />
-              </div>
-              <h2 className="font-heading font-semibold text-sm">
-                {isRu ? "Твой профиль" : "Profile inputs"}
+              <Target className="h-5 w-5 text-accent" />
+              <h2 className="font-heading font-semibold text-lg">
+                {isRu ? "Твой профиль" : "Your profile"}
               </h2>
-              <span className="text-[11px] text-muted-foreground hidden sm:inline">
-                · {isRu ? "Чем точнее — тем умнее ранжирование" : "The more precise, the smarter the ranking"}
-              </span>
             </div>
-            {submitted && (
-              <span className="label-mono text-success flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-success" />
-                Ranked
-              </span>
-            )}
-          </div>
+            <p className="text-xs text-muted-foreground">
+              {isRu ? "Чем точнее — тем умнее рекомендации." : "The more precise, the smarter the ranking."}
+            </p>
+          </CardHeader>
           <CardContent>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div>
@@ -369,11 +306,7 @@ const Discover = ({ language = "en" }: Props) => {
         {/* Results */}
         {loading ? (
           <div className="grid sm:grid-cols-2 gap-4">
-            {[1,2,3,4].map(i => (
-              <div key={i} className="h-72 bg-surface border border-border rounded-xl overflow-hidden relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-canvas to-transparent animate-shimmer" style={{ backgroundSize: "200% 100%" }} />
-              </div>
-            ))}
+            {[1,2,3,4].map(i => <div key={i} className="h-72 bg-card border border-border rounded-xl animate-pulse" />)}
           </div>
         ) : (
           <>
@@ -396,17 +329,8 @@ const Discover = ({ language = "en" }: Props) => {
                 const ElIcon = Elig.icon;
                 const days = s.application_deadline ? Math.ceil((new Date(s.application_deadline).getTime() - Date.now()) / 86400000) : null;
                 return (
-                  <motion.div
-                    key={s.scholarship_id}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
-                    whileHover={{ y: -2 }}
-                  >
-                    <Card className={`relative h-full flex flex-col overflow-hidden bg-surface border-border shadow-sm hover:shadow-lg transition-all duration-300 ${submitted && s.match >= 80 ? "ring-1 ring-accent/30" : ""}`}>
-                      {submitted && s.match >= 80 && (
-                        <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-accent" aria-hidden />
-                      )}
+                  <motion.div key={s.scholarship_id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                    <Card className="h-full hover:border-accent/40 transition-colors flex flex-col">
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
@@ -414,8 +338,9 @@ const Discover = ({ language = "en" }: Props) => {
                             <p className="text-xs text-muted-foreground mt-0.5">{s.provider_name} · {s.host_country}</p>
                           </div>
                           {submitted && (
-                            <div className="shrink-0">
-                              <MatchRing value={s.match} size={56} />
+                            <div className="text-right shrink-0">
+                              <div className="text-2xl font-bold text-accent leading-none">{s.match}</div>
+                              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">match</div>
                             </div>
                           )}
                         </div>
@@ -468,38 +393,18 @@ const Discover = ({ language = "en" }: Props) => {
             </div>
 
             {locked > 0 && (
-              <div className="relative mt-4 overflow-hidden rounded-2xl border border-border bg-surface shadow-md">
-                {/* Blurred preview strip behind */}
-                <div className="absolute inset-0 grid grid-cols-3 gap-3 p-4 opacity-30 blur-md pointer-events-none" aria-hidden>
-                  {[1,2,3].map(i => (
-                    <div key={i} className="h-full bg-canvas border border-border rounded-xl" />
-                  ))}
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-b from-surface/40 via-surface/85 to-surface" aria-hidden />
-
-                <div className="relative px-6 py-10 text-center max-w-xl mx-auto">
-                  <div className="inline-flex items-center gap-2 bg-accent/10 border border-accent/25 px-3 py-1 rounded-full mb-4">
-                    <Lock className="h-3 w-3 text-accent" />
-                    <span className="label-mono text-accent">{locked} more ranked</span>
-                  </div>
-                  <h3 className="font-heading text-2xl font-bold tracking-tight mb-2">
-                    {isRu ? "Открой полный план" : "Unlock your full admissions strategy"}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-5">
-                    {isRu
-                      ? "Полный ранжированный список, стратегии «как победить» и причины отказов."
-                      : "Full ranked list, match scores, How-to-win strategies, and rejection-reason analysis."}
-                  </p>
-                  <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] text-muted-foreground mb-5">
-                    <span className="inline-flex items-center gap-1.5"><Sparkle className="h-3 w-3 text-accent" /> Match scores</span>
-                    <span className="text-border">·</span>
-                    <span className="inline-flex items-center gap-1.5"><Zap className="h-3 w-3 text-accent" /> Strategy notes</span>
-                    <span className="text-border">·</span>
-                    <span className="inline-flex items-center gap-1.5"><Users className="h-3 w-3 text-accent" /> Expert review</span>
-                  </div>
-                  <Button size="lg" variant="gold" asChild className="shadow-md">
-                    <Link to="/pricing">{isRu ? "Открыть Founding Pro · $19/мес" : "Unlock Founding Pro · $19/mo"}</Link>
-                  </Button>
+              <div className="mt-2 p-6 bg-gradient-to-br from-primary/10 to-accent/10 border border-gold/30 rounded-2xl text-center space-y-3">
+                <Lock className="h-8 w-8 text-gold mx-auto" />
+                <h3 className="text-lg font-heading font-bold">
+                  {isRu ? `${locked} стипендий скрыто` : `${locked} more scholarships ranked for you`}
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+                  {isRu
+                    ? "Founding Pro открывает полный список с матч-скорами и стратегиями — $19/мес навсегда."
+                    : "Founding Pro unlocks the full ranked list, match scores, and strategy notes — $19/mo locked in."}
+                </p>
+                <div className="flex gap-3 justify-center flex-wrap">
+                  <Button asChild><Link to="/pricing">{isRu ? "Открыть полный доступ" : "Unlock full access"}</Link></Button>
                 </div>
               </div>
             )}
