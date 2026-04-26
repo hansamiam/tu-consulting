@@ -380,7 +380,10 @@ const Offerings = () => {
           }
         }} />
 
-        {/* Package Pricing */}
+        {/* Package Pricing — TEMPORARILY HIDDEN.
+            We're focused on free consultations + Founding membership for V1.
+            Multi-session packages return once Academy is live. Code preserved below. */}
+        {false && (
         <section id="packages" className="mb-12 md:mb-20 animate-enter">
           <h2 className="font-heading text-xl sm:text-2xl md:text-3xl font-bold text-center mb-3 md:mb-4 text-foreground px-4">
             Consulting Packages
