@@ -11,7 +11,7 @@ const WhyTURu = () => {
     <div className="min-h-screen bg-background">
       <Navigation language="ru" />
 
-      <section className="relative border-b border-border overflow-hidden bg-hero-soft">
+      <section className="relative border-b border-border overflow-hidden bg-canvas-soft">
         <div className="max-w-6xl mx-auto px-6 lg:px-10 pt-20 pb-16 lg:pt-32 lg:pb-24">
           <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-end">
             <div className="lg:col-span-8">
