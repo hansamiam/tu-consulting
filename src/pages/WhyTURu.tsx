@@ -19,22 +19,22 @@ const WhyTURu = () => {
                 Почему Top Uni
               </p>
               <h1 className="font-heading text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.02] tracking-tight">
-                Большинству нужны не <span className="text-muted-foreground/50">списки.</span>
+                Шорт-лист, план и эксперт —
                 <br />
-                А <span className="text-accent">стратегия.</span>
+                <span className="text-accent">когда он реально нужен.</span>
               </h1>
             </div>
             <div className="lg:col-span-4">
               <p className="text-base text-muted-foreground leading-relaxed mb-6">
-                Куда подавать, какие стипендии реальны, и как усилить профиль.
-                Вот настоящий вопрос.
+                Создано консультантами из Йеля, Гарварда, Кембриджа и Цинхуа.
+                Для студентов из Центральной Азии и не только.
               </p>
               <div className="flex flex-wrap gap-2.5">
                 <Button variant="gold" size="lg" onClick={() => navigate("/discover/ru")} className="gap-2">
-                  Получить план <ArrowRight className="h-4 w-4" />
+                  Смотреть стипендии <ArrowRight className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="lg" onClick={() => navigate("/discover/ru")}>
-                  Смотреть стипендии
+                <Button variant="ghost" size="lg" onClick={() => navigate("/offerings/ru")}>
+                  Консалтинг
                 </Button>
               </div>
             </div>
@@ -47,27 +47,27 @@ const WhyTURu = () => {
           <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 mb-14">
             <div className="lg:col-span-5">
               <p className="label-mono text-accent mb-4">
-                01 — В чём отличие
+                01 — Что мы делаем
               </p>
               <h2 className="font-heading text-3xl lg:text-4xl font-bold leading-tight tracking-tight">
-                Не каталог. Не чат-бот. Решающий движок с экспертами.
+                Движок по стипендиям плюс консалтинг — когда ставки растут.
               </h2>
             </div>
             <div className="lg:col-span-7 lg:pt-10">
               <p className="text-base text-muted-foreground leading-relaxed">
-                Базы дают всё подряд. Универсальный AI — что угодно. Top Uni даёт четыре вещи,
-                которые реально работают: ранжированный шорт-лист, реалистичный план по стипендиям,
-                последовательность шагов и эксперта, когда ставки высоки.
+                Self-serve инструменты для поиска, фит-скоринга и подготовки.
+                Поддержка 1:1 — для эссе, интервью и финальных решений.
+                Платишь только за то, чем пользуешься.
               </p>
             </div>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-px bg-border border border-border rounded-lg overflow-hidden">
             {[
-              { n: "01", t: "Стратегия до поиска", b: "Ранжирование по твоим оценкам, бюджету, стране и срокам — а не по алфавиту." },
-              { n: "02", t: "AI-инструменты, экспертная логика", b: "Структурированные данные и рекомендации, плюс эксперт там, где это важно." },
-              { n: "03", t: "Создано для международников", b: "Учитывает реалии Центральной Азии и других регионов, а не только США." },
-              { n: "04", t: "Премиум без наценки", b: "Сначала полезные инструменты, поддержка по запросу, без лишних слоёв." },
+              { n: "01", t: "Ранжирование, а не каталог", b: "Стипендии оцениваются по твоим оценкам, бюджету, стране и срокам." },
+              { n: "02", t: "Жёсткие пороги — сразу", b: "IELTS, GPA, SAT — видны до подачи, чтобы не тратить цикл впустую." },
+              { n: "03", t: "Кросс-бордер по умолчанию", b: "Учитывает реалии Центральной Азии и развивающихся рынков, а не только США." },
+              { n: "04", t: "Эксперты по запросу", b: "Консультанты из Йеля, Гарварда, Кембриджа, Цинхуа — поштучно, без пакетов." },
             ].map((d) => (
               <div key={d.n} className="bg-background p-7 lg:p-9 hover:bg-muted/30 transition-colors">
                 <div className="flex items-baseline gap-3 mb-3">
@@ -78,37 +78,6 @@ const WhyTURu = () => {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      <section className="border-y border-border bg-muted/20 py-20 lg:py-24">
-        <div className="max-w-6xl mx-auto px-6 lg:px-10">
-          <div className="grid lg:grid-cols-12 gap-10 lg:gap-16">
-            <div className="lg:col-span-5">
-              <p className="label-mono text-accent mb-4">
-                02 — Доверие
-              </p>
-              <h2 className="font-heading text-3xl lg:text-4xl font-bold leading-tight tracking-tight">
-                Реальный опыт. Не пересказанные советы.
-              </h2>
-              <p className="text-sm text-muted-foreground mt-4 leading-relaxed">
-                Мы не обещаем поступление. Мы помогаем построить максимально сильный
-                и реалистичный профиль для подходящих целей.
-              </p>
-            </div>
-            <div className="lg:col-span-7 grid grid-cols-2 gap-x-8 gap-y-10">
-              {[
-                { k: "$500K+", v: "Стипендий, выигранных нашими студентами" },
-                { k: "Yale · Harvard · Cambridge · Tsinghua", v: "Где училась и выпустилась наша команда" },
-                { k: "EN · RU", v: "Двуязычная поддержка" },
-                { k: "UG · Магистр · Лето · Стипендии", v: "Типы заявок, с которыми мы работали" },
-              ].map((s) => (
-                <div key={s.v} className="border-l-2 border-accent/40 pl-5">
-                  <div className="font-heading font-bold text-xl lg:text-2xl tracking-tight leading-tight">{s.k}</div>
-                  <div className="text-xs text-muted-foreground mt-2 leading-relaxed">{s.v}</div>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </section>
@@ -116,22 +85,20 @@ const WhyTURu = () => {
       <section className="py-20 lg:py-28">
         <div className="max-w-3xl mx-auto px-6 lg:px-10">
           <p className="label-mono text-accent mb-6">
-            03 — Для тех, кто не идеален на бумаге
+            03 — Если профиль не идеален
           </p>
           <h2 className="font-heading text-3xl lg:text-5xl font-bold leading-[1.1] tracking-tight mb-6">
-            Сильные заявки рождаются из <span className="text-accent">нелинейных историй.</span>
+            Топовые стипендии не зарезервированы за <span className="text-accent">идеальными аттестатами.</span>
           </h2>
           <p className="text-base lg:text-lg text-muted-foreground leading-relaxed mb-10">
-            Топовые университеты и стипендии конкурентны — но не зарезервированы для
-            идеальных аттестатов. Неровные оценки, финансовые ограничения, необычный бэкграунд,
-            особенности обучения, gap year. Главное — выбрать правильные цели и рассказать свою
-            историю без извинений.
+            Неровные оценки, ограниченный бюджет, gap year, нестандартный бэкграунд — всё это
+            часто встречается у победителей. Главное — выбрать правильные цели и чётко
+            сформулировать историю.
           </p>
           <Button variant="gold" size="lg" onClick={() => navigate("/discover/ru")} className="gap-2">
-            Найти подходящие варианты <ArrowRight className="h-4 w-4" />
+            Смотреть матчи <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
-      </section>
 
       <section className="border-t border-border bg-primary py-20 lg:py-24">
         <div className="max-w-4xl mx-auto px-6 lg:px-10 text-center">
