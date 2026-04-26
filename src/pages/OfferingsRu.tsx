@@ -297,14 +297,15 @@ const OfferingsRu = () => {
             ))}
           </div>
         </section>
+        )}
 
         <section className="mb-12 md:mb-20 animate-fade-in">
           <div className="text-center mb-6 md:mb-12">
             <h2 className="font-heading text-xl sm:text-2xl md:text-3xl font-bold mb-3 md:mb-4 text-foreground px-4">
-              Ещё не готовы?
+              Записаться на консультацию
             </h2>
             <p className="text-muted-foreground text-sm md:text-lg px-4">
-              Начните с пробной консультации, чтобы познакомиться с нашим сервисом
+              Начните бесплатно. Углубитесь со Стратегической консультацией, если захотите.
             </p>
           </div>
           <div className="grid md:grid-cols-2 gap-4 md:gap-8 max-w-4xl mx-auto">
