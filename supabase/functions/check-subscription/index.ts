@@ -18,7 +18,9 @@ const PRICE_MAP: Record<string, { tier: "pro" | "founding"; interval: "month" | 
   // Legacy Founding prices
   price_1TQ2ZMQVirFUxpBgviQFJwkF: { tier: "founding", interval: "month" },
   price_1TQ2ZNQVirFUxpBgoFdRKYSs: { tier: "founding", interval: "year" },
-  // CURRENT Founding prices ($9/mo · $90/yr) — must match create-subscription-checkout
+  // CURRENT Founding Pro price — $19/mo
+  price_1TQTyAQVirFUxpBg4YtW8JFo: { tier: "founding", interval: "month" },
+  // Legacy $9 prices (kept so older test subs still resolve)
   price_1TQRdvQVirFUxpBgcYeYbhDr: { tier: "founding", interval: "month" },
   price_1TQRdxQVirFUxpBgCBDWbNfI: { tier: "founding", interval: "year" },
 };

@@ -12,10 +12,10 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// $9/mo and $90/yr Founding prices
+// Founding Pro — $19/mo. Single tier, monthly only for now.
 const FOUNDING_PRICES: { month: string; year: string } = {
-  month: "price_1TQRdvQVirFUxpBgcYeYbhDr",
-  year: "price_1TQRdxQVirFUxpBgCBDWbNfI",
+  month: "price_1TQTyAQVirFUxpBg4YtW8JFo",
+  year: "price_1TQTyAQVirFUxpBg4YtW8JFo", // alias to monthly for now
 };
 
 Deno.serve(async (req) => {
