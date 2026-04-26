@@ -215,16 +215,15 @@ const Discover = ({ language = "en" }: Props) => {
       <section className="bg-primary py-14">
         <div className="max-w-6xl mx-auto px-4 text-center">
           <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/30 px-3 py-1 rounded-full text-gold text-xs font-medium mb-4">
-            <Compass className="h-3.5 w-3.5" /> {isRu ? "Поиск стипендий" : "Scholarship Decision Engine"}
+            <Compass className="h-3.5 w-3.5" /> {isRu ? "Стипендии" : "Scholarships"}
           </div>
           <h1 className="text-3xl sm:text-5xl font-heading font-bold text-primary-foreground mb-3">
-            {isRu ? "Не список — а " : "Not a list — a "}
-            <span className="text-gold">{isRu ? "ранжированные рекомендации" : "ranked recommendation"}</span>
+            {isRu ? "Стипендии, подходящие под твой профиль" : "Scholarships matched to your profile"}
           </h1>
           <p className="text-primary-foreground/70 max-w-2xl mx-auto">
             {isRu
-              ? "Расскажи о себе — мы покажем, к каким стипендиям ты реально подходишь, насколько силён твой шанс и что делать первым."
-              : "Tell us about you — we surface scholarships you can actually win, how strong your fit is, and exactly what to do next."}
+              ? "Заполни профиль — получишь ранжированный список с фит-скором, требованиями и сроками."
+              : "Fill in your profile to get a ranked list with fit score, requirements, and deadlines."}
           </p>
         </div>
       </section>
@@ -240,7 +239,7 @@ const Discover = ({ language = "en" }: Props) => {
               </h2>
             </div>
             <p className="text-xs text-muted-foreground">
-              {isRu ? "Чем точнее — тем умнее рекомендации." : "The more precise, the smarter the ranking."}
+              {isRu ? "Точные данные — точнее ранжирование." : "More accurate inputs, more accurate ranking."}
             </p>
           </CardHeader>
           <CardContent>
@@ -296,7 +295,7 @@ const Discover = ({ language = "en" }: Props) => {
               <div className="sm:col-span-2 flex items-end">
                 <Button className="w-full" onClick={() => setSubmitted(true)}>
                   <Sparkles className="h-4 w-4 mr-2" />
-                  {isRu ? "Получить рекомендации" : "Get my ranked recommendations"}
+                  {isRu ? "Показать матчи" : "Show matches"}
                 </Button>
               </div>
             </div>

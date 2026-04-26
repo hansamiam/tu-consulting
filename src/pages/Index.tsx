@@ -53,15 +53,16 @@ const Index = () => {
             {...fadeUp(0.2)}
             className="font-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-primary-foreground leading-[1.1] tracking-tight mb-6"
           >
-            Find your best-fit universities and{" "}
-            <span className="text-gold">admissions strategy</span> in minutes.
+            Scholarships ranked
+            <br className="hidden sm:block" />
+            <span className="text-gold"> against your profile.</span>
           </motion.h1>
 
           <motion.p
             {...fadeUp(0.35)}
             className="text-primary-foreground/85 text-lg sm:text-xl max-w-2xl mx-auto mb-10 font-light leading-relaxed"
           >
-            Ranked scholarship matches and a clear next step — built by consultants from Yale, Harvard, Cambridge & Tsinghua.
+            Fit scores, hard cutoffs, deadlines — and consultants from Yale, Harvard, Cambridge & Tsinghua when you need them.
           </motion.p>
 
           <motion.div {...fadeUp(0.55)} className="flex justify-center">
@@ -159,10 +160,10 @@ const Index = () => {
       <section className="py-16 bg-primary text-primary-foreground">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
           <motion.h2 {...fadeUp()} className="font-heading text-3xl sm:text-4xl font-bold mb-3">
-            Lock in <span className="text-gold">Founding Pro</span>
+            <span className="text-gold">Founding</span> · $19/mo, locked.
           </motion.h2>
           <motion.p {...fadeUp(0.1)} className="text-primary-foreground/70 mb-8 max-w-xl mx-auto">
-            $19/mo for life. First 100 members only.
+            First 100 members. Price doesn't change.
           </motion.p>
           <motion.div {...fadeUp(0.2)}>
             <Button

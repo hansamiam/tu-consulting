@@ -45,15 +45,16 @@ const IndexRu = () => {
             {...fadeUp(0.2)}
             className="font-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-primary-foreground leading-[1.1] tracking-tight mb-6"
           >
-            Ваше будущее.{" "}
-            <span className="text-gold">Наша миссия.</span>
+            Стипендии, ранжированные
+            <br className="hidden sm:block" />
+            <span className="text-gold"> под твой профиль.</span>
           </motion.h1>
 
           <motion.p
             {...fadeUp(0.35)}
             className="text-primary-foreground/85 text-lg sm:text-xl md:text-2xl max-w-3xl mx-auto mb-3 font-light leading-relaxed"
           >
-            AI-поиск университетов, адаптивная подготовка к экзаменам и экспертный консалтинг — всё в одном месте.
+            Фит-скоры, пороги по экзаменам, сроки — и консультанты из Йеля, Гарварда, Кембриджа и Цинхуа, когда нужно.
           </motion.p>
 
           <motion.p
