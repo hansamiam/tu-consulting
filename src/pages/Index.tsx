@@ -59,16 +59,9 @@ const Index = () => {
 
           <motion.p
             {...fadeUp(0.35)}
-            className="text-primary-foreground/85 text-lg sm:text-xl md:text-2xl max-w-3xl mx-auto mb-3 font-light leading-relaxed"
+            className="text-primary-foreground/85 text-lg sm:text-xl max-w-2xl mx-auto mb-10 font-light leading-relaxed"
           >
-            Personalized scholarship matches, university shortlists, and a clear next step — built by consultants from Yale, Harvard, Cambridge & Tsinghua.
-          </motion.p>
-
-          <motion.p
-            {...fadeUp(0.45)}
-            className="text-primary-foreground/50 text-xs sm:text-sm tracking-widest uppercase mb-10"
-          >
-            Free to start · No credit card · EN & RU
+            Ranked scholarship matches and a clear next step — built by consultants from Yale, Harvard, Cambridge & Tsinghua.
           </motion.p>
 
           <motion.div {...fadeUp(0.55)} className="flex justify-center">
@@ -100,127 +93,85 @@ const Index = () => {
         </motion.div>
       </motion.section>
 
-      {/* ── PLATFORM PILLARS ── */}
-      <section className="py-20 sm:py-28 bg-background">
+      {/* ── 3-STEP FUNNEL ── */}
+      <section className="py-20 sm:py-24 bg-background">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <motion.div {...fadeUp()} className="text-center mb-16">
-            <h2 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4">
-              One Platform. <span className="text-accent">Every Advantage.</span>
+          <motion.div {...fadeUp()} className="text-center mb-12">
+            <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground mb-3">
+              How it <span className="text-accent">works</span>
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              From finding your dream university to acing your exams and securing admission — we've built every tool you need.
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              Three steps. From your profile to a ranked plan you can actually act on.
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-            {/* Discover */}
-            <motion.div
-              {...fadeUp(0.1)}
-              className="group relative rounded-2xl border border-border bg-card p-8 hover:border-accent/40 hover:shadow-[var(--shadow-premium)] transition-all duration-300 cursor-pointer"
-              onClick={() => navigate('/discover')}
-            >
-              <div className="h-14 w-14 rounded-xl bg-accent/10 flex items-center justify-center mb-6 group-hover:bg-accent/20 transition-colors">
-                <Globe className="h-7 w-7 text-accent" />
-              </div>
-              <h3 className="font-heading text-xl font-bold text-foreground mb-3">Discover</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed mb-4">
-                Search 200+ universities worldwide. Compare tuition, rankings, visa info, and scholarships — all in one smart database.
-              </p>
-              <ul className="space-y-2 text-sm text-muted-foreground mb-6">
-                <li className="flex items-center gap-2"><Target className="h-4 w-4 text-accent" /> "Can I Get In?" match scoring</li>
-                <li className="flex items-center gap-2"><Search className="h-4 w-4 text-accent" /> Side-by-side comparisons</li>
-                <li className="flex items-center gap-2"><GraduationCap className="h-4 w-4 text-accent" /> Real cost calculator</li>
-              </ul>
-              <span className="inline-flex items-center gap-1 text-accent font-medium text-sm group-hover:gap-2 transition-all">
-                Explore Universities <ArrowRight className="h-4 w-4" />
-              </span>
-            </motion.div>
-
-            {/* Prep */}
-            <motion.div
-              {...fadeUp(0.2)}
-              className="group relative rounded-2xl border border-border bg-card p-8 hover:border-accent/40 hover:shadow-[var(--shadow-premium)] transition-all duration-300 cursor-pointer"
-              onClick={() => navigate('/prep')}
-            >
-              <div className="h-14 w-14 rounded-xl bg-accent/10 flex items-center justify-center mb-6 group-hover:bg-accent/20 transition-colors">
-                <BookOpen className="h-7 w-7 text-accent" />
-              </div>
-              <h3 className="font-heading text-xl font-bold text-foreground mb-3">Prep</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed mb-4">
-                Adaptive IELTS & SAT preparation with AI tutoring, full mock exams, and a gamified learning engine that keeps you going.
-              </p>
-              <ul className="space-y-2 text-sm text-muted-foreground mb-6">
-                <li className="flex items-center gap-2"><Brain className="h-4 w-4 text-accent" /> AI-powered adaptive practice</li>
-                <li className="flex items-center gap-2"><Trophy className="h-4 w-4 text-accent" /> Timed mock exams with scoring</li>
-                <li className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-accent" /> AI essay feedback & band scores</li>
-              </ul>
-              <span className="inline-flex items-center gap-1 text-accent font-medium text-sm group-hover:gap-2 transition-all">
-                Start Practicing <ArrowRight className="h-4 w-4" />
-              </span>
-            </motion.div>
-
-            {/* Consulting */}
-            <motion.div
-              {...fadeUp(0.3)}
-              className="group relative rounded-2xl border border-border bg-card p-8 hover:border-accent/40 hover:shadow-[var(--shadow-premium)] transition-all duration-300 cursor-pointer"
-              onClick={() => navigate('/offerings')}
-            >
-              <div className="h-14 w-14 rounded-xl bg-accent/10 flex items-center justify-center mb-6 group-hover:bg-accent/20 transition-colors">
-                <Users className="h-7 w-7 text-accent" />
-              </div>
-              <h3 className="font-heading text-xl font-bold text-foreground mb-3">Consulting</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed mb-4">
-                Personalized admission strategy from mentors who've been there. Essays, interviews, applications — handled with care.
-              </p>
-              <ul className="space-y-2 text-sm text-muted-foreground mb-6">
-                <li className="flex items-center gap-2"><GraduationCap className="h-4 w-4 text-accent" /> Ivy League & Oxbridge mentors</li>
-                <li className="flex items-center gap-2"><Target className="h-4 w-4 text-accent" /> Essay & interview coaching</li>
-                <li className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-accent" /> Full application management</li>
-              </ul>
-              <span className="inline-flex items-center gap-1 text-accent font-medium text-sm group-hover:gap-2 transition-all">
-                View Packages <ArrowRight className="h-4 w-4" />
-              </span>
-            </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {[
+              {
+                n: "1",
+                icon: Brain,
+                title: "TopUni AI",
+                body: "2-min intake — grades, country, budget, target. Builds your applicant profile.",
+                cta: "Start",
+                path: "/topuni-ai",
+              },
+              {
+                n: "2",
+                icon: Globe,
+                title: "Discover",
+                body: "Ranked scholarship matches with hard cutoffs (IELTS, GPA, SAT) and your fit score.",
+                cta: "See matches",
+                path: "/discover",
+              },
+              {
+                n: "3",
+                icon: BookOpen,
+                title: "Prep",
+                body: "Hit the test scores those scholarships actually require. Diagnostic + adaptive practice.",
+                cta: "Open Prep",
+                path: "/prep",
+              },
+            ].map((step, i) => (
+              <motion.div
+                key={step.n}
+                {...fadeUp(0.1 * i)}
+                className="group relative rounded-2xl border border-border bg-card p-6 hover:border-accent/40 transition-all cursor-pointer"
+                onClick={() => navigate(step.path)}
+              >
+                <div className="absolute -top-3 left-6 h-7 w-7 rounded-full bg-accent text-accent-foreground text-sm font-bold flex items-center justify-center">
+                  {step.n}
+                </div>
+                <div className="h-11 w-11 rounded-xl bg-accent/10 flex items-center justify-center mb-4 mt-2">
+                  <step.icon className="h-5 w-5 text-accent" />
+                </div>
+                <h3 className="font-heading text-lg font-bold text-foreground mb-1.5">{step.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4">{step.body}</p>
+                <span className="inline-flex items-center gap-1 text-accent font-medium text-sm group-hover:gap-2 transition-all">
+                  {step.cta} <ArrowRight className="h-4 w-4" />
+                </span>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ── AI SECTION ── */}
-      <section className="py-20 sm:py-28 bg-primary text-primary-foreground">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <motion.div {...fadeUp()} className="text-center mb-12">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold/30 bg-gold/10 text-gold text-xs sm:text-sm font-medium tracking-wide uppercase mb-6">
-              <Brain className="h-3.5 w-3.5" /> Powered by AI
-            </span>
-            <h2 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              TopUni <span className="text-gold">AI</span>
-            </h2>
-            <p className="text-primary-foreground/70 text-lg max-w-2xl mx-auto">
-              Start your journey with our AI — explore universities, get matched, and build your shortlist. When you're ready for the full strategy, our expert consultants take it from there.
-            </p>
-          </motion.div>
-
-          <motion.div {...fadeUp(0.2)} className="grid grid-cols-3 gap-6 max-w-lg mx-auto mb-12">
-            {[
-              { num: "200+", label: "Universities" },
-              { num: "24/7", label: "AI Counselor" },
-              { num: "2 min", label: "Full Strategy" },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="font-heading text-3xl sm:text-4xl font-bold text-gold mb-1">{stat.num}</div>
-                <div className="text-primary-foreground/60 text-sm">{stat.label}</div>
-              </div>
-            ))}
-          </motion.div>
-
-          <motion.div {...fadeUp(0.3)} className="text-center">
+      {/* ── FOUNDING PRO CTA ── */}
+      <section className="py-16 bg-primary text-primary-foreground">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+          <motion.h2 {...fadeUp()} className="font-heading text-3xl sm:text-4xl font-bold mb-3">
+            Lock in <span className="text-gold">Founding Pro</span>
+          </motion.h2>
+          <motion.p {...fadeUp(0.1)} className="text-primary-foreground/70 mb-8 max-w-xl mx-auto">
+            $19/mo for life. First 100 members only.
+          </motion.p>
+          <motion.div {...fadeUp(0.2)}>
             <Button
               variant="gold"
               size="lg"
-              className="text-lg px-10 py-6 hover:scale-105 transition-transform gap-2"
-              onClick={() => navigate('/topuni-ai')}
+              className="text-base px-8 py-5 hover:scale-105 transition-transform gap-2"
+              onClick={() => navigate('/pricing')}
             >
-              <Brain className="h-5 w-5" /> Try TopUni AI
+              See Founding Pro
             </Button>
           </motion.div>
         </div>
