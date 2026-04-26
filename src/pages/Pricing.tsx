@@ -1,5 +1,4 @@
-// Pricing page — single Founding Membership offer ($9/mo or $90/yr, capped at 100).
-// Honest framing: price-lock is the offer; we're early; group office hours included.
+// Pricing — single Founding Pro tier ($19/mo). No yearly toggle for now.
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navigation from "@/components/Navigation";
@@ -14,21 +13,16 @@ import { Check, Crown, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
-type Plan = "monthly" | "yearly";
-
-const FOUNDING_BENEFITS = [
-  "Full Scholarship Finder (free tier limited to 10 results / filter)",
-  "Academy access at launch — first to receive every new course, vault essay, and country guide",
-  "All Prep Premium tools as they ship — for free, forever",
-  "Monthly 60-minute group office hours with founders Nurzada & Samuel",
-  "Lifetime price lock — even after public launch raises to $29/mo",
-  "Founding Member badge + name in our credits",
-  "Direct line to founders for product input",
+const BENEFITS = [
+  "Full Discover — every ranked scholarship match, full strategy notes & rejection insights",
+  "All Prep tools as they ship — Diagnostic, Practice, Essay Grader, AI Tutor",
+  "Academy access at launch — early courses, country playbooks, vault content",
+  "Lifetime price lock at $19/mo — even after public launch raises the price",
+  "Founding Member badge + direct line to founders for product input",
 ];
 
 const Pricing = () => {
   const { user, subscription } = useAuth();
-  const [plan, setPlan] = useState<Plan>("yearly");
   const [authOpen, setAuthOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [foundingLeft, setFoundingLeft] = useState<number | null>(null);
@@ -53,7 +47,7 @@ const Pricing = () => {
     }
     setLoading(true);
     const { data, error } = await supabase.functions.invoke("create-subscription-checkout", {
-      body: { tier: "founding", interval: plan === "yearly" ? "year" : "month" },
+      body: { tier: "founding", interval: "month" },
     });
     setLoading(false);
     if (error || !data?.url) {
@@ -63,8 +57,6 @@ const Pricing = () => {
     window.location.href = data.url;
   };
 
-  const monthlyEquiv = plan === "yearly" ? "$7.50" : "$9";
-  const totalLine = plan === "yearly" ? "$90 billed yearly · save 17%" : "Billed monthly";
   const isFounding = subscription.tier === "founding";
 
   return (
@@ -76,47 +68,16 @@ const Pricing = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center max-w-2xl mx-auto mb-10"
         >
-          <Badge className="mb-4 bg-gold/15 text-gold border-gold/30">Founding Membership · 100 spots</Badge>
+          <Badge className="mb-4 bg-gold/15 text-gold border-gold/30">Founding Pro · 100 spots</Badge>
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
-            Get in early.<br />
-            <span className="text-gold">Pay $9 forever.</span>
+            Lock in <span className="text-gold">$19/mo forever</span>.
           </h1>
           <p className="text-muted-foreground mt-4 text-base">
-            We're building TopUni in public. The first 100 members lock in <strong>$9/mo for life</strong> —
-            even after we raise to $29 at public launch. You shape what we build next.
+            We're in early access. The first 100 members get every tool we ship — Discover, Prep, Academy —
+            at $19/mo for life.
           </p>
         </motion.div>
 
-        {/* Honesty note */}
-        <div className="max-w-2xl mx-auto mb-10 p-4 rounded-xl bg-muted/40 border border-border text-sm text-muted-foreground text-center">
-          <strong className="text-foreground">Real talk:</strong> we're shipping fast. Some tools are live (Scholarship Finder, Diagnostic, Essay Grader),
-          others are <em>coming soon</em>. As a founding member you get everything as it lands — and your price never moves.
-        </div>
-
-        {/* Billing toggle */}
-        <div className="flex justify-center mb-8">
-          <div className="inline-flex bg-muted p-1 rounded-full">
-            <button
-              onClick={() => setPlan("monthly")}
-              className={`px-6 py-2 rounded-full text-sm font-medium transition ${
-                plan === "monthly" ? "bg-background shadow-sm" : "text-muted-foreground"
-              }`}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setPlan("yearly")}
-              className={`px-6 py-2 rounded-full text-sm font-medium transition flex items-center gap-2 ${
-                plan === "yearly" ? "bg-background shadow-sm" : "text-muted-foreground"
-              }`}
-            >
-              Yearly
-              <Badge className="bg-green-500/15 text-green-600 border-0 text-[10px]">Save 17%</Badge>
-            </button>
-          </div>
-        </div>
-
-        {/* Single founding card */}
         <Card className="max-w-xl mx-auto p-8 sm:p-10 bg-gradient-to-br from-background via-background to-gold/5 border-gold/40 shadow-xl relative">
           {foundingLeft !== null && foundingLeft > 0 && (
             <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gold text-primary border-0">
@@ -126,18 +87,17 @@ const Pricing = () => {
 
           <div className="flex items-center gap-2 mb-2">
             <Crown className="w-5 h-5 text-gold" />
-            <h2 className="text-xl font-semibold">Founding Member</h2>
+            <h2 className="text-xl font-semibold">Founding Pro</h2>
           </div>
 
           <div className="flex items-baseline gap-2 mt-4 mb-1">
-            <span className="text-5xl font-bold">{monthlyEquiv}</span>
+            <span className="text-5xl font-bold">$19</span>
             <span className="text-muted-foreground">/month</span>
-            <span className="ml-2 text-sm text-muted-foreground line-through">$29</span>
           </div>
-          <p className="text-xs text-muted-foreground mb-6">{totalLine} · cancel anytime</p>
+          <p className="text-xs text-muted-foreground mb-6">Billed monthly · cancel anytime · price locked for life</p>
 
           <ul className="space-y-3 mb-8">
-            {FOUNDING_BENEFITS.map((b) => (
+            {BENEFITS.map((b) => (
               <li key={b} className="flex items-start gap-2.5 text-sm">
                 <Check className="w-4 h-4 mt-0.5 text-gold shrink-0" />
                 <span>{b}</span>
@@ -171,11 +131,10 @@ const Pricing = () => {
           </p>
         </Card>
 
-        {/* Free tier blurb */}
         <div className="text-center mt-12 max-w-2xl mx-auto space-y-2">
           <p className="text-sm text-muted-foreground">
-            Not ready? <strong className="text-foreground">Free</strong> still gets you the Scholarship Finder (top 10 results),
-            Diagnostic test, and TopUni AI chat.
+            Not ready? <strong className="text-foreground">Free</strong> still gets you Discover (top 3 ranked matches),
+            the Diagnostic test, and Essay Grader.
           </p>
           <p className="text-sm text-muted-foreground">
             Need 1:1 help instead?{" "}

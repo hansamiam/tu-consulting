@@ -400,12 +400,11 @@ const Discover = ({ language = "en" }: Props) => {
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-xl mx-auto">
                   {isRu
-                    ? "Стань Founding-членом и получи полный список с матч-скорами, стратегиями и шорт-листом — $9/мес навсегда."
-                    : "Become a Founding Member to unlock the full ranked list, match scores, strategy notes, and your saved shortlist — $9/mo locked in."}
+                    ? "Founding Pro открывает полный список с матч-скорами и стратегиями — $19/мес навсегда."
+                    : "Founding Pro unlocks the full ranked list, match scores, and strategy notes — $19/mo locked in."}
                 </p>
                 <div className="flex gap-3 justify-center flex-wrap">
                   <Button asChild><Link to="/pricing">{isRu ? "Открыть полный доступ" : "Unlock full access"}</Link></Button>
-                  {!user && <Button variant="outline" asChild><Link to="/auth">{isRu ? "Войти" : "Sign in"}</Link></Button>}
                 </div>
               </div>
             )}
@@ -413,7 +412,7 @@ const Discover = ({ language = "en" }: Props) => {
         )}
       </div>
 
-      {/* Detail dialog */}
+      {/* Detail dialog — requirements first, strategy gated to Pro */}
       <Dialog open={!!openDetail} onOpenChange={(o) => !o && setOpenDetail(null)}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           {openDetail && (
@@ -423,51 +422,94 @@ const Discover = ({ language = "en" }: Props) => {
                 <p className="text-sm text-muted-foreground">{openDetail.provider_name} · {openDetail.host_country}</p>
               </DialogHeader>
               <div className="space-y-4 mt-3 text-sm">
-                {openDetail.how_to_win && (
+                {/* Hard requirements — always visible */}
+                <section>
+                  <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2"><Target className="h-4 w-4 text-accent" />{isRu ? "Требования" : "Requirements"}</h4>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs bg-muted/30 rounded-lg p-3">
+                    {openDetail.min_gpa != null && (
+                      <div className="flex justify-between"><span className="text-muted-foreground">GPA</span><span className="font-medium">≥ {openDetail.min_gpa}/{openDetail.gpa_scale ?? 4.0}</span></div>
+                    )}
+                    {openDetail.min_ielts != null && (
+                      <div className="flex justify-between"><span className="text-muted-foreground">IELTS</span><span className="font-medium">≥ {openDetail.min_ielts}</span></div>
+                    )}
+                    {openDetail.min_toefl != null && (
+                      <div className="flex justify-between"><span className="text-muted-foreground">TOEFL</span><span className="font-medium">≥ {openDetail.min_toefl}</span></div>
+                    )}
+                    {openDetail.min_sat != null && (
+                      <div className="flex justify-between"><span className="text-muted-foreground">SAT</span><span className="font-medium">≥ {openDetail.min_sat}</span></div>
+                    )}
+                    {openDetail.application_deadline && (
+                      <div className="flex justify-between"><span className="text-muted-foreground">{isRu ? "Дедлайн" : "Deadline"}</span><span className="font-medium">{new Date(openDetail.application_deadline).toLocaleDateString(isRu ? "ru-RU" : "en-US", { year: "numeric", month: "short", day: "numeric" })}</span></div>
+                    )}
+                    {openDetail.citizenship_requirements && (
+                      <div className="col-span-2 flex justify-between"><span className="text-muted-foreground">{isRu ? "Гражданство" : "Citizenship"}</span><span className="font-medium text-right">{openDetail.citizenship_requirements}</span></div>
+                    )}
+                  </div>
+                </section>
+
+                {/* Required documents */}
+                {openDetail.required_documents && openDetail.required_documents.length > 0 && (
                   <section>
-                    <h4 className="font-semibold text-foreground mb-1 flex items-center gap-2"><Target className="h-4 w-4 text-accent" />{isRu ? "Как победить" : "How to win this"}</h4>
-                    <p className="text-foreground/85">{openDetail.how_to_win}</p>
+                    <h4 className="font-semibold text-foreground mb-1.5">{isRu ? "Документы" : "Required documents"}</h4>
+                    <ul className="text-xs text-foreground/80 grid grid-cols-2 gap-x-4 gap-y-1 list-disc list-inside">
+                      {openDetail.required_documents.map((d) => <li key={d}>{d}</li>)}
+                    </ul>
                   </section>
                 )}
-                {openDetail.what_to_prepare_first && (
-                  <section>
-                    <h4 className="font-semibold text-foreground mb-1 flex items-center gap-2"><Lightbulb className="h-4 w-4 text-accent" />{isRu ? "Подготовь в первую очередь" : "Prepare first"}</h4>
-                    <p className="text-foreground/85">{openDetail.what_to_prepare_first}</p>
-                  </section>
-                )}
-                {openDetail.next_step && (
-                  <section className="bg-accent/5 border border-accent/20 rounded-lg p-3">
-                    <h4 className="font-semibold text-accent mb-1 flex items-center gap-2"><ArrowRight className="h-4 w-4" />{isRu ? "Следующий шаг" : "Next step"}</h4>
-                    <p className="text-foreground/85">{openDetail.next_step}</p>
-                  </section>
-                )}
-                {isPro && openDetail.strategy_notes && (
-                  <section>
-                    <h4 className="font-semibold text-foreground mb-1">{isRu ? "Стратегия" : "Strategy notes"}</h4>
-                    <p className="text-foreground/85">{openDetail.strategy_notes}</p>
-                  </section>
-                )}
-                {isPro && openDetail.common_rejection_reasons && (
-                  <section>
-                    <h4 className="font-semibold text-foreground mb-1 flex items-center gap-2"><XCircle className="h-4 w-4 text-destructive" />{isRu ? "Причины отказов" : "Common rejection reasons"}</h4>
-                    <p className="text-foreground/85">{openDetail.common_rejection_reasons}</p>
-                  </section>
-                )}
-                {openDetail.risk_note && (
-                  <section className="border border-amber-500/30 bg-amber-500/5 rounded-lg p-3">
-                    <h4 className="font-semibold text-amber-600 dark:text-amber-400 mb-1 flex items-center gap-2"><AlertTriangle className="h-4 w-4" />{isRu ? "Важно" : "Risk note"}</h4>
-                    <p className="text-foreground/85">{openDetail.risk_note}</p>
-                  </section>
-                )}
-                {!isPro && (
-                  <div className="border border-gold/30 bg-gold/5 rounded-lg p-3 text-center">
-                    <Lock className="h-5 w-5 text-gold mx-auto mb-1" />
-                    <p className="text-xs text-muted-foreground mb-2">{isRu ? "Стратегия и причины отказов — для Founding" : "Strategy notes & rejection insights are Founding-only"}</p>
-                    <Button size="sm" asChild><Link to="/pricing">{isRu ? "Открыть" : "Unlock"}</Link></Button>
+
+                {/* Pro-only: strategy & rejection reasons */}
+                {isPro ? (
+                  <>
+                    {openDetail.how_to_win && (
+                      <section className="bg-accent/5 border border-accent/20 rounded-lg p-3">
+                        <h4 className="font-semibold text-accent mb-1 flex items-center gap-2"><Lightbulb className="h-4 w-4" />{isRu ? "Как победить" : "How to win this"}</h4>
+                        <p className="text-foreground/85">{openDetail.how_to_win}</p>
+                      </section>
+                    )}
+                    {openDetail.strategy_notes && (
+                      <section>
+                        <h4 className="font-semibold text-foreground mb-1">{isRu ? "Стратегия" : "Strategy notes"}</h4>
+                        <p className="text-foreground/85">{openDetail.strategy_notes}</p>
+                      </section>
+                    )}
+                    {openDetail.common_rejection_reasons && (
+                      <section>
+                        <h4 className="font-semibold text-foreground mb-1 flex items-center gap-2"><XCircle className="h-4 w-4 text-destructive" />{isRu ? "Причины отказов" : "Common rejection reasons"}</h4>
+                        <p className="text-foreground/85">{openDetail.common_rejection_reasons}</p>
+                      </section>
+                    )}
+                    {openDetail.risk_note && (
+                      <section className="border border-amber-500/30 bg-amber-500/5 rounded-lg p-3">
+                        <h4 className="font-semibold text-amber-600 dark:text-amber-400 mb-1 flex items-center gap-2"><AlertTriangle className="h-4 w-4" />{isRu ? "Важно" : "Risk note"}</h4>
+                        <p className="text-foreground/85">{openDetail.risk_note}</p>
+                      </section>
+                    )}
+                  </>
+                ) : (
+                  <div className="border border-gold/30 bg-gold/5 rounded-lg p-4 text-center">
+                    <Lock className="h-5 w-5 text-gold mx-auto mb-1.5" />
+                    <p className="text-sm text-foreground mb-1">{isRu ? "Стратегия выигрыша и причины отказов" : "How to win this · rejection reasons · strategy notes"}</p>
+                    <p className="text-xs text-muted-foreground mb-3">{isRu ? "Открой с Founding Pro · $19/мес" : "Unlock with Founding Pro · $19/mo"}</p>
+                    <Button size="sm" variant="gold" asChild><Link to="/pricing">{isRu ? "Открыть" : "Unlock"}</Link></Button>
                   </div>
                 )}
+
+                {/* CTA: prep gap */}
+                {(openDetail.min_ielts || openDetail.min_sat) && (
+                  <div className="border border-border rounded-lg p-3 flex items-start justify-between gap-3 bg-muted/20">
+                    <div className="text-xs text-foreground/80">
+                      {isRu ? "Нужно поднять балл?" : "Need to hit those scores?"}{" "}
+                      <Link to="/prep" className="underline">{isRu ? "Открыть Prep" : "Open Prep"}</Link>
+                    </div>
+                  </div>
+                )}
+
                 {openDetail.official_url && (
-                  <Button asChild className="w-full"><a href={openDetail.official_url} target="_blank" rel="noopener noreferrer">{isRu ? "Открыть официальную страницу" : "Open official application"} <ExternalLink className="h-3.5 w-3.5 ml-2" /></a></Button>
+                  <Button asChild className="w-full">
+                    <a href={openDetail.official_url} target="_blank" rel="noopener noreferrer">
+                      {isRu ? "Как подать — официальная страница" : "How to apply — official page"} <ExternalLink className="h-3.5 w-3.5 ml-2" />
+                    </a>
+                  </Button>
                 )}
               </div>
             </>
