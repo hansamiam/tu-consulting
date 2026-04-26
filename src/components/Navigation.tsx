@@ -22,6 +22,7 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
   const isRussian = language === "ru";
   const basePath = isRussian ? "/ru" : "/";
 
+  // Academy hidden from main nav until launch — still reachable via /academy direct link.
   const primaryLinks = [
     {
       label: "TopUni AI",
@@ -34,10 +35,6 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
     {
       label: isRussian ? "Подготовка" : "Prep",
       path: isRussian ? "/prep/ru" : "/prep",
-    },
-    {
-      label: isRussian ? "Академия" : "Academy",
-      path: "/academy",
     },
     {
       label: isRussian ? "Консалтинг" : "Consulting",
