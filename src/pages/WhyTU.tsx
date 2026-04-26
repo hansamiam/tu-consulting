@@ -12,12 +12,20 @@ const WhyTU = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
 
-      {/* Hero — editorial, asymmetric */}
-      <section className="border-b border-border bg-background">
-        <div className="max-w-6xl mx-auto px-6 lg:px-10 pt-20 pb-16 lg:pt-32 lg:pb-24">
+      {/* Hero — editorial, asymmetric, soft layered backdrop */}
+      <section className="relative border-b border-border overflow-hidden">
+        <div className="absolute inset-0 bg-hero-soft" aria-hidden />
+        <div className="absolute inset-0 bg-dot-grid opacity-60" aria-hidden />
+        <div
+          className="absolute inset-x-0 top-0 h-[420px] opacity-[0.08] bg-cover bg-center"
+          style={{ backgroundImage: "url('/src/assets/topuni-bg.jpg')" }}
+          aria-hidden
+        />
+        <div className="absolute inset-x-0 top-0 h-[420px] bg-gradient-to-b from-transparent via-background/60 to-background" aria-hidden />
+        <div className="relative max-w-6xl mx-auto px-6 lg:px-10 pt-20 pb-16 lg:pt-32 lg:pb-24">
           <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-end">
             <div className="lg:col-span-8">
-              <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-6">
+              <p className="label-mono text-accent mb-6">
                 Why Top Uni
               </p>
               <h1 className="font-heading text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.02] tracking-tight">

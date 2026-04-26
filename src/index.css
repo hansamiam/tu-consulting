@@ -2,107 +2,122 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Top Uni design system — modern AI-product, editorial, premium.
+   All colors MUST be HSL. Reference tokens, never raw colors in components. */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 210 74% 15%;
+    /* Editorial off-white base — solves harsh-white clash */
+    --background: 40 20% 98%;
+    --foreground: 215 35% 12%;
+
+    --canvas: 36 18% 96%;
+    --canvas-soft: 40 25% 99%;
+    --surface: 0 0% 100%;
 
     --card: 0 0% 100%;
-    --card-foreground: 210 74% 15%;
+    --card-foreground: 215 35% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 74% 15%;
+    --popover-foreground: 215 35% 12%;
 
-    --primary: 210 70% 20%;
+    /* Refined navy primary */
+    --primary: 222 64% 28%;
     --primary-foreground: 0 0% 100%;
+    --primary-bright: 224 76% 48%;
 
-    --secondary: 210 25% 95%;
-    --secondary-foreground: 210 74% 15%;
+    --secondary: 220 16% 94%;
+    --secondary-foreground: 215 35% 12%;
 
-    --muted: 210 20% 96%;
-    --muted-foreground: 210 20% 45%;
+    --muted: 40 15% 94%;
+    --muted-foreground: 215 16% 42%;
 
-    --accent: 46 64% 52%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 42 70% 50%;
+    --accent-foreground: 215 35% 12%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 20% 90%;
-    --input: 210 20% 90%;
-    --ring: 46 64% 52%;
+    --success: 152 55% 38%;
+    --warning: 30 90% 50%;
 
-    --radius: 0.5rem;
-    
-    /* Premium design tokens */
-    --navy: 210 65% 22%;
-    --gold: 46 64% 52%;
-    --gold-light: 46 64% 65%;
-    --gold-dark: 46 64% 40%;
-    
-    /* Gradients */
+    --border: 220 15% 90%;
+    --input: 220 15% 90%;
+    --ring: 224 76% 48%;
+
+    --radius: 0.75rem;
+
+    /* Brand tokens */
+    --navy: 222 64% 28%;
+    --navy-deep: 222 70% 18%;
+    --gold: 42 70% 50%;
+    --gold-light: 42 80% 65%;
+    --gold-dark: 38 70% 40%;
+
+    /* Gradients — subtle, editorial */
     --gradient-gold: linear-gradient(135deg, hsl(var(--gold)) 0%, hsl(var(--gold-light)) 100%);
-    --gradient-overlay: linear-gradient(180deg, hsla(var(--navy), 0.8) 0%, hsla(var(--navy), 0.6) 100%);
+    --gradient-overlay: linear-gradient(180deg, hsla(var(--navy-deep), 0.85) 0%, hsla(var(--navy), 0.6) 100%);
     --gradient-premium: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--gold)) 50%, hsl(var(--accent)) 100%);
-    
-    /* Shadows - Premium subtle elevation */
-    --shadow-premium: 0 8px 32px -8px hsl(var(--gold) / 0.15), 0 4px 16px -4px hsl(var(--primary) / 0.1);
-    --shadow-premium-hover: 0 12px 48px -12px hsl(var(--gold) / 0.25), 0 8px 24px -8px hsl(var(--primary) / 0.15);
-    
+    --gradient-canvas: linear-gradient(180deg, hsl(var(--canvas-soft)) 0%, hsl(var(--canvas)) 100%);
+    --gradient-hero: radial-gradient(ellipse 90% 60% at 50% 0%, hsl(var(--canvas-soft)) 0%, hsl(var(--background)) 60%);
+
+    /* Shadows — modern AI-product elevation */
+    --shadow-xs: 0 1px 2px 0 hsl(var(--navy-deep) / 0.04);
+    --shadow-sm: 0 1px 3px 0 hsl(var(--navy-deep) / 0.06), 0 1px 2px 0 hsl(var(--navy-deep) / 0.04);
+    --shadow-md: 0 4px 12px -2px hsl(var(--navy-deep) / 0.08), 0 2px 4px -1px hsl(var(--navy-deep) / 0.04);
+    --shadow-lg: 0 12px 32px -8px hsl(var(--navy-deep) / 0.12), 0 4px 8px -2px hsl(var(--navy-deep) / 0.06);
+    --shadow-xl: 0 24px 56px -16px hsl(var(--navy-deep) / 0.18), 0 8px 16px -4px hsl(var(--navy-deep) / 0.08);
+    --shadow-premium: var(--shadow-md);
+    --shadow-premium-hover: var(--shadow-lg);
+
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     --transition-premium: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 40 20% 97%;
+    --sidebar-foreground: 215 25% 26%;
+    --sidebar-primary: 222 64% 28%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 40 15% 93%;
+    --sidebar-accent-foreground: 215 35% 12%;
+    --sidebar-border: 220 15% 88%;
+    --sidebar-ring: 224 76% 48%;
   }
 
   .dark {
-    --background: 210 74% 8%;
-    --foreground: 0 0% 100%;
+    --background: 222 47% 7%;
+    --foreground: 0 0% 98%;
 
-    --card: 210 74% 10%;
-    --card-foreground: 0 0% 100%;
+    --canvas: 222 40% 10%;
+    --canvas-soft: 222 40% 9%;
+    --surface: 222 35% 12%;
 
-    --popover: 210 74% 10%;
-    --popover-foreground: 0 0% 100%;
+    --card: 222 35% 11%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 222 35% 11%;
+    --popover-foreground: 0 0% 98%;
 
     --primary: 0 0% 100%;
-    --primary-foreground: 210 74% 15%;
+    --primary-foreground: 222 64% 18%;
+    --primary-bright: 224 76% 60%;
 
-    --secondary: 210 50% 18%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 222 30% 18%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 210 50% 18%;
-    --muted-foreground: 210 20% 70%;
+    --muted: 222 30% 16%;
+    --muted-foreground: 220 12% 65%;
 
-    --accent: 46 64% 52%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 42 70% 55%;
+    --accent-foreground: 222 47% 7%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 62% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 50% 20%;
-    --input: 210 50% 20%;
-    --ring: 46 64% 52%;
+    --border: 222 30% 20%;
+    --input: 222 30% 20%;
+    --ring: 42 70% 55%;
   }
 }
 
@@ -112,12 +127,54 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
     font-family: 'Inter', sans-serif;
     font-size: 15px;
+    font-feature-settings: "ss01", "cv11";
   }
-  
+
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Montserrat', sans-serif;
+    letter-spacing: -0.02em;
   }
+}
+
+@layer utilities {
+  /* Subtle backdrop utilities — for hero sections, replaces harsh white */
+  .bg-canvas { background-color: hsl(var(--canvas)); }
+  .bg-canvas-soft { background-color: hsl(var(--canvas-soft)); }
+  .bg-surface { background-color: hsl(var(--surface)); }
+
+  .bg-hero-soft {
+    background:
+      radial-gradient(ellipse 80% 50% at 50% 0%, hsl(var(--canvas-soft)) 0%, transparent 70%),
+      hsl(var(--background));
+  }
+
+  /* Faint dot grid — for AI-product hero accents */
+  .bg-dot-grid {
+    background-image: radial-gradient(hsl(var(--foreground) / 0.06) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  /* Soft campus backdrop — restored from prior design */
+  .bg-campus-backdrop {
+    background-image:
+      linear-gradient(180deg, hsl(var(--background) / 0.92) 0%, hsl(var(--background)) 70%),
+      url('/src/assets/topuni-bg.jpg');
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
+  }
+
+  /* Mono / micro-label utility */
+  .label-mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .shadow-card { box-shadow: var(--shadow-sm); }
+  .shadow-card-hover { box-shadow: var(--shadow-lg); }
 }

@@ -11,11 +11,11 @@ const WhyTURu = () => {
     <div className="min-h-screen bg-background">
       <Navigation language="ru" />
 
-      <section className="border-b border-border bg-background">
+      <section className="relative border-b border-border overflow-hidden bg-hero-soft">
         <div className="max-w-6xl mx-auto px-6 lg:px-10 pt-20 pb-16 lg:pt-32 lg:pb-24">
           <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-end">
             <div className="lg:col-span-8">
-              <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-6">
+              <p className="label-mono text-accent mb-6">
                 Почему Top Uni
               </p>
               <h1 className="font-heading text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.02] tracking-tight">
@@ -46,7 +46,7 @@ const WhyTURu = () => {
         <div className="max-w-6xl mx-auto px-6 lg:px-10">
           <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 mb-14">
             <div className="lg:col-span-5">
-              <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-4">
+              <p className="label-mono text-accent mb-4">
                 01 — В чём отличие
               </p>
               <h2 className="font-heading text-3xl lg:text-4xl font-bold leading-tight tracking-tight">
@@ -85,7 +85,7 @@ const WhyTURu = () => {
         <div className="max-w-6xl mx-auto px-6 lg:px-10">
           <div className="grid lg:grid-cols-12 gap-10 lg:gap-16">
             <div className="lg:col-span-5">
-              <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-4">
+              <p className="label-mono text-accent mb-4">
                 02 — Доверие
               </p>
               <h2 className="font-heading text-3xl lg:text-4xl font-bold leading-tight tracking-tight">
@@ -115,7 +115,7 @@ const WhyTURu = () => {
 
       <section className="py-20 lg:py-28">
         <div className="max-w-3xl mx-auto px-6 lg:px-10">
-          <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-6">
+          <p className="label-mono text-accent mb-6">
             03 — Для тех, кто не идеален на бумаге
           </p>
           <h2 className="font-heading text-3xl lg:text-5xl font-bold leading-[1.1] tracking-tight mb-6">
