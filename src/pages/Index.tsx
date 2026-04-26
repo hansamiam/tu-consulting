@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Instagram, GraduationCap, Brain, Search, Users, ArrowRight, Sparkles, BookOpen, Globe, Trophy, Target } from "lucide-react";
+import { Instagram, Brain, Search, ArrowRight, Sparkles, BookOpen, Globe } from "lucide-react";
 import heroImage from "@/assets/hero-campus.jpg";
 import Navigation from "@/components/Navigation";
 import { shouldRedirectToRussian } from "@/utils/languageDetection";
