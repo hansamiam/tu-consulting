@@ -302,8 +302,23 @@ const Discover = ({ language = "en" }: Props) => {
           </CardContent>
         </Card>
 
-        {/* Results */}
-        {loading ? (
+        {/* Results — gated until form submitted */}
+        {!submitted ? (
+          <div className="border border-dashed border-border rounded-2xl p-10 text-center bg-muted/20 space-y-4">
+            <Compass className="h-10 w-10 text-accent mx-auto" />
+            <h3 className="text-xl font-heading font-bold">
+              {isRu ? "Заполни профиль, чтобы увидеть матчи" : "Fill in your profile to see your matches"}
+            </h3>
+            <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+              {isRu
+                ? `${rows.length} верифицированных стипендий ждут — мы покажем те, где у тебя реальные шансы, с фит-скором и точными требованиями.`
+                : `${rows.length} verified scholarships are waiting — we surface the ones where you actually have a shot, with fit score and exact requirements.`}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {isRu ? "Заполни форму выше → нажми «Показать матчи»." : "Fill the form above → tap \"Show matches\"."}
+            </p>
+          </div>
+        ) : loading ? (
           <div className="grid sm:grid-cols-2 gap-4">
             {[1,2,3,4].map(i => <div key={i} className="h-72 bg-card border border-border rounded-xl animate-pulse" />)}
           </div>
@@ -311,10 +326,10 @@ const Discover = ({ language = "en" }: Props) => {
           <>
             <div className="flex items-center justify-between">
               <h3 className="font-heading font-semibold text-lg">
-                {submitted ? (isRu ? "Твои рекомендации" : "Your recommendations") : (isRu ? "Все стипендии" : "All scholarships")}
+                {isRu ? "Твои рекомендации" : "Your recommendations"}
                 <span className="text-muted-foreground text-sm ml-2">({ranked.length})</span>
               </h3>
-              {!isPro && submitted && (
+              {!isPro && (
                 <Badge variant="outline" className="border-gold/40 text-gold">
                   <Lock className="h-3 w-3 mr-1" />{isRu ? "Превью: топ 3" : "Free preview: top 3"}
                 </Badge>
@@ -336,15 +351,13 @@ const Discover = ({ language = "en" }: Props) => {
                             <h4 className="font-heading font-semibold text-base leading-snug">{s.scholarship_name}</h4>
                             <p className="text-xs text-muted-foreground mt-0.5">{s.provider_name} · {s.host_country}</p>
                           </div>
-                          {submitted && (
-                            <div className="text-right shrink-0">
-                              <div className="text-2xl font-bold text-accent leading-none">{s.match}</div>
-                              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">match</div>
-                            </div>
-                          )}
+                          <div className="text-right shrink-0">
+                            <div className="text-2xl font-bold text-accent leading-none">{s.match}</div>
+                            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">match</div>
+                          </div>
                         </div>
                         <div className="flex flex-wrap gap-1.5 mt-3">
-                          {submitted && <Badge variant="outline" className={PStyle.cls}>{PStyle.label}</Badge>}
+                          <Badge variant="outline" className={PStyle.cls}>{PStyle.label}</Badge>
                           <Badge variant="outline" className={`gap-1 ${Elig.cls}`}><ElIcon className="h-3 w-3" />{Elig.label}</Badge>
                           {s.coverage_type === "full_ride" && <Badge className="bg-gold/15 text-gold border-gold/30 border" variant="outline"><Award className="h-3 w-3 mr-1" />Full ride</Badge>}
                           {days !== null && days > 0 && days < 60 && (
@@ -399,8 +412,8 @@ const Discover = ({ language = "en" }: Props) => {
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-xl mx-auto">
                   {isRu
-                    ? "Founding Pro открывает полный список с матч-скорами и стратегиями — $19/мес навсегда."
-                    : "Founding Pro unlocks the full ranked list, match scores, and strategy notes — $19/mo locked in."}
+                    ? "Pro открывает полный список с матч-скорами, стратегиями выигрыша и причинами отказов."
+                    : "Pro unlocks the full ranked list, match scores, win strategies, and rejection reasons."}
                 </p>
                 <div className="flex gap-3 justify-center flex-wrap">
                   <Button asChild><Link to="/pricing">{isRu ? "Открыть полный доступ" : "Unlock full access"}</Link></Button>
@@ -488,7 +501,7 @@ const Discover = ({ language = "en" }: Props) => {
                   <div className="border border-gold/30 bg-gold/5 rounded-lg p-4 text-center">
                     <Lock className="h-5 w-5 text-gold mx-auto mb-1.5" />
                     <p className="text-sm text-foreground mb-1">{isRu ? "Стратегия выигрыша и причины отказов" : "How to win this · rejection reasons · strategy notes"}</p>
-                    <p className="text-xs text-muted-foreground mb-3">{isRu ? "Открой с Founding Pro · $19/мес" : "Unlock with Founding Pro · $19/mo"}</p>
+                    <p className="text-xs text-muted-foreground mb-3">{isRu ? "Открой с Pro" : "Unlock with Pro"}</p>
                     <Button size="sm" variant="gold" asChild><Link to="/pricing">{isRu ? "Открыть" : "Unlock"}</Link></Button>
                   </div>
                 )}
