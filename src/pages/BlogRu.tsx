@@ -1,138 +1,128 @@
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import { ArrowLeft, BookOpen, Clock, ArrowRight, Globe } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import heroImage from "@/assets/hero-library.jpg";
 import { blogArticles } from "@/data/blogArticles";
 import { countryGuides } from "@/data/countryGuides";
 
 const BlogRu = () => {
   const navigate = useNavigate();
+  const featured = blogArticles[0];
+  const rest = blogArticles.slice(1);
 
   return (
-    <div
-      className="min-h-screen relative"
-      style={{
-        backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url(${heroImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed'
-      }}
-    >
+    <div className="min-h-screen bg-background">
       <Navigation language="ru" />
 
-      <header className="border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 sticky top-16 z-40 shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/ru")} className="gap-2 hover:text-primary transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            На главную
-          </Button>
+      <header className="border-b border-border">
+        <div className="max-w-6xl mx-auto px-6 lg:px-10 pt-20 pb-12 lg:pt-28 lg:pb-16">
+          <div className="grid lg:grid-cols-12 gap-8 items-end">
+            <div className="lg:col-span-8">
+              <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-5">
+                Журнал Top Uni
+              </p>
+              <h1 className="font-heading text-5xl lg:text-7xl font-bold tracking-tight leading-[1.02]">
+                Полевые заметки <span className="text-accent">международных</span> абитуриентов.
+              </h1>
+            </div>
+            <div className="lg:col-span-4">
+              <p className="text-base text-muted-foreground leading-relaxed">
+                Гайды по странам, стратегия стипендий и то, что хотелось бы узнать раньше.
+                Написано теми, кто это сделал.
+              </p>
+            </div>
+          </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 md:py-16">
-        <div className="max-w-4xl mx-auto space-y-8 md:space-y-12">
-          <div className="text-center space-y-4 md:space-y-6 animate-fade-in">
-            <div className="flex justify-center">
-              <div className="p-4 rounded-full bg-primary/10 border border-primary/20">
-                <BookOpen className="h-8 w-8 md:h-12 md:w-12 text-primary" />
+      <main className="max-w-6xl mx-auto px-6 lg:px-10 py-16 lg:py-20 space-y-20 lg:space-y-24">
+        {featured && (
+          <section>
+            <div className="flex items-baseline justify-between mb-6">
+              <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent">Главное</p>
+              <button onClick={() => navigate(`/blog/${featured.id}/ru`)} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                Читать →
+              </button>
+            </div>
+            <article
+              onClick={() => navigate(`/blog/${featured.id}/ru`)}
+              className="group cursor-pointer grid lg:grid-cols-12 gap-8 lg:gap-12 items-center border-y border-border py-10 lg:py-14"
+            >
+              <div className="lg:col-span-5 aspect-[4/3] overflow-hidden rounded-lg bg-muted">
+                <img src={featured.image} alt={featured.titleRu} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" />
               </div>
-            </div>
-            <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent px-2">
-              Блог
-            </h1>
-            <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
-              Гайды, стратегии и честные советы для студентов, поступающих в зарубежные университеты.
-            </p>
-          </div>
+              <div className="lg:col-span-7">
+                <div className="flex items-center gap-3 mb-4 text-xs">
+                  <span className="font-mono uppercase tracking-wider text-accent">{featured.categoryRu}</span>
+                  <span className="text-muted-foreground/50">·</span>
+                  <span className="text-muted-foreground">{featured.readTimeRu}</span>
+                </div>
+                <h2 className="font-heading text-3xl lg:text-4xl font-bold tracking-tight leading-tight mb-4 group-hover:text-accent transition-colors">
+                  {featured.titleRu}
+                </h2>
+                <p className="text-base text-muted-foreground leading-relaxed mb-5">{featured.excerptRu}</p>
+                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-accent group-hover:gap-2.5 transition-all">
+                  Читать <ArrowRight className="h-4 w-4" />
+                </span>
+              </div>
+            </article>
+          </section>
+        )}
 
-          <div className="grid gap-6 md:gap-8">
+        <section>
+          <div className="mb-8">
+            <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-2">Гайды по странам</p>
+            <h2 className="font-heading text-2xl lg:text-3xl font-bold tracking-tight">
+              Куда подавать, сколько стоит, как выиграть.
+            </h2>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border border border-border rounded-lg overflow-hidden">
             {countryGuides.map((g) => (
-              <Card
-                key={`guide-${g.slug}`}
-                className="overflow-hidden border-border/50 hover:border-accent/30 hover:shadow-lg transition-all duration-300 cursor-pointer group"
+              <button
+                key={g.slug}
                 onClick={() => navigate(`/blog/guide/${g.slug}/ru`)}
+                className="bg-background text-left p-6 hover:bg-muted/30 transition-colors group"
               >
-                <div className="flex flex-col sm:flex-row">
-                  <div className="sm:w-64 md:w-80 h-32 sm:h-auto shrink-0 bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-                    <span className="text-7xl">{g.flag}</span>
-                  </div>
-                  <div className="p-6 md:p-8 flex flex-col justify-center">
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className="px-2.5 py-0.5 rounded-full bg-gold/15 text-gold text-xs font-medium inline-flex items-center gap-1">
-                        <Globe className="h-3 w-3" /> Гайд по стране
-                      </span>
-                      <span className="text-xs text-muted-foreground">{g.popularCities.slice(0, 2).join(" · ")}</span>
-                    </div>
-                    <h2 className="text-lg md:text-xl font-bold text-foreground mb-2 group-hover:text-accent transition-colors">
-                      Учёба в {g.countryRu}
-                    </h2>
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{g.taglineRu}</p>
-                    <span className="inline-flex items-center gap-1 text-accent text-sm font-medium group-hover:gap-2 transition-all">
-                      Читать гайд <ArrowRight className="h-4 w-4" />
-                    </span>
-                  </div>
+                <div className="flex items-start justify-between mb-3">
+                  <span className="text-3xl">{g.flag}</span>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-accent group-hover:translate-x-0.5 transition-all" />
                 </div>
-              </Card>
-            ))}
-
-            {blogArticles.map((article) => (
-              <Card
-                key={article.id}
-                className="overflow-hidden border-border/50 hover:border-accent/30 hover:shadow-lg transition-all duration-300 cursor-pointer group"
-                onClick={() => navigate(`/blog/${article.id}/ru`)}
-              >
-                <div className="flex flex-col sm:flex-row">
-                  <div className="sm:w-64 md:w-80 h-48 sm:h-auto shrink-0 overflow-hidden">
-                    <img
-                      src={article.image}
-                      alt={article.titleRu}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      loading="lazy"
-                    />
-                  </div>
-                  <div className="p-6 md:p-8 flex flex-col justify-center">
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className="px-2.5 py-0.5 rounded-full bg-accent/10 text-accent text-xs font-medium">
-                        {article.categoryRu}
-                      </span>
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" /> {article.readTimeRu}
-                      </span>
-                    </div>
-                    <h2 className="text-lg md:text-xl font-bold text-foreground mb-2 group-hover:text-accent transition-colors">
-                      {article.titleRu}
-                    </h2>
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{article.excerptRu}</p>
-                    <span className="inline-flex items-center gap-1 text-accent text-sm font-medium group-hover:gap-2 transition-all">
-                      Читать статью <ArrowRight className="h-4 w-4" />
-                    </span>
-                  </div>
-                </div>
-              </Card>
+                <h3 className="font-heading font-semibold text-base tracking-tight mb-1 group-hover:text-accent transition-colors">
+                  {g.countryRu}
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{g.taglineRu}</p>
+              </button>
             ))}
           </div>
+        </section>
 
-          <Card className="p-8 md:p-12 bg-gradient-to-br from-primary/10 to-gold/10 border-primary/30 text-center space-y-6">
-            <h2 className="text-2xl md:text-3xl font-bold text-primary">Нужна персональная помощь?</h2>
-            <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto">
-              Наши эксперты помогут с поступлением, подготовкой к экзаменам и стипендиальной стратегией.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" variant="gold" onClick={() => navigate("/offerings/ru")}>Консалтинг</Button>
-              <Button size="lg" variant="outline" onClick={() => navigate("/prep")}>Подготовка</Button>
+        {rest.length > 0 && (
+          <section>
+            <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-8">Ещё статьи</p>
+            <div className="grid md:grid-cols-2 gap-x-10 gap-y-12">
+              {rest.map((article) => (
+                <article key={article.id} onClick={() => navigate(`/blog/${article.id}/ru`)} className="group cursor-pointer">
+                  <div className="aspect-[16/10] overflow-hidden rounded-lg bg-muted mb-5">
+                    <img src={article.image} alt={article.titleRu} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" />
+                  </div>
+                  <div className="flex items-center gap-3 mb-3 text-xs">
+                    <span className="font-mono uppercase tracking-wider text-accent">{article.categoryRu}</span>
+                    <span className="text-muted-foreground/50">·</span>
+                    <span className="text-muted-foreground">{article.readTimeRu}</span>
+                  </div>
+                  <h3 className="font-heading text-xl lg:text-2xl font-bold tracking-tight leading-snug mb-2 group-hover:text-accent transition-colors">
+                    {article.titleRu}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">{article.excerptRu}</p>
+                </article>
+              ))}
             </div>
-          </Card>
-        </div>
+          </section>
+        )}
       </main>
 
-      <footer className="border-t border-border/30 bg-background/80 backdrop-blur-sm py-6 mt-12">
-        <div className="container mx-auto px-4 text-center">
-          <Footer language="ru" variant="light" />
-        </div>
-      </footer>
+      <Footer language="ru" />
     </div>
   );
 };
