@@ -295,29 +295,11 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             <TabsTrigger value="essays" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
               <PenTool className="w-4 h-4" /> {t("Essays", "Эссе")}
             </TabsTrigger>
-            <TabsTrigger value="documents" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-              <FileText className="w-4 h-4" /> {t("Documents", "Документы")}
-            </TabsTrigger>
-            <TabsTrigger value="interview" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-              <Mic className="w-4 h-4" /> {t("Interview", "Интервью")}
-            </TabsTrigger>
-            <TabsTrigger value="tracker" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-              <ClipboardList className="w-4 h-4" /> {t("Tracker", "Трекер")}
-            </TabsTrigger>
             <TabsTrigger value="scholarships" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
               <Award className="w-4 h-4" /> {t("Scholarships", "Стипендии")}
             </TabsTrigger>
-            <TabsTrigger value="deadlines" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-              <Calendar className="w-4 h-4" /> {t("Deadlines", "Дедлайны")}
-            </TabsTrigger>
-            <TabsTrigger value="visa" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-              <Plane className="w-4 h-4" /> {t("Visa", "Виза")}
-            </TabsTrigger>
-            <TabsTrigger value="compare" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-              <GitCompare className="w-4 h-4" /> {t("Compare", "Сравнить")}
-            </TabsTrigger>
-            <TabsTrigger value="reports" className="flex items-center gap-1.5 text-xs sm:text-sm py-2 px-4 border border-gold/40 bg-gold/5 data-[state=active]:bg-gold data-[state=active]:text-primary font-semibold">
-              <Crown className="w-4 h-4" /> {t("AI Reports", "AI Отчёты")}
+            <TabsTrigger value="tracker" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+              <ClipboardList className="w-4 h-4" /> {t("Tracker", "Трекер")}
             </TabsTrigger>
           </TabsList>
         </div>
