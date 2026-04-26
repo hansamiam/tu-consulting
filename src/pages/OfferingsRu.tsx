@@ -201,10 +201,12 @@ const OfferingsRu = () => {
             Наши услуги
           </h1>
           <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto mb-2 px-4">
-            Выберите идеальный пакет для достижения ваших целей при поступлении в университет
+            Начните с бесплатной консультации. Без давления, без апселла.
           </p>
         </div>
 
+        {/* Пакеты временно скрыты — фокус на бесплатной консультации + Founding-членстве. */}
+        {false && (
         <section className="mb-12 md:mb-20 animate-enter">
           <h2 className="font-heading text-xl sm:text-2xl md:text-3xl font-bold text-center mb-3 md:mb-4 text-foreground px-4">
             Консультационные пакеты
