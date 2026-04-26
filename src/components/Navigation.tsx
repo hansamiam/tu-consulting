@@ -144,6 +144,11 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
               </button>
             ))}
 
+            {/* Founding spots urgency chip — only when user is not yet a founding member */}
+            {subscription.tier !== "founding" && (
+              <FoundingSpotsChip className="ml-1" language={isRussian ? "ru" : "en"} />
+            )}
+
             {/* Membership / Account */}
             {user ? (
               <button
@@ -193,6 +198,9 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
             </SheetTrigger>
             <SheetContent side="right" className="bg-primary border-gold/20 w-[280px]">
               <div className="flex flex-col gap-6 mt-8">
+                {subscription.tier !== "founding" && (
+                  <div className="px-2"><FoundingSpotsChip language={isRussian ? "ru" : "en"} /></div>
+                )}
                 {/* Home */}
                 <button
                   onClick={() => { navigate(basePath); setIsOpen(false); }}
