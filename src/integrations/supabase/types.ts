@@ -505,7 +505,7 @@ export type Database = {
           strategy_notes: string | null
           target_degree_level: string[] | null
           target_fields: string[] | null
-          university_id: string
+          university_id: string | null
           verified: boolean
           weak_candidate_warning: string | null
           what_to_prepare_first: string | null
@@ -563,7 +563,7 @@ export type Database = {
           strategy_notes?: string | null
           target_degree_level?: string[] | null
           target_fields?: string[] | null
-          university_id: string
+          university_id?: string | null
           verified?: boolean
           weak_candidate_warning?: string | null
           what_to_prepare_first?: string | null
@@ -621,7 +621,7 @@ export type Database = {
           strategy_notes?: string | null
           target_degree_level?: string[] | null
           target_fields?: string[] | null
-          university_id?: string
+          university_id?: string | null
           verified?: boolean
           weak_candidate_warning?: string | null
           what_to_prepare_first?: string | null

@@ -1,0 +1,1 @@
+ALTER TABLE public.scholarships ALTER COLUMN university_id DROP NOT NULL;
