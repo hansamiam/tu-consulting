@@ -3,160 +3,254 @@ import { Card } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import heroImage from "@/assets/hero-library.jpg";
+import { Compass, Brain, Globe2, Sparkles, Target, BookOpen, Users } from "lucide-react";
 
 const WhyTU = () => {
   const navigate = useNavigate();
 
-  const faqs = [
+  const differences = [
     {
-      question: "Why TopUni?",
-      answer: "We're different. Our consultants from Yale, Harvard, Cambridge, and Tsinghua have seen a lot of success—but just as much, we've faced challenges, setbacks, made mistakes, and learned from them. That's exactly why we can help you. We've been through the real struggles of the application process, conquered them, and know how to navigate them. We bridge the gap others can't: large firms give you minimal attention despite premium prices, while smaller services often lack global experience. We offer world-class expertise with genuine personal attention at accessible prices."
+      icon: Compass,
+      title: "Strategy before search",
+      body: "We do not just show options. We help you understand which universities and scholarships fit your grades, budget, goals, country, timeline, and application strength.",
     },
     {
-      question: "Who are your consultants?",
-      answer: "Current students and recent graduates from top universities (Yale, Harvard, Cambridge, Tsinghua) who succeeded across natural sciences, social sciences, and the humanities. They've personally won prestigious scholarships, navigated competitive admissions, and understand what it takes because they've done it themselves."
+      icon: Brain,
+      title: "AI tools with human judgment",
+      body: "Our tools help you move faster, but the logic comes from real admissions experience. We combine structured data, personalized recommendations, and expert review where needed.",
+    },
+    {
+      icon: Globe2,
+      title: "Built for international students",
+      body: "Many admissions platforms are built around U.S. or U.K. assumptions. Top Uni is designed for students applying across borders, especially from Central Asia and other underrepresented markets.",
+    },
+    {
+      icon: Sparkles,
+      title: "Premium guidance without the corporate markup",
+      body: "Large firms can be expensive and impersonal. We keep the model lean: useful tools first, expert support when it matters, and no unnecessary layers.",
+    },
+  ];
+
+  const productCards = [
+    {
+      icon: Target,
+      title: "Find realistic scholarship matches",
+      body: "Get ranked scholarship options based on eligibility, funding value, deadline urgency, effort level, and fit.",
+    },
+    {
+      icon: BookOpen,
+      title: "Build an admissions plan",
+      body: "Understand which schools are reach, target, and safer options, and what you need to strengthen before applying.",
+    },
+    {
+      icon: Users,
+      title: "Use expert support when needed",
+      body: "Book consultation support for essays, school lists, scholarship strategy, interviews, and final application decisions.",
+    },
+  ];
+
+  const faqs = [
+    {
+      question: "Why Top Uni?",
+      answer: "Because we combine three things students usually have to find separately: structured scholarship data, AI-powered admissions planning, and expert guidance from people who have successfully navigated top university applications.",
     },
     {
       question: "Who is this for?",
-      answer: "Everyone pursuing ambitious educational and career goals. We work with high school students applying to undergraduate programs, graduate school applicants (Master's, PhD, MBA), professionals seeking career coaching, middle school students building foundations, students applying to summer programs and boarding schools, and anyone navigating educational transitions. Whether you're 13 or 35, if you're striving for excellence, we're here to help."
+      answer: "High school students, university students, graduate applicants, and professionals applying to universities, scholarships, summer programs, or international opportunities.",
     },
     {
       question: "Do I need perfect grades?",
-      answer: "Absolutely not. We specialize in helping students from all backgrounds—whether you're dealing with lower grades, unique challenges, or non-traditional paths. You don't need to be a straight-A student to benefit from expert guidance. In fact, we welcome and encourage you—that much more of a comeback story is waiting to be written."
+      answer: "No. Strong grades help, but they are not the only factor. We help students understand where they are competitive, where they are stretching, and how to present their background honestly and strategically.",
+    },
+    {
+      question: "Is this only for Ivy League or Oxbridge?",
+      answer: "No. We help students apply to universities and scholarships across the U.S., U.K., Canada, Europe, Asia, and other regions. The goal is fit, funding, and long-term opportunity, not prestige alone.",
     },
     {
       question: "Do you offer free consultations?",
-      answer: "No—we believe our clients should be getting value from the very first minute. Many firms offer \"free\" consultations that are really just sales calls. We take a different approach: every consultation delivers real insights and genuine expertise tailored to your situation. That's why all our consultations are paid—and that's why they deliver immediate value."
+      answer: "We focus on paid consultations because they are designed to give real, personalized value from the first session, not function as sales calls. Students can still explore tools and resources before booking.",
     },
     {
-      question: "Is this just for Ivy League / Oxbridge applications?",
-      answer: "No! While our consultants have Ivy League and Oxbridge experience, we help students apply to top universities worldwide—US, UK, Canada, Europe, China, and beyond. We focus on finding the right fit for YOU, not just the most prestigious name."
-    }
+      question: "Is Top Uni an AI tool or a consulting service?",
+      answer: "Both. The platform helps students move faster with structured recommendations, while consulting is available for higher-stakes decisions that need expert judgment.",
+    },
   ];
 
   return (
-    <div
-      className="min-h-screen relative"
-      style={{
-        backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url(${heroImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed'
-      }}
-    >
-      <Navigation language="en" />
-      <header className="border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 sticky top-16 z-40 shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="gap-2 hover:text-primary transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Home
+    <div className="min-h-screen bg-background">
+      <Navigation />
+
+      {/* 1. Hero */}
+      <section className="bg-primary py-20 sm:py-28">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+          <h1 className="text-4xl sm:text-6xl font-heading font-bold text-primary-foreground mb-5 tracking-tight">
+            Why <span className="text-gold">Top Uni</span>?
+          </h1>
+          <p className="text-base sm:text-lg text-primary-foreground/75 max-w-2xl mx-auto leading-relaxed">
+            Most students do not need more random university lists. They need a clear strategy:
+            where to apply, which scholarships are realistic, and how to make their profile stronger.
+          </p>
+          <div className="flex flex-wrap gap-3 justify-center mt-8">
+            <Button variant="gold" size="lg" onClick={() => navigate("/discover")}>
+              Get your admissions plan
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => navigate("/discover")}
+              className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+            >
+              Explore scholarships
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* 2. Core argument */}
+      <section className="py-16 sm:py-20 bg-background">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-5 tracking-tight">
+            The problem is not ambition. It is unclear guidance.
+          </h2>
+          <p className="text-muted-foreground text-base leading-relaxed mb-4">
+            Many students are capable but lose months because they do not know:
+          </p>
+          <ul className="space-y-2 text-foreground/85 text-base">
+            <li>— which universities are realistic</li>
+            <li>— which scholarships are worth applying to</li>
+            <li>— how to position their background</li>
+            <li>— when to aim higher and when to be strategic</li>
+            <li>— how to avoid wasting months on poor-fit options</li>
+          </ul>
+        </div>
+      </section>
+
+      {/* 3. The Top Uni difference */}
+      <section className="py-16 sm:py-20 bg-muted/30 border-y border-border">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-10 tracking-tight">
+            The Top Uni difference
+          </h2>
+          <div className="grid sm:grid-cols-2 gap-5">
+            {differences.map((d) => {
+              const Icon = d.icon;
+              return (
+                <Card key={d.title} className="p-6 sm:p-7 hover:border-accent/40 transition-colors">
+                  <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
+                    <Icon className="h-5 w-5 text-accent" />
+                  </div>
+                  <h3 className="font-heading font-semibold text-lg mb-2">{d.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{d.body}</p>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* 4. Credibility */}
+      <section className="py-16 sm:py-20">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-6 tracking-tight">
+            Real experience, not recycled advice
+          </h2>
+          <ul className="space-y-3 text-foreground/85 text-base">
+            <li className="flex gap-3">
+              <span className="text-gold">·</span>
+              <span>Team experience across Yale, Harvard, Cambridge, Tsinghua, and other leading universities.</span>
+            </li>
+            <li className="flex gap-3">
+              <span className="text-gold">·</span>
+              <span>Over $500K in scholarships secured by students we have advised.</span>
+            </li>
+            <li className="flex gap-3">
+              <span className="text-gold">·</span>
+              <span>Experience across undergraduate, graduate, scholarship, summer program, and international applications.</span>
+            </li>
+            <li className="flex gap-3">
+              <span className="text-gold">·</span>
+              <span>Bilingual support in English and Russian.</span>
+            </li>
+          </ul>
+          <p className="text-xs text-muted-foreground mt-6 italic">
+            We do not guarantee acceptance. We help you build the strongest, most realistic case for the targets that fit you.
+          </p>
+        </div>
+      </section>
+
+      {/* 5. You do not need a perfect profile */}
+      <section className="py-16 sm:py-20 bg-muted/30 border-y border-border">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-5 tracking-tight">
+            You do not need perfect grades to build a strong application.
+          </h2>
+          <p className="text-muted-foreground text-base leading-relaxed mb-6">
+            Top universities and scholarships are competitive, but they are not only for students with flawless records.
+            Many strong applications come from students with uneven grades, financial constraints, unusual backgrounds,
+            learning differences, or non-linear stories. The key is knowing how to choose the right targets and explain
+            your record clearly.
+          </p>
+          <Button variant="gold" size="lg" onClick={() => navigate("/discover")}>
+            Find your best-fit options
           </Button>
         </div>
-      </header>
+      </section>
 
-      <main className="container mx-auto px-4 py-8 md:py-16">
-        <div className="max-w-6xl mx-auto space-y-8 md:space-y-16">
-          {/* Hero */}
-          <div className="text-center space-y-3 md:space-y-6 animate-fade-in">
-            <h1 className="text-2xl sm:text-3xl md:text-6xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent px-2">
-              Why Top Uni?
-            </h1>
-            <p className="text-sm md:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
-              Lean team. Real experience. Personal attention. No corporate markup.
-            </p>
+      {/* 6. Product-led */}
+      <section className="py-16 sm:py-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-10 tracking-tight">
+            What you can do with Top Uni
+          </h2>
+          <div className="grid md:grid-cols-3 gap-5">
+            {productCards.map((c) => {
+              const Icon = c.icon;
+              return (
+                <Card key={c.title} className="p-6 sm:p-7 hover:border-accent/40 transition-colors">
+                  <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center mb-4">
+                    <Icon className="h-5 w-5 text-gold" />
+                  </div>
+                  <h3 className="font-heading font-semibold text-lg mb-2">{c.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{c.body}</p>
+                </Card>
+              );
+            })}
           </div>
+        </div>
+      </section>
 
-          {/* Forbes */}
-          <Card className="p-6 md:p-10 bg-gradient-to-br from-accent/10 to-primary/10 border-accent/30 shadow-xl animate-enter">
-            <div className="max-w-4xl mx-auto space-y-4 md:space-y-6 text-center">
-              <p className="text-base md:text-2xl lg:text-3xl text-foreground leading-relaxed">
-                <a href="https://www.forbes.com/sites/christopherrim/2025/05/02/how-the-explosion-of-private-consultants-has-changed-the-college-admissions-landscape/" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-bold">Forbes</a> says the most critical factor in consulting success: <span className="font-bold">how well mentors understand their students.</span>
-              </p>
-              <div className="border-t-2 border-accent/30 pt-4 md:pt-6 mt-4 md:mt-6">
-                <p className="text-base md:text-xl lg:text-2xl text-primary font-bold mb-2 md:mb-3">The TopUni Difference:</p>
-                <p className="text-sm md:text-base lg:text-lg text-foreground">
-                  We're <span className="font-semibold">fresh out of the process</span>. We remember what it feels like, what works, what doesn't. We understand today's challenges—<span className="font-semibold">not from textbooks, from experience.</span>
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          {/* Key Differentiators */}
-          <div className="grid md:grid-cols-2 gap-4 md:gap-8 animate-fade-in">
-            {[
-              { title: "Small Team, Big Impact", text: "Unlike large firms where you're just a number, our small team means every consultant brings top-tier expertise. You work directly with someone who's been through it themselves—recently.", note: "Every team member is hand-picked for excellence" },
-              { title: "Personal Attention", text: "Large firms charge premium but spread mentors thin. We keep client loads manageable—you get dedicated support without the markup.", note: "Your success is our mission, not just another metric" },
-              { title: "Global Standards, Local Access", text: "We bring top-tier Western consulting methodology and resources directly to you. Full bilingual support in English and Russian means nothing gets lost in translation.", note: "World-class approach, accessible and personal" },
-              { title: "Proven Results", text: "Secured $500K+ in scholarships with 10+ years combined experience across Yale, Harvard, Cambridge, and Tsinghua. Real successes, tested strategies.", note: "Expertise proven through real outcomes" },
-            ].map((item) => (
-              <Card key={item.title} className="p-4 md:p-8 space-y-3 md:space-y-4 border-gold/30 bg-gradient-to-br from-card/80 to-accent/5 hover:shadow-xl transition-all">
-                <h3 className="text-lg md:text-2xl font-bold text-primary">{item.title}</h3>
-                <p className="text-xs md:text-base text-muted-foreground">{item.text}</p>
-                <div className="pt-3 md:pt-4 border-t border-border/50">
-                  <p className="text-xs md:text-sm text-foreground font-medium">{item.note}</p>
-                </div>
-              </Card>
+      {/* 7. FAQ */}
+      <section className="py-16 sm:py-20 bg-muted/30 border-t border-border">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-8 tracking-tight">
+            Frequently asked
+          </h2>
+          <Accordion type="single" collapsible className="w-full">
+            {faqs.map((f, i) => (
+              <AccordionItem key={i} value={`item-${i}`}>
+                <AccordionTrigger className="text-left text-base font-medium">
+                  {f.question}
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground text-sm leading-relaxed">
+                  {f.answer}
+                </AccordionContent>
+              </AccordionItem>
             ))}
+          </Accordion>
+
+          <div className="mt-12 flex flex-wrap gap-3">
+            <Button variant="gold" size="lg" onClick={() => navigate("/discover")}>
+              Get your admissions plan
+            </Button>
+            <Button variant="outline" size="lg" onClick={() => navigate("/offerings")}>
+              See consulting options
+            </Button>
           </div>
-
-          {/* Philosophy */}
-          <Card className="p-8 bg-gradient-to-br from-primary/5 via-accent/5 to-gold/5 border-primary/20">
-            <div className="max-w-3xl mx-auto space-y-4 text-center">
-              <h2 className="text-2xl md:text-3xl font-bold text-primary">Perfect Grades Not Required</h2>
-              <p className="text-base text-muted-foreground">
-                Top universities aren't just for "perfect" students. Our team faced learning differences, cultural barriers, financial constraints, and setbacks. We learned from those struggles—now we help you avoid the same mistakes.
-              </p>
-              <p className="text-base text-foreground font-medium">
-                Lower grades? Unusual background? Unique challenges? These make compelling applications.
-              </p>
-            </div>
-          </Card>
-
-          {/* FAQ Section */}
-          <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mb-2">
-                Frequently Asked Questions
-              </h2>
-              <p className="text-sm md:text-base text-muted-foreground">
-                Can't find what you're looking for? Email us at{" "}
-                <a href="mailto:team@topuniconsulting.com" className="text-accent hover:underline">team@topuniconsulting.com</a>
-              </p>
-            </div>
-            <Card className="border-gold/20 bg-card/50 backdrop-blur-sm shadow-xl">
-              <div className="p-6">
-                <Accordion type="single" collapsible className="w-full">
-                  {faqs.map((faq, index) => (
-                    <AccordionItem key={index} value={`item-${index}`}>
-                      <AccordionTrigger className="text-left text-sm md:text-base">{faq.question}</AccordionTrigger>
-                      <AccordionContent className="text-xs md:text-sm text-muted-foreground whitespace-pre-line">{faq.answer}</AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </div>
-            </Card>
-          </div>
-
-          {/* CTA */}
-          <Card className="p-12 bg-gradient-to-br from-primary/10 to-gold/10 border-primary/30 text-center space-y-6">
-            <h2 className="text-3xl md:text-4xl font-bold text-primary">Ready to Start Your Journey?</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Take the first step toward your dream university with expert guidance.</p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" variant="gold" onClick={() => navigate("/offerings")}>View Our Packages</Button>
-              <Button size="lg" variant="outline" onClick={() => navigate("/team")}>Meet Our Team</Button>
-            </div>
-          </Card>
         </div>
-      </main>
+      </section>
 
-      <footer className="border-t border-border/30 bg-background/80 backdrop-blur-sm py-6 mt-12">
-        <div className="container mx-auto px-4 text-center">
-          <Footer language="en" variant="light" />
-        </div>
-      </footer>
+      <Footer language="en" />
     </div>
   );
 };
