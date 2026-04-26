@@ -366,16 +366,6 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           <EssayTools profile={profile} language={language} />
         </TabsContent>
 
-        {/* DOCUMENT BUILDER TAB */}
-        <TabsContent value="documents">
-          <DocumentBuilder profile={profile} language={language} />
-        </TabsContent>
-
-        {/* INTERVIEW SIMULATOR TAB */}
-        <TabsContent value="interview">
-          <InterviewSimulator profile={profile} language={language} />
-        </TabsContent>
-
         {/* APPLICATION TRACKER TAB */}
         <TabsContent value="tracker">
           <Card>
