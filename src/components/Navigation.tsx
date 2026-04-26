@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthDialog } from "@/components/auth/AuthDialog";
+import { FoundingSpotsChip } from "@/components/FoundingSpotsChip";
 
 interface NavigationProps {
   language?: "en" | "ru";
