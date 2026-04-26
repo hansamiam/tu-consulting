@@ -30,7 +30,7 @@ import TopUniAI from "./pages/TopUniAI";
 import TopUniAIRu from "./pages/TopUniAIRu";
 import TopUniAIPartners from "./pages/TopUniAIPartners";
 import TopUniAIPartnersRu from "./pages/TopUniAIPartnersRu";
-import Scholarships from "./pages/Scholarships";
+import Discover from "./pages/Discover";
 import Admin from "./pages/Admin";
 import FunnelDashboard from "./pages/FunnelDashboard";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -96,12 +96,12 @@ const App = () => (
           <Route path="/topuni-ai/ru" element={<TopUniAIRu />} />
           <Route path="/topuni-ai/partners" element={<TopUniAIPartners />} />
           <Route path="/topuni-ai/partners/ru" element={<TopUniAIPartnersRu />} />
-          {/* Discover (universal university DB) replaced by Scholarships finder.
-              Old code archived in src/_archive/discover-v1. Redirect for SEO/links. */}
-          <Route path="/scholarships" element={<Scholarships language="en" />} />
-          <Route path="/scholarships/ru" element={<Scholarships language="ru" />} />
-          <Route path="/discover" element={<Scholarships language="en" />} />
-          <Route path="/discover/ru" element={<Scholarships language="ru" />} />
+          {/* Discover = scholarship decision engine. /scholarships kept as alias. */}
+          <Route path="/discover" element={<Discover language="en" />} />
+          <Route path="/discover/ru" element={<Discover language="ru" />} />
+          <Route path="/scholarships" element={<Discover language="en" />} />
+          <Route path="/scholarships/ru" element={<Discover language="ru" />} />
+
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/funnel" element={<FunnelDashboard />} />
           <Route path="/academy" element={<Academy />} />
