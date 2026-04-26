@@ -56,7 +56,7 @@ const Index = () => {
             Scholarships ranked
             <br className="hidden sm:block" />
             <span className="text-gold"> against your profile.</span>
-          </h1>
+          </motion.h1>
 
           <motion.p
             {...fadeUp(0.35)}
