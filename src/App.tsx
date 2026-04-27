@@ -31,6 +31,7 @@ import TopUniAIRu from "./pages/TopUniAIRu";
 import TopUniAIPartners from "./pages/TopUniAIPartners";
 import TopUniAIPartnersRu from "./pages/TopUniAIPartnersRu";
 import Discover from "./pages/Discover";
+import DiscoverApp from "./pages/DiscoverApp";
 import Admin from "./pages/Admin";
 import FunnelDashboard from "./pages/FunnelDashboard";
 import { ErrorBoundary } from "./components/ErrorBoundary";
