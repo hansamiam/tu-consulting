@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRight, ArrowLeft, Sparkles, GraduationCap, Target, Shield, CheckCircle2, Bot } from "lucide-react";
+import { ArrowRight, ArrowLeft, Sparkles, GraduationCap, Target, Shield, CheckCircle2, Bot, Search, PenTool, BookOpen } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 type Screen = "landing" | "intake" | "dashboard" | "chat-only";
 
@@ -24,6 +25,7 @@ const COUNTRY_MAP: Record<string, string> = {
 };
 
 const TopUniAIRu = () => {
+  const navigate = useNavigate();
   const [screen, setScreen] = useState<Screen>("landing");
   const [step, setStep] = useState(1);
   const [fullName, setFullName] = useState("");
@@ -85,6 +87,33 @@ const TopUniAIRu = () => {
                 <p className="text-xs text-muted-foreground max-w-md mx-auto">
                   Получите персональный AI-план с подбором университетов из нашей базы данных или общайтесь напрямую с AI-советником.
                 </p>
+                <div className="grid sm:grid-cols-3 gap-3 max-w-xl mx-auto pt-4">
+                  <button
+                    onClick={() => navigate("/discover/ru")}
+                    className="group p-4 rounded-xl border border-border hover:border-accent/40 bg-background/80 backdrop-blur-sm transition-all text-left space-y-1.5"
+                  >
+                    <Search className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
+                    <p className="text-sm font-semibold text-foreground">Discover</p>
+                    <p className="text-[11px] text-muted-foreground leading-snug">500+ университетов с фильтрами, рейтингами и стоимостью</p>
+                  </button>
+                  <button
+                    onClick={() => navigate("/prep/ru")}
+                    className="group p-4 rounded-xl border border-border hover:border-accent/40 bg-background/80 backdrop-blur-sm transition-all text-left space-y-1.5"
+                  >
+                    <PenTool className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
+                    <p className="text-sm font-semibold text-foreground">Prep</p>
+                    <p className="text-[11px] text-muted-foreground leading-snug">IELTS, SAT и курсы английского с AI-репетитором</p>
+                  </button>
+                  <button
+                    onClick={() => navigate("/academy")}
+                    className="group p-4 rounded-xl border border-border hover:border-accent/40 bg-background/80 backdrop-blur-sm transition-all text-left space-y-1.5"
+                  >
+                    <BookOpen className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
+                    <p className="text-sm font-semibold text-foreground">Academy</p>
+                    <p className="text-[11px] text-muted-foreground leading-snug">Гайды, курсы и плейбуки для каждого этапа поступления</p>
+                  </button>
+                </div>
+
                 <a href="/topuni-ai/partners/ru" className="text-sm text-muted-foreground hover:text-accent transition-colors underline underline-offset-4 cursor-pointer inline-block">Для университетов-партнёров →</a>
               </div>
             </motion.div>
