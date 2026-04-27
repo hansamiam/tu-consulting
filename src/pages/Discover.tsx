@@ -17,6 +17,7 @@ import {
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { DiscoverProfileGate, getStoredProfile, type DiscoverProfile } from "@/components/discover/DiscoverProfileGate";
+import heroImage from "@/assets/hero-campus.jpg";
 
 interface Scholarship {
   scholarship_id: string;
