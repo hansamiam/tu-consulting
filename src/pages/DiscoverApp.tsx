@@ -554,4 +554,4 @@ const DiscoverApp = ({ language = "en" }: Props) => {
   );
 };
 
-export default Discover;
+export default DiscoverApp;
