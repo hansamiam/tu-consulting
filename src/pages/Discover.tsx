@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { DiscoverProfileGate, getStoredProfile, type DiscoverProfile } from "@/components/discover/DiscoverProfileGate";
 
 interface Scholarship {
   scholarship_id: string;
@@ -181,6 +182,26 @@ const Discover = ({ language = "en" }: Props) => {
   const [submitted, setSubmitted] = useState(false);
   const [openDetail, setOpenDetail] = useState<Scored | null>(null);
 
+  // Lead-capture gate — hard wall before anything else loads
+  const [gateOpen, setGateOpen] = useState(() => !getStoredProfile());
+  const [unlocked, setUnlocked] = useState(() => !!getStoredProfile());
+
+  const handleGateComplete = (lead: DiscoverProfile) => {
+    // Pre-seed the ranking profile from the lead-capture data
+    setProfile((p) => ({
+      ...p,
+      country: lead.nationality || p.country,
+      degree: lead.targetDegree === "phd" ? "PhD" : lead.targetDegree === "master" ? "master's" : "undergraduate",
+      gpa: lead.gpa || p.gpa,
+      ielts: lead.ieltsScore || p.ielts,
+      field: lead.fieldOfInterest || p.field,
+      budget: lead.budgetRange?.startsWith("0") || lead.budgetRange?.startsWith("5000-") ? "low" : "medium",
+    }));
+    setSubmitted(true);
+    setUnlocked(true);
+    setGateOpen(false);
+  };
+
   useEffect(() => {
     (async () => {
       const { data } = await supabase
@@ -211,6 +232,9 @@ const Discover = ({ language = "en" }: Props) => {
     <div className="min-h-screen bg-background">
       <Navigation language={language} />
 
+      {/* Lead-capture gate — must complete before seeing anything */}
+      <DiscoverProfileGate open={gateOpen && !unlocked} onComplete={handleGateComplete} language={language} />
+
       {/* Hero */}
       <section className="bg-primary py-14">
         <div className="max-w-6xl mx-auto px-4 text-center">
@@ -218,12 +242,12 @@ const Discover = ({ language = "en" }: Props) => {
             <Compass className="h-3.5 w-3.5" /> {isRu ? "Стипендии" : "Scholarships"}
           </div>
           <h1 className="text-3xl sm:text-5xl font-heading font-bold text-primary-foreground mb-3">
-            {isRu ? "Стипендии, подходящие под твой профиль" : "Scholarships matched to your profile"}
+            {isRu ? "Твой шорт-лист стипендий" : "Your scholarship shortlist"}
           </h1>
-          <p className="text-primary-foreground/70 max-w-2xl mx-auto">
+          <p className="text-primary-foreground/70 max-w-xl mx-auto">
             {isRu
-              ? "Заполни профиль — получишь ранжированный список с фит-скором, требованиями и сроками."
-              : "Fill in your profile to get a ranked list with fit score, requirements, and deadlines."}
+              ? "Ранжировано по фиту. Только то, на что у тебя реальный шанс."
+              : "Ranked by fit. Only the ones you can actually win."}
           </p>
         </div>
       </section>
