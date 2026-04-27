@@ -171,36 +171,34 @@ const ELIG_STYLE: Record<Scored["eligibility"], { label: string; icon: typeof Ch
 
 interface Props { language?: "en" | "ru" }
 
-const Discover = ({ language = "en" }: Props) => {
+const DiscoverApp = ({ language = "en" }: Props) => {
   const isRu = language === "ru";
   const { user, subscription } = useAuth();
   const isPro = ["pro", "founding"].includes(subscription.tier);
 
+  const stored = getStoredProfile();
+
+  // Pre-seed ranking profile from stored lead-capture data
+  const seedFromLead = (lead: DiscoverProfile | null): Profile => ({
+    ...DEFAULT_PROFILE,
+    country: lead?.nationality || "",
+    degree: lead?.targetDegree === "phd" ? "PhD" : lead?.targetDegree === "master" ? "master's" : "undergraduate",
+    gpa: lead?.gpa || "",
+    ielts: lead?.ieltsScore || "",
+    field: lead?.fieldOfInterest || "",
+    budget: lead?.budgetRange?.startsWith("0") || lead?.budgetRange?.startsWith("5000-") ? "low" : "medium",
+  });
+
   const [rows, setRows] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
-  const [submitted, setSubmitted] = useState(false);
+  const [profile, setProfile] = useState<Profile>(() => seedFromLead(stored));
+  const [submitted, setSubmitted] = useState(true);
   const [openDetail, setOpenDetail] = useState<Scored | null>(null);
 
-  // Lead-capture gate — hard wall before anything else loads
-  const [gateOpen, setGateOpen] = useState(() => !getStoredProfile());
-  const [unlocked, setUnlocked] = useState(() => !!getStoredProfile());
-
-  const handleGateComplete = (lead: DiscoverProfile) => {
-    // Pre-seed the ranking profile from the lead-capture data
-    setProfile((p) => ({
-      ...p,
-      country: lead.nationality || p.country,
-      degree: lead.targetDegree === "phd" ? "PhD" : lead.targetDegree === "master" ? "master's" : "undergraduate",
-      gpa: lead.gpa || p.gpa,
-      ielts: lead.ieltsScore || p.ielts,
-      field: lead.fieldOfInterest || p.field,
-      budget: lead.budgetRange?.startsWith("0") || lead.budgetRange?.startsWith("5000-") ? "low" : "medium",
-    }));
-    setSubmitted(true);
-    setUnlocked(true);
-    setGateOpen(false);
-  };
+  // Hard wall: if no profile captured, send back to landing
+  if (!stored) {
+    return <Navigate to={isRu ? "/discover/ru" : "/discover"} replace />;
+  }
 
   useEffect(() => {
     (async () => {
