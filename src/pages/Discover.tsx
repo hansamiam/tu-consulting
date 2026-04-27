@@ -62,7 +62,7 @@ const Discover = ({ language = "en" }: Props) => {
             {...fadeUp(0.25)}
             className="text-primary-foreground/80 text-lg sm:text-xl max-w-2xl mx-auto mb-10 font-light leading-relaxed"
           >
-            "BETA"
+            BETA
           </motion.p>
           <motion.div {...fadeUp(0.4)}>
             <Button
