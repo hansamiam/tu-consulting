@@ -15,9 +15,8 @@ import {
   CheckCircle2, XCircle, Clock, Award, Compass, Lightbulb, ArrowRight,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
-import { DiscoverProfileGate, getStoredProfile, type DiscoverProfile } from "@/components/discover/DiscoverProfileGate";
-import heroImage from "@/assets/hero-campus.jpg";
+import { Link, Navigate } from "react-router-dom";
+import { getStoredProfile, type DiscoverProfile } from "@/components/discover/DiscoverProfileGate";
 
 interface Scholarship {
   scholarship_id: string;
