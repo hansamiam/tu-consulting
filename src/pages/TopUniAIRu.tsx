@@ -25,6 +25,7 @@ const COUNTRY_MAP: Record<string, string> = {
 };
 
 const TopUniAIRu = () => {
+  const navigate = useNavigate();
   const [screen, setScreen] = useState<Screen>("landing");
   const [step, setStep] = useState(1);
   const [fullName, setFullName] = useState("");
