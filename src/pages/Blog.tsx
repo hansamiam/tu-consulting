@@ -1,60 +1,105 @@
-import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useRef } from "react";
 import { blogArticles } from "@/data/blogArticles";
 import { countryGuides } from "@/data/countryGuides";
+import heroImage from "@/assets/hero-campus.jpg";
 
-// Editorial magazine layout. Country guides up top (anchor content),
-// articles below in a tight 2-col grid. No Unsplash filler for guides.
+// Compact magazine layout. Blurred campus backdrop (matches other pages),
+// sliding country playbook tiles, tight vertical rhythm.
 const Blog = () => {
   const navigate = useNavigate();
   const featured = blogArticles[0];
   const rest = blogArticles.slice(1);
+  const railRef = useRef<HTMLDivElement>(null);
+
+  const scrollRail = (dir: "left" | "right") => {
+    railRef.current?.scrollBy({ left: dir === "left" ? -320 : 320, behavior: "smooth" });
+  };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className="min-h-screen relative"
+      style={{
+        backgroundImage: `linear-gradient(rgba(255,255,255,0.92), rgba(255,255,255,0.92)), url(${heroImage})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed",
+      }}
+    >
       <Navigation language="en" />
 
-      {/* Masthead */}
-      <header className="border-b border-border">
-        <div className="max-w-6xl mx-auto px-6 lg:px-10 pt-20 pb-12 lg:pt-28 lg:pb-16">
-          <div className="grid lg:grid-cols-12 gap-8 items-end">
-            <div className="lg:col-span-8">
-              <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-5">
-                The Top Uni Journal
-              </p>
-              <h1 className="font-heading text-5xl lg:text-7xl font-bold tracking-tight leading-[1.02]">
-                Field notes from <span className="text-accent">cross-border</span> applicants.
-              </h1>
-            </div>
-            <div className="lg:col-span-4">
-              <p className="text-base text-muted-foreground leading-relaxed">
-                Country playbooks, scholarship strategy, and the things students wish
-                someone had told them earlier. Written by people who have done it.
-              </p>
-            </div>
-          </div>
+      {/* Compact masthead */}
+      <header className="border-b border-border/50 bg-background/60 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto px-6 lg:px-10 py-10 lg:py-12">
+          <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-3">
+            The Top Uni Journal
+          </p>
+          <h1 className="font-heading text-3xl lg:text-5xl font-bold tracking-tight leading-[1.05] max-w-3xl">
+            Field notes from <span className="text-accent">cross-border</span> applicants.
+          </h1>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 lg:px-10 py-16 lg:py-20 space-y-20 lg:space-y-24">
+      <main className="max-w-6xl mx-auto px-6 lg:px-10 py-10 lg:py-14 space-y-12 lg:space-y-14">
 
-        {/* Featured article */}
-        {featured && (
-          <section>
-            <div className="flex items-baseline justify-between mb-6">
-              <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent">Featured</p>
-              <button onClick={() => navigate(`/blog/${featured.id}`)} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                Read essay →
+        {/* Country playbooks — sliding rail */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-heading text-xl lg:text-2xl font-bold tracking-tight">
+              Country playbooks
+            </h2>
+            <div className="flex gap-1.5">
+              <button
+                onClick={() => scrollRail("left")}
+                aria-label="Scroll left"
+                className="h-8 w-8 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => scrollRail("right")}
+                aria-label="Scroll right"
+                className="h-8 w-8 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors"
+              >
+                <ChevronRight className="h-4 w-4" />
               </button>
             </div>
+          </div>
+          <div
+            ref={railRef}
+            className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1 scrollbar-hide"
+            style={{ scrollbarWidth: "none" }}
+          >
+            {countryGuides.map((g) => (
+              <button
+                key={g.slug}
+                onClick={() => navigate(`/blog/guide/${g.slug}`)}
+                className="snap-start shrink-0 w-44 bg-card border border-border rounded-lg p-4 text-left hover:border-accent/40 hover:shadow-sm transition-all group"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-2xl">{g.flag}</span>
+                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-accent group-hover:translate-x-0.5 transition-all" />
+                </div>
+                <h3 className="font-heading font-semibold text-sm tracking-tight group-hover:text-accent transition-colors">
+                  {g.country}
+                </h3>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Featured + essays — compact */}
+        {featured && (
+          <section>
+            <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-3">Featured</p>
             <article
               onClick={() => navigate(`/blog/${featured.id}`)}
-              className="group cursor-pointer grid lg:grid-cols-12 gap-8 lg:gap-12 items-center border-y border-border py-10 lg:py-14"
+              className="group cursor-pointer grid md:grid-cols-12 gap-5 md:gap-8 items-center bg-card border border-border rounded-lg p-4 md:p-5 hover:border-accent/40 transition-colors"
             >
-              <div className="lg:col-span-5 aspect-[4/3] overflow-hidden rounded-lg bg-muted">
+              <div className="md:col-span-5 aspect-[16/10] overflow-hidden rounded-md bg-muted">
                 <img
                   src={featured.image}
                   alt={featured.title}
@@ -62,68 +107,34 @@ const Blog = () => {
                   loading="lazy"
                 />
               </div>
-              <div className="lg:col-span-7">
-                <div className="flex items-center gap-3 mb-4 text-xs">
+              <div className="md:col-span-7">
+                <div className="flex items-center gap-2 mb-2 text-[11px]">
                   <span className="font-mono uppercase tracking-wider text-accent">{featured.category}</span>
                   <span className="text-muted-foreground/50">·</span>
                   <span className="text-muted-foreground">{featured.readTime}</span>
                 </div>
-                <h2 className="font-heading text-3xl lg:text-4xl font-bold tracking-tight leading-tight mb-4 group-hover:text-accent transition-colors">
+                <h2 className="font-heading text-xl md:text-2xl font-bold tracking-tight leading-snug mb-2 group-hover:text-accent transition-colors">
                   {featured.title}
                 </h2>
-                <p className="text-base text-muted-foreground leading-relaxed mb-5">
+                <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2 md:line-clamp-3">
                   {featured.excerpt}
                 </p>
-                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-accent group-hover:gap-2.5 transition-all">
-                  Read essay <ArrowRight className="h-4 w-4" />
-                </span>
               </div>
             </article>
           </section>
         )}
 
-        {/* Country guides */}
-        <section>
-          <div className="flex items-baseline justify-between mb-8">
-            <div>
-              <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-2">Country playbooks</p>
-              <h2 className="font-heading text-2xl lg:text-3xl font-bold tracking-tight">
-                Where to apply, what it costs, how to win.
-              </h2>
-            </div>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border border border-border rounded-lg overflow-hidden">
-            {countryGuides.map((g) => (
-              <button
-                key={g.slug}
-                onClick={() => navigate(`/blog/guide/${g.slug}`)}
-                className="bg-background text-left p-6 hover:bg-muted/30 transition-colors group"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <span className="text-3xl">{g.flag}</span>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-accent group-hover:translate-x-0.5 transition-all" />
-                </div>
-                <h3 className="font-heading font-semibold text-base tracking-tight mb-1 group-hover:text-accent transition-colors">
-                  {g.country}
-                </h3>
-                <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{g.tagline}</p>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* More essays */}
         {rest.length > 0 && (
           <section>
-            <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-8">More essays</p>
-            <div className="grid md:grid-cols-2 gap-x-10 gap-y-12">
+            <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-4">More essays</p>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {rest.map((article) => (
                 <article
                   key={article.id}
                   onClick={() => navigate(`/blog/${article.id}`)}
-                  className="group cursor-pointer"
+                  className="group cursor-pointer bg-card border border-border rounded-lg overflow-hidden hover:border-accent/40 transition-colors"
                 >
-                  <div className="aspect-[16/10] overflow-hidden rounded-lg bg-muted mb-5">
+                  <div className="aspect-[16/10] overflow-hidden bg-muted">
                     <img
                       src={article.image}
                       alt={article.title}
@@ -131,15 +142,17 @@ const Blog = () => {
                       loading="lazy"
                     />
                   </div>
-                  <div className="flex items-center gap-3 mb-3 text-xs">
-                    <span className="font-mono uppercase tracking-wider text-accent">{article.category}</span>
-                    <span className="text-muted-foreground/50">·</span>
-                    <span className="text-muted-foreground">{article.readTime}</span>
+                  <div className="p-4">
+                    <div className="flex items-center gap-2 mb-1.5 text-[11px]">
+                      <span className="font-mono uppercase tracking-wider text-accent">{article.category}</span>
+                      <span className="text-muted-foreground/50">·</span>
+                      <span className="text-muted-foreground">{article.readTime}</span>
+                    </div>
+                    <h3 className="font-heading text-base font-bold tracking-tight leading-snug mb-1.5 group-hover:text-accent transition-colors line-clamp-2">
+                      {article.title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{article.excerpt}</p>
                   </div>
-                  <h3 className="font-heading text-xl lg:text-2xl font-bold tracking-tight leading-snug mb-2 group-hover:text-accent transition-colors">
-                    {article.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">{article.excerpt}</p>
                 </article>
               ))}
             </div>
