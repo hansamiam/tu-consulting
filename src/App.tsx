@@ -31,6 +31,7 @@ import TopUniAIRu from "./pages/TopUniAIRu";
 import TopUniAIPartners from "./pages/TopUniAIPartners";
 import TopUniAIPartnersRu from "./pages/TopUniAIPartnersRu";
 import Discover from "./pages/Discover";
+import DiscoverApp from "./pages/DiscoverApp";
 import Admin from "./pages/Admin";
 import FunnelDashboard from "./pages/FunnelDashboard";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -99,6 +100,8 @@ const App = () => (
           {/* Discover = scholarship decision engine. /scholarships kept as alias. */}
           <Route path="/discover" element={<Discover language="en" />} />
           <Route path="/discover/ru" element={<Discover language="ru" />} />
+          <Route path="/discover/app" element={<DiscoverApp language="en" />} />
+          <Route path="/discover/ru/app" element={<DiscoverApp language="ru" />} />
           <Route path="/scholarships" element={<Discover language="en" />} />
           <Route path="/scholarships/ru" element={<Discover language="ru" />} />
 
