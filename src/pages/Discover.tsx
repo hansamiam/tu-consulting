@@ -448,6 +448,7 @@ const Discover = ({ language = "en" }: Props) => {
           </>
         )}
       </div>
+      )}
 
       {/* Detail dialog — requirements first, strategy gated to Pro */}
       <Dialog open={!!openDetail} onOpenChange={(o) => !o && setOpenDetail(null)}>
