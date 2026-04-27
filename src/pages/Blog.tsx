@@ -33,12 +33,9 @@ const Blog = () => {
 
       {/* Compact masthead */}
       <header className="border-b border-border/50 bg-background/60 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto px-6 lg:px-10 py-10 lg:py-12">
-          <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-3">
-            The Top Uni Journal
-          </p>
-          <h1 className="font-heading text-3xl lg:text-5xl font-bold tracking-tight leading-[1.05] max-w-3xl">
-            Field notes from <span className="text-accent">cross-border</span> applicants.
+        <div className="max-w-6xl mx-auto px-6 lg:px-10 py-8 lg:py-10">
+          <h1 className="font-heading text-3xl lg:text-5xl font-bold tracking-tight leading-[1.05]">
+            <span className="text-primary">Top Uni</span> <span className="text-accent">Journal</span>
           </h1>
         </div>
       </header>
