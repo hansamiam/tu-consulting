@@ -47,9 +47,9 @@ const Index = () => {
             {...fadeUp(0.2)}
             className="font-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-primary-foreground leading-[1.05] tracking-tight mb-6"
           >
-            Your tailored admission
+            Your tailored <span className="text-gold">admission strategy</span>
             <br className="hidden sm:block" />
-            <span className="text-gold"> strategy in minutes.</span>
+            in minutes.
           </motion.h1>
 
           <motion.p
