@@ -43,26 +43,20 @@ const Index = () => {
         }}
       >
         <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
-          <motion.div {...fadeUp(0.1)} className="mb-4">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold/30 bg-gold/10 text-gold text-xs sm:text-sm font-medium tracking-wide uppercase">
-              <Sparkles className="h-3.5 w-3.5" /> Discover · Prep · Succeed
-            </span>
-          </motion.div>
-
           <motion.h1
             {...fadeUp(0.2)}
-            className="font-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-primary-foreground leading-[1.1] tracking-tight mb-6"
+            className="font-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-primary-foreground leading-[1.05] tracking-tight mb-6"
           >
-            Scholarships ranked
+            Scholarships you can
             <br className="hidden sm:block" />
-            <span className="text-gold"> against your profile.</span>
+            <span className="text-gold"> actually win.</span>
           </motion.h1>
 
           <motion.p
             {...fadeUp(0.35)}
-            className="text-primary-foreground/85 text-lg sm:text-xl max-w-2xl mx-auto mb-10 font-light leading-relaxed"
+            className="text-primary-foreground/80 text-lg sm:text-xl max-w-xl mx-auto mb-10 font-light leading-relaxed"
           >
-            Fit scores, hard cutoffs, deadlines — and consultants from Yale, Harvard, Cambridge & Tsinghua when you need them.
+            Ranked against your profile. Real cutoffs, real deadlines, real shot.
           </motion.p>
 
           <motion.div {...fadeUp(0.55)} className="flex justify-center">
@@ -72,7 +66,7 @@ const Index = () => {
               className="text-lg px-10 py-6 hover:scale-105 transition-transform duration-200 gap-2"
               onClick={() => navigate('/discover')}
             >
-              <Search className="h-5 w-5" /> Get your admissions plan
+              <Search className="h-5 w-5" /> Find my scholarships
             </Button>
           </motion.div>
         </div>
@@ -156,14 +150,14 @@ const Index = () => {
         </div>
       </section>
 
-      {/* ── FOUNDING PRO CTA ── */}
+      {/* ── MEMBERSHIP CTA ── */}
       <section className="py-16 bg-primary text-primary-foreground">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
           <motion.h2 {...fadeUp()} className="font-heading text-3xl sm:text-4xl font-bold mb-3">
-            <span className="text-gold">Founding</span> · $19/mo, locked.
+            One <span className="text-gold">membership.</span> Every tool.
           </motion.h2>
           <motion.p {...fadeUp(0.1)} className="text-primary-foreground/70 mb-8 max-w-xl mx-auto">
-            First 100 members. Price doesn't change.
+            Discover, Prep, and Academy — locked at the founding price.
           </motion.p>
           <motion.div {...fadeUp(0.2)}>
             <Button
@@ -172,7 +166,7 @@ const Index = () => {
               className="text-base px-8 py-5 hover:scale-105 transition-transform gap-2"
               onClick={() => navigate('/pricing')}
             >
-              See Founding Pro
+              See Membership
             </Button>
           </motion.div>
         </div>
