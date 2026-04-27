@@ -249,7 +249,6 @@ const DiscoverApp = ({ language = "en" }: Props) => {
 
 
       <div id="discover-tools" className="max-w-6xl mx-auto px-4 py-10 space-y-8">
-      <div id="discover-tools" className="max-w-6xl mx-auto px-4 py-10 space-y-8">
         {/* Profile form */}
         <Card>
           <CardHeader>
