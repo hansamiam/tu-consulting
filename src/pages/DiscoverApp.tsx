@@ -230,54 +230,22 @@ const DiscoverApp = ({ language = "en" }: Props) => {
     <div className="min-h-screen bg-background">
       <Navigation language={language} />
 
-      {/* Lead-capture gate — must complete before seeing anything */}
-      <DiscoverProfileGate open={gateOpen && !unlocked} onComplete={handleGateComplete} language={language} />
-
-      {/* Hero — Prep-style campus backdrop */}
-      <motion.section
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
-        className="relative py-24 sm:py-32 bg-cover bg-center"
-        style={{
-          backgroundImage: `linear-gradient(160deg, rgba(10,35,66,0.92) 0%, rgba(10,35,66,0.72) 100%), url(${heroImage})`,
-        }}
-      >
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.6 }}
-            className="font-heading text-4xl sm:text-5xl md:text-6xl font-bold text-primary-foreground leading-[1.1] tracking-tight mb-5"
-          >
-            Top Uni <span className="text-gold">Discover</span>
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25, duration: 0.6 }}
-            className="text-primary-foreground/80 text-lg sm:text-xl max-w-2xl mx-auto mb-10 font-light leading-relaxed"
-          >
-            {isRu
-              ? "Стипендии, отранжированные под твой профиль. Реальные пороги, реальные дедлайны, реальный шанс."
-              : "Scholarships ranked against your profile. Real cutoffs, real deadlines, real shot."}
-          </motion.p>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-          >
-            <Button
-              variant="gold"
-              size="lg"
-              className="text-lg px-12 py-6 hover:scale-105 transition-transform gap-2"
-              onClick={() => unlocked ? document.getElementById("discover-tools")?.scrollIntoView({ behavior: "smooth" }) : setGateOpen(true)}
-            >
-              <Sparkles className="h-5 w-5" /> {isRu ? "Открыть базу стипендий" : "Launch Discover database"}
-            </Button>
-          </motion.div>
+      {/* Slim app header */}
+      <section className="border-b border-border bg-card/50 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto px-4 py-6 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-accent mb-1">
+              {isRu ? "База стипендий" : "Scholarship Database"}
+            </p>
+            <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight">
+              Top Uni <span className="text-accent">Discover</span>
+            </h1>
+          </div>
+          <div className="text-xs text-muted-foreground hidden sm:block">
+            {stored.fullName} · {stored.nationality}
+          </div>
         </div>
-      </motion.section>
+      </section>
 
       {/* What's inside — tools teaser */}
       {!unlocked && (
