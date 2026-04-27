@@ -45,9 +45,9 @@ const Index = () => {
         <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
           <motion.h1
             {...fadeUp(0.2)}
-            className="font-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-primary-foreground leading-[1.05] tracking-tight mb-6"
+            className="font-heading text-[2.4rem] sm:text-5xl md:text-[3.6rem] lg:text-[4rem] xl:text-[4.6rem] font-bold text-primary-foreground leading-[1.05] tracking-tight mb-6"
           >
-            Tailored <span className="text-gold">admission strategy</span>
+            <span className="whitespace-nowrap">Tailored <span className="text-gold">admission strategy</span></span>
             <br className="hidden sm:block" />
             in minutes.
           </motion.h1>
