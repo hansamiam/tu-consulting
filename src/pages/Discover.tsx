@@ -252,6 +252,7 @@ const Discover = ({ language = "en" }: Props) => {
         </div>
       </section>
 
+      {unlocked && (
       <div className="max-w-6xl mx-auto px-4 py-10 space-y-8">
         {/* Profile form */}
         <Card>
