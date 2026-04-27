@@ -246,8 +246,8 @@ const Discover = ({ language = "en" }: Props) => {
           </h1>
           <p className="text-primary-foreground/70 max-w-xl mx-auto">
             {isRu
-              ? "Ранжировано по фиту. Только то, на что у тебя реальный шанс."
-              : "Ranked by fit. Only the ones you can actually win."}
+              ? "Отранжировано по вашему профилю — ГПА, баллы, гражданство, специальность."
+              : "Matched to your profile — GPA, test scores, citizenship, and field of study."}
           </p>
         </div>
       </section>
@@ -412,7 +412,7 @@ const Discover = ({ language = "en" }: Props) => {
 
                         <div className="mt-auto flex gap-2 pt-2">
                           <Button size="sm" variant="outline" className="flex-1" onClick={() => setOpenDetail(s)}>
-                            {isRu ? "Стратегия" : "How to win"} <ArrowRight className="h-3 w-3 ml-1" />
+                            {isRu ? "Стратегия" : "Application notes"} <ArrowRight className="h-3 w-3 ml-1" />
                           </Button>
                           {s.official_url && (
                             <Button size="sm" asChild>
@@ -433,12 +433,12 @@ const Discover = ({ language = "en" }: Props) => {
               <div className="mt-2 p-6 bg-gradient-to-br from-primary/10 to-accent/10 border border-gold/30 rounded-2xl text-center space-y-3">
                 <Lock className="h-8 w-8 text-gold mx-auto" />
                 <h3 className="text-lg font-heading font-bold">
-                  {isRu ? `${locked} стипендий скрыто` : `${locked} more scholarships ranked for you`}
+                  {isRu ? `${locked} стипендий скрыто` : `${locked} more scholarships in your ranked list`}
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-xl mx-auto">
                   {isRu
-                    ? "Pro открывает полный список с матч-скорами, стратегиями выигрыша и причинами отказов."
-                    : "Pro unlocks the full ranked list, match scores, win strategies, and rejection reasons."}
+                    ? "Pro открывает полный список с матч-скорами, стратегиями подачи и причинами отказов."
+                    : "Unlock the full list with match scores, application strategy notes, and common rejection reasons."}
                 </p>
                 <div className="flex gap-3 justify-center flex-wrap">
                   <Button asChild><Link to="/pricing">{isRu ? "Открыть полный доступ" : "Unlock full access"}</Link></Button>
@@ -500,7 +500,7 @@ const Discover = ({ language = "en" }: Props) => {
                   <>
                     {openDetail.how_to_win && (
                       <section className="bg-accent/5 border border-accent/20 rounded-lg p-3">
-                        <h4 className="font-semibold text-accent mb-1 flex items-center gap-2"><Lightbulb className="h-4 w-4" />{isRu ? "Как победить" : "How to win this"}</h4>
+                        <h4 className="font-semibold text-accent mb-1 flex items-center gap-2"><Lightbulb className="h-4 w-4" />{isRu ? "Как подать сильную заявку" : "Application approach"}</h4>
                         <p className="text-foreground/85">{openDetail.how_to_win}</p>
                       </section>
                     )}
@@ -526,7 +526,7 @@ const Discover = ({ language = "en" }: Props) => {
                 ) : (
                   <div className="border border-gold/30 bg-gold/5 rounded-lg p-4 text-center">
                     <Lock className="h-5 w-5 text-gold mx-auto mb-1.5" />
-                    <p className="text-sm text-foreground mb-1">{isRu ? "Стратегия выигрыша и причины отказов" : "How to win this · rejection reasons · strategy notes"}</p>
+                    <p className="text-sm text-foreground mb-1">{isRu ? "Стратегия подачи и причины отказов" : "Application notes · common rejections · strategy"}</p>
                     <p className="text-xs text-muted-foreground mb-3">{isRu ? "Открой с Pro" : "Unlock with Pro"}</p>
                     <Button size="sm" variant="gold" asChild><Link to="/pricing">{isRu ? "Открыть" : "Unlock"}</Link></Button>
                   </div>

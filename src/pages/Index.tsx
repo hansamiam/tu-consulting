@@ -47,16 +47,16 @@ const Index = () => {
             {...fadeUp(0.2)}
             className="font-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-primary-foreground leading-[1.05] tracking-tight mb-6"
           >
-            Scholarships you can
+            Study abroad.
             <br className="hidden sm:block" />
-            <span className="text-gold"> actually win.</span>
+            <span className="text-gold"> Plan it properly.</span>
           </motion.h1>
 
           <motion.p
             {...fadeUp(0.35)}
             className="text-primary-foreground/80 text-lg sm:text-xl max-w-xl mx-auto mb-10 font-light leading-relaxed"
           >
-            Ranked against your profile. Real cutoffs, real deadlines, real shot.
+            Find universities that fit your profile, scholarships you qualify for, and a plan to get your test scores there.
           </motion.p>
 
           <motion.div {...fadeUp(0.55)} className="flex justify-center">
@@ -114,7 +114,7 @@ const Index = () => {
                 n: "2",
                 icon: Globe,
                 title: "Discover",
-                body: "Ranked scholarship matches with hard cutoffs (IELTS, GPA, SAT) and your fit score.",
+                body: "Browse scholarships with verified requirements — GPA, IELTS, SAT, and deadline — ranked by your profile.",
                 cta: "See matches",
                 path: "/discover",
               },
@@ -122,7 +122,7 @@ const Index = () => {
                 n: "3",
                 icon: BookOpen,
                 title: "Prep",
-                body: "Hit the test scores those scholarships actually require. Diagnostic + adaptive practice.",
+                body: "Diagnostic test and practice questions to reach the scores your target programs actually require.",
                 cta: "Open Prep",
                 path: "/prep",
               },

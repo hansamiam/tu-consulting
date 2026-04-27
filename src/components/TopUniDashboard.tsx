@@ -260,7 +260,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           }
         </h1>
         <p className="text-muted-foreground mt-1">
-          {t("Your personalized university pathway dashboard", "Ваша персональная панель планирования")}
+          {t("Your university planning dashboard", "Ваша панель планирования")}
         </p>
         {isProfileFilled && (
           <div className="flex flex-wrap gap-2 mt-3">
@@ -276,10 +276,10 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         <div className="mt-4 p-4 rounded-xl border border-accent/30 bg-accent/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-0.5">
             <p className="text-sm font-semibold text-foreground">
-              {t("See scholarships you can actually win", "Посмотрите стипендии, которые вы можете получить")}
+              {t("Browse scholarships matched to your profile", "Стипендии, подобранные по вашему профилю")}
             </p>
             <p className="text-xs text-muted-foreground">
-              {t("Ranked against your profile — real cutoffs, real deadlines.", "Отранжированы по вашему профилю — реальные требования и дедлайны.")}
+              {t("GPA, test scores, citizenship, and field — verified requirements, ranked by fit.", "ГПА, баллы, гражданство, специальность — верифицированные требования.")}
             </p>
           </div>
           <Button variant="gold" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate(isRu ? "/discover/ru" : "/discover")}>

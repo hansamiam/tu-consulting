@@ -70,7 +70,7 @@ const PrepLanding = () => {
             {...fadeUp(0.25)}
             className="text-primary-foreground/80 text-lg sm:text-xl max-w-2xl mx-auto mb-10 font-light leading-relaxed"
           >
-            Diagnostic, adaptive practice, AI essay feedback, and a personalised study plan — free during beta.
+            Diagnostic test, practice questions, essay feedback, and a study plan tailored to your weak areas — free during beta.
           </motion.p>
           <motion.div {...fadeUp(0.4)}>
             <Button

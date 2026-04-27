@@ -74,7 +74,7 @@ const TopUniAI = () => {
                     TopUni <span className="text-accent">AI</span>
                   </h1>
                   <p className="text-lg md:text-xl text-muted-foreground max-w-lg mx-auto leading-relaxed">
-                    Intelligent pathway planning for ambitious students.
+                    University and scholarship planning for students applying abroad.
                   </p>
                 </div>
 
@@ -89,7 +89,7 @@ const TopUniAI = () => {
                 </div>
 
                 <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                  Get a personalized AI pathway plan with university matches, essay tools, interview prep, and more.
+                  Tell us your academic profile and goals. We'll map your options and what each one actually requires.
                 </p>
 
                 {/* Product funnel CTAs */}
