@@ -150,7 +150,8 @@ const Index = () => {
         </div>
       </section>
 
-      {/* ── MEMBERSHIP CTA ── */}
+      {/* Membership CTA — hidden until ready */}
+      {false && (
       <section className="py-16 bg-primary text-primary-foreground">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
           <motion.h2 {...fadeUp()} className="font-heading text-3xl sm:text-4xl font-bold mb-3">
@@ -171,6 +172,7 @@ const Index = () => {
           </motion.div>
         </div>
       </section>
+      )}
 
       {/* ── FOOTER ── */}
       <footer className="bg-primary text-primary-foreground py-12">

@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Check, Star, ArrowLeft, Info, ArrowRight, Clock, Users, TrendingUp, Zap, ChevronRight, GraduationCap, Target, Award, MessageCircle, Sparkles } from "lucide-react";
+import { Check, Star, ArrowLeft, Info, ArrowRight, Clock, Users, TrendingUp, Zap, ChevronRight, GraduationCap, Target, Award, MessageCircle, Sparkles, Mail } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import Navigation from "@/components/Navigation";
@@ -32,6 +33,8 @@ const ReadinessQuiz = ({ onComplete }: { onComplete: (score: number) => void }) 
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
   const [score, setScore] = useState<number | null>(null);
+  const [leadEmail, setLeadEmail] = useState("");
+  const [leadSubmitted, setLeadSubmitted] = useState(false);
 
   const handleAnswer = (value: number) => {
     const next = [...answers, value];
@@ -45,6 +48,15 @@ const ReadinessQuiz = ({ onComplete }: { onComplete: (score: number) => void }) 
     }
   };
 
+  const handleLeadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!leadEmail) return;
+    try {
+      await supabase.from("leads" as any).insert({ email: leadEmail, source: "readiness_quiz", score });
+    } catch { /* silent */ }
+    setLeadSubmitted(true);
+  };
+
   if (!started) {
     return (
       <section className="mb-12 md:mb-20">
@@ -53,7 +65,7 @@ const ReadinessQuiz = ({ onComplete }: { onComplete: (score: number) => void }) 
             <div className="flex-1 space-y-4">
               <Badge className="bg-accent/10 text-accent border-accent/30 text-xs">Free • 30 seconds</Badge>
               <h3 className="text-2xl md:text-3xl font-heading font-bold text-foreground">How Ready Are You?</h3>
-              <p className="text-base text-muted-foreground leading-relaxed">Take our 5-question readiness assessment and get a personalized recommendation for the right consulting package.</p>
+              <p className="text-base text-muted-foreground leading-relaxed">5 quick questions. Get your readiness score and a personalised next step.</p>
               <Button variant="gold" size="lg" onClick={() => setStarted(true)}>
                 <Zap className="w-4 h-4 mr-2" /> Take the Quiz <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
@@ -71,8 +83,6 @@ const ReadinessQuiz = ({ onComplete }: { onComplete: (score: number) => void }) 
     const tier = score >= 70 ? "strong" : score >= 40 ? "developing" : "early";
     const scholarshipValue = tier === "strong" ? 50 : tier === "developing" ? 30 : 15;
     const fourYearSavings = scholarshipValue * 4 * 1000;
-    const consultingCost = tier === "strong" ? 1300 : tier === "developing" ? 690 : 390;
-    const roi = Math.round((fourYearSavings / consultingCost) * 10) / 10;
 
     return (
       <section className="mb-12 md:mb-20">
@@ -87,39 +97,68 @@ const ReadinessQuiz = ({ onComplete }: { onComplete: (score: number) => void }) 
               </h3>
               <p className="text-sm text-muted-foreground max-w-md mx-auto">
                 {tier === "strong"
-                  ? "You're well-prepared. Our Standard or Premium package will give you the competitive edge to secure top admits."
+                  ? "You're well-prepared. A consultation will sharpen your edge and help you land the best offers."
                   : tier === "developing"
-                  ? "You have a good start. A structured consulting package will fill the gaps and maximize your chances."
-                  : "Starting early is your biggest advantage. Book a free consultation to map out your journey."}
+                  ? "Good start. A free consultation will help you fill the gaps and maximise your chances."
+                  : "Starting early is your biggest advantage. Book a free call to map out your journey."}
               </p>
               <Progress value={score} className="max-w-xs mx-auto h-2" />
             </div>
 
-            {/* ROI Calculator integrated */}
+            {/* ROI stats */}
             <div className="border-t border-border pt-6">
-              <p className="text-xs text-muted-foreground text-center mb-4 uppercase tracking-wider font-medium">Your potential return on investment</p>
-              <div className="grid grid-cols-3 gap-3">
+              <p className="text-xs text-muted-foreground text-center mb-4 uppercase tracking-wider font-medium">Your potential scholarship value</p>
+              <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto">
                 <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 text-center space-y-1">
                   <TrendingUp className="w-5 h-5 text-accent mx-auto" />
                   <p className="text-xl font-bold text-foreground">${fourYearSavings.toLocaleString()}</p>
-                  <p className="text-[11px] text-muted-foreground">4-Year Scholarship Value</p>
+                  <p className="text-[11px] text-muted-foreground">4-Year Value</p>
                 </div>
                 <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-center space-y-1">
                   <Award className="w-5 h-5 text-primary mx-auto" />
-                  <p className="text-xl font-bold text-foreground">{roi}x</p>
-                  <p className="text-[11px] text-muted-foreground">Return on Investment</p>
-                </div>
-                <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-4 text-center space-y-1">
-                  <GraduationCap className="w-5 h-5 text-green-600 mx-auto" />
-                  <p className="text-xl font-bold text-foreground">${consultingCost}</p>
-                  <p className="text-[11px] text-muted-foreground">Consulting Investment</p>
+                  <p className="text-xl font-bold text-foreground">Free</p>
+                  <p className="text-[11px] text-muted-foreground">First Call</p>
                 </div>
               </div>
             </div>
 
-            <div className="text-center">
-              <Button variant="gold" onClick={() => { setStarted(false); setScore(null); setCurrent(0); setAnswers([]); }}>
-                Retake Quiz
+            {/* Email lead capture */}
+            <div className="border-t border-border pt-6">
+              {leadSubmitted ? (
+                <div className="text-center space-y-2">
+                  <p className="text-sm font-medium text-foreground">Got it — we'll be in touch.</p>
+                  <p className="text-xs text-muted-foreground">In the meantime, book your free call below.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleLeadSubmit} className="space-y-3">
+                  <p className="text-sm font-medium text-foreground text-center">Get a personalised plan sent to you</p>
+                  <div className="flex gap-2 max-w-sm mx-auto">
+                    <div className="relative flex-1">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        type="email"
+                        placeholder="your@email.com"
+                        value={leadEmail}
+                        onChange={e => setLeadEmail(e.target.value)}
+                        className="pl-9"
+                        required
+                      />
+                    </div>
+                    <Button type="submit" variant="gold" size="sm">Send</Button>
+                  </div>
+                </form>
+              )}
+            </div>
+
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <Button
+                variant="gold"
+                onClick={() => document.getElementById('consultations')?.scrollIntoView({ behavior: 'smooth' })}
+              >
+                Book free consultation
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => { setStarted(false); setScore(null); setCurrent(0); setAnswers([]); setLeadEmail(""); setLeadSubmitted(false); }}>
+                Retake
               </Button>
             </div>
           </CardContent>
@@ -341,9 +380,6 @@ const Offerings = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-12">
         {/* Hero Section */}
         <div className="text-center mb-8 md:mb-12 animate-fade-in">
-          <div className="inline-block px-3 py-1.5 md:px-4 md:py-2 bg-accent/10 border border-accent/20 rounded-full mb-3 md:mb-4">
-            <p className="text-accent font-semibold text-xs md:text-sm uppercase tracking-wide">Founding Members · $9/mo · 100 spots</p>
-          </div>
           <h1 className="font-heading text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mb-3 md:mb-4 px-2">
             Talk to a real consultant
           </h1>
@@ -359,26 +395,12 @@ const Offerings = () => {
             >
               <Sparkles className="w-5 h-5" /> Book a free call
             </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="text-base px-8 border-accent/30"
-              onClick={() => navigate('/pricing')}
-            >
-              See Founding Member <ArrowRight className="w-4 h-4 ml-1" />
-            </Button>
           </div>
         </div>
 
 
-        {/* FEATURE 1: Readiness Score Quiz - Instant engagement + lead qualification */}
-        <ReadinessQuiz onComplete={(score) => {
-          if (score >= 70) {
-            toast({ title: "You're ready!", description: "Based on your score, we recommend the Standard or Premium package." });
-          } else {
-            toast({ title: "Let's get you ready!", description: "A free consultation would be the perfect starting point." });
-          }
-        }} />
+        {/* Readiness Score Quiz */}
+        <ReadinessQuiz onComplete={(_score) => {}} />
 
         {/* Package Pricing — TEMPORARILY HIDDEN.
             We're focused on free consultations + Founding membership for V1.

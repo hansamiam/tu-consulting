@@ -130,20 +130,12 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
                 </span>
               </button>
             ) : (
-              <>
-                <button
-                  onClick={() => navigate("/pricing")}
-                  className="ml-1 px-3 py-1.5 text-sm font-semibold rounded-md text-gold border border-gold/40 hover:bg-gold/15 transition-all"
-                >
-                  {isRussian ? "Подписка" : "Membership"}
-                </button>
-                <button
-                  onClick={() => setAuthOpen(true)}
-                  className="ml-1 px-3 py-1.5 text-sm font-medium text-primary-foreground/70 hover:text-gold transition"
-                >
-                  Sign in
-                </button>
-              </>
+              <button
+                onClick={() => setAuthOpen(true)}
+                className="ml-1 px-3 py-1.5 text-sm font-medium text-primary-foreground/70 hover:text-gold transition"
+              >
+                Sign in
+              </button>
             )}
 
             <div className="ml-1">
@@ -239,20 +231,12 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
                       {subscription.tier === "founding" ? "Founding Member" : subscription.tier === "pro" ? "Pro Account" : "My Account"}
                     </button>
                   ) : (
-                    <>
-                      <button
-                        onClick={() => { navigate("/pricing"); setIsOpen(false); }}
-                        className="px-4 py-3 text-base font-semibold rounded-md text-gold border border-gold/40 text-left"
-                      >
-                        {isRussian ? "Подписка" : "Membership"}
-                      </button>
-                      <button
-                        onClick={() => { setIsOpen(false); setAuthOpen(true); }}
-                        className="px-4 py-3 text-base font-medium rounded-md text-primary-foreground/70 hover:text-gold text-left"
-                      >
-                        Sign in
-                      </button>
-                    </>
+                    <button
+                      onClick={() => { setIsOpen(false); setAuthOpen(true); }}
+                      className="px-4 py-3 text-base font-medium rounded-md text-primary-foreground/70 hover:text-gold text-left"
+                    >
+                      Sign in
+                    </button>
                   )}
                   <LanguageSwitcher />
                 </div>

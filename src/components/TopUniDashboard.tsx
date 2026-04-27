@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import {
   Sparkles, GraduationCap, Award, ClipboardList,
   Bot, Loader2, Send, ArrowLeft,
-  Plus, Trash2, PenTool, BarChart3,
+  Plus, Trash2, PenTool, BarChart3, Search, ArrowRight,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import EssayTools from "@/components/topuni/EssayTools";
 import AdmissionPredictor from "@/components/topuni/AdmissionPredictor";
@@ -58,6 +59,7 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/topuni-chat`
 const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) => {
   const isRu = language === "ru";
   const t = (en: string, ru: string) => isRu ? ru : en;
+  const navigate = useNavigate();
 
   // Pathway state
   const [pathwayContent, setPathwayContent] = useState("");
@@ -270,6 +272,20 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             {profile.ielts && <Badge variant="outline" className="text-xs">IELTS: {profile.ielts}</Badge>}
           </div>
         )}
+        {/* Discover CTA — prominent next step */}
+        <div className="mt-4 p-4 rounded-xl border border-accent/30 bg-accent/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-0.5">
+            <p className="text-sm font-semibold text-foreground">
+              {t("See scholarships you can actually win", "Посмотрите стипендии, которые вы можете получить")}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t("Ranked against your profile — real cutoffs, real deadlines.", "Отранжированы по вашему профилю — реальные требования и дедлайны.")}
+            </p>
+          </div>
+          <Button variant="gold" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate(isRu ? "/discover/ru" : "/discover")}>
+            <Search className="w-4 h-4" /> {t("Find my scholarships", "Найти стипендии")} <ArrowRight className="w-3.5 h-3.5" />
+          </Button>
+        </div>
       </motion.div>
 
       {/* Dashboard Tabs */}
@@ -437,7 +453,15 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         </TabsContent>
 
         {/* SCHOLARSHIP MATCHER TAB */}
-        <TabsContent value="scholarships">
+        <TabsContent value="scholarships" className="space-y-4">
+          <div className="flex items-center justify-between p-4 rounded-xl border border-accent/30 bg-accent/5">
+            <p className="text-sm text-foreground font-medium">
+              {t("Browse our full ranked scholarship database", "Просмотрите полную базу стипендий")}
+            </p>
+            <Button variant="gold" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate(isRu ? "/discover/ru" : "/discover")}>
+              <Search className="w-4 h-4" /> {t("Open Discover", "Открыть Discover")}
+            </Button>
+          </div>
           <ScholarshipMatcher profile={profile} language={language} />
         </TabsContent>
 
