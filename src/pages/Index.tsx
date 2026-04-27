@@ -7,7 +7,7 @@ import Navigation from "@/components/Navigation";
 import { shouldRedirectToRussian } from "@/utils/languageDetection";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { Footer } from "@/components/Footer";
-import { StickyCTA } from "@/components/StickyCTA";
+
 import { motion } from "framer-motion";
 
 const fadeUp = (delay = 0) => ({
@@ -30,7 +30,7 @@ const Index = () => {
     <div className="min-h-screen relative bg-background">
       <ScrollProgress />
       <Navigation language="en" />
-      <StickyCTA language="en" />
+      
 
       {/* ── HERO ── */}
       <motion.section
