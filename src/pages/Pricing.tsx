@@ -68,12 +68,12 @@ const Pricing = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center max-w-2xl mx-auto mb-10"
         >
-          <Badge className="mb-4 bg-gold/15 text-gold border-gold/30">Founding · 100 spots</Badge>
+          <Badge className="mb-4 bg-gold/15 text-gold border-gold/30">Membership</Badge>
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
-            $19/mo. <span className="text-gold">Locked for life.</span>
+            One membership. <span className="text-gold">Every tool.</span>
           </h1>
           <p className="text-muted-foreground mt-4 text-base">
-            For the first 100 members. Includes Discover, Prep, and Academy as they ship.
+            Discover, Prep, and Academy as they ship — at the founding price.
           </p>
         </motion.div>
 

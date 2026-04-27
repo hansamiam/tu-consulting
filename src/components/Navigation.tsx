@@ -6,7 +6,6 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthDialog } from "@/components/auth/AuthDialog";
-import { FoundingSpotsChip } from "@/components/FoundingSpotsChip";
 
 interface NavigationProps {
   language?: "en" | "ru";
@@ -37,8 +36,8 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
       path: isRussian ? "/prep/ru" : "/prep",
     },
     {
-      label: isRussian ? "Консалтинг" : "Consulting",
-      path: isRussian ? "/offerings/ru" : "/offerings",
+      label: isRussian ? "Академия" : "Academy",
+      path: "/academy",
     },
   ];
 
@@ -46,10 +45,6 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
     {
       label: isRussian ? "Команда" : "Team",
       path: isRussian ? "/team/ru" : "/team",
-    },
-    {
-      label: isRussian ? "Почему мы" : "Why Us",
-      path: isRussian ? "/why-tu/ru" : "/why-tu",
     },
     {
       label: isRussian ? "Блог" : "Blog",
@@ -72,79 +67,49 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
             Top Uni
           </button>
 
-          {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center gap-0.5">
-            {/* Home */}
+          {/* Desktop Navigation — clean, restrained, single typographic style */}
+          <div className="hidden lg:flex items-center gap-1">
             <button
               onClick={() => navigate(basePath)}
               className={cn(
-                "px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
+                "px-3 py-2 text-sm font-medium rounded-md transition-colors",
                 isActive(basePath, true)
-                  ? "text-gold bg-gold/10"
-                  : "text-primary-foreground/60 hover:text-primary-foreground/80 hover:bg-gold/5"
+                  ? "text-gold"
+                  : "text-primary-foreground/75 hover:text-gold"
               )}
             >
               {isRussian ? "Главная" : "Home"}
             </button>
 
-            {/* Divider */}
-            <div className="w-px h-5 bg-gold/20 mx-1" />
-
-            {/* TopUni AI — standalone with distinct styling */}
-            <button
-              onClick={() => navigate(primaryLinks[0].path)}
-              className={cn(
-                "px-3.5 py-1.5 text-sm font-bold rounded-md border transition-all duration-200",
-                isActive(primaryLinks[0].path)
-                  ? "text-gold bg-gold/10 border-gold/60"
-                  : "text-gold border-gold/40 hover:bg-gold/15 hover:border-gold/70"
-              )}
-            >
-              {primaryLinks[0].label}
-            </button>
-
-            {/* Divider */}
-            <div className="w-px h-5 bg-gold/20 mx-1" />
-
-            {/* Other product links — bold gold emphasis */}
-            {primaryLinks.slice(1).map((link) => (
+            {primaryLinks.map((link) => (
               <button
                 key={link.path}
                 onClick={() => navigate(link.path)}
                 className={cn(
-                  "px-3 py-2 text-sm font-semibold rounded-md transition-all duration-200",
+                  "px-3 py-2 text-sm font-medium rounded-md transition-colors",
                   isActive(link.path)
-                    ? "text-gold bg-gold/15"
-                    : "text-gold/80 hover:text-gold hover:bg-gold/10"
+                    ? "text-gold"
+                    : "text-primary-foreground/75 hover:text-gold"
                 )}
               >
                 {link.label}
               </button>
             ))}
 
-            {/* Divider */}
-            <div className="w-px h-5 bg-gold/20 mx-1" />
-
-            {/* Secondary links — subtler style */}
             {secondaryLinks.map((link) => (
               <button
                 key={link.path}
                 onClick={() => navigate(link.path)}
                 className={cn(
-                  "px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
+                  "px-3 py-2 text-sm font-medium rounded-md transition-colors",
                   isActive(link.path)
-                    ? "text-gold bg-gold/10"
-                    : "text-primary-foreground/50 hover:text-primary-foreground/80 hover:bg-gold/5"
+                    ? "text-gold"
+                    : "text-primary-foreground/60 hover:text-gold"
                 )}
               >
                 {link.label}
               </button>
             ))}
-
-            {/* Founding spots urgency chip — only when user is not yet a founding member */}
-            {subscription.tier !== "founding" && (
-              <FoundingSpotsChip className="ml-1" language={isRussian ? "ru" : "en"} />
-            )}
 
             {/* Membership / Account */}
             {user ? (
@@ -170,7 +135,7 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
                   onClick={() => navigate("/pricing")}
                   className="ml-1 px-3 py-1.5 text-sm font-semibold rounded-md text-gold border border-gold/40 hover:bg-gold/15 transition-all"
                 >
-                  Pricing
+                  {isRussian ? "Подписка" : "Membership"}
                 </button>
                 <button
                   onClick={() => setAuthOpen(true)}
@@ -195,9 +160,6 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
             </SheetTrigger>
             <SheetContent side="right" className="bg-primary border-gold/20 w-[280px]">
               <div className="flex flex-col gap-6 mt-8">
-                {subscription.tier !== "founding" && (
-                  <div className="px-2"><FoundingSpotsChip language={isRussian ? "ru" : "en"} /></div>
-                )}
                 {/* Home */}
                 <button
                   onClick={() => { navigate(basePath); setIsOpen(false); }}
@@ -282,7 +244,7 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
                         onClick={() => { navigate("/pricing"); setIsOpen(false); }}
                         className="px-4 py-3 text-base font-semibold rounded-md text-gold border border-gold/40 text-left"
                       >
-                        Pricing & Membership
+                        {isRussian ? "Подписка" : "Membership"}
                       </button>
                       <button
                         onClick={() => { setIsOpen(false); setAuthOpen(true); }}

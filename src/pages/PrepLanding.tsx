@@ -112,15 +112,55 @@ const PrepLanding = () => {
         </div>
       </motion.section>
 
-      {/* Courses Section */}
+      {/* Platform Section — moved to top: this is the hero product */}
+      <section className="py-20 sm:py-28 bg-primary text-primary-foreground">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <motion.div {...fadeUp()} className="text-center mb-14">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold/30 bg-gold/10 text-gold text-xs sm:text-sm font-medium tracking-wide uppercase mb-6">
+              <Zap className="h-3.5 w-3.5" /> AI-Powered
+            </span>
+            <h2 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
+              TopUni <span className="text-gold">Prep Platform</span>
+            </h2>
+            <p className="text-primary-foreground/70 text-lg max-w-2xl mx-auto">
+              Self-study meets AI. Practice adaptively, take mock exams, get instant essay feedback, and track your progress — all for free during our beta.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {platformFeatures.map((f, i) => (
+              <motion.div key={f.title} {...fadeUp(0.1 * (i + 1))}>
+                <div className="rounded-xl border border-gold/20 bg-primary-foreground/5 p-6 hover:bg-primary-foreground/10 transition-colors">
+                  <f.icon className="h-7 w-7 text-gold mb-3" />
+                  <h3 className="font-semibold text-primary-foreground mb-1">{f.title}</h3>
+                  <p className="text-sm text-primary-foreground/60">{f.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div {...fadeUp(0.4)} className="text-center">
+            <Button
+              variant="gold"
+              size="lg"
+              className="text-lg px-12 py-6 hover:scale-105 transition-transform gap-2"
+              onClick={() => navigate('/prep/dashboard')}
+            >
+              <ArrowRight className="h-5 w-5" /> Enter Prep Platform
+            </Button>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Courses Section — secondary, below the platform */}
       <section id="courses" className="py-20 sm:py-28 bg-background">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <motion.div {...fadeUp()} className="text-center mb-14">
             <h2 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4">
-              Our <span className="text-accent">Courses</span>
+              Live <span className="text-accent">Courses</span>
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Rigorous, results-driven preparation taught by experienced instructors — online and in-person.
+              Instructor-led IELTS, SAT, and English — for students who want guidance alongside the platform.
             </p>
           </motion.div>
 
@@ -159,46 +199,6 @@ const PrepLanding = () => {
               onClick={() => window.location.href = "mailto:team@topuniconsulting.com?subject=Course%20Inquiry"}
             >
               Contact Us About Courses
-            </Button>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Platform Section */}
-      <section className="py-20 sm:py-28 bg-primary text-primary-foreground">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <motion.div {...fadeUp()} className="text-center mb-14">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold/30 bg-gold/10 text-gold text-xs sm:text-sm font-medium tracking-wide uppercase mb-6">
-              <Zap className="h-3.5 w-3.5" /> AI-Powered
-            </span>
-            <h2 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              TopUni <span className="text-gold">Prep Platform</span>
-            </h2>
-            <p className="text-primary-foreground/70 text-lg max-w-2xl mx-auto">
-              Self-study meets AI. Practice adaptively, take mock exams, get instant essay feedback, and track your progress — all for free during our beta.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {platformFeatures.map((f, i) => (
-              <motion.div key={f.title} {...fadeUp(0.1 * (i + 1))}>
-                <div className="rounded-xl border border-gold/20 bg-primary-foreground/5 p-6 hover:bg-primary-foreground/10 transition-colors">
-                  <f.icon className="h-7 w-7 text-gold mb-3" />
-                  <h3 className="font-semibold text-primary-foreground mb-1">{f.title}</h3>
-                  <p className="text-sm text-primary-foreground/60">{f.desc}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          <motion.div {...fadeUp(0.4)} className="text-center">
-            <Button
-              variant="gold"
-              size="lg"
-              className="text-lg px-12 py-6 hover:scale-105 transition-transform gap-2"
-              onClick={() => navigate('/prep/dashboard')}
-            >
-              <ArrowRight className="h-5 w-5" /> Enter Prep Platform
             </Button>
           </motion.div>
         </div>

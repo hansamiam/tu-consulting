@@ -184,6 +184,34 @@ const Team = () => {
             </ScrollReveal>
           </div>
 
+          {/* ── Why Top Uni — condensed, high-yield, absorbed from old Why Us page ── */}
+          <ScrollReveal delay={0.1}>
+            <div className="max-w-5xl mx-auto mb-12 md:mb-20">
+              <div className="text-center mb-8 md:mb-10">
+                <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-3">Why Top Uni</p>
+                <h2 className="font-heading text-2xl md:text-4xl font-bold leading-tight tracking-tight text-foreground">
+                  A shortlist, a plan, and an expert <span className="text-accent">when you need one.</span>
+                </h2>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-px bg-border border border-border rounded-lg overflow-hidden">
+                {[
+                  { n: "01", t: "Ranked, not listed", b: "Scholarships scored against your grades, budget, country, and timeline." },
+                  { n: "02", t: "Hard cutoffs surfaced", b: "IELTS, GPA, SAT thresholds shown upfront — so you don't waste a cycle." },
+                  { n: "03", t: "Cross-border by default", b: "Built for Central Asian and emerging-market applicants, not US-only assumptions." },
+                  { n: "04", t: "Experts on demand", b: "Yale, Harvard, Cambridge, Tsinghua — the team you'll actually work with." },
+                ].map((d) => (
+                  <div key={d.n} className="bg-card p-5 md:p-7 hover:bg-muted/30 transition-colors">
+                    <div className="flex items-baseline gap-3 mb-2">
+                      <span className="font-mono text-xs text-accent">{d.n}</span>
+                      <h3 className="font-heading font-semibold text-base md:text-lg tracking-tight">{d.t}</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{d.b}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </ScrollReveal>
+
           {/* Team Grid */}
           <StaggerContainer className="grid md:grid-cols-2 gap-4 md:gap-8 animate-fade-in">
             {teamMembers.map((member, index) => (
