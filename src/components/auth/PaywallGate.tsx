@@ -1,11 +1,10 @@
 // PaywallGate — wraps premium content with a soft preview + Founding upgrade CTA.
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthDialog } from "@/components/auth/AuthDialog";
 import { Lock, Crown } from "lucide-react";
-import { useEffect, useState as useStateReact } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 type Props = {
