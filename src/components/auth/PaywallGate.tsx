@@ -17,9 +17,17 @@ type Props = {
 export const PaywallGate = ({ children, feature, description, showPreview = true }: Props) => {
   const { user, subscription } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
-  if (subscription.is_active) return <>{children}</>;
+  useEffect(() => {
+    if (!user) { setIsAdmin(false); return; }
+    supabase.rpc("has_role", { _user_id: user.id, _role: "admin" })
+      .then(({ data }) => setIsAdmin(!!data))
+      .catch(() => setIsAdmin(false));
+  }, [user]);
+
+  if (subscription.is_active || isAdmin) return <>{children}</>;
 
   const handleUpgrade = () => {
     if (!user) {
