@@ -22,9 +22,10 @@ export const PaywallGate = ({ children, feature, description, showPreview = true
 
   useEffect(() => {
     if (!user) { setIsAdmin(false); return; }
-    supabase.rpc("has_role", { _user_id: user.id, _role: "admin" })
-      .then(({ data }) => setIsAdmin(!!data))
-      .catch(() => setIsAdmin(false));
+    (async () => {
+      const { data } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
+      setIsAdmin(!!data);
+    })();
   }, [user]);
 
   if (subscription.is_active || isAdmin) return <>{children}</>;
