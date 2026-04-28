@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthDialog } from "@/components/auth/AuthDialog";
 import { Lock, Crown } from "lucide-react";
+import { useEffect, useState as useStateReact } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 type Props = {
   children: ReactNode;
