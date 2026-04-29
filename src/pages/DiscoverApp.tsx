@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import {
   Sparkles, Calendar, ExternalLink, Lock, Target, TrendingUp, AlertTriangle,
   CheckCircle2, XCircle, Clock, Award, Compass, Lightbulb, ArrowRight,
+  Pencil, LogOut,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link, Navigate } from "react-router-dom";
