@@ -5,7 +5,7 @@ import heroImage from "@/assets/hero-campus.jpg";
 import Navigation from "@/components/Navigation";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { Footer } from "@/components/Footer";
-import { StickyCTA } from "@/components/StickyCTA";
+
 import { motion } from "framer-motion";
 
 const fadeUp = (delay = 0) => ({
@@ -22,7 +22,7 @@ const IndexRu = () => {
     <div className="min-h-screen relative bg-background">
       <ScrollProgress />
       <Navigation language="ru" />
-      <StickyCTA language="ru" />
+      
 
       {/* ── HERO ── */}
       <motion.section
@@ -43,42 +43,35 @@ const IndexRu = () => {
 
           <motion.h1
             {...fadeUp(0.2)}
-            className="font-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-primary-foreground leading-[1.1] tracking-tight mb-6"
+            className="font-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-primary-foreground leading-[1.05] tracking-tight mb-6"
           >
-            Стипендии, ранжированные
+            Твоя стратегия поступления
             <br className="hidden sm:block" />
-            <span className="text-gold"> под твой профиль.</span>
+            <span className="text-gold"> за минуты.</span>
           </motion.h1>
 
           <motion.p
             {...fadeUp(0.35)}
-            className="text-primary-foreground/85 text-lg sm:text-xl md:text-2xl max-w-3xl mx-auto mb-3 font-light leading-relaxed"
+            className="text-primary-foreground/85 text-lg sm:text-xl max-w-2xl mx-auto mb-4 font-light leading-relaxed"
           >
-            Фит-скоры, пороги по экзаменам, сроки — и консультанты из Йеля, Гарварда, Кембриджа и Цинхуа, когда нужно.
+            AI-подбор университетов, адаптивная подготовка к экзаменам и экспертный консалтинг — в одном месте.
           </motion.p>
 
           <motion.p
             {...fadeUp(0.45)}
-            className="text-primary-foreground/50 text-xs sm:text-sm tracking-widest uppercase mb-10"
+            className="text-primary-foreground/55 text-xs sm:text-sm tracking-widest uppercase mb-10"
           >
             Консультанты из Йеля, Гарварда, Кембриджа и Цинхуа · Доступно на русском и английском
           </motion.p>
 
-          <motion.div {...fadeUp(0.55)} className="flex flex-col sm:flex-row gap-4 justify-center">
+          <motion.div {...fadeUp(0.55)} className="flex justify-center">
             <Button
               variant="gold"
               size="lg"
               className="text-lg px-10 py-6 hover:scale-105 transition-transform duration-200 gap-2"
-              onClick={() => navigate('/discover/ru')}
+              onClick={() => navigate('/topuni-ai/ru')}
             >
-              <Search className="h-5 w-5" /> Найти университет
-            </Button>
-            <Button
-              size="lg"
-              className="text-lg px-10 py-6 border-2 border-gold/40 bg-transparent text-gold hover:bg-gold/10 transition-all duration-200 gap-2"
-              onClick={() => navigate('/offerings/ru')}
-            >
-              Наши услуги <ArrowRight className="h-5 w-5" />
+              <Sparkles className="h-5 w-5" /> Получить план поступления
             </Button>
           </motion.div>
         </div>

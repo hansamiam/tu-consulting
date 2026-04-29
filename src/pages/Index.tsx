@@ -7,7 +7,7 @@ import Navigation from "@/components/Navigation";
 import { shouldRedirectToRussian } from "@/utils/languageDetection";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { Footer } from "@/components/Footer";
-import { StickyCTA } from "@/components/StickyCTA";
+
 import { motion } from "framer-motion";
 
 const fadeUp = (delay = 0) => ({
@@ -30,7 +30,7 @@ const Index = () => {
     <div className="min-h-screen relative bg-background">
       <ScrollProgress />
       <Navigation language="en" />
-      <StickyCTA language="en" />
+      
 
       {/* ── HERO ── */}
       <motion.section
@@ -45,18 +45,25 @@ const Index = () => {
         <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
           <motion.h1
             {...fadeUp(0.2)}
-            className="font-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-primary-foreground leading-[1.05] tracking-tight mb-6"
+            className="font-heading text-[2.4rem] sm:text-5xl md:text-[3.6rem] lg:text-[4rem] xl:text-[4.6rem] font-bold text-primary-foreground leading-[1.05] tracking-tight mb-6"
           >
-            Study abroad.
+            <span className="whitespace-nowrap">Tailored <span className="text-gold">admission strategy</span></span>
             <br className="hidden sm:block" />
-            <span className="text-gold"> Plan it properly.</span>
+            in minutes.
           </motion.h1>
 
           <motion.p
             {...fadeUp(0.35)}
-            className="text-primary-foreground/80 text-lg sm:text-xl max-w-xl mx-auto mb-10 font-light leading-relaxed"
+            className="text-primary-foreground/85 text-lg sm:text-xl max-w-2xl mx-auto mb-4 font-light leading-relaxed"
           >
-            Find universities that fit your profile, scholarships you qualify for, and a plan to get your test scores there.
+            AI-powered university discovery, adaptive test prep, and expert consulting all in one place.
+          </motion.p>
+
+          <motion.p
+            {...fadeUp(0.45)}
+            className="text-primary-foreground/55 text-xs sm:text-sm tracking-widest uppercase mb-10"
+          >
+            Led by consultants from Yale, Harvard, Cambridge & Tsinghua · Available in Russian & English
           </motion.p>
 
           <motion.div {...fadeUp(0.55)} className="flex justify-center">
@@ -64,9 +71,9 @@ const Index = () => {
               variant="gold"
               size="lg"
               className="text-lg px-10 py-6 hover:scale-105 transition-transform duration-200 gap-2"
-              onClick={() => navigate('/discover')}
+              onClick={() => navigate('/topuni-ai')}
             >
-              <Search className="h-5 w-5" /> Find my scholarships
+              <Sparkles className="h-5 w-5" /> Get your admissions plan
             </Button>
           </motion.div>
         </div>

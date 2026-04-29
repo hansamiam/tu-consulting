@@ -126,7 +126,11 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
               >
                 {subscription.tier === "founding" ? <Crown className="w-3.5 h-3.5" /> : subscription.tier === "pro" ? <Sparkles className="w-3.5 h-3.5" /> : <UserIcon className="w-3.5 h-3.5" />}
                 <span className="hidden xl:inline">
-                  {subscription.tier === "founding" ? "Founding" : subscription.tier === "pro" ? "Pro" : "Account"}
+                  {subscription.tier === "founding"
+                    ? (isRussian ? "Founding" : "Founding")
+                    : subscription.tier === "pro"
+                    ? "Pro"
+                    : (isRussian ? "Аккаунт" : "Account")}
                 </span>
               </button>
             ) : (
@@ -134,7 +138,7 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
                 onClick={() => setAuthOpen(true)}
                 className="ml-1 px-3 py-1.5 text-sm font-medium text-primary-foreground/70 hover:text-gold transition"
               >
-                Sign in
+                {isRussian ? "Войти" : "Sign in"}
               </button>
             )}
 

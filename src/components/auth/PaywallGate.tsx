@@ -1,10 +1,11 @@
 // PaywallGate — wraps premium content with a soft preview + Founding upgrade CTA.
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthDialog } from "@/components/auth/AuthDialog";
 import { Lock, Crown } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 type Props = {
   children: ReactNode;
@@ -16,9 +17,18 @@ type Props = {
 export const PaywallGate = ({ children, feature, description, showPreview = true }: Props) => {
   const { user, subscription } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
-  if (subscription.is_active) return <>{children}</>;
+  useEffect(() => {
+    if (!user) { setIsAdmin(false); return; }
+    (async () => {
+      const { data } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
+      setIsAdmin(!!data);
+    })();
+  }, [user]);
+
+  if (subscription.is_active || isAdmin) return <>{children}</>;
 
   const handleUpgrade = () => {
     if (!user) {

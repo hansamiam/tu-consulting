@@ -111,12 +111,12 @@ const TopUniAI = () => {
                     <p className="text-[11px] text-muted-foreground leading-snug">IELTS, SAT & English courses with AI tutoring</p>
                   </button>
                   <button
-                    onClick={() => navigate("/offerings")}
+                    onClick={() => navigate("/academy")}
                     className="group p-4 rounded-xl border border-border hover:border-accent/40 bg-background/80 backdrop-blur-sm transition-all text-left space-y-1.5"
                   >
                     <BookOpen className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
-                    <p className="text-sm font-semibold text-foreground">Consulting</p>
-                    <p className="text-[11px] text-muted-foreground leading-snug">1-on-1 expert guidance for your application journey</p>
+                    <p className="text-sm font-semibold text-foreground">Academy</p>
+                    <p className="text-[11px] text-muted-foreground leading-snug">Curated guides, courses & playbooks for every stage of your application</p>
                   </button>
                 </div>
 
