@@ -10,13 +10,13 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, useScroll } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
   ArrowRight, Sparkles, CheckCircle2, AlertTriangle, ExternalLink,
-  BookmarkCheck, Bookmark, ChevronLeft, ChevronRight, Zap, RefreshCw,
-  Star, Lightbulb, X, SlidersHorizontal, Filter, Search, Trophy,
-  Target, Flame, Globe2, TrendingUp, Layers,
+  BookmarkCheck, Bookmark, ChevronLeft, ChevronDown, Zap, RefreshCw,
+  Lightbulb, X, SlidersHorizontal, Filter, Search, Trophy,
+  Target, Flame, Layers,
 } from "lucide-react";
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
 
@@ -162,22 +162,36 @@ const COVERAGE_LABEL: Record<string, string> = { full_ride: "Full ride", tuition
 const fmtValue = (v: number) => v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `$${Math.round(v / 1000)}K` : `$${v}`;
 
 const deadlineDisplay = (d: string | null) => {
-  if (!d) return { text: "Rolling", cls: "text-muted-foreground" };
+  if (!d) return { text: "Rolling", cls: "text-foreground/40" };
   const days = Math.ceil((new Date(d).getTime() - Date.now()) / 86400000);
-  if (days <= 0) return { text: "Closed", cls: "text-muted-foreground line-through" };
-  if (days <= 30) return { text: `${days}d left`, cls: "text-red-500 font-bold" };
-  if (days <= 90) return { text: `${days}d left`, cls: "text-amber-500 font-semibold" };
-  return { text: `${Math.ceil(days / 30)} mo.`, cls: "text-muted-foreground" };
+  if (days <= 0) return { text: "Closed", cls: "text-foreground/30 line-through" };
+  if (days <= 30) return { text: `${days} days`, cls: "text-rose-500" };
+  if (days <= 90) return { text: `${days} days`, cls: "text-amber-500" };
+  return { text: `${Math.ceil(days / 30)} months`, cls: "text-foreground/50" };
 };
 
-const TIER_STYLE = {
-  strong_match: { grad: "from-emerald-500 via-teal-500 to-cyan-600", glow: "shadow-emerald-500/30", label: "Strong match", ring: "ring-emerald-400/40" },
-  competitive:  { grad: "from-amber-500 via-orange-500 to-rose-500", glow: "shadow-amber-500/25",   label: "Competitive",   ring: "ring-amber-400/40"   },
-  low_priority: { grad: "from-slate-500 via-slate-600 to-slate-700",  glow: "shadow-slate-500/15",   label: "Lower fit",      ring: "ring-slate-400/30"   },
+/* Tier signals — minimal palette: emerald (strong), gold/amber (competitive), neutral (lower) */
+const TIER = {
+  strong_match: { label: "Strong match", dot: "bg-emerald-400", text: "text-emerald-300", textLight: "text-emerald-600 dark:text-emerald-400", grad: "from-emerald-400 via-teal-400 to-cyan-400", glow: "shadow-emerald-500/20" },
+  competitive:  { label: "Competitive",  dot: "bg-amber-400",   text: "text-amber-300",   textLight: "text-amber-600 dark:text-amber-400",   grad: "from-amber-300 via-amber-400 to-orange-400",  glow: "shadow-amber-500/20"  },
+  low_priority: { label: "Lower fit",    dot: "bg-zinc-400",    text: "text-zinc-300",    textLight: "text-zinc-500 dark:text-zinc-400",     grad: "from-zinc-400 via-zinc-500 to-zinc-600",      glow: "shadow-zinc-500/10"   },
 };
+
+/* ─── Scroll-reveal wrapper ──────────────────────────────────────────── */
+const Reveal = ({ children, delay = 0, className = "", y = 24 }: { children: React.ReactNode; delay?: number; className?: string; y?: number }) => (
+  <motion.div
+    initial={{ opacity: 0, y }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, margin: "-80px" }}
+    transition={{ delay, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+    className={className}
+  >
+    {children}
+  </motion.div>
+);
 
 /* ─── Animated count-up ──────────────────────────────────────────────── */
-const useCountUp = (target: number, duration = 1100, enabled = true) => {
+const useCountUp = (target: number, duration = 1200, enabled = true) => {
   const [val, setVal] = useState(0);
   useEffect(() => {
     if (!enabled) return;
@@ -195,13 +209,13 @@ const useCountUp = (target: number, duration = 1100, enabled = true) => {
   return val;
 };
 
-/* ─── 3D tilt wrapper ────────────────────────────────────────────────── */
-const Tilt = ({ children, className = "", intensity = 6 }: { children: React.ReactNode; className?: string; intensity?: number }) => {
+/* ─── 3D tilt wrapper (subtle) ───────────────────────────────────────── */
+const Tilt = ({ children, className = "", intensity = 4 }: { children: React.ReactNode; className?: string; intensity?: number }) => {
   const ref = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-  const sx = useSpring(x, { stiffness: 300, damping: 22 });
-  const sy = useSpring(y, { stiffness: 300, damping: 22 });
+  const sx = useSpring(x, { stiffness: 220, damping: 24 });
+  const sy = useSpring(y, { stiffness: 220, damping: 24 });
   const rotX = useTransform(sy, [-0.5, 0.5], [intensity, -intensity]);
   const rotY = useTransform(sx, [-0.5, 0.5], [-intensity, intensity]);
 
@@ -214,85 +228,84 @@ const Tilt = ({ children, className = "", intensity = 6 }: { children: React.Rea
   const onLeave = () => { x.set(0); y.set(0); };
 
   return (
-    <motion.div
-      ref={ref}
-      onMouseMove={onMove}
-      onMouseLeave={onLeave}
-      style={{ rotateX: rotX, rotateY: rotY, transformStyle: "preserve-3d", perspective: 1000 }}
-      className={className}
-    >
+    <motion.div ref={ref} onMouseMove={onMove} onMouseLeave={onLeave}
+      style={{ rotateX: rotX, rotateY: rotY, transformStyle: "preserve-3d", perspective: 1200 }}
+      className={className}>
       {children}
     </motion.div>
   );
 };
 
-/* ─── Aurora background ──────────────────────────────────────────────── */
+/* ─── Aurora background (refined: deeper, smoother) ──────────────────── */
 const Aurora = () => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none">
-    <div className="absolute inset-0" style={{ background: "hsl(210 70% 12%)" }} />
+    <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at top, hsl(220 50% 11%) 0%, hsl(222 60% 6%) 100%)" }} />
     <motion.div
-      className="absolute -top-1/3 -left-1/4 w-[80vw] h-[80vw] rounded-full blur-[120px] opacity-40"
-      style={{ background: "radial-gradient(circle, hsl(42 90% 55%) 0%, transparent 60%)" }}
-      animate={{ x: [0, 60, -30, 0], y: [0, -40, 30, 0] }}
-      transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
+      className="absolute -top-[30%] -left-[15%] w-[70vw] h-[70vw] rounded-full blur-[140px] opacity-[0.35]"
+      style={{ background: "radial-gradient(circle, hsl(42 90% 55%) 0%, transparent 70%)" }}
+      animate={{ x: [0, 50, -20, 0], y: [0, -30, 20, 0] }}
+      transition={{ duration: 28, repeat: Infinity, ease: "easeInOut" }}
     />
     <motion.div
-      className="absolute -bottom-1/4 -right-1/4 w-[70vw] h-[70vw] rounded-full blur-[140px] opacity-35"
-      style={{ background: "radial-gradient(circle, hsl(180 70% 50%) 0%, transparent 60%)" }}
-      animate={{ x: [0, -50, 30, 0], y: [0, 40, -30, 0] }}
-      transition={{ duration: 26, repeat: Infinity, ease: "easeInOut" }}
+      className="absolute -bottom-[20%] -right-[15%] w-[65vw] h-[65vw] rounded-full blur-[160px] opacity-[0.28]"
+      style={{ background: "radial-gradient(circle, hsl(200 80% 50%) 0%, transparent 70%)" }}
+      animate={{ x: [0, -40, 20, 0], y: [0, 30, -20, 0] }}
+      transition={{ duration: 32, repeat: Infinity, ease: "easeInOut" }}
     />
     <motion.div
-      className="absolute top-1/3 left-1/3 w-[50vw] h-[50vw] rounded-full blur-[100px] opacity-25"
-      style={{ background: "radial-gradient(circle, hsl(280 80% 60%) 0%, transparent 60%)" }}
-      animate={{ x: [0, 40, -40, 0], y: [0, -30, 30, 0] }}
-      transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
+      className="absolute top-[30%] left-[35%] w-[40vw] h-[40vw] rounded-full blur-[120px] opacity-[0.18]"
+      style={{ background: "radial-gradient(circle, hsl(280 70% 60%) 0%, transparent 70%)" }}
+      animate={{ x: [0, 30, -30, 0], y: [0, -20, 25, 0] }}
+      transition={{ duration: 36, repeat: Infinity, ease: "easeInOut" }}
     />
-    <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "32px 32px" }} />
+    <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 0.5px, transparent 0)", backgroundSize: "28px 28px" }} />
+    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/30" />
   </div>
 );
 
-/* ─── Floating mock cards (landing decoration) ───────────────────────── */
-const FloatingCards = () => {
-  const cards = [
-    { flag: "🇬🇧", title: "Chevening", val: "$80K", tier: "strong_match" as const, x: "8%", y: "18%", rot: -8, delay: 0 },
-    { flag: "🇩🇪", title: "DAAD", val: "$45K", tier: "strong_match" as const, x: "82%", y: "14%", rot: 6, delay: 0.4 },
-    { flag: "🇯🇵", title: "MEXT", val: "Full ride", tier: "competitive" as const, x: "6%", y: "70%", rot: 5, delay: 0.8 },
-    { flag: "🇨🇦", title: "Vanier", val: "$150K", tier: "strong_match" as const, x: "84%", y: "66%", rot: -7, delay: 1.2 },
+/* ─── Floating orbs (minimal medals) ─────────────────────────────────── */
+const FloatingOrbs = () => {
+  const orbs = [
+    { flag: "🇬🇧", score: 92, x: "9%",  y: "22%", delay: 0,    rot: -6 },
+    { flag: "🇩🇪", score: 87, x: "82%", y: "18%", delay: 0.3,  rot:  5 },
+    { flag: "🇯🇵", score: 78, x: "7%",  y: "68%", delay: 0.6,  rot:  4 },
+    { flag: "🇨🇦", score: 95, x: "85%", y: "64%", delay: 0.9,  rot: -5 },
+    { flag: "🇰🇷", score: 81, x: "16%", y: "44%", delay: 1.2,  rot:  8 },
+    { flag: "🇸🇬", score: 89, x: "78%", y: "42%", delay: 1.5,  rot: -4 },
   ];
   return (
     <div className="absolute inset-0 pointer-events-none hidden md:block">
-      {cards.map((c, i) => {
-        const tier = TIER_STYLE[c.tier];
-        return (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 40, rotate: c.rot }}
-            animate={{ opacity: 1, y: [0, -12, 0], rotate: c.rot }}
-            transition={{ opacity: { delay: c.delay, duration: 0.6 }, y: { duration: 6 + i, repeat: Infinity, ease: "easeInOut", delay: c.delay }, rotate: { delay: c.delay, duration: 0.6 } }}
-            className="absolute w-44"
-            style={{ left: c.x, top: c.y }}
-          >
-            <div className={`bg-gradient-to-br ${tier.grad} rounded-2xl p-3 shadow-2xl ${tier.glow} backdrop-blur-sm border border-white/10`}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-2xl">{c.flag}</span>
-                <span className="text-white/80 text-[9px] font-bold uppercase tracking-widest">{tier.label}</span>
-              </div>
-              <p className="text-white font-heading font-bold text-sm leading-tight">{c.title}</p>
-              <p className="text-white/70 text-xs mt-0.5">{c.val}</p>
-              <div className="mt-2 h-1 bg-white/15 rounded-full overflow-hidden">
-                <div className="h-full bg-white/80" style={{ width: c.tier === "strong_match" ? "88%" : "62%" }} />
-              </div>
+      {orbs.map((o, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, scale: 0.6, rotate: o.rot }}
+          animate={{ opacity: 0.92, scale: 1, y: [0, -10, 0], rotate: o.rot }}
+          transition={{
+            opacity: { delay: o.delay, duration: 1 },
+            scale:   { delay: o.delay, duration: 1, ease: [0.16, 1, 0.3, 1] },
+            rotate:  { delay: o.delay, duration: 1 },
+            y:       { duration: 7 + i * 0.6, repeat: Infinity, ease: "easeInOut", delay: o.delay },
+          }}
+          className="absolute"
+          style={{ left: o.x, top: o.y }}
+        >
+          <div className="relative">
+            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/20 to-white/0 blur-xl" />
+            <div className="relative h-16 w-16 rounded-full bg-white/[0.04] backdrop-blur-xl border border-white/10 flex flex-col items-center justify-center shadow-2xl">
+              <span className="text-2xl leading-none">{o.flag}</span>
+              <span className="text-[9px] font-bold text-white/70 mt-0.5 tabular-nums tracking-wider">{o.score}</span>
             </div>
-          </motion.div>
-        );
-      })}
+          </div>
+        </motion.div>
+      ))}
     </div>
   );
 };
 
 /* ─── Animated radial match dial ─────────────────────────────────────── */
-const MatchDial = ({ value, size = 88, stroke = 7, gradId, color1, color2 }: { value: number; size?: number; stroke?: number; gradId: string; color1: string; color2: string }) => {
+const MatchDial = ({ value, size = 88, stroke = 6, gradId, color1, color2, delay = 0 }: {
+  value: number; size?: number; stroke?: number; gradId: string; color1: string; color2: string; delay?: number;
+}) => {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   return (
@@ -303,14 +316,15 @@ const MatchDial = ({ value, size = 88, stroke = 7, gradId, color1, color2 }: { v
           <stop offset="100%" stopColor={color2} />
         </linearGradient>
       </defs>
-      <circle cx={size / 2} cy={size / 2} r={r} stroke="rgba(255,255,255,0.12)" strokeWidth={stroke} fill="none" />
+      <circle cx={size / 2} cy={size / 2} r={r} stroke="currentColor" strokeOpacity={0.1} strokeWidth={stroke} fill="none" />
       <motion.circle
         cx={size / 2} cy={size / 2} r={r}
         stroke={`url(#${gradId})`} strokeWidth={stroke} fill="none" strokeLinecap="round"
         strokeDasharray={c}
         initial={{ strokeDashoffset: c }}
-        animate={{ strokeDashoffset: c - (c * value) / 100 }}
-        transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+        whileInView={{ strokeDashoffset: c - (c * value) / 100 }}
+        viewport={{ once: true }}
+        transition={{ delay, duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
       />
     </svg>
   );
@@ -320,78 +334,89 @@ const MatchDial = ({ value, size = 88, stroke = 7, gradId, color1, color2 }: { v
 const FeaturedCard = ({ s, onSelect, isBookmarked, onBookmark }: {
   s: Scored; onSelect: () => void; isBookmarked: boolean; onBookmark: (e: React.MouseEvent) => void;
 }) => {
-  const tier = TIER_STYLE[s.priority];
+  const tier = TIER[s.priority];
   const flag = FLAGS[s.host_country || ""] ?? "🌍";
   const dl = deadlineDisplay(s.application_deadline);
   const posReasons = s.reasons.filter(r => !r.toLowerCase().includes("below") && !r.toLowerCase().includes("not open") && !r.toLowerCase().includes("borderline"));
 
   return (
-    <Tilt intensity={4} className="col-span-full">
+    <Tilt intensity={3}>
       <motion.div
-        initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
-        className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${tier.grad} p-px shadow-2xl ${tier.glow} cursor-pointer group`}
+        initial={{ opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+        className={`relative overflow-hidden rounded-[28px] cursor-pointer group shadow-2xl ${tier.glow}`}
         onClick={onSelect}
       >
-        <div className="bg-gradient-to-br from-slate-950 to-slate-900 rounded-3xl p-6 sm:p-8 relative overflow-hidden">
-          <div className={`absolute inset-0 bg-gradient-to-br ${tier.grad} opacity-10`} />
-          <span className="absolute -right-8 -top-8 text-[280px] opacity-[0.06] select-none pointer-events-none leading-none">{flag}</span>
+        {/* Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
+        <div className={`absolute inset-0 bg-gradient-to-br ${tier.grad} opacity-[0.08]`} />
+        <span className="absolute -right-12 -top-12 text-[340px] opacity-[0.04] select-none pointer-events-none leading-none">{flag}</span>
 
-          <div className="relative grid sm:grid-cols-[auto,1fr,auto] gap-6 items-center">
+        {/* Subtle aurora wash */}
+        <div className="absolute -top-1/2 left-1/4 w-1/2 h-full rounded-full blur-[100px] opacity-30" style={{ background: "radial-gradient(circle, hsl(42 80% 60%) 0%, transparent 60%)" }} />
+
+        {/* Content */}
+        <div className="relative px-7 py-9 sm:px-10 sm:py-11">
+          <div className="flex items-center justify-between gap-4 mb-7">
+            <div className="inline-flex items-center gap-2 bg-white/[0.06] border border-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full">
+              <Trophy className="h-3.5 w-3.5 text-amber-300" />
+              <span className="text-white/90 text-xs font-semibold tracking-wide">Top match for you</span>
+            </div>
+            <button onClick={onBookmark} className="bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 backdrop-blur-md p-2.5 rounded-xl transition-colors">
+              {isBookmarked ? <BookmarkCheck className="h-4 w-4 text-amber-300" /> : <Bookmark className="h-4 w-4 text-white/80" />}
+            </button>
+          </div>
+
+          <div className="grid sm:grid-cols-[auto,1fr] gap-7 items-center">
             {/* Match dial */}
-            <div className="relative flex items-center justify-center">
-              <MatchDial value={s.match} size={120} stroke={9} gradId={`feat-${s.scholarship_id}`} color1="#34d399" color2="#06b6d4" />
+            <div className="relative shrink-0">
+              <MatchDial value={s.match} size={148} stroke={8} gradId={`feat-${s.scholarship_id}`} color1="#34d399" color2="#22d3ee" delay={0.2} />
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-4xl font-black text-white tabular-nums leading-none">{s.match}</span>
-                <span className="text-white/50 text-[9px] font-bold uppercase tracking-widest mt-1">match</span>
+                <span className="text-5xl font-black text-white tabular-nums leading-none tracking-tight">{s.match}</span>
+                <span className="text-white/40 text-[10px] font-semibold uppercase tracking-[0.2em] mt-2">match</span>
               </div>
             </div>
 
-            {/* Content */}
             <div className="min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="inline-flex items-center gap-1 bg-white/10 border border-white/15 px-2 py-0.5 rounded-full text-white text-[10px] font-bold uppercase tracking-widest backdrop-blur">
-                  <Trophy className="h-3 w-3 text-amber-400" /> Top pick for you
-                </span>
-                <span className="text-2xl">{flag}</span>
-              </div>
-              <h3 className="font-heading font-bold text-2xl sm:text-3xl text-white leading-tight">{s.scholarship_name}</h3>
-              <p className="text-white/60 text-sm mt-1.5">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
-
-              <div className="grid grid-cols-3 gap-3 mt-5">
-                <div className="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-2.5">
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-white/40 mb-0.5">Award</p>
-                  <p className="text-xs font-bold text-white leading-tight line-clamp-2">{s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || "—"}</p>
+              <div className="flex items-center gap-2.5 mb-3">
+                <span className="text-3xl">{flag}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`h-2 w-2 rounded-full ${tier.dot}`} />
+                  <span className={`text-xs font-semibold uppercase tracking-[0.18em] ${tier.text}`}>{tier.label}</span>
                 </div>
-                <div className="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-2.5">
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-white/40 mb-0.5">Deadline</p>
-                  <p className={`text-xs font-bold leading-tight ${dl.cls.replace("text-muted-foreground", "text-white/60")}`}>{dl.text}</p>
+              </div>
+              <h3 className="font-heading font-bold text-3xl sm:text-[34px] text-white leading-[1.1] tracking-tight mb-2">{s.scholarship_name}</h3>
+              <p className="text-white/55 text-base mb-6">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
+
+              {/* Key facts row */}
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mb-6">
+                <div>
+                  <div className="text-white/40 text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">Award</div>
+                  <div className="text-white text-base font-semibold">{s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || "—"}</div>
+                </div>
+                <div className="h-9 w-px bg-white/10" />
+                <div>
+                  <div className="text-white/40 text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">Deadline</div>
+                  <div className={`text-base font-semibold ${dl.cls.replace("text-foreground/40", "text-white/70").replace("text-foreground/30", "text-white/40").replace("text-foreground/50", "text-white/70")}`}>{dl.text}</div>
                 </div>
                 {s.estimated_total_value_usd ? (
-                  <div className="bg-gradient-to-br from-amber-400/20 to-orange-500/10 border border-amber-400/25 rounded-xl p-2.5">
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-amber-300/80 mb-0.5">Value</p>
-                    <p className="text-xs font-black text-amber-200 leading-tight">{fmtValue(s.estimated_total_value_usd)}</p>
-                  </div>
-                ) : <div />}
+                  <>
+                    <div className="h-9 w-px bg-white/10" />
+                    <div>
+                      <div className="text-amber-300/70 text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">Total value</div>
+                      <div className="text-amber-200 text-base font-bold">{fmtValue(s.estimated_total_value_usd)}</div>
+                    </div>
+                  </>
+                ) : null}
               </div>
 
               {posReasons.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-4">
-                  {posReasons.slice(0, 3).map((r, i) => (
-                    <span key={i} className="inline-flex items-center gap-1 text-[11px] text-emerald-300 bg-emerald-500/10 border border-emerald-400/20 px-2 py-0.5 rounded-full">
-                      <CheckCircle2 className="h-3 w-3" /> {r}
-                    </span>
-                  ))}
-                </div>
+                <p className="text-white/75 text-[15px] leading-relaxed mb-7 max-w-xl">
+                  <span className="text-emerald-300 font-medium">Why this fits</span> · {posReasons.slice(0, 2).join(" · ")}
+                </p>
               )}
-            </div>
 
-            {/* Actions */}
-            <div className="flex sm:flex-col gap-2 sm:items-end shrink-0">
-              <button onClick={onBookmark} className="bg-white/5 hover:bg-white/15 border border-white/10 backdrop-blur p-2.5 rounded-xl transition-colors">
-                {isBookmarked ? <BookmarkCheck className="h-4 w-4 text-amber-400" /> : <Bookmark className="h-4 w-4 text-white/80" />}
-              </button>
-              <Button variant="gold" size="sm" className="text-xs gap-1.5 shadow-lg" onClick={e => { e.stopPropagation(); onSelect(); }}>
-                Open strategy <ArrowRight className="h-3.5 w-3.5" />
+              <Button variant="gold" size="lg" className="gap-2 shadow-xl shadow-amber-500/30" onClick={e => { e.stopPropagation(); onSelect(); }}>
+                Open application strategy <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Button>
             </div>
           </div>
@@ -402,101 +427,103 @@ const FeaturedCard = ({ s, onSelect, isBookmarked, onBookmark }: {
 };
 
 /* ─── Standard scholarship card ──────────────────────────────────────── */
-const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark }: {
-  s: Scored; onSelect: () => void; isBookmarked: boolean; onBookmark: (e: React.MouseEvent) => void;
+const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, index = 0 }: {
+  s: Scored; onSelect: () => void; isBookmarked: boolean; onBookmark: (e: React.MouseEvent) => void; index?: number;
 }) => {
-  const tier = TIER_STYLE[s.priority];
+  const tier = TIER[s.priority];
   const flag = FLAGS[s.host_country || ""] ?? "🌍";
   const dl = deadlineDisplay(s.application_deadline);
   const posReasons = s.reasons.filter(r => !r.toLowerCase().includes("below") && !r.toLowerCase().includes("not open") && !r.toLowerCase().includes("borderline"));
-  const dialColors = s.priority === "strong_match" ? ["#34d399", "#06b6d4"] : s.priority === "competitive" ? ["#fbbf24", "#f97316"] : ["#94a3b8", "#64748b"];
+  const dialColors = s.priority === "strong_match" ? ["#34d399", "#22d3ee"] : s.priority === "competitive" ? ["#fbbf24", "#fb923c"] : ["#a1a1aa", "#71717a"];
 
   return (
-    <Tilt intensity={5}>
+    <Tilt intensity={3}>
       <motion.div
-        initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-        className={`relative rounded-2xl overflow-hidden border border-border/60 bg-card shadow-sm hover:shadow-xl transition-all cursor-pointer group h-full ${tier.glow}`}
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-30px" }}
+        transition={{ delay: Math.min(index * 0.04, 0.4), duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="relative rounded-3xl overflow-hidden border border-border/70 bg-card hover:border-border transition-all cursor-pointer group h-full hover:shadow-xl"
         onClick={onSelect}
       >
-        {/* Gradient accent band */}
-        <div className={`h-1.5 bg-gradient-to-r ${tier.grad}`} />
+        {/* Top accent line */}
+        <div className={`h-[3px] bg-gradient-to-r ${tier.grad} opacity-90`} />
 
-        <div className="p-5 relative">
-          {/* Ghost flag */}
-          <span className="absolute right-2 -top-2 text-7xl opacity-[0.04] select-none pointer-events-none leading-none">{flag}</span>
-
-          <div className="flex items-start gap-4 mb-4 relative">
-            <div className="relative shrink-0">
-              <MatchDial value={s.match} size={68} stroke={6} gradId={`d-${s.scholarship_id}`} color1={dialColors[0]} color2={dialColors[1]} />
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-xl font-black text-foreground tabular-nums leading-none">{s.match}</span>
-                <span className="text-muted-foreground text-[8px] font-bold uppercase tracking-widest mt-0.5">match</span>
+        <div className="px-6 py-6">
+          {/* Header */}
+          <div className="flex items-start gap-4 mb-5">
+            <div className={`relative shrink-0 ${tier.textLight}`}>
+              <MatchDial value={s.match} size={62} stroke={5} gradId={`d-${s.scholarship_id}`} color1={dialColors[0]} color2={dialColors[1]} delay={0.1} />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-lg font-black text-foreground tabular-nums leading-none">{s.match}</span>
               </div>
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-lg">{flag}</span>
-                <span className={`text-[9px] font-bold uppercase tracking-widest ${
-                  s.priority === "strong_match" ? "text-emerald-600 dark:text-emerald-400" :
-                  s.priority === "competitive" ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"
-                }`}>{tier.label}</span>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="text-xl">{flag}</span>
+                <span className={`h-1.5 w-1.5 rounded-full ${tier.dot}`} />
+                <span className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${tier.textLight}`}>{tier.label}</span>
               </div>
-              <h3 className="font-heading font-bold text-[15px] leading-snug text-foreground line-clamp-2">{s.scholarship_name}</h3>
-              <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
+              <h3 className="font-heading font-bold text-base leading-snug text-foreground line-clamp-2 tracking-tight">{s.scholarship_name}</h3>
+              <p className="text-xs text-muted-foreground mt-1 truncate">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
             </div>
-            <button onClick={onBookmark} className="bg-muted hover:bg-muted/70 p-1.5 rounded-lg transition-colors shrink-0">
-              {isBookmarked ? <BookmarkCheck className="h-4 w-4 text-accent" /> : <Bookmark className="h-4 w-4 text-muted-foreground" />}
+            <button onClick={onBookmark} className="bg-muted/60 hover:bg-muted p-2 rounded-xl transition-colors shrink-0">
+              {isBookmarked ? <BookmarkCheck className="h-4 w-4 text-amber-500" /> : <Bookmark className="h-4 w-4 text-muted-foreground" />}
             </button>
           </div>
 
-          {/* Stats grid */}
-          <div className="grid grid-cols-2 gap-2 mb-3">
-            <div className="bg-muted/40 rounded-lg p-2.5">
-              <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Award</p>
-              <p className="text-xs font-bold text-foreground leading-tight line-clamp-2">{s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || "—"}</p>
+          {/* Inline key facts */}
+          <div className="flex items-center justify-between gap-3 py-3.5 border-y border-border/60 mb-4">
+            <div className="min-w-0">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground mb-1">Award</div>
+              <div className="text-sm font-semibold text-foreground truncate">{s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || "—"}</div>
             </div>
-            <div className="bg-muted/40 rounded-lg p-2.5">
-              <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Deadline</p>
-              <p className={`text-xs font-bold leading-tight ${dl.cls}`}>{dl.text}</p>
-              {s.application_deadline && (
-                <p className="text-[10px] text-muted-foreground mt-0.5">{new Date(s.application_deadline).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</p>
-              )}
+            <div className="text-right">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground mb-1">Deadline</div>
+              <div className={`text-sm font-semibold ${dl.cls}`}>{dl.text}</div>
             </div>
           </div>
 
-          {s.estimated_total_value_usd ? (
-            <div className="mb-3">
-              <span className="inline-flex items-center gap-1 text-xs font-bold bg-gradient-to-r from-amber-500/15 to-orange-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 px-2.5 py-1 rounded-full">
+          {/* Total value chip (only when meaningful) */}
+          {s.estimated_total_value_usd && s.estimated_total_value_usd >= 5000 ? (
+            <div className="mb-4">
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full">
                 <Sparkles className="h-3 w-3" /> {fmtValue(s.estimated_total_value_usd)} total value
               </span>
             </div>
           ) : null}
 
+          {/* Why it fits */}
           {posReasons.slice(0, 2).length > 0 && (
-            <div className="space-y-1 mb-4">
+            <div className="space-y-1.5 mb-5">
               {posReasons.slice(0, 2).map((r, i) => (
-                <div key={i} className="flex items-center gap-1.5 text-[11px] text-emerald-700 dark:text-emerald-400">
-                  <CheckCircle2 className="h-3 w-3 shrink-0" />{r}
+                <div key={i} className="flex items-start gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 leading-relaxed">
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-px" />
+                  <span>{r}</span>
                 </div>
               ))}
             </div>
           )}
 
+          {/* Near-miss */}
           {s.eligibility === "missing" && (
-            <div className="mb-3 text-[11px] text-amber-700 dark:text-amber-400 flex items-start gap-1.5">
-              <AlertTriangle className="h-3 w-3 shrink-0 mt-px" />
-              {s.reasons.find(r => r.toLowerCase().includes("below") || r.toLowerCase().includes("borderline")) || "Missing one requirement"}
+            <div className="mb-4 text-xs text-amber-700 dark:text-amber-400 flex items-start gap-1.5 leading-relaxed">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-px" />
+              <span>{s.reasons.find(r => r.toLowerCase().includes("below") || r.toLowerCase().includes("borderline")) || "Missing one requirement"}</span>
             </div>
           )}
 
-          <div className="flex gap-2 pt-1">
-            <Button size="sm" className="flex-1 text-xs h-8" onClick={e => { e.stopPropagation(); onSelect(); }}>
-              Strategy & details <ChevronRight className="h-3.5 w-3.5 ml-0.5" />
-            </Button>
+          {/* Footer */}
+          <div className="flex items-center justify-between pt-1">
+            <button className="text-sm font-semibold text-foreground hover:text-amber-600 transition-colors flex items-center gap-1.5 group/cta" onClick={e => { e.stopPropagation(); onSelect(); }}>
+              View strategy
+              <ArrowRight className="h-3.5 w-3.5 group-hover/cta:translate-x-0.5 transition-transform" />
+            </button>
             {s.official_url && (
-              <Button size="sm" variant="outline" asChild className="text-xs h-8 px-2.5" onClick={e => e.stopPropagation()}>
-                <a href={s.official_url} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-3.5 w-3.5" /></a>
-              </Button>
+              <a href={s.official_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                 className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                Official <ExternalLink className="h-3 w-3" />
+              </a>
             )}
           </div>
         </div>
@@ -509,18 +536,18 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark }: {
 const FiltersPanel = ({ filters, setFilters, activeCount }: {
   filters: FilterState; setFilters: React.Dispatch<React.SetStateAction<FilterState>>; activeCount: number;
 }) => (
-  <div className="space-y-5">
+  <div className="space-y-6">
     {[
       { label: "Coverage", key: "coverage" as keyof FilterState, opts: [{ v: "all", l: "All types" }, { v: "full_ride", l: "Full ride" }, { v: "tuition_only", l: "Tuition" }, { v: "stipend", l: "Stipend" }] },
-      { label: "Degree", key: "degree" as keyof FilterState, opts: [{ v: "all", l: "All levels" }, { v: "undergraduate", l: "Bachelor\'s" }, { v: "master\'s", l: "Master\'s" }, { v: "PhD", l: "PhD" }] },
-      { label: "Effort", key: "effort" as keyof FilterState, opts: [{ v: "all", l: "Any effort" }, { v: "low", l: "Quick to apply" }, { v: "medium", l: "Medium" }, { v: "high", l: "Competitive" }] },
+      { label: "Degree",   key: "degree"   as keyof FilterState, opts: [{ v: "all", l: "All levels" }, { v: "undergraduate", l: "Bachelor\'s" }, { v: "master\'s", l: "Master\'s" }, { v: "PhD", l: "PhD" }] },
+      { label: "Effort",   key: "effort"   as keyof FilterState, opts: [{ v: "all", l: "Any effort" }, { v: "low", l: "Quick to apply" }, { v: "medium", l: "Medium" }, { v: "high", l: "Competitive" }] },
     ].map(section => (
       <div key={section.label}>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">{section.label}</p>
-        <div className="space-y-0.5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2.5">{section.label}</p>
+        <div className="space-y-1">
           {section.opts.map(o => (
             <button key={o.v} onClick={() => setFilters(f => ({ ...f, [section.key]: o.v }))}
-              className={`w-full text-left px-2.5 py-1.5 rounded-md text-sm transition-colors ${(filters[section.key] as string) === o.v ? "bg-accent/15 text-accent font-semibold" : "text-foreground/70 hover:bg-muted"}`}>
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${(filters[section.key] as string) === o.v ? "bg-foreground/[0.05] text-foreground font-semibold" : "text-foreground/65 hover:bg-foreground/[0.03]"}`}>
               {o.l}
             </button>
           ))}
@@ -528,21 +555,21 @@ const FiltersPanel = ({ filters, setFilters, activeCount }: {
       </div>
     ))}
     <Separator />
-    <div className="space-y-3">
+    <div className="space-y-3.5">
       {([
-        { id: "oe", label: "Eligible only", key: "onlyEligible" as keyof FilterState },
-        { id: "cs", label: "Closing in 90 days", key: "closingSoon" as keyof FilterState },
-        { id: "sl", label: "My shortlist", key: "onlyShortlisted" as keyof FilterState },
+        { id: "oe", label: "Eligible only",         key: "onlyEligible"    as keyof FilterState },
+        { id: "cs", label: "Closing in 90 days",    key: "closingSoon"     as keyof FilterState },
+        { id: "sl", label: "My shortlist",          key: "onlyShortlisted" as keyof FilterState },
       ] as const).map(t => (
         <div key={t.id} className="flex items-center justify-between">
-          <Label htmlFor={t.id} className="text-sm cursor-pointer text-foreground/80">{t.label}</Label>
+          <Label htmlFor={t.id} className="text-sm cursor-pointer text-foreground/75 font-normal">{t.label}</Label>
           <Switch id={t.id} checked={filters[t.key] as boolean} onCheckedChange={v => setFilters(f => ({ ...f, [t.key]: v }))} />
         </div>
       ))}
     </div>
     {activeCount > 0 && (
       <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => setFilters(DEFAULT_FILTERS)}>
-        <X className="h-3 w-3 mr-1" /> Clear all
+        <X className="h-3 w-3 mr-1.5" /> Clear all filters
       </Button>
     )}
   </div>
@@ -554,45 +581,50 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark }: {
   isBookmarked: boolean; onBookmark: () => void;
 }) => {
   if (!s) return null;
-  const tier = TIER_STYLE[s.priority];
+  const tier = TIER[s.priority];
   const flag = FLAGS[s.host_country || ""] ?? "🌍";
   const dl = deadlineDisplay(s.application_deadline);
   return (
     <Sheet open={open} onOpenChange={o => !o && onClose()}>
-      <SheetContent side="right" className="w-full sm:w-[500px] overflow-y-auto p-0">
-        <div className={`bg-gradient-to-br ${tier.grad} px-6 pt-7 pb-6 relative overflow-hidden`}>
-          <span className="absolute right-3 top-0 text-9xl opacity-[0.1] select-none pointer-events-none leading-none">{flag}</span>
-          <SheetHeader className="relative">
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div className="flex items-center gap-3">
+      <SheetContent side="right" className="w-full sm:w-[520px] overflow-y-auto p-0">
+        {/* Header */}
+        <div className="relative bg-gradient-to-br from-slate-950 to-slate-900 px-7 pt-8 pb-7 overflow-hidden">
+          <div className={`absolute inset-0 bg-gradient-to-br ${tier.grad} opacity-10`} />
+          <span className="absolute -right-6 -top-6 text-[200px] opacity-[0.07] select-none pointer-events-none leading-none">{flag}</span>
+          <SheetHeader className="relative space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3.5">
                 <div className="relative">
-                  <MatchDial value={s.match} size={68} stroke={6} gradId={`sh-${s.scholarship_id}`} color1="#ffffff" color2="rgba(255,255,255,0.6)" />
+                  <MatchDial value={s.match} size={70} stroke={5} gradId={`sh-${s.scholarship_id}`} color1="#fbbf24" color2="#f59e0b" />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xl font-black text-white">{s.match}</span>
+                    <span className="text-xl font-black text-white tabular-nums">{s.match}</span>
                   </div>
                 </div>
-                <div>
-                  <p className="text-white/70 text-[11px] font-bold uppercase tracking-wider">{tier.label}</p>
-                  <p className="text-white/50 text-[10px] mt-0.5">{s.eligibility === "eligible" ? "✓ You qualify" : s.eligibility === "missing" ? "Near miss" : s.eligibility === "not_eligible" ? "Out of scope" : "Likely fit"}</p>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`h-1.5 w-1.5 rounded-full ${tier.dot}`} />
+                    <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${tier.text}`}>{tier.label}</p>
+                  </div>
+                  <p className="text-white/40 text-xs mt-1">{s.eligibility === "eligible" ? "✓ You qualify on paper" : s.eligibility === "missing" ? "Near miss — close" : s.eligibility === "not_eligible" ? "Doesn't fit" : "Likely fit"}</p>
                 </div>
               </div>
-              <span className="text-4xl">{flag}</span>
+              <span className="text-3xl">{flag}</span>
             </div>
-            <SheetTitle className="text-white font-heading text-xl leading-snug">{s.scholarship_name}</SheetTitle>
-            <p className="text-white/60 text-sm mt-1">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
+            <SheetTitle className="text-white font-heading text-2xl leading-tight tracking-tight pt-1 text-left">{s.scholarship_name}</SheetTitle>
+            <p className="text-white/50 text-sm text-left">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
           </SheetHeader>
         </div>
 
-        <div className="px-6 py-5 space-y-5 text-sm">
+        <div className="px-7 py-6 space-y-6 text-sm">
           {s.reasons.length > 0 && (
             <section>
-              <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5">Why you matched</h4>
-              <div className="space-y-1.5">
+              <h4 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">Why you matched</h4>
+              <div className="space-y-2">
                 {s.reasons.map((r, i) => {
                   const pos = !r.toLowerCase().includes("below") && !r.toLowerCase().includes("not open") && !r.toLowerCase().includes("borderline");
                   return (
-                    <div key={i} className={`flex items-start gap-2 text-xs ${pos ? "text-emerald-700 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400"}`}>
-                      {pos ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-px" /> : <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-px" />}
+                    <div key={i} className={`flex items-start gap-2 text-sm leading-relaxed ${pos ? "text-emerald-700 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400"}`}>
+                      {pos ? <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" /> : <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />}
                       {r}
                     </div>
                   );
@@ -602,8 +634,8 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark }: {
           )}
           <Separator />
           <section>
-            <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5">Requirements</h4>
-            <div className="bg-muted/30 rounded-xl p-3 space-y-2 text-xs">
+            <h4 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">Requirements</h4>
+            <div className="bg-muted/40 rounded-2xl p-4 space-y-2.5 text-sm">
               {s.application_deadline && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Deadline</span>
@@ -622,15 +654,15 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark }: {
           </section>
           {s.required_documents && s.required_documents.length > 0 && (
             <section>
-              <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5">Documents needed</h4>
-              <div className="grid grid-cols-2 gap-1.5">
+              <h4 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">Documents needed</h4>
+              <div className="grid grid-cols-2 gap-2">
                 {s.required_documents.map((d, i) => (
                   <div key={i} className="flex items-center gap-1.5 text-xs text-foreground/80">
-                    <div className="h-1.5 w-1.5 rounded-full bg-accent shrink-0" />{d}
+                    <div className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />{d}
                   </div>
                 ))}
               </div>
-              <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
+              <div className="flex flex-wrap gap-3 mt-3 text-xs text-muted-foreground">
                 {s.essay_required && <span className="flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-amber-400" />Essay</span>}
                 {s.interview_required && <span>Interview required</span>}
                 {(s.recommendation_letters_required ?? 0) > 0 && <span>{s.recommendation_letters_required} rec letter{(s.recommendation_letters_required ?? 0) > 1 ? "s" : ""}</span>}
@@ -638,45 +670,45 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark }: {
             </section>
           )}
           {s.how_to_win && (
-            <section className="bg-accent/5 border border-accent/15 rounded-xl p-4">
-              <h4 className="text-xs font-semibold text-accent mb-2 flex items-center gap-1.5"><Lightbulb className="h-3.5 w-3.5" />Application approach</h4>
-              <p className="text-xs text-foreground/85 leading-relaxed">{s.how_to_win}</p>
+            <section className="bg-amber-500/[0.06] border border-amber-500/20 rounded-2xl p-5">
+              <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-300 mb-2 flex items-center gap-2"><Lightbulb className="h-4 w-4" />Application approach</h4>
+              <p className="text-sm text-foreground/85 leading-relaxed">{s.how_to_win}</p>
             </section>
           )}
           {s.strategy_notes && (
             <section>
-              <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Strategy</h4>
-              <p className="text-xs text-foreground/80 leading-relaxed">{s.strategy_notes}</p>
+              <h4 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Strategy</h4>
+              <p className="text-sm text-foreground/80 leading-relaxed">{s.strategy_notes}</p>
             </section>
           )}
           {s.what_to_prepare_first && (
-            <section className="border-l-2 border-l-accent bg-muted/20 rounded-r-xl px-4 py-3">
-              <p className="text-xs font-semibold text-foreground mb-1">Start here</p>
-              <p className="text-xs text-foreground/80">{s.what_to_prepare_first}</p>
+            <section className="border-l-2 border-l-amber-500 bg-muted/30 rounded-r-2xl px-5 py-4">
+              <p className="text-xs font-semibold text-foreground mb-1 uppercase tracking-[0.14em]">Start here</p>
+              <p className="text-sm text-foreground/80 leading-relaxed">{s.what_to_prepare_first}</p>
             </section>
           )}
           {s.risk_note && (
-            <section className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3">
-              <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1 flex items-center gap-1.5"><AlertTriangle className="h-3.5 w-3.5" />Watch out</p>
-              <p className="text-xs text-foreground/80">{s.risk_note}</p>
+            <section className="bg-rose-500/[0.06] border border-rose-500/20 rounded-2xl p-4">
+              <p className="text-sm font-semibold text-rose-700 dark:text-rose-400 mb-1 flex items-center gap-1.5"><AlertTriangle className="h-4 w-4" />Watch out</p>
+              <p className="text-sm text-foreground/80 leading-relaxed">{s.risk_note}</p>
             </section>
           )}
           {(s.min_ielts || s.min_sat) && (
-            <div className="bg-muted/40 border border-border rounded-xl p-3 flex items-center justify-between gap-3">
-              <p className="text-xs text-foreground/80">Need to hit those scores?</p>
-              <Button size="sm" variant="outline" asChild className="shrink-0 text-xs h-7">
-                <Link to="/prep">Open Prep <ArrowRight className="h-3 w-3 ml-1" /></Link>
+            <div className="bg-muted/40 border border-border rounded-2xl p-4 flex items-center justify-between gap-3">
+              <p className="text-sm text-foreground/80">Need to hit those scores?</p>
+              <Button size="sm" variant="outline" asChild className="shrink-0">
+                <Link to="/prep">Open Prep <ArrowRight className="h-3.5 w-3.5 ml-1.5" /></Link>
               </Button>
             </div>
           )}
-          <div className="flex gap-2 pb-2">
-            <Button variant="outline" size="sm" className="flex-1" onClick={onBookmark}>
-              {isBookmarked ? <><BookmarkCheck className="h-4 w-4 mr-1.5 text-accent" />Saved</> : <><Bookmark className="h-4 w-4 mr-1.5" />Save to shortlist</>}
+          <div className="flex gap-2 pb-3">
+            <Button variant="outline" size="default" className="flex-1" onClick={onBookmark}>
+              {isBookmarked ? <><BookmarkCheck className="h-4 w-4 mr-2 text-amber-500" />Saved</> : <><Bookmark className="h-4 w-4 mr-2" />Save to shortlist</>}
             </Button>
             {s.official_url && (
-              <Button size="sm" asChild className="flex-1">
+              <Button size="default" asChild className="flex-1">
                 <a href={s.official_url} target="_blank" rel="noopener noreferrer">
-                  Official page <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
+                  Official page <ExternalLink className="h-4 w-4 ml-2" />
                 </a>
               </Button>
             )}
@@ -687,47 +719,38 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark }: {
   );
 };
 
-/* ─── Animated stat tile ─────────────────────────────────────────────── */
-const StatTile = ({ label, value, color, icon: Icon, suffix = "", isMoney = false, delay = 0 }: {
-  label: string; value: number; color: string; icon: React.ComponentType<{ className?: string }>; suffix?: string; isMoney?: boolean; delay?: number;
+/* ─── Inline animated stat ───────────────────────────────────────────── */
+const InlineStat = ({ label, value, color = "text-white", isMoney = false, delay = 0, icon: Icon }: {
+  label: string; value: number; color?: string; isMoney?: boolean; delay?: number; icon: React.ComponentType<{ className?: string }>;
 }) => {
-  const animated = useCountUp(value, 1100);
-  const display = isMoney ? fmtValue(animated) : `${animated}${suffix}`;
+  const animated = useCountUp(value, 1300);
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay, duration: 0.5 }}
-      className={`relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur px-4 py-3 ${color}`}
-    >
-      <div className="absolute inset-0 opacity-30" style={{ background: "radial-gradient(ellipse at top right, currentColor 0%, transparent 60%)" }} />
-      <div className="relative flex items-center gap-3">
-        <div className="h-9 w-9 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center">
-          <Icon className="h-4 w-4" />
-        </div>
-        <div>
-          <div className="text-2xl font-black tabular-nums leading-none">{display}</div>
-          <div className="text-[10px] font-bold uppercase tracking-widest opacity-70 mt-1">{label}</div>
-        </div>
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay, duration: 0.5 }}
+      className="flex items-center gap-3">
+      <Icon className={`h-4 w-4 ${color} opacity-60`} />
+      <div>
+        <div className={`text-2xl sm:text-3xl font-bold tabular-nums leading-none ${color} tracking-tight`}>{isMoney ? fmtValue(animated) : animated}</div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40 mt-1.5">{label}</div>
       </div>
     </motion.div>
   );
 };
 
 /* ─── Section header ─────────────────────────────────────────────────── */
-const SectionHeader = ({ icon: Icon, title, subtitle, count, accentClass }: {
-  icon: React.ComponentType<{ className?: string }>; title: string; subtitle: string; count: number; accentClass: string;
+const SectionHeader = ({ kicker, title, subtitle, count, accentClass }: {
+  kicker: string; title: string; subtitle: string; count: number; accentClass: string;
 }) => (
-  <div className="flex items-end justify-between mb-4 mt-2">
-    <div className="flex items-center gap-3">
-      <div className={`h-9 w-9 rounded-xl flex items-center justify-center ${accentClass}`}>
-        <Icon className="h-4 w-4" />
+  <Reveal className="flex items-end justify-between gap-4 mb-7 pb-4 border-b border-border/60">
+    <div>
+      <div className={`inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] ${accentClass} mb-3`}>
+        <span className={`h-1.5 w-1.5 rounded-full ${accentClass.replace("text-", "bg-")}`} />
+        {kicker}
       </div>
-      <div>
-        <h2 className="font-heading font-bold text-xl text-foreground leading-tight">{title}</h2>
-        <p className="text-xs text-muted-foreground">{subtitle}</p>
-      </div>
+      <h2 className="font-heading font-bold text-2xl sm:text-3xl text-foreground leading-tight tracking-tight">{title}</h2>
+      <p className="text-sm text-muted-foreground mt-1.5">{subtitle}</p>
     </div>
-    <span className="text-sm font-bold text-muted-foreground tabular-nums">{count}</span>
-  </div>
+    <span className="text-2xl font-bold text-foreground/30 tabular-nums whitespace-nowrap">{count.toString().padStart(2, "0")}</span>
+  </Reveal>
 );
 
 /* ─── Main ───────────────────────────────────────────────────────────── */
@@ -750,6 +773,10 @@ const Discover = ({ language = "en" }: Props) => {
   const [sortBy, setSortBy] = useState<SortBy>("match");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [shortlistOpen, setShortlistOpen] = useState(false);
+
+  const { scrollY } = useScroll();
+  const heroOpacity = useTransform(scrollY, [0, 300], [1, 0.5]);
+  const heroY = useTransform(scrollY, [0, 300], [0, 60]);
 
   useEffect(() => {
     (async () => {
@@ -775,7 +802,7 @@ const Discover = ({ language = "en" }: Props) => {
   useEffect(() => {
     if (phase !== "analyzing") return;
     let i = 0;
-    const iv = setInterval(() => { i++; setAnalysisStep(i); if (i >= 5) { clearInterval(iv); setTimeout(() => setPhase("results"), 400); } }, 450);
+    const iv = setInterval(() => { i++; setAnalysisStep(i); if (i >= 5) { clearInterval(iv); setTimeout(() => setPhase("results"), 500); } }, 520);
     return () => clearInterval(iv);
   }, [phase]);
 
@@ -822,7 +849,6 @@ const Discover = ({ language = "en" }: Props) => {
     return list;
   }, [ranked, filters, sortBy, shortlist]);
 
-  /* Group filtered into sections */
   const sections = useMemo(() => {
     const top = filtered.filter(s => s.priority === "strong_match");
     const competitive = filtered.filter(s => s.priority === "competitive");
@@ -840,16 +866,15 @@ const Discover = ({ language = "en" }: Props) => {
   const activeFiltersCount = [filters.search !== "", filters.coverage !== "all", filters.degree !== "all", filters.effort !== "all", filters.onlyEligible, filters.closingSoon, filters.onlyShortlisted].filter(Boolean).length;
 
   const analysisTexts = [
-    `Scanning ${rows.length || 42} verified scholarships...`,
-    `Filtering by nationality${wiz.nationality ? `: ${wiz.nationality}` : ""}...`,
-    `Matching ${wiz.degree || "your degree"} programs...`,
-    "Evaluating academic thresholds...",
-    "Ranking your best opportunities...",
+    `Scanning ${rows.length || 75} verified scholarships`,
+    `Filtering by nationality${wiz.nationality ? `: ${wiz.nationality}` : ""}`,
+    `Matching ${wiz.degree || "your degree"} programs`,
+    "Evaluating academic thresholds",
+    "Ranking your best opportunities",
   ];
 
   const dark = phase === "landing" || phase === "wizard" || phase === "analyzing";
   const totalVerified = rows.length || 75;
-  const totalValueAll = rows.reduce((s, r) => s + (r.estimated_total_value_usd ?? 0), 0);
 
   return (
     <div className={`min-h-screen relative transition-colors duration-700 ${dark ? "" : "bg-background"}`}>
@@ -861,60 +886,63 @@ const Discover = ({ language = "en" }: Props) => {
         <AnimatePresence mode="wait">
           {/* ══ LANDING ══ */}
           {phase === "landing" && (
-            <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.5 }}
+            <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.97 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
               className="relative min-h-[calc(100vh-64px)] flex flex-col items-center justify-center px-6 text-center overflow-hidden">
-              <FloatingCards />
 
-              <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.7 }} className="max-w-3xl mx-auto space-y-8 relative z-10">
-                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.05, duration: 0.6 }}
-                  className="inline-flex items-center gap-2 bg-white/5 border border-white/15 backdrop-blur px-4 py-2 rounded-full text-white/80 text-xs font-semibold uppercase tracking-widest">
+              <FloatingOrbs />
+
+              <motion.div style={{ opacity: heroOpacity, y: heroY }} className="max-w-4xl mx-auto relative z-10 space-y-9">
+                {/* Status pill */}
+                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.7 }}
+                  className="inline-flex items-center gap-2.5 bg-white/[0.04] border border-white/10 backdrop-blur-xl px-4 py-2 rounded-full">
                   <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
                   </span>
-                  <span className="text-gold">{totalVerified}</span> verified scholarships · <span className="text-emerald-300">live</span>
+                  <span className="text-white/90 text-xs font-semibold tracking-wide">
+                    <span className="text-amber-300">{totalVerified}</span> verified scholarships · live database
+                  </span>
                 </motion.div>
 
-                <h1 className="font-heading text-5xl sm:text-6xl md:text-7xl font-bold text-white leading-[1.02] tracking-tight">
-                  Find scholarships<br />
-                  <span className="bg-gradient-to-r from-gold via-amber-300 to-gold bg-clip-text text-transparent" style={{ backgroundSize: "200% 100%", animation: "shimmer 6s linear infinite" }}>
+                {/* Headline */}
+                <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+                  className="font-heading text-[clamp(2.75rem,7vw,5.5rem)] font-bold text-white leading-[1.02] tracking-[-0.03em]">
+                  The scholarships<br />
+                  <span className="bg-gradient-to-r from-amber-200 via-amber-300 to-amber-200 bg-clip-text text-transparent inline-block" style={{ backgroundSize: "200% 100%", animation: "shimmer 7s linear infinite" }}>
                     made for you.
                   </span>
-                </h1>
+                </motion.h1>
 
-                <p className="text-white/55 text-lg sm:text-xl max-w-xl mx-auto leading-relaxed">
-                  Answer 4 questions. We match your profile against every scholarship in our database and surface where you have a real shot.
-                </p>
+                {/* Subhead */}
+                <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32, duration: 0.7 }}
+                  className="text-white/60 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed font-light">
+                  Answer four questions. We rank every scholarship in our database against your profile and tell you exactly where you have a real shot.
+                </motion.p>
 
-                <div className="flex flex-col items-center gap-4">
-                  <Button variant="gold" size="lg" className="text-base px-12 py-7 hover:scale-105 transition-transform gap-2 shadow-2xl shadow-gold/40 relative overflow-hidden group" onClick={() => setPhase("wizard")}>
+                {/* CTA */}
+                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 0.7 }}
+                  className="flex flex-col items-center gap-4 pt-2">
+                  <Button variant="gold" size="lg" className="text-base px-12 py-7 hover:scale-[1.03] transition-transform gap-2.5 shadow-2xl shadow-amber-500/30 relative overflow-hidden group" onClick={() => setPhase("wizard")}>
                     <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-                    <Sparkles className="h-5 w-5" /> Find my scholarships <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                    Find my scholarships
+                    <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                   </Button>
-                  <div className="flex items-center justify-center gap-5 text-xs text-white/35">
-                    <span className="flex items-center gap-1.5"><Zap className="h-3 w-3 text-gold" /> 2 min</span>
-                    <span>·</span>
-                    <span>No account</span>
-                    <span>·</span>
-                    <span>Free</span>
+                  <div className="flex items-center justify-center gap-5 text-xs text-white/30 font-medium tracking-wide">
+                    <span className="flex items-center gap-1.5"><Zap className="h-3 w-3 text-amber-400" /> 2 minutes</span>
+                    <span className="opacity-50">·</span>
+                    <span>No account needed</span>
+                    <span className="opacity-50">·</span>
+                    <span>Free during beta</span>
                   </div>
-                </div>
+                </motion.div>
 
-                {/* Live stats strip */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7, duration: 0.6 }}
-                  className="grid grid-cols-3 gap-3 max-w-2xl mx-auto pt-8">
-                  {[
-                    { k: "Active funding", v: totalValueAll ? fmtValue(totalValueAll) : "$50M+", icon: TrendingUp },
-                    { k: "Countries", v: "26", icon: Globe2 },
-                    { k: "Match accuracy", v: "94%", icon: Target },
-                  ].map((s, i) => (
-                    <motion.div key={s.k} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 + i * 0.1 }}
-                      className="bg-white/5 backdrop-blur border border-white/10 rounded-xl px-4 py-3">
-                      <s.icon className="h-4 w-4 text-gold mb-1.5 mx-auto" />
-                      <div className="text-white font-bold text-lg tabular-nums">{s.v}</div>
-                      <div className="text-white/40 text-[10px] uppercase tracking-widest">{s.k}</div>
-                    </motion.div>
-                  ))}
+                {/* Scroll indicator */}
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2, duration: 0.7 }}
+                  className="absolute bottom-[-180px] left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/30">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.3em]">Scroll</span>
+                  <motion.div animate={{ y: [0, 6, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}>
+                    <ChevronDown className="h-4 w-4" />
+                  </motion.div>
                 </motion.div>
               </motion.div>
             </motion.div>
@@ -922,139 +950,169 @@ const Discover = ({ language = "en" }: Props) => {
 
           {/* ══ WIZARD ══ */}
           {phase === "wizard" && (
-            <motion.div key="wizard" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} transition={{ duration: 0.4 }}
+            <motion.div key="wizard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}
               className="relative min-h-[calc(100vh-64px)] flex flex-col">
-              <div className="pt-6 px-6 flex items-center justify-between max-w-2xl mx-auto w-full relative z-10">
-                <button onClick={() => wizardStep === 0 ? setPhase("landing") : setWizardStep(s => s - 1)} className="text-white/40 hover:text-white/80 transition-colors p-1">
+              <div className="pt-7 px-6 flex items-center justify-between max-w-2xl mx-auto w-full relative z-10">
+                <button onClick={() => wizardStep === 0 ? setPhase("landing") : setWizardStep(s => s - 1)} className="text-white/40 hover:text-white/90 transition-colors p-2 -ml-2">
                   <ChevronLeft className="h-5 w-5" />
                 </button>
-                <div className="flex gap-2">{Array.from({ length: WIZARD_STEPS }).map((_, i) => (<motion.div key={i} animate={{ width: i <= wizardStep ? 32 : 32 }} className={`h-1.5 rounded-full transition-all duration-500 ${i < wizardStep ? "bg-gold" : i === wizardStep ? "bg-gold/60 shadow-lg shadow-gold/50" : "bg-white/15"}`} />))}</div>
-                <span className="text-white/40 text-xs tabular-nums">{wizardStep + 1}/{WIZARD_STEPS}</span>
+                <div className="flex gap-2">
+                  {Array.from({ length: WIZARD_STEPS }).map((_, i) => (
+                    <div key={i} className="h-1 w-9 rounded-full bg-white/10 overflow-hidden">
+                      <motion.div className="h-full bg-gradient-to-r from-amber-300 to-amber-400"
+                        initial={false}
+                        animate={{ width: i < wizardStep ? "100%" : i === wizardStep ? "60%" : "0%" }}
+                        transition={{ duration: 0.5, ease: "easeOut" }}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <span className="text-white/40 text-xs tabular-nums font-medium tracking-wider">{wizardStep + 1} / {WIZARD_STEPS}</span>
               </div>
+
               <AnimatePresence mode="wait">
                 {wizardStep === 0 && (
-                  <motion.div key="ws0" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
-                    className="flex-1 flex flex-col items-center justify-center px-6 py-10 max-w-2xl mx-auto w-full text-center relative z-10">
-                    <h2 className="font-heading text-4xl sm:text-5xl font-bold text-white mb-3 tracking-tight">Let\'s get started</h2>
-                    <p className="text-white/50 mb-10">Your results stay on your device.</p>
-                    <div className="w-full space-y-4 text-left">
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold uppercase tracking-widest text-white/50">Your name</label>
+                  <motion.div key="ws0" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.5 }}
+                    className="flex-1 flex flex-col items-center justify-center px-6 py-10 max-w-xl mx-auto w-full text-center relative z-10">
+                    <p className="text-amber-300/80 text-xs font-semibold uppercase tracking-[0.25em] mb-5">Step 1 · Hello</p>
+                    <h2 className="font-heading text-[clamp(2rem,5vw,3.25rem)] font-bold text-white mb-4 tracking-[-0.02em] leading-[1.05]">Let's start with you.</h2>
+                    <p className="text-white/50 mb-12 text-base">Just so we can save your matches.</p>
+                    <div className="w-full space-y-5 text-left">
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">Your name</label>
                         <Input value={wiz.fullName} onChange={e => setWiz(w => ({ ...w, fullName: e.target.value }))} placeholder="First name (optional)"
-                          className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-12 text-base backdrop-blur" />
+                          className="bg-white/[0.04] border-white/15 text-white placeholder:text-white/25 h-13 text-base backdrop-blur-md focus-visible:border-amber-300/50 focus-visible:bg-white/[0.06] transition-colors" />
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold uppercase tracking-widest text-white/50">Email *</label>
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">Email</label>
                         <Input type="email" value={wiz.email} onChange={e => setWiz(w => ({ ...w, email: e.target.value }))} placeholder="you@email.com"
-                          className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-12 text-base backdrop-blur" />
+                          className="bg-white/[0.04] border-white/15 text-white placeholder:text-white/25 h-13 text-base backdrop-blur-md focus-visible:border-amber-300/50 focus-visible:bg-white/[0.06] transition-colors" />
                       </div>
                     </div>
-                    <Button variant="gold" size="lg" className="mt-8 px-12 gap-2 text-base shadow-xl shadow-gold/30" disabled={!wiz.email} onClick={() => setWizardStep(1)}>
+                    <Button variant="gold" size="lg" className="mt-10 px-12 gap-2 text-base shadow-xl shadow-amber-500/25" disabled={!wiz.email} onClick={() => setWizardStep(1)}>
                       Continue <ArrowRight className="h-5 w-5" />
                     </Button>
                   </motion.div>
                 )}
+
                 {wizardStep === 1 && (
-                  <motion.div key="ws1" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
+                  <motion.div key="ws1" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.5 }}
                     className="flex-1 flex flex-col items-center justify-center px-6 py-10 max-w-2xl mx-auto w-full text-center relative z-10">
-                    <h2 className="font-heading text-4xl sm:text-5xl font-bold text-white mb-3 tracking-tight">Where are you from?</h2>
-                    <p className="text-white/50 mb-8">Your nationality determines eligibility for most scholarships.</p>
-                    <div className="w-full grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+                    <p className="text-amber-300/80 text-xs font-semibold uppercase tracking-[0.25em] mb-5">Step 2 · Origin</p>
+                    <h2 className="font-heading text-[clamp(2rem,5vw,3.25rem)] font-bold text-white mb-4 tracking-[-0.02em] leading-[1.05]">Where are you from?</h2>
+                    <p className="text-white/50 mb-10 text-base max-w-md mx-auto">Your nationality determines eligibility for most scholarships.</p>
+                    <div className="w-full grid grid-cols-3 sm:grid-cols-4 gap-3">
                       {COUNTRIES.map((c, i) => (
-                        <motion.button key={c.v} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.025 }}
+                        <motion.button key={c.v} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.025, duration: 0.4 }}
                           onClick={() => { setWiz(w => ({ ...w, nationality: c.v })); setWizardStep(2); }}
-                          className={`flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl border text-sm font-medium transition-all hover:scale-105 active:scale-95 ${wiz.nationality === c.v ? "bg-gold text-primary border-gold shadow-xl shadow-gold/30" : "bg-white/8 border-white/15 text-white hover:bg-white/15 backdrop-blur"}`}>
-                          <span className="text-2xl">{c.f}</span><span className="text-xs leading-tight">{c.v}</span>
+                          className={`group flex flex-col items-center gap-2 px-3 py-4 rounded-2xl border transition-all hover:scale-[1.04] active:scale-95 ${wiz.nationality === c.v ? "bg-gradient-to-br from-amber-300 to-amber-400 text-slate-900 border-amber-300 shadow-xl shadow-amber-500/30" : "bg-white/[0.03] border-white/12 text-white hover:bg-white/[0.07] hover:border-white/25 backdrop-blur-md"}`}>
+                          <span className="text-2xl">{c.f}</span>
+                          <span className="text-xs font-medium leading-tight">{c.v}</span>
                         </motion.button>
                       ))}
                       <button onClick={() => setWiz(w => ({ ...w, nationality: "other" }))}
-                        className={`flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl border text-sm font-medium transition-all hover:scale-105 ${wiz.nationality === "other" ? "bg-gold text-primary border-gold" : "bg-white/8 border-white/15 text-white hover:bg-white/15 backdrop-blur"}`}>
-                        <span className="text-2xl">🌍</span><span className="text-xs">Other</span>
+                        className={`flex flex-col items-center gap-2 px-3 py-4 rounded-2xl border transition-all hover:scale-[1.04] ${wiz.nationality === "other" ? "bg-gradient-to-br from-amber-300 to-amber-400 text-slate-900 border-amber-300" : "bg-white/[0.03] border-white/12 text-white hover:bg-white/[0.07] hover:border-white/25 backdrop-blur-md"}`}>
+                        <span className="text-2xl">🌍</span>
+                        <span className="text-xs font-medium">Other</span>
                       </button>
                     </div>
                     {wiz.nationality === "other" && (
-                      <div className="mt-4 w-full space-y-3">
+                      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-5 w-full max-w-md mx-auto space-y-3">
                         <Input value={wiz.customNationality} onChange={e => setWiz(w => ({ ...w, customNationality: e.target.value }))} placeholder="Type your country..."
-                          className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-11 backdrop-blur" />
+                          className="bg-white/[0.04] border-white/15 text-white placeholder:text-white/25 h-12 backdrop-blur-md" />
                         <Button variant="gold" onClick={() => setWizardStep(2)} disabled={!wiz.customNationality} className="w-full gap-2">Continue <ArrowRight className="h-4 w-4" /></Button>
-                      </div>
+                      </motion.div>
                     )}
                   </motion.div>
                 )}
+
                 {wizardStep === 2 && (
-                  <motion.div key="ws2" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
+                  <motion.div key="ws2" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.5 }}
                     className="flex-1 flex flex-col items-center justify-center px-6 py-10 max-w-2xl mx-auto w-full text-center relative z-10">
-                    <h2 className="font-heading text-4xl sm:text-5xl font-bold text-white mb-3 tracking-tight">What will you study?</h2>
-                    <p className="text-white/50 mb-8">Pick the degree level you\'re applying for.</p>
-                    <div className="w-full grid grid-cols-3 gap-3 mb-8">
-                      {DEGREES.map(d => (
-                        <button key={d.v} onClick={() => setWiz(w => ({ ...w, degree: d.v }))}
-                          className={`flex flex-col items-center gap-2 p-5 rounded-2xl border font-medium transition-all hover:scale-105 active:scale-95 ${wiz.degree === d.v ? "bg-gold text-primary border-gold shadow-xl shadow-gold/30" : "bg-white/8 border-white/15 text-white hover:bg-white/15 backdrop-blur"}`}>
-                          <span className="text-3xl">{d.icon}</span>
-                          <span className="font-semibold text-sm">{d.l}</span>
-                          <span className="text-[11px] opacity-60 leading-tight">{d.d}</span>
-                        </button>
+                    <p className="text-amber-300/80 text-xs font-semibold uppercase tracking-[0.25em] mb-5">Step 3 · Path</p>
+                    <h2 className="font-heading text-[clamp(2rem,5vw,3.25rem)] font-bold text-white mb-4 tracking-[-0.02em] leading-[1.05]">What will you study?</h2>
+                    <p className="text-white/50 mb-10 text-base">Pick the level you're applying for.</p>
+                    <div className="w-full grid grid-cols-3 gap-4 mb-10">
+                      {DEGREES.map((d, i) => (
+                        <motion.button key={d.v} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+                          onClick={() => setWiz(w => ({ ...w, degree: d.v }))}
+                          className={`flex flex-col items-center gap-2.5 p-6 rounded-3xl border transition-all hover:scale-[1.03] active:scale-95 ${wiz.degree === d.v ? "bg-gradient-to-br from-amber-300 to-amber-400 text-slate-900 border-amber-300 shadow-xl shadow-amber-500/30" : "bg-white/[0.03] border-white/12 text-white hover:bg-white/[0.07] hover:border-white/25 backdrop-blur-md"}`}>
+                          <span className="text-4xl">{d.icon}</span>
+                          <span className="font-semibold text-base">{d.l}</span>
+                          <span className={`text-xs leading-tight ${wiz.degree === d.v ? "opacity-70" : "opacity-50"}`}>{d.d}</span>
+                        </motion.button>
                       ))}
                     </div>
-                    {wiz.degree && (
-                      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full">
-                        <p className="text-white/50 text-sm mb-4">And your field of study?</p>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                          {FIELDS.map(f => (
-                            <button key={f.v} onClick={() => setWiz(w => ({ ...w, field: f.v }))}
-                              className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-medium transition-all hover:scale-105 ${wiz.field === f.v ? "bg-gold text-primary border-gold" : "bg-white/8 border-white/15 text-white hover:bg-white/15 backdrop-blur"}`}>
-                              <span>{f.i}</span><span>{f.v.split(" &")[0]}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </motion.div>
-                    )}
-                    {wiz.degree && wiz.field && (
-                      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
-                        <Button variant="gold" size="lg" onClick={() => setWizardStep(3)} className="px-12 gap-2 shadow-xl shadow-gold/30">Continue <ArrowRight className="h-5 w-5" /></Button>
-                      </motion.div>
-                    )}
+                    <AnimatePresence>
+                      {wiz.degree && (
+                        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} className="w-full">
+                          <p className="text-white/50 text-sm mb-4">And your field?</p>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                            {FIELDS.map((f, i) => (
+                              <motion.button key={f.v} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+                                onClick={() => setWiz(w => ({ ...w, field: f.v }))}
+                                className={`flex items-center gap-2 px-3 py-3 rounded-xl border text-xs font-medium transition-all hover:scale-[1.04] ${wiz.field === f.v ? "bg-gradient-to-br from-amber-300 to-amber-400 text-slate-900 border-amber-300" : "bg-white/[0.03] border-white/12 text-white hover:bg-white/[0.07] backdrop-blur-md"}`}>
+                                <span>{f.i}</span><span>{f.v.split(" &")[0]}</span>
+                              </motion.button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                    <AnimatePresence>
+                      {wiz.degree && wiz.field && (
+                        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-7">
+                          <Button variant="gold" size="lg" onClick={() => setWizardStep(3)} className="px-12 gap-2 shadow-xl shadow-amber-500/25">
+                            Continue <ArrowRight className="h-5 w-5" />
+                          </Button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </motion.div>
                 )}
+
                 {wizardStep === 3 && (
-                  <motion.div key="ws3" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
+                  <motion.div key="ws3" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.5 }}
                     className="flex-1 flex flex-col items-center justify-center px-6 py-10 max-w-lg mx-auto w-full text-center relative z-10">
-                    <h2 className="font-heading text-4xl sm:text-5xl font-bold text-white mb-3 tracking-tight">Your scores</h2>
-                    <p className="text-white/50 mb-8">Leave blank if you don\'t have them yet.</p>
-                    <div className="w-full space-y-5 text-left">
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold uppercase tracking-widest text-white/50">GPA</label>
+                    <p className="text-amber-300/80 text-xs font-semibold uppercase tracking-[0.25em] mb-5">Step 4 · Stats</p>
+                    <h2 className="font-heading text-[clamp(2rem,5vw,3.25rem)] font-bold text-white mb-4 tracking-[-0.02em] leading-[1.05]">Your scores.</h2>
+                    <p className="text-white/50 mb-10 text-base">Leave blank if you don't have them yet.</p>
+                    <div className="w-full space-y-6 text-left">
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">GPA</label>
                         <div className="flex gap-2">
                           <Input value={wiz.gpa} onChange={e => setWiz(w => ({ ...w, gpa: e.target.value }))} placeholder="e.g. 3.8"
-                            className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-12 flex-1 backdrop-blur" />
-                          <div className="flex rounded-lg overflow-hidden border border-white/20 backdrop-blur">
+                            className="bg-white/[0.04] border-white/15 text-white placeholder:text-white/25 h-13 flex-1 backdrop-blur-md focus-visible:border-amber-300/50" />
+                          <div className="flex rounded-xl overflow-hidden border border-white/15 backdrop-blur-md">
                             {["/4.0", "/5.0", "/100"].map(s => (
                               <button key={s} onClick={() => setWiz(w => ({ ...w, gpaScale: s.slice(1) }))}
-                                className={`px-3 text-xs font-medium transition-colors ${wiz.gpaScale === s.slice(1) ? "bg-gold text-primary" : "bg-white/8 text-white/60 hover:bg-white/15"}`}>{s}</button>
+                                className={`px-4 text-xs font-semibold transition-colors ${wiz.gpaScale === s.slice(1) ? "bg-gradient-to-br from-amber-300 to-amber-400 text-slate-900" : "bg-white/[0.04] text-white/60 hover:bg-white/[0.08]"}`}>
+                                {s}
+                              </button>
                             ))}
                           </div>
                         </div>
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold uppercase tracking-widest text-white/50">IELTS score (optional)</label>
-                        <Input value={wiz.ielts} onChange={e => setWiz(w => ({ ...w, ielts: e.target.value }))} placeholder="e.g. 7.0"
-                          className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-12 backdrop-blur" />
-                      </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-white/50">Funding situation</label>
+                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">IELTS score (optional)</label>
+                        <Input value={wiz.ielts} onChange={e => setWiz(w => ({ ...w, ielts: e.target.value }))} placeholder="e.g. 7.0"
+                          className="bg-white/[0.04] border-white/15 text-white placeholder:text-white/25 h-13 backdrop-blur-md focus-visible:border-amber-300/50" />
+                      </div>
+                      <div className="space-y-3">
+                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">Funding situation</label>
                         <div className="grid grid-cols-2 gap-3">
-                          {[{ v: "low", l: "Need full funding", d: "Can\'t self-fund tuition" }, { v: "medium", l: "Can cover some", d: "Partial support is OK" }].map(b => (
+                          {[{ v: "low", l: "Need full funding", d: "Can't self-fund tuition" }, { v: "medium", l: "Can cover some", d: "Partial support is OK" }].map(b => (
                             <button key={b.v} onClick={() => setWiz(w => ({ ...w, budget: b.v }))}
-                              className={`flex flex-col items-start gap-1 p-4 rounded-xl border text-left transition-all ${wiz.budget === b.v ? "bg-gold text-primary border-gold" : "bg-white/8 border-white/15 text-white hover:bg-white/15 backdrop-blur"}`}>
+                              className={`flex flex-col items-start gap-1 p-4 rounded-2xl border text-left transition-all ${wiz.budget === b.v ? "bg-gradient-to-br from-amber-300 to-amber-400 text-slate-900 border-amber-300 shadow-lg" : "bg-white/[0.03] border-white/12 text-white hover:bg-white/[0.07] backdrop-blur-md"}`}>
                               <span className="text-sm font-semibold">{b.l}</span>
-                              <span className="text-[11px] opacity-60">{b.d}</span>
+                              <span className={`text-xs ${wiz.budget === b.v ? "opacity-70" : "opacity-50"}`}>{b.d}</span>
                             </button>
                           ))}
                         </div>
                       </div>
                     </div>
-                    <Button variant="gold" size="lg" className="mt-10 px-12 gap-2 text-base shadow-2xl shadow-gold/40" onClick={completeWizard}>
-                      <Zap className="h-5 w-5" /> Show my scholarships
+                    <Button variant="gold" size="lg" className="mt-10 px-12 gap-2 text-base shadow-2xl shadow-amber-500/40" onClick={completeWizard}>
+                      <Sparkles className="h-5 w-5" /> Reveal my matches
                     </Button>
                   </motion.div>
                 )}
@@ -1064,22 +1122,31 @@ const Discover = ({ language = "en" }: Props) => {
 
           {/* ══ ANALYZING ══ */}
           {phase === "analyzing" && (
-            <motion.div key="analyzing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            <motion.div key="analyzing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6 }}
               className="relative flex flex-col items-center justify-center min-h-[calc(100vh-64px)] px-6 text-center">
-              <div className="max-w-md mx-auto space-y-10 relative z-10">
-                <div className="relative inline-flex items-center justify-center mx-auto">
-                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                    className="absolute inset-0 rounded-full border-2 border-dashed border-gold/30" style={{ width: 120, height: 120 }} />
-                  <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-gold/20 to-amber-400/10 border border-gold/40 backdrop-blur flex items-center justify-center shadow-2xl shadow-gold/30">
-                    <Sparkles className="h-10 w-10 text-gold" />
-                  </div>
+              <div className="max-w-md mx-auto space-y-12 relative z-10">
+                <div className="relative inline-flex items-center justify-center mx-auto" style={{ width: 140, height: 140 }}>
+                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                    className="absolute inset-0 rounded-full border border-dashed border-amber-300/30" />
+                  <motion.div animate={{ rotate: -360 }} transition={{ duration: 16, repeat: Infinity, ease: "linear" }}
+                    className="absolute inset-3 rounded-full border border-dashed border-amber-300/15" />
+                  <motion.div animate={{ scale: [1, 1.06, 1] }} transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                    className="h-20 w-20 rounded-3xl bg-gradient-to-br from-amber-300 to-amber-500 backdrop-blur flex items-center justify-center shadow-2xl shadow-amber-500/40">
+                    <Sparkles className="h-9 w-9 text-slate-900" />
+                  </motion.div>
                 </div>
-                <h2 className="font-heading text-4xl font-bold text-white">Matching your profile...</h2>
-                <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
-                  <motion.div className="h-full bg-gradient-to-r from-gold via-amber-300 to-gold rounded-full" animate={{ width: `${Math.min((analysisStep / 5) * 100, 100)}%` }} transition={{ duration: 0.4 }} />
+                <div className="space-y-3">
+                  <h2 className="font-heading text-3xl sm:text-4xl font-bold text-white tracking-tight">Reading your profile...</h2>
+                  <p className="text-white/40 text-sm">This usually takes a few seconds.</p>
+                </div>
+                <div className="w-full bg-white/8 rounded-full h-1 overflow-hidden">
+                  <motion.div className="h-full bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300"
+                    style={{ backgroundSize: "200% 100%", animation: "shimmer 2s linear infinite" }}
+                    animate={{ width: `${Math.min((analysisStep / 5) * 100, 100)}%` }} transition={{ duration: 0.4 }} />
                 </div>
                 <AnimatePresence mode="wait">
-                  <motion.p key={analysisStep} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="text-white/60 text-base font-mono">
+                  <motion.p key={analysisStep} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
+                    className="text-white/65 text-sm font-mono tracking-wide">
                     {analysisTexts[Math.min(analysisStep, analysisTexts.length - 1)]}
                   </motion.p>
                 </AnimatePresence>
@@ -1089,90 +1156,126 @@ const Discover = ({ language = "en" }: Props) => {
 
           {/* ══ RESULTS ══ */}
           {phase === "results" && (
-            <motion.div key="results" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-              {/* ── Stats header ── */}
-              <section className="relative bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 py-10 sm:py-12 overflow-hidden">
+            <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7 }}>
+              {/* ── Hero briefing ── */}
+              <section className="relative bg-gradient-to-br from-slate-950 via-[#0a1729] to-slate-950 pt-12 pb-14 sm:pt-20 sm:pb-20 overflow-hidden">
                 <div className="absolute inset-0">
-                  <div className="absolute -top-1/4 left-1/4 w-[40vw] h-[40vw] rounded-full blur-[120px] opacity-25" style={{ background: "radial-gradient(circle, hsl(42 90% 55%) 0%, transparent 60%)" }} />
-                  <div className="absolute bottom-0 right-0 w-[40vw] h-[40vw] rounded-full blur-[120px] opacity-20" style={{ background: "radial-gradient(circle, hsl(180 70% 50%) 0%, transparent 60%)" }} />
-                  <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "32px 32px" }} />
+                  <div className="absolute -top-1/3 left-1/4 w-[40vw] h-[40vw] rounded-full blur-[140px] opacity-25" style={{ background: "radial-gradient(circle, hsl(42 90% 55%) 0%, transparent 70%)" }} />
+                  <div className="absolute -bottom-1/4 right-0 w-[40vw] h-[40vw] rounded-full blur-[140px] opacity-20" style={{ background: "radial-gradient(circle, hsl(200 80% 50%) 0%, transparent 70%)" }} />
+                  <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 0.5px, transparent 0)", backgroundSize: "28px 28px" }} />
                 </div>
 
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
-                  <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-                    <div>
-                      {wiz.fullName && <p className="text-gold/80 text-sm font-medium mb-2 tracking-wide">Welcome back, {wiz.fullName} 👋</p>}
-                      <h1 className="font-heading text-3xl sm:text-5xl font-bold text-white leading-[1.05] tracking-tight">
-                        {loading ? "Loading your matches..." : (
-                          <>
-                            <span className="tabular-nums">{rows.length}</span> scholarships<br />
-                            <span className="bg-gradient-to-r from-emerald-300 via-teal-300 to-cyan-300 bg-clip-text text-transparent">
-                              {stats.strong} are strong matches.
-                            </span>
-                          </>
-                        )}
-                      </h1>
-                      <div className="flex flex-wrap gap-2 mt-4">
-                        {[profile.country, profile.degree, profile.gpa ? `GPA ${profile.gpa}/${profile.gpaScale}` : null, profile.ielts ? `IELTS ${profile.ielts}` : null].filter(Boolean).map(chip => (
-                          <span key={chip} className="text-xs bg-white/8 text-white/75 border border-white/15 backdrop-blur px-3 py-1 rounded-full">{chip}</span>
-                        ))}
-                        <button onClick={resetProfile} className="text-xs text-white/40 hover:text-gold transition-colors flex items-center gap-1 px-2">
-                          <RefreshCw className="h-3 w-3" /> Update profile
-                        </button>
-                      </div>
-                    </div>
+                <div className="max-w-7xl mx-auto px-6 sm:px-8 relative">
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
+                    {wiz.fullName && <p className="text-amber-300/80 text-sm font-semibold tracking-[0.06em] mb-4 uppercase">Welcome back, {wiz.fullName}</p>}
+                    <h1 className="font-heading text-[clamp(2.25rem,5.5vw,4.5rem)] font-bold text-white leading-[1.05] tracking-[-0.025em] max-w-4xl">
+                      {loading ? "Loading your matches..." : (
+                        <>
+                          You have{" "}
+                          <span className="bg-gradient-to-r from-emerald-300 via-teal-300 to-cyan-300 bg-clip-text text-transparent tabular-nums">
+                            {stats.strong + stats.competitive}
+                          </span>{" "}
+                          real opportunities.
+                        </>
+                      )}
+                    </h1>
+                    <p className="text-white/55 text-lg sm:text-xl max-w-2xl mt-5 leading-relaxed font-light">
+                      Based on your profile, we ranked all <span className="text-white font-medium tabular-nums">{rows.length}</span> scholarships in our database. Here's where you have a real shot.
+                    </p>
 
-                    {!loading && (
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 lg:max-w-2xl">
-                        <StatTile label="Strong" value={stats.strong} color="text-emerald-300" icon={Trophy} delay={0.05} />
-                        <StatTile label="Competitive" value={stats.competitive} color="text-amber-300" icon={Target} delay={0.1} />
-                        <StatTile label="Closing" value={stats.closing} color="text-rose-300" icon={Flame} suffix="" delay={0.15} />
-                        <StatTile label="Total pool" value={stats.totalValue} color="text-gold" icon={Sparkles} isMoney delay={0.2} />
+                    <div className="flex flex-wrap gap-2 mt-7">
+                      {[profile.country, profile.degree, profile.gpa ? `GPA ${profile.gpa}/${profile.gpaScale}` : null, profile.ielts ? `IELTS ${profile.ielts}` : null].filter(Boolean).map(chip => (
+                        <span key={chip} className="text-xs bg-white/[0.05] text-white/70 border border-white/12 backdrop-blur-md px-3 py-1.5 rounded-full font-medium">{chip}</span>
+                      ))}
+                      <button onClick={resetProfile} className="text-xs text-white/35 hover:text-amber-300 transition-colors flex items-center gap-1.5 px-2.5 py-1.5 font-medium">
+                        <RefreshCw className="h-3 w-3" /> Update profile
+                      </button>
+                    </div>
+                  </motion.div>
+
+                  {/* Stats row */}
+                  {!loading && (
+                    <Reveal delay={0.15} y={28} className="mt-12 pt-10 border-t border-white/8">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-7">
+                        <InlineStat label="Strong matches" value={stats.strong} color="text-emerald-300" icon={Trophy} delay={0.05} />
+                        <InlineStat label="Worth a shot" value={stats.competitive} color="text-amber-300" icon={Target} delay={0.1} />
+                        <InlineStat label="Closing soon" value={stats.closing} color="text-rose-300" icon={Flame} delay={0.15} />
+                        <InlineStat label="Funding pool" value={stats.totalValue} color="text-amber-200" icon={Sparkles} isMoney delay={0.2} />
                       </div>
-                    )}
-                  </div>
+                    </Reveal>
+                  )}
 
                   {/* Match landscape */}
                   {!loading && ranked.length > 0 && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="mt-7">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-white/40 text-[10px] uppercase tracking-widest">Match landscape · click any bar</p>
-                        <div className="flex items-center gap-3 text-[10px] text-white/40">
-                          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-emerald-400" />Strong</span>
-                          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-amber-400" />Competitive</span>
-                          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-slate-400/40" />Lower</span>
+                    <Reveal delay={0.3} className="mt-10 pt-8 border-t border-white/8">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <p className="text-white/35 text-[10px] uppercase tracking-[0.22em] mb-1 font-semibold">Match landscape</p>
+                          <p className="text-white/60 text-xs">Each bar is one scholarship · click to view</p>
+                        </div>
+                        <div className="hidden sm:flex items-center gap-4 text-[11px] text-white/40 font-medium">
+                          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-400" />Strong</span>
+                          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-amber-400" />Competitive</span>
+                          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-zinc-500" />Lower</span>
                         </div>
                       </div>
-                      <div className="flex items-end gap-[2px] h-16 overflow-hidden rounded-xl bg-white/5 p-1">
+                      <div className="flex items-end gap-[2px] h-20 overflow-hidden rounded-2xl bg-white/[0.025] p-2">
                         {ranked.map((s, i) => (
                           <motion.div
                             key={s.scholarship_id}
-                            initial={{ height: 0 }} animate={{ height: `${Math.max(s.match, 8)}%` }}
-                            transition={{ delay: i * 0.012, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                            className={`flex-1 min-w-[3px] rounded-t-sm cursor-pointer transition-all opacity-75 hover:opacity-100 hover:scale-y-110 origin-bottom ${
+                            initial={{ height: 0 }}
+                            whileInView={{ height: `${Math.max(s.match, 8)}%` }}
+                            viewport={{ once: true }}
+                            transition={{ delay: i * 0.012, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                            className={`flex-1 min-w-[3px] rounded-t cursor-pointer transition-all opacity-80 hover:opacity-100 hover:scale-y-110 origin-bottom ${
                               s.priority === "strong_match" ? "bg-gradient-to-t from-emerald-500 to-emerald-300" :
                               s.priority === "competitive" ? "bg-gradient-to-t from-amber-500 to-amber-300" :
-                              "bg-gradient-to-t from-slate-500/60 to-slate-400/40"
+                              "bg-gradient-to-t from-zinc-600/60 to-zinc-400/40"
                             }`}
                             onClick={() => setOpenDetail(s)}
-                            title={`${s.scholarship_name} — ${s.match}% match`}
+                            title={`${s.scholarship_name} — ${s.match}%`}
                           />
                         ))}
                       </div>
-                    </motion.div>
+                    </Reveal>
                   )}
                 </div>
               </section>
 
-              {/* ── Main layout ── */}
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 py-7">
-                <div className="flex gap-6">
-                  {/* Sidebar (desktop) */}
-                  <aside className="hidden lg:block w-[210px] shrink-0">
-                    <div className="sticky top-4 bg-card border border-border rounded-2xl p-4 shadow-sm">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5"><SlidersHorizontal className="h-4 w-4 text-accent" />Filters</h3>
-                        {activeFiltersCount > 0 && <Badge className="h-5 px-1.5 text-[10px] bg-accent/20 text-accent border-0">{activeFiltersCount}</Badge>}
+              {/* ── Sticky toolbar ── */}
+              <div className="sticky top-0 z-30 bg-background/85 backdrop-blur-xl border-b border-border/60">
+                <div className="max-w-7xl mx-auto px-6 sm:px-8 py-3.5 flex items-center gap-3">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                    <Input value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} placeholder="Search scholarships..."
+                      className="pl-10 h-11 text-sm rounded-xl border-border/60" />
+                    {filters.search && <button onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>}
+                  </div>
+                  <Button variant="outline" size="default" className="lg:hidden gap-1.5 h-11 rounded-xl" onClick={() => setFiltersOpen(true)}>
+                    <Filter className="h-4 w-4" />Filters{activeFiltersCount > 0 && <Badge className="h-5 px-1.5 text-[10px] bg-amber-500/20 text-amber-700 dark:text-amber-300 border-0 ml-0.5">{activeFiltersCount}</Badge>}
+                  </Button>
+                  <Select value={sortBy} onValueChange={v => setSortBy(v as SortBy)}>
+                    <SelectTrigger className="w-[160px] h-11 text-sm rounded-xl border-border/60"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="match">Best match</SelectItem>
+                      <SelectItem value="deadline">Deadline first</SelectItem>
+                      <SelectItem value="value">Highest value</SelectItem>
+                      <SelectItem value="effort">Easiest first</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-xs text-muted-foreground hidden sm:inline ml-auto tabular-nums">{filtered.length} of {ranked.length}</span>
+                </div>
+              </div>
+
+              {/* ── Results body ── */}
+              <div className="max-w-7xl mx-auto px-6 sm:px-8 py-12 sm:py-16">
+                <div className="flex gap-10">
+                  {/* Sidebar */}
+                  <aside className="hidden lg:block w-[220px] shrink-0">
+                    <div className="sticky top-24 bg-card border border-border/60 rounded-3xl p-5 shadow-sm">
+                      <div className="flex items-center justify-between mb-5">
+                        <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground flex items-center gap-2"><SlidersHorizontal className="h-3.5 w-3.5" />Refine</h3>
+                        {activeFiltersCount > 0 && <Badge className="h-5 px-1.5 text-[10px] bg-amber-500/20 text-amber-700 dark:text-amber-300 border-0">{activeFiltersCount}</Badge>}
                       </div>
                       <FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} />
                     </div>
@@ -1180,156 +1283,143 @@ const Discover = ({ language = "en" }: Props) => {
 
                   {/* Content */}
                   <main className="flex-1 min-w-0">
-                    {/* Toolbar */}
-                    <div className="flex items-center gap-2 mb-5 flex-wrap">
-                      <div className="relative flex-1 min-w-[180px]">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                        <Input value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} placeholder="Search by name, country, provider..."
-                          className="pl-9 h-10 text-sm" />
-                        {filters.search && <button onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>}
-                      </div>
-                      <Button variant="outline" size="sm" className="lg:hidden gap-1.5 h-10" onClick={() => setFiltersOpen(true)}>
-                        <Filter className="h-4 w-4" />Filters{activeFiltersCount > 0 && <Badge className="h-4 px-1 text-[10px] bg-accent/20 text-accent border-0 ml-0.5">{activeFiltersCount}</Badge>}
-                      </Button>
-                      <Select value={sortBy} onValueChange={v => setSortBy(v as SortBy)}>
-                        <SelectTrigger className="w-[150px] h-10 text-sm"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="match">Best match</SelectItem>
-                          <SelectItem value="deadline">Deadline first</SelectItem>
-                          <SelectItem value="value">Highest value</SelectItem>
-                          <SelectItem value="effort">Easiest first</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <span className="text-xs text-muted-foreground ml-1 hidden sm:inline">{filtered.length} of {ranked.length}</span>
-                    </div>
-
-                    {/* Card sections */}
                     {loading ? (
-                      <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {[1,2,3,4,5,6].map(i => <div key={i} className="h-72 bg-card border border-border rounded-2xl animate-pulse" />)}
+                      <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                        {[1,2,3,4,5,6].map(i => <div key={i} className="h-80 bg-card border border-border/60 rounded-3xl animate-pulse" />)}
                       </div>
                     ) : filtered.length === 0 ? (
-                      <div className="border border-dashed border-border rounded-2xl p-14 text-center bg-muted/10">
-                        <Search className="h-10 w-10 text-muted-foreground/20 mx-auto mb-3" />
-                        <h3 className="font-heading font-semibold text-foreground mb-1">No scholarships match</h3>
-                        <p className="text-sm text-muted-foreground mb-4">Try adjusting your filters</p>
+                      <div className="border border-dashed border-border rounded-3xl p-16 text-center bg-muted/10">
+                        <Search className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />
+                        <h3 className="font-heading font-semibold text-lg text-foreground mb-1.5">No scholarships match</h3>
+                        <p className="text-sm text-muted-foreground mb-5">Try adjusting your filters</p>
                         <Button variant="outline" size="sm" onClick={() => setFilters(DEFAULT_FILTERS)}>Clear filters</Button>
                       </div>
                     ) : (
-                      <div className="space-y-10">
+                      <div className="space-y-16">
                         {/* Hero featured */}
                         {sections.hero.length > 0 && (
-                          <div className="grid grid-cols-1 gap-4">
+                          <section>
+                            <Reveal y={20}>
+                              <p className="text-amber-600 dark:text-amber-400 text-[11px] font-semibold uppercase tracking-[0.22em] mb-4 flex items-center gap-2">
+                                <span className="h-px w-6 bg-amber-500" /> Top match for you
+                              </p>
+                            </Reveal>
                             <FeaturedCard
                               s={sections.hero[0]}
                               onSelect={() => setOpenDetail(sections.hero[0])}
                               isBookmarked={shortlist.has(sections.hero[0].scholarship_id)}
                               onBookmark={e => { e.stopPropagation(); toggleBookmark(sections.hero[0].scholarship_id); }}
                             />
-                          </div>
+                          </section>
                         )}
 
-                        {/* Strong matches */}
+                        {/* Strong */}
                         {sections.strong.length > 0 && (
-                          <div>
-                            <SectionHeader icon={Trophy} title="Strong matches" subtitle="Highest probability of acceptance"
-                              count={sections.strong.length} accentClass="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25" />
-                            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-fr">
-                              {sections.strong.map(s => (
-                                <ScholarCard key={s.scholarship_id} s={s}
+                          <section>
+                            <SectionHeader kicker="Strong matches" title="Where you have a real shot" subtitle="High alignment with your profile and goals."
+                              count={sections.strong.length} accentClass="text-emerald-600 dark:text-emerald-400" />
+                            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5 auto-rows-fr">
+                              {sections.strong.map((s, i) => (
+                                <ScholarCard key={s.scholarship_id} s={s} index={i}
                                   onSelect={() => setOpenDetail(s)}
                                   isBookmarked={shortlist.has(s.scholarship_id)}
                                   onBookmark={e => { e.stopPropagation(); toggleBookmark(s.scholarship_id); }} />
                               ))}
                             </div>
-                          </div>
+                          </section>
                         )}
 
                         {/* Competitive */}
                         {sections.competitive.length > 0 && (
-                          <div>
-                            <SectionHeader icon={Target} title="Worth a shot" subtitle="Competitive but achievable with a strong app"
-                              count={sections.competitive.length} accentClass="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25" />
-                            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-fr">
-                              {sections.competitive.map(s => (
-                                <ScholarCard key={s.scholarship_id} s={s}
+                          <section>
+                            <SectionHeader kicker="Competitive" title="Worth a shot" subtitle="Achievable with a strong, well-targeted application."
+                              count={sections.competitive.length} accentClass="text-amber-600 dark:text-amber-400" />
+                            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5 auto-rows-fr">
+                              {sections.competitive.map((s, i) => (
+                                <ScholarCard key={s.scholarship_id} s={s} index={i}
                                   onSelect={() => setOpenDetail(s)}
                                   isBookmarked={shortlist.has(s.scholarship_id)}
                                   onBookmark={e => { e.stopPropagation(); toggleBookmark(s.scholarship_id); }} />
                               ))}
                             </div>
-                          </div>
+                          </section>
                         )}
 
                         {/* Stretch */}
                         {sections.stretch.length > 0 && (
-                          <div>
-                            <SectionHeader icon={Layers} title="Stretch & lower-fit" subtitle="Long shots — only apply if you have bandwidth"
-                              count={sections.stretch.length} accentClass="bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/25" />
-                            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-fr opacity-90">
-                              {sections.stretch.map(s => (
-                                <ScholarCard key={s.scholarship_id} s={s}
+                          <section>
+                            <SectionHeader kicker="Stretch" title="Long shots" subtitle="Lower fit — apply only if you have bandwidth."
+                              count={sections.stretch.length} accentClass="text-zinc-500 dark:text-zinc-400" />
+                            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5 auto-rows-fr opacity-90">
+                              {sections.stretch.map((s, i) => (
+                                <ScholarCard key={s.scholarship_id} s={s} index={i}
                                   onSelect={() => setOpenDetail(s)}
                                   isBookmarked={shortlist.has(s.scholarship_id)}
                                   onBookmark={e => { e.stopPropagation(); toggleBookmark(s.scholarship_id); }} />
                               ))}
                             </div>
-                          </div>
+                          </section>
                         )}
                       </div>
                     )}
                   </main>
                 </div>
               </div>
+
               <Footer language={language} />
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Sticky shortlist FAB (results phase only) */}
-        {phase === "results" && shortlist.size > 0 && (
-          <motion.button
-            initial={{ opacity: 0, y: 20, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-            onClick={() => setShortlistOpen(true)}
-            className="fixed bottom-6 right-6 z-40 bg-gradient-to-br from-amber-400 to-gold text-primary font-bold px-5 py-3.5 rounded-2xl shadow-2xl shadow-gold/40 hover:scale-105 transition-transform flex items-center gap-2.5"
-          >
-            <BookmarkCheck className="h-5 w-5" />
-            <div className="text-left">
-              <div className="text-sm font-bold leading-none">My shortlist</div>
-              <div className="text-[10px] font-medium opacity-70 mt-0.5">{shortlist.size} saved</div>
-            </div>
-            <ArrowRight className="h-4 w-4" />
-          </motion.button>
-        )}
+        {/* Sticky shortlist FAB */}
+        <AnimatePresence>
+          {phase === "results" && shortlist.size > 0 && (
+            <motion.button
+              initial={{ opacity: 0, y: 30, scale: 0.85 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 30, scale: 0.85 }}
+              transition={{ type: "spring", stiffness: 280, damping: 22 }}
+              onClick={() => setShortlistOpen(true)}
+              className="fixed bottom-6 right-6 z-40 bg-gradient-to-br from-amber-300 to-amber-500 text-slate-900 font-bold pl-5 pr-4 py-3.5 rounded-2xl shadow-2xl shadow-amber-500/40 hover:scale-[1.03] transition-transform flex items-center gap-3"
+            >
+              <BookmarkCheck className="h-5 w-5" />
+              <div className="text-left">
+                <div className="text-sm font-bold leading-none">My shortlist</div>
+                <div className="text-[11px] font-medium opacity-70 mt-0.5">{shortlist.size} saved</div>
+              </div>
+              <ArrowRight className="h-4 w-4" />
+            </motion.button>
+          )}
+        </AnimatePresence>
 
         {/* Shortlist sheet */}
         <Sheet open={shortlistOpen} onOpenChange={setShortlistOpen}>
-          <SheetContent side="right" className="w-full sm:w-[440px] overflow-y-auto">
+          <SheetContent side="right" className="w-full sm:w-[460px] overflow-y-auto">
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
-                <BookmarkCheck className="h-5 w-5 text-gold" /> Your shortlist · {shortlist.size}
+                <BookmarkCheck className="h-5 w-5 text-amber-500" /> Your shortlist · {shortlist.size}
               </SheetTitle>
               <p className="text-xs text-muted-foreground">Saved scholarships you want to apply to.</p>
             </SheetHeader>
-            <div className="mt-5 space-y-2.5">
+            <div className="mt-6 space-y-3">
               {ranked.filter(s => shortlist.has(s.scholarship_id)).map(s => {
-                const tier = TIER_STYLE[s.priority];
+                const tier = TIER[s.priority];
                 const flag = FLAGS[s.host_country || ""] ?? "🌍";
                 const dl = deadlineDisplay(s.application_deadline);
                 return (
                   <button key={s.scholarship_id}
                     onClick={() => { setOpenDetail(s); setShortlistOpen(false); }}
-                    className="w-full text-left bg-card border border-border rounded-xl p-3 hover:border-accent/40 hover:shadow-md transition-all flex items-start gap-3">
-                    <div className={`h-10 w-10 rounded-xl bg-gradient-to-br ${tier.grad} flex items-center justify-center text-lg shrink-0`}>{flag}</div>
+                    className="w-full text-left bg-card border border-border/60 rounded-2xl p-3.5 hover:border-amber-500/40 hover:shadow-md transition-all flex items-start gap-3 group">
+                    <div className={`h-11 w-11 rounded-2xl bg-gradient-to-br ${tier.grad} flex items-center justify-center text-xl shrink-0 shadow-sm`}>{flag}</div>
                     <div className="min-w-0 flex-1">
                       <p className="font-heading font-bold text-sm text-foreground line-clamp-1">{s.scholarship_name}</p>
-                      <p className="text-[11px] text-muted-foreground truncate">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <span className="text-[10px] font-bold text-foreground bg-muted px-1.5 py-0.5 rounded">{s.match}%</span>
-                        <span className={`text-[10px] ${dl.cls}`}>{dl.text}</span>
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-[11px] font-bold text-foreground bg-muted px-2 py-0.5 rounded-md tabular-nums">{s.match}% match</span>
+                        <span className={`text-[11px] font-medium ${dl.cls}`}>· {dl.text}</span>
                       </div>
                     </div>
-                    <button onClick={e => { e.stopPropagation(); toggleBookmark(s.scholarship_id); }} className="text-muted-foreground hover:text-destructive p-1">
+                    <button onClick={e => { e.stopPropagation(); toggleBookmark(s.scholarship_id); }} className="text-muted-foreground hover:text-destructive p-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </button>
@@ -1344,9 +1434,9 @@ const Discover = ({ language = "en" }: Props) => {
 
         {/* Mobile filters */}
         <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-          <SheetContent side="left" className="w-[280px] overflow-y-auto">
+          <SheetContent side="left" className="w-[300px] overflow-y-auto">
             <SheetHeader><SheetTitle className="flex items-center gap-2"><SlidersHorizontal className="h-4 w-4" />Filters</SheetTitle></SheetHeader>
-            <div className="mt-4"><FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} /></div>
+            <div className="mt-5"><FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} /></div>
           </SheetContent>
         </Sheet>
 
@@ -1355,8 +1445,10 @@ const Discover = ({ language = "en" }: Props) => {
           onBookmark={() => openDetail && toggleBookmark(openDetail.scholarship_id)} />
       </div>
 
-      {/* Shimmer keyframes for hero gradient */}
-      <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
+      <style>{`
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .h-13 { height: 3.25rem; }
+      `}</style>
     </div>
   );
 };
