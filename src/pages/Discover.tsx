@@ -10,14 +10,15 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, useScroll } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
   ArrowRight, Sparkles, CheckCircle2, AlertTriangle, ExternalLink,
   BookmarkCheck, Bookmark, ChevronLeft, ChevronDown, Zap, RefreshCw,
   Lightbulb, X, SlidersHorizontal, Filter, Search, Trophy,
-  Target, Flame, Layers, Users, Globe2, FileText, Languages,
-  CreditCard, AlertOctagon, UserCheck,
+  Target, Flame, Users, FileText, Languages,
+  CreditCard, AlertOctagon, UserCheck, ShieldAlert, MinusCircle, HelpCircle,
 } from "lucide-react";
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
 
@@ -42,6 +43,7 @@ interface Scholarship {
   strategy_notes: string | null; best_for_tags: string[] | null; why_this_fits: string | null;
   how_to_win: string | null; what_to_prepare_first: string | null;
   next_step: string | null; risk_note: string | null;
+  last_verified_date: string | null;
 }
 
 interface Profile {
@@ -225,6 +227,19 @@ const FIELDS = [
 const SELECTIVITY_LABEL: Record<Scored["selectivity"], string> = {
   very_high: "Highly selective", high: "Selective", medium: "Moderate", low: "Open", unknown: "—",
 };
+
+/* Recognize "no real restriction" values so we don't render them as constraints */
+const INCLUSIVE_PATTERNS = [
+  /^open to all/i, /all nationalities/i, /any nationality/i,
+  /no nationality restriction/i, /^any$/i, /open to international/i,
+  /all international/i, /worldwide/i,
+];
+const isInclusive = (v: string | null | undefined) =>
+  !!v && INCLUSIVE_PATTERNS.some(p => p.test(v.trim()));
+
+/* Friendlier date display */
+const dateOnly = (d: string | null) => d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : null;
+const daysUntil = (d: string | null) => d ? Math.ceil((new Date(d).getTime() - Date.now()) / 86400000) : null;
 
 const WIZARD_STEPS = 4;
 const DEFAULT_WIZARD: WizardData = { fullName: "", email: "", nationality: "", customNationality: "", degree: "", field: "", gpa: "", gpaScale: "4.0", ielts: "", budget: "low" };
@@ -587,11 +602,9 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, index = 0 }: {
             </div>
           ) : null}
 
-          {/* Why this fits — uses DB text when available */}
+          {/* Why this fits — uses DB text when available, kept terse here */}
           {why && (
-            <div className="mb-5 text-xs text-foreground/75 leading-relaxed line-clamp-3">
-              <span className="font-semibold text-gold-dark dark:text-gold">Why this fits</span>
-              <span className="text-muted-foreground"> · </span>
+            <div className="mb-4 text-xs text-foreground/70 leading-relaxed line-clamp-2">
               {why}
             </div>
           )}
@@ -703,274 +716,407 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
   );
 };
 
-/* ─── Detail Sheet ───────────────────────────────────────────────────── */
-const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark }: {
+/* ─── Requirement check row (visual ✓ / ✗ / ?) ───────────────────────── */
+const ReqRow = ({ label, status, detail }: {
+  label: string;
+  status: "met" | "miss" | "near" | "unknown" | "info";
+  detail: string;
+}) => {
+  const cfg = {
+    met:     { Icon: CheckCircle2, cls: "text-success",       bar: "bg-success" },
+    near:    { Icon: AlertTriangle, cls: "text-warning",      bar: "bg-warning" },
+    miss:    { Icon: MinusCircle,  cls: "text-destructive",   bar: "bg-destructive" },
+    unknown: { Icon: HelpCircle,   cls: "text-muted-foreground", bar: "bg-muted-foreground/40" },
+    info:    { Icon: CheckCircle2, cls: "text-success",       bar: "bg-success" },
+  }[status];
+  const { Icon } = cfg;
+  return (
+    <div className="flex items-start gap-3 py-2.5 border-b border-border/50 last:border-0">
+      <Icon className={`h-4 w-4 ${cfg.cls} shrink-0 mt-0.5`} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="text-sm font-medium text-foreground">{label}</span>
+        </div>
+        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{detail}</p>
+      </div>
+    </div>
+  );
+};
+
+/* ─── Detail Sheet (tabbed, visual) ──────────────────────────────────── */
+const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile }: {
   s: Scored | null; open: boolean; onClose: () => void;
   isBookmarked: boolean; onBookmark: () => void;
+  profile: Profile;
 }) => {
   if (!s) return null;
   const tier = TIER[s.priority];
   const flag = FLAGS[s.host_country || ""] ?? "🌍";
   const dl = deadlineDisplay(s.application_deadline);
   const [dc1, dc2] = dialColors(s.priority);
+  const why = s.why_this_fits || s.reasons.slice(0, 2).join(". ");
+
+  // Build profile-vs-requirement checklist
+  const reqs: { label: string; status: "met"|"miss"|"near"|"unknown"|"info"; detail: string }[] = [];
+  if (s.min_gpa != null) {
+    if (profile.gpa) {
+      const ug = normalizeGpa(parseFloat(profile.gpa), parseFloat(profile.gpaScale));
+      const rg = normalizeGpa(s.min_gpa, s.gpa_scale ?? 4.0);
+      const status = ug >= rg ? "met" : ug >= rg - 0.3 ? "near" : "miss";
+      reqs.push({ label: `GPA ≥ ${s.min_gpa}/${s.gpa_scale ?? 4.0}`, status, detail: `Yours: ${profile.gpa}/${profile.gpaScale} (≈ ${ug.toFixed(2)}/4.0)` });
+    } else { reqs.push({ label: `GPA ≥ ${s.min_gpa}/${s.gpa_scale ?? 4.0}`, status: "unknown", detail: "Add your GPA to check" }); }
+  }
+  if (s.min_ielts != null) {
+    if (profile.ielts) {
+      const u = parseFloat(profile.ielts);
+      reqs.push({ label: `IELTS ≥ ${s.min_ielts}`, status: u >= s.min_ielts ? "met" : "miss", detail: `Yours: ${u}` });
+    } else { reqs.push({ label: `IELTS ≥ ${s.min_ielts}`, status: "unknown", detail: "Add your IELTS to check" }); }
+  }
+  if (s.min_toefl != null) reqs.push({ label: `TOEFL ≥ ${s.min_toefl}`, status: "unknown", detail: "We don't track TOEFL yet" });
+  if (s.min_sat != null) reqs.push({ label: `SAT ≥ ${s.min_sat}`, status: "unknown", detail: "Add your SAT to check" });
+  if (s.target_degree_level && profile.degree) {
+    const ok = s.target_degree_level.some(d => d.toLowerCase() === profile.degree.toLowerCase());
+    reqs.push({ label: `Degree level: ${s.target_degree_level.join(", ")}`, status: ok ? "met" : "miss", detail: `Your level: ${profile.degree}` });
+  }
+  if (s.target_fields && s.target_fields.length > 0 && profile.field) {
+    const fm = fieldMatches(profile.field, s.target_fields);
+    reqs.push({ label: `Field of study`, status: fm === true ? "met" : fm === false ? "miss" : "unknown", detail: `Funds: ${s.target_fields.slice(0, 4).join(", ")}${s.target_fields.length > 4 ? "..." : ""}` });
+  }
+  if (s.eligible_countries && profile.country) {
+    const list = s.eligible_countries.map(c => c.toLowerCase());
+    const open = list.some(c => c.includes("all") || c.includes("any"));
+    const ok = open || list.some(c => c.includes(profile.country.toLowerCase()));
+    reqs.push({ label: open ? "Open to all nationalities" : `Nationality eligibility`, status: ok ? "met" : "miss", detail: open ? "" : (ok ? `${profile.country} listed` : `${profile.country} not in eligible list`) });
+  }
+  if (s.citizenship_requirements && !isInclusive(s.citizenship_requirements)) {
+    reqs.push({ label: "Citizenship rule", status: "info", detail: s.citizenship_requirements });
+  }
+  if (s.language_requirements) reqs.push({ label: "Language", status: "info", detail: s.language_requirements });
+
+  const days = daysUntil(s.application_deadline);
+  const deadlineDate = dateOnly(s.application_deadline);
+
+  // Last verified
+  const verifiedDate = (s as Scholarship & { last_verified_date?: string }).last_verified_date;
+  const verifiedDays = verifiedDate ? Math.floor((Date.now() - new Date(verifiedDate).getTime()) / 86400000) : null;
+  const isStale = verifiedDays !== null && verifiedDays > 60;
+
   return (
     <Sheet open={open} onOpenChange={o => !o && onClose()}>
-      <SheetContent side="right" className="w-full sm:w-[540px] overflow-y-auto p-0">
-        {/* Header */}
-        <div className="relative bg-primary px-7 pt-8 pb-7 overflow-hidden">
+      <SheetContent side="right" className="w-full sm:w-[640px] overflow-y-auto p-0 flex flex-col">
+        {/* ── HEADER ── */}
+        <div className="relative bg-primary px-7 pt-7 pb-6 overflow-hidden shrink-0">
           <div className="absolute inset-0 bg-gradient-to-br from-navy-deep to-primary" />
-          <div className="absolute -top-1/3 left-1/4 w-2/3 h-full rounded-full blur-[100px] opacity-20" style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 60%)" }} />
-          <span className="absolute -right-6 -top-6 text-[200px] opacity-[0.06] select-none pointer-events-none leading-none">{flag}</span>
+          <div className="absolute -top-1/3 left-1/4 w-2/3 h-full rounded-full blur-[100px] opacity-15" style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 60%)" }} />
+          <span className="absolute -right-6 -top-6 text-[200px] opacity-[0.05] select-none pointer-events-none leading-none">{flag}</span>
+
           <SheetHeader className="relative space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3.5">
-                <div className="relative">
-                  <MatchDial value={s.match} size={70} stroke={5} gradId={`sh-${s.scholarship_id}`} color1={dc1} color2={dc2} />
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="relative shrink-0">
+                  <MatchDial value={s.match} size={64} stroke={5} gradId={`sh-${s.scholarship_id}`} color1={dc1} color2={dc2} />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xl font-black text-primary-foreground tabular-nums">{s.match}</span>
+                    <span className="text-lg font-black text-primary-foreground tabular-nums">{s.match}</span>
                   </div>
                 </div>
                 <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <span className={`h-1.5 w-1.5 rounded-full ${tier.dot}`} />
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold">{tier.label}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gold">{tier.label}</p>
+                    <span className="text-primary-foreground/30 text-[10px]">·</span>
+                    <SelectivityChip level={s.selectivity} dark />
                   </div>
                   <p className="text-primary-foreground/40 text-xs mt-1">
                     {s.eligibility === "eligible" ? "✓ You qualify on paper" : s.eligibility === "missing" ? "Near miss — close to threshold" : s.eligibility === "not_eligible" ? "Doesn't fit your profile" : "Likely fit"}
                   </p>
                 </div>
               </div>
-              <span className="text-3xl">{flag}</span>
+              <span className="text-3xl shrink-0">{flag}</span>
             </div>
-            <SheetTitle className="text-primary-foreground font-heading text-2xl leading-tight tracking-tight pt-1 text-left">{s.scholarship_name}</SheetTitle>
+            <SheetTitle className="text-primary-foreground font-heading text-[22px] leading-[1.15] tracking-tight pt-1 text-left">{s.scholarship_name}</SheetTitle>
             <p className="text-primary-foreground/55 text-sm text-left">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
           </SheetHeader>
+
+          {/* Key facts row */}
+          <div className="relative grid grid-cols-3 gap-3 mt-5">
+            <div className="bg-primary-foreground/[0.04] backdrop-blur border border-primary-foreground/10 rounded-xl px-3 py-2.5">
+              <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45 mb-1">Award</div>
+              <div className="text-primary-foreground text-xs font-semibold leading-tight line-clamp-2">{s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || "—"}</div>
+            </div>
+            <div className="bg-primary-foreground/[0.04] backdrop-blur border border-primary-foreground/10 rounded-xl px-3 py-2.5">
+              <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45 mb-1">Deadline</div>
+              <div className={`text-xs font-semibold leading-tight ${dl.urgent ? "text-gold-light" : "text-primary-foreground/85"}`}>{dl.text}</div>
+              {deadlineDate && <div className="text-primary-foreground/40 text-[10px] mt-0.5">{deadlineDate}</div>}
+            </div>
+            <div className="bg-primary-foreground/[0.04] backdrop-blur border border-primary-foreground/10 rounded-xl px-3 py-2.5">
+              <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45 mb-1">Total value</div>
+              <div className="text-gold-light text-xs font-bold leading-tight">{s.estimated_total_value_usd ? fmtValue(s.estimated_total_value_usd) : "—"}</div>
+            </div>
+          </div>
+
+          {/* Header CTAs */}
+          <div className="relative flex items-center gap-2 mt-4">
+            <Button variant="gold" size="sm" asChild className="flex-1 h-9" disabled={!s.official_url}>
+              {s.official_url ? (
+                <a href={s.official_url} target="_blank" rel="noopener noreferrer">
+                  Apply on official site <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
+                </a>
+              ) : <span>No official link</span>}
+            </Button>
+            <Button variant="outline" size="sm" className="bg-primary-foreground/[0.04] border-primary-foreground/15 text-primary-foreground hover:bg-primary-foreground/[0.1] h-9" onClick={onBookmark}>
+              {isBookmarked ? <BookmarkCheck className="h-4 w-4 text-gold" /> : <Bookmark className="h-4 w-4" />}
+            </Button>
+          </div>
         </div>
 
-        <div className="px-7 py-6 space-y-6 text-sm">
-          {/* Why this fits — DB-authored when present */}
-          {s.why_this_fits && (
-            <section className="bg-gold/5 border border-gold/20 rounded-2xl p-5">
-              <h4 className="text-xs font-semibold text-gold-dark dark:text-gold mb-2 flex items-center gap-2 uppercase tracking-[0.14em]">
-                <Sparkles className="h-3.5 w-3.5" /> Why this fits you
-              </h4>
-              <p className="text-sm text-foreground/85 leading-relaxed">{s.why_this_fits}</p>
-            </section>
-          )}
-
-          {/* Match reasons + warnings */}
-          {(s.reasons.length > 0 || s.warnings.length > 0) && (
-            <section>
-              <h4 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">Profile match</h4>
-              <div className="space-y-2">
-                {s.reasons.map((r, i) => (
-                  <div key={`r${i}`} className="flex items-start gap-2 text-sm leading-relaxed text-success">
-                    <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />{r}
-                  </div>
-                ))}
-                {s.warnings.map((w, i) => (
-                  <div key={`w${i}`} className="flex items-start gap-2 text-sm leading-relaxed text-warning">
-                    <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />{w}
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          <Separator />
-
-          {/* Requirements */}
-          <section>
-            <h4 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">Requirements</h4>
-            <div className="bg-muted/40 rounded-2xl p-4 space-y-2.5 text-sm">
-              {s.application_deadline && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Deadline</span>
-                  <span className={`font-semibold ${dl.cls}`}>
-                    {new Date(s.application_deadline).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                    <span className="ml-1.5 font-normal opacity-70">({dl.text})</span>
-                  </span>
-                </div>
-              )}
-              {s.deadline_type && <div className="flex justify-between"><span className="text-muted-foreground">Deadline type</span><span className="font-medium capitalize">{s.deadline_type}</span></div>}
-              {s.min_gpa != null && <div className="flex justify-between"><span className="text-muted-foreground">Min GPA</span><span className="font-semibold">≥ {s.min_gpa}/{s.gpa_scale ?? 4.0}</span></div>}
-              {s.min_ielts != null && <div className="flex justify-between"><span className="text-muted-foreground">Min IELTS</span><span className="font-semibold">≥ {s.min_ielts}</span></div>}
-              {s.min_toefl != null && <div className="flex justify-between"><span className="text-muted-foreground">Min TOEFL</span><span className="font-semibold">≥ {s.min_toefl}</span></div>}
-              {s.min_sat != null && <div className="flex justify-between"><span className="text-muted-foreground">Min SAT</span><span className="font-semibold">≥ {s.min_sat}</span></div>}
-              {s.language_requirements && (
-                <div className="flex justify-between gap-3">
-                  <span className="text-muted-foreground flex items-center gap-1.5"><Languages className="h-3.5 w-3.5" />Language</span>
-                  <span className="font-medium text-right">{s.language_requirements}</span>
-                </div>
-              )}
-              {s.citizenship_requirements && <div className="flex flex-col gap-0.5"><span className="text-muted-foreground">Citizenship</span><span className="font-medium">{s.citizenship_requirements}</span></div>}
-              {s.target_fields && s.target_fields.length > 0 && (
-                <div className="flex justify-between gap-3">
-                  <span className="text-muted-foreground">Fields funded</span>
-                  <span className="font-medium text-right">{s.target_fields.join(", ")}</span>
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* Application logistics */}
-          {(s.application_platform || s.application_fee_text || s.required_documents) && (
-            <section>
-              <h4 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">Application</h4>
-              <div className="bg-muted/40 rounded-2xl p-4 space-y-2.5 text-sm">
-                {s.application_platform && (
-                  <div className="flex justify-between gap-3">
-                    <span className="text-muted-foreground flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" />Platform</span>
-                    <span className="font-medium text-right">{s.application_platform}</span>
-                  </div>
-                )}
-                {s.application_fee_text && (
-                  <div className="flex justify-between gap-3">
-                    <span className="text-muted-foreground flex items-center gap-1.5"><CreditCard className="h-3.5 w-3.5" />Fee</span>
-                    <span className="font-medium text-right">{s.application_fee_text}</span>
-                  </div>
-                )}
-                {s.separate_application_required && (
-                  <div className="flex items-center gap-2 text-warning text-xs">
-                    <AlertTriangle className="h-3.5 w-3.5" />Separate application required (not auto-considered)
-                  </div>
-                )}
-                {s.required_documents && s.required_documents.length > 0 && (
-                  <div>
-                    <div className="text-muted-foreground mb-1.5">Required documents</div>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {s.required_documents.map((d, i) => (
-                        <div key={i} className="flex items-center gap-1.5 text-xs text-foreground/80">
-                          <div className="h-1.5 w-1.5 rounded-full bg-gold shrink-0" />{d}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <div className="flex flex-wrap gap-3 text-xs text-muted-foreground pt-1">
-                  {s.essay_required && <span className="flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-warning" />Essay required</span>}
-                  {s.interview_required && <span>Interview required</span>}
-                  {(s.recommendation_letters_required ?? 0) > 0 && <span>{s.recommendation_letters_required} recommendation letter{(s.recommendation_letters_required ?? 0) > 1 ? "s" : ""}</span>}
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* Ideal candidate */}
-          {s.ideal_candidate_profile && (
-            <section className="bg-primary/[0.03] border border-primary/15 rounded-2xl p-5">
-              <h4 className="text-xs font-semibold text-primary dark:text-primary-bright mb-2 flex items-center gap-2 uppercase tracking-[0.14em]">
-                <UserCheck className="h-3.5 w-3.5" /> Ideal candidate
-              </h4>
-              <p className="text-sm text-foreground/85 leading-relaxed">{s.ideal_candidate_profile}</p>
-            </section>
-          )}
-
-          {/* Common rejection reasons */}
-          {s.common_rejection_reasons && (
-            <section className="bg-destructive/5 border border-destructive/20 rounded-2xl p-5">
-              <h4 className="text-xs font-semibold text-destructive mb-2 flex items-center gap-2 uppercase tracking-[0.14em]">
-                <AlertOctagon className="h-3.5 w-3.5" /> Why people get rejected
-              </h4>
-              <p className="text-sm text-foreground/85 leading-relaxed">{s.common_rejection_reasons}</p>
-            </section>
-          )}
-
-          {/* Weak candidate warning */}
-          {s.weak_candidate_warning && (
-            <section className="border-l-2 border-warning bg-warning/5 rounded-r-2xl px-5 py-4">
-              <p className="text-xs font-semibold text-warning mb-1 uppercase tracking-[0.14em]">Don't apply if...</p>
-              <p className="text-sm text-foreground/80 leading-relaxed">{s.weak_candidate_warning}</p>
-            </section>
-          )}
-
-          {/* How to win */}
-          {s.how_to_win && (
-            <section className="bg-gold/5 border border-gold/20 rounded-2xl p-5">
-              <h4 className="text-xs font-semibold text-gold-dark dark:text-gold mb-2 flex items-center gap-2 uppercase tracking-[0.14em]">
-                <Lightbulb className="h-3.5 w-3.5" /> How to win
-              </h4>
-              <p className="text-sm text-foreground/85 leading-relaxed">{s.how_to_win}</p>
-            </section>
-          )}
-
-          {/* Strategy notes */}
-          {s.strategy_notes && (
-            <section>
-              <h4 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Strategy</h4>
-              <p className="text-sm text-foreground/80 leading-relaxed">{s.strategy_notes}</p>
-            </section>
-          )}
-
-          {/* Start here */}
-          {s.what_to_prepare_first && (
-            <section className="border-l-2 border-l-gold bg-muted/30 rounded-r-2xl px-5 py-4">
-              <p className="text-xs font-semibold text-foreground mb-1 uppercase tracking-[0.14em]">Start here</p>
-              <p className="text-sm text-foreground/80 leading-relaxed">{s.what_to_prepare_first}</p>
-            </section>
-          )}
-
-          {/* Risk note */}
-          {s.risk_note && (
-            <section className="bg-destructive/5 border border-destructive/20 rounded-2xl p-4">
-              <p className="text-sm font-semibold text-destructive mb-1 flex items-center gap-1.5"><AlertTriangle className="h-4 w-4" />Watch out</p>
-              <p className="text-sm text-foreground/80 leading-relaxed">{s.risk_note}</p>
-            </section>
-          )}
-
-          {/* Partner universities */}
-          {s.partner_universities && s.partner_universities.length > 0 && (
-            <section>
-              <h4 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3 flex items-center gap-2">
-                <Users className="h-3.5 w-3.5" /> Partner universities · {s.partner_universities.length}
-              </h4>
-              <div className="flex flex-wrap gap-1.5">
-                {s.partner_universities.slice(0, 12).map((u, i) => (
-                  <span key={i} className="text-xs bg-muted/60 border border-border px-2.5 py-1 rounded-md text-foreground/80">{u}</span>
-                ))}
-                {s.partner_universities.length > 12 && (
-                  <span className="text-xs text-muted-foreground self-center">+{s.partner_universities.length - 12} more</span>
-                )}
-              </div>
-            </section>
-          )}
-
-          {/* Best for tags */}
-          {s.best_for_tags && s.best_for_tags.length > 0 && (
-            <section>
-              <h4 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">Best for</h4>
-              <div className="flex flex-wrap gap-1.5">
-                {s.best_for_tags.map((t, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 text-xs bg-gold/10 text-gold-dark dark:text-gold border border-gold/20 px-2.5 py-1 rounded-full">
-                    {t}
-                  </span>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Prep CTA */}
-          {(s.min_ielts || s.min_sat) && (
-            <div className="bg-muted/40 border border-border rounded-2xl p-4 flex items-center justify-between gap-3">
-              <p className="text-sm text-foreground/80">Need to hit those scores?</p>
-              <Button size="sm" variant="outline" asChild className="shrink-0">
-                <Link to="/prep">Open Prep <ArrowRight className="h-3.5 w-3.5 ml-1.5" /></Link>
-              </Button>
-            </div>
-          )}
-
-          <div className="flex gap-2 pb-3">
-            <Button variant="outline" size="default" className="flex-1" onClick={onBookmark}>
-              {isBookmarked ? <><BookmarkCheck className="h-4 w-4 mr-2 text-gold" />Saved</> : <><Bookmark className="h-4 w-4 mr-2" />Save to shortlist</>}
-            </Button>
-            {s.official_url && (
-              <Button size="default" asChild className="flex-1">
-                <a href={s.official_url} target="_blank" rel="noopener noreferrer">
-                  Official page <ExternalLink className="h-4 w-4 ml-2" />
-                </a>
-              </Button>
-            )}
+        {/* ── TABS ── */}
+        <Tabs defaultValue="overview" className="flex-1 flex flex-col">
+          <div className="px-7 pt-5 border-b border-border bg-background sticky top-0 z-10">
+            <TabsList className="bg-transparent p-0 h-auto gap-1 w-full justify-start">
+              <TabsTrigger value="overview"     className="data-[state=active]:bg-foreground/[0.05] data-[state=active]:text-foreground data-[state=active]:shadow-none rounded-lg px-3 py-1.5 text-xs font-semibold">Overview</TabsTrigger>
+              <TabsTrigger value="requirements" className="data-[state=active]:bg-foreground/[0.05] data-[state=active]:text-foreground data-[state=active]:shadow-none rounded-lg px-3 py-1.5 text-xs font-semibold">Requirements</TabsTrigger>
+              <TabsTrigger value="strategy"     className="data-[state=active]:bg-foreground/[0.05] data-[state=active]:text-foreground data-[state=active]:shadow-none rounded-lg px-3 py-1.5 text-xs font-semibold">Strategy</TabsTrigger>
+              <TabsTrigger value="apply"        className="data-[state=active]:bg-foreground/[0.05] data-[state=active]:text-foreground data-[state=active]:shadow-none rounded-lg px-3 py-1.5 text-xs font-semibold">Apply</TabsTrigger>
+            </TabsList>
           </div>
+
+          {/* OVERVIEW */}
+          <TabsContent value="overview" className="px-7 py-6 space-y-5 m-0 focus-visible:outline-none">
+            {why && (
+              <div className="bg-gold/5 border border-gold/20 rounded-2xl p-5">
+                <h4 className="text-[10px] font-semibold text-gold-dark dark:text-gold mb-2 flex items-center gap-2 uppercase tracking-[0.16em]">
+                  <Sparkles className="h-3 w-3" /> Why this fits you
+                </h4>
+                <p className="text-sm text-foreground/85 leading-relaxed">{why}</p>
+              </div>
+            )}
+
+            {s.reasons.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Profile signals</p>
+                <div className="space-y-1.5">
+                  {s.reasons.map((r, i) => (
+                    <div key={i} className="flex items-start gap-2 text-sm leading-relaxed text-success">
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-0.5" />{r}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {s.warnings.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Watch outs</p>
+                <div className="space-y-1.5">
+                  {s.warnings.map((w, i) => (
+                    <div key={i} className="flex items-start gap-2 text-sm leading-relaxed text-warning">
+                      <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />{w}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {s.target_fields && s.target_fields.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Funds</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {s.target_fields.map((f, i) => (
+                    <span key={i} className="text-xs text-foreground/75 bg-muted/60 border border-border px-2.5 py-1 rounded-md">{f}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {s.best_for_tags && s.best_for_tags.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Best for</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {s.best_for_tags.map((t, i) => (
+                    <span key={i} className="text-xs bg-gold/10 text-gold-dark dark:text-gold border border-gold/20 px-2.5 py-1 rounded-full font-medium">{t}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* REQUIREMENTS */}
+          <TabsContent value="requirements" className="px-7 py-6 space-y-5 m-0 focus-visible:outline-none">
+            {reqs.length > 0 ? (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">You vs. requirements</p>
+                <div className="bg-muted/30 rounded-2xl px-4 py-1">
+                  {reqs.map((r, i) => <ReqRow key={i} {...r} />)}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">
+                  Always verify on the official site — requirements change yearly and we don't track TOEFL or every nationality nuance.
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No specific requirements recorded for this scholarship.</p>
+            )}
+
+            {(s.essay_required || s.interview_required || (s.recommendation_letters_required ?? 0) > 0) && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Application demands</p>
+                <div className="flex flex-wrap gap-2">
+                  {s.essay_required && <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full"><FileText className="h-3 w-3" />Essay required</span>}
+                  {s.interview_required && <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full"><Users className="h-3 w-3" />Interview</span>}
+                  {(s.recommendation_letters_required ?? 0) > 0 && (
+                    <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full">
+                      <FileText className="h-3 w-3" />{s.recommendation_letters_required} rec letter{(s.recommendation_letters_required ?? 0) > 1 ? "s" : ""}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {s.required_documents && s.required_documents.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Documents needed</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {s.required_documents.map((d, i) => (
+                    <div key={i} className="flex items-center gap-1.5 text-xs text-foreground/80">
+                      <div className="h-1.5 w-1.5 rounded-full bg-gold shrink-0" />{d}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(s.min_ielts || s.min_sat) && (
+              <div className="bg-muted/40 border border-border rounded-2xl p-4 flex items-center justify-between gap-3">
+                <p className="text-sm text-foreground/80">Need to hit those scores?</p>
+                <Button size="sm" variant="outline" asChild className="shrink-0">
+                  <Link to="/prep">Open Prep <ArrowRight className="h-3.5 w-3.5 ml-1.5" /></Link>
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* STRATEGY */}
+          <TabsContent value="strategy" className="px-7 py-6 space-y-5 m-0 focus-visible:outline-none">
+            {s.ideal_candidate_profile && (
+              <div className="bg-primary/[0.03] border border-primary/15 rounded-2xl p-5">
+                <h4 className="text-[10px] font-semibold text-primary dark:text-primary-bright mb-2 flex items-center gap-2 uppercase tracking-[0.16em]">
+                  <UserCheck className="h-3 w-3" /> Ideal candidate
+                </h4>
+                <p className="text-sm text-foreground/85 leading-relaxed">{s.ideal_candidate_profile}</p>
+              </div>
+            )}
+            {s.how_to_win && (
+              <div className="bg-gold/5 border border-gold/20 rounded-2xl p-5">
+                <h4 className="text-[10px] font-semibold text-gold-dark dark:text-gold mb-2 flex items-center gap-2 uppercase tracking-[0.16em]">
+                  <Lightbulb className="h-3 w-3" /> How to win
+                </h4>
+                <p className="text-sm text-foreground/85 leading-relaxed">{s.how_to_win}</p>
+              </div>
+            )}
+            {s.what_to_prepare_first && (
+              <div className="border-l-2 border-l-gold bg-muted/30 rounded-r-2xl px-5 py-4">
+                <p className="text-[10px] font-semibold text-foreground mb-1 uppercase tracking-[0.16em]">Start here</p>
+                <p className="text-sm text-foreground/80 leading-relaxed">{s.what_to_prepare_first}</p>
+              </div>
+            )}
+            {s.strategy_notes && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Strategy notes</p>
+                <p className="text-sm text-foreground/80 leading-relaxed">{s.strategy_notes}</p>
+              </div>
+            )}
+            {s.common_rejection_reasons && (
+              <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-5">
+                <h4 className="text-[10px] font-semibold text-destructive mb-2 flex items-center gap-2 uppercase tracking-[0.16em]">
+                  <AlertOctagon className="h-3 w-3" /> Why people get rejected
+                </h4>
+                <p className="text-sm text-foreground/85 leading-relaxed">{s.common_rejection_reasons}</p>
+              </div>
+            )}
+            {s.weak_candidate_warning && (
+              <div className="border-l-2 border-warning bg-warning/5 rounded-r-2xl px-5 py-4">
+                <p className="text-[10px] font-semibold text-warning mb-1 uppercase tracking-[0.16em]">Don't apply if...</p>
+                <p className="text-sm text-foreground/80 leading-relaxed">{s.weak_candidate_warning}</p>
+              </div>
+            )}
+            {s.risk_note && (
+              <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-4">
+                <p className="text-sm font-semibold text-destructive mb-1 flex items-center gap-1.5"><AlertTriangle className="h-4 w-4" />Watch out</p>
+                <p className="text-sm text-foreground/80 leading-relaxed">{s.risk_note}</p>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* APPLY */}
+          <TabsContent value="apply" className="px-7 py-6 space-y-5 m-0 focus-visible:outline-none">
+            {/* Deadline urgency banner */}
+            {days !== null && days > 0 && days <= 90 && (
+              <div className={`rounded-2xl p-4 border ${days <= 30 ? "bg-destructive/5 border-destructive/20" : "bg-warning/5 border-warning/20"}`}>
+                <div className="flex items-center gap-2.5">
+                  <Flame className={`h-5 w-5 ${days <= 30 ? "text-destructive" : "text-warning"}`} />
+                  <div>
+                    <p className={`font-semibold text-sm ${days <= 30 ? "text-destructive" : "text-warning"}`}>{days} days until deadline</p>
+                    <p className="text-xs text-muted-foreground">{deadlineDate}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-muted/40 rounded-2xl px-4 py-1">
+              {[
+                ["Deadline", deadlineDate ? `${deadlineDate} (${dl.text})` : "Rolling"],
+                ["Cycle", s.deadline_type ? s.deadline_type.charAt(0).toUpperCase() + s.deadline_type.slice(1) : null],
+                ["Platform", s.application_platform],
+                ["Application fee", s.application_fee_text],
+              ].filter(([, v]) => v).map(([label, val], i) => (
+                <div key={i} className="flex items-start justify-between gap-3 py-2.5 border-b border-border/50 last:border-0">
+                  <span className="text-xs text-muted-foreground">{label}</span>
+                  <span className="text-sm font-medium text-foreground text-right">{val}</span>
+                </div>
+              ))}
+            </div>
+
+            {s.separate_application_required && (
+              <div className="bg-warning/5 border border-warning/20 rounded-2xl p-4 flex items-start gap-2.5">
+                <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-warning">Separate application required</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">You're not auto-considered when admitted — you must apply separately.</p>
+                </div>
+              </div>
+            )}
+
+            {s.partner_universities && s.partner_universities.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2 flex items-center gap-2">
+                  <Users className="h-3 w-3" /> Partner universities · {s.partner_universities.length}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {s.partner_universities.slice(0, 18).map((u, i) => (
+                    <span key={i} className="text-xs bg-muted/60 border border-border px-2.5 py-1 rounded-md text-foreground/80">{u}</span>
+                  ))}
+                  {s.partner_universities.length > 18 && (
+                    <span className="text-xs text-muted-foreground self-center">+{s.partner_universities.length - 18} more</span>
+                  )}
+                </div>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+
+        {/* ── FOOTER (data trust) ── */}
+        <div className="px-7 py-4 border-t border-border bg-muted/20 flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+            <ShieldAlert className={`h-3.5 w-3.5 ${isStale ? "text-warning" : "text-success"}`} />
+            <span>
+              {verifiedDate ? <>Verified {dateOnly(verifiedDate)} {isStale && <span className="text-warning">· may be stale</span>}</> : "Verification date unknown"}
+            </span>
+          </div>
+          <a
+            href={`mailto:hello@topuni.com?subject=${encodeURIComponent("Inaccurate scholarship data: " + s.scholarship_name)}&body=${encodeURIComponent("ID: " + s.scholarship_id + "\n\nWhat's wrong:\n")}`}
+            className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-4"
+          >
+            Report inaccuracy
+          </a>
         </div>
       </SheetContent>
     </Sheet>
@@ -1693,7 +1839,8 @@ const Discover = ({ language = "en" }: Props) => {
 
         <DetailSheet s={openDetail} open={!!openDetail} onClose={() => setOpenDetail(null)}
           isBookmarked={openDetail ? shortlist.has(openDetail.scholarship_id) : false}
-          onBookmark={() => openDetail && toggleBookmark(openDetail.scholarship_id)} />
+          onBookmark={() => openDetail && toggleBookmark(openDetail.scholarship_id)}
+          profile={profile} />
       </div>
     </div>
   );
