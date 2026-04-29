@@ -227,222 +227,294 @@ const DiscoverApp = ({ language = "en" }: Props) => {
   const visible = isPro ? ranked : ranked.slice(0, 3);
   const locked = isPro ? 0 : Math.max(0, ranked.length - 3);
 
+  const handleResetProfile = () => {
+    localStorage.removeItem("topuni_discover_profile");
+    window.location.href = isRu ? "/discover/ru" : "/discover";
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation language={language} />
 
-      {/* Slim app header */}
-      <section className="border-b border-border bg-card/50 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto px-4 py-6 flex items-center justify-between gap-4">
+      {/* Editorial app header */}
+      <section className="border-b border-border bg-canvas-soft/60">
+        <div className="max-w-7xl mx-auto px-6 lg:px-10 py-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-accent mb-1">
-              {isRu ? "База стипендий" : "Scholarship Database"}
+            <p className="label-mono text-accent mb-2">
+              {isRu ? "База / 2026 цикл" : "Database / 2026 cycle"}
             </p>
-            <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight">
-              Top Uni <span className="text-accent">Discover</span>
+            <h1 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight leading-none">
+              {isRu ? "Стипендии" : "Scholarships"}
+              <span className="text-muted-foreground font-light italic ml-2">
+                {isRu ? "для тебя" : "for you"}
+              </span>
             </h1>
           </div>
-          <div className="text-xs text-muted-foreground hidden sm:block">
-            {stored.fullName} · {stored.nationality}
+
+          {/* Proper user pill — replaces awkward "d · Kazakh" text */}
+          <div className="flex items-center gap-2 self-start sm:self-end">
+            <div className="flex items-center gap-2.5 bg-card border border-border rounded-full pl-1.5 pr-3 py-1.5 shadow-xs">
+              <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-[11px] font-semibold text-primary-foreground">
+                {(stored.fullName || "?").trim().charAt(0).toUpperCase()}
+              </div>
+              <div className="text-xs leading-tight">
+                <div className="font-medium text-foreground truncate max-w-[120px]">{stored.fullName}</div>
+                <div className="text-muted-foreground">{stored.nationality}</div>
+              </div>
+              <button
+                onClick={handleResetProfile}
+                className="ml-1 p-1 rounded-full hover:bg-muted transition-colors"
+                title={isRu ? "Сменить профиль" : "Edit profile"}
+              >
+                <Pencil className="h-3 w-3 text-muted-foreground" />
+              </button>
+            </div>
           </div>
         </div>
       </section>
 
+      <div id="discover-tools" className="max-w-7xl mx-auto px-6 lg:px-10 py-10">
+        <div className="grid lg:grid-cols-12 gap-10">
+          {/* LEFT — Sticky profile rail */}
+          <aside className="lg:col-span-4 xl:col-span-3">
+            <div className="lg:sticky lg:top-24 space-y-5">
+              <div>
+                <p className="label-mono text-muted-foreground mb-2">{isRu ? "Профиль" : "Your profile"}</p>
+                <h2 className="font-heading font-semibold text-xl text-foreground leading-tight">
+                  {isRu ? "Точные данные —" : "Sharper inputs,"}
+                  <span className="block italic font-light text-muted-foreground">
+                    {isRu ? "точнее ранжирование." : "sharper ranking."}
+                  </span>
+                </h2>
+              </div>
 
-      <div id="discover-tools" className="max-w-6xl mx-auto px-4 py-10 space-y-8">
-        {/* Profile form */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-accent" />
-              <h2 className="font-heading font-semibold text-lg">
-                {isRu ? "Твой профиль" : "Your profile"}
-              </h2>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {isRu ? "Точные данные — точнее ранжирование." : "More accurate inputs, more accurate ranking."}
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div>
-                <Label className="text-xs">{isRu ? "Гражданство" : "Citizenship"}</Label>
-                <Input value={profile.country} onChange={e => setProfile(p => ({ ...p, country: e.target.value }))} placeholder="Kazakhstan" />
-              </div>
-              <div>
-                <Label className="text-xs">{isRu ? "Уровень" : "Degree level"}</Label>
-                <Select value={profile.degree} onValueChange={v => setProfile(p => ({ ...p, degree: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="undergraduate">Undergraduate</SelectItem>
-                    <SelectItem value="master's">Master's</SelectItem>
-                    <SelectItem value="PhD">PhD</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs">GPA</Label>
-                <div className="flex gap-2">
-                  <Input value={profile.gpa} onChange={e => setProfile(p => ({ ...p, gpa: e.target.value }))} placeholder="3.8" />
-                  <Select value={profile.gpaScale} onValueChange={v => setProfile(p => ({ ...p, gpaScale: v }))}>
-                    <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+              <div className="bg-card border border-border rounded-2xl p-5 space-y-4 shadow-xs">
+                <div>
+                  <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                    {isRu ? "Гражданство" : "Citizenship"}
+                  </Label>
+                  <Input
+                    className="mt-1.5 bg-background"
+                    value={profile.country}
+                    onChange={e => setProfile(p => ({ ...p, country: e.target.value }))}
+                    placeholder="Kazakhstan"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                    {isRu ? "Уровень" : "Degree level"}
+                  </Label>
+                  <Select value={profile.degree} onValueChange={v => setProfile(p => ({ ...p, degree: v }))}>
+                    <SelectTrigger className="mt-1.5 bg-background"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="4.0">/4.0</SelectItem>
-                      <SelectItem value="5.0">/5.0</SelectItem>
-                      <SelectItem value="100">/100</SelectItem>
+                      <SelectItem value="undergraduate">Undergraduate</SelectItem>
+                      <SelectItem value="master's">Master's</SelectItem>
+                      <SelectItem value="PhD">PhD</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              <div>
-                <Label className="text-xs">IELTS</Label>
-                <Input value={profile.ielts} onChange={e => setProfile(p => ({ ...p, ielts: e.target.value }))} placeholder="7.0" />
-              </div>
-              <div>
-                <Label className="text-xs">SAT (optional)</Label>
-                <Input value={profile.sat} onChange={e => setProfile(p => ({ ...p, sat: e.target.value }))} placeholder="1450" />
-              </div>
-              <div>
-                <Label className="text-xs">{isRu ? "Бюджет" : "Budget reality"}</Label>
-                <Select value={profile.budget} onValueChange={v => setProfile(p => ({ ...p, budget: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">{isRu ? "Нужно полное финансирование" : "Need full funding"}</SelectItem>
-                    <SelectItem value="medium">{isRu ? "Можем покрыть часть" : "Can cover some costs"}</SelectItem>
-                    <SelectItem value="high">{isRu ? "Бюджет не критичен" : "Budget is flexible"}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="sm:col-span-2 flex items-end">
-                <Button className="w-full" onClick={() => setSubmitted(true)}>
+
+                <div>
+                  <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">GPA</Label>
+                  <div className="flex gap-2 mt-1.5">
+                    <Input
+                      className="bg-background"
+                      value={profile.gpa}
+                      onChange={e => setProfile(p => ({ ...p, gpa: e.target.value }))}
+                      placeholder="3.8"
+                    />
+                    <Select value={profile.gpaScale} onValueChange={v => setProfile(p => ({ ...p, gpaScale: v }))}>
+                      <SelectTrigger className="w-24 bg-background"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="4.0">/4.0</SelectItem>
+                        <SelectItem value="5.0">/5.0</SelectItem>
+                        <SelectItem value="100">/100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">IELTS</Label>
+                    <Input
+                      className="mt-1.5 bg-background"
+                      value={profile.ielts}
+                      onChange={e => setProfile(p => ({ ...p, ielts: e.target.value }))}
+                      placeholder="7.0"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">SAT</Label>
+                    <Input
+                      className="mt-1.5 bg-background"
+                      value={profile.sat}
+                      onChange={e => setProfile(p => ({ ...p, sat: e.target.value }))}
+                      placeholder="1450"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                    {isRu ? "Бюджет" : "Budget reality"}
+                  </Label>
+                  <Select value={profile.budget} onValueChange={v => setProfile(p => ({ ...p, budget: v }))}>
+                    <SelectTrigger className="mt-1.5 bg-background"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">{isRu ? "Нужно полное финансирование" : "Need full funding"}</SelectItem>
+                      <SelectItem value="medium">{isRu ? "Можем покрыть часть" : "Can cover some costs"}</SelectItem>
+                      <SelectItem value="high">{isRu ? "Бюджет не критичен" : "Budget is flexible"}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button
+                  className="w-full bg-foreground text-background hover:bg-foreground/90 rounded-full h-11 mt-1"
+                  onClick={() => setSubmitted(true)}
+                >
                   <Sparkles className="h-4 w-4 mr-2" />
-                  {isRu ? "Показать матчи" : "Show matches"}
+                  {isRu ? "Пересчитать матчи" : "Re-rank matches"}
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </aside>
 
-        {/* Results — gated until form submitted */}
-        {!submitted ? (
-          <div className="border border-dashed border-border rounded-2xl p-10 text-center bg-muted/20 space-y-4">
-            <Compass className="h-10 w-10 text-accent mx-auto" />
-            <h3 className="text-xl font-heading font-bold">
-              {isRu ? "Заполни профиль, чтобы увидеть матчи" : "Fill in your profile to see your matches"}
-            </h3>
-            <p className="text-sm text-muted-foreground max-w-xl mx-auto">
-              {isRu
-                ? `${rows.length} верифицированных стипендий ждут — мы покажем те, где у тебя реальные шансы, с фит-скором и точными требованиями.`
-                : `${rows.length} verified scholarships are waiting — we surface the ones where you actually have a shot, with fit score and exact requirements.`}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {isRu ? "Заполни форму выше → нажми «Показать матчи»." : "Fill the form above → tap \"Show matches\"."}
-            </p>
-          </div>
-        ) : loading ? (
-          <div className="grid sm:grid-cols-2 gap-4">
-            {[1,2,3,4].map(i => <div key={i} className="h-72 bg-card border border-border rounded-xl animate-pulse" />)}
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center justify-between">
-              <h3 className="font-heading font-semibold text-lg">
-                {isRu ? "Твои рекомендации" : "Your recommendations"}
-                <span className="text-muted-foreground text-sm ml-2">({ranked.length})</span>
-              </h3>
-              {!isPro && (
-                <Badge variant="outline" className="border-gold/40 text-gold">
-                  <Lock className="h-3 w-3 mr-1" />{isRu ? "Превью: топ 3" : "Free preview: top 3"}
-                </Badge>
-              )}
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-5">
-              {visible.map(s => {
-                const PStyle = PRIORITY_STYLE[s.priority];
-                const Elig = ELIG_STYLE[s.eligibility];
-                const ElIcon = Elig.icon;
-                const days = s.application_deadline ? Math.ceil((new Date(s.application_deadline).getTime() - Date.now()) / 86400000) : null;
-                return (
-                  <motion.div key={s.scholarship_id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                    <Card className="h-full hover:border-accent/40 transition-colors flex flex-col">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <h4 className="font-heading font-semibold text-base leading-snug">{s.scholarship_name}</h4>
-                            <p className="text-xs text-muted-foreground mt-0.5">{s.provider_name} · {s.host_country}</p>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <div className="text-2xl font-bold text-accent leading-none">{s.match}</div>
-                            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">match</div>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5 mt-3">
-                          <Badge variant="outline" className={PStyle.cls}>{PStyle.label}</Badge>
-                          <Badge variant="outline" className={`gap-1 ${Elig.cls}`}><ElIcon className="h-3 w-3" />{Elig.label}</Badge>
-                          {s.coverage_type === "full_ride" && <Badge className="bg-gold/15 text-gold border-gold/30 border" variant="outline"><Award className="h-3 w-3 mr-1" />Full ride</Badge>}
-                          {days !== null && days > 0 && days < 60 && (
-                            <Badge variant="outline" className="border-destructive/30 text-destructive"><Clock className="h-3 w-3 mr-1" />{days}d left</Badge>
-                          )}
-                        </div>
-                      </CardHeader>
-                      <CardContent className="flex-1 flex flex-col gap-3 text-sm">
-                        <div className="text-xs space-y-1.5">
-                          <div className="flex items-start gap-2"><Award className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" /><span className="text-foreground/80">{s.award_amount_text}</span></div>
-                          {s.application_deadline && (
-                            <div className="flex items-start gap-2"><Calendar className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" /><span className="text-foreground/80">{new Date(s.application_deadline).toLocaleDateString(isRu ? "ru-RU" : "en-US", { year: "numeric", month: "short", day: "numeric" })}</span></div>
-                          )}
-                        </div>
-
-                        {s.why_this_fits && (
-                          <div className="bg-accent/5 border border-accent/20 rounded-lg p-3">
-                            <p className="text-[11px] uppercase tracking-wide text-accent font-semibold mb-1 flex items-center gap-1"><Lightbulb className="h-3 w-3" />{isRu ? "Почему подходит" : "Why this fits you"}</p>
-                            <p className="text-xs text-foreground/85">{s.why_this_fits}</p>
-                          </div>
-                        )}
-
-                        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                          <span className="inline-flex items-center gap-1"><TrendingUp className="h-3 w-3" />Reward: <strong className="text-foreground">{s.reward}</strong></span>
-                          <span className="inline-flex items-center gap-1">Effort: <strong className="text-foreground">{s.effort}</strong></span>
-                        </div>
-
-                        <div className="mt-auto flex gap-2 pt-2">
-                          <Button size="sm" variant="outline" className="flex-1" onClick={() => setOpenDetail(s)}>
-                            {isRu ? "Стратегия" : "Application notes"} <ArrowRight className="h-3 w-3 ml-1" />
-                          </Button>
-                          {s.official_url && (
-                            <Button size="sm" asChild>
-                              <a href={s.official_url} target="_blank" rel="noopener noreferrer">
-                                {isRu ? "Подать" : "Apply"} <ExternalLink className="h-3 w-3 ml-1" />
-                              </a>
-                            </Button>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                );
-              })}
-            </div>
-
-            {locked > 0 && (
-              <div className="mt-2 p-6 bg-gradient-to-br from-primary/10 to-accent/10 border border-gold/30 rounded-2xl text-center space-y-3">
-                <Lock className="h-8 w-8 text-gold mx-auto" />
-                <h3 className="text-lg font-heading font-bold">
-                  {isRu ? `${locked} стипендий скрыто` : `${locked} more scholarships in your ranked list`}
+          {/* RIGHT — Results column */}
+          <main className="lg:col-span-8 xl:col-span-9 space-y-8">
+            {!submitted ? (
+              <div className="border border-dashed border-border rounded-2xl p-12 text-center bg-canvas-soft/40 space-y-4">
+                <Compass className="h-10 w-10 text-accent mx-auto" />
+                <h3 className="text-2xl font-heading font-bold tracking-tight">
+                  {isRu ? "Заполни профиль слева" : "Fill the profile on the left"}
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-xl mx-auto">
                   {isRu
-                    ? "Pro открывает полный список с матч-скорами, стратегиями подачи и причинами отказов."
-                    : "Unlock the full list with match scores, application strategy notes, and common rejection reasons."}
+                    ? `${rows.length} верифицированных стипендий ждут.`
+                    : `${rows.length} verified scholarships waiting to be ranked against you.`}
                 </p>
-                <div className="flex gap-3 justify-center flex-wrap">
-                  <Button asChild><Link to="/pricing">{isRu ? "Открыть полный доступ" : "Unlock full access"}</Link></Button>
-                </div>
               </div>
+            ) : loading ? (
+              <div className="grid sm:grid-cols-2 gap-5">
+                {[1,2,3,4].map(i => <div key={i} className="h-72 bg-card border border-border rounded-2xl animate-pulse" />)}
+              </div>
+            ) : (
+              <>
+                {/* Results header — editorial */}
+                <div className="flex items-end justify-between gap-4 pb-4 border-b border-border">
+                  <div>
+                    <p className="label-mono text-muted-foreground mb-1">
+                      {isRu ? "Результаты" : "Ranked results"}
+                    </p>
+                    <h2 className="font-heading text-2xl font-bold tracking-tight">
+                      {ranked.length}{" "}
+                      <span className="text-muted-foreground font-light italic">
+                        {isRu ? "стипендий найдено" : "matches found"}
+                      </span>
+                    </h2>
+                  </div>
+                  {!isPro && (
+                    <Badge variant="outline" className="border-gold/40 text-gold-dark bg-gold/5 self-start">
+                      <Lock className="h-3 w-3 mr-1" />{isRu ? "Превью: топ 3" : "Preview · top 3"}
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-5">
+                  {visible.map(s => {
+                    const PStyle = PRIORITY_STYLE[s.priority];
+                    const Elig = ELIG_STYLE[s.eligibility];
+                    const ElIcon = Elig.icon;
+                    const days = s.application_deadline ? Math.ceil((new Date(s.application_deadline).getTime() - Date.now()) / 86400000) : null;
+                    return (
+                      <motion.div key={s.scholarship_id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                        <Card className="h-full hover:border-accent/40 hover:shadow-md transition-all flex flex-col rounded-2xl border-border bg-card">
+                          <CardHeader className="pb-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="label-mono text-muted-foreground mb-1.5">{s.host_country || "—"}</p>
+                                <h4 className="font-heading font-semibold text-base leading-snug tracking-tight">{s.scholarship_name}</h4>
+                                <p className="text-xs text-muted-foreground mt-1">{s.provider_name}</p>
+                              </div>
+                              <div className="text-right shrink-0 border-l border-border pl-3">
+                                <div className="text-3xl font-heading font-bold text-foreground leading-none tabular-nums">{s.match}</div>
+                                <div className="label-mono text-muted-foreground mt-1">match</div>
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5 mt-3">
+                              <Badge variant="outline" className={PStyle.cls}>{PStyle.label}</Badge>
+                              <Badge variant="outline" className={`gap-1 ${Elig.cls}`}><ElIcon className="h-3 w-3" />{Elig.label}</Badge>
+                              {s.coverage_type === "full_ride" && <Badge className="bg-gold/15 text-gold-dark border-gold/30 border" variant="outline"><Award className="h-3 w-3 mr-1" />Full ride</Badge>}
+                              {days !== null && days > 0 && days < 60 && (
+                                <Badge variant="outline" className="border-destructive/30 text-destructive"><Clock className="h-3 w-3 mr-1" />{days}d left</Badge>
+                              )}
+                            </div>
+                          </CardHeader>
+                          <CardContent className="flex-1 flex flex-col gap-3 text-sm">
+                            <div className="text-xs space-y-1.5">
+                              <div className="flex items-start gap-2"><Award className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" /><span className="text-foreground/80">{s.award_amount_text}</span></div>
+                              {s.application_deadline && (
+                                <div className="flex items-start gap-2"><Calendar className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" /><span className="text-foreground/80">{new Date(s.application_deadline).toLocaleDateString(isRu ? "ru-RU" : "en-US", { year: "numeric", month: "short", day: "numeric" })}</span></div>
+                              )}
+                            </div>
+
+                            {s.why_this_fits && (
+                              <div className="bg-accent/5 border border-accent/20 rounded-xl p-3">
+                                <p className="label-mono text-accent mb-1 flex items-center gap-1"><Lightbulb className="h-3 w-3" />{isRu ? "Почему подходит" : "Why this fits"}</p>
+                                <p className="text-xs text-foreground/85 leading-relaxed">{s.why_this_fits}</p>
+                              </div>
+                            )}
+
+                            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                              <span className="inline-flex items-center gap-1"><TrendingUp className="h-3 w-3" />Reward: <strong className="text-foreground">{s.reward}</strong></span>
+                              <span className="inline-flex items-center gap-1">Effort: <strong className="text-foreground">{s.effort}</strong></span>
+                            </div>
+
+                            <div className="mt-auto flex gap-2 pt-2">
+                              <Button size="sm" variant="outline" className="flex-1 rounded-full" onClick={() => setOpenDetail(s)}>
+                                {isRu ? "Стратегия" : "Application notes"} <ArrowRight className="h-3 w-3 ml-1" />
+                              </Button>
+                              {s.official_url && (
+                                <Button size="sm" asChild className="rounded-full bg-foreground text-background hover:bg-foreground/90">
+                                  <a href={s.official_url} target="_blank" rel="noopener noreferrer">
+                                    {isRu ? "Подать" : "Apply"} <ExternalLink className="h-3 w-3 ml-1" />
+                                  </a>
+                                </Button>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+
+                {locked > 0 && (
+                  <div className="mt-2 p-8 bg-canvas-soft border border-gold/30 rounded-2xl text-center space-y-3">
+                    <Lock className="h-8 w-8 text-gold mx-auto" />
+                    <h3 className="text-xl font-heading font-bold tracking-tight">
+                      {isRu ? `+${locked} стипендий` : `+${locked} more scholarships`}
+                      <span className="text-muted-foreground font-light italic ml-2">
+                        {isRu ? "в твоём списке" : "in your ranked list"}
+                      </span>
+                    </h3>
+                    <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+                      {isRu
+                        ? "Pro открывает полный список с матч-скорами, стратегиями подачи и причинами отказов."
+                        : "Pro unlocks the full ranked list with strategy notes, rejection patterns, and the rest of the database."}
+                    </p>
+                    <div className="flex gap-3 justify-center flex-wrap pt-1">
+                      <Button asChild className="rounded-full bg-foreground text-background hover:bg-foreground/90">
+                        <Link to="/pricing">{isRu ? "Открыть Pro" : "Unlock full access"}</Link>
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
-          </>
-        )}
+          </main>
+        </div>
       </div>
 
       {/* Detail dialog — requirements first, strategy gated to Pro */}
