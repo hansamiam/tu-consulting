@@ -67,38 +67,18 @@ const Index = () => {
 
       <main className="relative">
 
-        {/* SVG color-matrix filter — selective red→gold remix.
-            For each pixel, this matrix:
-              R' = 1.05·R + 0  ·G + 0  ·B   (keep red intensity, slight lift)
-              G' = 0.85·R + 0.55·G + 0  ·B   (boost green using red — red pixels gain a lot of green, turning red→orange→gold)
-              B' = 0  ·R + 0  ·G + 0.45·B   (suppress blue: gold is low-blue, so reds-with-no-blue stay clean gold; sky just slightly desaturates)
-              A' = A
-            Net: red leaves become honey-gold, green leaves stay green
-            (slightly warmer), stones look honeyed, sky desaturates a touch. */}
-        <svg width="0" height="0" className="absolute pointer-events-none" aria-hidden="true">
-          <defs>
-            <filter id="leaves-to-gold" colorInterpolationFilters="sRGB">
-              <feColorMatrix type="matrix" values="
-                1.05 0    0    0 0
-                0.85 0.55 0    0 0
-                0    0    0.45 0 0
-                0    0    0    1 0
-              " />
-            </filter>
-          </defs>
-        </svg>
-
         {/* HERO — pulled up behind the nav (-mt-16) so the navy gradient at the
             top of the section sits BEHIND the (transparent) nav strip. */}
         <section className="relative -mt-16 min-h-[86vh] flex items-center overflow-hidden bg-background text-foreground">
-          {/* Campus image — bg-fixed parallax + selective gold filter applied
-              via the SVG feColorMatrix above. CSS saturate/brightness chained
-              after for final polish. */}
+          {/* Campus image — bg-fixed creates the parallax effect.
+              The CSS filter shifts the autumn red foliage toward the gold/amber
+              brand palette: sepia(0.55) gives a unified warm cast, hue-rotate
+              nudges leftover reds toward gold, saturate punches the result. */}
           <div
             className="absolute inset-0 bg-cover bg-center bg-fixed"
             style={{
               backgroundImage: `url(${heroImage})`,
-              filter: "url(#leaves-to-gold) saturate(1.2) brightness(1.05) contrast(1.04)",
+              filter: "sepia(0.55) hue-rotate(-12deg) saturate(1.35) brightness(1.02)",
             }}
           />
           {/* Wash: navy band at the top (covers the nav strip), then a uniform
