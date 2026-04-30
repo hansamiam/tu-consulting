@@ -117,7 +117,7 @@ const Index = () => {
           <div className="relative max-w-5xl mx-auto px-5 sm:px-8 text-center pt-16 pb-24 sm:pt-20 sm:pb-28 w-full">
             <motion.h1
               {...fadeUp(0.15)}
-              className="font-heading text-5xl sm:text-6xl font-bold tracking-tight leading-[1.02] mb-7 text-balance max-w-4xl mx-auto text-foreground md:text-7xl"
+              className="font-heading text-5xl sm:text-6xl font-bold tracking-tight leading-[1.02] mb-7 text-balance max-w-4xl mx-auto text-foreground md:text-6xl"
             >
               Your tailored <span className="text-gold-dark">admission strategy</span>
               <br className="hidden sm:block" /> in minutes.
