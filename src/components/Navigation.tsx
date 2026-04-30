@@ -82,13 +82,13 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
     )}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
+          {/* Logo — gold in overlay mode for brand presence on the navy band */}
           <button
             onClick={() => navigate(basePath)}
             className={cn(
               "font-heading text-lg sm:text-xl font-semibold transition-colors",
               isOverlay
-                ? "text-primary-foreground hover:text-gold-light"
+                ? "text-gold-light hover:text-gold"
                 : "text-primary hover:text-gold-dark"
             )}
           >

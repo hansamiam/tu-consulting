@@ -89,9 +89,10 @@ const Index = () => {
                 hsl(var(--primary) / 0.78) 5%,
                 hsl(var(--primary) / 0.42) 12%,
                 hsl(var(--primary) / 0.12) 22%,
-                hsl(var(--background) / 0.82) 38%,
-                hsl(var(--background) / 0.72) 65%,
-                hsl(var(--background) / 0.95) 100%)`,
+                hsl(var(--background) / 0.92) 32%,
+                hsl(var(--background) / 0.86) 48%,
+                hsl(var(--background) / 0.78) 70%,
+                hsl(var(--background) / 0.96) 100%)`,
             }}
           />
           <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-background pointer-events-none" />
