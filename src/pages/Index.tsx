@@ -110,19 +110,12 @@ const Index = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-sm px-4 text-primary-foreground/72 hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                className="text-sm px-4 text-foreground/65 hover:bg-foreground/5 hover:text-foreground"
                 onClick={() => document.getElementById('how')?.scrollIntoView({ behavior: 'smooth' })}
               >
                 Scroll
               </Button>
             </motion.div>
-
-            <motion.p
-              {...fadeUp(0.45)}
-              className="text-[10px] sm:text-[11px] tracking-[0.16em] uppercase text-primary-foreground/38"
-            >
-              With insights from Yale, Harvard, Cambridge & Tsinghua alumni · Russian & English
-            </motion.p>
           </div>
         </section>
 
