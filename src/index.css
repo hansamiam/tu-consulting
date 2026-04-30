@@ -207,3 +207,65 @@
   .shadow-card { box-shadow: var(--shadow-sm); }
   .shadow-card-hover { box-shadow: var(--shadow-lg); }
 }
+
+/* ─── Print: TopUni AI pathway report → PDF ─────────────────────────────
+   When the user hits "Download PDF" on the pathway tab we call
+   window.print(); this stylesheet hides all chrome and renders just the
+   #printable-report element on a clean white sheet with editorial typography. */
+@media print {
+  /* Hide everything by default... */
+  body * { visibility: hidden !important; }
+
+  /* ...except the printable report and its descendants */
+  #printable-report,
+  #printable-report * {
+    visibility: visible !important;
+  }
+
+  /* Promote the report to fill the printed page */
+  #printable-report {
+    position: absolute !important;
+    inset: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+    color: black !important;
+    max-width: none !important;
+    font-size: 11pt !important;
+    line-height: 1.55 !important;
+  }
+
+  /* Reveal the print-only masthead/footer */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Plain-black headings for print */
+  #printable-report h1,
+  #printable-report h2,
+  #printable-report h3,
+  #printable-report h4 {
+    color: black !important;
+    page-break-after: avoid;
+  }
+  #printable-report h1 { font-size: 22pt !important; }
+  #printable-report h2 { font-size: 14pt !important; margin-top: 20pt !important; }
+  #printable-report h3 { font-size: 12pt !important; margin-top: 14pt !important; }
+
+  #printable-report p,
+  #printable-report li {
+    color: #1a1a1a !important;
+  }
+
+  /* Page margins */
+  @page {
+    size: A4;
+    margin: 18mm 16mm;
+  }
+
+  /* Avoid breaking inside list items / paragraphs */
+  #printable-report li,
+  #printable-report p {
+    page-break-inside: avoid;
+  }
+}
