@@ -599,15 +599,7 @@ const DiscoverApp = ({ language = "en" }: Props) => {
                   </div>
                 )}
 
-                {/* CTA: prep gap */}
-                {(openDetail.min_ielts || openDetail.min_sat) && (
-                  <div className="border border-border rounded-lg p-3 flex items-start justify-between gap-3 bg-muted/20">
-                    <div className="text-xs text-foreground/80">
-                      {isRu ? "Нужно поднять балл?" : "Need to hit those scores?"}{" "}
-                      <Link to="/prep" className="underline">{isRu ? "Открыть Prep" : "Open Prep"}</Link>
-                    </div>
-                  </div>
-                )}
+                {/* Score gap CTA removed — Prep spun off as separate product */}
 
                 {openDetail.official_url && (
                   <Button asChild className="w-full">

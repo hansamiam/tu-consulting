@@ -15,8 +15,8 @@ import { motion } from "framer-motion";
 
 const BENEFITS = [
   "Full Discover — every ranked scholarship match, full strategy notes & rejection insights",
-  "All Prep tools as they ship — Diagnostic, Practice, Essay Grader, AI Tutor",
   "Academy access at launch — early courses, country playbooks, vault content",
+  "Priority access to new TopUni AI tools as they ship",
   "Lifetime price lock at $19/mo — even after public launch raises the price",
   "Founding Member badge + direct line to founders for product input",
 ];
@@ -73,7 +73,7 @@ const Pricing = () => {
             One membership. <span className="text-gold">Every tool.</span>
           </h1>
           <p className="text-muted-foreground mt-4 text-base">
-            Discover, Prep, and Academy as they ship — at the founding price.
+            Discover and Academy as they ship — at the founding price.
           </p>
         </motion.div>
 

@@ -54,7 +54,7 @@ export const PaywallGate = ({ children, feature, description, showPreview = true
           <h3 className="font-bold text-lg mb-1">{feature} is a Pro feature</h3>
           <p className="text-sm text-muted-foreground mb-5">
             {description ||
-              "Pro unlocks the full Discover ranked matches, every Prep tool, and Academy as it ships."}
+              "Pro unlocks the full Discover ranked matches and Academy as it ships."}
           </p>
           <Button onClick={handleUpgrade} variant="gold" className="w-full gap-2">
             <Crown className="w-4 h-4" /> Unlock full access

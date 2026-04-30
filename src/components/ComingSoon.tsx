@@ -16,9 +16,9 @@ type Props = {
   title: string;
   /** One-line value prop describing what users will get */
   description: string;
-  /** Tag stored with the email so we know what they're waiting for, e.g. "prep-tutor" */
+  /** Tag stored with the email so we know what they're waiting for */
   featureTag: string;
-  /** Optional path to go back to (defaults to /prep/dashboard) */
+  /** Optional path to go back to (defaults to /) */
   backTo?: string;
   backLabel?: string;
 };
@@ -27,8 +27,8 @@ const ComingSoon = ({
   title,
   description,
   featureTag,
-  backTo = "/prep/dashboard",
-  backLabel = "Back to Prep",
+  backTo = "/",
+  backLabel = "Back home",
 }: Props) => {
   const navigate = useNavigate();
   const { user, subscription } = useAuth();

@@ -93,22 +93,14 @@ const TopUniAI = () => {
                 </p>
 
                 {/* Product funnel CTAs */}
-                <div className="grid sm:grid-cols-3 gap-3 max-w-xl mx-auto pt-4">
+                <div className="grid sm:grid-cols-2 gap-3 max-w-xl mx-auto pt-4">
                   <button
                     onClick={() => navigate("/discover")}
                     className="group p-4 rounded-xl border border-border hover:border-accent/40 bg-background/80 backdrop-blur-sm transition-all text-left space-y-1.5"
                   >
                     <Search className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
                     <p className="text-sm font-semibold text-foreground">Discover</p>
-                    <p className="text-[11px] text-muted-foreground leading-snug">Browse 500+ universities with filters, rankings & costs</p>
-                  </button>
-                  <button
-                    onClick={() => navigate("/prep")}
-                    className="group p-4 rounded-xl border border-border hover:border-accent/40 bg-background/80 backdrop-blur-sm transition-all text-left space-y-1.5"
-                  >
-                    <PenTool className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
-                    <p className="text-sm font-semibold text-foreground">Prep</p>
-                    <p className="text-[11px] text-muted-foreground leading-snug">IELTS, SAT & English courses with AI tutoring</p>
+                    <p className="text-[11px] text-muted-foreground leading-snug">Find your funding pathway — scholarships ranked by your profile</p>
                   </button>
                   <button
                     onClick={() => navigate("/academy")}
