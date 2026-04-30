@@ -1100,7 +1100,7 @@ const ReqRow = ({ label, status, detail }: {
 };
 
 /* ─── Detail Sheet (tabbed, visual) ──────────────────────────────────── */
-const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, status, onStatusChange, note, onNoteChange }: {
+const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, status, onStatusChange, note, onNoteChange, similar, onSwitchTo }: {
   s: Scored | null; open: boolean; onClose: () => void;
   isBookmarked: boolean; onBookmark: () => void;
   profile: Profile;
@@ -1108,6 +1108,8 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
   onStatusChange: (s: AppStatus | null) => void;
   note: string;
   onNoteChange: (note: string) => void;
+  similar: Scored[];
+  onSwitchTo: (s: Scored) => void;
 }) => {
   if (!s) return null;
   const tier = TIER[s.priority];
@@ -1484,6 +1486,36 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           </TabsContent>
         </Tabs>
 
+        {/* ── SIMILAR SCHOLARSHIPS — Crunchbase/IMDB pattern: keep users moving ── */}
+        {similar.length > 0 && (
+          <div className="px-7 py-6 border-t border-border bg-canvas-soft/50">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-3">If you like this, also look at</p>
+            <div className="space-y-1.5">
+              {similar.map(sim => {
+                const flag = FLAGS[sim.host_country || ""] ?? "🌍";
+                return (
+                  <button
+                    key={sim.scholarship_id}
+                    onClick={() => onSwitchTo(sim)}
+                    className="w-full flex items-center gap-3 p-2.5 rounded-lg bg-card border border-border/60 hover:border-gold/30 hover:shadow-sm transition-all text-left group"
+                  >
+                    <span className="text-xl shrink-0">{flag}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-foreground truncate group-hover:text-gold-dark transition-colors">{sim.scholarship_name}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        {[sim.provider_name, sim.host_country].filter(Boolean).join(" · ")}
+                        <span className="mx-1.5 text-muted-foreground/40">·</span>
+                        <span className="font-semibold text-foreground/70 tabular-nums">{sim.match}% match</span>
+                      </p>
+                    </div>
+                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 group-hover:translate-x-0.5 group-hover:text-gold-dark transition-all" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* ── FOOTER (data trust) ── */}
         <div className="px-7 py-4 border-t border-border bg-muted/20 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
@@ -1745,6 +1777,40 @@ const Discover = ({ language = "en" }: Props) => {
       return { def, items: sorted };
     }).filter(c => c.items.length >= (c.def.minItems ?? 1));
   }, [ranked, profile, hidden]);
+
+  /* Similar scholarships — Crunchbase/IMDB \"You may also like\" pattern. */
+  const similarToOpen = useMemo(() => {
+    if (!openDetail) return [];
+    return ranked
+      .filter(s => s.scholarship_id !== openDetail.scholarship_id && !hidden.has(s.scholarship_id))
+      .map(s => {
+        let score = 0;
+        if (s.host_country && s.host_country === openDetail.host_country) score += 3;
+        if (s.selectivity === openDetail.selectivity) score += 2;
+        if (s.target_fields && openDetail.target_fields && s.target_fields.some(f => openDetail.target_fields?.includes(f))) score += 2;
+        if (s.coverage_type === openDetail.coverage_type) score += 1;
+        if (s.target_degree_level && openDetail.target_degree_level && s.target_degree_level.some(d => openDetail.target_degree_level?.includes(d))) score += 1;
+        return { s, score };
+      })
+      .filter(x => x.score >= 2)
+      .sort((a, b) => b.score - a.score || b.s.match - a.s.match)
+      .slice(0, 3)
+      .map(x => x.s);
+  }, [openDetail, ranked, hidden]);
+
+  /* Browse-by-country aggregation — Spotify/Zillow-style geographic discovery */
+  const byCountry = useMemo(() => {
+    const map = new Map<string, { country: string; count: number; totalValue: number; topMatch: number }>();
+    ranked.forEach(s => {
+      if (!s.host_country || hidden.has(s.scholarship_id)) return;
+      const cur = map.get(s.host_country) || { country: s.host_country, count: 0, totalValue: 0, topMatch: 0 };
+      cur.count += 1;
+      cur.totalValue += s.estimated_total_value_usd ?? 0;
+      cur.topMatch = Math.max(cur.topMatch, s.match);
+      map.set(s.host_country, cur);
+    });
+    return [...map.values()].sort((a, b) => b.count - a.count);
+  }, [ranked, hidden]);
 
   const [openCollection, setOpenCollection] = useState<string | null>(null);
   const activeCollection = liveCollections.find(c => c.def.id === openCollection) ?? null;
@@ -2149,25 +2215,52 @@ const Discover = ({ language = "en" }: Props) => {
                     </Reveal>
                   )}
 
-                  {/* Match landscape — recolored to a single gold gradient (no judgmental tier colors) */}
-                  {!loading && ranked.length > 0 && (
+                  {/* ── Browse by country — geographic discovery rail (Spotify-style)
+                      Replaces the old match-landscape bar chart. Each tile is a
+                      clickable host country: flag + name + scholarship count +
+                      total funding pool. Click → applies host-country filter. */}
+                  {!loading && byCountry.length > 0 && (
                     <Reveal delay={0.3} className="mt-7 pt-6 border-t border-border/60">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-foreground/65 text-[11px] uppercase tracking-[0.18em] font-medium">All {ranked.length} scholarships in your universe · click any bar</p>
+                      <div className="flex items-baseline justify-between mb-4">
+                        <div>
+                          <p className="text-gold-dark text-[10px] font-semibold uppercase tracking-[0.22em] mb-1">Discover by destination</p>
+                          <h3 className="font-heading text-base font-bold text-foreground tracking-tight">{byCountry.length} countries · funding worldwide</h3>
+                        </div>
+                        {filters.hostCountry !== "all" && (
+                          <button onClick={() => setFilters(f => ({ ...f, hostCountry: "all" }))} className="text-[11px] text-muted-foreground hover:text-gold-dark transition-colors flex items-center gap-1">
+                            <X className="h-3 w-3" /> Clear country
+                          </button>
+                        )}
                       </div>
-                      <div className="flex items-end gap-[2px] h-12 overflow-hidden rounded-lg bg-card border border-border/60 p-1.5">
-                        {ranked.map((s, i) => (
-                          <motion.div
-                            key={s.scholarship_id}
-                            initial={{ height: 0 }}
-                            whileInView={{ height: `${Math.max(s.match, 8)}%` }}
-                            viewport={{ once: true }}
-                            transition={{ delay: i * 0.012, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                            className="flex-1 min-w-[3px] rounded-t cursor-pointer transition-all opacity-70 hover:opacity-100 hover:scale-y-110 origin-bottom bg-gradient-to-t from-gold-dark/40 to-gold-light"
-                            onClick={() => setOpenDetail(s)}
-                            title={`${s.scholarship_name} — ${s.match}%`}
-                          />
-                        ))}
+                      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
+                        {byCountry.slice(0, 16).map((c, i) => {
+                          const flag = FLAGS[c.country] ?? "🌍";
+                          const active = filters.hostCountry === c.country;
+                          return (
+                            <motion.button
+                              key={c.country}
+                              initial={{ opacity: 0, y: 8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: Math.min(i * 0.025, 0.35), duration: 0.4 }}
+                              onClick={() => setFilters(f => ({ ...f, hostCountry: active ? "all" : c.country }))}
+                              className={`group relative text-left rounded-xl border px-3 py-3 transition-all hover:-translate-y-0.5 ${
+                                active
+                                  ? "bg-gold/10 border-gold/40 shadow-md"
+                                  : "bg-card border-border/70 hover:border-gold/30 hover:shadow-sm"
+                              }`}
+                              title={`${c.country} — ${c.count} scholarships${c.totalValue > 0 ? ` · ${fmtValue(c.totalValue)}` : ""}`}
+                            >
+                              <div className="flex items-baseline justify-between gap-1.5 mb-1.5">
+                                <span className="text-2xl leading-none">{flag}</span>
+                                <span className="text-base font-bold tabular-nums text-foreground/45">{c.count}</span>
+                              </div>
+                              <p className="text-[11px] font-semibold text-foreground tracking-tight truncate leading-tight">{c.country}</p>
+                              {c.totalValue > 0 && (
+                                <p className="text-[10px] text-gold-dark mt-0.5 tabular-nums truncate">{fmtValue(c.totalValue)}</p>
+                              )}
+                            </motion.button>
+                          );
+                        })}
                       </div>
                     </Reveal>
                   )}
@@ -2860,6 +2953,8 @@ const Discover = ({ language = "en" }: Props) => {
           onStatusChange={(st) => openDetail && setStatus(openDetail.scholarship_id, st)}
           note={openDetail ? (notesMap[openDetail.scholarship_id] || "") : ""}
           onNoteChange={(n) => openDetail && setNote(openDetail.scholarship_id, n)}
+          similar={similarToOpen}
+          onSwitchTo={(s) => setOpenDetail(s)}
         />
       </div>
     </div>
