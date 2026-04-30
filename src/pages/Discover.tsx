@@ -20,7 +20,7 @@ import {
   Target, Flame, Users, FileText, Languages,
   CreditCard, AlertOctagon, UserCheck, ShieldAlert, MinusCircle, HelpCircle,
   LayoutGrid, List, EyeOff, Eye, Columns3, Circle, MoreHorizontal, GitCompare,
-  Gem, DollarSign, Crown, Award, Compass,
+  Gem, DollarSign, Crown, Award, Compass, Layers,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
@@ -80,6 +80,7 @@ interface FilterState {
 type Phase = "landing" | "wizard" | "analyzing" | "results";
 type SortBy = "match" | "deadline" | "value" | "effort" | "selectivity";
 type ViewMode = "grid" | "list" | "timeline";
+type AppSection = "browse" | "pipeline" | "shortlist" | "collections";
 type AppStatus = "researching" | "drafting" | "submitted" | "decision" | "rejected";
 
 const STATUS_LABEL: Record<AppStatus, string> = {
@@ -1560,6 +1561,8 @@ const Discover = ({ language = "en" }: Props) => {
 
   // Logic-Pro-grade app state, persisted in localStorage
   const [viewMode, setViewMode] = useState<ViewMode>(() => (localStorage.getItem("tu_view_mode") as ViewMode) || "grid");
+  const [appSection, setAppSection] = useState<AppSection>("browse");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [statusMap, setStatusMap] = useState<Record<string, AppStatus>>(() => {
     try { return JSON.parse(localStorage.getItem("tu_status_map") || "{}"); } catch { return {}; }
   });
@@ -1577,6 +1580,20 @@ const Discover = ({ language = "en" }: Props) => {
   useEffect(() => { localStorage.setItem("tu_status_map", JSON.stringify(statusMap)); }, [statusMap]);
   useEffect(() => { localStorage.setItem("tu_hidden", JSON.stringify([...hidden])); }, [hidden]);
   useEffect(() => { localStorage.setItem("tu_notes_map", JSON.stringify(notesMap)); }, [notesMap]);
+
+  // Keyboard: "/" focuses the search box (skip when an input is focused)
+  useEffect(() => {
+    if (phase !== "results") return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "/") return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      e.preventDefault();
+      searchInputRef.current?.focus();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [phase]);
 
   const setNote = (id: string, note: string) => {
     setNotesMap(prev => {
@@ -2162,7 +2179,7 @@ const Discover = ({ language = "en" }: Props) => {
                 <div className="max-w-7xl mx-auto px-6 sm:px-8 py-3 flex items-center gap-2.5 flex-wrap">
                   <div className="relative flex-1 min-w-[200px] max-w-md">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                    <Input value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} placeholder="Search scholarships, providers, countries..."
+                    <Input ref={searchInputRef} value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} placeholder="Search scholarships, providers, countries…  (press / to focus)"
                       className="pl-10 h-10 text-sm rounded-lg" />
                     {filters.search && <button onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>}
                   </div>
@@ -2243,15 +2260,89 @@ const Discover = ({ language = "en" }: Props) => {
               </div>
 
               {/* Results body */}
-              <div className="max-w-7xl mx-auto px-6 sm:px-8 py-12 sm:py-16">
-                <div className="flex gap-10">
-                  <aside className="hidden lg:block w-[230px] shrink-0">
-                    <div className="sticky top-24 bg-card border border-border rounded-3xl p-5 shadow-sm">
-                      <div className="flex items-center justify-between mb-5">
-                        <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground flex items-center gap-2"><SlidersHorizontal className="h-3.5 w-3.5" />Refine</h3>
-                        {activeFiltersCount > 0 && <Badge className="h-5 px-1.5 text-[10px] bg-gold/20 text-gold-dark dark:text-gold border-0">{activeFiltersCount}</Badge>}
+              <div className="max-w-7xl mx-auto px-6 sm:px-8 py-10 sm:py-12">
+                <div className="flex gap-8">
+                  {/* ─── WORKSPACE SIDEBAR — app navigation rail ─── */}
+                  <aside className="hidden lg:block w-[232px] shrink-0">
+                    <div className="sticky top-24 space-y-3.5">
+                      {/* Workspace nav */}
+                      <nav className="bg-card border border-border rounded-2xl p-3 shadow-sm">
+                        <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-2.5 px-2 mt-1">Workspace</p>
+                        {([
+                          { id: "browse" as AppSection,      label: "Browse",       icon: Layers,        count: ranked.length },
+                          { id: "pipeline" as AppSection,    label: "My pipeline",  icon: Zap,           count: pipeline.total, accent: pipeline.total > 0 },
+                          { id: "shortlist" as AppSection,   label: "Shortlist",    icon: BookmarkCheck, count: shortlist.size,  accent: shortlist.size > 0 },
+                          { id: "collections" as AppSection, label: "Collections",  icon: Sparkles,      count: liveCollections.length },
+                        ]).map(item => {
+                          const Icon = item.icon;
+                          const active = appSection === item.id;
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={() => setAppSection(item.id)}
+                              className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                                active
+                                  ? "bg-foreground/[0.05] text-foreground font-semibold"
+                                  : "text-foreground/65 hover:bg-foreground/[0.025] hover:text-foreground"
+                              }`}
+                            >
+                              <span className="flex items-center gap-2.5">
+                                <Icon className={`h-4 w-4 ${active ? "text-gold-dark" : "text-muted-foreground"}`} />
+                                {item.label}
+                              </span>
+                              {item.count > 0 && (
+                                <span className={`text-[11px] tabular-nums px-1.5 py-0.5 rounded font-medium ${
+                                  active ? "bg-gold/15 text-gold-dark" : item.accent ? "bg-gold/10 text-gold-dark" : "bg-muted/50 text-muted-foreground"
+                                }`}>
+                                  {item.count}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+
+                        {compareSet.size > 0 && (
+                          <>
+                            <div className="my-2 mx-2 h-px bg-border/50" />
+                            <button
+                              onClick={() => setCompareOpen(true)}
+                              className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm text-gold-dark bg-gold/8 hover:bg-gold/12 transition-colors"
+                            >
+                              <span className="flex items-center gap-2.5">
+                                <Columns3 className="h-4 w-4" />
+                                Compare
+                              </span>
+                              <span className="text-[11px] tabular-nums px-1.5 py-0.5 rounded bg-gold/20 font-semibold">{compareSet.size}</span>
+                            </button>
+                          </>
+                        )}
+
+                        <div className="my-2 mx-2 h-px bg-border/50" />
+                        <button
+                          onClick={resetProfile}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-foreground/65 hover:bg-foreground/[0.025] hover:text-foreground transition-colors"
+                        >
+                          <UserCheck className="h-4 w-4 text-muted-foreground" />
+                          Profile
+                        </button>
+                      </nav>
+
+                      {/* Filters panel */}
+                      <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+                        <div className="flex items-center justify-between mb-5">
+                          <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground flex items-center gap-2"><SlidersHorizontal className="h-3.5 w-3.5" />Refine</h3>
+                          {activeFiltersCount > 0 && <Badge className="h-5 px-1.5 text-[10px] bg-gold/20 text-gold-dark dark:text-gold border-0">{activeFiltersCount}</Badge>}
+                        </div>
+                        <FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} fieldsAvailable={fieldsAvailable} />
                       </div>
-                      <FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} fieldsAvailable={fieldsAvailable} />
+
+                      {/* Local-state indicator — app feel */}
+                      <div className="text-[10px] text-muted-foreground/70 px-2">
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-success" />
+                          {shortlist.size + Object.keys(statusMap).length + Object.keys(notesMap).length} items saved locally
+                        </span>
+                      </div>
                     </div>
                   </aside>
 
@@ -2268,9 +2359,108 @@ const Discover = ({ language = "en" }: Props) => {
                         <Button variant="outline" size="sm" onClick={() => setFilters(DEFAULT_FILTERS)}>Clear filters</Button>
                       </div>
                     ) : (
-                      <div className="space-y-16">
-                        {/* Collections rail — curated triage views */}
-                        {viewMode === "grid" && liveCollections.length > 0 && (
+                      <div className="space-y-12">
+                        {/* Section header — context for the active workspace section */}
+                        {appSection !== "browse" && (
+                          <div className="flex items-baseline justify-between pb-5 border-b border-border/60">
+                            <div>
+                              <p className="text-gold-dark text-[11px] font-semibold uppercase tracking-[0.22em] mb-1">
+                                {appSection === "pipeline" ? "Workspace · Pipeline" : appSection === "shortlist" ? "Workspace · Shortlist" : "Workspace · Collections"}
+                              </p>
+                              <h2 className="font-heading text-2xl font-bold tracking-tight text-foreground">
+                                {appSection === "pipeline" ? "Applications in progress" : appSection === "shortlist" ? "Saved scholarships" : "Curated collections"}
+                              </h2>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {appSection === "pipeline" ? "Scholarships you've moved into your pipeline. Status updates from here sync everywhere." :
+                                 appSection === "shortlist" ? "Scholarships you've bookmarked. Save more from any view." :
+                                 "Pre-built lists organized by application strategy."}
+                              </p>
+                            </div>
+                            <button onClick={() => setAppSection("browse")} className="text-xs text-muted-foreground hover:text-gold-dark transition-colors">← Back to browse</button>
+                          </div>
+                        )}
+
+                        {/* Pipeline / Shortlist — filter to those items, render as list */}
+                        {(appSection === "pipeline" || appSection === "shortlist") && (() => {
+                          const items = filtered.filter(s =>
+                            appSection === "pipeline" ? !!statusMap[s.scholarship_id] : shortlist.has(s.scholarship_id)
+                          );
+                          if (items.length === 0) {
+                            return (
+                              <div className="border border-dashed border-border rounded-3xl p-14 text-center bg-canvas-soft/40">
+                                {appSection === "pipeline" ? <Zap className="h-10 w-10 text-muted-foreground/20 mx-auto mb-4" /> : <BookmarkCheck className="h-10 w-10 text-muted-foreground/20 mx-auto mb-4" />}
+                                <h3 className="font-heading font-semibold text-lg text-foreground mb-1.5">
+                                  {appSection === "pipeline" ? "Nothing in your pipeline yet" : "No saved scholarships yet"}
+                                </h3>
+                                <p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">
+                                  {appSection === "pipeline" ? "Set a status on any scholarship and it'll show up here for tracking." : "Bookmark any scholarship and it'll appear here."}
+                                </p>
+                                <Button variant="outline" size="sm" onClick={() => setAppSection("browse")}>Back to browse</Button>
+                              </div>
+                            );
+                          }
+                          const cp = (s: Scored, i: number) => ({
+                            key: s.scholarship_id, s, index: i,
+                            onSelect: () => setOpenDetail(s),
+                            isBookmarked: shortlist.has(s.scholarship_id),
+                            onBookmark: (e: React.MouseEvent) => { e.stopPropagation(); toggleBookmark(s.scholarship_id); },
+                            status: statusMap[s.scholarship_id],
+                            onStatusChange: (st: AppStatus | null) => setStatus(s.scholarship_id, st),
+                            isHidden: hidden.has(s.scholarship_id),
+                            onToggleHide: (e: React.MouseEvent) => { e.stopPropagation(); toggleHide(s.scholarship_id); },
+                            isComparing: compareSet.has(s.scholarship_id),
+                            onToggleCompare: (e: React.MouseEvent) => { e.stopPropagation(); toggleCompare(s.scholarship_id); },
+                          });
+                          return (
+                            <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
+                              <div className="hidden sm:grid grid-cols-[44px,minmax(0,2fr),minmax(0,1.2fr),minmax(0,1fr),auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                                <span className="text-center">Score</span>
+                                <span>Scholarship</span>
+                                <span>Award · Deadline</span>
+                                <span>Status</span>
+                                <span className="text-right pr-2">Actions</span>
+                              </div>
+                              {items.map((s, i) => <ScholarRow {...cp(s, i)} />)}
+                            </div>
+                          );
+                        })()}
+
+                        {/* Collections — full layout when explicitly visiting that section */}
+                        {appSection === "collections" && liveCollections.length > 0 && (
+                          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {liveCollections.map((c, i) => {
+                              const Icon = c.def.icon;
+                              const description = typeof c.def.description === "function" ? c.def.description(profile) : c.def.description;
+                              return (
+                                <motion.button
+                                  key={c.def.id}
+                                  initial={{ opacity: 0, y: 14 }}
+                                  whileInView={{ opacity: 1, y: 0 }}
+                                  viewport={{ once: true, margin: "-30px" }}
+                                  transition={{ delay: Math.min(i * 0.04, 0.3), duration: 0.5 }}
+                                  onClick={() => setOpenCollection(c.def.id)}
+                                  className="group relative text-left bg-card border border-border/70 hover:border-gold/30 hover:shadow-md rounded-2xl p-6 transition-all"
+                                >
+                                  <div className="flex items-start justify-between gap-3 mb-5">
+                                    <div className={`h-11 w-11 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0 ${c.def.accentClass}`}>
+                                      <Icon className="h-5 w-5" />
+                                    </div>
+                                    <span className="text-2xl font-bold tabular-nums text-foreground/40">{c.items.length.toString().padStart(2, "0")}</span>
+                                  </div>
+                                  <p className={`text-[10px] font-semibold uppercase tracking-[0.2em] mb-1 ${c.def.accentClass}`}>{c.def.kicker}</p>
+                                  <h3 className="font-heading font-bold text-lg text-foreground tracking-tight mb-2 leading-tight">{c.def.title}</h3>
+                                  <p className="text-sm text-muted-foreground leading-[1.6] mb-5">{description}</p>
+                                  <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground group-hover:text-gold-dark transition-colors">
+                                    View {c.items.length} <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                                  </span>
+                                </motion.button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* BROWSE — default render with collections rail + featured + sections */}
+                        {appSection === "browse" && viewMode === "grid" && liveCollections.length > 0 && (
                           <section>
                             <Reveal y={20}>
                               <div className="flex items-baseline justify-between mb-5">
@@ -2314,7 +2504,7 @@ const Discover = ({ language = "en" }: Props) => {
                           </section>
                         )}
 
-                        {viewMode === "grid" && sections.hero.length > 0 && (
+                        {appSection === "browse" && viewMode === "grid" && sections.hero.length > 0 && (
                           <section>
                             <Reveal y={20}>
                               <p className="text-gold-dark dark:text-gold text-[11px] font-semibold uppercase tracking-[0.22em] mb-4 flex items-center gap-2">
@@ -2330,7 +2520,7 @@ const Discover = ({ language = "en" }: Props) => {
                           </section>
                         )}
 
-                        {(() => {
+                        {appSection === "browse" && (() => {
                           const cardProps = (s: Scored, i: number) => ({
                             key: s.scholarship_id, s, index: i,
                             onSelect: () => setOpenDetail(s),
