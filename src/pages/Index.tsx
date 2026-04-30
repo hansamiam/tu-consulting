@@ -117,7 +117,7 @@ const Index = () => {
       </motion.section>
 
       {/* ── 3-STEP FUNNEL ── */}
-      <section className="py-18 sm:py-22 bg-canvas-soft">
+      <section className="py-20 sm:py-24 bg-canvas-soft">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <motion.div {...fadeUp()} className="mb-10 max-w-2xl">
             <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground mb-3">
@@ -139,7 +139,7 @@ const Index = () => {
                 <div className="absolute -top-3 left-6 h-7 w-7 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">
                   {step.n}
                 </div>
-                <div className="h-11 w-11 rounded-md bg-gold/12 flex items-center justify-center mb-4 mt-2">
+                <div className="h-11 w-11 rounded-md bg-gold/10 flex items-center justify-center mb-4 mt-2">
                   <step.icon className="h-5 w-5 text-gold-dark" />
                 </div>
                 <h3 className="font-heading text-lg font-bold text-foreground mb-1.5">{step.title}</h3>
@@ -154,7 +154,7 @@ const Index = () => {
       </section>
 
       {/* ── TEAM ── */}
-      <section className="py-18 sm:py-22 bg-background border-y border-border/70">
+      <section className="py-20 sm:py-24 bg-background border-y border-border/70">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <motion.div {...fadeUp()} className="mb-10 max-w-2xl">
             <p className="text-xs uppercase tracking-[0.2em] text-gold-dark font-medium mb-3">The people behind it</p>
