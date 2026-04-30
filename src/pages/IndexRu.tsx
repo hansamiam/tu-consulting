@@ -110,13 +110,13 @@ const IndexRu = () => {
       </motion.section>
 
       {/* 3-STEP FUNNEL */}
-      <section className="py-20 sm:py-24 bg-background">
+      <section className="py-20 sm:py-24 bg-canvas-soft">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <motion.div {...fadeUp()} className="text-center mb-12">
+          <motion.div {...fadeUp()} className="mb-10 max-w-2xl">
             <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground mb-3">
-              Три шага. <span className="text-accent">Один план.</span>
+              Три шага. <span className="text-gold-dark">Один план.</span>
             </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">
+            <p className="text-muted-foreground">
               От профиля до финансируемого шорт-листа, готового к действиям уже на этой неделе.
             </p>
           </motion.div>
@@ -126,18 +126,18 @@ const IndexRu = () => {
               <motion.div
                 key={step.n}
                 {...fadeUp(0.1 * i)}
-                className="group relative rounded-2xl border border-border bg-card p-6 hover:border-accent/40 hover:shadow-md transition-all cursor-pointer"
+                className="group relative rounded-lg border border-border bg-surface p-6 shadow-sm hover:border-gold/45 hover:shadow-md transition-all cursor-pointer"
                 onClick={() => navigate(step.path)}
               >
-                <div className="absolute -top-3 left-6 h-7 w-7 rounded-full bg-accent text-accent-foreground text-sm font-bold flex items-center justify-center">
+                <div className="absolute -top-3 left-6 h-7 w-7 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">
                   {step.n}
                 </div>
-                <div className="h-11 w-11 rounded-xl bg-accent/10 flex items-center justify-center mb-4 mt-2">
-                  <step.icon className="h-5 w-5 text-accent" />
+                <div className="h-11 w-11 rounded-md bg-gold/10 flex items-center justify-center mb-4 mt-2">
+                  <step.icon className="h-5 w-5 text-gold-dark" />
                 </div>
                 <h3 className="font-heading text-lg font-bold text-foreground mb-1.5">{step.title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed mb-4">{step.body}</p>
-                <span className="inline-flex items-center gap-1 text-accent font-medium text-sm group-hover:gap-2 transition-all">
+                <span className="inline-flex items-center gap-1 text-primary font-medium text-sm group-hover:gap-2 transition-all">
                   {step.cta} <ArrowRight className="h-4 w-4" />
                 </span>
               </motion.div>
