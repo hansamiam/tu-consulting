@@ -7,32 +7,32 @@
 
 @layer base {
   :root {
-    /* Perplexity-style off-white base — visibly warm, not pure white */
-    --background: 40 18% 97%;
-    --foreground: 210 74% 13%;
+    /* Warm editorial base — parchment, not stark white */
+    --background: 43 38% 94%;
+    --foreground: 210 64% 16%;
 
-    --canvas: 40 14% 95%;
-    --canvas-soft: 40 20% 96.5%;
-    --surface: 40 25% 98.5%;
+    --canvas: 42 32% 90%;
+    --canvas-soft: 43 44% 96%;
+    --surface: 42 42% 97%;
 
-    --card: 40 25% 98.5%;
-    --card-foreground: 210 74% 13%;
+    --card: 42 42% 97%;
+    --card-foreground: 210 64% 16%;
 
-    --popover: 40 25% 98.5%;
-    --popover-foreground: 210 74% 13%;
+    --popover: 42 42% 97%;
+    --popover-foreground: 210 64% 16%;
 
     /* Refined navy primary */
-    --primary: 210 70% 20%;
-    --primary-foreground: 0 0% 100%;
-    --primary-bright: 210 70% 32%;
+    --primary: 210 58% 22%;
+    --primary-foreground: 43 44% 96%;
+    --primary-bright: 209 46% 34%;
 
-    --secondary: 40 14% 93%;
+    --secondary: 42 30% 88%;
     --secondary-foreground: 210 74% 15%;
 
-    --muted: 40 14% 94%;
-    --muted-foreground: 220 10% 44%;
+    --muted: 42 28% 89%;
+    --muted-foreground: 212 18% 39%;
 
-    --accent: 42 70% 50%;
+    --accent: 41 61% 47%;
     --accent-foreground: 210 74% 15%;
 
     --destructive: 0 72% 51%;
@@ -41,8 +41,8 @@
     --success: 152 55% 38%;
     --warning: 30 90% 50%;
 
-    --border: 40 12% 89%;
-    --input: 40 12% 89%;
+    --border: 41 22% 81%;
+    --input: 41 22% 81%;
     --ring: 210 70% 28%;
 
     --radius: 0.625rem;
@@ -50,12 +50,12 @@
     /* Brand tokens */
     --navy: 210 70% 20%;
     --navy-deep: 210 74% 13%;
-    --gold: 42 70% 50%;
-    --gold-light: 42 80% 65%;
-    --gold-dark: 38 70% 40%;
+    --gold: 41 61% 47%;
+    --gold-light: 40 61% 58%;
+    --gold-dark: 38 58% 35%;
 
     /* Gradients — subtle, editorial */
-    --gradient-gold: linear-gradient(135deg, hsl(var(--gold)) 0%, hsl(var(--gold-light)) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(var(--gold-dark)) 0%, hsl(var(--gold)) 100%);
     --gradient-overlay: linear-gradient(180deg, hsla(var(--navy-deep), 0.85) 0%, hsla(var(--navy), 0.6) 100%);
     --gradient-premium: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--gold)) 50%, hsl(var(--accent)) 100%);
     --gradient-canvas: linear-gradient(180deg, hsl(var(--canvas-soft)) 0%, hsl(var(--canvas)) 100%);
@@ -75,7 +75,7 @@
     --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     --transition-premium: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
-    --sidebar-background: 40 20% 97%;
+    --sidebar-background: 43 38% 94%;
     --sidebar-foreground: 210 25% 26%;
     --sidebar-primary: 210 70% 20%;
     --sidebar-primary-foreground: 0 0% 100%;

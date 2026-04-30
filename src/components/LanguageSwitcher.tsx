@@ -26,7 +26,7 @@ const LanguageSwitcher = () => {
       onClick={switchLanguage}
       variant="outline"
       size="sm"
-      className="rounded-full border-gold/50 text-primary-foreground bg-background/30 hover:bg-background/50"
+      className="rounded-full border-gold/45 text-primary bg-surface hover:bg-secondary hover:text-primary"
       aria-label={isRussian ? 'Switch to English' : 'Переключить на русский'}
     >
       {isRussian ? 'EN' : 'RU'}
