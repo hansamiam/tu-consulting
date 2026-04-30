@@ -558,7 +558,7 @@ const MatchDial = ({ value, size = 64, stroke = 5, gradId, color1, color2, delay
   );
 };
 
-/* ─── Featured card — editorial cream with gold accent (no navy block) ── */
+/* ─── Featured card — compact editorial poster, gold accent only ─────── */
 const FeaturedCard = ({ s, onSelect, isBookmarked, onBookmark }: {
   s: Scored; onSelect: () => void; isBookmarked: boolean; onBookmark: (e: React.MouseEvent) => void;
 }) => {
@@ -568,27 +568,27 @@ const FeaturedCard = ({ s, onSelect, isBookmarked, onBookmark }: {
 
   return (
     <motion.article
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
       onClick={onSelect}
-      className="relative overflow-hidden rounded-3xl cursor-pointer group bg-card border border-border hover:border-gold/40 hover:shadow-xl transition-all"
+      className="relative overflow-hidden rounded-2xl cursor-pointer group bg-card border border-border hover:border-gold/40 hover:shadow-md transition-all"
     >
-      {/* Subtle gold accent strip on the left */}
-      <div className="absolute left-0 inset-y-0 w-[3px] bg-gradient-to-b from-gold-light via-gold-dark to-gold-light" />
+      {/* Thin gold accent strip on the left */}
+      <div className="absolute left-0 inset-y-0 w-[2px] bg-gradient-to-b from-gold-light via-gold-dark to-gold-light" />
 
-      <div className="px-8 py-9 sm:px-12 sm:py-12 grid lg:grid-cols-[auto,1fr] gap-x-12 gap-y-7 items-center">
-        {/* Match score block — large editorial number, not a dial */}
-        <div className="flex lg:flex-col items-center lg:items-start gap-5 lg:gap-3 shrink-0">
-          <div className="flex items-baseline gap-2">
-            <span className="font-heading text-7xl sm:text-8xl font-bold tabular-nums leading-none tracking-[-0.03em] text-foreground">{s.match}</span>
-            <span className="text-base text-muted-foreground/70 tabular-nums">/100</span>
+      <div className="px-6 py-6 sm:px-8 sm:py-7 grid sm:grid-cols-[auto,1fr] gap-x-7 gap-y-5 items-center">
+        {/* Match score — refined, not gigantic */}
+        <div className="flex items-center gap-4 sm:flex-col sm:items-start sm:gap-2.5 shrink-0">
+          <div className="flex items-baseline gap-1.5">
+            <span className="font-heading text-4xl sm:text-5xl font-bold tabular-nums leading-none tracking-[-0.03em] text-foreground">{s.match}</span>
+            <span className="text-xs text-muted-foreground/70 tabular-nums">/100</span>
           </div>
-          <div>
-            <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/25 px-3 py-1 rounded-full">
-              <Trophy className="h-3 w-3 text-gold-dark" />
-              <span className="text-gold-dark text-[10px] font-semibold uppercase tracking-[0.2em]">Top match</span>
+          <div className="flex sm:flex-col items-baseline sm:items-start gap-2 sm:gap-1.5">
+            <div className="inline-flex items-center gap-1.5 bg-gold/10 border border-gold/25 px-2 py-0.5 rounded-full">
+              <Trophy className="h-2.5 w-2.5 text-gold-dark" />
+              <span className="text-gold-dark text-[10px] font-semibold uppercase tracking-[0.18em]">Top match</span>
             </div>
             <SelectivityChip level={s.selectivity} />
           </div>
@@ -596,38 +596,30 @@ const FeaturedCard = ({ s, onSelect, isBookmarked, onBookmark }: {
 
         {/* Content */}
         <div className="min-w-0">
-          <div className="flex items-center gap-3 flex-wrap mb-4">
-            <span className="text-3xl">{flag}</span>
-            <p className="text-sm text-muted-foreground">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
-            {s.partner_universities && s.partner_universities.length > 0 && (
-              <>
-                <span className="text-muted-foreground/40">·</span>
-                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                  <Users className="h-3 w-3" /> {s.partner_universities.length} partner unis
-                </span>
-              </>
-            )}
+          <div className="flex items-center gap-2.5 flex-wrap mb-2">
+            <span className="text-xl">{flag}</span>
+            <p className="text-xs text-muted-foreground truncate">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
           </div>
 
-          <h3 className="font-heading font-bold text-3xl sm:text-[36px] text-foreground leading-[1.05] tracking-[-0.025em] mb-5">{s.scholarship_name}</h3>
+          <h3 className="font-heading font-bold text-xl sm:text-2xl text-foreground leading-[1.15] tracking-[-0.02em] mb-3">{s.scholarship_name}</h3>
 
-          {/* Key facts row — editorial inline */}
-          <div className="flex flex-wrap items-center gap-x-7 gap-y-3 mb-6 pb-6 border-b border-border/60">
+          {/* Inline facts row */}
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mb-4 text-sm">
             <div>
-              <div className="text-muted-foreground text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">Award</div>
-              <div className="text-foreground text-[15px] font-semibold">{s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || "—"}</div>
+              <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-[0.18em] mr-2">Award</span>
+              <span className="text-foreground font-semibold">{s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || "—"}</span>
             </div>
-            <div className="h-9 w-px bg-border/60" />
+            <span className="text-muted-foreground/40">·</span>
             <div>
-              <div className="text-muted-foreground text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">Deadline</div>
-              <div className={`text-[15px] font-semibold ${dl.cls}`}>{dl.text}</div>
+              <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-[0.18em] mr-2">Deadline</span>
+              <span className={`font-semibold ${dl.cls}`}>{dl.text}</span>
             </div>
             {s.estimated_total_value_usd ? (
               <>
-                <div className="h-9 w-px bg-border/60" />
+                <span className="text-muted-foreground/40">·</span>
                 <div>
-                  <div className="text-gold-dark text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">Total value</div>
-                  <div className="text-gold-dark text-[15px] font-bold">{fmtValue(s.estimated_total_value_usd)}</div>
+                  <span className="text-gold-dark text-[10px] font-semibold uppercase tracking-[0.18em] mr-2">Value</span>
+                  <span className="text-gold-dark font-bold">{fmtValue(s.estimated_total_value_usd)}</span>
                 </div>
               </>
             ) : null}
@@ -635,28 +627,18 @@ const FeaturedCard = ({ s, onSelect, isBookmarked, onBookmark }: {
 
           {/* Why this fits */}
           {why && (
-            <p className="text-foreground/80 text-[15px] leading-[1.65] italic font-light mb-6 max-w-2xl">
+            <p className="text-foreground/75 text-sm leading-[1.6] italic font-light line-clamp-2 mb-4">
               "{why.replace(/\.+$/, "")}."
             </p>
           )}
 
-          {/* Field tags */}
-          {s.target_fields && s.target_fields.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-7">
-              {s.target_fields.slice(0, 5).map((f, i) => (
-                <span key={i} className="text-xs text-foreground/65 bg-muted/50 border border-border/60 px-2.5 py-1 rounded-md">{f}</span>
-              ))}
-              {s.target_fields.length > 5 && <span className="text-xs text-muted-foreground self-center">+{s.target_fields.length - 5}</span>}
-            </div>
-          )}
-
           {/* CTA row */}
-          <div className="flex items-center gap-3">
-            <Button variant="gold" size="lg" className="gap-2" onClick={e => { e.stopPropagation(); onSelect(); }}>
-              Open strategy <ArrowRight className="h-4 w-4" />
+          <div className="flex items-center gap-2 mt-1">
+            <Button variant="gold" size="sm" className="gap-1.5 h-9" onClick={e => { e.stopPropagation(); onSelect(); }}>
+              Open strategy <ArrowRight className="h-3.5 w-3.5" />
             </Button>
             <button onClick={onBookmark} className="text-muted-foreground hover:text-gold-dark transition-colors p-2 -m-2" aria-label={isBookmarked ? "Remove from shortlist" : "Save to shortlist"}>
-              {isBookmarked ? <BookmarkCheck className="h-5 w-5 text-gold-dark" /> : <Bookmark className="h-5 w-5" />}
+              {isBookmarked ? <BookmarkCheck className="h-4 w-4 text-gold-dark" /> : <Bookmark className="h-4 w-4" />}
             </button>
           </div>
         </div>
@@ -2030,32 +2012,55 @@ const Discover = ({ language = "en" }: Props) => {
             </motion.div>
           )}
 
-          {/* ══ RESULTS ══ */}
+          {/* ══ RESULTS — distinctive app-shell experience ══ */}
           {phase === "results" && (
             <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7 }}>
-              {/* ── Hero briefing — cream with navy/gold accents (no thick navy block) ── */}
-              <section className="relative bg-canvas-soft pt-12 pb-14 sm:pt-16 sm:pb-16 overflow-hidden border-b border-border">
-                {/* Soft navy hint at top so the page isn't fully cream from the navbar */}
-                <div className="absolute inset-x-0 top-0 h-40 pointer-events-none"
-                  style={{ backgroundImage: "linear-gradient(180deg, hsl(var(--primary) / 0.08) 0%, transparent 100%)" }} />
-                {/* Subtle warm glow */}
-                <div className="absolute -top-1/3 right-1/4 w-[30vw] h-[30vw] rounded-full blur-[140px] opacity-[0.10] pointer-events-none" style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 70%)" }} />
+              {/* App-shell brand strip — signals "you're inside the database app" */}
+              <div className="relative bg-gradient-to-b from-canvas-soft via-canvas-soft to-background border-b border-border/70">
+                {/* Top gold accent line — subtle "app frame" */}
+                <div className="h-[2px] bg-gradient-to-r from-transparent via-gold/60 to-transparent" />
+                {/* Soft navy hint at top */}
+                <div className="absolute inset-x-0 top-0 h-32 pointer-events-none"
+                  style={{ backgroundImage: "linear-gradient(180deg, hsl(var(--primary) / 0.06) 0%, transparent 100%)" }} />
+                {/* Subtle gold ambient glow */}
+                <div className="absolute -top-1/4 right-1/3 w-[40vw] h-[40vw] rounded-full blur-[160px] opacity-[0.08] pointer-events-none" style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 70%)" }} />
 
-                <div className="max-w-7xl mx-auto px-6 sm:px-8 relative">
-                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-                    {wiz.fullName && <p className="text-gold-dark text-sm font-semibold tracking-[0.06em] mb-4 uppercase">Welcome back, {wiz.fullName}</p>}
-                    <h1 className="font-heading text-[clamp(2.25rem,5.5vw,4.5rem)] font-bold text-foreground leading-[1.05] tracking-[-0.025em] max-w-4xl">
-                      {loading ? "Loading your matches..." : (
+                {/* ── App header (compact, distinctive) ── */}
+                <div className="max-w-7xl mx-auto px-6 sm:px-8 pt-7 pb-8 relative">
+                  <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+                    {/* Brand row */}
+                    <div className="flex items-center justify-between gap-4 mb-7">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-gold to-gold-dark flex items-center justify-center shadow-sm">
+                          <Sparkles className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-heading font-bold text-base text-foreground tracking-tight leading-none">Discover</p>
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground mt-1">The scholarship database</p>
+                        </div>
+                      </div>
+                      <div className="flex items-baseline gap-1.5 text-sm">
+                        <span className="font-heading font-bold tabular-nums text-foreground text-lg">{rows.length}</span>
+                        <span className="text-muted-foreground text-xs">scholarships indexed</span>
+                      </div>
+                    </div>
+
+                    {/* Welcome + headline (compact, inspiring, NOT restrictive) */}
+                    {wiz.fullName && <p className="text-gold-dark text-[11px] font-semibold tracking-[0.22em] uppercase mb-3">Welcome back, {wiz.fullName}</p>}
+                    <h1 className="font-heading text-[clamp(1.75rem,3.6vw,2.75rem)] font-bold text-foreground leading-[1.1] tracking-[-0.02em] max-w-3xl">
+                      {loading ? "Loading the database..." : (
                         <>
-                          You have <span className="text-gold-dark tabular-nums">{stats.strong + stats.competitive}</span> real opportunities.
+                          Your scholarship universe.
+                          <span className="text-foreground/55"> All <span className="tabular-nums">{rows.length}</span>, ranked for you.</span>
                         </>
                       )}
                     </h1>
-                    <p className="text-foreground/65 text-lg sm:text-xl max-w-2xl mt-5 leading-relaxed">
-                      We ranked all <span className="text-foreground font-semibold tabular-nums">{rows.length}</span> scholarships in our database against your profile. Here's how each one aligns.
+                    <p className="text-foreground/65 text-base max-w-2xl mt-3 leading-relaxed">
+                      Some are natural fits today. Others become realistic with the right essays, timing, and prep. Browse all of them — even the stretches are worth knowing about.
                     </p>
 
-                    <div className="flex flex-wrap gap-2 mt-6">
+                    {/* Profile chips */}
+                    <div className="flex flex-wrap gap-2 mt-5">
                       {[profile.country, profile.degree, profile.field, profile.gpa ? `GPA ${profile.gpa}/${profile.gpaScale}` : null, profile.ielts ? `IELTS ${profile.ielts}` : null].filter(Boolean).map(chip => (
                         <span key={chip} className="text-xs bg-card text-foreground/75 border border-border px-3 py-1.5 rounded-full font-medium">{chip}</span>
                       ))}
@@ -2065,27 +2070,16 @@ const Discover = ({ language = "en" }: Props) => {
                     </div>
                   </motion.div>
 
-                  {!loading && (
-                    <Reveal delay={0.15} y={28} className="mt-10 pt-8 border-t border-border">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-7">
-                        <InlineStat label="Strong matches" value={stats.strong} color="text-gold-dark" icon={Trophy} delay={0.05} />
-                        <InlineStat label="Aligned" value={stats.competitive} color="text-foreground" icon={Target} delay={0.1} />
-                        <InlineStat label="Closing soon" value={stats.closing} color="text-foreground" icon={Flame} delay={0.15} />
-                        <InlineStat label="Funding pool" value={stats.totalValue} color="text-gold-dark" icon={Sparkles} isMoney delay={0.2} />
-                      </div>
-                    </Reveal>
-                  )}
-
                   {/* My pipeline — appears once the user has tracked applications */}
                   {!loading && pipeline.total > 0 && (
-                    <Reveal delay={0.2} y={20} className="mt-7 pt-7 border-t border-border">
-                      <div className="flex items-baseline justify-between mb-4">
+                    <Reveal delay={0.2} y={16} className="mt-7 pt-6 border-t border-border/60">
+                      <div className="flex items-baseline justify-between mb-3">
                         <div>
                           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-1">My pipeline</p>
-                          <h3 className="font-heading text-base font-bold text-foreground">{pipeline.total} application{pipeline.total === 1 ? "" : "s"} in progress</h3>
+                          <h3 className="font-heading text-sm font-bold text-foreground">{pipeline.total} application{pipeline.total === 1 ? "" : "s"} in progress</h3>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                         {([
                           { k: "researching" as AppStatus, label: "Researching" },
                           { k: "drafting" as AppStatus, label: "Drafting" },
@@ -2093,29 +2087,22 @@ const Discover = ({ language = "en" }: Props) => {
                           { k: "decision" as AppStatus, label: "Awaiting decision" },
                           { k: "rejected" as AppStatus, label: "Rejected" },
                         ]).filter(p => pipeline.counts[p.k] > 0).map(p => (
-                          <div key={p.k} className={`rounded-xl border px-4 py-3 ${STATUS_COLOR[p.k]}`}>
-                            <div className="text-2xl font-bold tabular-nums leading-none">{pipeline.counts[p.k]}</div>
-                            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] mt-2 opacity-80">{p.label}</div>
+                          <div key={p.k} className={`rounded-lg border px-3 py-2 ${STATUS_COLOR[p.k]}`}>
+                            <div className="text-lg font-bold tabular-nums leading-none">{pipeline.counts[p.k]}</div>
+                            <div className="text-[9px] font-semibold uppercase tracking-[0.18em] mt-1.5 opacity-80">{p.label}</div>
                           </div>
                         ))}
                       </div>
                     </Reveal>
                   )}
 
+                  {/* Match landscape — recolored to a single gold gradient (no judgmental tier colors) */}
                   {!loading && ranked.length > 0 && (
-                    <Reveal delay={0.3} className="mt-9 pt-7 border-t border-border">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <p className="text-muted-foreground text-[10px] uppercase tracking-[0.22em] mb-1 font-semibold">Match landscape</p>
-                          <p className="text-foreground/65 text-xs">Each bar is one scholarship · click to view</p>
-                        </div>
-                        <div className="hidden sm:flex items-center gap-4 text-[11px] text-muted-foreground font-medium">
-                          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-gold-dark" />Strong</span>
-                          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-primary" />Competitive</span>
-                          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-foreground/25" />Lower</span>
-                        </div>
+                    <Reveal delay={0.3} className="mt-7 pt-6 border-t border-border/60">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-foreground/65 text-[11px] uppercase tracking-[0.18em] font-medium">All {ranked.length} scholarships in your universe · click any bar</p>
                       </div>
-                      <div className="flex items-end gap-[2px] h-20 overflow-hidden rounded-2xl bg-card border border-border p-2">
+                      <div className="flex items-end gap-[2px] h-12 overflow-hidden rounded-lg bg-card border border-border/60 p-1.5">
                         {ranked.map((s, i) => (
                           <motion.div
                             key={s.scholarship_id}
@@ -2123,11 +2110,7 @@ const Discover = ({ language = "en" }: Props) => {
                             whileInView={{ height: `${Math.max(s.match, 8)}%` }}
                             viewport={{ once: true }}
                             transition={{ delay: i * 0.012, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                            className={`flex-1 min-w-[3px] rounded-t cursor-pointer transition-all opacity-85 hover:opacity-100 hover:scale-y-110 origin-bottom ${
-                              s.priority === "strong_match" ? "bg-gradient-to-t from-gold-dark to-gold-light" :
-                              s.priority === "competitive" ? "bg-gradient-to-t from-primary to-primary-bright" :
-                              "bg-gradient-to-t from-foreground/15 to-foreground/30"
-                            }`}
+                            className="flex-1 min-w-[3px] rounded-t cursor-pointer transition-all opacity-70 hover:opacity-100 hover:scale-y-110 origin-bottom bg-gradient-to-t from-gold-dark/40 to-gold-light"
                             onClick={() => setOpenDetail(s)}
                             title={`${s.scholarship_name} — ${s.match}%`}
                           />
@@ -2136,7 +2119,7 @@ const Discover = ({ language = "en" }: Props) => {
                     </Reveal>
                   )}
                 </div>
-              </section>
+              </div>
 
               {/* Sticky toolbar — search · filters · sort · view-mode · hidden · compare */}
               <div className="sticky top-0 z-30 bg-background/85 backdrop-blur-xl border-b border-border">
