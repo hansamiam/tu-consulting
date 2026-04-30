@@ -74,16 +74,20 @@ const Index = () => {
             className="absolute inset-0 bg-cover bg-center"
             style={{ backgroundImage: `url(${heroImage})` }}
           />
-          {/* Wash: subtle navy hint at top so the page isn't navyless up here,
-              dense cream through the middle so the hero text stays legible. */}
+          {/* Wash: navy band at the top fades through cream wash to background.
+              Mirrors the cream→navy ramp at the bottom of the page so the hero
+              has navy bookend presence above + below. Cream wash is dense
+              throughout so the campus photo only whispers behind the text. */}
           <div
             className="absolute inset-0"
             style={{
               backgroundImage: `linear-gradient(180deg,
-                hsl(var(--primary) / 0.10) 0%,
-                hsl(var(--background) / 0.80) 28%,
-                hsl(var(--background) / 0.70) 55%,
-                hsl(var(--background) / 0.95) 100%)`,
+                hsl(var(--primary) / 0.92) 0%,
+                hsl(var(--primary) / 0.55) 8%,
+                hsl(var(--primary) / 0.18) 18%,
+                hsl(var(--background) / 0.93) 32%,
+                hsl(var(--background) / 0.88) 60%,
+                hsl(var(--background) / 0.97) 100%)`,
             }}
           />
           <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-background pointer-events-none" />
@@ -189,13 +193,13 @@ const Index = () => {
                   key={m.name}
                   {...fadeUp(0.06 * i)}
                   onClick={() => navigate('/team')}
-                  className="group text-left"
+                  className="group text-center"
                 >
-                  <div className="aspect-[4/5] overflow-hidden rounded-md mb-4 bg-canvas">
+                  <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden mb-5 bg-canvas mx-auto ring-1 ring-border/60 ring-offset-4 ring-offset-background shadow-sm">
                     <img
                       src={m.photo}
                       alt={m.name}
-                      className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700"
+                      className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-700"
                     />
                   </div>
                   <p className="font-heading font-semibold text-foreground text-base leading-tight">{m.name}</p>
@@ -216,43 +220,23 @@ const Index = () => {
           </div>
         </section>
 
-        {/* ACADEMY — single inline editorial moment */}
+        {/* ACADEMY — single inline editorial moment, no specific dates or sample list */}
         <section className="py-20 sm:py-28">
-          <div className="max-w-6xl mx-auto px-5 sm:px-8">
-            <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-start">
-              <motion.div {...fadeUp()} className="lg:col-span-5">
-                <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">
-                  Academy · launching May 10
-                </p>
-                <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-5">
-                  The application playbook.
-                </h2>
-                <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-                  Workshops, country guides, admitted essays, and practical tactics. New material every week.
-                </p>
-                <Button onClick={() => navigate('/academy')} variant="gold" className="gap-2">
-                  Preview Academy <ArrowRight className="h-4 w-4" />
-                </Button>
-              </motion.div>
-
-              <motion.div {...fadeUp(0.15)} className="lg:col-span-7">
-                <ul className="divide-y divide-border/70 border-y border-border/70">
-                  {[
-                    { tag: "Essay", t: "Yale supplemental essays — 3 admitted samples, annotated" },
-                    { tag: "Teardown", t: "Schwarzman application — what actually got me in" },
-                    { tag: "Live · May 17", t: "Workshop: building your activities list" },
-                    { tag: "Country", t: "USA need-blind aid for international students" },
-                  ].map((item) => (
-                    <li key={item.t} className="py-5 flex items-start gap-5">
-                      <span className="text-[10px] uppercase tracking-[0.18em] text-gold-dark font-medium pt-1 w-24 shrink-0">
-                        {item.tag}
-                      </span>
-                      <span className="text-foreground/90 leading-relaxed">{item.t}</span>
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-            </div>
+          <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
+            <motion.p {...fadeUp()} className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">
+              Academy
+            </motion.p>
+            <motion.h2 {...fadeUp(0.05)} className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-5">
+              The application playbook.
+            </motion.h2>
+            <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-lg leading-relaxed mb-8 max-w-xl mx-auto">
+              Workshops with our founders, country guides, and admitted essays. Recordings live in your library so you can return to them.
+            </motion.p>
+            <motion.div {...fadeUp(0.18)}>
+              <Button onClick={() => navigate('/academy')} variant="gold" className="gap-2">
+                Preview Academy <ArrowRight className="h-4 w-4" />
+              </Button>
+            </motion.div>
           </div>
         </section>
 
@@ -275,7 +259,7 @@ const Index = () => {
               <Crown className="h-3.5 w-3.5" /> Founding Membership
             </motion.div>
             <motion.h2 {...fadeUp(0.05)} className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.1] mb-5">
-              One membership. Everything inside.
+              Become a founding member.
             </motion.h2>
             <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-lg mb-10 max-w-xl mx-auto leading-relaxed">
               TopUni AI, Discover, and Academy — locked at the founding price for our first cohort.

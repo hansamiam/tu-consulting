@@ -70,7 +70,7 @@ const Pricing = () => {
         >
           <Badge className="mb-4 bg-gold/15 text-gold border-gold/30">Membership</Badge>
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
-            One membership. <span className="text-gold">Every tool.</span>
+            Become a <span className="text-gold">founding member.</span>
           </h1>
           <p className="text-muted-foreground mt-4 text-base">
             Discover and Academy as they ship — at the founding price.
