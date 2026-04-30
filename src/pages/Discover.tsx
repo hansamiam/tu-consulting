@@ -1560,11 +1560,14 @@ const Discover = ({ language = "en" }: Props) => {
           {/* ══ RESULTS ══ */}
           {phase === "results" && (
             <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7 }}>
-              {/* ── Hero briefing (navy) ── */}
-              <section className="relative bg-primary pt-12 pb-14 sm:pt-20 sm:pb-20 overflow-hidden">
+              {/* ── Hero briefing (navy) — soft bottom fade into cream body ── */}
+              <section className="relative bg-primary pt-12 pb-20 sm:pt-20 sm:pb-28 overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-navy-deep via-primary to-navy-deep" />
                 <div className="absolute -top-1/3 left-1/4 w-[40vw] h-[40vw] rounded-full blur-[140px] opacity-15" style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 70%)" }} />
                 <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 0.5px, transparent 0)", backgroundSize: "32px 32px" }} />
+                {/* Bottom fade: navy → cream so toolbar/body don't snap back to white */}
+                <div className="absolute inset-x-0 bottom-0 h-32 pointer-events-none"
+                  style={{ backgroundImage: "linear-gradient(180deg, transparent 0%, hsl(var(--background) / 0.4) 60%, hsl(var(--background)) 100%)" }} />
 
                 <div className="max-w-7xl mx-auto px-6 sm:px-8 relative">
                   <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>

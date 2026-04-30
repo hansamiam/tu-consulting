@@ -246,10 +246,16 @@ const Index = () => {
           </div>
         </section>
 
-        {/* MEMBERSHIP — closing crescendo */}
+        {/* MEMBERSHIP — closing crescendo, gradient bridges into navy footer */}
         <section
           className="py-20 sm:py-28"
-          style={{ backgroundImage: `linear-gradient(180deg, hsl(var(--background)), hsl(var(--primary) / 0.06))` }}
+          style={{
+            backgroundImage: `linear-gradient(180deg,
+              hsl(var(--background)) 0%,
+              hsl(var(--primary) / 0.04) 35%,
+              hsl(var(--primary) / 0.10) 70%,
+              hsl(var(--primary) / 0.22) 100%)`,
+          }}
         >
           <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
             <motion.div {...fadeUp()} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gold/30 bg-gold/10 text-gold-dark text-[11px] font-medium tracking-[0.18em] uppercase mb-7">
@@ -284,8 +290,17 @@ const Index = () => {
 
       </main>
 
-      {/* FOOTER */}
-      <footer className="bg-primary text-primary-foreground py-12">
+      {/* FOOTER — soft top edge fades up from membership's faint navy into full primary */}
+      <footer
+        className="text-primary-foreground py-12"
+        style={{
+          backgroundImage: `linear-gradient(180deg,
+            hsl(var(--primary) / 0.55) 0%,
+            hsl(var(--primary)) 35%,
+            hsl(var(--primary)) 100%)`,
+          backgroundColor: `hsl(var(--primary))`,
+        }}
+      >
         <div className="max-w-5xl mx-auto px-5 sm:px-8">
           <div className="flex flex-col items-center gap-6">
             <a
