@@ -68,46 +68,34 @@ const Index = () => {
       <main className="relative">
 
         {/* HERO */}
-        <section
-          className="relative min-h-[86vh] flex items-center overflow-hidden bg-primary text-primary-foreground"
-          style={{
-            backgroundImage: `linear-gradient(180deg, hsl(var(--navy-deep) / 0.9), hsl(var(--primary)) 58%, hsl(var(--background)) 100%)`,
-          }}
-        >
+        <section className="relative min-h-[86vh] flex items-center overflow-hidden bg-background text-foreground">
+          {/* Campus image — bright, full visibility */}
           <div
-            className="absolute inset-0 opacity-[0.16] pointer-events-none bg-cover bg-center"
-            style={{
-              backgroundImage: `url(${heroImage})`,
-              maskImage: "linear-gradient(180deg, black 0%, black 68%, transparent 100%)",
-              WebkitMaskImage: "linear-gradient(180deg, black 0%, black 68%, transparent 100%)",
-            }}
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${heroImage})` }}
           />
-          <div className="absolute left-1/2 top-[42%] h-[28rem] w-[28rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold/18 blur-3xl opacity-70 pointer-events-none" />
+          {/* Soft warm wash for legibility */}
+          <div className="absolute inset-0 bg-gradient-to-b from-background/85 via-background/55 to-background/90" />
           <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-background pointer-events-none" />
 
-          <div className="relative max-w-4xl mx-auto px-5 sm:px-8 text-center pt-16 pb-24 sm:pt-20 sm:pb-28">
-            <motion.p
-              {...fadeUp(0.05)}
-              className="text-[10px] sm:text-[11px] uppercase tracking-[0.2em] text-gold-light/85 font-medium mb-6"
-            >
-              TopUni
-            </motion.p>
-
+          <div className="relative max-w-5xl mx-auto px-5 sm:px-8 text-center pt-16 pb-24 sm:pt-20 sm:pb-28 w-full">
             <motion.h1
               {...fadeUp(0.15)}
-              className="font-sans text-[2.15rem] sm:text-4xl md:text-5xl font-medium tracking-normal leading-[1.08] mb-6 text-balance max-w-3xl mx-auto"
-              style={{ textShadow: "0 18px 60px hsl(var(--gold) / 0.22)" }}
+              className="font-heading text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight leading-[1.02] mb-7 text-balance max-w-4xl mx-auto text-foreground"
             >
-              Your admission strategy,
-              <br className="hidden sm:block" /> built in minutes.
+              Your <span className="text-gold-dark">admission strategy</span>
+              <br className="hidden sm:block" /> in minutes.
             </motion.h1>
 
             <motion.p
               {...fadeUp(0.25)}
-              className="text-base sm:text-[17px] text-primary-foreground/76 max-w-xl mx-auto leading-relaxed mb-9"
+              className="text-lg sm:text-xl text-foreground/75 max-w-2xl mx-auto leading-relaxed mb-6"
             >
-              A calm intake, a clear plan, and a smarter path through schools,
-              scholarships, and application work.
+              A two-minute intake builds your plan. Then discover the funding, and learn the playbook.
+            </motion.p>
+
+            <motion.p {...fadeUp(0.32)} className="text-[10px] sm:text-[11px] tracking-[0.16em] uppercase text-foreground/55 mb-9 max-w-xl mx-auto">
+              With insights from Yale, Harvard, Cambridge & Tsinghua alumni · Available in Russian & English
             </motion.p>
 
             <motion.div {...fadeUp(0.35)} className="flex flex-wrap items-center justify-center gap-3 mb-10">
@@ -117,7 +105,7 @@ const Index = () => {
                 className="text-sm sm:text-base px-7 py-5 gap-2"
                 onClick={() => navigate('/topuni-ai')}
               >
-                Build my plan <ArrowRight className="h-4 w-4" />
+                Get my admissions plan <ArrowRight className="h-4 w-4" />
               </Button>
               <Button
                 variant="ghost"
