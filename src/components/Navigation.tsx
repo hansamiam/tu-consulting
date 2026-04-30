@@ -158,8 +158,8 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
                   className={cn(
                     "px-4 py-3 text-base font-medium rounded-md transition-all duration-200 text-left",
                     isActive(basePath, true)
-                      ? "text-gold bg-gold/10 border-l-4 border-gold"
-                      : "text-primary-foreground/70 hover:text-gold hover:bg-gold/5"
+                      ? "text-gold-dark bg-gold/10 border-l-4 border-gold"
+                      : "text-muted-foreground hover:text-primary hover:bg-secondary"
                   )}
                 >
                   {isRussian ? "Главная" : "Home"}
@@ -171,8 +171,8 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
                   className={cn(
                     "px-4 py-3 text-base font-bold rounded-md border transition-all duration-200 text-left",
                     isActive(primaryLinks[0].path)
-                      ? "text-gold bg-gold/10 border-gold/60"
-                      : "text-gold border-gold/40 hover:bg-gold/15"
+                      ? "text-gold-dark bg-gold/10 border-gold/60"
+                      : "text-primary border-gold/35 hover:bg-gold/10"
                   )}
                 >
                   {primaryLinks[0].label}
@@ -180,7 +180,7 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
 
                 {/* Other products */}
                 <div>
-                  <p className="px-4 text-xs text-gold/50 uppercase tracking-wider font-medium mb-2">
+                    <p className="px-4 text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">
                     {isRussian ? "Платформа" : "Platform"}
                   </p>
                   <div className="flex flex-col gap-1">
@@ -191,8 +191,8 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
                         className={cn(
                           "px-4 py-3 text-base font-semibold rounded-md transition-all duration-200 text-left",
                           isActive(link.path)
-                            ? "text-gold bg-gold/10 border-l-4 border-gold"
-                            : "text-gold/70 hover:text-gold hover:bg-gold/5"
+                              ? "text-gold-dark bg-gold/10 border-l-4 border-gold"
+                              : "text-primary/75 hover:text-primary hover:bg-secondary"
                         )}
                       >
                         {link.label}
@@ -202,7 +202,7 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
                 </div>
 
                 {/* Secondary links */}
-                <div className="border-t border-gold/20 pt-4">
+                <div className="border-t border-border pt-4">
                   <div className="flex flex-col gap-1">
                     {secondaryLinks.map((link) => (
                       <button
@@ -211,8 +211,8 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
                         className={cn(
                           "px-4 py-3 text-base font-medium rounded-md transition-all duration-200 text-left",
                           isActive(link.path)
-                            ? "text-gold bg-gold/10 border-l-4 border-gold"
-                            : "text-primary-foreground/50 hover:text-primary-foreground/80 hover:bg-gold/5"
+                            ? "text-gold-dark bg-gold/10 border-l-4 border-gold"
+                            : "text-muted-foreground hover:text-primary hover:bg-secondary"
                         )}
                       >
                         {link.label}
@@ -221,11 +221,11 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-gold/20 flex flex-col gap-2">
+                <div className="pt-4 border-t border-border flex flex-col gap-2">
                   {user ? (
                     <button
                       onClick={() => { navigate("/account"); setIsOpen(false); }}
-                      className="px-4 py-3 text-base font-semibold rounded-md text-gold bg-gold/10 border border-gold/40 text-left flex items-center gap-2"
+                      className="px-4 py-3 text-base font-semibold rounded-md text-gold-dark bg-gold/10 border border-gold/35 text-left flex items-center gap-2"
                     >
                       {subscription.tier === "founding" ? <Crown className="w-4 h-4" /> : <UserIcon className="w-4 h-4" />}
                       {subscription.tier === "founding" ? "Founding Member" : subscription.tier === "pro" ? "Pro Account" : "My Account"}
@@ -233,7 +233,7 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
                   ) : (
                     <button
                       onClick={() => { setIsOpen(false); setAuthOpen(true); }}
-                      className="px-4 py-3 text-base font-medium rounded-md text-primary-foreground/70 hover:text-gold text-left"
+                      className="px-4 py-3 text-base font-medium rounded-md text-muted-foreground hover:text-primary text-left"
                     >
                       Sign in
                     </button>
