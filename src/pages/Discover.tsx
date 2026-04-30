@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, useScroll } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight, Sparkles, CheckCircle2, AlertTriangle, ExternalLink,
   BookmarkCheck, Bookmark, ChevronLeft, ChevronDown, Zap, RefreshCw,
@@ -24,6 +24,10 @@ import {
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
+import { useAuth } from "@/contexts/AuthContext";
+import { Lock } from "lucide-react";
+
+const SHORTLIST_FREE_LIMIT = 5;
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
 interface Scholarship {
@@ -1101,7 +1105,7 @@ const ReqRow = ({ label, status, detail }: {
 };
 
 /* ─── Detail Sheet (tabbed, visual) ──────────────────────────────────── */
-const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, status, onStatusChange, note, onNoteChange, similar, onSwitchTo }: {
+const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, status, onStatusChange, note, onNoteChange, similar, onSwitchTo, isMember, onUnlock }: {
   s: Scored | null; open: boolean; onClose: () => void;
   isBookmarked: boolean; onBookmark: () => void;
   profile: Profile;
@@ -1111,6 +1115,8 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
   onNoteChange: (note: string) => void;
   similar: Scored[];
   onSwitchTo: (s: Scored) => void;
+  isMember: boolean;
+  onUnlock: () => void;
 }) => {
   if (!s) return null;
   const tier = TIER[s.priority];
@@ -1379,53 +1385,97 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           </TabsContent>
 
           {/* STRATEGY */}
-          <TabsContent value="strategy" className="px-7 py-6 space-y-5 m-0 focus-visible:outline-none">
-            {s.ideal_candidate_profile && (
-              <div className="bg-primary/[0.03] border border-primary/15 rounded-2xl p-5">
-                <h4 className="text-[10px] font-semibold text-primary dark:text-primary-bright mb-2 flex items-center gap-2 uppercase tracking-[0.16em]">
-                  <UserCheck className="h-3 w-3" /> Ideal candidate
-                </h4>
-                <p className="text-sm text-foreground/85 leading-relaxed">{s.ideal_candidate_profile}</p>
-              </div>
-            )}
-            {s.how_to_win && (
-              <div className="bg-gold/5 border border-gold/20 rounded-2xl p-5">
-                <h4 className="text-[10px] font-semibold text-gold-dark dark:text-gold mb-2 flex items-center gap-2 uppercase tracking-[0.16em]">
-                  <Lightbulb className="h-3 w-3" /> How to win
-                </h4>
-                <p className="text-sm text-foreground/85 leading-relaxed">{s.how_to_win}</p>
-              </div>
-            )}
+          <TabsContent value="strategy" className="px-7 py-6 space-y-5 m-0 focus-visible:outline-none relative">
+            {/* First strategy block — preview, free for everyone (creates desire) */}
             {s.what_to_prepare_first && (
               <div className="border-l-2 border-l-gold bg-muted/30 rounded-r-2xl px-5 py-4">
                 <p className="text-[10px] font-semibold text-foreground mb-1 uppercase tracking-[0.16em]">Start here</p>
                 <p className="text-sm text-foreground/80 leading-relaxed">{s.what_to_prepare_first}</p>
               </div>
             )}
-            {s.strategy_notes && (
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Strategy notes</p>
-                <p className="text-sm text-foreground/80 leading-relaxed">{s.strategy_notes}</p>
-              </div>
-            )}
-            {s.common_rejection_reasons && (
-              <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-5">
-                <h4 className="text-[10px] font-semibold text-destructive mb-2 flex items-center gap-2 uppercase tracking-[0.16em]">
-                  <AlertOctagon className="h-3 w-3" /> Why people get rejected
-                </h4>
-                <p className="text-sm text-foreground/85 leading-relaxed">{s.common_rejection_reasons}</p>
-              </div>
-            )}
-            {s.weak_candidate_warning && (
-              <div className="border-l-2 border-warning bg-warning/5 rounded-r-2xl px-5 py-4">
-                <p className="text-[10px] font-semibold text-warning mb-1 uppercase tracking-[0.16em]">Don't apply if...</p>
-                <p className="text-sm text-foreground/80 leading-relaxed">{s.weak_candidate_warning}</p>
-              </div>
-            )}
-            {s.risk_note && (
-              <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-4">
-                <p className="text-sm font-semibold text-destructive mb-1 flex items-center gap-1.5"><AlertTriangle className="h-4 w-4" />Watch out</p>
-                <p className="text-sm text-foreground/80 leading-relaxed">{s.risk_note}</p>
+
+            {/* Members-only content (or unlocked if isMember) */}
+            {isMember ? (
+              <>
+                {s.ideal_candidate_profile && (
+                  <div className="bg-primary/[0.03] border border-primary/15 rounded-2xl p-5">
+                    <h4 className="text-[10px] font-semibold text-primary dark:text-primary-bright mb-2 flex items-center gap-2 uppercase tracking-[0.16em]">
+                      <UserCheck className="h-3 w-3" /> Ideal candidate
+                    </h4>
+                    <p className="text-sm text-foreground/85 leading-relaxed">{s.ideal_candidate_profile}</p>
+                  </div>
+                )}
+                {s.how_to_win && (
+                  <div className="bg-gold/5 border border-gold/20 rounded-2xl p-5">
+                    <h4 className="text-[10px] font-semibold text-gold-dark dark:text-gold mb-2 flex items-center gap-2 uppercase tracking-[0.16em]">
+                      <Lightbulb className="h-3 w-3" /> How to win
+                    </h4>
+                    <p className="text-sm text-foreground/85 leading-relaxed">{s.how_to_win}</p>
+                  </div>
+                )}
+                {s.strategy_notes && (
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Strategy notes</p>
+                    <p className="text-sm text-foreground/80 leading-relaxed">{s.strategy_notes}</p>
+                  </div>
+                )}
+                {s.common_rejection_reasons && (
+                  <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-5">
+                    <h4 className="text-[10px] font-semibold text-destructive mb-2 flex items-center gap-2 uppercase tracking-[0.16em]">
+                      <AlertOctagon className="h-3 w-3" /> Why people get rejected
+                    </h4>
+                    <p className="text-sm text-foreground/85 leading-relaxed">{s.common_rejection_reasons}</p>
+                  </div>
+                )}
+                {s.weak_candidate_warning && (
+                  <div className="border-l-2 border-warning bg-warning/5 rounded-r-2xl px-5 py-4">
+                    <p className="text-[10px] font-semibold text-warning mb-1 uppercase tracking-[0.16em]">Don't apply if...</p>
+                    <p className="text-sm text-foreground/80 leading-relaxed">{s.weak_candidate_warning}</p>
+                  </div>
+                )}
+                {s.risk_note && (
+                  <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-4">
+                    <p className="text-sm font-semibold text-destructive mb-1 flex items-center gap-1.5"><AlertTriangle className="h-4 w-4" />Watch out</p>
+                    <p className="text-sm text-foreground/80 leading-relaxed">{s.risk_note}</p>
+                  </div>
+                )}
+              </>
+            ) : (
+              /* Soft paywall — show first 1-2 lines blurred + an unlock CTA */
+              <div className="relative">
+                <div className="space-y-5 pointer-events-none select-none">
+                  {s.ideal_candidate_profile && (
+                    <div className="bg-primary/[0.03] border border-primary/15 rounded-2xl p-5">
+                      <h4 className="text-[10px] font-semibold text-primary dark:text-primary-bright mb-2 flex items-center gap-2 uppercase tracking-[0.16em]">
+                        <UserCheck className="h-3 w-3" /> Ideal candidate
+                      </h4>
+                      <p className="text-sm text-foreground/85 leading-relaxed line-clamp-2 blur-[3px]">{s.ideal_candidate_profile}</p>
+                    </div>
+                  )}
+                  {s.how_to_win && (
+                    <div className="bg-gold/5 border border-gold/20 rounded-2xl p-5">
+                      <h4 className="text-[10px] font-semibold text-gold-dark mb-2 flex items-center gap-2 uppercase tracking-[0.16em]">
+                        <Lightbulb className="h-3 w-3" /> How to win
+                      </h4>
+                      <p className="text-sm text-foreground/85 leading-relaxed line-clamp-2 blur-[3px]">{s.how_to_win}</p>
+                    </div>
+                  )}
+                </div>
+                {/* Lock overlay */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-t from-background via-background/95 to-background/40 pt-16">
+                  <div className="bg-card border border-gold/30 rounded-2xl p-5 max-w-sm w-full text-center shadow-md">
+                    <div className="inline-flex items-center justify-center h-9 w-9 rounded-full bg-gold/10 border border-gold/25 mb-3">
+                      <Lock className="h-4 w-4 text-gold-dark" />
+                    </div>
+                    <h4 className="font-heading font-bold text-base text-foreground mb-1.5">Strategy notes are members-only</h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+                      Ideal candidate profile, how-to-win playbook, common rejection reasons, and warnings are part of Founding Pro.
+                    </p>
+                    <Button variant="gold" size="sm" className="w-full gap-2" onClick={onUnlock}>
+                      <Sparkles className="h-3.5 w-3.5" /> Unlock for $19/mo
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
           </TabsContent>
@@ -1575,6 +1625,21 @@ const SectionHeader = ({ kicker, title, subtitle, count, accentClass }: {
 interface Props { language?: "en" | "ru" }
 
 const Discover = ({ language = "en" }: Props) => {
+  const navigate = useNavigate();
+  const { user, subscription } = useAuth();
+  const isMember = subscription.tier === "founding" || subscription.tier === "pro";
+  const [foundingLeft, setFoundingLeft] = useState<{ left: number; cap: number } | null>(null);
+
+  useEffect(() => {
+    supabase.from("founding_member_counter")
+      .select("claimed_count, cap")
+      .eq("id", 1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setFoundingLeft({ left: Math.max(0, data.cap - data.claimed_count), cap: data.cap });
+      });
+  }, []);
+
   const [rows, setRows] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile>({ country: "", degree: "", gpa: "", gpaScale: "4.0", ielts: "", sat: "", field: "", budget: "low" });
@@ -1688,10 +1753,21 @@ const Discover = ({ language = "en" }: Props) => {
     return () => clearInterval(iv);
   }, [phase]);
 
+  const [paywallOpen, setPaywallOpen] = useState<null | "shortlist" | "compare" | "strategy">(null);
+
   const toggleBookmark = (id: string) => {
     setShortlist(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        // Free-tier limit: 5 saves. Members unlimited.
+        if (!isMember && next.size >= SHORTLIST_FREE_LIMIT) {
+          setPaywallOpen("shortlist");
+          return prev;
+        }
+        next.add(id);
+      }
       localStorage.setItem("tu_shortlist", JSON.stringify([...next]));
       return next;
     });
@@ -2297,11 +2373,45 @@ const Discover = ({ language = "en" }: Props) => {
                         <FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} fieldsAvailable={fieldsAvailable} />
                       </div>
 
+                      {/* Founding membership card — visible always (until user is a member) */}
+                      {!isMember && foundingLeft && foundingLeft.left > 0 && (
+                        <button
+                          onClick={() => navigate("/pricing")}
+                          className="block w-full text-left rounded-2xl bg-primary text-primary-foreground p-4 hover:shadow-md transition-shadow relative overflow-hidden group"
+                        >
+                          <div className="absolute -top-1/3 right-0 w-1/2 h-full rounded-full blur-[60px] opacity-20" style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 60%)" }} />
+                          <div className="relative">
+                            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold-light mb-2">
+                              <Sparkles className="h-3 w-3" /> Founding Pro
+                            </div>
+                            <p className="font-heading font-bold text-sm leading-tight mb-1">Unlock the full database + workshops with our founders.</p>
+                            <p className="text-[11px] text-primary-foreground/65 mb-3">Lifetime price lock. Capped at {foundingLeft.cap} members.</p>
+                            <div className="h-1.5 rounded-full bg-primary-foreground/15 overflow-hidden mb-2">
+                              <div className="h-full bg-gold-light" style={{ width: `${((foundingLeft.cap - foundingLeft.left) / foundingLeft.cap) * 100}%` }} />
+                            </div>
+                            <p className="text-[11px] text-primary-foreground/80 tabular-nums flex items-center justify-between">
+                              <span><span className="font-semibold text-gold-light">{foundingLeft.left}</span> spots left</span>
+                              <span className="text-gold-light font-medium">See pricing →</span>
+                            </p>
+                          </div>
+                        </button>
+                      )}
+
+                      {isMember && (
+                        <div className="rounded-xl border border-gold/30 bg-gold/8 px-3 py-2.5 flex items-center gap-2">
+                          <Sparkles className="h-3.5 w-3.5 text-gold-dark" />
+                          <span className="text-[11px] font-semibold text-gold-dark">{subscription.tier === "founding" ? "Founding member" : "Pro member"}</span>
+                        </div>
+                      )}
+
                       {/* Local-state indicator — app feel */}
                       <div className="text-[10px] text-muted-foreground/70 px-2">
                         <span className="inline-flex items-center gap-1.5">
                           <span className="h-1.5 w-1.5 rounded-full bg-success" />
                           {shortlist.size + Object.keys(statusMap).length + Object.keys(notesMap).length} items saved locally
+                          {!isMember && shortlist.size >= SHORTLIST_FREE_LIMIT && (
+                            <span className="text-warning"> · saves locked</span>
+                          )}
                         </span>
                       </div>
                     </div>
@@ -2819,6 +2929,61 @@ const Discover = ({ language = "en" }: Props) => {
           </SheetContent>
         </Sheet>
 
+        {/* ── PAYWALL PROMPT — appears on shortlist limit / strategy lock ── */}
+        <Sheet open={!!paywallOpen} onOpenChange={(o) => !o && setPaywallOpen(null)}>
+          <SheetContent side="right" className="w-full sm:max-w-md p-0 overflow-y-auto">
+            <div className="relative bg-primary text-primary-foreground px-7 pt-9 pb-7 overflow-hidden">
+              <div className="absolute -top-1/3 left-1/4 w-2/3 h-full rounded-full blur-[120px] opacity-20" style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 60%)" }} />
+              <div className="relative">
+                <div className="inline-flex items-center gap-2 bg-gold/15 border border-gold/30 px-3 py-1 rounded-full mb-5">
+                  <Sparkles className="h-3 w-3 text-gold-light" />
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold-light">Founding Pro</span>
+                </div>
+                <SheetHeader>
+                  <SheetTitle className="font-heading text-2xl text-primary-foreground tracking-tight leading-tight text-left">
+                    {paywallOpen === "shortlist" && `Save more than ${SHORTLIST_FREE_LIMIT} scholarships.`}
+                    {paywallOpen === "strategy" && "Unlock the full strategy."}
+                    {paywallOpen === "compare" && "Compare more than 2 scholarships."}
+                  </SheetTitle>
+                  <p className="text-primary-foreground/65 text-sm leading-relaxed pt-1 text-left">
+                    {paywallOpen === "shortlist" && `You've saved your free ${SHORTLIST_FREE_LIMIT}. Founding Pro members keep an unlimited shortlist plus per-scholarship status tracking and notes.`}
+                    {paywallOpen === "strategy" && "Strategy notes — ideal-candidate profile, how-to-win playbook, common rejection reasons, weak-candidate warnings — are part of the Founding Pro membership."}
+                    {paywallOpen === "compare" && "Compare up to three scholarships side-by-side as a Founding Pro member."}
+                  </p>
+                </SheetHeader>
+              </div>
+            </div>
+            <div className="px-7 py-6 space-y-5">
+              <div className="space-y-2.5 text-sm text-foreground/85">
+                {[
+                  "Full database — all 75 scholarships with strategy notes, rejection patterns, and how-to-win playbooks.",
+                  "Live monthly workshops with our founders — Yale, Schwarzman/Cambridge, Harvard.",
+                  "Recordings library — every workshop saved for you.",
+                  "Unlimited shortlist + status tracking + notes.",
+                ].map((b, i) => (
+                  <div key={i} className="flex items-start gap-2.5">
+                    <CheckCircle2 className="h-4 w-4 text-gold-dark shrink-0 mt-0.5" />
+                    <span>{b}</span>
+                  </div>
+                ))}
+              </div>
+              {foundingLeft && foundingLeft.left > 0 && (
+                <div className="rounded-xl bg-gold/10 border border-gold/25 p-3 text-xs text-gold-dark text-center">
+                  <span className="font-semibold tabular-nums">{foundingLeft.left}</span> founding spots left · price locked for life
+                </div>
+              )}
+              <div className="flex flex-col gap-2 pt-2">
+                <Button variant="gold" size="lg" className="w-full gap-2" onClick={() => { setPaywallOpen(null); navigate("/pricing"); }}>
+                  See Founding Pro <ArrowRight className="h-4 w-4" />
+                </Button>
+                <button onClick={() => setPaywallOpen(null)} className="text-xs text-muted-foreground hover:text-foreground transition-colors py-2">
+                  Not now
+                </button>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+
         {/* Mobile filters */}
         <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
           <SheetContent side="left" className="w-[300px] overflow-y-auto">
@@ -2840,6 +3005,8 @@ const Discover = ({ language = "en" }: Props) => {
           onNoteChange={(n) => openDetail && setNote(openDetail.scholarship_id, n)}
           similar={similarToOpen}
           onSwitchTo={(s) => setOpenDetail(s)}
+          isMember={isMember}
+          onUnlock={() => setPaywallOpen("strategy")}
         />
       </div>
     </div>
