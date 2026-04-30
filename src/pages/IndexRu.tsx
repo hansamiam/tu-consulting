@@ -67,60 +67,46 @@ const IndexRu = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
-        className="relative min-h-[88vh] flex items-center justify-center bg-cover bg-center"
+        className="relative min-h-[76vh] flex items-center overflow-hidden bg-cover bg-center"
         style={{
-          backgroundImage: `linear-gradient(160deg, rgba(10,35,66,0.88) 0%, rgba(10,35,66,0.65) 100%), url(${heroImage})`,
+          backgroundImage: `linear-gradient(90deg, hsl(var(--background) / 0.96) 0%, hsl(var(--background) / 0.88) 44%, hsl(var(--background) / 0.42) 100%), url(${heroImage})`,
         }}
       >
-        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
+        <div className="absolute inset-x-0 bottom-0 h-px bg-border" />
+        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-14 sm:py-20 text-left w-full">
           <motion.h1
             {...fadeUp(0.2)}
-            className="font-heading text-[2.4rem] sm:text-5xl md:text-[3.6rem] lg:text-[4rem] font-bold text-primary-foreground leading-[1.05] tracking-tight mb-6"
+            className="font-heading max-w-4xl text-[2.35rem] sm:text-5xl md:text-[3.4rem] lg:text-[4rem] font-bold text-foreground leading-[1.04] mb-6"
           >
-            Ваша <span className="text-gold">стратегия поступления</span>
+            Ваша <span className="text-gold-dark">стратегия поступления</span>
             <br className="hidden sm:block" /> за минуты.
           </motion.h1>
 
           <motion.p
             {...fadeUp(0.35)}
-            className="text-primary-foreground/85 text-lg sm:text-xl max-w-2xl mx-auto mb-4 font-light leading-relaxed"
+            className="text-muted-foreground text-lg sm:text-xl max-w-2xl mb-4 leading-relaxed"
           >
             Анкета на 2 минуты строит ваш план. Дальше — стипендии и плейбук от консультантов.
           </motion.p>
 
           <motion.p
             {...fadeUp(0.45)}
-            className="text-primary-foreground/55 text-xs sm:text-sm tracking-widest uppercase mb-10"
+            className="text-primary/60 text-xs sm:text-sm tracking-widest uppercase mb-10 max-w-3xl"
           >
             ИНСАЙТЫ ОТ ВЫПУСКНИКОВ ЙЕЛЬ, ГАРВАРД, КЕМБРИДЖ И ЦИНХУА · НА РУССКОМ И АНГЛИЙСКОМ
           </motion.p>
 
-          <motion.div {...fadeUp(0.55)} className="flex justify-center">
+          <motion.div {...fadeUp(0.55)} className="flex">
             <Button
               variant="gold"
               size="lg"
-              className="text-lg px-10 py-6 hover:scale-105 transition-transform duration-200 gap-2"
+              className="text-base sm:text-lg px-8 sm:px-10 py-6 gap-2"
               onClick={() => navigate('/topuni-ai/ru')}
             >
               <Sparkles className="h-5 w-5" /> Получить план поступления
             </Button>
           </motion.div>
         </div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.2, duration: 0.8 }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2"
-        >
-          <div className="w-6 h-10 rounded-full border-2 border-gold/40 flex justify-center pt-2">
-            <motion.div
-              animate={{ y: [0, 12, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              className="w-1.5 h-1.5 rounded-full bg-gold"
-            />
-          </div>
-        </motion.div>
       </motion.section>
 
       {/* 3-STEP FUNNEL */}
