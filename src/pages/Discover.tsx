@@ -984,14 +984,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile }: {
               </div>
             )}
 
-            {(s.min_ielts || s.min_sat) && (
-              <div className="bg-muted/40 border border-border rounded-2xl p-4 flex items-center justify-between gap-3">
-                <p className="text-sm text-foreground/80">Need to hit those scores?</p>
-                <Button size="sm" variant="outline" asChild className="shrink-0">
-                  <Link to="/prep">Open Prep <ArrowRight className="h-3.5 w-3.5 ml-1.5" /></Link>
-                </Button>
-              </div>
-            )}
+            {/* Score-gap Prep CTA removed — Prep spun off as separate product */}
           </TabsContent>
 
           {/* STRATEGY */}

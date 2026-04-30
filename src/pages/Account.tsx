@@ -162,8 +162,8 @@ const Account = () => {
           <div className="grid sm:grid-cols-2 gap-2 text-sm">
             <Button variant="ghost" className="justify-start" onClick={() => navigate("/discover")}>Discover universities</Button>
             <Button variant="ghost" className="justify-start" onClick={() => navigate("/academy")}>Open Academy</Button>
-            <Button variant="ghost" className="justify-start" onClick={() => navigate("/prep/dashboard")}>Open Prep</Button>
             <Button variant="ghost" className="justify-start" onClick={() => navigate("/topuni-ai")}>TopUni AI</Button>
+            <Button variant="ghost" className="justify-start" onClick={() => navigate("/team")}>Meet the team</Button>
           </div>
         </Card>
 
