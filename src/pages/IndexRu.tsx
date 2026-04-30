@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Instagram, ArrowRight, Sparkles, Crown, Check } from "lucide-react";
+import { Instagram, ArrowRight, Crown } from "lucide-react";
 import heroImage from "@/assets/hero-campus.jpg";
 import samuelPhoto from "@/assets/samuel.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
@@ -31,13 +31,6 @@ const TEAM = [
   { name: "Aigul Abdoubaetova", title: "Senior Advisor", school: "Ex-OSCE Academy", photo: aigulPhoto },
 ];
 
-const PROMISES = [
-  "Ваш план — а не шаблон",
-  "Реальные консультанты — Yale, Harvard, Cambridge, Tsinghua",
-  "Стипендии под верифицированный профиль",
-  "Сделано в Бишкеке. Двуязычно с первого дня.",
-];
-
 const IndexRu = () => {
   const navigate = useNavigate();
 
@@ -50,67 +43,52 @@ const IndexRu = () => {
 
         {/* HERO */}
         <section
-          className="relative pt-12 sm:pt-20 pb-24 sm:pb-32 overflow-hidden"
+          className="relative min-h-[86vh] flex items-center overflow-hidden bg-primary text-primary-foreground"
           style={{
-            backgroundImage: `linear-gradient(180deg, hsl(var(--canvas-soft)) 0%, hsl(var(--background)) 100%), radial-gradient(ellipse 70% 50% at 80% 20%, hsl(var(--gold) / 0.06), transparent 70%)`,
+            backgroundImage: `linear-gradient(180deg, hsl(var(--navy-deep) / 0.9), hsl(var(--primary)) 58%, hsl(var(--background)) 100%)`,
           }}
         >
           <div
-            className="hidden md:block absolute right-0 top-0 bottom-0 w-1/2 opacity-[0.18] pointer-events-none bg-cover bg-center"
+            className="absolute inset-0 opacity-[0.16] pointer-events-none bg-cover bg-center"
             style={{
               backgroundImage: `url(${heroImage})`,
-              maskImage: "linear-gradient(90deg, transparent 0%, black 60%)",
-              WebkitMaskImage: "linear-gradient(90deg, transparent 0%, black 60%)",
+              maskImage: "linear-gradient(180deg, black 0%, black 68%, transparent 100%)",
+              WebkitMaskImage: "linear-gradient(180deg, black 0%, black 68%, transparent 100%)",
             }}
           />
+          <div className="absolute left-1/2 top-[42%] h-[28rem] w-[28rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold/18 blur-3xl opacity-70 pointer-events-none" />
+          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-background pointer-events-none" />
 
-          <div className="relative max-w-6xl mx-auto px-5 sm:px-8">
-            <motion.p {...fadeUp(0.05)} className="text-[11px] sm:text-xs uppercase tracking-[0.22em] text-gold-dark font-medium mb-6">
-              <span className="inline-block w-6 h-px bg-gold-dark/60 align-middle mr-2.5" />
-              Top Uni Consulting · с 2024
+          <div className="relative max-w-4xl mx-auto px-5 sm:px-8 text-center pt-16 pb-24 sm:pt-20 sm:pb-28">
+            <motion.p {...fadeUp(0.05)} className="text-[10px] sm:text-[11px] uppercase tracking-[0.2em] text-gold-light/90 font-medium mb-6">
+              TopUni AI · Discover · Academy
             </motion.p>
 
-            <motion.h1 {...fadeUp(0.15)} className="font-heading text-[2.6rem] sm:text-6xl md:text-[4.5rem] lg:text-[5.25rem] font-bold tracking-tight leading-[1.02] mb-7 max-w-5xl">
-              Ваша <span className="text-gold-dark italic font-medium">стратегия поступления</span>
+            <motion.h1 {...fadeUp(0.15)} className="font-sans text-[2.45rem] sm:text-5xl md:text-6xl font-semibold tracking-normal leading-[1.06] mb-7 text-balance">
+              Ваша стратегия поступления
               <br className="hidden sm:block" /> за минуты.
             </motion.h1>
 
-            <motion.p {...fadeUp(0.25)} className="text-lg sm:text-xl text-muted-foreground max-w-2xl leading-relaxed mb-10">
-              Двухминутная анкета. Реальный план. Стипендии, школы, и playbook —
-              от консультантов, которые сами там учились.
+            <motion.p {...fadeUp(0.25)} className="text-base sm:text-lg text-primary-foreground/78 max-w-2xl mx-auto leading-relaxed mb-9">
+              Спокойная анкета, понятный план и более умный путь через университеты,
+              стипендии и заявки.
             </motion.p>
 
-            <motion.div {...fadeUp(0.35)} className="flex flex-wrap items-center gap-3 mb-12">
-              <Button variant="gold" size="lg" className="text-base px-8 py-6 gap-2" onClick={() => navigate('/topuni-ai/ru')}>
-                <Sparkles className="h-4 w-4" /> Создать план
+            <motion.div {...fadeUp(0.35)} className="flex flex-wrap items-center justify-center gap-3 mb-10">
+              <Button variant="gold" size="lg" className="text-sm sm:text-base px-7 py-5 gap-2" onClick={() => navigate('/topuni-ai/ru')}>
+                Создать план <ArrowRight className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="lg" className="text-base px-6 py-6 gap-2 text-foreground hover:bg-secondary"
+              <Button variant="ghost" size="lg" className="text-sm sm:text-base px-6 py-5 gap-2 text-primary-foreground/88 hover:bg-primary-foreground/10 hover:text-primary-foreground"
                 onClick={() => document.getElementById('how')?.scrollIntoView({ behavior: 'smooth' })}>
-                Как это работает <ArrowRight className="h-4 w-4" />
+                Ниже
               </Button>
             </motion.div>
 
-            <motion.p {...fadeUp(0.45)} className="text-[11px] sm:text-xs tracking-[0.18em] uppercase text-primary/55">
+            <motion.p {...fadeUp(0.45)} className="text-[10px] sm:text-[11px] tracking-[0.16em] uppercase text-primary-foreground/50">
               Опыт выпускников Yale · Harvard · Cambridge · Tsinghua · Доступно на русском и английском
             </motion.p>
           </div>
         </section>
-
-        <div className="max-w-6xl mx-auto px-5 sm:px-8"><div className="h-px bg-border/70" /></div>
-
-        {/* PROMISE STRIP */}
-        <section className="py-14 sm:py-16">
-          <div className="max-w-6xl mx-auto px-5 sm:px-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-5 gap-x-8">
-            {PROMISES.map((p, i) => (
-              <motion.div key={p} {...fadeUp(0.05 * i)} className="flex items-start gap-2.5">
-                <Check className="h-4 w-4 text-gold-dark mt-1 shrink-0" strokeWidth={2.5} />
-                <span className="text-sm text-foreground/85 leading-relaxed">{p}</span>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-
-        <div className="max-w-6xl mx-auto px-5 sm:px-8"><div className="h-px bg-border/70" /></div>
 
         {/* HOW IT WORKS */}
         <section id="how" className="py-24 sm:py-32">
