@@ -267,7 +267,7 @@ const Index = () => {
         {/* MEMBERSHIP — closing crescendo */}
         <section
           className="py-20 sm:py-28"
-          style={{ backgroundImage: `linear-gradient(180deg, hsl(var(--background)), hsl(var(--primary) / 0.06)))` }}
+          style={{ backgroundImage: `linear-gradient(180deg, hsl(var(--background)), hsl(var(--primary) / 0.06))` }}
         >
           <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
             <motion.div {...fadeUp()} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gold/30 bg-gold/10 text-gold-dark text-[11px] font-medium tracking-[0.18em] uppercase mb-7">
