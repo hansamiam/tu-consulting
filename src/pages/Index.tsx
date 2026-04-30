@@ -74,8 +74,18 @@ const Index = () => {
             className="absolute inset-0 bg-cover bg-center"
             style={{ backgroundImage: `url(${heroImage})` }}
           />
-          {/* Soft warm wash for legibility */}
-          <div className="absolute inset-0 bg-gradient-to-b from-background/85 via-background/55 to-background/90" />
+          {/* Wash: subtle navy hint at top so the page isn't navyless up here,
+              dense cream through the middle so the hero text stays legible. */}
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `linear-gradient(180deg,
+                hsl(var(--primary) / 0.10) 0%,
+                hsl(var(--background) / 0.80) 28%,
+                hsl(var(--background) / 0.70) 55%,
+                hsl(var(--background) / 0.95) 100%)`,
+            }}
+          />
           <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-background pointer-events-none" />
 
           <div className="relative max-w-5xl mx-auto px-5 sm:px-8 text-center pt-16 pb-24 sm:pt-20 sm:pb-28 w-full">
@@ -89,12 +99,12 @@ const Index = () => {
 
             <motion.p
               {...fadeUp(0.25)}
-              className="text-lg sm:text-xl text-foreground/75 max-w-2xl mx-auto leading-relaxed mb-6"
+              className="text-lg sm:text-xl text-foreground/90 max-w-2xl mx-auto leading-relaxed mb-6 font-medium"
             >
               A two-minute intake builds your plan. Then discover the funding, and learn the playbook.
             </motion.p>
 
-            <motion.p {...fadeUp(0.32)} className="text-[10px] sm:text-[11px] tracking-[0.16em] uppercase text-foreground/55 mb-9 max-w-xl mx-auto">
+            <motion.p {...fadeUp(0.32)} className="text-[11px] sm:text-xs tracking-[0.18em] uppercase text-foreground/75 mb-9 max-w-xl mx-auto font-medium">
               With insights from Yale, Harvard, Cambridge & Tsinghua alumni · Available in Russian & English
             </motion.p>
 
@@ -246,15 +256,18 @@ const Index = () => {
           </div>
         </section>
 
-        {/* MEMBERSHIP — closing crescendo, gradient bridges into navy footer */}
+        {/* MEMBERSHIP — top stays cream for content legibility, then a long
+            gradient ramp bridges all the way into the footer's full navy.
+            Content sits in the cream/light-tint half; the bottom 30% is the bridge. */}
         <section
-          className="py-20 sm:py-28"
+          className="pt-20 sm:pt-28 pb-32 sm:pb-40"
           style={{
             backgroundImage: `linear-gradient(180deg,
               hsl(var(--background)) 0%,
-              hsl(var(--primary) / 0.04) 35%,
-              hsl(var(--primary) / 0.10) 70%,
-              hsl(var(--primary) / 0.22) 100%)`,
+              hsl(var(--background)) 30%,
+              hsl(var(--primary) / 0.05) 55%,
+              hsl(var(--primary) / 0.30) 85%,
+              hsl(var(--primary)) 100%)`,
           }}
         >
           <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
@@ -290,17 +303,9 @@ const Index = () => {
 
       </main>
 
-      {/* FOOTER — soft top edge fades up from membership's faint navy into full primary */}
-      <footer
-        className="text-primary-foreground py-12"
-        style={{
-          backgroundImage: `linear-gradient(180deg,
-            hsl(var(--primary) / 0.55) 0%,
-            hsl(var(--primary)) 35%,
-            hsl(var(--primary)) 100%)`,
-          backgroundColor: `hsl(var(--primary))`,
-        }}
-      >
+      {/* FOOTER — solid navy now that the membership section gradients all
+          the way into full primary at its bottom edge. */}
+      <footer className="bg-primary text-primary-foreground py-12">
         <div className="max-w-5xl mx-auto px-5 sm:px-8">
           <div className="flex flex-col items-center gap-6">
             <a

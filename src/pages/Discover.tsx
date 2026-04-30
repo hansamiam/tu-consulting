@@ -1117,17 +1117,17 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile }: {
 };
 
 /* ─── Inline animated stat ───────────────────────────────────────────── */
-const InlineStat = ({ label, value, color = "text-primary-foreground", isMoney = false, delay = 0, icon: Icon }: {
+const InlineStat = ({ label, value, color = "text-foreground", isMoney = false, delay = 0, icon: Icon }: {
   label: string; value: number; color?: string; isMoney?: boolean; delay?: number; icon: React.ComponentType<{ className?: string }>;
 }) => {
   const animated = useCountUp(value, 1300);
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay, duration: 0.5 }}
       className="flex items-center gap-3">
-      <Icon className={`h-4 w-4 ${color} opacity-60`} />
+      <Icon className={`h-4 w-4 ${color} opacity-70`} />
       <div>
         <div className={`text-2xl sm:text-3xl font-bold tabular-nums leading-none ${color} tracking-tight`}>{isMoney ? fmtValue(animated) : animated}</div>
-        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/40 mt-1.5">{label}</div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mt-1.5">{label}</div>
       </div>
     </motion.div>
   );
@@ -1560,64 +1560,63 @@ const Discover = ({ language = "en" }: Props) => {
           {/* ══ RESULTS ══ */}
           {phase === "results" && (
             <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7 }}>
-              {/* ── Hero briefing (navy) — soft bottom fade into cream body ── */}
-              <section className="relative bg-primary pt-12 pb-20 sm:pt-20 sm:pb-28 overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-navy-deep via-primary to-navy-deep" />
-                <div className="absolute -top-1/3 left-1/4 w-[40vw] h-[40vw] rounded-full blur-[140px] opacity-15" style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 70%)" }} />
-                <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 0.5px, transparent 0)", backgroundSize: "32px 32px" }} />
-                {/* Bottom fade: navy → cream so toolbar/body don't snap back to white */}
-                <div className="absolute inset-x-0 bottom-0 h-32 pointer-events-none"
-                  style={{ backgroundImage: "linear-gradient(180deg, transparent 0%, hsl(var(--background) / 0.4) 60%, hsl(var(--background)) 100%)" }} />
+              {/* ── Hero briefing — cream with navy/gold accents (no thick navy block) ── */}
+              <section className="relative bg-canvas-soft pt-12 pb-14 sm:pt-16 sm:pb-16 overflow-hidden border-b border-border">
+                {/* Soft navy hint at top so the page isn't fully cream from the navbar */}
+                <div className="absolute inset-x-0 top-0 h-40 pointer-events-none"
+                  style={{ backgroundImage: "linear-gradient(180deg, hsl(var(--primary) / 0.08) 0%, transparent 100%)" }} />
+                {/* Subtle warm glow */}
+                <div className="absolute -top-1/3 right-1/4 w-[30vw] h-[30vw] rounded-full blur-[140px] opacity-[0.10] pointer-events-none" style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 70%)" }} />
 
                 <div className="max-w-7xl mx-auto px-6 sm:px-8 relative">
                   <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-                    {wiz.fullName && <p className="text-gold text-sm font-semibold tracking-[0.06em] mb-4 uppercase">Welcome back, {wiz.fullName}</p>}
-                    <h1 className="font-heading text-[clamp(2.25rem,5.5vw,4.5rem)] font-bold text-primary-foreground leading-[1.05] tracking-[-0.025em] max-w-4xl">
+                    {wiz.fullName && <p className="text-gold-dark text-sm font-semibold tracking-[0.06em] mb-4 uppercase">Welcome back, {wiz.fullName}</p>}
+                    <h1 className="font-heading text-[clamp(2.25rem,5.5vw,4.5rem)] font-bold text-foreground leading-[1.05] tracking-[-0.025em] max-w-4xl">
                       {loading ? "Loading your matches..." : (
                         <>
-                          You have <span className="text-gold tabular-nums">{stats.strong + stats.competitive}</span> real opportunities.
+                          You have <span className="text-gold-dark tabular-nums">{stats.strong + stats.competitive}</span> real opportunities.
                         </>
                       )}
                     </h1>
-                    <p className="text-primary-foreground/55 text-lg sm:text-xl max-w-2xl mt-5 leading-relaxed font-light">
-                      Based on your profile, we ranked all <span className="text-primary-foreground font-medium tabular-nums">{rows.length}</span> scholarships in our database. Here's where you have a real shot.
+                    <p className="text-foreground/65 text-lg sm:text-xl max-w-2xl mt-5 leading-relaxed">
+                      Based on your profile, we ranked all <span className="text-foreground font-semibold tabular-nums">{rows.length}</span> scholarships in our database. Here's where you have a real shot.
                     </p>
 
-                    <div className="flex flex-wrap gap-2 mt-7">
+                    <div className="flex flex-wrap gap-2 mt-6">
                       {[profile.country, profile.degree, profile.field, profile.gpa ? `GPA ${profile.gpa}/${profile.gpaScale}` : null, profile.ielts ? `IELTS ${profile.ielts}` : null].filter(Boolean).map(chip => (
-                        <span key={chip} className="text-xs bg-primary-foreground/[0.05] text-primary-foreground/70 border border-primary-foreground/12 backdrop-blur-md px-3 py-1.5 rounded-full font-medium">{chip}</span>
+                        <span key={chip} className="text-xs bg-card text-foreground/75 border border-border px-3 py-1.5 rounded-full font-medium">{chip}</span>
                       ))}
-                      <button onClick={resetProfile} className="text-xs text-primary-foreground/35 hover:text-gold transition-colors flex items-center gap-1.5 px-2.5 py-1.5 font-medium">
+                      <button onClick={resetProfile} className="text-xs text-muted-foreground hover:text-gold-dark transition-colors flex items-center gap-1.5 px-2.5 py-1.5 font-medium">
                         <RefreshCw className="h-3 w-3" /> Update profile
                       </button>
                     </div>
                   </motion.div>
 
                   {!loading && (
-                    <Reveal delay={0.15} y={28} className="mt-12 pt-10 border-t border-primary-foreground/8">
+                    <Reveal delay={0.15} y={28} className="mt-10 pt-8 border-t border-border">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-7">
-                        <InlineStat label="Strong matches" value={stats.strong} color="text-gold" icon={Trophy} delay={0.05} />
-                        <InlineStat label="Worth a shot" value={stats.competitive} color="text-primary-foreground" icon={Target} delay={0.1} />
-                        <InlineStat label="Closing soon" value={stats.closing} color="text-primary-foreground" icon={Flame} delay={0.15} />
-                        <InlineStat label="Funding pool" value={stats.totalValue} color="text-gold" icon={Sparkles} isMoney delay={0.2} />
+                        <InlineStat label="Strong matches" value={stats.strong} color="text-gold-dark" icon={Trophy} delay={0.05} />
+                        <InlineStat label="Worth a shot" value={stats.competitive} color="text-foreground" icon={Target} delay={0.1} />
+                        <InlineStat label="Closing soon" value={stats.closing} color="text-foreground" icon={Flame} delay={0.15} />
+                        <InlineStat label="Funding pool" value={stats.totalValue} color="text-gold-dark" icon={Sparkles} isMoney delay={0.2} />
                       </div>
                     </Reveal>
                   )}
 
                   {!loading && ranked.length > 0 && (
-                    <Reveal delay={0.3} className="mt-10 pt-8 border-t border-primary-foreground/8">
+                    <Reveal delay={0.3} className="mt-9 pt-7 border-t border-border">
                       <div className="flex items-center justify-between mb-3">
                         <div>
-                          <p className="text-primary-foreground/35 text-[10px] uppercase tracking-[0.22em] mb-1 font-semibold">Match landscape</p>
-                          <p className="text-primary-foreground/60 text-xs">Each bar is one scholarship · click to view</p>
+                          <p className="text-muted-foreground text-[10px] uppercase tracking-[0.22em] mb-1 font-semibold">Match landscape</p>
+                          <p className="text-foreground/65 text-xs">Each bar is one scholarship · click to view</p>
                         </div>
-                        <div className="hidden sm:flex items-center gap-4 text-[11px] text-primary-foreground/40 font-medium">
-                          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-gold" />Strong</span>
-                          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-primary-bright" />Competitive</span>
-                          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-primary-foreground/30" />Lower</span>
+                        <div className="hidden sm:flex items-center gap-4 text-[11px] text-muted-foreground font-medium">
+                          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-gold-dark" />Strong</span>
+                          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-primary" />Competitive</span>
+                          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-foreground/25" />Lower</span>
                         </div>
                       </div>
-                      <div className="flex items-end gap-[2px] h-20 overflow-hidden rounded-2xl bg-primary-foreground/[0.025] p-2">
+                      <div className="flex items-end gap-[2px] h-20 overflow-hidden rounded-2xl bg-card border border-border p-2">
                         {ranked.map((s, i) => (
                           <motion.div
                             key={s.scholarship_id}
@@ -1625,10 +1624,10 @@ const Discover = ({ language = "en" }: Props) => {
                             whileInView={{ height: `${Math.max(s.match, 8)}%` }}
                             viewport={{ once: true }}
                             transition={{ delay: i * 0.012, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                            className={`flex-1 min-w-[3px] rounded-t cursor-pointer transition-all opacity-80 hover:opacity-100 hover:scale-y-110 origin-bottom ${
+                            className={`flex-1 min-w-[3px] rounded-t cursor-pointer transition-all opacity-85 hover:opacity-100 hover:scale-y-110 origin-bottom ${
                               s.priority === "strong_match" ? "bg-gradient-to-t from-gold-dark to-gold-light" :
-                              s.priority === "competitive" ? "bg-gradient-to-t from-primary-bright/80 to-primary-bright" :
-                              "bg-gradient-to-t from-primary-foreground/20 to-primary-foreground/35"
+                              s.priority === "competitive" ? "bg-gradient-to-t from-primary to-primary-bright" :
+                              "bg-gradient-to-t from-foreground/15 to-foreground/30"
                             }`}
                             onClick={() => setOpenDetail(s)}
                             title={`${s.scholarship_name} — ${s.match}%`}
