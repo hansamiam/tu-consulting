@@ -90,9 +90,10 @@ const Index = () => {
                 hsl(var(--primary) / 0.42) 12%,
                 hsl(var(--primary) / 0.12) 22%,
                 hsl(var(--background) / 0.97) 30%,
-                hsl(var(--background) / 0.92) 40%,
-                hsl(var(--background) / 0.86) 50%,
-                hsl(var(--background) / 0.78) 70%,
+                hsl(var(--background) / 0.95) 42%,
+                hsl(var(--background) / 0.93) 55%,
+                hsl(var(--background) / 0.84) 72%,
+                hsl(var(--background) / 0.78) 85%,
                 hsl(var(--background) / 0.96) 100%)`,
             }}
           />
