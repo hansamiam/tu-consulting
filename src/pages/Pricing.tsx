@@ -132,8 +132,8 @@ const Pricing = () => {
 
         <div className="text-center mt-12 max-w-2xl mx-auto space-y-2">
           <p className="text-sm text-muted-foreground">
-            Not ready? <strong className="text-foreground">Free</strong> still gets you Discover (top 3 ranked matches),
-            the Diagnostic test, and Essay Grader.
+            Not ready? <strong className="text-foreground">Free</strong> still gets you the TopUni AI report
+            and your top 3 ranked scholarship matches.
           </p>
           <p className="text-sm text-muted-foreground">
             Need 1:1 help instead?{" "}
