@@ -117,13 +117,13 @@ const Index = () => {
       </motion.section>
 
       {/* ── 3-STEP FUNNEL ── */}
-      <section className="py-20 sm:py-24 bg-background">
+      <section className="py-18 sm:py-22 bg-canvas-soft">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <motion.div {...fadeUp()} className="text-center mb-12">
+          <motion.div {...fadeUp()} className="mb-10 max-w-2xl">
             <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground mb-3">
-              Three steps. <span className="text-accent">One plan.</span>
+              Three steps. <span className="text-gold-dark">One plan.</span>
             </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">
+            <p className="text-muted-foreground">
               From your profile to a funded shortlist you can act on this week.
             </p>
           </motion.div>
@@ -133,18 +133,18 @@ const Index = () => {
               <motion.div
                 key={step.n}
                 {...fadeUp(0.1 * i)}
-                className="group relative rounded-2xl border border-border bg-card p-6 hover:border-accent/40 hover:shadow-md transition-all cursor-pointer"
+                className="group relative rounded-lg border border-border bg-surface p-6 shadow-sm hover:border-gold/45 hover:shadow-md transition-all cursor-pointer"
                 onClick={() => navigate(step.path)}
               >
-                <div className="absolute -top-3 left-6 h-7 w-7 rounded-full bg-accent text-accent-foreground text-sm font-bold flex items-center justify-center">
+                <div className="absolute -top-3 left-6 h-7 w-7 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">
                   {step.n}
                 </div>
-                <div className="h-11 w-11 rounded-xl bg-accent/10 flex items-center justify-center mb-4 mt-2">
-                  <step.icon className="h-5 w-5 text-accent" />
+                <div className="h-11 w-11 rounded-md bg-gold/12 flex items-center justify-center mb-4 mt-2">
+                  <step.icon className="h-5 w-5 text-gold-dark" />
                 </div>
                 <h3 className="font-heading text-lg font-bold text-foreground mb-1.5">{step.title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed mb-4">{step.body}</p>
-                <span className="inline-flex items-center gap-1 text-accent font-medium text-sm group-hover:gap-2 transition-all">
+                <span className="inline-flex items-center gap-1 text-primary font-medium text-sm group-hover:gap-2 transition-all">
                   {step.cta} <ArrowRight className="h-4 w-4" />
                 </span>
               </motion.div>
@@ -154,10 +154,10 @@ const Index = () => {
       </section>
 
       {/* ── TEAM ── */}
-      <section className="py-20 sm:py-24 bg-canvas-soft border-y border-border/60">
+      <section className="py-18 sm:py-22 bg-background border-y border-border/70">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <motion.div {...fadeUp()} className="text-center mb-12 max-w-2xl mx-auto">
-            <p className="text-xs uppercase tracking-[0.2em] text-accent font-medium mb-3">The people behind it</p>
+          <motion.div {...fadeUp()} className="mb-10 max-w-2xl">
+            <p className="text-xs uppercase tracking-[0.2em] text-gold-dark font-medium mb-3">The people behind it</p>
             <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground mb-3">
               Consultants who've actually been there.
             </h2>
@@ -172,16 +172,16 @@ const Index = () => {
                 key={m.name}
                 {...fadeUp(0.06 * i)}
                 onClick={() => navigate('/team')}
-                className="group rounded-2xl bg-card border border-border p-5 text-center hover:border-accent/40 hover:shadow-md transition-all"
+                className="group rounded-lg bg-surface border border-border p-5 text-center shadow-sm hover:border-gold/45 hover:shadow-md transition-all"
               >
                 <img
                   src={m.photo}
                   alt={m.name}
-                  className="w-20 h-20 rounded-full object-cover mx-auto mb-3 ring-2 ring-border group-hover:ring-accent/40 transition-all"
+                  className="w-20 h-20 rounded-full object-cover mx-auto mb-3 ring-2 ring-border group-hover:ring-gold/35 transition-all"
                 />
                 <p className="font-semibold text-sm text-foreground leading-tight">{m.name}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{m.title}</p>
-                <p className="text-[11px] text-accent mt-1.5 font-medium">{m.school}</p>
+                <p className="text-[11px] text-gold-dark mt-1.5 font-medium">{m.school}</p>
               </motion.button>
             ))}
           </div>
