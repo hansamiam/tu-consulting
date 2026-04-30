@@ -88,14 +88,15 @@ const Index = () => {
           <div className="relative max-w-4xl mx-auto px-5 sm:px-8 text-center pt-16 pb-24 sm:pt-20 sm:pb-28">
             <motion.p
               {...fadeUp(0.05)}
-              className="text-[10px] sm:text-[11px] uppercase tracking-[0.2em] text-gold-light/90 font-medium mb-6"
+              className="text-[10px] sm:text-[11px] uppercase tracking-[0.2em] text-gold-light/85 font-medium mb-6"
             >
-              TopUni AI · Discover · Academy
+              TopUni
             </motion.p>
 
             <motion.h1
               {...fadeUp(0.15)}
-              className="font-sans text-[2.45rem] sm:text-5xl md:text-6xl font-semibold tracking-normal leading-[1.06] mb-7 text-balance"
+              className="font-sans text-[2.15rem] sm:text-4xl md:text-5xl font-medium tracking-normal leading-[1.08] mb-6 text-balance max-w-3xl mx-auto"
+              style={{ textShadow: "0 18px 60px hsl(var(--gold) / 0.22)" }}
             >
               Your admission strategy,
               <br className="hidden sm:block" /> built in minutes.
@@ -103,7 +104,7 @@ const Index = () => {
 
             <motion.p
               {...fadeUp(0.25)}
-              className="text-base sm:text-lg text-primary-foreground/78 max-w-2xl mx-auto leading-relaxed mb-9"
+              className="text-base sm:text-[17px] text-primary-foreground/76 max-w-xl mx-auto leading-relaxed mb-9"
             >
               A calm intake, a clear plan, and a smarter path through schools,
               scholarships, and application work.
@@ -120,17 +121,17 @@ const Index = () => {
               </Button>
               <Button
                 variant="ghost"
-                size="lg"
-                className="text-sm sm:text-base px-6 py-5 gap-2 text-primary-foreground/88 hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                size="sm"
+                className="text-sm px-4 text-primary-foreground/72 hover:bg-primary-foreground/10 hover:text-primary-foreground"
                 onClick={() => document.getElementById('how')?.scrollIntoView({ behavior: 'smooth' })}
               >
-                Scroll down
+                Scroll
               </Button>
             </motion.div>
 
             <motion.p
               {...fadeUp(0.45)}
-              className="text-[10px] sm:text-[11px] tracking-[0.16em] uppercase text-primary-foreground/50"
+              className="text-[10px] sm:text-[11px] tracking-[0.16em] uppercase text-primary-foreground/38"
             >
               With insights from Yale, Harvard, Cambridge & Tsinghua alumni · Russian & English
             </motion.p>
