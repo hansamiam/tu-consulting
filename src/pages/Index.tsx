@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-  Instagram, ArrowRight, Sparkles, Crown, Check,
+  Instagram, ArrowRight, Crown,
 } from "lucide-react";
 import heroImage from "@/assets/hero-campus.jpg";
 import samuelPhoto from "@/assets/samuel.jpg";
@@ -53,13 +53,6 @@ const TEAM = [
   { name: "Aigul Abdoubaetova", title: "Senior Advisor", school: "Ex-OSCE Academy", photo: aigulPhoto },
 ];
 
-const PROMISES = [
-  "Your plan, not a template",
-  "Real consultants — Yale, Harvard, Cambridge, Tsinghua",
-  "Scholarships matched to your verified profile",
-  "Built in Bishkek. Bilingual from day one.",
-];
-
 const Index = () => {
   const navigate = useNavigate();
 
@@ -72,111 +65,86 @@ const Index = () => {
       <ScrollProgress />
       <Navigation language="en" />
 
-      {/* ────────────────────────────────────────────────────────────
-          ONE CONTINUOUS CANVAS — sections flow without hard breaks.
-          Background is the same parchment throughout; we only vary
-          via subtle inner cards, hairlines, and generous space.
-         ──────────────────────────────────────────────────────────── */}
       <main className="relative">
 
         {/* HERO */}
         <section
-          className="relative pt-12 sm:pt-20 pb-24 sm:pb-32 overflow-hidden"
+          className="relative min-h-[86vh] flex items-center overflow-hidden bg-primary text-primary-foreground"
           style={{
-            backgroundImage: `linear-gradient(180deg, hsl(var(--canvas-soft)) 0%, hsl(var(--background)) 100%), radial-gradient(ellipse 70% 50% at 80% 20%, hsl(var(--gold) / 0.06), transparent 70%)`,
+            backgroundImage: `linear-gradient(180deg, hsl(var(--navy-deep) / 0.9), hsl(var(--primary)) 58%, hsl(var(--background)) 100%)`,
           }}
         >
-          {/* faint photo wash on right */}
           <div
-            className="hidden md:block absolute right-0 top-0 bottom-0 w-1/2 opacity-[0.18] pointer-events-none bg-cover bg-center"
+            className="absolute inset-0 opacity-[0.16] pointer-events-none bg-cover bg-center"
             style={{
               backgroundImage: `url(${heroImage})`,
-              maskImage: "linear-gradient(90deg, transparent 0%, black 60%)",
-              WebkitMaskImage: "linear-gradient(90deg, transparent 0%, black 60%)",
+              maskImage: "linear-gradient(180deg, black 0%, black 68%, transparent 100%)",
+              WebkitMaskImage: "linear-gradient(180deg, black 0%, black 68%, transparent 100%)",
             }}
           />
+          <div className="absolute left-1/2 top-[42%] h-[28rem] w-[28rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold/18 blur-3xl opacity-70 pointer-events-none" />
+          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-background pointer-events-none" />
 
-          <div className="relative max-w-6xl mx-auto px-5 sm:px-8">
+          <div className="relative max-w-4xl mx-auto px-5 sm:px-8 text-center pt-16 pb-24 sm:pt-20 sm:pb-28">
             <motion.p
               {...fadeUp(0.05)}
-              className="text-[11px] sm:text-xs uppercase tracking-[0.22em] text-gold-dark font-medium mb-6"
+              className="text-[10px] sm:text-[11px] uppercase tracking-[0.2em] text-gold-light/85 font-medium mb-6"
             >
-              <span className="inline-block w-6 h-px bg-gold-dark/60 align-middle mr-2.5" />
-              Top Uni Consulting · Est. 2024
+              TopUni
             </motion.p>
 
             <motion.h1
               {...fadeUp(0.15)}
-              className="font-heading text-[2.6rem] sm:text-6xl md:text-[4.5rem] lg:text-[5.25rem] font-bold tracking-tight leading-[1.02] mb-7 max-w-5xl"
+              className="font-sans text-[2.15rem] sm:text-4xl md:text-5xl font-medium tracking-normal leading-[1.08] mb-6 text-balance max-w-3xl mx-auto"
+              style={{ textShadow: "0 18px 60px hsl(var(--gold) / 0.22)" }}
             >
-              Your <span className="text-gold-dark italic font-medium">admission strategy</span>,
+              Your admission strategy,
               <br className="hidden sm:block" /> built in minutes.
             </motion.h1>
 
             <motion.p
               {...fadeUp(0.25)}
-              className="text-lg sm:text-xl text-muted-foreground max-w-2xl leading-relaxed mb-10"
+              className="text-base sm:text-[17px] text-primary-foreground/76 max-w-xl mx-auto leading-relaxed mb-9"
             >
-              A two-minute intake. A real plan. Funding pathways, target schools,
-              and the playbook to actually get in — from consultants who've been there.
+              A calm intake, a clear plan, and a smarter path through schools,
+              scholarships, and application work.
             </motion.p>
 
-            <motion.div {...fadeUp(0.35)} className="flex flex-wrap items-center gap-3 mb-12">
+            <motion.div {...fadeUp(0.35)} className="flex flex-wrap items-center justify-center gap-3 mb-10">
               <Button
                 variant="gold"
                 size="lg"
-                className="text-base px-8 py-6 gap-2"
+                className="text-sm sm:text-base px-7 py-5 gap-2"
                 onClick={() => navigate('/topuni-ai')}
               >
-                <Sparkles className="h-4 w-4" /> Build my plan
+                Build my plan <ArrowRight className="h-4 w-4" />
               </Button>
               <Button
                 variant="ghost"
-                size="lg"
-                className="text-base px-6 py-6 gap-2 text-foreground hover:bg-secondary"
+                size="sm"
+                className="text-sm px-4 text-primary-foreground/72 hover:bg-primary-foreground/10 hover:text-primary-foreground"
                 onClick={() => document.getElementById('how')?.scrollIntoView({ behavior: 'smooth' })}
               >
-                How it works <ArrowRight className="h-4 w-4" />
+                Scroll
               </Button>
             </motion.div>
 
             <motion.p
               {...fadeUp(0.45)}
-              className="text-[11px] sm:text-xs tracking-[0.18em] uppercase text-primary/55"
+              className="text-[10px] sm:text-[11px] tracking-[0.16em] uppercase text-primary-foreground/38"
             >
-              With insights from Yale · Harvard · Cambridge · Tsinghua alumni · Available in Russian & English
+              With insights from Yale, Harvard, Cambridge & Tsinghua alumni · Russian & English
             </motion.p>
           </div>
         </section>
 
-        {/* hairline */}
-        <div className="max-w-6xl mx-auto px-5 sm:px-8"><div className="h-px bg-border/70" /></div>
-
-        {/* PROMISE STRIP — flows directly from hero */}
-        <section className="py-14 sm:py-16">
-          <div className="max-w-6xl mx-auto px-5 sm:px-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-5 gap-x-8">
-            {PROMISES.map((p, i) => (
-              <motion.div
-                key={p}
-                {...fadeUp(0.05 * i)}
-                className="flex items-start gap-2.5"
-              >
-                <Check className="h-4 w-4 text-gold-dark mt-1 shrink-0" strokeWidth={2.5} />
-                <span className="text-sm text-foreground/85 leading-relaxed">{p}</span>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-
-        <div className="max-w-6xl mx-auto px-5 sm:px-8"><div className="h-px bg-border/70" /></div>
-
         {/* HOW IT WORKS — vertical, editorial, not card-grid */}
-        <section id="how" className="py-24 sm:py-32">
+        <section id="how" className="py-20 sm:py-28">
           <div className="max-w-6xl mx-auto px-5 sm:px-8">
-            <motion.div {...fadeUp()} className="max-w-2xl mb-16 sm:mb-20">
+            <motion.div {...fadeUp()} className="max-w-2xl mx-auto text-center mb-14 sm:mb-16">
               <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">How it works</p>
-              <h2 className="font-heading text-3xl sm:text-5xl font-bold tracking-tight leading-[1.1]">
-                Three steps. <span className="text-gold-dark italic font-medium">One outcome.</span>
+              <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12]">
+                Three steps. One plan.
               </h2>
             </motion.div>
 
@@ -210,18 +178,17 @@ const Index = () => {
 
         {/* TEAM — subtle background shift, no hard block */}
         <section
-          className="py-24 sm:py-32"
-          style={{ backgroundImage: `linear-gradient(180deg, hsl(var(--background)), hsl(var(--canvas-soft)) 50%, hsl(var(--background)))` }}
+          className="py-20 sm:py-28"
+          style={{ backgroundImage: `linear-gradient(180deg, hsl(var(--background)), hsl(var(--primary) / 0.055) 50%, hsl(var(--background)))` }}
         >
           <div className="max-w-6xl mx-auto px-5 sm:px-8">
-            <motion.div {...fadeUp()} className="max-w-3xl mb-14 sm:mb-16">
-              <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">The people behind it</p>
-              <h2 className="font-heading text-3xl sm:text-5xl font-bold tracking-tight leading-[1.1] mb-5">
-                Consultants who've <span className="text-gold-dark italic font-medium">actually been there.</span>
+            <motion.div {...fadeUp()} className="max-w-3xl mx-auto text-center mb-14 sm:mb-16">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">Team</p>
+              <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-5">
+                Built with alumni insight.
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed">
-                Yale, Harvard, Cambridge, Tsinghua, Schwarzman. Not a sales team —
-                the same people who'll read your essays.
+                Yale, Harvard, Cambridge, Tsinghua, Schwarzman — concise guidance from people who know the process.
               </p>
             </motion.div>
 
@@ -259,19 +226,18 @@ const Index = () => {
         </section>
 
         {/* ACADEMY — single inline editorial moment */}
-        <section className="py-24 sm:py-32">
+        <section className="py-20 sm:py-28">
           <div className="max-w-6xl mx-auto px-5 sm:px-8">
             <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-start">
               <motion.div {...fadeUp()} className="lg:col-span-5">
                 <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">
                   Academy · launching May 10
                 </p>
-                <h2 className="font-heading text-3xl sm:text-5xl font-bold tracking-tight leading-[1.1] mb-5">
-                  The playbook, <span className="text-gold-dark italic font-medium">unfiltered.</span>
+                <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-5">
+                  The application playbook.
                 </h2>
                 <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-                  Workshops, country playbooks, real winning essays, and the tactics
-                  our consultants actually use. New every week.
+                  Workshops, country guides, admitted essays, and practical tactics. New material every week.
                 </p>
                 <Button onClick={() => navigate('/academy')} variant="gold" className="gap-2">
                   Preview Academy <ArrowRight className="h-4 w-4" />
@@ -301,15 +267,15 @@ const Index = () => {
 
         {/* MEMBERSHIP — closing crescendo */}
         <section
-          className="py-24 sm:py-32"
-          style={{ backgroundImage: `linear-gradient(180deg, hsl(var(--background)), hsl(var(--canvas-soft)))` }}
+          className="py-20 sm:py-28"
+          style={{ backgroundImage: `linear-gradient(180deg, hsl(var(--background)), hsl(var(--primary) / 0.06))` }}
         >
           <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
             <motion.div {...fadeUp()} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gold/30 bg-gold/10 text-gold-dark text-[11px] font-medium tracking-[0.18em] uppercase mb-7">
               <Crown className="h-3.5 w-3.5" /> Founding Membership
             </motion.div>
-            <motion.h2 {...fadeUp(0.05)} className="font-heading text-3xl sm:text-5xl font-bold tracking-tight leading-[1.08] mb-5">
-              One membership. <span className="text-gold-dark italic font-medium">Everything inside.</span>
+            <motion.h2 {...fadeUp(0.05)} className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.1] mb-5">
+              One membership. Everything inside.
             </motion.h2>
             <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-lg mb-10 max-w-xl mx-auto leading-relaxed">
               TopUni AI, Discover, and Academy — locked at the founding price for our first cohort.
