@@ -147,10 +147,10 @@ const IndexRu = () => {
       </section>
 
       {/* TEAM */}
-      <section className="py-20 sm:py-24 bg-canvas-soft border-y border-border/60">
+      <section className="py-20 sm:py-24 bg-background border-y border-border/70">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <motion.div {...fadeUp()} className="text-center mb-12 max-w-2xl mx-auto">
-            <p className="text-xs uppercase tracking-[0.2em] text-accent font-medium mb-3">Команда</p>
+          <motion.div {...fadeUp()} className="mb-10 max-w-2xl">
+            <p className="text-xs uppercase tracking-[0.2em] text-gold-dark font-medium mb-3">Команда</p>
             <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground mb-3">
               Консультанты, прошедшие этот путь.
             </h2>
@@ -165,16 +165,16 @@ const IndexRu = () => {
                 key={m.name}
                 {...fadeUp(0.06 * i)}
                 onClick={() => navigate('/team/ru')}
-                className="group rounded-2xl bg-card border border-border p-5 text-center hover:border-accent/40 hover:shadow-md transition-all"
+                className="group rounded-lg bg-surface border border-border p-5 text-center shadow-sm hover:border-gold/45 hover:shadow-md transition-all"
               >
                 <img
                   src={m.photo}
                   alt={m.name}
-                  className="w-20 h-20 rounded-full object-cover mx-auto mb-3 ring-2 ring-border group-hover:ring-accent/40 transition-all"
+                  className="w-20 h-20 rounded-full object-cover mx-auto mb-3 ring-2 ring-border group-hover:ring-gold/35 transition-all"
                 />
                 <p className="font-semibold text-sm text-foreground leading-tight">{m.name}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{m.title}</p>
-                <p className="text-[11px] text-accent mt-1.5 font-medium">{m.school}</p>
+                <p className="text-[11px] text-gold-dark mt-1.5 font-medium">{m.school}</p>
               </motion.button>
             ))}
           </div>
