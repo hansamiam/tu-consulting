@@ -78,7 +78,7 @@ interface FilterState {
 
 type Phase = "landing" | "wizard" | "analyzing" | "results";
 type SortBy = "match" | "deadline" | "value" | "effort" | "selectivity";
-type ViewMode = "grid" | "list";
+type ViewMode = "grid" | "list" | "timeline";
 type AppStatus = "researching" | "drafting" | "submitted" | "decision" | "rejected";
 
 const STATUS_LABEL: Record<AppStatus, string> = {
@@ -792,6 +792,98 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
   );
 };
 
+/* ─── Timeline view — group by deadline urgency, dense compact rows ──── */
+const TimelineView = ({ items, onSelect, openDetail, ...common }: {
+  items: Scored[];
+  onSelect: (s: Scored) => void;
+  openDetail: Scored | null;
+  shortlist: Set<string>;
+  toggleBookmark: (id: string) => void;
+  statusMap: Record<string, AppStatus>;
+  setStatus: (id: string, s: AppStatus | null) => void;
+  hidden: Set<string>;
+  toggleHide: (id: string) => void;
+  compareSet: Set<string>;
+  toggleCompare: (id: string) => void;
+}) => {
+  const groups = useMemo(() => {
+    const buckets: { label: string; subtitle: string; cls: string; items: Scored[] }[] = [
+      { label: "This week",       subtitle: "Apply or skip — no time to research", cls: "text-destructive",  items: [] },
+      { label: "This month",      subtitle: "Get drafts moving",                   cls: "text-rose-600",     items: [] },
+      { label: "Next 90 days",    subtitle: "Plan ahead, draft early",             cls: "text-warning",      items: [] },
+      { label: "Later this year", subtitle: "On the radar",                        cls: "text-foreground/60",items: [] },
+      { label: "Rolling / undated", subtitle: "Apply when ready",                  cls: "text-muted-foreground", items: [] },
+    ];
+    items.forEach(s => {
+      const d = daysUntil(s.application_deadline);
+      if (d === null) buckets[4].items.push(s);
+      else if (d <= 0) return; // closed — skip from timeline
+      else if (d <= 7) buckets[0].items.push(s);
+      else if (d <= 31) buckets[1].items.push(s);
+      else if (d <= 90) buckets[2].items.push(s);
+      else if (d <= 365) buckets[3].items.push(s);
+      else buckets[4].items.push(s);
+    });
+    // Sort each bucket by deadline ascending (rolling/undated stays in input order)
+    buckets.slice(0, 4).forEach(b => b.items.sort((a, b) => {
+      if (!a.application_deadline) return 1;
+      if (!b.application_deadline) return -1;
+      return new Date(a.application_deadline).getTime() - new Date(b.application_deadline).getTime();
+    }));
+    return buckets.filter(b => b.items.length > 0);
+  }, [items]);
+
+  if (groups.length === 0) {
+    return (
+      <div className="border border-dashed border-border rounded-3xl p-16 text-center bg-muted/10">
+        <Search className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />
+        <h3 className="font-heading font-semibold text-lg text-foreground mb-1.5">Nothing on the calendar</h3>
+        <p className="text-sm text-muted-foreground">No deadlines match your current filters.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-10">
+      {groups.map(g => (
+        <section key={g.label}>
+          <div className="flex items-baseline justify-between mb-4 pb-3 border-b border-border/60">
+            <div>
+              <h2 className={`font-heading text-xl font-bold tracking-tight ${g.cls}`}>{g.label}</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">{g.subtitle}</p>
+            </div>
+            <span className="text-2xl font-bold text-foreground/30 tabular-nums">{g.items.length.toString().padStart(2, "0")}</span>
+          </div>
+          <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
+            {g.items.map((s, i) => {
+              const isBookmarked = common.shortlist.has(s.scholarship_id);
+              const isHidden = common.hidden.has(s.scholarship_id);
+              const isComparing = common.compareSet.has(s.scholarship_id);
+              const status = common.statusMap[s.scholarship_id];
+              return (
+                <ScholarRow
+                  key={s.scholarship_id}
+                  s={s}
+                  index={i}
+                  onSelect={() => onSelect(s)}
+                  isBookmarked={isBookmarked}
+                  onBookmark={(e) => { e.stopPropagation(); common.toggleBookmark(s.scholarship_id); }}
+                  status={status}
+                  onStatusChange={(st) => common.setStatus(s.scholarship_id, st)}
+                  isHidden={isHidden}
+                  onToggleHide={(e) => { e.stopPropagation(); common.toggleHide(s.scholarship_id); }}
+                  isComparing={isComparing}
+                  onToggleCompare={(e) => { e.stopPropagation(); common.toggleCompare(s.scholarship_id); }}
+                />
+              );
+            })}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+};
+
 /* ─── Filters Panel ──────────────────────────────────────────────────── */
 const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsAvailable }: {
   filters: FilterState;
@@ -900,10 +992,14 @@ const ReqRow = ({ label, status, detail }: {
 };
 
 /* ─── Detail Sheet (tabbed, visual) ──────────────────────────────────── */
-const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile }: {
+const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, status, onStatusChange, note, onNoteChange }: {
   s: Scored | null; open: boolean; onClose: () => void;
   isBookmarked: boolean; onBookmark: () => void;
   profile: Profile;
+  status: AppStatus | undefined;
+  onStatusChange: (s: AppStatus | null) => void;
+  note: string;
+  onNoteChange: (note: string) => void;
 }) => {
   if (!s) return null;
   const tier = TIER[s.priority];
@@ -1022,6 +1118,29 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile }: {
             <Button variant="outline" size="sm" className="h-9" onClick={onBookmark}>
               {isBookmarked ? <BookmarkCheck className="h-4 w-4 text-gold-dark" /> : <Bookmark className="h-4 w-4" />}
             </Button>
+          </div>
+
+          {/* Application status + notes — application-software pattern */}
+          <div className="relative mt-4 flex flex-col gap-3 bg-card border border-border rounded-xl p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">My status</p>
+                <StatusBadge status={status} onChange={onStatusChange} />
+              </div>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Saved locally
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1.5">My notes</p>
+              <textarea
+                value={note}
+                onChange={(e) => onNoteChange(e.target.value)}
+                rows={3}
+                placeholder="Essay ideas, recommender contacts, research links…"
+                className="w-full text-sm text-foreground/90 bg-background border border-border/70 rounded-lg p-3 leading-relaxed resize-none focus:outline-none focus:border-gold/40 placeholder:text-muted-foreground/60"
+              />
+            </div>
           </div>
         </div>
 
@@ -1343,10 +1462,22 @@ const Discover = ({ language = "en" }: Props) => {
   const [showHidden, setShowHidden] = useState(false);
   const [compareSet, setCompareSet] = useState<Set<string>>(new Set());
   const [compareOpen, setCompareOpen] = useState(false);
+  const [notesMap, setNotesMap] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem("tu_notes_map") || "{}"); } catch { return {}; }
+  });
 
   useEffect(() => { localStorage.setItem("tu_view_mode", viewMode); }, [viewMode]);
   useEffect(() => { localStorage.setItem("tu_status_map", JSON.stringify(statusMap)); }, [statusMap]);
   useEffect(() => { localStorage.setItem("tu_hidden", JSON.stringify([...hidden])); }, [hidden]);
+  useEffect(() => { localStorage.setItem("tu_notes_map", JSON.stringify(notesMap)); }, [notesMap]);
+
+  const setNote = (id: string, note: string) => {
+    setNotesMap(prev => {
+      const next = { ...prev };
+      if (note.trim() === "") delete next[id]; else next[id] = note;
+      return next;
+    });
+  };
 
   const setStatus = (id: string, s: AppStatus | null) => {
     setStatusMap(prev => {
@@ -1473,6 +1604,14 @@ const Discover = ({ language = "en" }: Props) => {
     closing: ranked.filter(s => { const d = s.application_deadline ? Math.ceil((new Date(s.application_deadline).getTime() - Date.now()) / 86400000) : null; return d !== null && d > 0 && d <= 60; }).length,
     totalValue: ranked.filter(s => s.priority !== "low_priority").reduce((sum, s) => sum + (s.estimated_total_value_usd ?? 0), 0),
   }), [ranked]);
+
+  /* My pipeline — count of scholarships per active status */
+  const pipeline = useMemo(() => {
+    const counts: Record<AppStatus, number> = { researching: 0, drafting: 0, submitted: 0, decision: 0, rejected: 0 };
+    Object.values(statusMap).forEach(s => { counts[s] = (counts[s] ?? 0) + 1; });
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    return { counts, total };
+  }, [statusMap]);
 
   const activeFiltersCount = [filters.search !== "", filters.coverage !== "all", filters.degree !== "all", filters.effort !== "all", filters.selectivity !== "all", filters.field !== "all", filters.hostCountry !== "all", filters.onlyEligible, filters.closingSoon, filters.onlyShortlisted].filter(Boolean).length;
 
@@ -1800,6 +1939,32 @@ const Discover = ({ language = "en" }: Props) => {
                     </Reveal>
                   )}
 
+                  {/* My pipeline — appears once the user has tracked applications */}
+                  {!loading && pipeline.total > 0 && (
+                    <Reveal delay={0.2} y={20} className="mt-7 pt-7 border-t border-border">
+                      <div className="flex items-baseline justify-between mb-4">
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-1">My pipeline</p>
+                          <h3 className="font-heading text-base font-bold text-foreground">{pipeline.total} application{pipeline.total === 1 ? "" : "s"} in progress</h3>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                        {([
+                          { k: "researching" as AppStatus, label: "Researching" },
+                          { k: "drafting" as AppStatus, label: "Drafting" },
+                          { k: "submitted" as AppStatus, label: "Submitted" },
+                          { k: "decision" as AppStatus, label: "Awaiting decision" },
+                          { k: "rejected" as AppStatus, label: "Rejected" },
+                        ]).filter(p => pipeline.counts[p.k] > 0).map(p => (
+                          <div key={p.k} className={`rounded-xl border px-4 py-3 ${STATUS_COLOR[p.k]}`}>
+                            <div className="text-2xl font-bold tabular-nums leading-none">{pipeline.counts[p.k]}</div>
+                            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] mt-2 opacity-80">{p.label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </Reveal>
+                  )}
+
                   {!loading && ranked.length > 0 && (
                     <Reveal delay={0.3} className="mt-9 pt-7 border-t border-border">
                       <div className="flex items-center justify-between mb-3">
@@ -1878,6 +2043,14 @@ const Discover = ({ language = "en" }: Props) => {
                       title="List view"
                     >
                       <List className="h-3.5 w-3.5" /><span className="hidden sm:inline">List</span>
+                    </button>
+                    <button
+                      onClick={() => setViewMode("timeline")}
+                      className={`h-full px-3 text-xs font-medium flex items-center gap-1.5 transition-colors border-l border-border ${viewMode === "timeline" ? "bg-foreground/[0.06] text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                      aria-pressed={viewMode === "timeline"}
+                      title="Timeline view"
+                    >
+                      <Flame className="h-3.5 w-3.5" /><span className="hidden sm:inline">Deadlines</span>
                     </button>
                   </div>
 
@@ -1983,6 +2156,24 @@ const Discover = ({ language = "en" }: Props) => {
                                 </div>
                                 {filtered.map((s, i) => <ScholarRow {...cardProps(s, i)} />)}
                               </div>
+                            );
+                          }
+
+                          if (viewMode === "timeline") {
+                            return (
+                              <TimelineView
+                                items={filtered}
+                                onSelect={(s) => setOpenDetail(s)}
+                                openDetail={openDetail}
+                                shortlist={shortlist}
+                                toggleBookmark={toggleBookmark}
+                                statusMap={statusMap}
+                                setStatus={setStatus}
+                                hidden={hidden}
+                                toggleHide={toggleHide}
+                                compareSet={compareSet}
+                                toggleCompare={toggleCompare}
+                              />
                             );
                           }
 
@@ -2219,10 +2410,18 @@ const Discover = ({ language = "en" }: Props) => {
           </SheetContent>
         </Sheet>
 
-        <DetailSheet s={openDetail} open={!!openDetail} onClose={() => setOpenDetail(null)}
+        <DetailSheet
+          s={openDetail}
+          open={!!openDetail}
+          onClose={() => setOpenDetail(null)}
           isBookmarked={openDetail ? shortlist.has(openDetail.scholarship_id) : false}
           onBookmark={() => openDetail && toggleBookmark(openDetail.scholarship_id)}
-          profile={profile} />
+          profile={profile}
+          status={openDetail ? statusMap[openDetail.scholarship_id] : undefined}
+          onStatusChange={(st) => openDetail && setStatus(openDetail.scholarship_id, st)}
+          note={openDetail ? (notesMap[openDetail.scholarship_id] || "") : ""}
+          onNoteChange={(n) => openDetail && setNote(openDetail.scholarship_id, n)}
+        />
       </div>
     </div>
   );
