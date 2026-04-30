@@ -51,17 +51,17 @@ const IndexRu = () => {
           <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-background pointer-events-none" />
 
           <div className="relative max-w-5xl mx-auto px-5 sm:px-8 text-center pt-16 pb-24 sm:pt-20 sm:pb-28 w-full">
-            <motion.h1 {...fadeUp(0.15)} className="font-heading text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight leading-[1.02] mb-7 text-balance max-w-4xl mx-auto text-foreground">
-              Ваша <span className="text-gold-dark">стратегия поступления</span>
+            <motion.h1 {...fadeUp(0.15)} className="font-heading text-5xl sm:text-6xl font-bold tracking-tight leading-[1.02] mb-7 text-balance max-w-4xl mx-auto text-foreground md:text-7xl">
+              Ваша индивидуальная <span className="text-gold-dark">стратегия поступления</span>
               <br className="hidden sm:block" /> за минуты.
             </motion.h1>
 
-            <motion.p {...fadeUp(0.25)} className="text-lg sm:text-xl text-foreground/75 max-w-2xl mx-auto leading-relaxed mb-6">
-              Двухминутная анкета строит ваш план. Затем — поиск финансирования и плейбук поступления.
+            <motion.p {...fadeUp(0.25)} className="text-lg sm:text-xl text-foreground/75 max-w-2xl mx-auto leading-relaxed mb-6 font-medium">
+              Опыт выпускников Yale, Harvard, Cambridge & Tsinghua
             </motion.p>
 
-            <motion.p {...fadeUp(0.32)} className="text-[10px] sm:text-[11px] tracking-[0.16em] uppercase text-foreground/55 mb-9 max-w-xl mx-auto">
-              Опыт выпускников Yale, Harvard, Cambridge & Tsinghua · Доступно на русском и английском
+            <motion.p {...fadeUp(0.32)} className="text-[10px] sm:text-[11px] tracking-[0.16em] uppercase text-foreground/55 mb-9 max-w-xl mx-auto font-medium">
+               · ДОСТУПНО НА РУССКОМ И АНГЛИЙСКОМ
             </motion.p>
 
             <motion.div {...fadeUp(0.35)} className="flex flex-wrap items-center justify-center gap-3 mb-10">
