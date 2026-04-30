@@ -85,8 +85,7 @@ const Index = () => {
             className="font-heading max-w-4xl text-[2.35rem] sm:text-5xl md:text-[3.4rem] lg:text-[4rem] font-bold text-foreground leading-[1.04] mb-6"
           >
             Your <span className="text-gold-dark">admission strategy</span>
-            <br className="hidden sm:block" />
-            in minutes.
+            <br className="hidden sm:block" /> in minutes.
           </motion.h1>
 
           <motion.p
