@@ -157,6 +157,19 @@ const Blog = () => {
         )}
       </main>
 
+      {/* Bottom bookend — gradient ramp into the navy footer */}
+      <div
+        className="h-32 sm:h-40"
+        style={{
+          backgroundImage: `linear-gradient(180deg,
+            transparent 0%,
+            hsl(var(--primary) / 0.06) 40%,
+            hsl(var(--primary) / 0.30) 75%,
+            hsl(var(--primary)) 100%)`,
+        }}
+        aria-hidden="true"
+      />
+
       <Footer language="en" />
     </div>
   );

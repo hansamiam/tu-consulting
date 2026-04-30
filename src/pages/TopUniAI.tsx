@@ -87,11 +87,17 @@ const TopUniAI = () => {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5 }}
             >
-              {/* HERO — strategy plan positioning */}
+              {/* HERO — strategy plan positioning, with strong navy bookend at top */}
               <section className="relative pt-16 pb-20 sm:pt-24 sm:pb-28 overflow-hidden">
-                {/* Soft navy hint at the top so the page has bookend presence */}
-                <div className="absolute inset-x-0 top-0 h-48 pointer-events-none"
-                  style={{ backgroundImage: "linear-gradient(180deg, hsl(var(--primary) / 0.07) 0%, transparent 100%)" }} />
+                {/* Navy band at the top — same bookend pattern as homepage */}
+                <div className="absolute inset-x-0 top-0 h-64 pointer-events-none"
+                  style={{
+                    backgroundImage: `linear-gradient(180deg,
+                      hsl(var(--primary) / 0.18) 0%,
+                      hsl(var(--primary) / 0.10) 35%,
+                      hsl(var(--primary) / 0.04) 70%,
+                      transparent 100%)`,
+                  }} />
 
                 <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center relative">
                   <motion.p {...fadeUp(0.05)} className="text-[11px] uppercase tracking-[0.24em] text-gold-dark font-medium mb-5">
@@ -230,6 +236,19 @@ const TopUniAI = () => {
                   </motion.div>
                 </div>
               </section>
+
+              {/* Bottom bookend — gradient ramp into the navy footer */}
+              <div
+                className="h-32 sm:h-40"
+                style={{
+                  backgroundImage: `linear-gradient(180deg,
+                    transparent 0%,
+                    hsl(var(--primary) / 0.06) 40%,
+                    hsl(var(--primary) / 0.30) 75%,
+                    hsl(var(--primary)) 100%)`,
+                }}
+                aria-hidden="true"
+              />
             </motion.div>
           )}
 

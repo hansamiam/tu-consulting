@@ -2015,36 +2015,72 @@ const Discover = ({ language = "en" }: Props) => {
           {/* ══ RESULTS — distinctive app-shell experience ══ */}
           {phase === "results" && (
             <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7 }}>
-              {/* App-shell brand strip — signals "you're inside the database app" */}
-              <div className="relative bg-gradient-to-b from-canvas-soft via-canvas-soft to-background border-b border-border/70">
-                {/* Top gold accent line — subtle "app frame" */}
-                <div className="h-[2px] bg-gradient-to-r from-transparent via-gold/60 to-transparent" />
-                {/* Soft navy hint at top */}
-                <div className="absolute inset-x-0 top-0 h-32 pointer-events-none"
-                  style={{ backgroundImage: "linear-gradient(180deg, hsl(var(--primary) / 0.06) 0%, transparent 100%)" }} />
-                {/* Subtle gold ambient glow */}
-                <div className="absolute -top-1/4 right-1/3 w-[40vw] h-[40vw] rounded-full blur-[160px] opacity-[0.08] pointer-events-none" style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 70%)" }} />
-
-                {/* ── App header (compact, distinctive) ── */}
-                <div className="max-w-7xl mx-auto px-6 sm:px-8 pt-7 pb-8 relative">
-                  <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-                    {/* Brand row */}
-                    <div className="flex items-center justify-between gap-4 mb-7">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-gold to-gold-dark flex items-center justify-center shadow-sm">
-                          <Sparkles className="h-4 w-4 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-heading font-bold text-base text-foreground tracking-tight leading-none">Discover</p>
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground mt-1">The scholarship database</p>
-                        </div>
-                      </div>
-                      <div className="flex items-baseline gap-1.5 text-sm">
-                        <span className="font-heading font-bold tabular-nums text-foreground text-lg">{rows.length}</span>
-                        <span className="text-muted-foreground text-xs">scholarships indexed</span>
-                      </div>
+              {/* ─── DARK NAVY APP HEADER BAR — distinct chrome that
+                  signals "this is the Discover app, not just a website page" ─── */}
+              <motion.div
+                initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+                className="relative bg-primary text-primary-foreground border-b border-primary/40 shadow-md"
+              >
+                {/* Subtle gold ambient inside the navy bar */}
+                <div className="absolute inset-0 pointer-events-none opacity-30" style={{ backgroundImage: "linear-gradient(90deg, transparent, hsl(42 70% 50% / 0.08) 50%, transparent)" }} />
+                <div className="max-w-7xl mx-auto px-6 sm:px-8 py-3.5 flex items-center gap-4 relative">
+                  {/* App brand */}
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-gold-light to-gold-dark flex items-center justify-center shadow-sm">
+                      <Sparkles className="h-4 w-4 text-primary" />
                     </div>
+                    <div className="min-w-0">
+                      <p className="font-heading font-bold text-sm text-primary-foreground tracking-tight leading-none">Discover</p>
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-primary-foreground/55 mt-1">Scholarship database · v1</p>
+                    </div>
+                  </div>
 
+                  <div className="flex-1" />
+
+                  {/* Live indicators */}
+                  <div className="hidden md:flex items-center gap-3 text-xs text-primary-foreground/65">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
+                      </span>
+                      <span className="font-mono uppercase tracking-[0.14em] text-[10px]">Live</span>
+                    </span>
+                    <span className="text-primary-foreground/30">·</span>
+                    <span className="tabular-nums"><span className="text-primary-foreground font-semibold">{rows.length}</span> indexed</span>
+                    {shortlist.size > 0 && (
+                      <>
+                        <span className="text-primary-foreground/30">·</span>
+                        <span className="tabular-nums"><span className="text-gold-light font-semibold">{shortlist.size}</span> saved</span>
+                      </>
+                    )}
+                    {pipeline.total > 0 && (
+                      <>
+                        <span className="text-primary-foreground/30">·</span>
+                        <span className="tabular-nums"><span className="text-gold-light font-semibold">{pipeline.total}</span> in pipeline</span>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Profile chip */}
+                  {wiz.fullName && (
+                    <div className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-primary-foreground/[0.06] border border-primary-foreground/10 text-[11px] text-primary-foreground/80">
+                      <UserCheck className="h-3 w-3 text-gold-light" />
+                      {wiz.fullName}
+                    </div>
+                  )}
+                </div>
+                {/* Bottom thin gold accent line */}
+                <div className="h-[2px] bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
+              </motion.div>
+
+              {/* ─── App-shell content area (cream, distinct from website's cream) ─── */}
+              <div className="relative bg-canvas-soft border-b border-border/70">
+                {/* Soft warm glow */}
+                <div className="absolute -top-1/4 right-1/3 w-[40vw] h-[40vw] rounded-full blur-[160px] opacity-[0.10] pointer-events-none" style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 70%)" }} />
+
+                <div className="max-w-7xl mx-auto px-6 sm:px-8 pt-9 pb-8 relative">
+                  <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}>
                     {/* Welcome + headline (compact, inspiring, NOT restrictive) */}
                     {wiz.fullName && <p className="text-gold-dark text-[11px] font-semibold tracking-[0.22em] uppercase mb-3">Welcome back, {wiz.fullName}</p>}
                     <h1 className="font-heading text-[clamp(1.75rem,3.6vw,2.75rem)] font-bold text-foreground leading-[1.1] tracking-[-0.02em] max-w-3xl">
