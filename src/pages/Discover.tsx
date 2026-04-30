@@ -734,27 +734,28 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
         <StatusBadge status={status} onChange={onStatusChange} dense />
       </div>
 
-      {/* Actions */}
+      {/* Actions — bookmark stays always-visible (it's a stateful affordance);
+          compare + more reveal on hover. Premium-tool pattern. */}
       <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={onToggleCompare}
           aria-label="Add to compare"
           title="Add to compare"
-          className={`p-2 rounded-md transition-colors ${isComparing ? "text-gold-dark bg-gold/10" : "text-muted-foreground hover:text-foreground hover:bg-muted/60"}`}
+          className={`p-2 rounded-md transition-all ${isComparing ? "text-gold-dark bg-gold/10 opacity-100" : "text-muted-foreground hover:text-foreground hover:bg-muted/60 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"}`}
         >
           <GitCompare className="h-3.5 w-3.5" />
         </button>
         <button
           onClick={onBookmark}
           aria-label={isBookmarked ? "Remove from shortlist" : "Save to shortlist"}
-          className="p-2 rounded-md text-muted-foreground hover:text-gold-dark hover:bg-muted/60 transition-colors"
+          className={`p-2 rounded-md transition-all ${isBookmarked ? "text-gold-dark hover:bg-muted/60 opacity-100" : "text-muted-foreground hover:text-gold-dark hover:bg-muted/60 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"}`}
         >
           {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5 text-gold-dark" /> : <Bookmark className="h-3.5 w-3.5" />}
         </button>
         <DropdownMenu>
           <DropdownMenuTrigger
             onClick={(e) => e.stopPropagation()}
-            className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+            className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all opacity-0 group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
             aria-label="More actions"
           >
             <MoreHorizontal className="h-3.5 w-3.5" />
@@ -2115,66 +2116,22 @@ const Discover = ({ language = "en" }: Props) => {
                 </div>
               </div>
 
-              {/* ─── App-shell content area (cream, distinct from website's cream) ─── */}
+              {/* ─── Filter context strip — Linear/Notion pattern ─── */}
               <div className="relative bg-canvas-soft border-b border-border/70">
-                {/* Soft warm glow */}
-                <div className="absolute -top-1/4 right-1/3 w-[40vw] h-[40vw] rounded-full blur-[160px] opacity-[0.10] pointer-events-none" style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 70%)" }} />
-
-                <div className="max-w-7xl mx-auto px-6 sm:px-8 pt-9 pb-8 relative">
-                  <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}>
-                    {/* Welcome + headline (compact, inspiring, NOT restrictive) */}
-                    {wiz.fullName && <p className="text-gold-dark text-[11px] font-semibold tracking-[0.22em] uppercase mb-3">Welcome back, {wiz.fullName}</p>}
-                    <h1 className="font-heading text-[clamp(1.75rem,3.6vw,2.75rem)] font-bold text-foreground leading-[1.1] tracking-[-0.02em] max-w-3xl">
-                      {loading ? "Loading the database..." : (
-                        <>
-                          Your scholarship universe.
-                          <span className="text-foreground/55"> All <span className="tabular-nums">{rows.length}</span>, ranked for you.</span>
-                        </>
-                      )}
-                    </h1>
-                    <p className="text-foreground/65 text-base max-w-2xl mt-3 leading-relaxed">
-                      Some are natural fits today. Others become realistic with the right essays, timing, and prep. Browse all of them — even the stretches are worth knowing about.
-                    </p>
-
-                    {/* Profile chips */}
-                    <div className="flex flex-wrap gap-2 mt-5">
-                      {[profile.country, profile.degree, profile.field, profile.gpa ? `GPA ${profile.gpa}/${profile.gpaScale}` : null, profile.ielts ? `IELTS ${profile.ielts}` : null].filter(Boolean).map(chip => (
-                        <span key={chip} className="text-xs bg-card text-foreground/75 border border-border px-3 py-1.5 rounded-full font-medium">{chip}</span>
-                      ))}
-                      <button onClick={resetProfile} className="text-xs text-muted-foreground hover:text-gold-dark transition-colors flex items-center gap-1.5 px-2.5 py-1.5 font-medium">
-                        <RefreshCw className="h-3 w-3" /> Update profile
-                      </button>
-                    </div>
-                  </motion.div>
-
-                  {/* My pipeline — appears once the user has tracked applications */}
-                  {!loading && pipeline.total > 0 && (
-                    <Reveal delay={0.2} y={16} className="mt-7 pt-6 border-t border-border/60">
-                      <div className="flex items-baseline justify-between mb-3">
-                        <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-1">My pipeline</p>
-                          <h3 className="font-heading text-sm font-bold text-foreground">{pipeline.total} application{pipeline.total === 1 ? "" : "s"} in progress</h3>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                        {([
-                          { k: "researching" as AppStatus, label: "Researching" },
-                          { k: "drafting" as AppStatus, label: "Drafting" },
-                          { k: "submitted" as AppStatus, label: "Submitted" },
-                          { k: "decision" as AppStatus, label: "Awaiting decision" },
-                          { k: "rejected" as AppStatus, label: "Rejected" },
-                        ]).filter(p => pipeline.counts[p.k] > 0).map(p => (
-                          <div key={p.k} className={`rounded-lg border px-3 py-2 ${STATUS_COLOR[p.k]}`}>
-                            <div className="text-lg font-bold tabular-nums leading-none">{pipeline.counts[p.k]}</div>
-                            <div className="text-[9px] font-semibold uppercase tracking-[0.18em] mt-1.5 opacity-80">{p.label}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </Reveal>
+                <div className="max-w-7xl mx-auto px-6 sm:px-8 py-4 flex items-baseline gap-3 flex-wrap">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground shrink-0">Filtered by</span>
+                  {[profile.country, profile.degree, profile.field, profile.gpa ? `GPA ${profile.gpa}/${profile.gpaScale}` : null, profile.ielts ? `IELTS ${profile.ielts}` : null].filter(Boolean).map(chip => (
+                    <span key={chip} className="text-xs text-foreground/75 bg-card border border-border px-2.5 py-1 rounded-md font-medium">{chip}</span>
+                  ))}
+                  <button onClick={resetProfile} className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 underline-offset-4 hover:underline">
+                    Edit
+                  </button>
+                  <div className="flex-1" />
+                  {!loading && (
+                    <span className="text-[11px] text-muted-foreground tabular-nums">
+                      <span className="text-foreground font-semibold">{filtered.length}</span> of {ranked.length}
+                    </span>
                   )}
-
-                  {/* Country rail removed — was busy/emoji-heavy. Country
-                      filtering still available via the Refine sidebar. */}
                 </div>
               </div>
 
@@ -2418,9 +2375,13 @@ const Discover = ({ language = "en" }: Props) => {
                           return (
                             <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
                               <div className="hidden sm:grid grid-cols-[44px,minmax(0,2fr),minmax(0,1.2fr),minmax(0,1fr),auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                                <span className="text-center">Score</span>
+                                <span className="text-center">
+                                  <button onClick={() => setSortBy("match")} className={`transition-colors ${sortBy === "match" ? "text-foreground" : "hover:text-foreground"}`}>Score{sortBy === "match" && <span className="ml-1 text-gold-dark">↓</span>}</button>
+                                </span>
                                 <span>Scholarship</span>
-                                <span>Award · Deadline</span>
+                                <span>
+                                  <button onClick={() => setSortBy("deadline")} className={`transition-colors ${sortBy === "deadline" ? "text-foreground" : "hover:text-foreground"}`}>Award · Deadline{sortBy === "deadline" && <span className="ml-1 text-gold-dark">↓</span>}</button>
+                                </span>
                                 <span>Status</span>
                                 <span className="text-right pr-2">Actions</span>
                               </div>
@@ -2541,13 +2502,24 @@ const Discover = ({ language = "en" }: Props) => {
                           });
 
                           if (viewMode === "list") {
+                            const sortBtn = (label: string, key: SortBy) => {
+                              const active = sortBy === key;
+                              return (
+                                <button
+                                  onClick={() => setSortBy(key)}
+                                  className={`text-left transition-colors ${active ? "text-foreground" : "hover:text-foreground"}`}
+                                >
+                                  {label}{active && <span className="ml-1 text-gold-dark">↓</span>}
+                                </button>
+                              );
+                            };
                             return (
                               <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
-                                {/* Column headers (desktop) */}
+                                {/* Sortable column headers (desktop) */}
                                 <div className="hidden sm:grid grid-cols-[44px,minmax(0,2fr),minmax(0,1.2fr),minmax(0,1fr),auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                                  <span className="text-center">Score</span>
+                                  <span className="text-center">{sortBtn("Score", "match")}</span>
                                   <span>Scholarship</span>
-                                  <span>Award · Deadline</span>
+                                  <span>{sortBtn("Award · Deadline", "deadline")}</span>
                                   <span>Status</span>
                                   <span className="text-right pr-2">Actions</span>
                                 </div>
