@@ -3,20 +3,35 @@ import { cn } from "@/lib/utils";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Menu, Sparkles, Crown, User as UserIcon } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthDialog } from "@/components/auth/AuthDialog";
 
 interface NavigationProps {
   language?: "en" | "ru";
+  /** "overlay" lets the page background show through the nav while at the top of the page,
+   *  then fades to the normal opaque cream nav once the user scrolls. Used on the homepage
+   *  so the navy gradient at the top of the hero extends through the nav strip. */
+  variant?: "default" | "overlay";
 }
 
-const Navigation = ({ language = "en" }: NavigationProps) => {
+const Navigation = ({ language = "en", variant = "default" }: NavigationProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const { user, subscription } = useAuth();
+
+  useEffect(() => {
+    if (variant !== "overlay") return;
+    const onScroll = () => setScrolled(window.scrollY > 80);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [variant]);
+
+  const isOverlay = variant === "overlay" && !scrolled;
 
   const isRussian = language === "ru";
   const basePath = isRussian ? "/ru" : "/";
@@ -51,14 +66,31 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname === path;
 
+  // Color tokens swap when overlaying a navy hero
+  const linkBase = "px-3 py-2 text-sm font-medium rounded-md transition-colors";
+  const linkIdle = isOverlay
+    ? "text-primary-foreground/80 hover:text-primary-foreground"
+    : "text-muted-foreground hover:text-primary";
+  const linkActive = isOverlay ? "text-gold-light" : "text-gold-dark";
+
   return (
-    <nav className="bg-surface/92 backdrop-blur-md border-b border-border sticky top-0 z-50 shadow-xs">
+    <nav className={cn(
+      "sticky top-0 z-50 transition-[background-color,border-color,box-shadow] duration-500 border-b",
+      isOverlay
+        ? "bg-transparent border-transparent shadow-none"
+        : "bg-surface/92 backdrop-blur-md border-border shadow-xs"
+    )}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <button
             onClick={() => navigate(basePath)}
-            className="text-primary font-heading text-lg sm:text-xl font-semibold hover:text-gold-dark transition-colors"
+            className={cn(
+              "font-heading text-lg sm:text-xl font-semibold transition-colors",
+              isOverlay
+                ? "text-primary-foreground hover:text-gold-light"
+                : "text-primary hover:text-gold-dark"
+            )}
           >
             Top Uni
           </button>
@@ -67,12 +99,7 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
           <div className="hidden lg:flex items-center gap-1">
             <button
               onClick={() => navigate(basePath)}
-              className={cn(
-                "px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                isActive(basePath, true)
-                  ? "text-gold-dark"
-                  : "text-muted-foreground hover:text-primary"
-              )}
+              className={cn(linkBase, isActive(basePath, true) ? linkActive : linkIdle)}
             >
               {isRussian ? "Главная" : "Home"}
             </button>
@@ -81,12 +108,7 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
               <button
                 key={link.path}
                 onClick={() => navigate(link.path)}
-                className={cn(
-                  "px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                  isActive(link.path)
-                    ? "text-gold-dark"
-                    : "text-muted-foreground hover:text-primary"
-                )}
+                className={cn(linkBase, isActive(link.path) ? linkActive : linkIdle)}
               >
                 {link.label}
               </button>
@@ -96,12 +118,7 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
               <button
                 key={link.path}
                 onClick={() => navigate(link.path)}
-                className={cn(
-                  "px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                  isActive(link.path)
-                    ? "text-gold-dark"
-                    : "text-muted-foreground hover:text-primary"
-                )}
+                className={cn(linkBase, isActive(link.path) ? linkActive : linkIdle)}
               >
                 {link.label}
               </button>
@@ -114,10 +131,10 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
                 className={cn(
                   "ml-1 px-3 py-1.5 text-sm font-medium rounded-md flex items-center gap-1.5 transition-all",
                   subscription.tier === "founding"
-                    ? "bg-gold/15 text-gold-dark border border-gold/35"
+                    ? (isOverlay ? "bg-gold/20 text-gold-light border border-gold/45" : "bg-gold/15 text-gold-dark border border-gold/35")
                     : subscription.tier === "pro"
-                    ? "bg-gold/10 text-gold-dark border border-gold/25"
-                    : "text-muted-foreground hover:bg-secondary hover:text-primary border border-transparent"
+                    ? (isOverlay ? "bg-gold/15 text-gold-light border border-gold/35" : "bg-gold/10 text-gold-dark border border-gold/25")
+                    : (isOverlay ? "text-primary-foreground/80 hover:text-primary-foreground border border-transparent" : "text-muted-foreground hover:bg-secondary hover:text-primary border border-transparent")
                 )}
               >
                 {subscription.tier === "founding" ? <Crown className="w-3.5 h-3.5" /> : subscription.tier === "pro" ? <Sparkles className="w-3.5 h-3.5" /> : <UserIcon className="w-3.5 h-3.5" />}
@@ -132,7 +149,10 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
             ) : (
               <button
                 onClick={() => setAuthOpen(true)}
-                className="ml-1 px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition"
+                className={cn(
+                  "ml-1 px-3 py-1.5 text-sm font-medium transition",
+                  isOverlay ? "text-primary-foreground/80 hover:text-primary-foreground" : "text-muted-foreground hover:text-primary"
+                )}
               >
                 {isRussian ? "Войти" : "Sign in"}
               </button>
@@ -146,7 +166,7 @@ const Navigation = ({ language = "en" }: NavigationProps) => {
           {/* Mobile Hamburger */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild className="lg:hidden">
-              <button className="text-primary p-2">
+              <button className={cn("p-2 transition-colors", isOverlay ? "text-primary-foreground" : "text-primary")}>
                 <Menu size={24} />
               </button>
             </SheetTrigger>

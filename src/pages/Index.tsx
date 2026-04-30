@@ -63,31 +63,35 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background text-foreground antialiased">
       <ScrollProgress />
-      <Navigation language="en" />
+      <Navigation language="en" variant="overlay" />
 
       <main className="relative">
 
-        {/* HERO */}
-        <section className="relative min-h-[86vh] flex items-center overflow-hidden bg-background text-foreground">
-          {/* Campus image — bright, full visibility */}
+        {/* HERO — pulled up behind the nav (-mt-16) so the navy gradient at the
+            top of the section sits BEHIND the (transparent) nav strip. */}
+        <section className="relative -mt-16 min-h-[86vh] flex items-center overflow-hidden bg-background text-foreground">
+          {/* Campus image */}
           <div
             className="absolute inset-0 bg-cover bg-center"
             style={{ backgroundImage: `url(${heroImage})` }}
           />
-          {/* Wash: navy band at the top fades through cream wash to background.
-              Mirrors the cream→navy ramp at the bottom of the page so the hero
-              has navy bookend presence above + below. Cream wash is dense
-              throughout so the campus photo only whispers behind the text. */}
+          {/* Wash: full navy at the very top (covers the nav strip area),
+              fading through cream wash. The 0–10% navy zone now sits behind
+              the transparent nav, so the navy gradient extends through the
+              top-left "Top Uni" logo and the entire ribbon. Cream wash is
+              lighter than before so the campus image shimmers through —
+              subtle texture without dominating. */}
           <div
             className="absolute inset-0"
             style={{
               backgroundImage: `linear-gradient(180deg,
-                hsl(var(--primary) / 0.92) 0%,
-                hsl(var(--primary) / 0.55) 8%,
-                hsl(var(--primary) / 0.18) 18%,
-                hsl(var(--background) / 0.93) 32%,
-                hsl(var(--background) / 0.88) 60%,
-                hsl(var(--background) / 0.97) 100%)`,
+                hsl(var(--primary) / 0.95) 0%,
+                hsl(var(--primary) / 0.78) 5%,
+                hsl(var(--primary) / 0.42) 12%,
+                hsl(var(--primary) / 0.12) 22%,
+                hsl(var(--background) / 0.82) 38%,
+                hsl(var(--background) / 0.72) 65%,
+                hsl(var(--background) / 0.95) 100%)`,
             }}
           />
           <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-background pointer-events-none" />
