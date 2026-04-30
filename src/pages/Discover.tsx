@@ -245,7 +245,7 @@ const FIELDS = [
 ];
 
 const SELECTIVITY_LABEL: Record<Scored["selectivity"], string> = {
-  very_high: "Highly selective", high: "Selective", medium: "Moderate", low: "Open", unknown: "—",
+  very_high: "Highly competitive", high: "Competitive", medium: "Moderate", low: "Accessible", unknown: "—",
 };
 
 /* Recognize "no real restriction" values so we don't render them as constraints */
@@ -277,10 +277,10 @@ const deadlineDisplay = (d: string | null) => {
   return { text: `${Math.ceil(days / 30)} months`, cls: "text-foreground/60", urgent: false };
 };
 
-/* Tier — strict navy/gold palette */
+/* Tier — positive framing only. No "stretch", "long shot", "lower fit". */
 const TIER = {
   strong_match: {
-    label: "Strong match",
+    label: "Closely aligned",
     dot: "bg-gold",
     text: "text-gold",
     textLight: "text-gold-dark dark:text-gold",
@@ -288,7 +288,7 @@ const TIER = {
     border: "border-gold/30",
   },
   competitive: {
-    label: "Competitive",
+    label: "Aligned",
     dot: "bg-primary-bright",
     text: "text-primary-foreground/85",
     textLight: "text-primary dark:text-primary-bright",
@@ -296,7 +296,7 @@ const TIER = {
     border: "border-primary/25",
   },
   low_priority: {
-    label: "Lower fit",
+    label: "Worth exploring",
     dot: "bg-muted-foreground/50",
     text: "text-muted-foreground",
     textLight: "text-muted-foreground",
@@ -808,11 +808,11 @@ const TimelineView = ({ items, onSelect, openDetail, ...common }: {
 }) => {
   const groups = useMemo(() => {
     const buckets: { label: string; subtitle: string; cls: string; items: Scored[] }[] = [
-      { label: "This week",       subtitle: "Apply or skip — no time to research", cls: "text-destructive",  items: [] },
-      { label: "This month",      subtitle: "Get drafts moving",                   cls: "text-rose-600",     items: [] },
-      { label: "Next 90 days",    subtitle: "Plan ahead, draft early",             cls: "text-warning",      items: [] },
-      { label: "Later this year", subtitle: "On the radar",                        cls: "text-foreground/60",items: [] },
-      { label: "Rolling / undated", subtitle: "Apply when ready",                  cls: "text-muted-foreground", items: [] },
+      { label: "This week",       subtitle: "Closing in seven days. Decide and act.",         cls: "text-destructive",  items: [] },
+      { label: "This month",      subtitle: "Closing in the next 31 days.",                   cls: "text-rose-600",     items: [] },
+      { label: "Next 90 days",    subtitle: "Plenty of runway to prepare a strong application.", cls: "text-warning",   items: [] },
+      { label: "Later this year", subtitle: "On the radar — start research now.",              cls: "text-foreground/60",items: [] },
+      { label: "Rolling / undated", subtitle: "Apply whenever you're ready.",                  cls: "text-muted-foreground", items: [] },
     ];
     items.forEach(s => {
       const d = daysUntil(s.application_deadline);
@@ -895,8 +895,8 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
   const sections: { label: string; key: keyof FilterState; opts: { v: string; l: string }[] }[] = [
     { label: "Coverage", key: "coverage", opts: [{ v: "all", l: "All types" }, { v: "full_ride", l: "Full ride" }, { v: "tuition_only", l: "Tuition" }, { v: "stipend", l: "Stipend" }] },
     { label: "Degree",   key: "degree",   opts: [{ v: "all", l: "All levels" }, { v: "undergraduate", l: "Bachelor\'s" }, { v: "master\'s", l: "Master\'s" }, { v: "PhD", l: "PhD" }] },
-    { label: "Selectivity", key: "selectivity", opts: [{ v: "all", l: "Any selectivity" }, { v: "low", l: "Open / accessible" }, { v: "medium", l: "Moderate" }, { v: "high", l: "Selective" }, { v: "very_high", l: "Highly selective" }] },
-    { label: "Effort", key: "effort", opts: [{ v: "all", l: "Any effort" }, { v: "low", l: "Quick to apply" }, { v: "medium", l: "Medium" }, { v: "high", l: "Heavy lift" }] },
+    { label: "Competitiveness", key: "selectivity", opts: [{ v: "all", l: "Any level" }, { v: "low", l: "Accessible" }, { v: "medium", l: "Moderate" }, { v: "high", l: "Competitive" }, { v: "very_high", l: "Highly competitive" }] },
+    // Effort filter removed for now — effort still surfaces on the detail card.
   ];
   return (
     <div className="space-y-6">
@@ -1659,7 +1659,7 @@ const Discover = ({ language = "en" }: Props) => {
 
                 <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32, duration: 0.7 }}
                   className="text-primary-foreground/55 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed font-light">
-                  Answer four questions. We rank every scholarship in our database against your profile and tell you exactly where you have a real shot.
+                  Answer four questions. We rank every scholarship in our database against your profile and show how each one aligns with you.
                 </motion.p>
 
                 <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 0.7 }}
@@ -1915,7 +1915,7 @@ const Discover = ({ language = "en" }: Props) => {
                       )}
                     </h1>
                     <p className="text-foreground/65 text-lg sm:text-xl max-w-2xl mt-5 leading-relaxed">
-                      Based on your profile, we ranked all <span className="text-foreground font-semibold tabular-nums">{rows.length}</span> scholarships in our database. Here's where you have a real shot.
+                      We ranked all <span className="text-foreground font-semibold tabular-nums">{rows.length}</span> scholarships in our database against your profile. Here's how each one aligns.
                     </p>
 
                     <div className="flex flex-wrap gap-2 mt-6">
@@ -1932,7 +1932,7 @@ const Discover = ({ language = "en" }: Props) => {
                     <Reveal delay={0.15} y={28} className="mt-10 pt-8 border-t border-border">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-7">
                         <InlineStat label="Strong matches" value={stats.strong} color="text-gold-dark" icon={Trophy} delay={0.05} />
-                        <InlineStat label="Worth a shot" value={stats.competitive} color="text-foreground" icon={Target} delay={0.1} />
+                        <InlineStat label="Aligned" value={stats.competitive} color="text-foreground" icon={Target} delay={0.1} />
                         <InlineStat label="Closing soon" value={stats.closing} color="text-foreground" icon={Flame} delay={0.15} />
                         <InlineStat label="Funding pool" value={stats.totalValue} color="text-gold-dark" icon={Sparkles} isMoney delay={0.2} />
                       </div>
@@ -2022,7 +2022,7 @@ const Discover = ({ language = "en" }: Props) => {
                       <SelectItem value="deadline">Deadline first</SelectItem>
                       <SelectItem value="value">Highest value</SelectItem>
                       <SelectItem value="effort">Easiest first</SelectItem>
-                      <SelectItem value="selectivity">Least selective</SelectItem>
+                      <SelectItem value="selectivity">Most accessible</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -2182,7 +2182,7 @@ const Discover = ({ language = "en" }: Props) => {
                             <>
                               {sections.strong.length > 0 && (
                                 <section>
-                                  <SectionHeader kicker="Strong matches" title="Where you have a real shot" subtitle="High alignment with your profile and goals."
+                                  <SectionHeader kicker="Closely aligned" title="Strongest fits with your profile" subtitle="These hit on multiple dimensions — academics, field, eligibility, and budget."
                                     count={sections.strong.length} accentClass="text-gold-dark dark:text-gold" />
                                   <div className="grid sm:grid-cols-2 gap-5 auto-rows-fr">
                                     {sections.strong.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
@@ -2192,7 +2192,7 @@ const Discover = ({ language = "en" }: Props) => {
 
                               {sections.competitive.length > 0 && (
                                 <section>
-                                  <SectionHeader kicker="Competitive" title="Worth a shot" subtitle="Achievable with a strong, well-targeted application."
+                                  <SectionHeader kicker="Aligned" title="Competitive matches" subtitle="A strong, well-targeted application makes these very achievable."
                                     count={sections.competitive.length} accentClass="text-primary dark:text-primary-bright" />
                                   <div className="grid sm:grid-cols-2 gap-5 auto-rows-fr">
                                     {sections.competitive.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
@@ -2202,7 +2202,7 @@ const Discover = ({ language = "en" }: Props) => {
 
                               {sections.stretch.length > 0 && (
                                 <section>
-                                  <SectionHeader kicker="Stretch" title="Long shots" subtitle="Lower fit — apply only if you have bandwidth."
+                                  <SectionHeader kicker="Worth exploring" title="More to consider" subtitle="Selective fits worth a quick scan — review the requirements and decide."
                                     count={sections.stretch.length} accentClass="text-muted-foreground" />
                                   <div className="grid sm:grid-cols-2 gap-5 auto-rows-fr opacity-90">
                                     {sections.stretch.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}

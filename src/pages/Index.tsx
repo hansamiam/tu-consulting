@@ -61,48 +61,58 @@ const Index = () => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground antialiased">
+    <div className="min-h-screen relative bg-background text-foreground antialiased">
       <ScrollProgress />
-      <Navigation language="en" variant="overlay" />
+
+      {/* ── Page-level parallax campus image — fixed in viewport, visible
+          behind every section all the way to the footer. Filter neutralizes
+          the autumn foliage to a grey gothic palette so it reads color-neutral. */}
+      <div
+        className="fixed inset-0 z-0 bg-cover bg-center pointer-events-none"
+        style={{
+          backgroundImage: `url(${heroImage})`,
+          filter: "grayscale(1) contrast(1.05) brightness(0.96)",
+        }}
+        aria-hidden="true"
+      />
+      {/* ── Page-level cream wash on top of the campus image. This is what
+          gives every section its readable cream backdrop while still letting
+          the campus shimmer through. */}
+      <div
+        className="fixed inset-0 z-0 pointer-events-none"
+        style={{
+          backgroundImage: `linear-gradient(180deg,
+            hsl(var(--background) / 0.84) 0%,
+            hsl(var(--background) / 0.90) 35%,
+            hsl(var(--background) / 0.92) 70%,
+            hsl(var(--background) / 0.88) 100%)`,
+        }}
+        aria-hidden="true"
+      />
+
+      <div className="relative z-10">
+        <Navigation language="en" variant="overlay" />
 
       <main className="relative">
 
-        {/* HERO — pulled up behind the nav (-mt-16) so the navy gradient at the
-            top of the section sits BEHIND the (transparent) nav strip. */}
-        <section className="relative -mt-16 min-h-[86vh] flex items-center overflow-hidden bg-background text-foreground">
-          {/* Campus image — bg-fixed creates the parallax effect.
-              The CSS filter shifts the autumn red foliage toward the gold/amber
-              brand palette: sepia(0.55) gives a unified warm cast, hue-rotate
-              nudges leftover reds toward gold, saturate punches the result. */}
+        {/* HERO — pulled up behind the nav (-mt-16). Only adds the navy band
+            at the very top; the page-level cream wash + campus image handle
+            the rest. */}
+        <section className="relative -mt-16 min-h-[86vh] flex items-center overflow-hidden text-foreground">
+          {/* Navy band at the top, fades into the page-level wash */}
           <div
-            className="absolute inset-0 bg-cover bg-center bg-fixed"
-            style={{
-              backgroundImage: `url(${heroImage})`,
-              filter: "sepia(0.55) hue-rotate(-12deg) saturate(1.35) brightness(1.02)",
-            }}
-          />
-          {/* Wash: navy band at the top (covers the nav strip), then a uniform
-              cream shimmer through the rest of the hero so the campus is
-              visible everywhere as a faint texture rather than appearing in
-              one strip. Bottom edge fades to solid background for the next
-              section. */}
-          <div
-            className="absolute inset-0"
+            className="absolute inset-0 pointer-events-none"
             style={{
               backgroundImage: `linear-gradient(180deg,
                 hsl(var(--primary) / 0.95) 0%,
                 hsl(var(--primary) / 0.78) 5%,
                 hsl(var(--primary) / 0.50) 12%,
                 hsl(var(--primary) / 0.22) 20%,
-                hsl(var(--background) / 0.55) 28%,
-                hsl(var(--background) / 0.72) 36%,
-                hsl(var(--background) / 0.82) 46%,
-                hsl(var(--background) / 0.84) 58%,
-                hsl(var(--background) / 0.84) 88%,
-                hsl(var(--background) / 0.95) 100%)`,
+                hsl(var(--primary) / 0.06) 28%,
+                transparent 38%,
+                transparent 100%)`,
             }}
           />
-          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-background pointer-events-none" />
 
           <div className="relative max-w-5xl mx-auto px-5 sm:px-8 text-center pt-16 pb-24 sm:pt-20 sm:pb-28 w-full">
             <motion.h1
@@ -186,7 +196,7 @@ const Index = () => {
         {/* TEAM — subtle background shift, no hard block */}
         <section
           className="py-20 sm:py-28"
-          style={{ backgroundImage: `linear-gradient(180deg, hsl(var(--background)), hsl(var(--primary) / 0.055) 50%, hsl(var(--background)))` }}
+          style={{ backgroundImage: `linear-gradient(180deg, transparent, hsl(var(--primary) / 0.07) 50%, transparent)` }}
         >
           <div className="max-w-6xl mx-auto px-5 sm:px-8">
             <motion.div {...fadeUp()} className="max-w-3xl mx-auto text-center mb-14 sm:mb-16">
@@ -259,10 +269,10 @@ const Index = () => {
           className="pt-20 sm:pt-28 pb-32 sm:pb-40"
           style={{
             backgroundImage: `linear-gradient(180deg,
-              hsl(var(--background)) 0%,
-              hsl(var(--background)) 30%,
-              hsl(var(--primary) / 0.05) 55%,
-              hsl(var(--primary) / 0.30) 85%,
+              transparent 0%,
+              transparent 30%,
+              hsl(var(--primary) / 0.06) 55%,
+              hsl(var(--primary) / 0.45) 85%,
               hsl(var(--primary)) 100%)`,
           }}
         >
@@ -317,6 +327,7 @@ const Index = () => {
           </div>
         </div>
       </footer>
+      </div>
     </div>
   );
 };
