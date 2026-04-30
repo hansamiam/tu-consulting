@@ -1591,8 +1591,9 @@ const Discover = ({ language = "en" }: Props) => {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [shortlistOpen, setShortlistOpen] = useState(false);
 
-  // Logic-Pro-grade app state, persisted in localStorage
-  const [viewMode, setViewMode] = useState<ViewMode>(() => (localStorage.getItem("tu_view_mode") as ViewMode) || "grid");
+  // Logic-Pro-grade app state, persisted in localStorage. Default to list —
+  // serious databases lead with dense rows, not marketing card grids.
+  const [viewMode, setViewMode] = useState<ViewMode>(() => (localStorage.getItem("tu_view_mode") as ViewMode) || "list");
   const [appSection, setAppSection] = useState<AppSection>("browse");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [statusMap, setStatusMap] = useState<Record<string, AppStatus>>(() => {
@@ -2098,64 +2099,21 @@ const Discover = ({ language = "en" }: Props) => {
           {/* ══ RESULTS — distinctive app-shell experience ══ */}
           {phase === "results" && (
             <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7 }}>
-              {/* ─── DARK NAVY APP HEADER BAR — distinct chrome that
-                  signals "this is the Discover app, not just a website page" ─── */}
-              <motion.div
-                initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-                className="relative bg-primary text-primary-foreground border-b border-primary/40 shadow-md"
-              >
-                {/* Subtle gold ambient inside the navy bar */}
-                <div className="absolute inset-0 pointer-events-none opacity-30" style={{ backgroundImage: "linear-gradient(90deg, transparent, hsl(42 70% 50% / 0.08) 50%, transparent)" }} />
-                <div className="max-w-7xl mx-auto px-6 sm:px-8 py-3.5 flex items-center gap-4 relative">
-                  {/* App brand */}
-                  <div className="flex items-center gap-2.5 shrink-0">
-                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-gold-light to-gold-dark flex items-center justify-center shadow-sm">
-                      <Sparkles className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-heading font-bold text-sm text-primary-foreground tracking-tight leading-none">Discover</p>
-                      <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-primary-foreground/55 mt-1">Scholarship database · v1</p>
-                    </div>
-                  </div>
-
+              {/* ─── App title bar — restrained navy strip, single-line wordmark ─── */}
+              <div className="relative bg-primary text-primary-foreground border-b border-primary/30">
+                <div className="max-w-7xl mx-auto px-6 sm:px-8 h-12 flex items-center gap-5">
+                  <p className="font-heading font-semibold text-[15px] text-primary-foreground tracking-tight">
+                    Discover
+                  </p>
+                  <span className="hidden sm:inline text-[11px] text-primary-foreground/40 tabular-nums">
+                    {rows.length} scholarships
+                  </span>
                   <div className="flex-1" />
-
-                  {/* Live indicators */}
-                  <div className="hidden md:flex items-center gap-3 text-xs text-primary-foreground/65">
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="relative flex h-1.5 w-1.5">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
-                      </span>
-                      <span className="font-mono uppercase tracking-[0.14em] text-[10px]">Live</span>
-                    </span>
-                    <span className="text-primary-foreground/30">·</span>
-                    <span className="tabular-nums"><span className="text-primary-foreground font-semibold">{rows.length}</span> indexed</span>
-                    {shortlist.size > 0 && (
-                      <>
-                        <span className="text-primary-foreground/30">·</span>
-                        <span className="tabular-nums"><span className="text-gold-light font-semibold">{shortlist.size}</span> saved</span>
-                      </>
-                    )}
-                    {pipeline.total > 0 && (
-                      <>
-                        <span className="text-primary-foreground/30">·</span>
-                        <span className="tabular-nums"><span className="text-gold-light font-semibold">{pipeline.total}</span> in pipeline</span>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Profile chip */}
                   {wiz.fullName && (
-                    <div className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-primary-foreground/[0.06] border border-primary-foreground/10 text-[11px] text-primary-foreground/80">
-                      <UserCheck className="h-3 w-3 text-gold-light" />
-                      {wiz.fullName}
-                    </div>
+                    <span className="hidden sm:inline text-[11px] text-primary-foreground/55">{wiz.fullName}</span>
                   )}
                 </div>
-                {/* Bottom thin gold accent line */}
-                <div className="h-[2px] bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
-              </motion.div>
+              </div>
 
               {/* ─── App-shell content area (cream, distinct from website's cream) ─── */}
               <div className="relative bg-canvas-soft border-b border-border/70">
@@ -2215,55 +2173,8 @@ const Discover = ({ language = "en" }: Props) => {
                     </Reveal>
                   )}
 
-                  {/* ── Browse by country — geographic discovery rail (Spotify-style)
-                      Replaces the old match-landscape bar chart. Each tile is a
-                      clickable host country: flag + name + scholarship count +
-                      total funding pool. Click → applies host-country filter. */}
-                  {!loading && byCountry.length > 0 && (
-                    <Reveal delay={0.3} className="mt-7 pt-6 border-t border-border/60">
-                      <div className="flex items-baseline justify-between mb-4">
-                        <div>
-                          <p className="text-gold-dark text-[10px] font-semibold uppercase tracking-[0.22em] mb-1">Discover by destination</p>
-                          <h3 className="font-heading text-base font-bold text-foreground tracking-tight">{byCountry.length} countries · funding worldwide</h3>
-                        </div>
-                        {filters.hostCountry !== "all" && (
-                          <button onClick={() => setFilters(f => ({ ...f, hostCountry: "all" }))} className="text-[11px] text-muted-foreground hover:text-gold-dark transition-colors flex items-center gap-1">
-                            <X className="h-3 w-3" /> Clear country
-                          </button>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
-                        {byCountry.slice(0, 16).map((c, i) => {
-                          const flag = FLAGS[c.country] ?? "🌍";
-                          const active = filters.hostCountry === c.country;
-                          return (
-                            <motion.button
-                              key={c.country}
-                              initial={{ opacity: 0, y: 8 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: Math.min(i * 0.025, 0.35), duration: 0.4 }}
-                              onClick={() => setFilters(f => ({ ...f, hostCountry: active ? "all" : c.country }))}
-                              className={`group relative text-left rounded-xl border px-3 py-3 transition-all hover:-translate-y-0.5 ${
-                                active
-                                  ? "bg-gold/10 border-gold/40 shadow-md"
-                                  : "bg-card border-border/70 hover:border-gold/30 hover:shadow-sm"
-                              }`}
-                              title={`${c.country} — ${c.count} scholarships${c.totalValue > 0 ? ` · ${fmtValue(c.totalValue)}` : ""}`}
-                            >
-                              <div className="flex items-baseline justify-between gap-1.5 mb-1.5">
-                                <span className="text-2xl leading-none">{flag}</span>
-                                <span className="text-base font-bold tabular-nums text-foreground/45">{c.count}</span>
-                              </div>
-                              <p className="text-[11px] font-semibold text-foreground tracking-tight truncate leading-tight">{c.country}</p>
-                              {c.totalValue > 0 && (
-                                <p className="text-[10px] text-gold-dark mt-0.5 tabular-nums truncate">{fmtValue(c.totalValue)}</p>
-                              )}
-                            </motion.button>
-                          );
-                        })}
-                      </div>
-                    </Reveal>
-                  )}
+                  {/* Country rail removed — was busy/emoji-heavy. Country
+                      filtering still available via the Refine sidebar. */}
                 </div>
               </div>
 
@@ -2597,20 +2508,22 @@ const Discover = ({ language = "en" }: Props) => {
                           </section>
                         )}
 
+                        {/* Editor's spotlight — single line, no marketing card */}
                         {appSection === "browse" && viewMode === "grid" && sections.hero.length > 0 && (
-                          <section>
-                            <Reveal y={20}>
-                              <p className="text-gold-dark dark:text-gold text-[11px] font-semibold uppercase tracking-[0.22em] mb-4 flex items-center gap-2">
-                                <span className="h-px w-6 bg-gold" /> Top match for you
-                              </p>
-                            </Reveal>
-                            <FeaturedCard
-                              s={sections.hero[0]}
-                              onSelect={() => setOpenDetail(sections.hero[0])}
-                              isBookmarked={shortlist.has(sections.hero[0].scholarship_id)}
-                              onBookmark={e => { e.stopPropagation(); toggleBookmark(sections.hero[0].scholarship_id); }}
-                            />
-                          </section>
+                          <button
+                            onClick={() => setOpenDetail(sections.hero[0])}
+                            className="group w-full flex items-baseline justify-between gap-4 py-3 border-y border-border/60 hover:border-gold/40 transition-colors text-left"
+                          >
+                            <div className="flex items-baseline gap-3 min-w-0">
+                              <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark shrink-0">Top match</span>
+                              <span className="font-heading font-semibold text-foreground truncate group-hover:text-gold-dark transition-colors">{sections.hero[0].scholarship_name}</span>
+                              <span className="hidden sm:inline text-xs text-muted-foreground truncate">{sections.hero[0].provider_name}</span>
+                            </div>
+                            <span className="flex items-baseline gap-2 shrink-0">
+                              <span className="font-bold tabular-nums text-foreground">{sections.hero[0].match}</span>
+                              <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-gold-dark group-hover:translate-x-0.5 transition-all" />
+                            </span>
+                          </button>
                         )}
 
                         {appSection === "browse" && (() => {
