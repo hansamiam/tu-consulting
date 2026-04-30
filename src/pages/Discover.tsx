@@ -20,6 +20,7 @@ import {
   Target, Flame, Users, FileText, Languages,
   CreditCard, AlertOctagon, UserCheck, ShieldAlert, MinusCircle, HelpCircle,
   LayoutGrid, List, EyeOff, Eye, Columns3, Circle, MoreHorizontal, GitCompare,
+  Gem, DollarSign, Crown, Award, Compass,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
@@ -207,6 +208,130 @@ const scoreScholarship = (s: Scholarship, p: Profile): Scored => {
 
   return { ...s, match, eligibility, priority, reward, effort, selectivity, fieldMatch: fm, reasons, warnings };
 };
+
+/* ─── Curated Collections — recommendation rule-set ──────────────────────
+   Each collection is computed live from the ranked list and the user's
+   profile. Surfaced as a rail above the main results so students can
+   triage by intent ("I want sleepers" vs "I want prestigious") rather
+   than only by raw match score. */
+interface CollectionDef {
+  id: string;
+  title: string;
+  kicker: string;
+  description: string | ((p: Profile) => string);
+  icon: typeof Trophy;
+  accentClass: string;
+  filter: (s: Scored, p: Profile) => boolean;
+  sort?: (a: Scored, b: Scored) => number;
+  minItems?: number;
+}
+
+const PRESTIGIOUS_NAMES = /knight-hennessy|rhodes|schwarzman|fulbright|gates cambridge|chevening|marshall|mastercard foundation|erasmus mundus|vanier|eiffel|daad|aga khan/i;
+
+const COLLECTIONS: CollectionDef[] = [
+  {
+    id: "recommended",
+    title: "Recommended for you",
+    kicker: "Top picks",
+    description: "Most aligned across academics, field, eligibility, and budget.",
+    icon: Sparkles,
+    accentClass: "text-gold-dark",
+    filter: (s) => s.priority === "strong_match",
+    sort: (a, b) => b.match - a.match,
+    minItems: 1,
+  },
+  {
+    id: "sleepers",
+    title: "Sleeper picks",
+    kicker: "Hidden gems",
+    description: "Solid value, accessible competitiveness — strong odds with a focused application.",
+    icon: Gem,
+    accentClass: "text-primary",
+    filter: (s) => s.match >= 60 && (s.selectivity === "low" || s.selectivity === "medium") && (s.estimated_total_value_usd ?? 0) >= 25000,
+    sort: (a, b) => (b.estimated_total_value_usd ?? 0) - (a.estimated_total_value_usd ?? 0),
+    minItems: 2,
+  },
+  {
+    id: "prestigious",
+    title: "Household names",
+    kicker: "Prestigious",
+    description: "Globally recognized scholarships that signal heavily on a CV.",
+    icon: Crown,
+    accentClass: "text-gold-dark",
+    filter: (s) => PRESTIGIOUS_NAMES.test(s.scholarship_name),
+    sort: (a, b) => b.match - a.match,
+    minItems: 1,
+  },
+  {
+    id: "underrated",
+    title: "Underrated full-rides",
+    kicker: "Big award, lower bar",
+    description: "Full-funding scholarships outside the household name list — quieter but generous.",
+    icon: Award,
+    accentClass: "text-primary",
+    filter: (s) =>
+      s.coverage_type === "full_ride" &&
+      !PRESTIGIOUS_NAMES.test(s.scholarship_name) &&
+      (s.selectivity === "low" || s.selectivity === "medium" || s.selectivity === "unknown"),
+    sort: (a, b) => (b.estimated_total_value_usd ?? 0) - (a.estimated_total_value_usd ?? 0),
+    minItems: 2,
+  },
+  {
+    id: "closing_soon",
+    title: "Closing this month",
+    kicker: "Act now",
+    description: "Deadlines within 31 days. Decide and execute or skip cleanly.",
+    icon: Flame,
+    accentClass: "text-destructive",
+    filter: (s) => {
+      const d = daysUntil(s.application_deadline);
+      return d !== null && d > 0 && d <= 31;
+    },
+    sort: (a, b) => {
+      if (!a.application_deadline) return 1;
+      if (!b.application_deadline) return -1;
+      return new Date(a.application_deadline).getTime() - new Date(b.application_deadline).getTime();
+    },
+    minItems: 1,
+  },
+  {
+    id: "biggest_checks",
+    title: "Biggest checks",
+    kicker: "Highest value",
+    description: "Awards over $100K in total funding — life-changing money.",
+    icon: DollarSign,
+    accentClass: "text-gold-dark",
+    filter: (s) => (s.estimated_total_value_usd ?? 0) >= 100000,
+    sort: (a, b) => (b.estimated_total_value_usd ?? 0) - (a.estimated_total_value_usd ?? 0),
+    minItems: 2,
+  },
+  {
+    id: "for_your_field",
+    title: "For your field",
+    kicker: "Field-specific",
+    description: (p) => `Scholarships explicitly funding ${p.field || "your area of study"}.`,
+    icon: Target,
+    accentClass: "text-primary",
+    filter: (s, p) => fieldMatches(p.field, s.target_fields) === true,
+    sort: (a, b) => b.match - a.match,
+    minItems: 3,
+  },
+  {
+    id: "for_your_country",
+    title: "Built for your nationality",
+    kicker: "Country-specific",
+    description: (p) => `Programs that explicitly include ${p.country || "your country"} in their eligible list.`,
+    icon: Compass,
+    accentClass: "text-primary",
+    filter: (s, p) => {
+      if (!p.country || !s.eligible_countries || s.eligible_countries.length === 0) return false;
+      const list = s.eligible_countries.map(c => c.toLowerCase());
+      return list.some(c => c.includes(p.country.toLowerCase()));
+    },
+    sort: (a, b) => b.match - a.match,
+    minItems: 2,
+  },
+];
 
 /* ─── Constants ──────────────────────────────────────────────────────── */
 const FLAGS: Record<string, string> = {
@@ -1613,6 +1738,18 @@ const Discover = ({ language = "en" }: Props) => {
     return { counts, total };
   }, [statusMap]);
 
+  /* Live collections from the ranked list + user profile */
+  const liveCollections = useMemo(() => {
+    return COLLECTIONS.map(def => {
+      const items = ranked.filter(s => def.filter(s, profile) && !hidden.has(s.scholarship_id));
+      const sorted = def.sort ? [...items].sort(def.sort) : items;
+      return { def, items: sorted };
+    }).filter(c => c.items.length >= (c.def.minItems ?? 1));
+  }, [ranked, profile, hidden]);
+
+  const [openCollection, setOpenCollection] = useState<string | null>(null);
+  const activeCollection = liveCollections.find(c => c.def.id === openCollection) ?? null;
+
   const activeFiltersCount = [filters.search !== "", filters.coverage !== "all", filters.degree !== "all", filters.effort !== "all", filters.selectivity !== "all", filters.field !== "all", filters.hostCountry !== "all", filters.onlyEligible, filters.closingSoon, filters.onlyShortlisted].filter(Boolean).length;
 
   const analysisTexts = [
@@ -2113,6 +2250,51 @@ const Discover = ({ language = "en" }: Props) => {
                       </div>
                     ) : (
                       <div className="space-y-16">
+                        {/* Collections rail — curated triage views */}
+                        {viewMode === "grid" && liveCollections.length > 0 && (
+                          <section>
+                            <Reveal y={20}>
+                              <div className="flex items-baseline justify-between mb-5">
+                                <div>
+                                  <p className="text-gold-dark text-[11px] font-semibold uppercase tracking-[0.22em] mb-1">Curated collections</p>
+                                  <h2 className="font-heading text-xl font-bold tracking-tight text-foreground">Pre-built lists for different application strategies</h2>
+                                </div>
+                                <span className="text-xs text-muted-foreground tabular-nums">{liveCollections.length} collections</span>
+                              </div>
+                            </Reveal>
+                            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                              {liveCollections.map((c, i) => {
+                                const Icon = c.def.icon;
+                                const description = typeof c.def.description === "function" ? c.def.description(profile) : c.def.description;
+                                return (
+                                  <motion.button
+                                    key={c.def.id}
+                                    initial={{ opacity: 0, y: 14 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true, margin: "-30px" }}
+                                    transition={{ delay: Math.min(i * 0.04, 0.3), duration: 0.5 }}
+                                    onClick={() => setOpenCollection(c.def.id)}
+                                    className="group relative text-left bg-card border border-border/70 hover:border-gold/30 hover:shadow-md rounded-2xl p-5 transition-all"
+                                  >
+                                    <div className="flex items-start justify-between gap-3 mb-4">
+                                      <div className={`h-10 w-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0 ${c.def.accentClass}`}>
+                                        <Icon className="h-5 w-5" />
+                                      </div>
+                                      <span className="text-2xl font-bold tabular-nums text-foreground/40">{c.items.length.toString().padStart(2, "0")}</span>
+                                    </div>
+                                    <p className={`text-[10px] font-semibold uppercase tracking-[0.2em] mb-1 ${c.def.accentClass}`}>{c.def.kicker}</p>
+                                    <h3 className="font-heading font-bold text-base text-foreground tracking-tight mb-1.5 leading-tight">{c.def.title}</h3>
+                                    <p className="text-xs text-muted-foreground leading-[1.55] line-clamp-2 mb-4">{description}</p>
+                                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground group-hover:text-gold-dark transition-colors">
+                                      View {c.items.length} <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                                    </span>
+                                  </motion.button>
+                                );
+                              })}
+                            </div>
+                          </section>
+                        )}
+
                         {viewMode === "grid" && sections.hero.length > 0 && (
                           <section>
                             <Reveal y={20}>
@@ -2399,6 +2581,54 @@ const Discover = ({ language = "en" }: Props) => {
                 <p className="text-sm text-muted-foreground text-center py-12">No saved scholarships yet.</p>
               )}
             </div>
+          </SheetContent>
+        </Sheet>
+
+        {/* ── COLLECTION DRAWER — opens when a curated collection is clicked ── */}
+        <Sheet open={!!activeCollection} onOpenChange={(o) => !o && setOpenCollection(null)}>
+          <SheetContent side="right" className="w-full sm:max-w-[700px] overflow-y-auto p-0 flex flex-col">
+            {activeCollection && (() => {
+              const Icon = activeCollection.def.icon;
+              const description = typeof activeCollection.def.description === "function" ? activeCollection.def.description(profile) : activeCollection.def.description;
+              return (
+                <>
+                  <div className="px-7 py-7 border-b border-border bg-canvas-soft sticky top-0 z-10 backdrop-blur">
+                    <div className="flex items-start gap-4">
+                      <div className={`h-11 w-11 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0 ${activeCollection.def.accentClass}`}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <SheetHeader>
+                          <p className={`text-[10px] font-semibold uppercase tracking-[0.22em] ${activeCollection.def.accentClass} mb-1`}>{activeCollection.def.kicker}</p>
+                          <SheetTitle className="font-heading text-2xl tracking-tight leading-tight text-foreground text-left">{activeCollection.def.title}</SheetTitle>
+                          <p className="text-sm text-muted-foreground leading-relaxed text-left">{description}</p>
+                        </SheetHeader>
+                      </div>
+                      <span className="text-3xl font-bold tabular-nums text-foreground/30 shrink-0">{activeCollection.items.length.toString().padStart(2, "0")}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 bg-card">
+                    {activeCollection.items.map((s, i) => (
+                      <ScholarRow
+                        key={s.scholarship_id}
+                        s={s}
+                        index={i}
+                        onSelect={() => { setOpenDetail(s); setOpenCollection(null); }}
+                        isBookmarked={shortlist.has(s.scholarship_id)}
+                        onBookmark={(e) => { e.stopPropagation(); toggleBookmark(s.scholarship_id); }}
+                        status={statusMap[s.scholarship_id]}
+                        onStatusChange={(st) => setStatus(s.scholarship_id, st)}
+                        isHidden={hidden.has(s.scholarship_id)}
+                        onToggleHide={(e) => { e.stopPropagation(); toggleHide(s.scholarship_id); }}
+                        isComparing={compareSet.has(s.scholarship_id)}
+                        onToggleCompare={(e) => { e.stopPropagation(); toggleCompare(s.scholarship_id); }}
+                      />
+                    ))}
+                  </div>
+                </>
+              );
+            })()}
           </SheetContent>
         </Sheet>
 
