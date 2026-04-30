@@ -188,13 +188,13 @@ const IndexRu = () => {
       </section>
 
       {/* ACADEMY PREVIEW */}
-      <section className="py-20 sm:py-24 bg-background">
+      <section className="py-20 sm:py-24 bg-canvas-soft">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <motion.div {...fadeUp()} className="grid md:grid-cols-2 gap-10 items-center">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-accent font-medium mb-3">Academy · запуск 10 мая</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-gold-dark font-medium mb-3">Academy · запуск 10 мая</p>
               <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground mb-4">
-                Плейбук <span className="text-accent">без купюр.</span>
+                Плейбук <span className="text-gold-dark">без купюр.</span>
               </h2>
               <p className="text-muted-foreground mb-6 leading-relaxed">
                 Воркшопы, гайды по странам, реальные эссе победителей и тактики, которые действительно используют наши консультанты. Новые материалы каждую неделю.
@@ -203,7 +203,7 @@ const IndexRu = () => {
                 Открыть Academy <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
-            <div className="rounded-2xl bg-card border border-border p-6 space-y-3">
+            <div className="rounded-lg bg-surface border border-border p-6 space-y-3 shadow-sm">
               {[
                 "Эссе для Yale — 3 примера принятых, с разбором",
                 "Schwarzman: разбор успешной заявки от первого лица",
@@ -211,7 +211,7 @@ const IndexRu = () => {
                 "Гайд по США: need-blind стипендии для иностранцев",
               ].map((t) => (
                 <div key={t} className="flex items-start gap-2.5 text-sm text-foreground/85">
-                  <div className="h-1.5 w-1.5 rounded-full bg-gold mt-2 shrink-0" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-gold-dark mt-2 shrink-0" />
                   <span className="leading-relaxed">{t}</span>
                 </div>
               ))}
