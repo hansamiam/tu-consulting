@@ -19,7 +19,9 @@ import {
   Lightbulb, X, SlidersHorizontal, Filter, Search, Trophy,
   Target, Flame, Users, FileText, Languages,
   CreditCard, AlertOctagon, UserCheck, ShieldAlert, MinusCircle, HelpCircle,
+  LayoutGrid, List, EyeOff, Eye, Columns3, Circle, MoreHorizontal, GitCompare,
 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
@@ -76,6 +78,24 @@ interface FilterState {
 
 type Phase = "landing" | "wizard" | "analyzing" | "results";
 type SortBy = "match" | "deadline" | "value" | "effort" | "selectivity";
+type ViewMode = "grid" | "list";
+type AppStatus = "researching" | "drafting" | "submitted" | "decision" | "rejected";
+
+const STATUS_LABEL: Record<AppStatus, string> = {
+  researching: "Researching",
+  drafting:    "Drafting",
+  submitted:   "Submitted",
+  decision:    "Awaiting decision",
+  rejected:    "Rejected",
+};
+
+const STATUS_COLOR: Record<AppStatus, string> = {
+  researching: "text-muted-foreground bg-muted/40 border-border",
+  drafting:    "text-amber-700 dark:text-amber-300 bg-amber-500/10 border-amber-500/25",
+  submitted:   "text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border-emerald-500/25",
+  decision:    "text-primary bg-primary/8 border-primary/20",
+  rejected:    "text-rose-700 dark:text-rose-300 bg-rose-500/10 border-rose-500/25",
+};
 
 /* ─── Scoring ────────────────────────────────────────────────────────── */
 const normalizeGpa = (gpa: number, scale: number) => {
@@ -413,112 +433,255 @@ const MatchDial = ({ value, size = 64, stroke = 5, gradId, color1, color2, delay
   );
 };
 
-/* ─── Featured card (cinematic top pick) ─────────────────────────────── */
+/* ─── Featured card — editorial cream with gold accent (no navy block) ── */
 const FeaturedCard = ({ s, onSelect, isBookmarked, onBookmark }: {
   s: Scored; onSelect: () => void; isBookmarked: boolean; onBookmark: (e: React.MouseEvent) => void;
 }) => {
   const flag = FLAGS[s.host_country || ""] ?? "🌍";
   const dl = deadlineDisplay(s.application_deadline);
-  const [dc1, dc2] = dialColors(s.priority);
-  const why = s.why_this_fits || s.reasons.slice(0, 2).join(" · ") || "";
+  const why = s.why_this_fits || s.reasons.slice(0, 2).join(". ") || "";
 
   return (
-    <Tilt intensity={2}>
-      <motion.div
-        initial={{ opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-        className="relative overflow-hidden rounded-3xl cursor-pointer group shadow-lg hover:shadow-xl transition-shadow"
-        onClick={onSelect}
-      >
-        <div className="absolute inset-0 bg-primary" />
-        <div className="absolute inset-0 bg-gradient-to-br from-navy-deep via-primary to-navy-deep" />
-        <span className="absolute -right-12 -top-12 text-[300px] opacity-[0.05] select-none pointer-events-none leading-none">{flag}</span>
+    <motion.article
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+      onClick={onSelect}
+      className="relative overflow-hidden rounded-3xl cursor-pointer group bg-card border border-border hover:border-gold/40 hover:shadow-xl transition-all"
+    >
+      {/* Subtle gold accent strip on the left */}
+      <div className="absolute left-0 inset-y-0 w-[3px] bg-gradient-to-b from-gold-light via-gold-dark to-gold-light" />
 
-        {/* Subtle gold wash */}
-        <div className="absolute -top-1/3 left-1/4 w-1/2 h-2/3 rounded-full blur-[120px] opacity-25" style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 60%)" }} />
-
-        <div className="relative px-7 py-9 sm:px-10 sm:py-11">
-          <div className="flex items-center justify-between gap-4 mb-7">
-            <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/20 backdrop-blur px-3.5 py-1.5 rounded-full">
-              <Trophy className="h-3.5 w-3.5 text-gold" />
-              <span className="text-gold text-[11px] font-semibold uppercase tracking-[0.18em]">Top match for you</span>
-            </div>
-            <button onClick={onBookmark} className="bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 backdrop-blur p-2.5 rounded-xl transition-colors">
-              {isBookmarked ? <BookmarkCheck className="h-4 w-4 text-gold" /> : <Bookmark className="h-4 w-4 text-primary-foreground/70" />}
-            </button>
+      <div className="px-8 py-9 sm:px-12 sm:py-12 grid lg:grid-cols-[auto,1fr] gap-x-12 gap-y-7 items-center">
+        {/* Match score block — large editorial number, not a dial */}
+        <div className="flex lg:flex-col items-center lg:items-start gap-5 lg:gap-3 shrink-0">
+          <div className="flex items-baseline gap-2">
+            <span className="font-heading text-7xl sm:text-8xl font-bold tabular-nums leading-none tracking-[-0.03em] text-foreground">{s.match}</span>
+            <span className="text-base text-muted-foreground/70 tabular-nums">/100</span>
           </div>
-
-          <div className="grid sm:grid-cols-[auto,1fr] gap-7 items-center">
-            <div className="relative shrink-0">
-              <MatchDial value={s.match} size={148} stroke={8} gradId={`feat-${s.scholarship_id}`} color1={dc1} color2={dc2} delay={0.2} />
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-5xl font-black text-primary-foreground tabular-nums leading-none tracking-tight">{s.match}</span>
-                <span className="text-primary-foreground/40 text-[10px] font-semibold uppercase tracking-[0.2em] mt-2">match</span>
-              </div>
+          <div>
+            <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/25 px-3 py-1 rounded-full">
+              <Trophy className="h-3 w-3 text-gold-dark" />
+              <span className="text-gold-dark text-[10px] font-semibold uppercase tracking-[0.2em]">Top match</span>
             </div>
-
-            <div className="min-w-0">
-              <div className="flex items-center gap-3 mb-3 flex-wrap">
-                <span className="text-3xl">{flag}</span>
-                <SelectivityChip level={s.selectivity} dark />
-                {s.partner_universities && s.partner_universities.length > 0 && (
-                  <span className="inline-flex items-center gap-1.5 text-[11px] text-primary-foreground/70 font-medium">
-                    <Users className="h-3 w-3" /> {s.partner_universities.length} partner unis
-                  </span>
-                )}
-              </div>
-              <h3 className="font-heading font-bold text-3xl sm:text-[34px] text-primary-foreground leading-[1.08] tracking-tight mb-2">{s.scholarship_name}</h3>
-              <p className="text-primary-foreground/55 text-base mb-6">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
-
-              <div className="flex flex-wrap items-center gap-x-7 gap-y-3 mb-5">
-                <div>
-                  <div className="text-primary-foreground/40 text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">Award</div>
-                  <div className="text-primary-foreground text-[15px] font-semibold">{s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || "—"}</div>
-                </div>
-                <div className="h-9 w-px bg-primary-foreground/15" />
-                <div>
-                  <div className="text-primary-foreground/40 text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">Deadline</div>
-                  <div className={`text-[15px] font-semibold ${dl.urgent ? "text-gold-light" : "text-primary-foreground/80"}`}>{dl.text}</div>
-                </div>
-                {s.estimated_total_value_usd ? (
-                  <>
-                    <div className="h-9 w-px bg-primary-foreground/15" />
-                    <div>
-                      <div className="text-gold/70 text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">Total value</div>
-                      <div className="text-gold-light text-[15px] font-bold">{fmtValue(s.estimated_total_value_usd)}</div>
-                    </div>
-                  </>
-                ) : null}
-              </div>
-
-              {s.target_fields && s.target_fields.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-5">
-                  {s.target_fields.slice(0, 4).map((f, i) => (
-                    <span key={i} className="text-[11px] text-primary-foreground/65 bg-white/[0.05] border border-white/10 px-2 py-0.5 rounded-md">{f}</span>
-                  ))}
-                  {s.target_fields.length > 4 && <span className="text-[11px] text-primary-foreground/40">+{s.target_fields.length - 4}</span>}
-                </div>
-              )}
-
-              {why && (
-                <p className="text-primary-foreground/75 text-[15px] leading-relaxed mb-7 max-w-2xl">
-                  <span className="text-gold font-medium">Why this fits</span> · {why}
-                </p>
-              )}
-
-              <Button variant="gold" size="lg" className="gap-2" onClick={e => { e.stopPropagation(); onSelect(); }}>
-                Open application strategy <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </div>
+            <SelectivityChip level={s.selectivity} />
           </div>
         </div>
-      </motion.div>
-    </Tilt>
+
+        {/* Content */}
+        <div className="min-w-0">
+          <div className="flex items-center gap-3 flex-wrap mb-4">
+            <span className="text-3xl">{flag}</span>
+            <p className="text-sm text-muted-foreground">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
+            {s.partner_universities && s.partner_universities.length > 0 && (
+              <>
+                <span className="text-muted-foreground/40">·</span>
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  <Users className="h-3 w-3" /> {s.partner_universities.length} partner unis
+                </span>
+              </>
+            )}
+          </div>
+
+          <h3 className="font-heading font-bold text-3xl sm:text-[36px] text-foreground leading-[1.05] tracking-[-0.025em] mb-5">{s.scholarship_name}</h3>
+
+          {/* Key facts row — editorial inline */}
+          <div className="flex flex-wrap items-center gap-x-7 gap-y-3 mb-6 pb-6 border-b border-border/60">
+            <div>
+              <div className="text-muted-foreground text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">Award</div>
+              <div className="text-foreground text-[15px] font-semibold">{s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || "—"}</div>
+            </div>
+            <div className="h-9 w-px bg-border/60" />
+            <div>
+              <div className="text-muted-foreground text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">Deadline</div>
+              <div className={`text-[15px] font-semibold ${dl.cls}`}>{dl.text}</div>
+            </div>
+            {s.estimated_total_value_usd ? (
+              <>
+                <div className="h-9 w-px bg-border/60" />
+                <div>
+                  <div className="text-gold-dark text-[10px] font-semibold uppercase tracking-[0.18em] mb-1">Total value</div>
+                  <div className="text-gold-dark text-[15px] font-bold">{fmtValue(s.estimated_total_value_usd)}</div>
+                </div>
+              </>
+            ) : null}
+          </div>
+
+          {/* Why this fits */}
+          {why && (
+            <p className="text-foreground/80 text-[15px] leading-[1.65] italic font-light mb-6 max-w-2xl">
+              "{why.replace(/\.+$/, "")}."
+            </p>
+          )}
+
+          {/* Field tags */}
+          {s.target_fields && s.target_fields.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-7">
+              {s.target_fields.slice(0, 5).map((f, i) => (
+                <span key={i} className="text-xs text-foreground/65 bg-muted/50 border border-border/60 px-2.5 py-1 rounded-md">{f}</span>
+              ))}
+              {s.target_fields.length > 5 && <span className="text-xs text-muted-foreground self-center">+{s.target_fields.length - 5}</span>}
+            </div>
+          )}
+
+          {/* CTA row */}
+          <div className="flex items-center gap-3">
+            <Button variant="gold" size="lg" className="gap-2" onClick={e => { e.stopPropagation(); onSelect(); }}>
+              Open strategy <ArrowRight className="h-4 w-4" />
+            </Button>
+            <button onClick={onBookmark} className="text-muted-foreground hover:text-gold-dark transition-colors p-2 -m-2" aria-label={isBookmarked ? "Remove from shortlist" : "Save to shortlist"}>
+              {isBookmarked ? <BookmarkCheck className="h-5 w-5 text-gold-dark" /> : <Bookmark className="h-5 w-5" />}
+            </button>
+          </div>
+        </div>
+      </div>
+    </motion.article>
+  );
+};
+
+/* ─── Status badge + dropdown ────────────────────────────────────────── */
+const StatusBadge = ({ status, onChange, dense = false }: {
+  status: AppStatus | undefined;
+  onChange: (s: AppStatus | null) => void;
+  dense?: boolean;
+}) => {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        onClick={(e) => e.stopPropagation()}
+        className={`inline-flex items-center gap-1.5 ${dense ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-[11px]"} rounded-full border font-semibold uppercase tracking-[0.14em] transition-colors ${
+          status ? STATUS_COLOR[status] : "text-muted-foreground bg-transparent border-dashed border-border hover:border-foreground/40 hover:text-foreground"
+        }`}
+      >
+        <Circle className={`${dense ? "h-2 w-2" : "h-2.5 w-2.5"} ${status ? "fill-current" : ""}`} />
+        {status ? STATUS_LABEL[status] : "Set status"}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
+        {(["researching","drafting","submitted","decision","rejected"] as AppStatus[]).map(s => (
+          <DropdownMenuItem key={s} onClick={() => onChange(s)} className="text-xs gap-2">
+            <Circle className="h-2.5 w-2.5 fill-current" />
+            {STATUS_LABEL[s]}
+            {status === s && <CheckCircle2 className="h-3 w-3 ml-auto text-success" />}
+          </DropdownMenuItem>
+        ))}
+        {status && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => onChange(null)} className="text-xs text-muted-foreground gap-2">
+              <X className="h-3 w-3" /> Clear status
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+/* ─── List row (compact, scannable, table-like) ──────────────────────── */
+const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0 }: {
+  s: Scored; onSelect: () => void;
+  isBookmarked: boolean; onBookmark: (e: React.MouseEvent) => void;
+  status: AppStatus | undefined; onStatusChange: (s: AppStatus | null) => void;
+  isHidden: boolean; onToggleHide: (e: React.MouseEvent) => void;
+  isComparing: boolean; onToggleCompare: (e: React.MouseEvent) => void;
+  index?: number;
+}) => {
+  const tier = TIER[s.priority];
+  const flag = FLAGS[s.host_country || ""] ?? "🌍";
+  const dl = deadlineDisplay(s.application_deadline);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-30px" }}
+      transition={{ delay: Math.min(index * 0.018, 0.36), duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      onClick={onSelect}
+      className={`group grid grid-cols-[44px,minmax(0,1fr),auto] sm:grid-cols-[44px,minmax(0,2fr),minmax(0,1.2fr),minmax(0,1fr),auto] items-center gap-4 px-4 py-3.5 border-b border-border/60 hover:bg-canvas-soft/60 cursor-pointer transition-colors ${isHidden ? "opacity-40" : ""}`}
+    >
+      {/* Match score */}
+      <div className="flex flex-col items-center">
+        <span className="font-heading text-lg font-bold tabular-nums leading-none text-foreground">{s.match}</span>
+        <span className={`mt-1 h-1 w-1 rounded-full ${tier.dot}`} />
+      </div>
+
+      {/* Name + provider */}
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-base">{flag}</span>
+          <h3 className="font-heading font-semibold text-[15px] text-foreground truncate tracking-tight">{s.scholarship_name}</h3>
+        </div>
+        <p className="text-xs text-muted-foreground truncate mt-0.5">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
+      </div>
+
+      {/* Award + deadline (desktop only) */}
+      <div className="hidden sm:block min-w-0">
+        <p className="text-sm text-foreground truncate">{s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || "—"}</p>
+        <p className={`text-xs mt-0.5 ${dl.cls}`}>{dl.text}</p>
+      </div>
+
+      {/* Status (desktop only) */}
+      <div className="hidden sm:flex items-center justify-start">
+        <StatusBadge status={status} onChange={onStatusChange} dense />
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+        <button
+          onClick={onToggleCompare}
+          aria-label="Add to compare"
+          title="Add to compare"
+          className={`p-2 rounded-md transition-colors ${isComparing ? "text-gold-dark bg-gold/10" : "text-muted-foreground hover:text-foreground hover:bg-muted/60"}`}
+        >
+          <GitCompare className="h-3.5 w-3.5" />
+        </button>
+        <button
+          onClick={onBookmark}
+          aria-label={isBookmarked ? "Remove from shortlist" : "Save to shortlist"}
+          className="p-2 rounded-md text-muted-foreground hover:text-gold-dark hover:bg-muted/60 transition-colors"
+        >
+          {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5 text-gold-dark" /> : <Bookmark className="h-3.5 w-3.5" />}
+        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            onClick={(e) => e.stopPropagation()}
+            className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+            aria-label="More actions"
+          >
+            <MoreHorizontal className="h-3.5 w-3.5" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelect(); }} className="text-xs">
+              <FileText className="h-3 w-3 mr-2" /> Open strategy
+            </DropdownMenuItem>
+            {s.official_url && (
+              <DropdownMenuItem asChild>
+                <a href={s.official_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs cursor-pointer">
+                  <ExternalLink className="h-3 w-3 mr-2" /> Official page
+                </a>
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onToggleHide} className="text-xs">
+              {isHidden ? <Eye className="h-3 w-3 mr-2" /> : <EyeOff className="h-3 w-3 mr-2" />}
+              {isHidden ? "Show again" : "Hide from list"}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </motion.div>
   );
 };
 
 /* ─── Standard scholarship card — editorial restraint, key info only ─── */
-const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, index = 0 }: {
-  s: Scored; onSelect: () => void; isBookmarked: boolean; onBookmark: (e: React.MouseEvent) => void; index?: number;
+const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0 }: {
+  s: Scored; onSelect: () => void;
+  isBookmarked: boolean; onBookmark: (e: React.MouseEvent) => void;
+  status: AppStatus | undefined; onStatusChange: (s: AppStatus | null) => void;
+  isHidden: boolean; onToggleHide: (e: React.MouseEvent) => void;
+  isComparing: boolean; onToggleCompare: (e: React.MouseEvent) => void;
+  index?: number;
 }) => {
   const tier = TIER[s.priority];
   const flag = FLAGS[s.host_country || ""] ?? "🌍";
@@ -532,7 +695,7 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, index = 0 }: {
       viewport={{ once: true, margin: "-30px" }}
       transition={{ delay: Math.min(index * 0.04, 0.4), duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       onClick={onSelect}
-      className="group relative rounded-2xl bg-card border border-border/70 hover:border-gold/35 hover:shadow-md transition-all cursor-pointer h-full flex flex-col"
+      className={`group relative rounded-2xl bg-card border hover:shadow-md transition-all cursor-pointer h-full flex flex-col ${isComparing ? "border-gold ring-2 ring-gold/20" : "border-border/70 hover:border-gold/35"} ${isHidden ? "opacity-50" : ""}`}
     >
       <div className="p-7 flex flex-col flex-1">
         {/* Top: tier kicker + match score */}
@@ -574,19 +737,55 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, index = 0 }: {
           </p>
         )}
 
-        {/* Footer: CTA + bookmark */}
-        <div className="flex items-center justify-between mt-auto">
+        {/* Status row */}
+        <div className="flex items-center mb-4" onClick={(e) => e.stopPropagation()}>
+          <StatusBadge status={status} onChange={onStatusChange} />
+        </div>
+
+        {/* Footer: CTA + actions */}
+        <div className="flex items-center justify-between mt-auto pt-2 border-t border-border/40">
           <span className="text-sm font-semibold text-foreground group-hover:text-gold-dark transition-colors flex items-center gap-1.5">
             Open strategy
             <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
           </span>
-          <button
-            onClick={onBookmark}
-            className="text-muted-foreground hover:text-gold-dark transition-colors p-1.5 -m-1.5"
-            aria-label={isBookmarked ? "Remove from shortlist" : "Save to shortlist"}
-          >
-            {isBookmarked ? <BookmarkCheck className="h-4 w-4 text-gold-dark" /> : <Bookmark className="h-4 w-4" />}
-          </button>
+          <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={onToggleCompare}
+              aria-label={isComparing ? "Remove from compare" : "Add to compare"}
+              title={isComparing ? "Remove from compare" : "Add to compare"}
+              className={`p-2 rounded-md transition-colors ${isComparing ? "text-gold-dark bg-gold/10" : "text-muted-foreground hover:text-foreground hover:bg-muted/60"}`}
+            >
+              <GitCompare className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={onBookmark}
+              aria-label={isBookmarked ? "Remove from shortlist" : "Save to shortlist"}
+              className="p-2 rounded-md text-muted-foreground hover:text-gold-dark hover:bg-muted/60 transition-colors"
+            >
+              {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5 text-gold-dark" /> : <Bookmark className="h-3.5 w-3.5" />}
+            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                aria-label="More actions"
+              >
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                {s.official_url && (
+                  <DropdownMenuItem asChild>
+                    <a href={s.official_url} target="_blank" rel="noopener noreferrer" className="text-xs cursor-pointer">
+                      <ExternalLink className="h-3 w-3 mr-2" /> Official page
+                    </a>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={onToggleHide} className="text-xs">
+                  {isHidden ? <Eye className="h-3 w-3 mr-2" /> : <EyeOff className="h-3 w-3 mr-2" />}
+                  {isHidden ? "Show again" : "Hide from list"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
     </motion.article>
@@ -1133,6 +1332,41 @@ const Discover = ({ language = "en" }: Props) => {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [shortlistOpen, setShortlistOpen] = useState(false);
 
+  // Logic-Pro-grade app state, persisted in localStorage
+  const [viewMode, setViewMode] = useState<ViewMode>(() => (localStorage.getItem("tu_view_mode") as ViewMode) || "grid");
+  const [statusMap, setStatusMap] = useState<Record<string, AppStatus>>(() => {
+    try { return JSON.parse(localStorage.getItem("tu_status_map") || "{}"); } catch { return {}; }
+  });
+  const [hidden, setHidden] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("tu_hidden") || "[]")); } catch { return new Set(); }
+  });
+  const [showHidden, setShowHidden] = useState(false);
+  const [compareSet, setCompareSet] = useState<Set<string>>(new Set());
+  const [compareOpen, setCompareOpen] = useState(false);
+
+  useEffect(() => { localStorage.setItem("tu_view_mode", viewMode); }, [viewMode]);
+  useEffect(() => { localStorage.setItem("tu_status_map", JSON.stringify(statusMap)); }, [statusMap]);
+  useEffect(() => { localStorage.setItem("tu_hidden", JSON.stringify([...hidden])); }, [hidden]);
+
+  const setStatus = (id: string, s: AppStatus | null) => {
+    setStatusMap(prev => {
+      const next = { ...prev };
+      if (s === null) delete next[id]; else next[id] = s;
+      return next;
+    });
+  };
+  const toggleHide = (id: string) => {
+    setHidden(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  };
+  const toggleCompare = (id: string) => {
+    setCompareSet(prev => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id);
+      else if (n.size < 3) n.add(id);
+      return n;
+    });
+  };
+
   const { scrollY } = useScroll();
   const heroOpacity = useTransform(scrollY, [0, 300], [1, 0.5]);
   const heroY = useTransform(scrollY, [0, 300], [0, 60]);
@@ -1218,12 +1452,13 @@ const Discover = ({ language = "en" }: Props) => {
     if (filters.onlyEligible) list = list.filter(s => s.eligibility === "eligible" || s.eligibility === "likely");
     if (filters.closingSoon) list = list.filter(s => { const d = s.application_deadline ? Math.ceil((new Date(s.application_deadline).getTime() - Date.now()) / 86400000) : null; return d !== null && d > 0 && d <= 90; });
     if (filters.onlyShortlisted) list = list.filter(s => shortlist.has(s.scholarship_id));
+    if (!showHidden) list = list.filter(s => !hidden.has(s.scholarship_id));
     if (sortBy === "deadline") return [...list].sort((a, b) => { if (!a.application_deadline) return 1; if (!b.application_deadline) return -1; return new Date(a.application_deadline).getTime() - new Date(b.application_deadline).getTime(); });
     if (sortBy === "value") return [...list].sort((a, b) => (b.estimated_total_value_usd ?? 0) - (a.estimated_total_value_usd ?? 0));
     if (sortBy === "effort") { const o: Record<string, number> = { low: 0, medium: 1, high: 2 }; return [...list].sort((a, b) => (o[a.effort] ?? 1) - (o[b.effort] ?? 1)); }
     if (sortBy === "selectivity") { const o: Record<string, number> = { low: 0, medium: 1, high: 2, very_high: 3, unknown: 4 }; return [...list].sort((a, b) => (o[a.selectivity] ?? 4) - (o[b.selectivity] ?? 4)); }
     return list;
-  }, [ranked, filters, sortBy, shortlist]);
+  }, [ranked, filters, sortBy, shortlist, hidden, showHidden]);
 
   const sections = useMemo(() => {
     const top = filtered.filter(s => s.priority === "strong_match");
@@ -1601,20 +1836,22 @@ const Discover = ({ language = "en" }: Props) => {
                 </div>
               </section>
 
-              {/* Sticky toolbar */}
+              {/* Sticky toolbar — search · filters · sort · view-mode · hidden · compare */}
               <div className="sticky top-0 z-30 bg-background/85 backdrop-blur-xl border-b border-border">
-                <div className="max-w-7xl mx-auto px-6 sm:px-8 py-3.5 flex items-center gap-3">
-                  <div className="relative flex-1 max-w-md">
+                <div className="max-w-7xl mx-auto px-6 sm:px-8 py-3 flex items-center gap-2.5 flex-wrap">
+                  <div className="relative flex-1 min-w-[200px] max-w-md">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                     <Input value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} placeholder="Search scholarships, providers, countries..."
-                      className="pl-10 h-11 text-sm rounded-xl" />
+                      className="pl-10 h-10 text-sm rounded-lg" />
                     {filters.search && <button onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>}
                   </div>
-                  <Button variant="outline" size="default" className="lg:hidden gap-1.5 h-11 rounded-xl" onClick={() => setFiltersOpen(true)}>
+
+                  <Button variant="outline" size="default" className="lg:hidden gap-1.5 h-10 rounded-lg" onClick={() => setFiltersOpen(true)}>
                     <Filter className="h-4 w-4" />Filters{activeFiltersCount > 0 && <Badge className="h-5 px-1.5 text-[10px] bg-gold/20 text-gold-dark dark:text-gold border-0 ml-0.5">{activeFiltersCount}</Badge>}
                   </Button>
+
                   <Select value={sortBy} onValueChange={v => setSortBy(v as SortBy)}>
-                    <SelectTrigger className="w-[170px] h-11 text-sm rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="w-[156px] h-10 text-sm rounded-lg"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="match">Best match</SelectItem>
                       <SelectItem value="deadline">Deadline first</SelectItem>
@@ -1623,7 +1860,56 @@ const Discover = ({ language = "en" }: Props) => {
                       <SelectItem value="selectivity">Least selective</SelectItem>
                     </SelectContent>
                   </Select>
-                  <span className="text-xs text-muted-foreground hidden sm:inline ml-auto tabular-nums">{filtered.length} of {ranked.length}</span>
+
+                  {/* View-mode segmented control */}
+                  <div className="inline-flex h-10 items-center rounded-lg border border-border bg-card overflow-hidden" role="tablist" aria-label="View mode">
+                    <button
+                      onClick={() => setViewMode("grid")}
+                      className={`h-full px-3 text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === "grid" ? "bg-foreground/[0.06] text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                      aria-pressed={viewMode === "grid"}
+                      title="Grid view"
+                    >
+                      <LayoutGrid className="h-3.5 w-3.5" /><span className="hidden sm:inline">Grid</span>
+                    </button>
+                    <button
+                      onClick={() => setViewMode("list")}
+                      className={`h-full px-3 text-xs font-medium flex items-center gap-1.5 transition-colors border-l border-border ${viewMode === "list" ? "bg-foreground/[0.06] text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                      aria-pressed={viewMode === "list"}
+                      title="List view"
+                    >
+                      <List className="h-3.5 w-3.5" /><span className="hidden sm:inline">List</span>
+                    </button>
+                  </div>
+
+                  {/* Compare button — opens drawer */}
+                  {compareSet.size > 0 && (
+                    <Button
+                      variant="outline"
+                      size="default"
+                      className="h-10 rounded-lg gap-1.5 border-gold/40 text-gold-dark hover:bg-gold/10"
+                      onClick={() => setCompareOpen(true)}
+                    >
+                      <Columns3 className="h-4 w-4" />
+                      <span className="hidden sm:inline">Compare</span>
+                      <Badge className="h-5 px-1.5 text-[10px] bg-gold text-primary border-0">{compareSet.size}</Badge>
+                    </Button>
+                  )}
+
+                  {/* Hidden toggle */}
+                  {hidden.size > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="default"
+                      className="h-10 rounded-lg gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowHidden(v => !v)}
+                      title={showHidden ? "Hide hidden" : "Show hidden"}
+                    >
+                      {showHidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                      <span className="hidden sm:inline">{hidden.size} hidden</span>
+                    </Button>
+                  )}
+
+                  <span className="text-xs text-muted-foreground hidden md:inline ml-auto tabular-nums">{filtered.length} of {ranked.length}</span>
                 </div>
               </div>
 
@@ -1654,7 +1940,7 @@ const Discover = ({ language = "en" }: Props) => {
                       </div>
                     ) : (
                       <div className="space-y-16">
-                        {sections.hero.length > 0 && (
+                        {viewMode === "grid" && sections.hero.length > 0 && (
                           <section>
                             <Reveal y={20}>
                               <p className="text-gold-dark dark:text-gold text-[11px] font-semibold uppercase tracking-[0.22em] mb-4 flex items-center gap-2">
@@ -1670,50 +1956,71 @@ const Discover = ({ language = "en" }: Props) => {
                           </section>
                         )}
 
-                        {sections.strong.length > 0 && (
-                          <section>
-                            <SectionHeader kicker="Strong matches" title="Where you have a real shot" subtitle="High alignment with your profile and goals."
-                              count={sections.strong.length} accentClass="text-gold-dark dark:text-gold" />
-                            <div className="grid sm:grid-cols-2 gap-5 auto-rows-fr">
-                              {sections.strong.map((s, i) => (
-                                <ScholarCard key={s.scholarship_id} s={s} index={i}
-                                  onSelect={() => setOpenDetail(s)}
-                                  isBookmarked={shortlist.has(s.scholarship_id)}
-                                  onBookmark={e => { e.stopPropagation(); toggleBookmark(s.scholarship_id); }} />
-                              ))}
-                            </div>
-                          </section>
-                        )}
+                        {(() => {
+                          const cardProps = (s: Scored, i: number) => ({
+                            key: s.scholarship_id, s, index: i,
+                            onSelect: () => setOpenDetail(s),
+                            isBookmarked: shortlist.has(s.scholarship_id),
+                            onBookmark: (e: React.MouseEvent) => { e.stopPropagation(); toggleBookmark(s.scholarship_id); },
+                            status: statusMap[s.scholarship_id],
+                            onStatusChange: (st: AppStatus | null) => setStatus(s.scholarship_id, st),
+                            isHidden: hidden.has(s.scholarship_id),
+                            onToggleHide: (e: React.MouseEvent) => { e.stopPropagation(); toggleHide(s.scholarship_id); },
+                            isComparing: compareSet.has(s.scholarship_id),
+                            onToggleCompare: (e: React.MouseEvent) => { e.stopPropagation(); toggleCompare(s.scholarship_id); },
+                          });
 
-                        {sections.competitive.length > 0 && (
-                          <section>
-                            <SectionHeader kicker="Competitive" title="Worth a shot" subtitle="Achievable with a strong, well-targeted application."
-                              count={sections.competitive.length} accentClass="text-primary dark:text-primary-bright" />
-                            <div className="grid sm:grid-cols-2 gap-5 auto-rows-fr">
-                              {sections.competitive.map((s, i) => (
-                                <ScholarCard key={s.scholarship_id} s={s} index={i}
-                                  onSelect={() => setOpenDetail(s)}
-                                  isBookmarked={shortlist.has(s.scholarship_id)}
-                                  onBookmark={e => { e.stopPropagation(); toggleBookmark(s.scholarship_id); }} />
-                              ))}
-                            </div>
-                          </section>
-                        )}
+                          if (viewMode === "list") {
+                            return (
+                              <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
+                                {/* Column headers (desktop) */}
+                                <div className="hidden sm:grid grid-cols-[44px,minmax(0,2fr),minmax(0,1.2fr),minmax(0,1fr),auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                                  <span className="text-center">Score</span>
+                                  <span>Scholarship</span>
+                                  <span>Award · Deadline</span>
+                                  <span>Status</span>
+                                  <span className="text-right pr-2">Actions</span>
+                                </div>
+                                {filtered.map((s, i) => <ScholarRow {...cardProps(s, i)} />)}
+                              </div>
+                            );
+                          }
 
-                        {sections.stretch.length > 0 && (
-                          <section>
-                            <SectionHeader kicker="Stretch" title="Long shots" subtitle="Lower fit — apply only if you have bandwidth."
-                              count={sections.stretch.length} accentClass="text-muted-foreground" />
-                            <div className="grid sm:grid-cols-2 gap-5 auto-rows-fr opacity-90">
-                              {sections.stretch.map((s, i) => (
-                                <ScholarCard key={s.scholarship_id} s={s} index={i}
-                                  onSelect={() => setOpenDetail(s)}
-                                  isBookmarked={shortlist.has(s.scholarship_id)}
-                                  onBookmark={e => { e.stopPropagation(); toggleBookmark(s.scholarship_id); }} />
-                              ))}
-                            </div>
-                          </section>
-                        )}
+                          // Grid view — keep sectioned rendering (Featured + Strong + Competitive + Stretch)
+                          return (
+                            <>
+                              {sections.strong.length > 0 && (
+                                <section>
+                                  <SectionHeader kicker="Strong matches" title="Where you have a real shot" subtitle="High alignment with your profile and goals."
+                                    count={sections.strong.length} accentClass="text-gold-dark dark:text-gold" />
+                                  <div className="grid sm:grid-cols-2 gap-5 auto-rows-fr">
+                                    {sections.strong.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
+                                  </div>
+                                </section>
+                              )}
+
+                              {sections.competitive.length > 0 && (
+                                <section>
+                                  <SectionHeader kicker="Competitive" title="Worth a shot" subtitle="Achievable with a strong, well-targeted application."
+                                    count={sections.competitive.length} accentClass="text-primary dark:text-primary-bright" />
+                                  <div className="grid sm:grid-cols-2 gap-5 auto-rows-fr">
+                                    {sections.competitive.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
+                                  </div>
+                                </section>
+                              )}
+
+                              {sections.stretch.length > 0 && (
+                                <section>
+                                  <SectionHeader kicker="Stretch" title="Long shots" subtitle="Lower fit — apply only if you have bandwidth."
+                                    count={sections.stretch.length} accentClass="text-muted-foreground" />
+                                  <div className="grid sm:grid-cols-2 gap-5 auto-rows-fr opacity-90">
+                                    {sections.stretch.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
+                                  </div>
+                                </section>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                     )}
                   </main>
@@ -1745,6 +2052,124 @@ const Discover = ({ language = "en" }: Props) => {
             </motion.button>
           )}
         </AnimatePresence>
+
+        {/* ── COMPARE DRAWER — side-by-side comparison of up to 3 scholarships ── */}
+        <Sheet open={compareOpen} onOpenChange={setCompareOpen}>
+          <SheetContent side="right" className="w-full sm:max-w-[1100px] overflow-y-auto p-0">
+            <div className="px-7 py-6 border-b border-border bg-canvas-soft sticky top-0 z-10 backdrop-blur">
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2 font-heading text-xl tracking-tight">
+                  <Columns3 className="h-5 w-5 text-gold-dark" /> Compare scholarships · {compareSet.size}
+                </SheetTitle>
+                <p className="text-xs text-muted-foreground">Side-by-side breakdown. Up to three at a time.</p>
+              </SheetHeader>
+            </div>
+
+            <div className="p-5">
+              {compareSet.size === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-12">
+                  Click the <GitCompare className="h-3.5 w-3.5 inline mx-0.5" /> icon on any card to add it here.
+                </p>
+              ) : (() => {
+                const items = ranked.filter(s => compareSet.has(s.scholarship_id));
+                const rows: { label: string; render: (s: Scored) => React.ReactNode }[] = [
+                  { label: "Match", render: s => <span className="font-bold text-lg tabular-nums text-foreground">{s.match}<span className="text-muted-foreground/60 text-sm font-normal">/100</span></span> },
+                  { label: "Tier", render: s => {
+                      const t = TIER[s.priority];
+                      return <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] ${t.textLight}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${t.dot}`} />{t.label}
+                      </span>;
+                    }
+                  },
+                  { label: "Selectivity", render: s => <SelectivityChip level={s.selectivity} /> },
+                  { label: "Award", render: s => s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || "—" },
+                  { label: "Total value", render: s => s.estimated_total_value_usd ? <span className="text-gold-dark font-bold">{fmtValue(s.estimated_total_value_usd)}</span> : "—" },
+                  { label: "Deadline", render: s => {
+                      const dl = deadlineDisplay(s.application_deadline);
+                      return <span className={dl.cls}>{dateOnly(s.application_deadline) || dl.text} {s.application_deadline && <span className="text-muted-foreground/70 text-xs ml-1">({dl.text})</span>}</span>;
+                    }
+                  },
+                  { label: "Min GPA", render: s => s.min_gpa != null ? `≥ ${s.min_gpa}/${s.gpa_scale ?? 4.0}` : <span className="text-muted-foreground/60">—</span> },
+                  { label: "Min IELTS", render: s => s.min_ielts != null ? `≥ ${s.min_ielts}` : <span className="text-muted-foreground/60">—</span> },
+                  { label: "Min TOEFL", render: s => s.min_toefl != null ? `≥ ${s.min_toefl}` : <span className="text-muted-foreground/60">—</span> },
+                  { label: "Min SAT", render: s => s.min_sat != null ? `≥ ${s.min_sat}` : <span className="text-muted-foreground/60">—</span> },
+                  { label: "Eligibility", render: s => isInclusive(s.citizenship_requirements) ? <span className="text-success">Open to all</span> : (s.citizenship_requirements || <span className="text-muted-foreground/60">—</span>) },
+                  { label: "Degree levels", render: s => s.target_degree_level?.join(", ") || <span className="text-muted-foreground/60">—</span> },
+                  { label: "Fields funded", render: s => s.target_fields?.length ? s.target_fields.slice(0, 3).join(", ") + (s.target_fields.length > 3 ? `, +${s.target_fields.length - 3}` : "") : <span className="text-muted-foreground/60">—</span> },
+                  { label: "Application fee", render: s => s.application_fee_text || <span className="text-muted-foreground/60">—</span> },
+                  { label: "Effort level", render: s => s.effort_level ? <span className="capitalize">{s.effort_level}</span> : <span className="text-muted-foreground/60">—</span> },
+                  { label: "Essay required", render: s => s.essay_required ? <span className="text-warning">Yes</span> : <span className="text-success">No</span> },
+                  { label: "Interview", render: s => s.interview_required ? <span className="text-warning">Yes</span> : <span className="text-success">No</span> },
+                  { label: "Rec letters", render: s => s.recommendation_letters_required ?? <span className="text-muted-foreground/60">—</span> },
+                  { label: "Partner unis", render: s => s.partner_universities?.length ?? <span className="text-muted-foreground/60">—</span> },
+                ];
+
+                return (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr>
+                          <th className="text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground py-3 pr-4 align-top w-[120px] sticky left-0 bg-background z-10">Field</th>
+                          {items.map(s => {
+                            const flag = FLAGS[s.host_country || ""] ?? "🌍";
+                            return (
+                              <th key={s.scholarship_id} className="text-left p-4 align-top min-w-[260px] border-l border-border/60">
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                  <span className="text-2xl shrink-0">{flag}</span>
+                                  <button
+                                    onClick={() => toggleCompare(s.scholarship_id)}
+                                    className="text-muted-foreground hover:text-destructive transition-colors p-1 -m-1"
+                                    aria-label="Remove from compare"
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                                <h3 className="font-heading font-bold text-base text-foreground tracking-tight leading-tight line-clamp-2 mb-1">
+                                  {s.scholarship_name}
+                                </h3>
+                                <p className="text-xs text-muted-foreground truncate">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
+                                <div className="flex gap-2 mt-3">
+                                  <Button variant="gold" size="sm" className="text-xs h-7 px-3" onClick={() => { setOpenDetail(s); setCompareOpen(false); }}>
+                                    Strategy
+                                  </Button>
+                                  {s.official_url && (
+                                    <Button variant="outline" size="sm" className="text-xs h-7 px-2.5" asChild>
+                                      <a href={s.official_url} target="_blank" rel="noopener noreferrer">
+                                        <ExternalLink className="h-3 w-3" />
+                                      </a>
+                                    </Button>
+                                  )}
+                                </div>
+                              </th>
+                            );
+                          })}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rows.map((r, i) => (
+                          <tr key={i} className="border-t border-border/60">
+                            <td className="text-[11px] font-medium text-muted-foreground uppercase tracking-[0.12em] py-3 pr-4 align-top sticky left-0 bg-background z-10">{r.label}</td>
+                            {items.map(s => (
+                              <td key={s.scholarship_id} className="text-[13px] text-foreground/85 p-4 align-top border-l border-border/60 leading-relaxed">
+                                {r.render(s)}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+
+                    <div className="flex justify-end mt-5 pt-4 border-t border-border/60">
+                      <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => { setCompareSet(new Set()); }}>
+                        <X className="h-3 w-3 mr-1" /> Clear all
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </SheetContent>
+        </Sheet>
 
         {/* Shortlist sheet */}
         <Sheet open={shortlistOpen} onOpenChange={setShortlistOpen}>
