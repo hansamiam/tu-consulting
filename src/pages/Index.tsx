@@ -138,12 +138,12 @@ const Index = () => {
         </section>
 
         {/* HOW IT WORKS — vertical, editorial, not card-grid */}
-        <section id="how" className="py-24 sm:py-32">
+        <section id="how" className="py-20 sm:py-28">
           <div className="max-w-6xl mx-auto px-5 sm:px-8">
-            <motion.div {...fadeUp()} className="max-w-2xl mb-16 sm:mb-20">
+            <motion.div {...fadeUp()} className="max-w-2xl mx-auto text-center mb-14 sm:mb-16">
               <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">How it works</p>
-              <h2 className="font-heading text-3xl sm:text-5xl font-bold tracking-tight leading-[1.1]">
-                Three steps. <span className="text-gold-dark italic font-medium">One outcome.</span>
+              <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12]">
+                Three steps. One plan.
               </h2>
             </motion.div>
 
@@ -177,18 +177,17 @@ const Index = () => {
 
         {/* TEAM — subtle background shift, no hard block */}
         <section
-          className="py-24 sm:py-32"
-          style={{ backgroundImage: `linear-gradient(180deg, hsl(var(--background)), hsl(var(--canvas-soft)) 50%, hsl(var(--background)))` }}
+          className="py-20 sm:py-28"
+          style={{ backgroundImage: `linear-gradient(180deg, hsl(var(--background)), hsl(var(--primary) / 0.055) 50%, hsl(var(--background)))` }}
         >
           <div className="max-w-6xl mx-auto px-5 sm:px-8">
-            <motion.div {...fadeUp()} className="max-w-3xl mb-14 sm:mb-16">
-              <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">The people behind it</p>
-              <h2 className="font-heading text-3xl sm:text-5xl font-bold tracking-tight leading-[1.1] mb-5">
-                Consultants who've <span className="text-gold-dark italic font-medium">actually been there.</span>
+            <motion.div {...fadeUp()} className="max-w-3xl mx-auto text-center mb-14 sm:mb-16">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">Team</p>
+              <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-5">
+                Built with alumni insight.
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed">
-                Yale, Harvard, Cambridge, Tsinghua, Schwarzman. Not a sales team —
-                the same people who'll read your essays.
+                Yale, Harvard, Cambridge, Tsinghua, Schwarzman — concise guidance from people who know the process.
               </p>
             </motion.div>
 
@@ -226,19 +225,18 @@ const Index = () => {
         </section>
 
         {/* ACADEMY — single inline editorial moment */}
-        <section className="py-24 sm:py-32">
+        <section className="py-20 sm:py-28">
           <div className="max-w-6xl mx-auto px-5 sm:px-8">
             <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-start">
               <motion.div {...fadeUp()} className="lg:col-span-5">
                 <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">
                   Academy · launching May 10
                 </p>
-                <h2 className="font-heading text-3xl sm:text-5xl font-bold tracking-tight leading-[1.1] mb-5">
-                  The playbook, <span className="text-gold-dark italic font-medium">unfiltered.</span>
+                <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-5">
+                  The application playbook.
                 </h2>
                 <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-                  Workshops, country playbooks, real winning essays, and the tactics
-                  our consultants actually use. New every week.
+                  Workshops, country guides, admitted essays, and practical tactics. New material every week.
                 </p>
                 <Button onClick={() => navigate('/academy')} variant="gold" className="gap-2">
                   Preview Academy <ArrowRight className="h-4 w-4" />
@@ -268,15 +266,15 @@ const Index = () => {
 
         {/* MEMBERSHIP — closing crescendo */}
         <section
-          className="py-24 sm:py-32"
-          style={{ backgroundImage: `linear-gradient(180deg, hsl(var(--background)), hsl(var(--canvas-soft)))` }}
+          className="py-20 sm:py-28"
+          style={{ backgroundImage: `linear-gradient(180deg, hsl(var(--background)), hsl(var(--primary) / 0.06)))` }}
         >
           <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
             <motion.div {...fadeUp()} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gold/30 bg-gold/10 text-gold-dark text-[11px] font-medium tracking-[0.18em] uppercase mb-7">
               <Crown className="h-3.5 w-3.5" /> Founding Membership
             </motion.div>
-            <motion.h2 {...fadeUp(0.05)} className="font-heading text-3xl sm:text-5xl font-bold tracking-tight leading-[1.08] mb-5">
-              One membership. <span className="text-gold-dark italic font-medium">Everything inside.</span>
+            <motion.h2 {...fadeUp(0.05)} className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.1] mb-5">
+              One membership. Everything inside.
             </motion.h2>
             <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-lg mb-10 max-w-xl mx-auto leading-relaxed">
               TopUni AI, Discover, and Academy — locked at the founding price for our first cohort.
