@@ -195,13 +195,13 @@ const Index = () => {
       </section>
 
       {/* ── ACADEMY PREVIEW ── */}
-      <section className="py-20 sm:py-24 bg-background">
+      <section className="py-20 sm:py-24 bg-canvas-soft">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <motion.div {...fadeUp()} className="grid md:grid-cols-2 gap-10 items-center">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-accent font-medium mb-3">Academy · launching May 10</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-gold-dark font-medium mb-3">Academy · launching May 10</p>
               <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground mb-4">
-                The playbook, <span className="text-accent">unfiltered.</span>
+                The playbook, <span className="text-gold-dark">unfiltered.</span>
               </h2>
               <p className="text-muted-foreground mb-6 leading-relaxed">
                 Workshops, country playbooks, real winning essays, and the tactics our consultants actually use. New content every week.
@@ -210,7 +210,7 @@ const Index = () => {
                 Preview Academy <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
-            <div className="rounded-2xl bg-card border border-border p-6 space-y-3">
+            <div className="rounded-lg bg-surface border border-border p-6 space-y-3 shadow-sm">
               {[
                 "Yale supplemental essays — 3 admitted samples, annotated",
                 "Schwarzman application teardown — what actually got me in",
@@ -218,7 +218,7 @@ const Index = () => {
                 "Country playbook: USA need-blind aid for internationals",
               ].map((t) => (
                 <div key={t} className="flex items-start gap-2.5 text-sm text-foreground/85">
-                  <div className="h-1.5 w-1.5 rounded-full bg-gold mt-2 shrink-0" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-gold-dark mt-2 shrink-0" />
                   <span className="leading-relaxed">{t}</span>
                 </div>
               ))}
@@ -228,22 +228,22 @@ const Index = () => {
       </section>
 
       {/* ── MEMBERSHIP CTA ── */}
-      <section className="py-16 bg-primary text-primary-foreground">
+      <section className="py-16 bg-background border-t border-border">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
-          <motion.div {...fadeUp()} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gold/30 bg-gold/10 text-gold text-xs font-medium tracking-wide uppercase mb-5">
+          <motion.div {...fadeUp()} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gold/30 bg-gold/10 text-gold-dark text-xs font-medium tracking-wide uppercase mb-5">
             <Crown className="h-3.5 w-3.5" /> Founding Membership
           </motion.div>
-          <motion.h2 {...fadeUp(0.05)} className="font-heading text-3xl sm:text-4xl font-bold mb-3">
-            One <span className="text-gold">membership.</span> Everything inside.
+          <motion.h2 {...fadeUp(0.05)} className="font-heading text-3xl sm:text-4xl font-bold text-foreground mb-3">
+            One <span className="text-gold-dark">membership.</span> Everything inside.
           </motion.h2>
-          <motion.p {...fadeUp(0.1)} className="text-primary-foreground/70 mb-8 max-w-xl mx-auto">
+          <motion.p {...fadeUp(0.1)} className="text-muted-foreground mb-8 max-w-xl mx-auto">
             TopUni AI, Discover, and Academy — locked at the founding price.
           </motion.p>
           <motion.div {...fadeUp(0.2)}>
             <Button
               variant="gold"
               size="lg"
-              className="text-base px-8 py-5 hover:scale-105 transition-transform gap-2"
+              className="text-base px-8 py-5 gap-2"
               onClick={() => navigate('/pricing')}
             >
               See Membership <ArrowRight className="h-4 w-4" />
