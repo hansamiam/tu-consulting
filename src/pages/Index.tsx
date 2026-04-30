@@ -70,11 +70,16 @@ const Index = () => {
         {/* HERO — pulled up behind the nav (-mt-16) so the navy gradient at the
             top of the section sits BEHIND the (transparent) nav strip. */}
         <section className="relative -mt-16 min-h-[86vh] flex items-center overflow-hidden bg-background text-foreground">
-          {/* Campus image — bg-fixed creates the parallax effect: the image
-              stays put in the viewport while page content scrolls over it. */}
+          {/* Campus image — bg-fixed creates the parallax effect.
+              The CSS filter shifts the autumn red foliage toward the gold/amber
+              brand palette: sepia(0.55) gives a unified warm cast, hue-rotate
+              nudges leftover reds toward gold, saturate punches the result. */}
           <div
             className="absolute inset-0 bg-cover bg-center bg-fixed"
-            style={{ backgroundImage: `url(${heroImage})` }}
+            style={{
+              backgroundImage: `url(${heroImage})`,
+              filter: "sepia(0.55) hue-rotate(-12deg) saturate(1.35) brightness(1.02)",
+            }}
           />
           {/* Wash: navy band at the top (covers the nav strip), then a uniform
               cream shimmer through the rest of the hero so the campus is
@@ -85,14 +90,14 @@ const Index = () => {
             className="absolute inset-0"
             style={{
               backgroundImage: `linear-gradient(180deg,
-                hsl(var(--primary) / 0.92) 0%,
-                hsl(var(--primary) / 0.65) 4%,
-                hsl(var(--primary) / 0.30) 10%,
-                hsl(var(--primary) / 0.10) 17%,
-                hsl(var(--background) / 0.40) 24%,
-                hsl(var(--background) / 0.62) 32%,
-                hsl(var(--background) / 0.78) 42%,
-                hsl(var(--background) / 0.84) 55%,
+                hsl(var(--primary) / 0.95) 0%,
+                hsl(var(--primary) / 0.78) 5%,
+                hsl(var(--primary) / 0.50) 12%,
+                hsl(var(--primary) / 0.22) 20%,
+                hsl(var(--background) / 0.55) 28%,
+                hsl(var(--background) / 0.72) 36%,
+                hsl(var(--background) / 0.82) 46%,
+                hsl(var(--background) / 0.84) 58%,
                 hsl(var(--background) / 0.84) 88%,
                 hsl(var(--background) / 0.95) 100%)`,
             }}
