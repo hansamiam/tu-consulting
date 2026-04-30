@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { trackPageView, trackToolUsage } from "@/utils/analytics";
+import { trackPageView } from "@/utils/analytics";
 import { motion, AnimatePresence } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import { BetaBanner } from "@/components/BetaBanner";
@@ -11,14 +11,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRight, ArrowLeft, Sparkles, GraduationCap, Target, Shield, CheckCircle2, Bot, Search, BookOpen, PenTool } from "lucide-react";
+import {
+  ArrowRight, ArrowLeft, Sparkles, GraduationCap, Target, Shield,
+  CheckCircle2, Search, BookOpen, ListChecks, Map, Zap,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 type Screen = "landing" | "intake" | "dashboard";
 
 const COUNTRIES = ["United States", "United Kingdom", "Canada", "Germany", "South Korea", "China", "Netherlands", "Czech Republic", "Turkey", "Malaysia", "Hungary", "Italy", "Poland", "Sweden", "Estonia"];
+
+const fadeUp = (delay = 0) => ({
+  initial: { opacity: 0, y: 22 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-50px" },
+  transition: { delay, duration: 0.6, ease: [0.22, 1, 0.36, 1] as const },
+});
 
 const TopUniAI = () => {
   const navigate = useNavigate();
@@ -56,98 +65,238 @@ const TopUniAI = () => {
     careerRoi: careerRoi[0], visaAccess: visaAccess[0], locationPref: locationPref[0],
   };
 
-  const fadeIn = { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -20 }, transition: { duration: 0.4 } };
-
   return (
-    <div className="min-h-screen bg-background relative">
-      <div className="fixed inset-0 z-0 opacity-20" style={{ backgroundImage: `url(${topuniBg})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(2px)' }} />
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Faint blurred backdrop — TopUniAI's existing visual signature */}
+      <div
+        className="fixed inset-0 z-0 opacity-[0.12] pointer-events-none"
+        style={{ backgroundImage: `url(${topuniBg})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(3px)' }}
+      />
+
       <div className="relative z-10">
         <Navigation language="en" />
         <BetaBanner />
 
         <AnimatePresence mode="wait">
+          {/* ═══ LANDING ═══ */}
           {screen === "landing" && (
-            <motion.div key="landing" {...fadeIn} className="flex flex-col items-center justify-center min-h-[70vh] px-4 text-center">
-              <div className="max-w-2xl mx-auto space-y-8">
-                <div className="space-y-2">
-                  <h1 className="text-5xl md:text-6xl font-heading font-bold text-foreground tracking-tight">
-                    TopUni <span className="text-accent">AI</span>
-                  </h1>
-                  <p className="text-lg md:text-xl text-muted-foreground max-w-lg mx-auto leading-relaxed">
-                    University and scholarship planning for students applying abroad.
-                  </p>
+            <motion.div
+              key="landing"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              {/* HERO — strategy plan positioning */}
+              <section className="relative pt-16 pb-20 sm:pt-24 sm:pb-28 overflow-hidden">
+                {/* Soft navy hint at the top so the page has bookend presence */}
+                <div className="absolute inset-x-0 top-0 h-48 pointer-events-none"
+                  style={{ backgroundImage: "linear-gradient(180deg, hsl(var(--primary) / 0.07) 0%, transparent 100%)" }} />
+
+                <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center relative">
+                  <motion.p {...fadeUp(0.05)} className="text-[11px] uppercase tracking-[0.24em] text-gold-dark font-medium mb-5">
+                    TopUni AI · Free
+                  </motion.p>
+
+                  <motion.h1 {...fadeUp(0.12)} className="font-heading text-[clamp(2.5rem,6.5vw,4.5rem)] font-bold leading-[1.04] tracking-[-0.025em] text-foreground mb-6">
+                    Your <span className="text-gold-dark">admissions strategy.</span><br />
+                    In two minutes.
+                  </motion.h1>
+
+                  <motion.p {...fadeUp(0.22)} className="text-lg sm:text-xl text-foreground/75 leading-[1.6] max-w-xl mx-auto mb-10 font-light">
+                    Tell us your scores, goals, and constraints. Our AI returns a tailored plan: where to apply, how to fund it, and what to do next.
+                  </motion.p>
+
+                  <motion.div {...fadeUp(0.32)} className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-8">
+                    <Button variant="gold" size="lg" className="text-base px-8 py-6 gap-2" onClick={() => setScreen("intake")}>
+                      <Sparkles className="w-5 h-5" /> Start my plan <ArrowRight className="w-5 h-5" />
+                    </Button>
+                  </motion.div>
+
+                  <motion.p {...fadeUp(0.4)} className="text-xs text-muted-foreground tracking-wide">
+                    2 minutes · No account needed · Free during beta
+                  </motion.p>
                 </div>
+              </section>
 
-                {/* Primary CTAs */}
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                  <Button variant="gold" size="lg" className="text-base px-8" onClick={() => setScreen("intake")}>
-                    <GraduationCap className="mr-2 w-5 h-5" /> Start Your Plan <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
-                  <Button variant="outline" size="lg" className="text-base px-6 border-accent/40 hover:bg-accent/10" onClick={() => setScreen("dashboard")}>
-                    <Bot className="mr-2 w-5 h-5 text-accent" /> Chat with AI Counselor
-                  </Button>
+              {/* WHAT YOU'LL GET — three outcomes the strategy plan delivers */}
+              <section className="py-16 sm:py-20 border-t border-border/60">
+                <div className="max-w-5xl mx-auto px-5 sm:px-8">
+                  <motion.div {...fadeUp()} className="text-center mb-12">
+                    <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">Your plan delivers</p>
+                    <h2 className="font-heading text-3xl sm:text-4xl font-semibold tracking-tight text-foreground leading-[1.15]">
+                      Three concrete outputs.
+                    </h2>
+                  </motion.div>
+
+                  <div className="grid sm:grid-cols-3 gap-px bg-border/60 border border-border/60 rounded-2xl overflow-hidden">
+                    {[
+                      {
+                        icon: ListChecks,
+                        kicker: "01 · Target list",
+                        title: "A balanced shortlist",
+                        body: "Reach, match, and safety schools across your target countries — ranked by your fit and funding need.",
+                      },
+                      {
+                        icon: Map,
+                        kicker: "02 · Funding pathway",
+                        title: "Where the money is",
+                        body: "Scholarships and need-based aid you can realistically win, with deadlines and effort tagged.",
+                      },
+                      {
+                        icon: Zap,
+                        kicker: "03 · Action plan",
+                        title: "What to do this month",
+                        body: "Tests to take, essays to draft, recommenders to ask — sequenced backwards from your earliest deadline.",
+                      },
+                    ].map((item, i) => (
+                      <motion.div
+                        key={item.kicker}
+                        {...fadeUp(0.08 * i)}
+                        className="bg-card p-7 flex flex-col"
+                      >
+                        <item.icon className="w-5 h-5 text-gold-dark mb-5" />
+                        <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium mb-2">{item.kicker}</p>
+                        <h3 className="font-heading font-semibold text-lg text-foreground mb-2 leading-tight">{item.title}</h3>
+                        <p className="text-sm text-muted-foreground leading-[1.65]">{item.body}</p>
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
+              </section>
 
-                <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                  Tell us your academic profile and goals. We'll map your options and what each one actually requires.
-                </p>
+              {/* THE FLOW — strategy → discover → academy */}
+              <section className="py-16 sm:py-20">
+                <div className="max-w-5xl mx-auto px-5 sm:px-8">
+                  <motion.div {...fadeUp()} className="max-w-2xl mb-12">
+                    <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">From plan to admission</p>
+                    <h2 className="font-heading text-3xl sm:text-4xl font-semibold tracking-tight text-foreground leading-[1.15]">
+                      One plan. Two products to execute it.
+                    </h2>
+                    <p className="text-muted-foreground mt-4 text-base leading-relaxed">
+                      Once your strategy is generated, your scholarships are waiting in Discover and your application playbook lives in Academy.
+                    </p>
+                  </motion.div>
 
-                {/* Product funnel CTAs */}
-                <div className="grid sm:grid-cols-2 gap-3 max-w-xl mx-auto pt-4">
-                  <button
-                    onClick={() => navigate("/discover")}
-                    className="group p-4 rounded-xl border border-border hover:border-accent/40 bg-background/80 backdrop-blur-sm transition-all text-left space-y-1.5"
-                  >
-                    <Search className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
-                    <p className="text-sm font-semibold text-foreground">Discover</p>
-                    <p className="text-[11px] text-muted-foreground leading-snug">Find your funding pathway — scholarships ranked by your profile</p>
-                  </button>
-                  <button
-                    onClick={() => navigate("/academy")}
-                    className="group p-4 rounded-xl border border-border hover:border-accent/40 bg-background/80 backdrop-blur-sm transition-all text-left space-y-1.5"
-                  >
-                    <BookOpen className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
-                    <p className="text-sm font-semibold text-foreground">Academy</p>
-                    <p className="text-[11px] text-muted-foreground leading-snug">Curated guides, courses & playbooks for every stage of your application</p>
-                  </button>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <motion.button
+                      {...fadeUp(0.1)}
+                      onClick={() => navigate("/discover")}
+                      className="group text-left p-7 rounded-2xl border border-border/70 bg-card hover:border-gold/30 hover:shadow-md transition-all"
+                    >
+                      <div className="flex items-center justify-between mb-5">
+                        <div className="h-10 w-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center">
+                          <Search className="w-5 h-5 text-gold-dark" />
+                        </div>
+                        <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">Step 02</span>
+                      </div>
+                      <h3 className="font-heading font-bold text-xl text-foreground mb-2 tracking-tight">Discover</h3>
+                      <p className="text-sm text-muted-foreground leading-[1.65] mb-5">
+                        Every scholarship in our database, ranked against your profile. See exactly where you have a real shot.
+                      </p>
+                      <span className="text-sm font-semibold text-foreground group-hover:text-gold-dark transition-colors flex items-center gap-1.5">
+                        See your matches <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                      </span>
+                    </motion.button>
+
+                    <motion.button
+                      {...fadeUp(0.18)}
+                      onClick={() => navigate("/academy")}
+                      className="group text-left p-7 rounded-2xl border border-border/70 bg-card hover:border-gold/30 hover:shadow-md transition-all"
+                    >
+                      <div className="flex items-center justify-between mb-5">
+                        <div className="h-10 w-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center">
+                          <BookOpen className="w-5 h-5 text-gold-dark" />
+                        </div>
+                        <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">Step 03</span>
+                      </div>
+                      <h3 className="font-heading font-bold text-xl text-foreground mb-2 tracking-tight">Academy</h3>
+                      <p className="text-sm text-muted-foreground leading-[1.65] mb-5">
+                        Live workshops with our founders and a recorded library — execute your plan with people who've done it.
+                      </p>
+                      <span className="text-sm font-semibold text-foreground group-hover:text-gold-dark transition-colors flex items-center gap-1.5">
+                        Preview Academy <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                      </span>
+                    </motion.button>
+                  </div>
+
+                  <motion.div {...fadeUp(0.3)} className="text-center mt-12">
+                    <a
+                      href="/topuni-ai/partners"
+                      className="text-sm text-muted-foreground hover:text-gold-dark transition-colors underline-offset-4 hover:underline"
+                    >
+                      For university partners →
+                    </a>
+                  </motion.div>
                 </div>
-
-                <a href="/topuni-ai/partners" className="text-sm text-muted-foreground hover:text-accent transition-colors underline underline-offset-4 cursor-pointer inline-block">
-                  For University Partners →
-                </a>
-              </div>
+              </section>
             </motion.div>
           )}
 
+          {/* ═══ INTAKE ═══ */}
           {screen === "intake" && (
-            <motion.div key="intake" {...fadeIn} className="max-w-2xl mx-auto px-4 py-12">
-              <div className="flex items-center justify-center gap-2 mb-10">
+            <motion.div
+              key="intake"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              className="max-w-2xl mx-auto px-5 sm:px-8 pt-12 pb-20"
+            >
+              {/* Progress */}
+              <div className="flex items-center justify-center gap-2 mb-12">
                 {[1, 2, 3].map(s => (
                   <div key={s} className="flex items-center gap-2">
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${s <= step ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"}`}>{s}</div>
-                    {s < 3 && <div className={`w-12 h-0.5 ${s < step ? "bg-accent" : "bg-muted"}`} />}
+                    <div className={`h-1.5 w-12 rounded-full overflow-hidden bg-border/60`}>
+                      <motion.div
+                        className="h-full bg-gold-dark"
+                        initial={false}
+                        animate={{ width: s < step ? "100%" : s === step ? "60%" : "0%" }}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                      />
+                    </div>
                   </div>
                 ))}
+                <span className="text-xs text-muted-foreground tabular-nums tracking-wider font-medium ml-3">{step} / 3</span>
               </div>
 
               <AnimatePresence mode="wait">
                 {step === 1 && (
-                  <motion.div key="step1" {...fadeIn} className="space-y-6">
+                  <motion.div
+                    key="step1"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.35 }}
+                    className="space-y-7"
+                  >
                     <div>
-                      <h2 className="text-2xl font-heading font-bold text-foreground">Academic Profile</h2>
-                      <p className="text-muted-foreground text-sm mt-1">Tell us about your academic background.</p>
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Step 01 · Profile</p>
+                      <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight">
+                        Tell us about you.
+                      </h2>
+                      <p className="text-muted-foreground mt-2 text-sm">Your academic foundation. About a minute.</p>
                     </div>
                     <div className="grid gap-5">
                       <div className="grid sm:grid-cols-2 gap-4">
-                        <div className="space-y-2"><Label>Full Name *</Label><Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Enter your full name" /></div>
-                        <div className="space-y-2"><Label>Email *</Label><Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@email.com" /></div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs uppercase tracking-wider font-medium">Full name *</Label>
+                          <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Your name" className="h-11 bg-card" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs uppercase tracking-wider font-medium">Email *</Label>
+                          <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@email.com" className="h-11 bg-card" />
+                        </div>
                       </div>
                       <div className="grid sm:grid-cols-2 gap-4">
-                        <div className="space-y-2"><Label>WhatsApp</Label><Input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="+996..." /></div>
-                        <div className="space-y-2">
-                          <Label>Current Grade Level *</Label>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs uppercase tracking-wider font-medium">WhatsApp</Label>
+                          <Input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="+996..." className="h-11 bg-card" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs uppercase tracking-wider font-medium">Grade level *</Label>
                           <Select value={gradeLevel} onValueChange={setGradeLevel}>
-                            <SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger>
+                            <SelectTrigger className="h-11 bg-card"><SelectValue placeholder="Select" /></SelectTrigger>
                             <SelectContent>
                               {["9th Grade", "10th Grade", "11th Grade", "12th Grade", "Gap Year", "University Transfer"].map(g => (
                                 <SelectItem key={g} value={g}>{g}</SelectItem>
@@ -157,42 +306,71 @@ const TopUniAI = () => {
                         </div>
                       </div>
                       <div className="grid sm:grid-cols-3 gap-4">
-                        <div className="space-y-2"><Label>GPA *</Label><Input value={gpa} onChange={e => setGpa(e.target.value)} placeholder="e.g. 3.7" /></div>
-                        <div className="space-y-2"><Label>IELTS Score</Label><Input value={ielts} onChange={e => setIelts(e.target.value)} placeholder="Optional" /></div>
-                        <div className="space-y-2"><Label>SAT Score</Label><Input value={sat} onChange={e => setSat(e.target.value)} placeholder="Optional" /></div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs uppercase tracking-wider font-medium">GPA *</Label>
+                          <Input value={gpa} onChange={e => setGpa(e.target.value)} placeholder="e.g. 3.7" className="h-11 bg-card" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs uppercase tracking-wider font-medium">IELTS</Label>
+                          <Input value={ielts} onChange={e => setIelts(e.target.value)} placeholder="Optional" className="h-11 bg-card" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs uppercase tracking-wider font-medium">SAT</Label>
+                          <Input value={sat} onChange={e => setSat(e.target.value)} placeholder="Optional" className="h-11 bg-card" />
+                        </div>
                       </div>
                     </div>
                     <div className="flex justify-between pt-4">
                       <Button variant="outline" onClick={() => setScreen("landing")}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
-                      <Button variant="gold" onClick={() => setStep(2)}>Next <ArrowRight className="ml-2 w-4 h-4" /></Button>
+                      <Button variant="gold" onClick={() => setStep(2)}>Continue <ArrowRight className="ml-2 w-4 h-4" /></Button>
                     </div>
                   </motion.div>
                 )}
 
                 {step === 2 && (
-                  <motion.div key="step2" {...fadeIn} className="space-y-6">
+                  <motion.div
+                    key="step2"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.35 }}
+                    className="space-y-7"
+                  >
                     <div>
-                      <h2 className="text-2xl font-heading font-bold text-foreground">Preferences</h2>
-                      <p className="text-muted-foreground text-sm mt-1">Where and what do you want to study?</p>
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Step 02 · Direction</p>
+                      <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight">
+                        Where, and what?
+                      </h2>
+                      <p className="text-muted-foreground mt-2 text-sm">Your target geographies and field.</p>
                     </div>
-                    <div className="space-y-5">
+                    <div className="space-y-6">
                       <div className="space-y-2">
-                        <Label>Target Countries *</Label>
+                        <Label className="text-xs uppercase tracking-wider font-medium">Target countries *</Label>
                         <div className="flex flex-wrap gap-2">
                           {COUNTRIES.map(c => (
-                            <button key={c} onClick={() => toggleCountry(c)}
-                              className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${targetCountries.includes(c) ? "bg-accent text-accent-foreground border-accent" : "bg-background text-muted-foreground border-border hover:border-accent/50"}`}>
+                            <button
+                              key={c}
+                              onClick={() => toggleCountry(c)}
+                              className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                                targetCountries.includes(c)
+                                  ? "bg-gold-dark text-primary-foreground border-gold-dark"
+                                  : "bg-card text-foreground/75 border-border hover:border-gold/40"
+                              }`}
+                            >
                               {c}
                             </button>
                           ))}
                         </div>
                       </div>
-                      <div className="space-y-2"><Label>Intended Major *</Label><Input value={major} onChange={e => setMajor(e.target.value)} placeholder="e.g. Computer Science, Economics" /></div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs uppercase tracking-wider font-medium">Intended major *</Label>
+                        <Input value={major} onChange={e => setMajor(e.target.value)} placeholder="e.g. Computer Science, Economics" className="h-11 bg-card" />
+                      </div>
                       <div className="grid sm:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Budget Range</Label>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs uppercase tracking-wider font-medium">Budget</Label>
                           <Select value={budget} onValueChange={setBudget}>
-                            <SelectTrigger><SelectValue placeholder="Select budget" /></SelectTrigger>
+                            <SelectTrigger className="h-11 bg-card"><SelectValue placeholder="Select" /></SelectTrigger>
                             <SelectContent>
                               {["Under $5,000/year", "$5,000–$15,000/year", "$15,000–$30,000/year", "$30,000+/year", "Full scholarship needed"].map(b => (
                                 <SelectItem key={b} value={b}>{b}</SelectItem>
@@ -200,10 +378,10 @@ const TopUniAI = () => {
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="space-y-2">
-                          <Label>Scholarship Needed?</Label>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs uppercase tracking-wider font-medium">Need scholarship?</Label>
                           <Select value={scholarshipNeeded} onValueChange={setScholarshipNeeded}>
-                            <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                            <SelectTrigger className="h-11 bg-card"><SelectValue placeholder="Select" /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="yes">Yes</SelectItem>
                               <SelectItem value="no">No</SelectItem>
@@ -211,10 +389,10 @@ const TopUniAI = () => {
                           </Select>
                         </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label>Timeline</Label>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs uppercase tracking-wider font-medium">Timeline</Label>
                         <Select value={timeline} onValueChange={setTimeline}>
-                          <SelectTrigger><SelectValue placeholder="Select timeline" /></SelectTrigger>
+                          <SelectTrigger className="h-11 bg-card"><SelectValue placeholder="Select" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="Fall 2026">Fall 2026</SelectItem>
                             <SelectItem value="Fall 2027">Fall 2027</SelectItem>
@@ -225,38 +403,60 @@ const TopUniAI = () => {
                     </div>
                     <div className="flex justify-between pt-4">
                       <Button variant="outline" onClick={() => setStep(1)}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
-                      <Button variant="gold" onClick={() => setStep(3)}>Next <ArrowRight className="ml-2 w-4 h-4" /></Button>
+                      <Button variant="gold" onClick={() => setStep(3)}>Continue <ArrowRight className="ml-2 w-4 h-4" /></Button>
                     </div>
                   </motion.div>
                 )}
 
                 {step === 3 && (
-                  <motion.div key="step3" {...fadeIn} className="space-y-6">
+                  <motion.div
+                    key="step3"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.35 }}
+                    className="space-y-7"
+                  >
                     <div>
-                      <h2 className="text-2xl font-heading font-bold text-foreground">Your Goals</h2>
-                      <p className="text-muted-foreground text-sm mt-1">Rank what matters most to you (1 = low, 5 = high).</p>
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Step 03 · Priorities</p>
+                      <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight">
+                        What matters most?
+                      </h2>
+                      <p className="text-muted-foreground mt-2 text-sm">Weight each on a 1-5 scale.</p>
                     </div>
-                    <div className="space-y-6">
+                    <div className="space-y-5">
                       {[
-                        { label: "Prestige", value: prestige, set: setPrestige, icon: <GraduationCap className="w-4 h-4" /> },
-                        { label: "Scholarship", value: scholarship, set: setScholarship, icon: <Shield className="w-4 h-4" /> },
-                        { label: "Career ROI", value: careerRoi, set: setCareerRoi, icon: <Target className="w-4 h-4" /> },
-                        { label: "Visa Accessibility", value: visaAccess, set: setVisaAccess, icon: <CheckCircle2 className="w-4 h-4" /> },
-                        { label: "Location Preference", value: locationPref, set: setLocationPref, icon: <ArrowRight className="w-4 h-4" /> },
+                        { label: "Prestige", value: prestige, set: setPrestige, icon: GraduationCap, low: "Any school", high: "Top 50 only" },
+                        { label: "Scholarship need", value: scholarship, set: setScholarship, icon: Shield, low: "Self-fund OK", high: "Must be free" },
+                        { label: "Career ROI", value: careerRoi, set: setCareerRoi, icon: Target, low: "Open-ended", high: "Top 1% jobs" },
+                        { label: "Visa accessibility", value: visaAccess, set: setVisaAccess, icon: CheckCircle2, low: "Don't mind", high: "Easy access" },
+                        { label: "Location preference", value: locationPref, set: setLocationPref, icon: ArrowRight, low: "Anywhere", high: "Specific city" },
                       ].map(item => (
-                        <div key={item.label} className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <Label className="flex items-center gap-2">{item.icon} {item.label}</Label>
-                            <span className="text-sm font-semibold text-accent">{item.value[0]}/5</span>
+                        <div key={item.label} className="bg-card border border-border/70 rounded-xl p-5">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2.5">
+                              <item.icon className="w-4 h-4 text-gold-dark" />
+                              <span className="text-sm font-semibold text-foreground">{item.label}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              {[1, 2, 3, 4, 5].map(n => (
+                                <span key={n} className={`h-1.5 w-1.5 rounded-full transition-colors ${n <= item.value[0] ? "bg-gold-dark" : "bg-border"}`} />
+                              ))}
+                              <span className="text-xs font-bold text-gold-dark tabular-nums ml-1.5">{item.value[0]}/5</span>
+                            </div>
                           </div>
                           <Slider min={1} max={5} step={1} value={item.value} onValueChange={item.set} className="w-full" />
+                          <div className="flex justify-between mt-2 text-[11px] text-muted-foreground font-medium">
+                            <span>{item.low}</span>
+                            <span>{item.high}</span>
+                          </div>
                         </div>
                       ))}
                     </div>
                     <div className="flex justify-between pt-4">
                       <Button variant="outline" onClick={() => setStep(2)}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
                       <Button variant="gold" size="lg" onClick={() => setScreen("dashboard")}>
-                        <Sparkles className="mr-2 w-5 h-5" /> Generate My Pathway
+                        <Sparkles className="mr-2 w-5 h-5" /> Generate my plan
                       </Button>
                     </div>
                   </motion.div>
@@ -265,8 +465,15 @@ const TopUniAI = () => {
             </motion.div>
           )}
 
+          {/* ═══ DASHBOARD ═══ */}
           {screen === "dashboard" && (
-            <motion.div key="dashboard" {...fadeIn}>
+            <motion.div
+              key="dashboard"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+            >
               <TopUniDashboard
                 profile={profile}
                 language="en"

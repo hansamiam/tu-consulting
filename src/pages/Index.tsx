@@ -85,13 +85,15 @@ const Index = () => {
             className="absolute inset-0"
             style={{
               backgroundImage: `linear-gradient(180deg,
-                hsl(var(--primary) / 0.95) 0%,
-                hsl(var(--primary) / 0.78) 5%,
-                hsl(var(--primary) / 0.42) 12%,
-                hsl(var(--primary) / 0.12) 22%,
-                hsl(var(--background) / 0.86) 30%,
+                hsl(var(--primary) / 0.92) 0%,
+                hsl(var(--primary) / 0.65) 4%,
+                hsl(var(--primary) / 0.30) 10%,
+                hsl(var(--primary) / 0.10) 17%,
+                hsl(var(--background) / 0.40) 24%,
+                hsl(var(--background) / 0.62) 32%,
+                hsl(var(--background) / 0.78) 42%,
                 hsl(var(--background) / 0.84) 55%,
-                hsl(var(--background) / 0.84) 80%,
+                hsl(var(--background) / 0.84) 88%,
                 hsl(var(--background) / 0.95) 100%)`,
             }}
           />
