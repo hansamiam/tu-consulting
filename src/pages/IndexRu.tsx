@@ -26,7 +26,7 @@ const STEPS = [
 
 const TEAM = [
   { name: "Samuel Han", title: "Founder & CEO", school: "Yale", photo: samuelPhoto },
-  { name: "Nurzada Abdivalieva", title: "Co-Founder", school: "Schwarzman · Cambridge", photo: nurzadaPhoto },
+  { name: "Nurzada Abdivalieva", title: "Co-Founder", school: "Tsinghua · Cambridge", photo: nurzadaPhoto },
   { name: "Josh Hughes", title: "Lead Consultant", school: "Harvard", photo: joshPhoto },
   { name: "Aigul Abdoubaetova", title: "Senior Advisor", school: "Ex-OSCE Academy", photo: aigulPhoto },
 ];
@@ -116,7 +116,7 @@ const IndexRu = () => {
                 С опорой на опыт выпускников.
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed">
-                Yale, Harvard, Cambridge, Tsinghua, Schwarzman — спокойная и точная навигация по процессу.
+                Yale, Harvard, Cambridge, Tsinghua — спокойная и точная навигация по процессу.
               </p>
             </motion.div>
 

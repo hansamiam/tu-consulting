@@ -48,7 +48,7 @@ const STEPS = [
 
 const TEAM = [
   { name: "Samuel Han", title: "Founder & CEO", school: "Yale", photo: samuelPhoto },
-  { name: "Nurzada Abdivalieva", title: "Co-Founder", school: "Schwarzman · Cambridge", photo: nurzadaPhoto },
+  { name: "Nurzada Abdivalieva", title: "Co-Founder", school: "Tsinghua · Cambridge", photo: nurzadaPhoto },
   { name: "Josh Hughes", title: "Lead Consultant", school: "Harvard", photo: joshPhoto },
   { name: "Aigul Abdoubaetova", title: "Senior Advisor", school: "Ex-OSCE Academy", photo: aigulPhoto },
 ];
@@ -205,7 +205,7 @@ const Index = () => {
                 Built with alumni insight.
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed">
-                Yale, Harvard, Cambridge, Tsinghua, Schwarzman — concise guidance from people who know the process.
+                Yale, Harvard, Cambridge, Tsinghua — concise guidance from people who know the process.
               </p>
             </motion.div>
 
