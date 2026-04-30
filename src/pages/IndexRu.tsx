@@ -221,22 +221,22 @@ const IndexRu = () => {
       </section>
 
       {/* MEMBERSHIP */}
-      <section className="py-16 bg-primary text-primary-foreground">
+      <section className="py-16 bg-background border-t border-border">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
-          <motion.div {...fadeUp()} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gold/30 bg-gold/10 text-gold text-xs font-medium tracking-wide uppercase mb-5">
+          <motion.div {...fadeUp()} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gold/30 bg-gold/10 text-gold-dark text-xs font-medium tracking-wide uppercase mb-5">
             <Crown className="h-3.5 w-3.5" /> Founding Membership
           </motion.div>
-          <motion.h2 {...fadeUp(0.05)} className="font-heading text-3xl sm:text-4xl font-bold mb-3">
-            Одно <span className="text-gold">членство.</span> Всё внутри.
+          <motion.h2 {...fadeUp(0.05)} className="font-heading text-3xl sm:text-4xl font-bold text-foreground mb-3">
+            Одно <span className="text-gold-dark">членство.</span> Всё внутри.
           </motion.h2>
-          <motion.p {...fadeUp(0.1)} className="text-primary-foreground/70 mb-8 max-w-xl mx-auto">
+          <motion.p {...fadeUp(0.1)} className="text-muted-foreground mb-8 max-w-xl mx-auto">
             TopUni AI, Discover и Academy — по цене основателей, навсегда.
           </motion.p>
           <motion.div {...fadeUp(0.2)}>
             <Button
               variant="gold"
               size="lg"
-              className="text-base px-8 py-5 hover:scale-105 transition-transform gap-2"
+              className="text-base px-8 py-5 gap-2"
               onClick={() => navigate('/pricing')}
             >
               Подробнее <ArrowRight className="h-4 w-4" />
