@@ -9,6 +9,7 @@ import {
   Sparkles, GraduationCap,
   Bot, Loader2, Send, ArrowLeft,
   Search, ArrowRight, Download, BookOpen, ExternalLink, Calendar, Zap,
+  RotateCcw, Compass, PenLine, Wallet, FileText, Plane,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
@@ -553,17 +554,39 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     })();
   }, [profile.fullName, profile.targetCountries?.join(",")]);
 
-  // Chat state
-  const [chatMessages, setChatMessages] = useState<Msg[]>([]);
+  // Chat state — persisted to localStorage so the conversation survives reloads.
+  const [chatMessages, setChatMessages] = useState<Msg[]>(() => {
+    try {
+      const raw = localStorage.getItem("topuni-chat-history");
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
+  });
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const chatScrollRef = useRef<HTMLDivElement>(null);
+  const chatTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
+    try { localStorage.setItem("topuni-chat-history", JSON.stringify(chatMessages)); } catch { /* ignore */ }
   }, [chatMessages]);
+
+  // Auto-grow the textarea as the user types, capped at ~5 lines.
+  useEffect(() => {
+    const el = chatTextareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 140) + "px";
+  }, [chatInput]);
+
+  const clearChat = () => {
+    setChatMessages([]);
+    try { localStorage.removeItem("topuni-chat-history"); } catch { /* ignore */ }
+  };
 
   // Only generate pathway if profile is actually filled
   const isProfileFilled = profile.fullName && profile.fullName !== "Student" && profile.gpa && profile.targetCountries.length > 0;
@@ -928,97 +951,281 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             all secondary or duplicating Discover. The strategy report is the
             product; the chat counselor is the follow-up surface.) */}
 
-        {/* AI COUNSELOR TAB */}
+        {/* AI COUNSELOR TAB ───────────────────────────────────────────────
+            A two-pane layout: profile-aware suggestion rail on the left,
+            scrollable transcript on the right with persistent localStorage
+            history. Suggestions are profile-aware (refer to the student's
+            target country and major when present) so the chat feels like a
+            real follow-up to the strategy report rather than a blank-slate
+            ChatGPT clone. */}
         <TabsContent value="counselor">
-          <Card className="h-[600px] flex flex-col">
-            <CardHeader className="shrink-0">
-              <CardTitle className="flex items-center gap-2">
-                <Bot className="w-5 h-5 text-accent" />
-                {t("AI Counselor", "AI Советник")}
-              </CardTitle>
-              <p className="text-xs text-muted-foreground">
-                {t("Your personal admissions counselor. Ask anything about universities, scholarships, applications, or strategy.",
-                   "Ваш личный консультант по поступлению. Спросите о университетах, стипендиях, заявках или стратегии.")}
-              </p>
-            </CardHeader>
-            <div ref={chatScrollRef} className="flex-1 overflow-y-auto px-6 space-y-3">
-              {chatMessages.length === 0 && (
-                <div className="space-y-3 pt-4">
-                  <div className="bg-accent/10 rounded-lg p-3 text-sm text-muted-foreground">
-                    <p className="font-semibold text-foreground mb-1">
-                      {isProfileFilled
-                        ? (isRu ? `👋 Привет, ${profile.fullName.split(" ")[0]}! Я ваш AI-советник.` : `👋 Hi ${profile.fullName.split(" ")[0]}! I'm your AI counselor.`)
-                        : (isRu ? "👋 Привет! Я ваш AI-советник по поступлению." : "👋 Hi! I'm your AI admissions counselor.")
-                      }
-                    </p>
-                    <p>{isRu ? "Задайте любой вопрос о поступлении, стипендиях или планировании." : "Ask me anything about admissions, scholarships, or study planning."}</p>
-                  </div>
+          {(() => {
+            const firstName = isProfileFilled ? profile.fullName.split(" ")[0] : "";
+            const targetCountry = profile.targetCountries[0] || "";
+            const major = profile.major || "";
+            const referProfile = isProfileFilled && (targetCountry || major);
 
-                  {!isProfileFilled && (
-                    <div className="bg-accent/5 border border-accent/20 rounded-lg p-4 space-y-3">
-                      <p className="text-sm text-foreground font-medium">
-                        {t("💡 Want personalized advice?", "💡 Хотите персональные советы?")}
+            const promptGroups: { label: string; icon: React.ReactNode; prompts: string[] }[] = isRu
+              ? [
+                  { label: "Стратегия", icon: <Compass className="w-3.5 h-3.5" />, prompts: [
+                    referProfile && targetCountry
+                      ? `Учитывая мой профиль, какие 5 университетов в ${targetCountry} мне стоит рассмотреть?`
+                      : `Какие университеты соответствуют моему профилю?`,
+                    `Каковы реальные шансы на поступление с моим GPA ${profile.gpa || "?"}?`,
+                    `На что мне стоит сосредоточиться в ближайший месяц?`,
+                  ]},
+                  { label: "Эссе", icon: <PenLine className="w-3.5 h-3.5" />, prompts: [
+                    `Помогите мне найти угол для мотивационного письма.`,
+                    `Какие три истории из моего опыта стоит использовать в эссе?`,
+                    `Дайте обратную связь по черновику моего personal statement.`,
+                  ]},
+                  { label: "Финансирование", icon: <Wallet className="w-3.5 h-3.5" />, prompts: [
+                    targetCountry
+                      ? `Какие стипендии в ${targetCountry} с полным покрытием стоит подать?`
+                      : `Какие стипендии с полным покрытием стоит подать?`,
+                    `Как объяснить финансовые потребности в эссе?`,
+                    `Что такое need-blind и как это влияет на мою стратегию?`,
+                  ]},
+                  { label: "Тесты", icon: <FileText className="w-3.5 h-3.5" />, prompts: [
+                    `Составьте план подготовки к IELTS на 8 недель.`,
+                    `Какой балл SAT нужен для топ-30 университетов США?`,
+                    `Стоит ли пересдавать тест с моим текущим баллом?`,
+                  ]},
+                  { label: "Виза", icon: <Plane className="w-3.5 h-3.5" />, prompts: [
+                    `Какие документы нужны для студенческой визы?`,
+                    `Что чаще всего приводит к отказу в визе?`,
+                    `Когда лучше всего подавать заявление на визу?`,
+                  ]},
+                ]
+              : [
+                  { label: "Strategy", icon: <Compass className="w-3.5 h-3.5" />, prompts: [
+                    referProfile && targetCountry
+                      ? `Given my profile, what 5 universities in ${targetCountry} should I look at?`
+                      : `What universities best match my profile?`,
+                    `What are my realistic chances with a GPA of ${profile.gpa || "my current numbers"}?`,
+                    referProfile && major
+                      ? `What's the strongest path into a top ${major} program?`
+                      : `What should I prioritize this month?`,
+                  ]},
+                  { label: "Essays", icon: <PenLine className="w-3.5 h-3.5" />, prompts: [
+                    `Help me find the strongest angle for my personal statement.`,
+                    `What three stories from my background should I lean on in essays?`,
+                    `Give me critical feedback on a draft I'll paste in.`,
+                  ]},
+                  { label: "Funding", icon: <Wallet className="w-3.5 h-3.5" />, prompts: [
+                    targetCountry
+                      ? `Which fully-funded scholarships in ${targetCountry} should I apply to?`
+                      : `Which fully-funded scholarships fit my profile?`,
+                    `How do I explain financial need in my application?`,
+                    `What does need-blind admission mean for my strategy?`,
+                  ]},
+                  { label: "Tests", icon: <FileText className="w-3.5 h-3.5" />, prompts: [
+                    `Build me an 8-week IELTS prep plan.`,
+                    `What SAT score do I need for the top-30 US universities?`,
+                    `Should I retake my test with my current score?`,
+                  ]},
+                  { label: "Visa", icon: <Plane className="w-3.5 h-3.5" />, prompts: [
+                    `What documents do I need for a student visa?`,
+                    `What are the most common reasons for visa rejection?`,
+                    `When is the best time to apply for my visa?`,
+                  ]},
+                ];
+
+            return (
+              <div className="grid lg:grid-cols-[280px_1fr] gap-6">
+                {/* LEFT RAIL — categorized prompts ─────────────────────── */}
+                <aside className="hidden lg:block">
+                  <div className="sticky top-6 space-y-5">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground font-semibold mb-2">
+                        {t("Start a thread", "Начать диалог")}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {t("Complete your profile for tailored university matches, admission predictions, and more.", "Заполните профиль для персональных рекомендаций.")}
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {t("Tap a prompt to send it, or type your own. Your conversation is saved.",
+                           "Нажмите подсказку или напишите свой вопрос. Диалог сохраняется.")}
                       </p>
-                      <Button variant="gold" size="sm" onClick={onBack}>
-                        <Sparkles className="w-4 h-4 mr-1" /> {t("Start Your Plan", "Начать план")}
-                      </Button>
                     </div>
-                  )}
+                    <div className="space-y-4">
+                      {promptGroups.map((g) => (
+                        <div key={g.label}>
+                          <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] text-foreground font-semibold mb-1.5">
+                            <span className="text-accent">{g.icon}</span>
+                            {g.label}
+                          </div>
+                          <div className="space-y-1">
+                            {g.prompts.map((p, i) => (
+                              <button
+                                key={i}
+                                onClick={() => sendChatMessage(p)}
+                                disabled={chatLoading}
+                                className="block w-full text-left text-xs leading-snug px-2 py-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors disabled:opacity-50"
+                              >
+                                {p}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </aside>
 
-                  <div className="grid sm:grid-cols-2 gap-2">
-                    {[
-                      t("What are my chances at my top choice?", "Каковы мои шансы в топ-выборе?"),
-                      t("Help me write my personal statement", "Помогите с мотивационным письмом"),
-                      t("What scholarships should I apply to?", "На какие стипендии подать?"),
-                      t("Create a study plan for IELTS", "Составьте план подготовки к IELTS"),
-                    ].map((q, i) => (
-                      <button key={i} onClick={() => sendChatMessage(q)}
-                        className="text-left text-xs px-3 py-2 rounded-md border border-border hover:border-accent/50 hover:bg-accent/5 text-muted-foreground transition-colors">
-                        {q}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {chatMessages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
-                    msg.role === "user" ? "bg-accent text-accent-foreground" : "bg-muted text-foreground"
-                  }`}>
-                    {msg.role === "assistant" ? (
-                      <div className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5">
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                {/* MAIN CHAT ──────────────────────────────────────────── */}
+                <Card className="h-[640px] flex flex-col overflow-hidden">
+                  <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-border shrink-0 bg-card">
+                    <div className="flex items-center gap-2.5">
+                      <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                        <Bot className="w-4 h-4" />
+                        <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-card" />
+                      </span>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground leading-tight">
+                          {t("AI Counselor", "AI Советник")}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground leading-tight">
+                          {t("Trained on Yale, Cambridge & Harvard admissions experience",
+                             "Обучен на опыте поступления в Йель, Кембридж и Гарвард")}
+                        </p>
                       </div>
-                    ) : msg.content}
+                    </div>
+                    {chatMessages.length > 0 && (
+                      <button
+                        onClick={clearChat}
+                        className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                        title={t("Clear conversation", "Очистить диалог")}
+                      >
+                        <RotateCcw className="w-3 h-3" /> {t("New thread", "Новый диалог")}
+                      </button>
+                    )}
                   </div>
-                </div>
-              ))}
-              {chatLoading && chatMessages[chatMessages.length - 1]?.role === "user" && (
-                <div className="flex justify-start">
-                  <div className="bg-muted rounded-lg px-3 py-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-accent" />
+
+                  <div ref={chatScrollRef} className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
+                    {chatMessages.length === 0 ? (
+                      <div className="h-full flex flex-col">
+                        {/* Editorial empty state — feels like walking into an office, not a chatbot. */}
+                        <div className="flex-1 flex flex-col items-center justify-center text-center max-w-md mx-auto">
+                          <div className="h-12 w-12 rounded-full bg-primary/5 flex items-center justify-center mb-4 ring-1 ring-primary/15">
+                            <Bot className="w-5 h-5 text-primary" />
+                          </div>
+                          <h3 className="font-heading text-xl text-foreground mb-1.5">
+                            {firstName
+                              ? t(`Hi ${firstName}.`, `Привет, ${firstName}.`)
+                              : t("Welcome.", "Добро пожаловать.")}
+                          </h3>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {referProfile
+                              ? t(`I have your profile and your strategy report in front of me. Ask me anything — applications, essays, funding, tests, visa.`,
+                                  `У меня уже есть ваш профиль и стратегический отчёт. Задайте любой вопрос — заявки, эссе, финансирование, тесты, виза.`)
+                              : t("Ask me anything about applications, essays, scholarships, tests, or visas. Complete your profile for tailored answers.",
+                                  "Спросите о заявках, эссе, стипендиях, тестах или визах. Заполните профиль для персональных ответов.")}
+                          </p>
+                          {!isProfileFilled && (
+                            <Button variant="gold" size="sm" onClick={onBack} className="mt-4">
+                              <Sparkles className="w-4 h-4 mr-1" /> {t("Build my profile", "Заполнить профиль")}
+                            </Button>
+                          )}
+                        </div>
+                        {/* Mobile: show grouped prompts inline since the left rail is hidden */}
+                        <div className="lg:hidden mt-6 space-y-3">
+                          {promptGroups.slice(0, 3).map((g) => (
+                            <div key={g.label}>
+                              <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] text-foreground font-semibold mb-1.5">
+                                <span className="text-accent">{g.icon}</span>
+                                {g.label}
+                              </div>
+                              <div className="grid grid-cols-1 gap-1.5">
+                                {g.prompts.slice(0, 2).map((p, i) => (
+                                  <button
+                                    key={i}
+                                    onClick={() => sendChatMessage(p)}
+                                    disabled={chatLoading}
+                                    className="text-left text-xs leading-snug px-3 py-2 rounded-md border border-border hover:border-accent/40 hover:bg-accent/5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                                  >
+                                    {p}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {chatMessages.map((msg, i) => (
+                          <div key={i} className={`flex gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
+                            <div className={`shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-semibold ${
+                              msg.role === "user"
+                                ? "bg-muted text-foreground"
+                                : "bg-primary text-primary-foreground"
+                            }`}>
+                              {msg.role === "user"
+                                ? (firstName ? firstName[0]?.toUpperCase() : "Y")
+                                : <Bot className="w-3.5 h-3.5" />}
+                            </div>
+                            <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                              msg.role === "user"
+                                ? "bg-primary text-primary-foreground rounded-tr-sm"
+                                : "bg-muted/60 text-foreground rounded-tl-sm"
+                            }`}>
+                              {msg.role === "assistant" ? (
+                                <div className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_strong]:text-foreground [&_a]:text-accent">
+                                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                                </div>
+                              ) : <span className="whitespace-pre-wrap">{msg.content}</span>}
+                            </div>
+                          </div>
+                        ))}
+                        {chatLoading && chatMessages[chatMessages.length - 1]?.role === "user" && (
+                          <div className="flex gap-2.5">
+                            <div className="shrink-0 h-7 w-7 rounded-full flex items-center justify-center bg-primary text-primary-foreground">
+                              <Bot className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="bg-muted/60 rounded-2xl rounded-tl-sm px-4 py-3">
+                              <div className="flex gap-1">
+                                <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce" />
+                                <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: "0.15s" }} />
+                                <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: "0.3s" }} />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
-                </div>
-              )}
-            </div>
-            <div className="border-t border-border p-4 shrink-0">
-              <form onSubmit={(e) => { e.preventDefault(); sendChatMessage(chatInput); }} className="flex gap-2">
-                <Input
-                  value={chatInput}
-                  onChange={e => setChatInput(e.target.value)}
-                  placeholder={isRu ? "Спросите о поступлении..." : "Ask about admissions..."}
-                  className="text-sm"
-                  disabled={chatLoading}
-                />
-                <Button type="submit" size="icon" variant="gold" disabled={chatLoading || !chatInput.trim()}>
-                  <Send className="w-4 h-4" />
-                </Button>
-              </form>
-            </div>
-          </Card>
+
+                  <div className="border-t border-border p-3 shrink-0 bg-card">
+                    <form
+                      onSubmit={(e) => { e.preventDefault(); sendChatMessage(chatInput); }}
+                      className="flex items-end gap-2 rounded-xl border border-border bg-background focus-within:border-accent/40 focus-within:ring-2 focus-within:ring-accent/15 transition-all px-3 py-2"
+                    >
+                      <textarea
+                        ref={chatTextareaRef}
+                        value={chatInput}
+                        onChange={e => setChatInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            sendChatMessage(chatInput);
+                          }
+                        }}
+                        placeholder={isRu ? "Задайте вопрос... (Shift+Enter — новая строка)" : "Ask anything... (Shift+Enter for newline)"}
+                        rows={1}
+                        disabled={chatLoading}
+                        className="flex-1 resize-none bg-transparent border-0 outline-none text-sm leading-relaxed placeholder:text-muted-foreground/70 disabled:opacity-50 max-h-[140px]"
+                      />
+                      <Button type="submit" size="icon" variant="gold" disabled={chatLoading || !chatInput.trim()} className="h-8 w-8 shrink-0">
+                        <Send className="w-3.5 h-3.5" />
+                      </Button>
+                    </form>
+                    <p className="text-[10px] text-muted-foreground/70 mt-1.5 px-1">
+                      {t("Counselor uses your profile and report for context. Always sanity-check critical dates.",
+                         "Советник использует ваш профиль и отчёт. Всегда перепроверяйте важные даты.")}
+                    </p>
+                  </div>
+                </Card>
+              </div>
+            );
+          })()}
         </TabsContent>
 
       </Tabs>
