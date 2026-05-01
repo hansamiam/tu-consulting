@@ -10,7 +10,7 @@ import {
   Bot, Loader2, Send, ArrowLeft,
   Search, ArrowRight, Download, BookOpen, ExternalLink, Calendar, Zap,
   RotateCcw, Compass, PenLine, Wallet, FileText, Plane,
-  Lightbulb, AlertTriangle, Quote,
+  Lightbulb, AlertTriangle, Quote, Check,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
@@ -817,6 +817,81 @@ const InteractiveActionPlanOrFallback = (props: {
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/topuni-chat`;
 
+/* ─── Analysis progress — substantive loading state ───────────────────
+   Replaces the generic spinner the user used to see in the few seconds
+   before the AI's first stream chunk arrived. Steps tick through with
+   checkmarks at staggered intervals, so the wait feels like real work
+   is happening, not like the page is hung. */
+const AnalysisProgress = ({ profile, isRu }: {
+  profile: { fullName?: string; targetCountries?: string[] };
+  isRu: boolean;
+}) => {
+  const t = (en: string, ru: string) => (isRu ? ru : en);
+  const countryList = (profile.targetCountries || []).slice(0, 2).join(", ");
+  const steps = useMemo(() => [
+    t("Reading your academic profile and targets", "Читаем ваш профиль и цели"),
+    countryList
+      ? t(`Cross-referencing universities in ${countryList}`, `Сопоставляем университеты в ${countryList}`)
+      : t("Cross-referencing universities globally", "Сопоставляем университеты по всему миру"),
+    t("Pulling matched scholarships from our database", "Подбираем стипендии из нашей базы"),
+    t("Drafting your strategic brief", "Готовим стратегический брифинг"),
+  ], [countryList, isRu]);
+
+  const [done, setDone] = useState(0);
+  useEffect(() => {
+    setDone(0);
+    const intervals: ReturnType<typeof setTimeout>[] = [];
+    // Tick steps at 800ms, 1800ms, 3000ms, 4500ms — enough that the
+    // first stream chunk usually arrives by step 3 or 4.
+    [800, 1800, 3000, 4500].forEach((ms, i) => {
+      intervals.push(setTimeout(() => setDone(i + 1), ms));
+    });
+    return () => intervals.forEach(clearTimeout);
+  }, []);
+
+  return (
+    <div className="py-12 px-4 max-w-md mx-auto">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="h-px w-8 bg-gold-dark" />
+        <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark">
+          {t("Working", "Идёт работа")}
+        </span>
+      </div>
+      <h3 className="font-heading text-xl font-bold text-foreground tracking-tight mb-1">
+        {t("Building your strategic brief", "Готовим ваш стратегический брифинг")}
+      </h3>
+      <p className="text-xs text-muted-foreground mb-6">
+        {t("Usually takes 20–40 seconds. Stay on this page.",
+           "Обычно 20–40 секунд. Не закрывайте страницу.")}
+      </p>
+      <ul className="space-y-2.5">
+        {steps.map((label, i) => {
+          const isDone = i < done;
+          const isCurrent = i === done;
+          return (
+            <li key={i} className="flex items-center gap-3 text-sm">
+              <span className={`shrink-0 h-5 w-5 rounded-full flex items-center justify-center border transition-all ${
+                isDone
+                  ? "bg-gold-dark border-gold-dark text-white"
+                  : isCurrent
+                    ? "border-gold-dark/60 bg-gold-light/10"
+                    : "border-border bg-card"
+              }`}>
+                {isDone ? <Check className="w-3 h-3" strokeWidth={3} />
+                  : isCurrent ? <Loader2 className="w-3 h-3 animate-spin text-gold-dark" />
+                  : <span className="text-[10px] text-muted-foreground/60 tabular-nums">{i + 1}</span>}
+              </span>
+              <span className={`leading-snug transition-colors ${
+                isDone ? "text-foreground" : isCurrent ? "text-foreground font-medium" : "text-muted-foreground"
+              }`}>{label}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+};
+
 const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) => {
   const isRu = language === "ru";
   const t = (en: string, ru: string) => isRu ? ru : en;
@@ -1133,10 +1208,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                 </div>
               )}
               {pathwayLoading && !pathwayContent && (
-                <div className="flex flex-col items-center justify-center py-16 space-y-4">
-                  <Loader2 className="w-8 h-8 animate-spin text-accent" />
-                  <p className="text-muted-foreground text-sm">{t("Analyzing your profile and matching universities...", "Анализируем ваш профиль и подбираем университеты...")}</p>
-                </div>
+                <AnalysisProgress profile={profile} isRu={isRu} />
               )}
               {pathwayContent && (
                 <div id="printable-report" className="prose prose-sm max-w-none dark:prose-invert [&_h2]:text-foreground [&_h2]:font-heading [&_h2]:text-xl [&_h2]:mt-8 [&_h2]:mb-3 [&_h3]:text-foreground [&_h3]:font-heading [&_h3]:text-lg [&_h3]:mt-6 [&_h3]:mb-2 [&_p]:text-muted-foreground [&_li]:text-muted-foreground [&_strong]:text-foreground">
