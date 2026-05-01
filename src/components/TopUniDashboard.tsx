@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,6 +45,173 @@ type Msg = { role: "user" | "assistant"; content: string };
 // (TrackerItem interface removed along with the tracker tab.)
 
 const PATHWAY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/topuni-ai-pathway`;
+
+/* ─── Inline-markdown helper ──────────────────────────────────────────
+   Tiny renderer for the bold + italic inside a single line. Used by the
+   InteractiveActionPlan because we want plain checkbox-list rendering
+   but still want **bold** and *italic* to render as themselves. */
+const renderInline = (txt: string): React.ReactNode => {
+  const parts = txt.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  return parts.map((p, i) => {
+    if (p.startsWith("**") && p.endsWith("**")) return <strong key={i} className="font-semibold text-foreground">{p.slice(2, -2)}</strong>;
+    if (p.startsWith("*") && p.endsWith("*"))   return <em key={i} className="italic">{p.slice(1, -1)}</em>;
+    return <span key={i}>{p}</span>;
+  });
+};
+
+/* ─── Interactive action plan ─────────────────────────────────────────
+   Parses the "Your 90-day action plan" markdown section into structured
+   sub-sections (e.g. Weeks 1-2 / 3-6 / 7-12) and renders each bullet as
+   a checkbox the user can tick off. Completion state is persisted in
+   localStorage by stable text hash, so the user can come back to the
+   report and see their progress. */
+const InteractiveActionPlan = ({ markdown, completedTasks, onToggle, taskKey, isRu }: {
+  markdown: string;
+  completedTasks: Set<string>;
+  onToggle: (id: string) => void;
+  taskKey: (text: string) => string;
+  isRu: boolean;
+}) => {
+  const { title, blocks } = useMemo(() => {
+    const lines = markdown.split("\n");
+    let title = "";
+    const blocks: { heading: string; intro: string; items: string[] }[] = [];
+    let cur: typeof blocks[number] | null = null;
+    let pendingIntro: string[] = [];
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line) { pendingIntro = []; continue; }
+      if (line.startsWith("## ")) {
+        title = line.slice(3).trim();
+      } else if (line.startsWith("### ")) {
+        cur = { heading: line.slice(4).trim(), intro: "", items: [] };
+        blocks.push(cur);
+        pendingIntro = [];
+      } else if (cur && /^([-*]|\d+\.)\s+/.test(line)) {
+        const text = line.replace(/^([-*]|\d+\.)\s+/, "").trim();
+        if (text) cur.items.push(text);
+      } else if (cur && cur.items.length === 0 && !line.startsWith("#")) {
+        // Lines between a ### heading and the first bullet are treated as intro
+        pendingIntro.push(line);
+        cur.intro = pendingIntro.join(" ");
+      }
+    }
+    return { title, blocks };
+  }, [markdown]);
+
+  // No structured sub-sections yet → caller will fall back to plain markdown
+  if (blocks.length === 0 || blocks.every(b => b.items.length === 0)) return null;
+
+  const allKeys = blocks.flatMap(b => b.items.map(i => taskKey(i)));
+  const doneCount = allKeys.filter(k => completedTasks.has(k)).length;
+  const pct = allKeys.length > 0 ? Math.round((doneCount / allKeys.length) * 100) : 0;
+
+  return (
+    <div className="not-prose my-10">
+      <div className="flex items-baseline justify-between gap-3 mb-1">
+        <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground">{title || (isRu ? "Ваш 90-дневный план" : "Your 90-day action plan")}</h2>
+        <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+          <span className="text-foreground font-semibold">{doneCount}</span> / {allKeys.length} {isRu ? "сделано" : "done"}
+        </span>
+      </div>
+      {/* Progress bar */}
+      <div className="h-1 rounded-full bg-muted overflow-hidden mb-7">
+        <div
+          className="h-full bg-gradient-to-r from-gold-dark to-gold transition-[width] duration-500"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+
+      <div className="space-y-6">
+        {blocks.map((b, sIdx) => {
+          const blockKeys = b.items.map(i => taskKey(i));
+          const blockDone = blockKeys.filter(k => completedTasks.has(k)).length;
+          return (
+            <div key={sIdx}>
+              <div className="flex items-baseline justify-between mb-3">
+                <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold-dark">{b.heading}</h3>
+                <span className="text-[10px] text-muted-foreground tabular-nums">{blockDone} / {b.items.length}</span>
+              </div>
+              {b.intro && (
+                <p className="text-xs text-muted-foreground mb-3 leading-relaxed">{renderInline(b.intro)}</p>
+              )}
+              <div className="bg-card border border-border rounded-xl divide-y divide-border/60 overflow-hidden">
+                {b.items.map((text, iIdx) => {
+                  const id = taskKey(text);
+                  const done = completedTasks.has(id);
+                  return (
+                    <label key={iIdx} className="flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={done}
+                        onChange={() => onToggle(id)}
+                        className="mt-1 h-4 w-4 rounded border-border accent-gold-dark cursor-pointer shrink-0"
+                      />
+                      <span className={`text-sm leading-relaxed transition-colors ${done ? "text-muted-foreground line-through decoration-muted-foreground/40" : "text-foreground"}`}>
+                        {renderInline(text)}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+/* ─── Section-aware renderer ───────────────────────────────────────────
+   Splits the streaming markdown by ## headings. Routes the "action plan"
+   section to InteractiveActionPlan; everything else renders as standard
+   markdown. */
+const PATHWAY_PLAN_SECTION_REGEX = /^##\s+.*?(action plan|90.day|план действий)/i;
+
+const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu }: {
+  markdown: string;
+  completedTasks: Set<string>;
+  onToggle: (id: string) => void;
+  taskKey: (text: string) => string;
+  isRu: boolean;
+}) => {
+  const sections = useMemo(() => {
+    if (!markdown.trim()) return [] as string[];
+    return markdown.split(/(?=^##\s+)/m).filter(s => s.trim().length > 0);
+  }, [markdown]);
+
+  if (sections.length === 0) return null;
+
+  return (
+    <>
+      {sections.map((section, i) => {
+        if (PATHWAY_PLAN_SECTION_REGEX.test(section)) {
+          // Try to render as interactive plan; fall back to markdown if no items yet
+          return <InteractiveActionPlanOrFallback
+            key={i} markdown={section} completedTasks={completedTasks}
+            onToggle={onToggle} taskKey={taskKey} isRu={isRu}
+          />;
+        }
+        return <ReactMarkdown key={i}>{section}</ReactMarkdown>;
+      })}
+    </>
+  );
+};
+
+/* If the AI hasn't streamed in any list items yet for the plan section,
+   fall back to standard markdown so the user sees something during stream. */
+const InteractiveActionPlanOrFallback = (props: {
+  markdown: string;
+  completedTasks: Set<string>;
+  onToggle: (id: string) => void;
+  taskKey: (text: string) => string;
+  isRu: boolean;
+}) => {
+  const hasItems = /^\s*([-*]|\d+\.)\s+/m.test(props.markdown);
+  if (!hasItems) return <ReactMarkdown>{props.markdown}</ReactMarkdown>;
+  return <InteractiveActionPlan {...props} />;
+};
+
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/topuni-chat`;
 
 const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) => {
@@ -56,6 +223,31 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   const [pathwayContent, setPathwayContent] = useState("");
   const [pathwayLoading, setPathwayLoading] = useState(false);
   const [pathwayGenerated, setPathwayGenerated] = useState(false);
+
+  // Interactive action plan: track which planned tasks the user has completed.
+  // Keyed by stable hash of the task text (so the keys survive re-generation
+  // as long as the AI keeps the same wording, and gracefully reset when
+  // wording changes).
+  const [completedTasks, setCompletedTasks] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("topuni-tasks-done") || "[]")); }
+    catch { return new Set(); }
+  });
+  useEffect(() => {
+    localStorage.setItem("topuni-tasks-done", JSON.stringify([...completedTasks]));
+  }, [completedTasks]);
+  const toggleTask = (id: string) => {
+    setCompletedTasks(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const taskKey = (text: string) => {
+    // Cheap stable hash. Same text → same key, different text → different key.
+    let h = 0;
+    for (let i = 0; i < text.length; i++) h = ((h << 5) - h + text.charCodeAt(i)) | 0;
+    return `t${h.toString(36)}`;
+  };
 
   // Live scholarship matches — pulled from the database, scored against the
   // student's profile. The visual bridge from this report into Discover.
@@ -395,7 +587,13 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                     </div>
                   )}
 
-                  <ReactMarkdown>{pathwayContent}</ReactMarkdown>
+                  <ReportRenderer
+                    markdown={pathwayContent}
+                    completedTasks={completedTasks}
+                    onToggle={toggleTask}
+                    taskKey={taskKey}
+                    isRu={isRu}
+                  />
                   {pathwayLoading && <span className="inline-block w-2 h-4 bg-accent animate-pulse ml-1" />}
 
                   {/* Next steps — drives users into the rest of the funnel */}
