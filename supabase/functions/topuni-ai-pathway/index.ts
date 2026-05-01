@@ -60,79 +60,162 @@ serve(async (req) => {
 
     const lang = language === "ru" ? "Russian" : "English";
     
-    const basicSections = `Generate a pathway analysis with these sections (use markdown headers):
+    const basicSections = `Generate the student's pathway report. The output is rendered both on screen AND as a printable PDF the student can email to parents and bring to advising sessions. Use clean markdown — ## for major sections, ### for sub-sections, bullet lists for items.
 
-## Strategy Summary
-A personalized overview of their competitiveness and recommended approach.
+Required sections, in this exact order:
 
-## Recommended Universities
-Categorize into Stretch, Target, and Safety tiers. For each university, explain WHY it's a good fit. Include specific programs from the database.
+## Strategic positioning
+One paragraph (4-6 sentences). Where this student stands among international applicants this cycle, what their strongest signals are, what their biggest gap is. Be specific and quantitative — cite GPA in context, IELTS band relative to thresholds at the targets they listed, country competitiveness if relevant.
 
-## Scholarship Opportunities
-List specific scholarships that match their profile. Include deadlines.
+## Your university shortlist
+Pull 6-9 real universities from the database section above. Organize into three buckets, in this exact order, using exactly these labels:
 
-## Test Prep Recommendations
-Based on their current scores, recommend target scores and prep strategy.
+### Strong fits — apply with confidence
+3-4 universities where the student's profile aligns well. For each:
+- **University name** — one-line "why it fits you specifically"
+- Specific program from the database
+- Acceptance rate or selectivity context
 
-## Application Timeline
-A month-by-month action plan.
+### Aligned options — competitive but achievable
+2-3 universities where it's selective but realistic with a focused application. Same format.
 
-## Key Risks & Mitigation
-Honest assessment of challenges.
+### Worth keeping on the radar
+1-2 universities to track for next cycle or with stronger prep. Same format.
 
-Be specific, use real data from the database, and be honest about competitiveness.`;
+Do NOT invent universities. Pull only from the database section above.
 
-    const premiumSections = `Generate an EXHAUSTIVE, DEEPLY PERSONALIZED hyper-intelligence report. This is our PREMIUM tier — go significantly deeper than a standard report. Cover ALL of the following sections in comprehensive detail:
+## Your funding pathway
+3-5 specific scholarships from the database that match this profile. For each:
+- **Scholarship name** — award amount and coverage type
+- Why this student is a real candidate
+- Application timing and deadline if known
+Be honest about probability. Mark each as a primary target, secondary option, or stretch.
 
-## Executive Summary
-Detailed competitive analysis including percentile positioning among international applicants.
+## Your 90-day action plan
+A week-by-week sequence starting from today. Group as:
 
-## University Matches (15-20 universities)
-For EACH university, provide:
-- Fit percentage (0-100%) with justification
-- Tier classification: Safety / Target / Reach / Dream
-- Specific program recommendations with admission requirements
+### Weeks 1–2 — Foundation
+2-3 concrete actions
+
+### Weeks 3–6 — Drafting
+2-3 concrete actions
+
+### Weeks 7–12 — Submission
+2-3 concrete actions
+
+Reference the student's specific scores and target countries. Concrete actions only — no "research more" filler.
+
+## Three essay angles
+Three distinct narrative angles this student could lead with. For each:
+- **One-sentence concept**
+- Why it differentiates this candidate
+- A specific story or detail to anchor it
+
+## Honest gaps to close
+1-3 specific weaknesses in the profile and concrete steps to address each. No softening — the parent reading this should see exactly what to work on.
+
+## Next steps
+Two short paragraphs:
+- **In Discover** (TopUni's scholarship database): your full ranked match list with strategy notes is waiting there. Mention 2-3 specific scholarships the student should review first based on their profile.
+- **In Academy**: live monthly workshops with our founders go deeper on essay strategy, country deep-dives, and admissions interview prep — useful as the student moves into drafting.
+
+Then close with one sentence of specific encouragement based on this student's strongest signal.
+
+Throughout the report:
+- Be specific, use real data from the database, name names, cite numbers
+- Avoid the words "stretch," "long shot," "real shot," "safety school"
+- Avoid generic advice — every sentence should be specific to this student
+- Write in a confident, direct voice the student would respect`;
+
+    const premiumSections = `Generate an EXHAUSTIVE, DEEPLY PERSONALIZED report. This is the premium tier — go significantly deeper than a basic report. The output is rendered both on screen AND as a printable PDF the student keeps as a reference document. Use clean markdown.
+
+Required sections, in this exact order:
+
+## Strategic positioning
+2-3 paragraphs. Quantitative competitive analysis: GPA percentile context, IELTS band relative to thresholds at target countries, where this profile is strongest, where it is weakest. End with the single most important strategic call this student should make in the next 30 days.
+
+## Your university shortlist (15-20 universities)
+Pull 15-20 real universities from the database. Organize into three buckets:
+
+### Strong fits — apply with confidence
+6-8 universities. For each:
+- **University name** — fit score (0-100%) with one-line justification
+- Specific program(s) with admission requirements (IELTS, GPA cutoff)
 - Historical acceptance rate context
-- Unique selling points for THIS student specifically
+- One unique selling point specific to this student
 
-## Career ROI Analysis
-For each recommended university:
-- Average starting salary for their target field
-- Employment rate within 6 months
-- Industry connections and notable employers
-- Long-term career trajectory projection
+### Aligned options — competitive but achievable
+5-7 universities. Same format.
 
-## Scholarship Deep Dive
-- Probability assessment for each scholarship (Low/Medium/High)
-- Application strategy and timeline for EACH scholarship
-- Combined funding scenarios (multiple scholarships)
-- Alternative funding sources (government grants, private foundations)
+### Worth keeping on the radar
+3-5 universities. Same format.
 
-## Visa & Immigration Pathway
-- Post-graduation work visa details per country
+Do NOT invent universities. Pull from the database section only.
+
+## Career ROI breakdown
+For each top-3 recommended university (the strongest 3 fits):
+- Typical starting salary range in this student's target field
+- Employment rate within 6 months of graduation
+- Notable employers from each program
+- Long-term trajectory (where alumni are 5-10 years later)
+
+## Funding deep-dive
+For each shortlist of 4-6 scholarships:
+- **Scholarship name** with award amount
+- Probability assessment: primary target / secondary / stretch
+- Specific application strategy and timeline
+- Key documents this student needs to start gathering now
+
+Then add a sub-section:
+
+### Combined funding scenarios
+2-3 plausible combinations of scholarships, partial aid, and country-specific need-based programs that could fully fund this student. Estimate total funding for each scenario.
+
+## Visa and post-graduation pathway
+For each of the student's top 3 target countries:
+- Student visa difficulty (specific to this student's nationality)
+- Post-study work visa details and duration
 - Path to permanent residency timeline
-- Visa difficulty score and mitigation strategies
+- Realistic challenges this student should plan for
 
-## Personalized Essay Angles
-- 3-5 unique essay topic suggestions tailored to their background
-- How to differentiate from other Central Asian applicants
-- University-specific supplemental essay guidance
+## Three personalized essay angles
+For each:
+- **One-sentence concept**
+- Why it differentiates this specific candidate
+- A specific story or detail from the student's profile to anchor it
+- Which target universities each angle plays best to
 
-## Monthly Budget Breakdown
-For top 5 recommended cities:
-- Rent, food, transport, insurance, entertainment
-- Part-time work opportunities and typical earnings
+## Monthly budget breakdown
+For the top 3 recommended cities:
+- Rent, food, transport, insurance, books, leisure (realistic ranges)
+- Part-time work options and typical earnings if visa allows
+- Total monthly cost and how scholarship coverage maps onto it
 
-## Risk Matrix
-Detailed risk assessment with probability and impact ratings.
-Mitigation strategy for each identified risk.
+## Honest gaps to close
+2-3 specific weaknesses in the profile. For each, the concrete 30-60 day plan to close it.
 
-## 90-Day Action Plan
-Week-by-week actionable steps starting from TODAY.
+## 90-day action plan
+Week-by-week from today, grouped as Weeks 1-2 / 3-6 / 7-12. 3-4 concrete actions per group, with specific deliverables.
 
-Be exceptionally thorough. This report should feel like it was written by a team of 5 expert advisors who spent 3 hours analyzing this student's profile.`;
+## Next steps
+Two short paragraphs:
+- **In Discover** (the scholarship database): name 3-5 specific scholarships the student should open first.
+- **In Academy**: live monthly workshops with our founders. Mention which workshop topic this student would benefit from most.
 
-    const systemPrompt = `You are TopUni AI — the world's most advanced university pathway intelligence system. You create ${grade === "premium" ? "exhaustive, deeply personalized hyper-intelligence reports" : "focused, actionable pathway analyses"} for students from Central Asia.
+Close with one sentence of specific encouragement based on the student's strongest signal.
+
+Throughout:
+- Be exceptionally specific. This is the premium tier — every paragraph should feel hand-written for this student.
+- Use real data from the database — name universities, programs, scholarships, deadlines.
+- Avoid the words "stretch," "long shot," "real shot," "safety school."
+- Confident, direct voice. The student should feel respected.`;
+
+    const studentNationality = (profile.nationality || "").trim();
+    const audienceLine = studentNationality
+      ? `for ambitious students applying internationally (this student is from ${studentNationality})`
+      : `for ambitious students applying internationally from anywhere in the world`;
+
+    const systemPrompt = `You are TopUni AI — a thoughtful university admissions strategist that produces ${grade === "premium" ? "exhaustive, deeply personalized strategy reports" : "focused, actionable pathway analyses"} ${audienceLine}.
 
 You MUST respond in ${lang}.
 
