@@ -662,6 +662,75 @@ const HonestGaps = ({ markdown, isRu }: { markdown: string; isRu: boolean }) => 
   );
 };
 
+/* ─── Strategic positioning → executive brief + 30-day call pull-quote ──
+   Renders the report's opening section as an editorial brief: heading +
+   body paragraphs in serif, and the explicitly-marked "**Your 30-day
+   call:** …" line lifted out into a gold-bordered pull-quote. Falls
+   back to plain markdown if the call marker isn't present (e.g. legacy
+   reports generated before the prompt update). */
+const StrategicPositioning = ({ markdown, isRu }: { markdown: string; isRu: boolean }) => {
+  const { title, body, call } = useMemo(() => {
+    const lines = markdown.split("\n");
+    let title = "";
+    const bodyLines: string[] = [];
+    let call = "";
+    const callRegex = /^\*\*\s*(your 30-day call|30-day call|ваш стратегический шаг|стратегический шаг|30-дневный шаг)\s*[:.]?\*\*\s*(.+)$/i;
+    const altCallRegex = /^\s*(your 30-day call|30-day call|ваш стратегический шаг)\s*[:.]\s*(.+)$/i;
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line) { bodyLines.push(""); continue; }
+      if (line.startsWith("## ")) {
+        title = line.slice(3).trim();
+        continue;
+      }
+      const m = line.match(callRegex) || line.match(altCallRegex);
+      if (m && !call) {
+        call = m[2].trim().replace(/\*+/g, "");
+      } else {
+        bodyLines.push(line);
+      }
+    }
+    // Trim trailing blanks
+    while (bodyLines.length && bodyLines[bodyLines.length - 1] === "") bodyLines.pop();
+    return { title, body: bodyLines.join("\n").trim(), call };
+  }, [markdown]);
+
+  if (!body && !call) return null;
+
+  return (
+    <div className="not-prose my-10">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="h-px w-8 bg-gold-dark" />
+        <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark">
+          {isRu ? "Стратегический брифинг" : "Strategic brief"}
+        </span>
+      </div>
+      <h2 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground mb-4 leading-tight">
+        {title || (isRu ? "Стратегическое позиционирование" : "Strategic positioning")}
+      </h2>
+      {body && (
+        <div className="prose prose-sm sm:prose-base max-w-none text-foreground/90 [&_p]:leading-relaxed [&_p]:mb-3">
+          <ReactMarkdown>{body}</ReactMarkdown>
+        </div>
+      )}
+      {call && (
+        <div className="mt-6 relative bg-gradient-to-br from-gold-light/10 to-card border-l-[3px] border-gold-dark rounded-r-xl rounded-l-sm p-5 sm:p-6">
+          <div className="flex items-center gap-1.5 mb-2">
+            <Quote className="w-4 h-4 text-gold-dark" />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold-dark">
+              {isRu ? "Ваш шаг на 30 дней" : "Your 30-day call"}
+            </span>
+          </div>
+          <p className="font-heading text-lg sm:text-xl leading-snug text-foreground tracking-tight">
+            {renderInline(call)}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PATHWAY_POS_SECTION_REGEX = /^##\s+.*?(strategic positioning|positioning|стратегическое позиционирование|позиционирование)/i;
 const PATHWAY_PLAN_SECTION_REGEX = /^##\s+.*?(action plan|90.day|план действий)/i;
 const PATHWAY_UNIS_SECTION_REGEX = /^##\s+.*?(university shortlist|your university|шорт.лист университетов)/i;
 const PATHWAY_FUND_SECTION_REGEX = /^##\s+.*?(funding pathway|funding deep|финансирование|стипендии)/i;
@@ -687,6 +756,13 @@ const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onO
   return (
     <>
       {sections.map((section, i) => {
+        if (PATHWAY_POS_SECTION_REGEX.test(section)) {
+          // Stream-safe: render once we have at least one body line beyond the heading
+          const hasBody = section.split("\n").slice(1).join("\n").trim().length > 30;
+          if (hasBody) {
+            return <StrategicPositioning key={i} markdown={section} isRu={isRu} />;
+          }
+        }
         if (PATHWAY_PLAN_SECTION_REGEX.test(section)) {
           return <InteractiveActionPlanOrFallback
             key={i} markdown={section} completedTasks={completedTasks}

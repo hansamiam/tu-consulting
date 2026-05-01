@@ -67,6 +67,10 @@ Required sections, in this exact order:
 ## Strategic positioning
 One paragraph (4-6 sentences). Where this student stands among international applicants this cycle, what their strongest signals are, what their biggest gap is. Be specific and quantitative — cite GPA in context, IELTS band relative to thresholds at the targets they listed, country competitiveness if relevant.
 
+After the paragraph, on its own line, output exactly:
+
+**Your 30-day call:** [one specific, single-sentence strategic action this student should take in the next 30 days]
+
 ## Your university shortlist
 Pull 6-9 real universities from the database section above. Organize into three buckets, in this exact order, using exactly these labels:
 
@@ -132,7 +136,11 @@ Throughout the report:
 Required sections, in this exact order:
 
 ## Strategic positioning
-2-3 paragraphs. Quantitative competitive analysis: GPA percentile context, IELTS band relative to thresholds at target countries, where this profile is strongest, where it is weakest. End with the single most important strategic call this student should make in the next 30 days.
+2-3 paragraphs. Quantitative competitive analysis: GPA percentile context, IELTS band relative to thresholds at target countries, where this profile is strongest, where it is weakest.
+
+After the paragraphs, on its own line, output exactly:
+
+**Your 30-day call:** [one specific, single-sentence strategic action this student should take in the next 30 days]
 
 ## Your university shortlist (15-20 universities)
 Pull 15-20 real universities from the database. Organize into three buckets:
