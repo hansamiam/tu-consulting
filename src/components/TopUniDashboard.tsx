@@ -1143,9 +1143,16 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       });
     };
 
+    // Hand the chat function the profile + a slim summary of the student's
+    // strategy report so the counselor can answer with specifics instead of
+    // asking the student to repeat themselves.
+    const reportSummary = pathwayContent
+      ? pathwayContent.slice(0, 4000)
+      : "";
+
     await streamSSE(
       CHAT_URL,
-      { messages: allMessages, language },
+      { messages: allMessages, language, profile, reportSummary },
       (chunk) => upsertAssistant(chunk),
       () => setChatLoading(false)
     );
