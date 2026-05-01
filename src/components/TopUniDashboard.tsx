@@ -10,6 +10,7 @@ import {
   Bot, Loader2, Send, ArrowLeft,
   Search, ArrowRight, Download, BookOpen, ExternalLink, Calendar, Zap,
   RotateCcw, Compass, PenLine, Wallet, FileText, Plane,
+  Lightbulb, AlertTriangle, Quote,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
@@ -423,9 +424,249 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover }: {
    Splits the streaming markdown by ## headings. Routes specific sections
    (action plan, university shortlist, funding pathway) to custom
    renderers; everything else renders as standard markdown. */
+/* ─── Essay angles → narrative cards ──────────────────────────────────
+   The AI generates 3 distinct essay angles, each with a concept + why-it-
+   differentiates + anchor story. Renders as 3 numbered narrative cards
+   instead of a flat bulleted list, so each angle reads as a real
+   strategic option the student can pick from. */
+const EssayAngles = ({ markdown, isRu }: { markdown: string; isRu: boolean }) => {
+  const { title, angles } = useMemo(() => {
+    const lines = markdown.split("\n");
+    let title = "";
+    const angles: { concept: string; body: string[] }[] = [];
+    let cur: typeof angles[number] | null = null;
+    let pendingBody: string[] = [];
+
+    const startAngle = (concept: string) => {
+      if (cur && pendingBody.length) cur.body = pendingBody.slice();
+      pendingBody = [];
+      cur = { concept: concept.trim().replace(/^\*+|\*+$/g, ""), body: [] };
+      angles.push(cur);
+    };
+    const finishCurrent = () => {
+      if (cur && pendingBody.length) {
+        cur.body = pendingBody.slice();
+        pendingBody = [];
+      }
+    };
+
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line) { continue; }
+      if (line.startsWith("## ")) {
+        title = line.slice(3).trim();
+      } else if (line.startsWith("### ")) {
+        finishCurrent();
+        startAngle(line.slice(4).trim());
+      } else if (/^\*\*([^*]+)\*\*\s*[:.—–-]?\s*$/.test(line)) {
+        // Standalone bold heading-like line — treat as a new angle title
+        finishCurrent();
+        const m = line.match(/^\*\*([^*]+)\*\*/);
+        if (m) startAngle(m[1]);
+      } else if (/^(\d+\.)\s+\*\*/.test(line)) {
+        // "1. **Concept**: rest..." style
+        finishCurrent();
+        const m = line.match(/^\d+\.\s+\*\*([^*]+)\*\*\s*[:.—–-]?\s*(.*)$/);
+        if (m) {
+          startAngle(m[1]);
+          if (m[2]) pendingBody.push(m[2].trim());
+        }
+      } else if (/^[-*]\s+/.test(line) && cur) {
+        pendingBody.push(line.replace(/^[-*]\s+/, "").trim());
+      } else if (cur) {
+        pendingBody.push(line);
+      }
+    }
+    finishCurrent();
+
+    // Filter out empty angles, cap at 3
+    return { title, angles: angles.filter(a => a.concept && a.body.length > 0).slice(0, 3) };
+  }, [markdown]);
+
+  if (angles.length === 0) return null;
+
+  return (
+    <div className="not-prose my-10">
+      <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground mb-1">
+        {title || (isRu ? "Три угла для эссе" : "Three essay angles")}
+      </h2>
+      <p className="text-sm text-muted-foreground mb-6">
+        {isRu
+          ? "Три различных нарратива, которые вы можете развить. Каждый — реальный стратегический выбор."
+          : "Three distinct narratives you could lead with. Each is a real strategic choice."}
+      </p>
+      <div className="grid md:grid-cols-3 gap-3">
+        {angles.map((a, i) => (
+          <div
+            key={i}
+            className="relative bg-card border border-border rounded-xl p-5 overflow-hidden flex flex-col"
+          >
+            <div className="absolute top-0 inset-x-0 h-[2px] bg-gold-dark/50" />
+            <div className="flex items-center gap-2 mb-3">
+              <span className="h-6 w-6 rounded-full bg-gold-dark/10 text-gold-dark text-[11px] font-semibold flex items-center justify-center">
+                {i + 1}
+              </span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                {isRu ? "Угол" : "Angle"}
+              </span>
+            </div>
+            <h4 className="font-heading font-semibold text-base text-foreground tracking-tight leading-snug mb-3">
+              {a.concept}
+            </h4>
+            <div className="space-y-2 text-xs text-muted-foreground leading-relaxed flex-1">
+              {a.body.map((b, j) => (
+                <p key={j}>{renderInline(b)}</p>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* ─── Honest gaps → severity-coded action cards ───────────────────────
+   The AI lists 1-3 specific weaknesses with concrete steps. Each becomes
+   a card with a severity strip (red/amber/blue) auto-detected from the
+   gap text + an "Action" footer that pulls out the action-step bullet
+   if the AI distinguished it. */
+const HonestGaps = ({ markdown, isRu }: { markdown: string; isRu: boolean }) => {
+  const { title, gaps } = useMemo(() => {
+    const lines = markdown.split("\n");
+    let title = "";
+    const gaps: { headline: string; body: string[]; action: string }[] = [];
+    let cur: typeof gaps[number] | null = null;
+    let pendingBody: string[] = [];
+
+    const finish = () => {
+      if (cur) {
+        cur.body = pendingBody.slice();
+        pendingBody = [];
+      }
+    };
+    const start = (headline: string) => {
+      finish();
+      cur = { headline: headline.trim().replace(/^\*+|\*+$/g, "").trim(), body: [], action: "" };
+      gaps.push(cur);
+    };
+
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line) continue;
+      if (line.startsWith("## ")) {
+        title = line.slice(3).trim();
+      } else if (line.startsWith("### ")) {
+        start(line.slice(4).trim());
+      } else if (/^(\d+\.)\s+\*\*/.test(line)) {
+        const m = line.match(/^\d+\.\s+\*\*([^*]+)\*\*\s*[:.—–-]?\s*(.*)$/);
+        if (m) {
+          start(m[1]);
+          if (m[2]) pendingBody.push(m[2].trim());
+        }
+      } else if (/^(\d+\.)\s+/.test(line)) {
+        start(line.replace(/^\d+\.\s+/, ""));
+      } else if (/^[-*]\s+\*\*/.test(line)) {
+        const m = line.match(/^[-*]\s+\*\*([^*]+)\*\*\s*[:.—–-]?\s*(.*)$/);
+        if (m) {
+          start(m[1]);
+          if (m[2]) pendingBody.push(m[2].trim());
+        }
+      } else if (/^[-*]\s+/.test(line) && cur) {
+        pendingBody.push(line.replace(/^[-*]\s+/, "").trim());
+      } else if (cur) {
+        pendingBody.push(line);
+      }
+    }
+    finish();
+
+    // Pull out an action bullet if one of the body lines starts with
+    // "Action:" / "Plan:" / "Next:" — promote it to the action footer.
+    const actionRegex = /^(action|plan|next step|next|to do|fix|шаг|план|действие)\s*[:—–-]\s*(.+)$/i;
+    return {
+      title,
+      gaps: gaps.map(g => {
+        const idx = g.body.findIndex(b => actionRegex.test(b));
+        if (idx >= 0) {
+          const m = g.body[idx].match(actionRegex);
+          return {
+            ...g,
+            body: g.body.filter((_, i) => i !== idx),
+            action: m?.[2]?.trim() || "",
+          };
+        }
+        return g;
+      }).filter(g => g.headline),
+    };
+  }, [markdown]);
+
+  if (gaps.length === 0) return null;
+
+  // Severity heuristic: if the gap text mentions tests/scores/GPA → high (red),
+  // language/IELTS → medium (amber), everything else → low (navy/info).
+  const severityFor = (g: { headline: string; body: string[] }) => {
+    const blob = (g.headline + " " + g.body.join(" ")).toLowerCase();
+    if (/gpa|sat|act|gre|gmat|score|test|exam|fail/.test(blob))
+      return { strip: "bg-destructive", label: isRu ? "Высокий приоритет" : "High priority", labelClass: "text-destructive" };
+    if (/ielts|toefl|english|language|essay|writing|portfolio|extracurricular/.test(blob))
+      return { strip: "bg-amber-500", label: isRu ? "Средний приоритет" : "Medium priority", labelClass: "text-amber-600 dark:text-amber-500" };
+    return { strip: "bg-primary", label: isRu ? "Стоит закрыть" : "Worth closing", labelClass: "text-primary" };
+  };
+
+  return (
+    <div className="not-prose my-10">
+      <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground mb-1">
+        {title || (isRu ? "Где честно недотягиваете" : "Honest gaps to close")}
+      </h2>
+      <p className="text-sm text-muted-foreground mb-6">
+        {isRu
+          ? "Никакой сахарной пудры — это слабые места, которые читают приёмные комиссии. И что с ними делать."
+          : "No softening — these are the weak spots admissions readers will see, and what to do about each."}
+      </p>
+      <div className="space-y-3">
+        {gaps.map((g, i) => {
+          const sev = severityFor(g);
+          return (
+            <div
+              key={i}
+              className="relative bg-card border border-border rounded-xl pl-5 pr-5 py-4 overflow-hidden"
+            >
+              <div className={`absolute left-0 inset-y-0 w-[3px] ${sev.strip}`} />
+              <div className="flex items-baseline justify-between gap-3 mb-1.5">
+                <h4 className="font-heading font-semibold text-[15px] text-foreground tracking-tight leading-snug">
+                  {g.headline}
+                </h4>
+                <span className={`text-[10px] font-semibold uppercase tracking-[0.18em] shrink-0 ${sev.labelClass}`}>
+                  {sev.label}
+                </span>
+              </div>
+              {g.body.length > 0 && (
+                <div className="space-y-1.5 text-xs text-muted-foreground leading-relaxed">
+                  {g.body.map((b, j) => (
+                    <p key={j}>{renderInline(b)}</p>
+                  ))}
+                </div>
+              )}
+              {g.action && (
+                <div className="mt-3 pt-3 border-t border-border/60 flex items-start gap-2">
+                  <Zap className="w-3.5 h-3.5 text-gold-dark mt-0.5 shrink-0" />
+                  <p className="text-xs font-medium text-foreground leading-relaxed">
+                    {renderInline(g.action)}
+                  </p>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 const PATHWAY_PLAN_SECTION_REGEX = /^##\s+.*?(action plan|90.day|план действий)/i;
 const PATHWAY_UNIS_SECTION_REGEX = /^##\s+.*?(university shortlist|your university|шорт.лист университетов)/i;
 const PATHWAY_FUND_SECTION_REGEX = /^##\s+.*?(funding pathway|funding deep|финансирование|стипендии)/i;
+const PATHWAY_ESSAYS_SECTION_REGEX = /^##\s+.*?(essay angle|essay angles|углов? для эссе|эссе)/i;
+const PATHWAY_GAPS_SECTION_REGEX = /^##\s+.*?(honest gap|gaps to close|пробел|недотяг|слабые)/i;
 
 const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onOpenDiscover, liveMatches }: {
   markdown: string;
@@ -463,6 +704,19 @@ const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onO
           const hasBullets = /^\s*([-*]|\d+\.)\s+/m.test(section);
           if (hasBullets) {
             return <FundingShortlist key={i} markdown={section} liveMatches={liveMatches} isRu={isRu} onOpenDiscover={onOpenDiscover} />;
+          }
+        }
+        if (PATHWAY_ESSAYS_SECTION_REGEX.test(section)) {
+          // Stream-safe: only flip once we have something to render
+          const hasContent = /^\s*([-*]|\d+\.|\#)\s+/m.test(section.split("\n").slice(1).join("\n"));
+          if (hasContent) {
+            return <EssayAngles key={i} markdown={section} isRu={isRu} />;
+          }
+        }
+        if (PATHWAY_GAPS_SECTION_REGEX.test(section)) {
+          const hasContent = /^\s*([-*]|\d+\.|\#)\s+/m.test(section.split("\n").slice(1).join("\n"));
+          if (hasContent) {
+            return <HonestGaps key={i} markdown={section} isRu={isRu} />;
           }
         }
         return <ReactMarkdown key={i}>{section}</ReactMarkdown>;
