@@ -10,10 +10,10 @@ const features = [
   "Application Vault — real accepted SOPs, essays, CVs",
   "Learning paths with progress tracking",
   "Community lounge & peer review rooms",
-  "Weekly live Q&A sessions",
+  "Live Q&A sessions with our founders",
   "Template & checklist downloads",
   "Priority mentor matching",
-  "New content every week",
+  "Recordings library that compounds over time",
 ];
 
 export const SubscriptionBanner = () => {

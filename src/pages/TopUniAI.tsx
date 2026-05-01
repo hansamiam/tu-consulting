@@ -180,7 +180,7 @@ const TopUniAI = () => {
                       One plan. Two products to execute it.
                     </h2>
                     <p className="text-muted-foreground mt-4 text-base leading-relaxed">
-                      Once your strategy is generated, your scholarships are waiting in Discover and your application playbook lives in Academy.
+                      Once your strategy is generated, your scholarships are waiting in Discover and your live workshops happen in Academy.
                     </p>
                   </motion.div>
 

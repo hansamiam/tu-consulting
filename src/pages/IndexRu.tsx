@@ -147,12 +147,12 @@ const IndexRu = () => {
           <div className="max-w-6xl mx-auto px-5 sm:px-8">
             <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-start">
               <motion.div {...fadeUp()} className="lg:col-span-5">
-                <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">Academy · старт 10 мая</p>
+                <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">Academy</p>
                 <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-5">
-                  Application playbook.
+                  Application advantage.
                 </h2>
                 <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-                  Воркшопы, страновые гайды, реальные эссе и практичные тактики. Новое каждую неделю.
+                  Воркшопы с основателями, страновые гайды и принятые эссе — применяйте, пока пишете свои.
                 </p>
                 <Button onClick={() => navigate('/academy')} variant="gold" className="gap-2">
                   Превью Academy <ArrowRight className="h-4 w-4" />

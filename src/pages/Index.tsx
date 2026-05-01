@@ -39,8 +39,8 @@ const STEPS = [
   },
   {
     n: "03",
-    title: "Execute with the playbook",
-    body: "Workshops, country guides, real admitted essays. New material every week from May 10.",
+    title: "Execute with our team",
+    body: "Workshops with our founders, country guides, and admitted essays — applied as you write your own.",
     detail: "Academy",
     path: "/academy",
   },
@@ -202,10 +202,10 @@ const Index = () => {
             <motion.div {...fadeUp()} className="max-w-3xl mx-auto text-center mb-14 sm:mb-16">
               <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">Team</p>
               <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-5">
-                Built with alumni insight.
+                Built with expert insight.
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed">
-                Yale, Harvard, Cambridge, Tsinghua — concise guidance from people who know the process.
+                Yale, Harvard, Cambridge, Tsinghua.
               </p>
             </motion.div>
 
@@ -249,7 +249,7 @@ const Index = () => {
               Academy
             </motion.p>
             <motion.h2 {...fadeUp(0.05)} className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-5">
-              The application playbook.
+              The application advantage.
             </motion.h2>
             <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-lg leading-relaxed mb-8 max-w-xl mx-auto">
               Workshops with our founders, country guides, and admitted essays. Recordings live in your library so you can return to them.

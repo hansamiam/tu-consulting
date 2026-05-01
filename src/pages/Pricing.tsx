@@ -25,7 +25,7 @@ const VALUE_STACK = [
   },
   {
     title: "Full Discover database with strategy notes",
-    body: "Every ranked scholarship match with how-to-win playbooks, ideal-candidate profiles, and common rejection patterns.",
+    body: "Every ranked scholarship match with how-to-win strategy notes, ideal-candidate profiles, and common rejection patterns.",
     value: "$199",
   },
   {

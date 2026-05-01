@@ -8,7 +8,7 @@ import { countryGuides } from "@/data/countryGuides";
 import heroImage from "@/assets/hero-campus.jpg";
 
 // Compact magazine layout. Blurred campus backdrop (matches other pages),
-// sliding country playbook tiles, tight vertical rhythm.
+// sliding country-guide tiles, tight vertical rhythm.
 const Blog = () => {
   const navigate = useNavigate();
   const featured = blogArticles[0];
@@ -42,11 +42,11 @@ const Blog = () => {
 
       <main className="max-w-6xl mx-auto px-6 lg:px-10 py-10 lg:py-14 space-y-12 lg:space-y-14">
 
-        {/* Country playbooks — sliding rail */}
+        {/* Country guides — sliding rail */}
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-heading text-xl lg:text-2xl font-bold tracking-tight">
-              Country playbooks
+              Country guides
             </h2>
             <div className="flex gap-1.5">
               <button

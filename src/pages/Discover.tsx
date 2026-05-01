@@ -1469,7 +1469,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                     </div>
                     <h4 className="font-heading font-bold text-base text-foreground mb-1.5">Strategy notes are members-only</h4>
                     <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-                      Ideal candidate profile, how-to-win playbook, common rejection reasons, and warnings are part of Founding Pro.
+                      Ideal candidate profile, how-to-win strategy, common rejection reasons, and warnings are part of Founding Pro.
                     </p>
                     <Button variant="gold" size="sm" className="w-full gap-2" onClick={onUnlock}>
                       <Sparkles className="h-3.5 w-3.5" /> Unlock for $19/mo
@@ -2947,7 +2947,7 @@ const Discover = ({ language = "en" }: Props) => {
                   </SheetTitle>
                   <p className="text-primary-foreground/65 text-sm leading-relaxed pt-1 text-left">
                     {paywallOpen === "shortlist" && `You've saved your free ${SHORTLIST_FREE_LIMIT}. Founding Pro members keep an unlimited shortlist plus per-scholarship status tracking and notes.`}
-                    {paywallOpen === "strategy" && "Strategy notes — ideal-candidate profile, how-to-win playbook, common rejection reasons, weak-candidate warnings — are part of the Founding Pro membership."}
+                    {paywallOpen === "strategy" && "Strategy notes — ideal-candidate profile, how-to-win approach, common rejection reasons, weak-candidate warnings — are part of the Founding Pro membership."}
                     {paywallOpen === "compare" && "Compare up to three scholarships side-by-side as a Founding Pro member."}
                   </p>
                 </SheetHeader>
@@ -2956,7 +2956,7 @@ const Discover = ({ language = "en" }: Props) => {
             <div className="px-7 py-6 space-y-5">
               <div className="space-y-2.5 text-sm text-foreground/85">
                 {[
-                  "Full database — all 75 scholarships with strategy notes, rejection patterns, and how-to-win playbooks.",
+                  "Full database — all 75 scholarships with strategy notes, rejection patterns, and how-to-win approaches.",
                   "Live monthly workshops with our founders — Yale, Schwarzman/Cambridge, Harvard.",
                   "Recordings library — every workshop saved for you.",
                   "Unlimited shortlist + status tracking + notes.",

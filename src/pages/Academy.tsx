@@ -13,7 +13,7 @@ import { toast } from "sonner";
 
 const PILLARS = [
   { icon: Video, title: "Live workshops", body: "Small-group sessions on essays, interviews, and scholarship strategy." },
-  { icon: FileText, title: "Country playbooks", body: "Step-by-step guides per destination — deadlines, docs, common pitfalls." },
+  { icon: FileText, title: "Country guides", body: "Step-by-step guides per destination — deadlines, docs, common pitfalls." },
   { icon: BookOpen, title: "Tailored advising tracks", body: "Curated learning paths based on your target country and degree." },
   { icon: MessageSquare, title: "Group office hours", body: "Live Q&A with our advisors as you build your application." },
 ];
@@ -51,7 +51,7 @@ const Academy = () => {
             TopUni <span className="text-gold">Academy</span>
           </motion.h1>
           <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-primary-foreground/75 text-lg max-w-xl mx-auto">
-            Workshops, country playbooks, and tailored advising tracks for serious applicants.
+            Workshops, country guides, and tailored advising tracks for serious applicants.
           </motion.p>
         </div>
       </section>
