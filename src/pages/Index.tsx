@@ -236,7 +236,7 @@ const Index = () => {
                 onClick={() => navigate('/team')}
                 className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-gold-dark transition-colors"
               >
-                Meet the full team <ArrowRight className="h-4 w-4" />
+                Meet the team <ArrowRight className="h-4 w-4" />
               </button>
             </motion.div>
           </div>
