@@ -162,18 +162,129 @@ const InteractiveActionPlan = ({ markdown, completedTasks, onToggle, taskKey, is
   );
 };
 
-/* ─── Section-aware renderer ───────────────────────────────────────────
-   Splits the streaming markdown by ## headings. Routes the "action plan"
-   section to InteractiveActionPlan; everything else renders as standard
-   markdown. */
-const PATHWAY_PLAN_SECTION_REGEX = /^##\s+.*?(action plan|90.day|план действий)/i;
+/* ─── University shortlist → card grid ───────────────────────────────
+   Parses the "Your university shortlist" section into the three buckets
+   defined by ### sub-headings (Strong fits / Aligned / Worth keeping
+   on the radar) and renders each bullet item as a visual card with the
+   university name, description, and a country-coded link out to a
+   filtered Discover view. Way more scannable than bulleted prose. */
+const UniversityShortlist = ({ markdown, isRu, onOpenDiscover }: {
+  markdown: string;
+  isRu: boolean;
+  onOpenDiscover: () => void;
+}) => {
+  const { title, buckets } = useMemo(() => {
+    const lines = markdown.split("\n");
+    let title = "";
+    const buckets: { heading: string; items: { name: string; detail: string }[] }[] = [];
+    let cur: typeof buckets[number] | null = null;
+    let pendingBullet: string[] = [];
 
-const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu }: {
+    const flushPending = () => {
+      if (cur && pendingBullet.length > 0) {
+        const text = pendingBullet.join(" ").trim();
+        const m = text.match(/^\*\*([^*]+)\*\*\s*[—–-]?\s*(.*)$/);
+        if (m) {
+          cur.items.push({ name: m[1].trim(), detail: m[2].trim() });
+        } else if (text) {
+          cur.items.push({ name: text.replace(/^\*\*|\*\*$/g, "").trim(), detail: "" });
+        }
+        pendingBullet = [];
+      }
+    };
+
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line) { flushPending(); continue; }
+      if (line.startsWith("## ")) {
+        title = line.slice(3).trim();
+      } else if (line.startsWith("### ")) {
+        flushPending();
+        cur = { heading: line.slice(4).trim(), items: [] };
+        buckets.push(cur);
+      } else if (cur && /^([-*]|\d+\.)\s+/.test(line)) {
+        flushPending();
+        pendingBullet = [line.replace(/^([-*]|\d+\.)\s+/, "").trim()];
+      } else if (cur && pendingBullet.length > 0) {
+        // Continuation of a bullet (multi-line bullet)
+        pendingBullet.push(line);
+      }
+    }
+    flushPending();
+    return { title, buckets: buckets.filter(b => b.items.length > 0) };
+  }, [markdown]);
+
+  if (buckets.length === 0) return null;
+
+  // Map bucket index → tier accent. Strong fits = gold, Aligned = navy, last = muted.
+  const tierFor = (i: number, total: number) => {
+    if (i === 0) return { kicker: "text-gold-dark", strip: "from-gold-light via-gold-dark to-gold-light" };
+    if (i === total - 1) return { kicker: "text-muted-foreground", strip: "from-muted-foreground/30 to-muted-foreground/50" };
+    return { kicker: "text-primary", strip: "from-primary/60 via-primary to-primary/60" };
+  };
+
+  return (
+    <div className="not-prose my-10">
+      <div className="flex items-baseline justify-between gap-3 mb-6">
+        <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+          {title || (isRu ? "Ваш шорт-лист университетов" : "Your university shortlist")}
+        </h2>
+        <button
+          onClick={onOpenDiscover}
+          className="text-xs text-muted-foreground hover:text-gold-dark transition-colors hidden sm:inline-flex items-center gap-1"
+        >
+          {isRu ? "Открыть Discover" : "Open in Discover"} <ArrowRight className="w-3 h-3" />
+        </button>
+      </div>
+
+      <div className="space-y-7">
+        {buckets.map((b, bIdx) => {
+          const tier = tierFor(bIdx, buckets.length);
+          return (
+            <div key={bIdx}>
+              <p className={`text-[10px] font-semibold uppercase tracking-[0.22em] ${tier.kicker} mb-3`}>
+                {b.heading}
+              </p>
+              <div className="grid sm:grid-cols-2 gap-2.5">
+                {b.items.map((item, iIdx) => (
+                  <div
+                    key={iIdx}
+                    className="group relative bg-card border border-border rounded-xl p-4 hover:border-foreground/20 hover:shadow-sm transition-all overflow-hidden"
+                  >
+                    <div className={`absolute left-0 inset-y-0 w-[2px] bg-gradient-to-b ${tier.strip} opacity-70`} />
+                    <h4 className="font-heading font-semibold text-[15px] text-foreground tracking-tight leading-snug mb-1">
+                      {item.name}
+                    </h4>
+                    {item.detail && (
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {renderInline(item.detail)}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+/* ─── Section-aware renderer ───────────────────────────────────────────
+   Splits the streaming markdown by ## headings. Routes specific sections
+   (action plan, university shortlist) to custom interactive renderers;
+   everything else renders as standard markdown. */
+const PATHWAY_PLAN_SECTION_REGEX = /^##\s+.*?(action plan|90.day|план действий)/i;
+const PATHWAY_UNIS_SECTION_REGEX = /^##\s+.*?(university shortlist|your university|шорт.лист университетов)/i;
+
+const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onOpenDiscover }: {
   markdown: string;
   completedTasks: Set<string>;
   onToggle: (id: string) => void;
   taskKey: (text: string) => string;
   isRu: boolean;
+  onOpenDiscover: () => void;
 }) => {
   const sections = useMemo(() => {
     if (!markdown.trim()) return [] as string[];
@@ -186,11 +297,17 @@ const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu }: {
     <>
       {sections.map((section, i) => {
         if (PATHWAY_PLAN_SECTION_REGEX.test(section)) {
-          // Try to render as interactive plan; fall back to markdown if no items yet
           return <InteractiveActionPlanOrFallback
             key={i} markdown={section} completedTasks={completedTasks}
             onToggle={onToggle} taskKey={taskKey} isRu={isRu}
           />;
+        }
+        if (PATHWAY_UNIS_SECTION_REGEX.test(section)) {
+          // Stream-safe: only flip to cards once the AI has produced at least one ### sub-bucket
+          const hasBuckets = /^###\s+/m.test(section);
+          if (hasBuckets) {
+            return <UniversityShortlist key={i} markdown={section} isRu={isRu} onOpenDiscover={onOpenDiscover} />;
+          }
         }
         return <ReactMarkdown key={i}>{section}</ReactMarkdown>;
       })}
@@ -593,6 +710,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                     onToggle={toggleTask}
                     taskKey={taskKey}
                     isRu={isRu}
+                    onOpenDiscover={() => navigate(isRu ? "/discover/ru" : "/discover")}
                   />
                   {pathwayLoading && <span className="inline-block w-2 h-4 bg-accent animate-pulse ml-1" />}
 
