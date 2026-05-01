@@ -440,7 +440,14 @@ const EssayAngles = ({ markdown, isRu }: { markdown: string; isRu: boolean }) =>
     const startAngle = (concept: string) => {
       if (cur && pendingBody.length) cur.body = pendingBody.slice();
       pendingBody = [];
-      cur = { concept: concept.trim().replace(/^\*+|\*+$/g, ""), body: [] };
+      // Strip a leading "Angle N:" / "Угол N:" prefix from prompt-driven
+      // headings so the card displays the concept directly.
+      const cleaned = concept
+        .trim()
+        .replace(/^\*+|\*+$/g, "")
+        .replace(/^(angle|угол)\s*\d+\s*[:.—–-]\s*/i, "")
+        .trim();
+      cur = { concept: cleaned, body: [] };
       angles.push(cur);
     };
     const finishCurrent = () => {

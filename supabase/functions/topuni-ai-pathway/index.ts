@@ -110,10 +110,19 @@ A week-by-week sequence starting from today. Group as:
 Reference the student's specific scores and target countries. Concrete actions only — no "research more" filler.
 
 ## Three essay angles
-Three distinct narrative angles this student could lead with. For each:
-- **One-sentence concept**
-- Why it differentiates this candidate
-- A specific story or detail to anchor it
+Three distinct narrative angles this student could lead with. For each, use this exact structure (do not deviate):
+
+### Angle 1: [one-sentence concept]
+**Why it works for you:** [2-3 sentences on what specifically about this student's profile makes this angle credible — cite real details]
+**Anchor it with:** [a specific story, detail, or experience from the student's profile they could build the essay around]
+
+### Angle 2: [one-sentence concept]
+**Why it works for you:** ...
+**Anchor it with:** ...
+
+### Angle 3: [one-sentence concept]
+**Why it works for you:** ...
+**Anchor it with:** ...
 
 ## Honest gaps to close
 1-3 specific weaknesses in the profile and concrete steps to address each. No softening — the parent reading this should see exactly what to work on.
@@ -187,11 +196,22 @@ For each of the student's top 3 target countries:
 - Realistic challenges this student should plan for
 
 ## Three personalized essay angles
-For each:
-- **One-sentence concept**
-- Why it differentiates this specific candidate
-- A specific story or detail from the student's profile to anchor it
-- Which target universities each angle plays best to
+For each, use this exact structure (do not deviate):
+
+### Angle 1: [one-sentence concept]
+**Why it works for you:** [2-3 sentences citing specific details from this student's profile]
+**Anchor it with:** [a specific story, detail, or experience]
+**Plays best to:** [which 2-3 target universities this angle plays best to and why]
+
+### Angle 2: [one-sentence concept]
+**Why it works for you:** ...
+**Anchor it with:** ...
+**Plays best to:** ...
+
+### Angle 3: [one-sentence concept]
+**Why it works for you:** ...
+**Anchor it with:** ...
+**Plays best to:** ...
 
 ## Monthly budget breakdown
 For the top 3 recommended cities:
