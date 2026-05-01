@@ -897,10 +897,38 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   const t = (en: string, ru: string) => isRu ? ru : en;
   const navigate = useNavigate();
 
-  // Pathway state
-  const [pathwayContent, setPathwayContent] = useState("");
+  // Pathway state — persisted to localStorage so the user sees the SAME
+  // report on every visit (vs a fresh generation each time), which keeps
+  // their action-plan checkbox progress aligned to stable wording. Keyed
+  // by a profile hash so editing the profile invalidates the stored report.
+  const profileHash = useMemo(() => {
+    const fingerprint = JSON.stringify({
+      n: profile.fullName, g: profile.gpa, i: profile.ielts, s: profile.sat,
+      m: profile.major, c: profile.targetCountries, b: profile.budget,
+      lang: language,
+    });
+    let h = 0;
+    for (let i = 0; i < fingerprint.length; i++) h = ((h << 5) - h + fingerprint.charCodeAt(i)) | 0;
+    return `p${h.toString(36)}`;
+  }, [profile.fullName, profile.gpa, profile.ielts, profile.sat, profile.major, profile.targetCountries?.join(","), profile.budget, language]);
+
+  const PATHWAY_STORAGE_KEY = "topuni-pathway-cache";
+
+  const restored = useMemo(() => {
+    try {
+      const raw = localStorage.getItem(PATHWAY_STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.hash === profileHash && typeof parsed.content === "string" && parsed.content.length > 100) {
+        return parsed.content as string;
+      }
+    } catch { /* ignore */ }
+    return null;
+  }, [profileHash]);
+
+  const [pathwayContent, setPathwayContent] = useState<string>(restored ?? "");
   const [pathwayLoading, setPathwayLoading] = useState(false);
-  const [pathwayGenerated, setPathwayGenerated] = useState(false);
+  const [pathwayGenerated, setPathwayGenerated] = useState<boolean>(!!restored);
 
   // Interactive action plan: track which planned tasks the user has completed.
   // Keyed by stable hash of the task text (so the keys survive re-generation
@@ -1076,7 +1104,22 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       PATHWAY_URL,
       { profile, language },
       (chunk) => { soFar += chunk; setPathwayContent(soFar); },
-      () => { setPathwayLoading(false); setPathwayGenerated(true); }
+      () => {
+        setPathwayLoading(false);
+        setPathwayGenerated(true);
+        // Persist the completed report keyed by current profile hash, so
+        // subsequent visits restore the same text and the action-plan
+        // checkboxes (keyed by text hash) line up.
+        try {
+          if (soFar && soFar.length > 100) {
+            localStorage.setItem(PATHWAY_STORAGE_KEY, JSON.stringify({
+              hash: profileHash,
+              content: soFar,
+              generatedAt: Date.now(),
+            }));
+          }
+        } catch { /* ignore */ }
+      }
     );
   };
 
