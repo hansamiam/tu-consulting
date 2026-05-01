@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Stray nested checkout — sibling project tree, ignored to keep `git add -A` clean
+/tu-consulting/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
