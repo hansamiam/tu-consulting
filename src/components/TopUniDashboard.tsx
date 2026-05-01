@@ -6,16 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
-  Sparkles, GraduationCap, Award, ClipboardList,
+  Sparkles, GraduationCap,
   Bot, Loader2, Send, ArrowLeft,
-  Plus, Trash2, PenTool, BarChart3, Search, ArrowRight,
-  Download,
+  Search, ArrowRight, Download, BookOpen, ExternalLink, Calendar, Zap,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
-import EssayTools from "@/components/topuni/EssayTools";
-import AdmissionPredictor from "@/components/topuni/AdmissionPredictor";
-import ScholarshipMatcher from "@/components/topuni/ScholarshipMatcher";
+import { supabase } from "@/integrations/supabase/client";
 
 interface StudentProfile {
   fullName: string;
@@ -45,14 +42,7 @@ interface TopUniDashboardProps {
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-interface TrackerItem {
-  id: string;
-  university: string;
-  program: string;
-  deadline: string;
-  status: "not_started" | "in_progress" | "submitted" | "accepted" | "rejected";
-  notes: string;
-}
+// (TrackerItem interface removed along with the tracker tab.)
 
 const PATHWAY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/topuni-ai-pathway`;
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/topuni-chat`;
@@ -67,23 +57,43 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   const [pathwayLoading, setPathwayLoading] = useState(false);
   const [pathwayGenerated, setPathwayGenerated] = useState(false);
 
+  // Live scholarship matches — pulled from the database, scored against the
+  // student's profile. The visual bridge from this report into Discover.
+  type LiveMatch = {
+    scholarship_id: string;
+    scholarship_name: string;
+    provider_name: string | null;
+    host_country: string | null;
+    coverage_type: string;
+    award_amount_text: string | null;
+    estimated_total_value_usd: number | null;
+    application_deadline: string | null;
+    why_this_fits: string | null;
+  };
+  const [liveMatches, setLiveMatches] = useState<LiveMatch[]>([]);
+
+  useEffect(() => {
+    // Skip if profile is essentially empty (no targets, no scores)
+    if (!profile.fullName || profile.fullName === "Student") return;
+    (async () => {
+      let q = supabase.from("scholarships").select(
+        "scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, application_deadline, why_this_fits"
+      ).eq("verified", true);
+      if (profile.targetCountries && profile.targetCountries.length > 0) {
+        q = q.in("host_country", profile.targetCountries);
+      }
+      const { data } = await q
+        .order("application_deadline", { ascending: true, nullsFirst: false })
+        .limit(6);
+      if (data) setLiveMatches(data as LiveMatch[]);
+    })();
+  }, [profile.fullName, profile.targetCountries?.join(",")]);
+
   // Chat state
   const [chatMessages, setChatMessages] = useState<Msg[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const chatScrollRef = useRef<HTMLDivElement>(null);
-
-  // Application tracker state
-  const [trackerItems, setTrackerItems] = useState<TrackerItem[]>(() => {
-    try {
-      const saved = localStorage.getItem("topuni-tracker");
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
-
-  useEffect(() => {
-    localStorage.setItem("topuni-tracker", JSON.stringify(trackerItems));
-  }, [trackerItems]);
 
   useEffect(() => {
     if (chatScrollRef.current) {
@@ -206,41 +216,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     );
   };
 
-  // Tracker functions
-  const addTrackerItem = () => {
-    setTrackerItems(prev => [...prev, {
-      id: crypto.randomUUID(),
-      university: "",
-      program: "",
-      deadline: "",
-      status: "not_started",
-      notes: "",
-    }]);
-  };
-
-  const updateTrackerItem = (id: string, updates: Partial<TrackerItem>) => {
-    setTrackerItems(prev => prev.map(item => item.id === id ? { ...item, ...updates } : item));
-  };
-
-  const removeTrackerItem = (id: string) => {
-    setTrackerItems(prev => prev.filter(item => item.id !== id));
-  };
-
-  const statusColors: Record<string, string> = {
-    not_started: "bg-muted text-muted-foreground",
-    in_progress: "bg-blue-500/10 text-blue-600 border-blue-500/30",
-    submitted: "bg-accent/10 text-accent border-accent/30",
-    accepted: "bg-green-500/10 text-green-600 border-green-500/30",
-    rejected: "bg-destructive/10 text-destructive border-destructive/30",
-  };
-
-  const statusLabels: Record<string, { en: string; ru: string }> = {
-    not_started: { en: "Not Started", ru: "Не начато" },
-    in_progress: { en: "In Progress", ru: "В процессе" },
-    submitted: { en: "Submitted", ru: "Подано" },
-    accepted: { en: "Accepted", ru: "Принято" },
-    rejected: { en: "Rejected", ru: "Отклонено" },
-  };
+  // (Tracker functions removed along with the tracker tab — application
+  // status is tracked inside Discover now.)
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -289,27 +266,15 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         </div>
       </motion.div>
 
-      {/* Dashboard Tabs */}
+      {/* Dashboard — two surfaces only: Strategy (the report) and Counselor (chat) */}
       <Tabs defaultValue={isProfileFilled ? "pathway" : "counselor"} className="space-y-6">
-        <div className="flex flex-wrap items-center gap-3">
-          <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
-            <TabsTrigger value="counselor" className="flex items-center gap-1.5 text-xs sm:text-sm py-2 px-4 border-2 border-accent bg-accent/10 data-[state=active]:bg-accent data-[state=active]:text-accent-foreground font-bold shadow-sm hover:shadow-md transition-all">
-              <Bot className="w-4 h-4" /> TopUni AI
+        <div className="flex flex-wrap items-center gap-3 border-b border-border pb-1">
+          <TabsList className="bg-transparent p-0 h-auto gap-7 rounded-none -mb-[1px]">
+            <TabsTrigger value="pathway" className="data-[state=active]:text-foreground data-[state=active]:border-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent border-b-2 border-transparent text-muted-foreground hover:text-foreground rounded-none px-0 pb-3 pt-0 text-sm font-medium gap-1.5 bg-transparent">
+              <GraduationCap className="w-4 h-4" /> {t("Strategy", "Стратегия")}
             </TabsTrigger>
-            <TabsTrigger value="pathway" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-              <GraduationCap className="w-4 h-4" /> {t("Pathway", "Путь")}
-            </TabsTrigger>
-            <TabsTrigger value="predictor" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-              <BarChart3 className="w-4 h-4" /> {t("Chances", "Шансы")}
-            </TabsTrigger>
-            <TabsTrigger value="essays" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-              <PenTool className="w-4 h-4" /> {t("Essays", "Эссе")}
-            </TabsTrigger>
-            <TabsTrigger value="scholarships" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-              <Award className="w-4 h-4" /> {t("Scholarships", "Стипендии")}
-            </TabsTrigger>
-            <TabsTrigger value="tracker" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
-              <ClipboardList className="w-4 h-4" /> {t("Tracker", "Трекер")}
+            <TabsTrigger value="counselor" className="data-[state=active]:text-foreground data-[state=active]:border-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent border-b-2 border-transparent text-muted-foreground hover:text-foreground rounded-none px-0 pb-3 pt-0 text-sm font-medium gap-1.5 bg-transparent">
+              <Bot className="w-4 h-4" /> {t("Counselor", "Советник")}
             </TabsTrigger>
           </TabsList>
         </div>
@@ -371,8 +336,109 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                     </p>
                   </div>
 
+                  {/* Profile recap chips — visual context, no chart, no fluff */}
+                  <div className="not-prose flex flex-wrap gap-2 mb-8 pb-6 border-b border-border">
+                    {[
+                      profile.gradeLevel,
+                      profile.major,
+                      profile.gpa ? `GPA ${profile.gpa}` : null,
+                      profile.ielts ? `IELTS ${profile.ielts}` : null,
+                      profile.sat ? `SAT ${profile.sat}` : null,
+                      ...(profile.targetCountries || []),
+                    ].filter(Boolean).map((chip) => (
+                      <span key={chip as string} className="text-xs bg-muted/50 text-foreground/80 border border-border px-2.5 py-1 rounded-full font-medium">{chip as string}</span>
+                    ))}
+                  </div>
+
+                  {/* Live scholarship matches — the visual bridge into Discover */}
+                  {liveMatches.length > 0 && (
+                    <div className="not-prose mb-10">
+                      <div className="flex items-baseline justify-between mb-4">
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-1">Your top scholarship matches</p>
+                          <h3 className="font-heading text-base font-bold text-foreground tracking-tight">{t("Pulled live from our database — sorted by deadline", "Подобрано из базы — по дедлайнам")}</h3>
+                        </div>
+                        <Button variant="outline" size="sm" className="gap-1.5 shrink-0 hidden sm:flex" onClick={() => navigate(isRu ? "/discover/ru" : "/discover")}>
+                          {t("See all in Discover", "Открыть Discover")} <ArrowRight className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                      <div className="grid sm:grid-cols-2 gap-2.5">
+                        {liveMatches.slice(0, 6).map((m) => {
+                          const days = m.application_deadline ? Math.ceil((new Date(m.application_deadline).getTime() - Date.now()) / 86400000) : null;
+                          const dl = !m.application_deadline ? "Rolling" : days! <= 0 ? "Closed" : days! <= 30 ? `${days} days` : days! <= 90 ? `${days} days` : `${Math.ceil(days! / 30)} months`;
+                          const dlClass = !m.application_deadline ? "text-muted-foreground" : days! <= 30 ? "text-destructive" : days! <= 90 ? "text-warning" : "text-muted-foreground";
+                          return (
+                            <button
+                              key={m.scholarship_id}
+                              onClick={() => navigate(isRu ? "/discover/ru" : "/discover")}
+                              className="group text-left bg-card border border-border rounded-xl p-4 hover:border-gold/40 hover:shadow-sm transition-all"
+                            >
+                              <div className="flex items-baseline justify-between gap-2 mb-2">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground truncate">
+                                  {m.host_country || "—"}
+                                </p>
+                                <span className={`text-[11px] font-semibold tabular-nums ${dlClass}`}>{dl}</span>
+                              </div>
+                              <h4 className="font-heading font-semibold text-[15px] text-foreground line-clamp-2 leading-snug mb-1 group-hover:text-gold-dark transition-colors">
+                                {m.scholarship_name}
+                              </h4>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {m.award_amount_text || (m.coverage_type === "full_ride" ? "Full ride" : m.coverage_type === "tuition_only" ? "Tuition" : "Stipend")}
+                              </p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <Button variant="outline" size="sm" className="w-full mt-3 gap-1.5 sm:hidden" onClick={() => navigate(isRu ? "/discover/ru" : "/discover")}>
+                        {t("See all in Discover", "Открыть Discover")} <ArrowRight className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  )}
+
                   <ReactMarkdown>{pathwayContent}</ReactMarkdown>
                   {pathwayLoading && <span className="inline-block w-2 h-4 bg-accent animate-pulse ml-1" />}
+
+                  {/* Next steps — drives users into the rest of the funnel */}
+                  {!pathwayLoading && (
+                    <div className="not-prose grid sm:grid-cols-2 gap-3 mt-12 pt-8 border-t border-border">
+                      <button
+                        onClick={() => navigate(isRu ? "/discover/ru" : "/discover")}
+                        className="group text-left bg-card border border-border rounded-2xl p-6 hover:border-gold/40 hover:shadow-md transition-all"
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="h-10 w-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center">
+                            <Search className="w-5 h-5 text-gold-dark" />
+                          </div>
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Step 02</span>
+                        </div>
+                        <h4 className="font-heading font-bold text-lg text-foreground mb-1.5 tracking-tight">Discover</h4>
+                        <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+                          {t("See every ranked scholarship match, with how-to-win strategy notes and rejection patterns.", "Все ранжированные стипендии со стратегией и причинами отказов.")}
+                        </p>
+                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground group-hover:text-gold-dark transition-colors">
+                          {t("Open the database", "Открыть базу")} <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => navigate("/academy")}
+                        className="group text-left bg-card border border-border rounded-2xl p-6 hover:border-gold/40 hover:shadow-md transition-all"
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="h-10 w-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center">
+                            <BookOpen className="w-5 h-5 text-gold-dark" />
+                          </div>
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Step 03</span>
+                        </div>
+                        <h4 className="font-heading font-bold text-lg text-foreground mb-1.5 tracking-tight">Academy</h4>
+                        <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+                          {t("Live monthly workshops with our founders. Refine the strategy with people who've been through it.", "Ежемесячные воркшопы с нашими основателями.")}
+                        </p>
+                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground group-hover:text-gold-dark transition-colors">
+                          {t("Preview Academy", "Открыть Academy")} <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                        </span>
+                      </button>
+                    </div>
+                  )}
 
                   {/* Print-only footer disclaimer */}
                   <div className="print-only mt-12 pt-6 border-t border-foreground/20 hidden">
@@ -386,117 +452,9 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           </Card>
         </TabsContent>
 
-        {/* ADMISSION PREDICTOR TAB */}
-        <TabsContent value="predictor">
-          {isProfileFilled ? (
-            <AdmissionPredictor profile={profile} language={language} />
-          ) : (
-            <Card>
-              <CardContent className="text-center py-12 space-y-4">
-                <BarChart3 className="w-10 h-10 mx-auto text-muted-foreground/40" />
-                <p className="text-muted-foreground text-sm">{t("Complete your profile to see admission predictions.", "Заполните профиль для прогнозов.")}</p>
-                <Button variant="gold" onClick={onBack}>
-                  <Sparkles className="w-4 h-4 mr-2" /> {t("Start Your Plan", "Начать план")}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        {/* ESSAY TOOLS TAB */}
-        <TabsContent value="essays">
-          <EssayTools profile={profile} language={language} />
-        </TabsContent>
-
-        {/* APPLICATION TRACKER TAB */}
-        <TabsContent value="tracker">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <ClipboardList className="w-5 h-5 text-accent" />
-                {t("Application Tracker", "Трекер заявок")}
-              </CardTitle>
-              <Button variant="gold" size="sm" onClick={addTrackerItem}>
-                <Plus className="w-4 h-4 mr-1" /> {t("Add", "Добавить")}
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {trackerItems.length === 0 ? (
-                <div className="text-center py-12 space-y-3">
-                  <ClipboardList className="w-10 h-10 mx-auto text-muted-foreground/40" />
-                  <p className="text-muted-foreground text-sm">{t("No applications tracked yet. Add your first one!", "Пока нет заявок. Добавьте первую!")}</p>
-                  <Button variant="outline" size="sm" onClick={addTrackerItem}>
-                    <Plus className="w-4 h-4 mr-1" /> {t("Add Application", "Добавить заявку")}
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {trackerItems.map(item => (
-                    <div key={item.id} className="border border-border rounded-lg p-4 space-y-3">
-                      <div className="grid sm:grid-cols-2 gap-3">
-                        <Input
-                          placeholder={t("University name", "Название университета")}
-                          value={item.university}
-                          onChange={e => updateTrackerItem(item.id, { university: e.target.value })}
-                          className="text-sm"
-                        />
-                        <Input
-                          placeholder={t("Program", "Программа")}
-                          value={item.program}
-                          onChange={e => updateTrackerItem(item.id, { program: e.target.value })}
-                          className="text-sm"
-                        />
-                      </div>
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <Input
-                          type="date"
-                          value={item.deadline}
-                          onChange={e => updateTrackerItem(item.id, { deadline: e.target.value })}
-                          className="text-sm w-auto"
-                        />
-                        <div className="flex gap-1.5 flex-wrap">
-                          {Object.entries(statusLabels).map(([key, label]) => (
-                            <button
-                              key={key}
-                              onClick={() => updateTrackerItem(item.id, { status: key as TrackerItem["status"] })}
-                              className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
-                                item.status === key ? statusColors[key] : "bg-background text-muted-foreground border-border hover:border-accent/30"
-                              }`}
-                            >
-                              {isRu ? label.ru : label.en}
-                            </button>
-                          ))}
-                        </div>
-                        <button onClick={() => removeTrackerItem(item.id)} className="text-muted-foreground hover:text-destructive transition-colors ml-auto">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <Input
-                        placeholder={t("Notes...", "Заметки...")}
-                        value={item.notes}
-                        onChange={e => updateTrackerItem(item.id, { notes: e.target.value })}
-                        className="text-sm"
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* SCHOLARSHIP MATCHER TAB */}
-        <TabsContent value="scholarships" className="space-y-4">
-          <div className="flex items-center justify-between p-4 rounded-xl border border-accent/30 bg-accent/5">
-            <p className="text-sm text-foreground font-medium">
-              {t("Browse our full ranked scholarship database", "Просмотрите полную базу стипендий")}
-            </p>
-            <Button variant="gold" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate(isRu ? "/discover/ru" : "/discover")}>
-              <Search className="w-4 h-4" /> {t("Open Discover", "Открыть Discover")}
-            </Button>
-          </div>
-          <ScholarshipMatcher profile={profile} language={language} />
-        </TabsContent>
+        {/* (Predictor / Essays / Tracker / Scholarships matcher tabs removed —
+            all secondary or duplicating Discover. The strategy report is the
+            product; the chat counselor is the follow-up surface.) */}
 
         {/* AI COUNSELOR TAB */}
         <TabsContent value="counselor">
