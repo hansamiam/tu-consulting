@@ -541,7 +541,7 @@ const HonestGaps = ({ markdown, isRu }: { markdown: string; isRu: boolean }) => 
   const { title, gaps } = useMemo(() => {
     const lines = markdown.split("\n");
     let title = "";
-    const gaps: { headline: string; body: string[]; action: string }[] = [];
+    const gaps: { headline: string; body: string[]; action: string; priority: "high" | "medium" | "low" | null }[] = [];
     let cur: typeof gaps[number] | null = null;
     let pendingBody: string[] = [];
 
@@ -553,7 +553,12 @@ const HonestGaps = ({ markdown, isRu }: { markdown: string; isRu: boolean }) => 
     };
     const start = (headline: string) => {
       finish();
-      cur = { headline: headline.trim().replace(/^\*+|\*+$/g, "").trim(), body: [], action: "" };
+      const cleaned = headline
+        .trim()
+        .replace(/^\*+|\*+$/g, "")
+        .replace(/^(gap|пробел)\s*\d+\s*[:.—–-]\s*/i, "")
+        .trim();
+      cur = { headline: cleaned, body: [], action: "", priority: null };
       gaps.push(cur);
     };
 
@@ -586,36 +591,53 @@ const HonestGaps = ({ markdown, isRu }: { markdown: string; isRu: boolean }) => 
     }
     finish();
 
-    // Pull out an action bullet if one of the body lines starts with
-    // "Action:" / "Plan:" / "Next:" — promote it to the action footer.
-    const actionRegex = /^(action|plan|next step|next|to do|fix|шаг|план|действие)\s*[:—–-]\s*(.+)$/i;
+    // Pull priority and action from the labelled body lines.
+    const priorityRegex = /^\*?\*?\s*(priority|приоритет)\s*\*?\*?\s*[:—–-]\s*\*?\*?\s*(high|medium|low|высок|сред|низк)/i;
+    const actionRegex = /^\*?\*?\s*(action this month|action|plan|next step|next|to do|fix|шаг|план|действие|действие в этом месяце)\s*\*?\*?\s*[:—–-]\s*(.+)$/i;
+    const normalizePriority = (s: string): "high" | "medium" | "low" => {
+      const v = s.toLowerCase();
+      if (v.startsWith("high") || v.startsWith("высок")) return "high";
+      if (v.startsWith("med") || v.startsWith("сред")) return "medium";
+      return "low";
+    };
+
     return {
       title,
       gaps: gaps.map(g => {
-        const idx = g.body.findIndex(b => actionRegex.test(b));
-        if (idx >= 0) {
-          const m = g.body[idx].match(actionRegex);
-          return {
-            ...g,
-            body: g.body.filter((_, i) => i !== idx),
-            action: m?.[2]?.trim() || "",
-          };
+        let priority = g.priority;
+        let action = g.action;
+        const remainingBody: string[] = [];
+        for (const b of g.body) {
+          const pm = b.match(priorityRegex);
+          const am = b.match(actionRegex);
+          if (pm && !priority) {
+            priority = normalizePriority(pm[2]);
+            continue;
+          }
+          if (am && !action) {
+            action = am[2].trim().replace(/\*+/g, "");
+            continue;
+          }
+          remainingBody.push(b);
         }
-        return g;
+        return { ...g, body: remainingBody, action, priority };
       }).filter(g => g.headline),
     };
   }, [markdown]);
 
   if (gaps.length === 0) return null;
 
-  // Severity heuristic: if the gap text mentions tests/scores/GPA → high (red),
-  // language/IELTS → medium (amber), everything else → low (navy/info).
-  const severityFor = (g: { headline: string; body: string[] }) => {
-    const blob = (g.headline + " " + g.body.join(" ")).toLowerCase();
-    if (/gpa|sat|act|gre|gmat|score|test|exam|fail/.test(blob))
-      return { strip: "bg-destructive", label: isRu ? "Высокий приоритет" : "High priority", labelClass: "text-destructive" };
-    if (/ielts|toefl|english|language|essay|writing|portfolio|extracurricular/.test(blob))
-      return { strip: "bg-amber-500", label: isRu ? "Средний приоритет" : "Medium priority", labelClass: "text-amber-600 dark:text-amber-500" };
+  // Use AI-tagged priority when present, fall back to keyword heuristic.
+  const severityFor = (g: { headline: string; body: string[]; priority: "high" | "medium" | "low" | null }) => {
+    let p = g.priority;
+    if (!p) {
+      const blob = (g.headline + " " + g.body.join(" ")).toLowerCase();
+      if (/gpa|sat|act|gre|gmat|score|test|exam|fail/.test(blob)) p = "high";
+      else if (/ielts|toefl|english|language|essay|writing|portfolio|extracurricular/.test(blob)) p = "medium";
+      else p = "low";
+    }
+    if (p === "high") return { strip: "bg-destructive", label: isRu ? "Высокий приоритет" : "High priority", labelClass: "text-destructive" };
+    if (p === "medium") return { strip: "bg-amber-500", label: isRu ? "Средний приоритет" : "Medium priority", labelClass: "text-amber-600 dark:text-amber-500" };
     return { strip: "bg-primary", label: isRu ? "Стоит закрыть" : "Worth closing", labelClass: "text-primary" };
   };
 

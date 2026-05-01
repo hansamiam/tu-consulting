@@ -125,7 +125,17 @@ Three distinct narrative angles this student could lead with. For each, use this
 **Anchor it with:** ...
 
 ## Honest gaps to close
-1-3 specific weaknesses in the profile and concrete steps to address each. No softening — the parent reading this should see exactly what to work on.
+1-3 specific weaknesses in the profile. No softening — the parent reading this should see exactly what to work on. For each gap, use this exact structure (do not deviate):
+
+### Gap 1: [short headline of the gap]
+**Priority:** [high | medium | low]
+**Why it matters:** [1-2 sentences citing the specific threshold or context]
+**Action this month:** [one specific, single-sentence action they can start now]
+
+### Gap 2: [short headline]
+**Priority:** ...
+**Why it matters:** ...
+**Action this month:** ...
 
 ## Next steps
 Two short paragraphs:
@@ -220,7 +230,13 @@ For the top 3 recommended cities:
 - Total monthly cost and how scholarship coverage maps onto it
 
 ## Honest gaps to close
-2-3 specific weaknesses in the profile. For each, the concrete 30-60 day plan to close it.
+2-3 specific weaknesses in the profile. For each, use this exact structure (do not deviate):
+
+### Gap 1: [short headline of the gap]
+**Priority:** [high | medium | low]
+**Why it matters:** [2-3 sentences citing specific thresholds or context]
+**Action this month:** [one specific action they can start now]
+**30-60 day plan:** [the next-step plan after that]
 
 ## 90-day action plan
 Week-by-week from today, grouped as Weeks 1-2 / 3-6 / 7-12. 3-4 concrete actions per group, with specific deliverables.
