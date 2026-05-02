@@ -14,6 +14,7 @@ import { template as bookingReminder24h } from './booking-reminder-24h.tsx'
 import { template as bookingReminder1h } from './booking-reminder-1h.tsx'
 import { template as noShowRecovery } from './no-show-recovery.tsx'
 import { template as postCallUpsell } from './post-call-upsell.tsx'
+import { template as scholarshipDeadline } from './scholarship-deadline.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'booking-confirmation': bookingConfirmation,
@@ -21,4 +22,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'booking-reminder-1h': bookingReminder1h,
   'no-show-recovery': noShowRecovery,
   'post-call-upsell': postCallUpsell,
+  'scholarship-deadline': scholarshipDeadline,
 }
