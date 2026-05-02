@@ -87,10 +87,10 @@ export const Footer = ({ language, variant = "dark" }: FooterProps) => {
             </p>
             <p>
               <a
-                href="mailto:team@topuni.org"
-                className={`${accentLink} transition-colors text-xs`}
+                href="mailto:team@topuniconsulting.com"
+                className={`${accentLink} transition-colors text-xs break-all`}
               >
-                team@topuni.org
+                team@topuniconsulting.com
               </a>
             </p>
           </div>
