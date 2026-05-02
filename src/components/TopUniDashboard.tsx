@@ -1192,25 +1192,19 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      {/* Header */}
+      {/* Header — kept lean: back button, name, profile chips. The
+          AI-Powered badge and "Your university planning dashboard"
+          subtitle were filler. */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <button onClick={onBack} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="w-4 h-4" /> {t("Back", "Назад")}
-          </button>
-          <Badge className="bg-accent/10 text-accent border-accent/30">
-            <Sparkles className="w-3 h-3 mr-1" /> {t("AI-Powered", "На базе AI")}
-          </Badge>
-        </div>
-        <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground">
+        <button onClick={onBack} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
+          <ArrowLeft className="w-4 h-4" /> {t("Back", "Назад")}
+        </button>
+        <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground tracking-tight">
           {isProfileFilled
             ? t(`Welcome, ${profile.fullName.split(" ")[0]}`, `Добро пожаловать, ${profile.fullName.split(" ")[0]}`)
-            : t("Your Dashboard", "Ваша панель")
+            : t("Your dashboard", "Ваша панель")
           }
         </h1>
-        <p className="text-muted-foreground mt-1">
-          {t("Your university planning dashboard", "Ваша панель планирования")}
-        </p>
         {isProfileFilled && (
           <div className="flex flex-wrap gap-2 mt-3">
             {profile.targetCountries.map(c => (
@@ -1221,9 +1215,6 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             {profile.ielts && <Badge variant="outline" className="text-xs">IELTS: {profile.ielts}</Badge>}
           </div>
         )}
-        {/* (Discover CTA card moved into the Counselor tab — on Strategy
-            the in-report matches grid, funding pathway, and Step 02
-            Discover card already cover the same path.) */}
       </motion.div>
 
       {/* Dashboard — two surfaces only: Strategy (the report) and Counselor (chat) */}
@@ -1245,7 +1236,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-accent" />
-                {t("Your AI-Generated Pathway", "Ваш AI-сгенерированный путь")}
+                {t("Your strategic brief", "Ваш стратегический брифинг")}
               </CardTitle>
               {pathwayGenerated && pathwayContent && (
                 <div className="flex items-center gap-2">
