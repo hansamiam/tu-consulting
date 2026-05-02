@@ -35,6 +35,7 @@ import DiscoverApp from "./pages/DiscoverApp";
 import SharedBrief from "./pages/SharedBrief";
 import Pipeline from "./pages/Pipeline";
 import ScholarshipsByFilter from "./pages/ScholarshipsByFilter";
+import EssayCritique from "./pages/EssayCritique";
 import Admin from "./pages/Admin";
 import FunnelDashboard from "./pages/FunnelDashboard";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -106,6 +107,8 @@ const App = () => (
           <Route path="/scholarships/by-country/:country" element={<ScholarshipsByFilter mode="country" />} />
           <Route path="/scholarships/by-field/:field"     element={<ScholarshipsByFilter mode="field" />} />
           <Route path="/scholarships/theme/:theme"        element={<ScholarshipsByFilter mode="theme" />} />
+          {/* Essay critique — premium-gated reader-perspective AI feedback */}
+          <Route path="/essay"                            element={<EssayCritique />} />
 
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/funnel" element={<FunnelDashboard />} />
