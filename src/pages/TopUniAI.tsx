@@ -20,7 +20,15 @@ import { useNavigate } from "react-router-dom";
 
 type Screen = "landing" | "intake" | "dashboard";
 
-const COUNTRIES = ["United States", "United Kingdom", "Canada", "Germany", "South Korea", "China", "Netherlands", "Czech Republic", "Turkey", "Malaysia", "Hungary", "Italy", "Poland", "Sweden", "Estonia"];
+const COUNTRIES = [
+  "United States", "United Kingdom", "Canada", "Australia",
+  "Germany", "France", "Netherlands", "Switzerland", "Ireland",
+  "Sweden", "Norway", "Denmark", "Italy", "Spain", "Belgium",
+  "Singapore", "South Korea", "Japan", "Hong Kong", "China",
+  "New Zealand", "United Arab Emirates",
+  "Czech Republic", "Hungary", "Poland", "Estonia",
+  "Turkey", "Malaysia",
+];
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 22 },
