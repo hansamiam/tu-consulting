@@ -28,7 +28,21 @@ const Account = () => {
     if (!user) return;
     const params = new URLSearchParams(window.location.search);
     const justSubscribed = params.get("subscribed") === "1";
+    const action = params.get("action");
     (async () => {
+      // Handle "pause weekly nudges" link from the nudge email footer
+      if (action === "pause-nudges") {
+        const { error } = await supabase
+          .from("student_profiles")
+          .update({ nudge_opt_out: true })
+          .eq("user_id", user.id);
+        if (error) {
+          toast.error("Couldn't update nudge preference. Try again.");
+        } else {
+          toast.success("Weekly nudges paused. You can re-enable any time below.");
+        }
+        window.history.replaceState({}, "", "/account");
+      }
       if (justSubscribed) {
         // Force Stripe→DB sync, then refresh local state. Retry briefly in case Stripe lags.
         for (let i = 0; i < 3; i++) {

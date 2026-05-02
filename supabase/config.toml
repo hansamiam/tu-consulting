@@ -55,3 +55,6 @@ verify_jwt = false
 
 [functions.essay-critique]
 verify_jwt = false
+
+[functions.weekly-nudge-cron]
+verify_jwt = true
