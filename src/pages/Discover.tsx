@@ -25,6 +25,7 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSemanticScholarshipMatch } from "@/hooks/useSemanticScholarshipMatch";
 import { Lock } from "lucide-react";
 
 const SHORTLIST_FREE_LIMIT = 5;
@@ -141,7 +142,7 @@ const normalizeSelectivity = (s: string | null): Scored["selectivity"] => {
   return "unknown";
 };
 
-const scoreScholarship = (s: Scholarship, p: Profile): Scored => {
+const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: number): Scored => {
   const reasons: string[] = [];
   const warnings: string[] = [];
   let match = 50;
@@ -203,6 +204,21 @@ const scoreScholarship = (s: Scholarship, p: Profile): Scored => {
   if (s.application_deadline) {
     const days = Math.ceil((new Date(s.application_deadline).getTime() - Date.now()) / 86400000);
     if (days > 0 && days < 60) match += 4;
+  }
+
+  /* Semantic similarity from pgvector (when present): up to +20 boost
+     for an exact-match embedding, falling off linearly. Caps at 20 so
+     it tunes — doesn't dominate — the heuristic signals. Also surfaces
+     a "Closely matches your stated field" reason when strong. */
+  if (typeof semanticSimilarity === "number" && semanticSimilarity > 0) {
+    const sim = Math.max(0, Math.min(1, semanticSimilarity));
+    // Most embeddings cluster between 0.4–0.85; rescale so the boost
+    // discriminates within that band instead of pegging to 1.0.
+    const rescaled = Math.max(0, (sim - 0.30) / 0.55);
+    const bonus = Math.round(rescaled * 20);
+    match += bonus;
+    if (bonus >= 12) reasons.push("Closely matches your stated field & goals");
+    else if (bonus >= 6) reasons.push("Semantically aligned with your field");
   }
 
   if (eligibility === "likely" && match >= 70) eligibility = "eligible";
@@ -1816,14 +1832,34 @@ const Discover = ({ language = "en" }: Props) => {
 
   const resetProfile = () => { setWiz(DEFAULT_WIZARD); setWizardStep(0); setPhase("wizard"); };
 
+  /* Semantic-match hook — fires once per profile change against the
+     match-scholarships edge function. Returns Map<scholarship_id,
+     similarity>; soft-fails to an empty map if the endpoint isn't
+     reachable or no embeddings exist yet. The score blends in via
+     scoreScholarship — heuristic + semantic, not either-or. */
+  const semantic = useSemanticScholarshipMatch(
+    {
+      field: profile.field,
+      targetCountries: profile.country ? [profile.country] : undefined,
+      degree: profile.degree,
+      nationality: profile.country,
+      gpa: profile.gpa,
+      ielts: profile.ielts,
+    },
+    { limit: 80 },
+  );
+
   const ranked = useMemo(() => {
     const p = profile.country || profile.degree ? profile : { country: "", degree: "master\'s", gpa: "", gpaScale: "4.0", ielts: "", sat: "", field: "", budget: "low" };
-    return rows.map(r => scoreScholarship(r, p)).sort((a, b) => {
+    return rows.map(r => {
+      const sim = semantic.matches.get(r.scholarship_id)?.similarity;
+      return scoreScholarship(r, p, sim);
+    }).sort((a, b) => {
       const e = { eligible: 0, likely: 1, missing: 2, not_eligible: 3 };
       if (e[a.eligibility] !== e[b.eligibility]) return e[a.eligibility] - e[b.eligibility];
       return b.match - a.match;
     });
-  }, [rows, profile]);
+  }, [rows, profile, semantic.matches]);
 
   /* Available host countries + fields, derived from data */
   const hostCountries = useMemo(() => {
