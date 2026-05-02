@@ -1,13 +1,3 @@
-// AUTO-GENERATED — do not edit by hand.
-// Regenerate with: npm run gen:types
-//
-// This file mirrors the public schema of the live Supabase project at
-// bsfldtpemfxhnkdzccib. Whenever a migration changes the schema (new
-// table, new column, dropped column, etc.) re-run the generator so
-// the TypeScript types stay in sync. Drift between this file and the
-// live schema is the leading cause of "row.field is undefined at
-// runtime" bugs.
-
 export type Json =
   | string
   | number
@@ -20,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
@@ -97,67 +87,6 @@ export type Database = {
           period?: string | null
         }
         Relationships: []
-      }
-      application_tracker: {
-        Row: {
-          created_at: string
-          hidden: boolean
-          notes: string | null
-          reminder_sent_at: string | null
-          scholarship_id: string
-          shortlisted: boolean
-          status: string | null
-          status_changed_at: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          hidden?: boolean
-          notes?: string | null
-          reminder_sent_at?: string | null
-          scholarship_id: string
-          shortlisted?: boolean
-          status?: string | null
-          status_changed_at?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          hidden?: boolean
-          notes?: string | null
-          reminder_sent_at?: string | null
-          scholarship_id?: string
-          shortlisted?: boolean
-          status?: string | null
-          status_changed_at?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "application_tracker_scholarship_id_fkey"
-            columns: ["scholarship_id"]
-            isOneToOne: false
-            referencedRelation: "scholarships"
-            referencedColumns: ["scholarship_id"]
-          },
-          {
-            foreignKeyName: "application_tracker_scholarship_id_fkey"
-            columns: ["scholarship_id"]
-            isOneToOne: false
-            referencedRelation: "scholarships_needing_embedding"
-            referencedColumns: ["scholarship_id"]
-          },
-          {
-            foreignKeyName: "application_tracker_scholarship_id_fkey"
-            columns: ["scholarship_id"]
-            isOneToOne: false
-            referencedRelation: "scholarships_url_check_queue"
-            referencedColumns: ["scholarship_id"]
-          },
-        ]
       }
       applications: {
         Row: {
@@ -308,74 +237,6 @@ export type Database = {
         }
         Relationships: []
       }
-      counselor_messages: {
-        Row: {
-          content: string
-          created_at: string
-          message_id: string
-          role: string
-          session_id: string
-          user_id: string
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          message_id?: string
-          role: string
-          session_id: string
-          user_id: string
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          message_id?: string
-          role?: string
-          session_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "counselor_messages_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "counselor_sessions"
-            referencedColumns: ["session_id"]
-          },
-        ]
-      }
-      counselor_sessions: {
-        Row: {
-          archived: boolean
-          created_at: string
-          language: string
-          last_message_at: string
-          message_count: number
-          session_id: string
-          title: string | null
-          user_id: string
-        }
-        Insert: {
-          archived?: boolean
-          created_at?: string
-          language?: string
-          last_message_at?: string
-          message_count?: number
-          session_id?: string
-          title?: string | null
-          user_id: string
-        }
-        Update: {
-          archived?: boolean
-          created_at?: string
-          language?: string
-          last_message_at?: string
-          message_count?: number
-          session_id?: string
-          title?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       email_send_log: {
         Row: {
           created_at: string
@@ -508,81 +369,6 @@ export type Database = {
         }
         Relationships: []
       }
-      nudge_log: {
-        Row: {
-          ai_body_preview: string | null
-          duration_ms: number | null
-          email_error: string | null
-          email_status: string | null
-          email_subject: string | null
-          nudge_id: string
-          sent_at: string
-          status_pending: number | null
-          tracked_count: number | null
-          urgent_deadlines: number | null
-          user_id: string
-        }
-        Insert: {
-          ai_body_preview?: string | null
-          duration_ms?: number | null
-          email_error?: string | null
-          email_status?: string | null
-          email_subject?: string | null
-          nudge_id?: string
-          sent_at?: string
-          status_pending?: number | null
-          tracked_count?: number | null
-          urgent_deadlines?: number | null
-          user_id: string
-        }
-        Update: {
-          ai_body_preview?: string | null
-          duration_ms?: number | null
-          email_error?: string | null
-          email_status?: string | null
-          email_subject?: string | null
-          nudge_id?: string
-          sent_at?: string
-          status_pending?: number | null
-          tracked_count?: number | null
-          urgent_deadlines?: number | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      pathway_reports: {
-        Row: {
-          content: string
-          generated_at: string
-          language: string
-          profile_hash: string
-          report_grade: string
-          retrieval_method: string | null
-          token_count: number | null
-          user_id: string
-        }
-        Insert: {
-          content: string
-          generated_at?: string
-          language?: string
-          profile_hash: string
-          report_grade?: string
-          retrieval_method?: string | null
-          token_count?: number | null
-          user_id: string
-        }
-        Update: {
-          content?: string
-          generated_at?: string
-          language?: string
-          profile_hash?: string
-          report_grade?: string
-          retrieval_method?: string | null
-          token_count?: number | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -666,74 +452,6 @@ export type Database = {
           },
         ]
       }
-      referral_codes: {
-        Row: {
-          code: string
-          created_at: string
-          premium_conversions: number
-          total_uses: number
-          user_id: string
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          premium_conversions?: number
-          total_uses?: number
-          user_id: string
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          premium_conversions?: number
-          total_uses?: number
-          user_id?: string
-        }
-        Relationships: []
-      }
-      referrals: {
-        Row: {
-          became_premium_at: string | null
-          code: string
-          credit_paid_out_at: string | null
-          redeem_ip: string | null
-          redeem_user_agent: string | null
-          referee_user_id: string
-          referral_id: string
-          referrer_user_id: string
-          signed_up_at: string
-        }
-        Insert: {
-          became_premium_at?: string | null
-          code: string
-          credit_paid_out_at?: string | null
-          redeem_ip?: string | null
-          redeem_user_agent?: string | null
-          referee_user_id: string
-          referral_id?: string
-          referrer_user_id: string
-          signed_up_at?: string
-        }
-        Update: {
-          became_premium_at?: string | null
-          code?: string
-          credit_paid_out_at?: string | null
-          redeem_ip?: string | null
-          redeem_user_agent?: string | null
-          referee_user_id?: string
-          referral_id?: string
-          referrer_user_id?: string
-          signed_up_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "referrals_code_fkey"
-            columns: ["code"]
-            isOneToOne: false
-            referencedRelation: "referral_codes"
-            referencedColumns: ["code"]
-          },
-        ]
-      }
       scholarships: {
         Row: {
           age_limit: string | null
@@ -747,16 +465,12 @@ export type Database = {
           common_rejection_reasons: string | null
           coverage_type: string
           created_at: string | null
-          data_source: string
           deadline_type: string | null
           duration_text: string | null
           effort_level: string | null
           effort_reason: string | null
           eligibility_requirements: string | null
           eligible_countries: string[] | null
-          embedded_at: string | null
-          embedding: string | null
-          embedding_source_text: string | null
           essay_required: boolean | null
           estimated_total_value_usd: number | null
           extracurricular_required: boolean | null
@@ -792,11 +506,6 @@ export type Database = {
           target_degree_level: string[] | null
           target_fields: string[] | null
           university_id: string | null
-          url_check_http_code: number | null
-          url_check_status: string | null
-          url_consecutive_fails: number
-          url_last_checked_at: string | null
-          url_resolved_to: string | null
           verified: boolean
           weak_candidate_warning: string | null
           what_to_prepare_first: string | null
@@ -814,16 +523,12 @@ export type Database = {
           common_rejection_reasons?: string | null
           coverage_type: string
           created_at?: string | null
-          data_source?: string
           deadline_type?: string | null
           duration_text?: string | null
           effort_level?: string | null
           effort_reason?: string | null
           eligibility_requirements?: string | null
           eligible_countries?: string[] | null
-          embedded_at?: string | null
-          embedding?: string | null
-          embedding_source_text?: string | null
           essay_required?: boolean | null
           estimated_total_value_usd?: number | null
           extracurricular_required?: boolean | null
@@ -859,11 +564,6 @@ export type Database = {
           target_degree_level?: string[] | null
           target_fields?: string[] | null
           university_id?: string | null
-          url_check_http_code?: number | null
-          url_check_status?: string | null
-          url_consecutive_fails?: number
-          url_last_checked_at?: string | null
-          url_resolved_to?: string | null
           verified?: boolean
           weak_candidate_warning?: string | null
           what_to_prepare_first?: string | null
@@ -881,16 +581,12 @@ export type Database = {
           common_rejection_reasons?: string | null
           coverage_type?: string
           created_at?: string | null
-          data_source?: string
           deadline_type?: string | null
           duration_text?: string | null
           effort_level?: string | null
           effort_reason?: string | null
           eligibility_requirements?: string | null
           eligible_countries?: string[] | null
-          embedded_at?: string | null
-          embedding?: string | null
-          embedding_source_text?: string | null
           essay_required?: boolean | null
           estimated_total_value_usd?: number | null
           extracurricular_required?: boolean | null
@@ -926,11 +622,6 @@ export type Database = {
           target_degree_level?: string[] | null
           target_fields?: string[] | null
           university_id?: string | null
-          url_check_http_code?: number | null
-          url_check_status?: string | null
-          url_consecutive_fails?: number
-          url_last_checked_at?: string | null
-          url_resolved_to?: string | null
           verified?: boolean
           weak_candidate_warning?: string | null
           what_to_prepare_first?: string | null
@@ -945,238 +636,6 @@ export type Database = {
             referencedColumns: ["university_id"]
           },
         ]
-      }
-      scholarships_research_intake: {
-        Row: {
-          age_limit: string | null
-          application_deadline: string | null
-          award_amount_text: string | null
-          citizenship_requirements: string | null
-          coverage_type: string | null
-          deadline_type: string | null
-          eligibility_requirements: string | null
-          eligible_countries: string[] | null
-          estimated_total_value_usd: number | null
-          host_country: string | null
-          ingested_at: string
-          intake_id: string
-          is_loadable: boolean
-          live_scholarship_id: string | null
-          official_url: string | null
-          promoted_at: string | null
-          promoted_to_live: boolean
-          provider_name: string | null
-          raw_annual_awards: string | null
-          raw_coverage: string | null
-          raw_criteria: string | null
-          raw_deadline: string | null
-          raw_education_levels: string | null
-          raw_eligibility: string | null
-          raw_offering_org: string | null
-          raw_url: string | null
-          scholarship_name: string
-          selectivity_level: string | null
-          source: string
-          source_category: string | null
-          target_degree_level: string[] | null
-          target_fields: string[] | null
-        }
-        Insert: {
-          age_limit?: string | null
-          application_deadline?: string | null
-          award_amount_text?: string | null
-          citizenship_requirements?: string | null
-          coverage_type?: string | null
-          deadline_type?: string | null
-          eligibility_requirements?: string | null
-          eligible_countries?: string[] | null
-          estimated_total_value_usd?: number | null
-          host_country?: string | null
-          ingested_at?: string
-          intake_id?: string
-          is_loadable?: boolean
-          live_scholarship_id?: string | null
-          official_url?: string | null
-          promoted_at?: string | null
-          promoted_to_live?: boolean
-          provider_name?: string | null
-          raw_annual_awards?: string | null
-          raw_coverage?: string | null
-          raw_criteria?: string | null
-          raw_deadline?: string | null
-          raw_education_levels?: string | null
-          raw_eligibility?: string | null
-          raw_offering_org?: string | null
-          raw_url?: string | null
-          scholarship_name: string
-          selectivity_level?: string | null
-          source: string
-          source_category?: string | null
-          target_degree_level?: string[] | null
-          target_fields?: string[] | null
-        }
-        Update: {
-          age_limit?: string | null
-          application_deadline?: string | null
-          award_amount_text?: string | null
-          citizenship_requirements?: string | null
-          coverage_type?: string | null
-          deadline_type?: string | null
-          eligibility_requirements?: string | null
-          eligible_countries?: string[] | null
-          estimated_total_value_usd?: number | null
-          host_country?: string | null
-          ingested_at?: string
-          intake_id?: string
-          is_loadable?: boolean
-          live_scholarship_id?: string | null
-          official_url?: string | null
-          promoted_at?: string | null
-          promoted_to_live?: boolean
-          provider_name?: string | null
-          raw_annual_awards?: string | null
-          raw_coverage?: string | null
-          raw_criteria?: string | null
-          raw_deadline?: string | null
-          raw_education_levels?: string | null
-          raw_eligibility?: string | null
-          raw_offering_org?: string | null
-          raw_url?: string | null
-          scholarship_name?: string
-          selectivity_level?: string | null
-          source?: string
-          source_category?: string | null
-          target_degree_level?: string[] | null
-          target_fields?: string[] | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scholarships_research_intake_live_scholarship_id_fkey"
-            columns: ["live_scholarship_id"]
-            isOneToOne: false
-            referencedRelation: "scholarships"
-            referencedColumns: ["scholarship_id"]
-          },
-          {
-            foreignKeyName: "scholarships_research_intake_live_scholarship_id_fkey"
-            columns: ["live_scholarship_id"]
-            isOneToOne: false
-            referencedRelation: "scholarships_needing_embedding"
-            referencedColumns: ["scholarship_id"]
-          },
-          {
-            foreignKeyName: "scholarships_research_intake_live_scholarship_id_fkey"
-            columns: ["live_scholarship_id"]
-            isOneToOne: false
-            referencedRelation: "scholarships_url_check_queue"
-            referencedColumns: ["scholarship_id"]
-          },
-        ]
-      }
-      shared_briefs: {
-        Row: {
-          brief_id: string
-          content: string
-          created_at: string
-          created_by_user_id: string | null
-          expires_at: string | null
-          is_public: boolean
-          language: string
-          profile_first_name: string | null
-          profile_grade_level: string | null
-          profile_major: string | null
-          profile_target_countries: string[] | null
-          report_grade: string
-          slug: string
-          view_count: number
-        }
-        Insert: {
-          brief_id?: string
-          content: string
-          created_at?: string
-          created_by_user_id?: string | null
-          expires_at?: string | null
-          is_public?: boolean
-          language?: string
-          profile_first_name?: string | null
-          profile_grade_level?: string | null
-          profile_major?: string | null
-          profile_target_countries?: string[] | null
-          report_grade?: string
-          slug: string
-          view_count?: number
-        }
-        Update: {
-          brief_id?: string
-          content?: string
-          created_at?: string
-          created_by_user_id?: string | null
-          expires_at?: string | null
-          is_public?: boolean
-          language?: string
-          profile_first_name?: string | null
-          profile_grade_level?: string | null
-          profile_major?: string | null
-          profile_target_countries?: string[] | null
-          report_grade?: string
-          slug?: string
-          view_count?: number
-        }
-        Relationships: []
-      }
-      student_documents: {
-        Row: {
-          document_id: string
-          extracted_text: string | null
-          filename: string
-          kind: string
-          mime_type: string | null
-          parse_error: string | null
-          parse_status: string
-          parsed_at: string | null
-          size_bytes: number | null
-          storage_path: string
-          title: string | null
-          updated_at: string
-          uploaded_at: string
-          use_in_counselor: boolean
-          user_id: string
-        }
-        Insert: {
-          document_id?: string
-          extracted_text?: string | null
-          filename: string
-          kind: string
-          mime_type?: string | null
-          parse_error?: string | null
-          parse_status?: string
-          parsed_at?: string | null
-          size_bytes?: number | null
-          storage_path: string
-          title?: string | null
-          updated_at?: string
-          uploaded_at?: string
-          use_in_counselor?: boolean
-          user_id: string
-        }
-        Update: {
-          document_id?: string
-          extracted_text?: string | null
-          filename?: string
-          kind?: string
-          mime_type?: string | null
-          parse_error?: string | null
-          parse_status?: string
-          parsed_at?: string | null
-          size_bytes?: number | null
-          storage_path?: string
-          title?: string | null
-          updated_at?: string
-          uploaded_at?: string
-          use_in_counselor?: boolean
-          user_id?: string
-        }
-        Relationships: []
       }
       student_interactions: {
         Row: {
@@ -1205,111 +664,6 @@ export type Database = {
           event_type?: string
           id?: string
           session_id?: string | null
-        }
-        Relationships: []
-      }
-      student_profiles: {
-        Row: {
-          budget: string | null
-          career_roi_weight: number | null
-          created_at: string
-          email: string | null
-          field_of_study: string | null
-          full_name: string | null
-          gpa: number | null
-          gpa_scale: number | null
-          grade_level: string | null
-          ielts: number | null
-          last_nudge_sent_at: string | null
-          location_weight: number | null
-          major: string | null
-          nationality: string | null
-          nudge_opt_out: boolean
-          prestige_weight: number | null
-          sat: number | null
-          scholarship_needed: boolean | null
-          scholarship_weight: number | null
-          target_countries: string[] | null
-          timeline: string | null
-          toefl: number | null
-          updated_at: string
-          user_id: string
-          visa_weight: number | null
-        }
-        Insert: {
-          budget?: string | null
-          career_roi_weight?: number | null
-          created_at?: string
-          email?: string | null
-          field_of_study?: string | null
-          full_name?: string | null
-          gpa?: number | null
-          gpa_scale?: number | null
-          grade_level?: string | null
-          ielts?: number | null
-          last_nudge_sent_at?: string | null
-          location_weight?: number | null
-          major?: string | null
-          nationality?: string | null
-          nudge_opt_out?: boolean
-          prestige_weight?: number | null
-          sat?: number | null
-          scholarship_needed?: boolean | null
-          scholarship_weight?: number | null
-          target_countries?: string[] | null
-          timeline?: string | null
-          toefl?: number | null
-          updated_at?: string
-          user_id: string
-          visa_weight?: number | null
-        }
-        Update: {
-          budget?: string | null
-          career_roi_weight?: number | null
-          created_at?: string
-          email?: string | null
-          field_of_study?: string | null
-          full_name?: string | null
-          gpa?: number | null
-          gpa_scale?: number | null
-          grade_level?: string | null
-          ielts?: number | null
-          last_nudge_sent_at?: string | null
-          location_weight?: number | null
-          major?: string | null
-          nationality?: string | null
-          nudge_opt_out?: boolean
-          prestige_weight?: number | null
-          sat?: number | null
-          scholarship_needed?: boolean | null
-          scholarship_weight?: number | null
-          target_countries?: string[] | null
-          timeline?: string | null
-          toefl?: number | null
-          updated_at?: string
-          user_id?: string
-          visa_weight?: number | null
-        }
-        Relationships: []
-      }
-      student_tasks: {
-        Row: {
-          completed_at: string
-          task_key: string
-          task_text: string | null
-          user_id: string
-        }
-        Insert: {
-          completed_at?: string
-          task_key: string
-          task_text?: string | null
-          user_id: string
-        }
-        Update: {
-          completed_at?: string
-          task_key?: string
-          task_text?: string | null
-          user_id?: string
         }
         Relationships: []
       }
@@ -1628,42 +982,7 @@ export type Database = {
       }
     }
     Views: {
-      scholarships_needing_embedding: {
-        Row: {
-          scholarship_id: string | null
-          source_text: string | null
-        }
-        Insert: {
-          scholarship_id?: string | null
-          source_text?: never
-        }
-        Update: {
-          scholarship_id?: string | null
-          source_text?: never
-        }
-        Relationships: []
-      }
-      scholarships_url_check_queue: {
-        Row: {
-          official_url: string | null
-          scholarship_id: string | null
-          url_consecutive_fails: number | null
-          url_last_checked_at: string | null
-        }
-        Insert: {
-          official_url?: string | null
-          scholarship_id?: string | null
-          url_consecutive_fails?: number | null
-          url_last_checked_at?: string | null
-        }
-        Update: {
-          official_url?: string | null
-          scholarship_id?: string | null
-          url_consecutive_fails?: number | null
-          url_last_checked_at?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       claim_founding_member_slot: { Args: never; Returns: number }
@@ -1675,9 +994,6 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
-      expire_old_shared_briefs: { Args: never; Returns: number }
-      generate_referral_code: { Args: never; Returns: string }
-      get_or_create_my_referral_code: { Args: never; Returns: string }
       has_active_subscription: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
@@ -1685,26 +1001,6 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
-      }
-      increment_brief_view: { Args: { p_slug: string }; Returns: undefined }
-      increment_referral_total_uses: {
-        Args: { p_code: string }
-        Returns: undefined
-      }
-      match_scholarships: {
-        Args: {
-          p_degree_level?: string
-          p_max_results?: number
-          p_min_gpa?: number
-          p_min_ielts?: number
-          p_nationality?: string
-          query_embedding: string
-        }
-        Returns: {
-          passes_eligibility: boolean
-          scholarship_id: string
-          similarity: number
-        }[]
       }
       move_to_dlq: {
         Args: {
@@ -1722,20 +1018,6 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
-      }
-      scholarship_embedding_source: {
-        Args: { s: Database["public"]["Tables"]["scholarships"]["Row"] }
-        Returns: string
-      }
-      scholarship_passes_eligibility: {
-        Args: {
-          p_degree_level: string
-          p_min_gpa: number
-          p_min_ielts: number
-          p_nationality: string
-          s: Database["public"]["Tables"]["scholarships"]["Row"]
-        }
-        Returns: boolean
       }
     }
     Enums: {
