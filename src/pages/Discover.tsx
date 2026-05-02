@@ -2937,7 +2937,10 @@ const Discover = ({ language = "en" }: Props) => {
                 );
               })}
               {shortlist.size === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-12">No saved scholarships yet.</p>
+                <div className="py-8">
+                  <p className="text-sm text-muted-foreground text-center mb-1">{language === "ru" ? "Нет сохранённых стипендий." : "No saved scholarships yet."}</p>
+                  <p className="text-xs text-muted-foreground/70 text-center">{language === "ru" ? "Тапните на сердечко на любой карточке чтобы сохранить." : "Tap the heart on any card to save it here."}</p>
+                </div>
               )}
             </div>
           </SheetContent>

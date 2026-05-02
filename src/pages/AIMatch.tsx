@@ -13,13 +13,15 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowRight, Sparkles, Loader2, Search, Wallet, GraduationCap, Globe,
+  ArrowRight, Sparkles, Loader2, Search, Wallet, GraduationCap, Globe, SearchX,
 } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { ScholarshipCardSkeleton } from "@/components/ScholarshipCard";
+import { EmptyState } from "@/components/EmptyState";
 
 interface AIMatchProps { language?: "en" | "ru"; }
 
@@ -286,12 +288,22 @@ const AIMatch = ({ language = "en" }: AIMatchProps) => {
         {!hasSearched ? (
           <EmptyExplainer items={t.explainer} />
         ) : running && results.length === 0 ? (
-          <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span className="text-sm">{t.reading}</span>
-          </div>
+          <>
+            <div className="flex items-center justify-center pb-6 gap-2 text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm">{t.reading}</span>
+            </div>
+            <div className="space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => <ScholarshipCardSkeleton key={i} index={i} />)}
+            </div>
+          </>
         ) : results.length === 0 ? (
-          <NoMatches t={t} aiPath={aiPath} />
+          <EmptyState
+            icon={<SearchX />}
+            title={language === "ru" ? "Не нашли точных совпадений" : "No close matches yet"}
+            description={t.noMatches}
+            cta={{ label: t.noMatchesCta.replace(/[→]/g, "").trim(), to: aiPath }}
+          />
         ) : (
           <>
             <div className="flex items-baseline justify-between gap-3 mb-5">
@@ -405,17 +417,6 @@ const EmptyExplainer = ({ items }: { items: T["explainer"] }) => (
         <p className="text-xs text-muted-foreground leading-relaxed">{card.body}</p>
       </div>
     ))}
-  </div>
-);
-
-const NoMatches = ({ t, aiPath }: { t: T; aiPath: string }) => (
-  <div className="text-center py-16">
-    <p className="text-sm text-muted-foreground leading-relaxed mb-5 max-w-sm mx-auto">{t.noMatches}</p>
-    <Button variant="outline" asChild>
-      <Link to={aiPath}>
-        {t.noMatchesCta} <ArrowRight className="ml-2 w-4 h-4" />
-      </Link>
-    </Button>
   </div>
 );
 
