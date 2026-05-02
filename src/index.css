@@ -211,7 +211,9 @@
 /* ─── Print: TopUni AI pathway report → PDF ─────────────────────────────
    When the user hits "Download PDF" on the pathway tab we call
    window.print(); this stylesheet hides all chrome and renders just the
-   #printable-report element on a clean white sheet with editorial typography. */
+   #printable-report element on a clean white sheet with editorial typography.
+   The visual card components also need print-aware styling so they render
+   as flat editorial blocks instead of screen-ish rounded chrome. */
 @media print {
   /* Hide everything by default... */
   body * { visibility: hidden !important; }
@@ -267,5 +269,63 @@
   #printable-report li,
   #printable-report p {
     page-break-inside: avoid;
+  }
+
+  /* Card components print as flat editorial blocks ─────────────────
+     The visual card renderers (StrategicPositioning pull-quote,
+     UniversityShortlist tier cards, FundingShortlist scholarship cards,
+     EssayAngles, HonestGaps, action-plan items) all use rounded
+     bg-card containers with coloured strips. In print we strip the
+     fills and shadows and keep only thin black borders. */
+  #printable-report .not-prose [class*="rounded"],
+  #printable-report .not-prose .bg-card,
+  #printable-report .not-prose [class*="bg-gradient-to"] {
+    background: white !important;
+    box-shadow: none !important;
+    border-color: #d4d4d4 !important;
+    border-radius: 4px !important;
+  }
+  /* Keep the gold strategic-call pull-quote visible — it's a key element */
+  #printable-report .not-prose [class*="border-gold-dark"] {
+    border-color: #b8860b !important;
+  }
+  /* Avoid breaking inside any visual card */
+  #printable-report .not-prose > div > div,
+  #printable-report .not-prose [class*="rounded-xl"],
+  #printable-report .not-prose [class*="rounded-2xl"] {
+    page-break-inside: avoid;
+  }
+
+  /* Hide click-only affordances (arrows, "Open in Discover" footers,
+     hover states) — meaningless on paper */
+  #printable-report svg.lucide-arrow-right,
+  #printable-report svg.lucide-external-link,
+  #printable-report [class*="group-hover:"] {
+    display: none !important;
+  }
+
+  /* Hide the "Open in Discover" / "See all in Discover" / next-step
+     navigation buttons — those are screen-only paths */
+  #printable-report button {
+    pointer-events: none !important;
+  }
+  #printable-report .not-prose button[class*="rounded-2xl"] {
+    display: none !important;
+  }
+
+  /* Action plan checkboxes: render as printable boxes, hide the live
+     toggle state visually so they all look ready to tick on paper */
+  #printable-report input[type="checkbox"] {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    border: 1.5pt solid #333 !important;
+    width: 10pt !important;
+    height: 10pt !important;
+    background: white !important;
+  }
+
+  /* Keep severity strips visible as thin black bars in print */
+  #printable-report [class*="absolute left-0"][class*="bg-"] {
+    background: #333 !important;
   }
 }
