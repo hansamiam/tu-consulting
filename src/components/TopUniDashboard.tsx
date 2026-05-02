@@ -16,6 +16,7 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { SaveBriefPrompt } from "@/components/topuni/SaveBriefPrompt";
+import { Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
@@ -983,16 +984,34 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   // report on every visit (vs a fresh generation each time), which keeps
   // their action-plan checkbox progress aligned to stable wording. Keyed
   // by a profile hash so editing the profile invalidates the stored report.
+
+  /* Auth + premium tier resolution — declared early because profileHash
+     depends on reportGrade. Members get the premium prompt (15-20
+     universities, deeper sections, Gemini 2.5 Pro). */
+  const { user, subscription } = useAuth();
+  const isMember = !!subscription && (
+    subscription.is_active ||
+    subscription.is_founding_member ||
+    subscription.earned_trial_active ||
+    subscription.tier === "pro" ||
+    subscription.tier === "founding"
+  );
+  const reportGrade: "basic" | "premium" = isMember ? "premium" : "basic";
+
+  /* Profile hash — bumps when ANY signal changes that should invalidate
+     the cached brief: identity fields, language, AND the reportGrade
+     (so a user who upgrades from basic to premium auto-regenerates the
+     deeper version on next visit, not the stale basic one). */
   const profileHash = useMemo(() => {
     const fingerprint = JSON.stringify({
       n: profile.fullName, g: profile.gpa, i: profile.ielts, s: profile.sat,
       m: profile.major, c: profile.targetCountries, b: profile.budget,
-      lang: language,
+      lang: language, grade: reportGrade,
     });
     let h = 0;
     for (let i = 0; i < fingerprint.length; i++) h = ((h << 5) - h + fingerprint.charCodeAt(i)) | 0;
     return `p${h.toString(36)}`;
-  }, [profile.fullName, profile.gpa, profile.ielts, profile.sat, profile.major, profile.targetCountries?.join(","), profile.budget, language]);
+  }, [profile.fullName, profile.gpa, profile.ielts, profile.sat, profile.major, profile.targetCountries?.join(","), profile.budget, language, reportGrade]);
 
   const PATHWAY_STORAGE_KEY = "topuni-pathway-cache";
 
@@ -1106,7 +1125,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
 
   /* ─── Public share — mints a /brief/:slug URL via the share-brief
      edge function. Used by the Share button in the report toolbar. */
-  const { user } = useAuth();
+  // (user / subscription / isMember / reportGrade declared earlier
+  //  alongside profileHash — they're needed for cache-key invalidation.)
 
   /* ─── Save-your-work signup prompt. Fires once after the brief
      finishes generating, only for anon users. Stores a "shown" flag
@@ -1130,7 +1150,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         body: {
           content: pathwayContent,
           language,
-          reportGrade: "basic",
+          reportGrade,
           profileSnapshot: {
             firstName: profile.fullName?.split(" ")[0],
             gradeLevel: profile.gradeLevel,
@@ -1248,7 +1268,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
 
     await streamSSE(
       PATHWAY_URL,
-      { profile, language },
+      { profile, language, reportGrade },
       (chunk) => { soFar += chunk; setPathwayContent(soFar); },
       () => {
         const now = Date.now();
@@ -1383,7 +1403,26 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                 })()}
               </div>
               {pathwayGenerated && pathwayContent && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap justify-end">
+                  {/* Premium upgrade nudge — visible only when the user
+                      ran the basic tier. Members see a quiet "Premium"
+                      badge instead. */}
+                  {isMember ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold uppercase tracking-[0.14em] bg-gold/10 text-gold-dark border border-gold/30">
+                      <Crown className="w-3 h-3" />
+                      {t("Premium brief", "Премиум брифинг")}
+                    </span>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1.5 text-gold-dark hover:bg-gold/10"
+                      onClick={() => navigate(isRu ? "/pricing/ru" : "/pricing")}
+                    >
+                      <Crown className="w-4 h-4" />
+                      {t("Upgrade for Premium brief", "Премиум брифинг")}
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm" onClick={generatePathway} disabled={pathwayLoading}>
                     {pathwayLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : t("Regenerate", "Обновить")}
                   </Button>
@@ -1957,7 +1996,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
               ? {
                   content: pathwayContent,
                   language,
-                  grade: "basic",
+                  grade: reportGrade,
                   profileHash,
                 }
               : undefined,
