@@ -27,8 +27,17 @@ export default defineConfig(({ mode }) => ({
         manualChunks(id) {
           if (!id.includes("node_modules")) return undefined;
 
-          // React + react-dom + scheduler — the framework runtime
-          if (id.includes("/react/") || id.includes("/react-dom/") || id.includes("/scheduler/")) {
+          // React + react-dom + scheduler — the framework runtime.
+          // Use node_modules/<pkg>/ prefix so we don't accidentally match
+          // packages like @floating-ui/react-dom (which embed React in
+          // their path and would otherwise pull Floating UI into the
+          // react-vendor chunk, scrambling its exports and breaking
+          // every consumer that imports React from this chunk).
+          if (
+            id.includes("node_modules/react/") ||
+            id.includes("node_modules/react-dom/") ||
+            id.includes("node_modules/scheduler/")
+          ) {
             return "react-vendor";
           }
           // Routing
