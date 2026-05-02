@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { clearPendingAccount, getPendingAccount, type PendingAccountPayload } from "@/lib/pendingAccount";
+import { clearPendingReferral, getPendingReferral } from "@/lib/referralCapture";
 
 const AuthCallback = () => {
   const navigate = useNavigate();
@@ -39,6 +40,21 @@ const AuthCallback = () => {
           console.warn("[AuthCallback] persist pending failed", e);
         }
         clearPendingAccount();
+      }
+
+      // Drain pending referral code (set by ReferralCaptor on any
+      // landing page that had ?ref=CODE in the URL).
+      const referralCode = getPendingReferral();
+      if (referralCode) {
+        setStatus("Linking your referral…");
+        try {
+          await supabase.functions.invoke("register-referral", {
+            body: { code: referralCode },
+          });
+        } catch (e) {
+          console.warn("[AuthCallback] register-referral failed", e);
+        }
+        clearPendingReferral();
       }
 
       const dest = sessionStorage.getItem("post_auth_redirect") || "/account";

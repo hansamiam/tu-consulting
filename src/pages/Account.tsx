@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Crown, Sparkles, ExternalLink, Loader2, LogOut, Calendar,
   Inbox, FileText, Bot, Bell, BellOff, ArrowRight, Search, Mail,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
@@ -340,7 +341,9 @@ const Account = () => {
             <QuickLink to="/topuni-ai"          icon={<Bot className="w-3.5 h-3.5" />}      label="AI counselor + brief" />
             <QuickLink to="/discover"           icon={<Search className="w-3.5 h-3.5" />}   label="Discover scholarships" />
             <QuickLink to="/pipeline"           icon={<Inbox className="w-3.5 h-3.5" />}    label="Application pipeline" />
+            <QuickLink to="/calendar"           icon={<Calendar className="w-3.5 h-3.5" />} label="Deadline calendar" />
             <QuickLink to="/essay"              icon={<FileText className="w-3.5 h-3.5" />} label="Essay critique" />
+            <QuickLink to="/refer"              icon={<Users className="w-3.5 h-3.5" />}    label="Refer a friend" />
           </div>
         </Card>
 

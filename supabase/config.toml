@@ -67,3 +67,6 @@ verify_jwt = true
 
 [functions.scholarship-url-health-cron]
 verify_jwt = true
+
+[functions.register-referral]
+verify_jwt = true

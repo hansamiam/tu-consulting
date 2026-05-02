@@ -39,6 +39,7 @@ import ScholarshipDetail from "./pages/ScholarshipDetail";
 import EssayCritique from "./pages/EssayCritique";
 import AIMatch from "./pages/AIMatch";
 import Calendar from "./pages/Calendar";
+import Refer from "./pages/Refer";
 import Admin from "./pages/Admin";
 import FunnelDashboard from "./pages/FunnelDashboard";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -52,8 +53,19 @@ import Pricing from "./pages/Pricing";
 import AuthCallback from "./pages/AuthCallback";
 import Account from "./pages/Account";
 import { AuthProvider } from "./contexts/AuthContext";
+import { rememberReferralFromUrl } from "./lib/referralCapture";
+import { useEffect } from "react";
 // EarnedTrialBanner archived — single Founding tier, no earned trial mechanic
 const queryClient = new QueryClient();
+
+/* Captures ?ref=CODE on any landing — runs once on mount. The actual
+   referral registration happens in AuthCallback after the user signs
+   up; this just persists the code so it survives the magic-link round
+   trip. */
+const ReferralCaptor = () => {
+  useEffect(() => { rememberReferralFromUrl(); }, []);
+  return null;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -62,6 +74,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+        <ReferralCaptor />
         <ErrorBoundary>
         <Routes>
           <Route path="/" element={<Index />} />
@@ -109,6 +122,8 @@ const App = () => (
           {/* Deadline calendar — paired with pipeline for time-based view */}
           <Route path="/calendar"     element={<Calendar language="en" />} />
           <Route path="/calendar/ru"  element={<Calendar language="ru" />} />
+          {/* Referral hub — share your code, see your referrals */}
+          <Route path="/refer"        element={<Refer />} />
           {/* Programmatic SEO landing pages — country / field / theme */}
           <Route path="/scholarships/by-country/:country" element={<ScholarshipsByFilter mode="country" />} />
           <Route path="/scholarships/by-field/:field"     element={<ScholarshipsByFilter mode="field" />} />
