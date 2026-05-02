@@ -28,6 +28,56 @@ const STATUS_LABELS: Record<string, string> = {
   accepted: "Accepted",
 };
 
+/* Tees an SSE stream: passes every chunk through to the client AND
+   accumulates the assistant text content as it arrives so we can
+   persist the final message to the DB after [DONE]. */
+function teeAndCapture(
+  upstream: ReadableStream<Uint8Array>,
+  onComplete: (assistantContent: string) => Promise<void> | void,
+): ReadableStream<Uint8Array> {
+  const reader = upstream.getReader();
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  let textBuffer = "";
+  let assistantContent = "";
+
+  return new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          // Pass-through to the client immediately
+          controller.enqueue(value);
+          // Accumulate for our own parse
+          textBuffer += decoder.decode(value, { stream: true });
+          let nl: number;
+          while ((nl = textBuffer.indexOf("\n")) !== -1) {
+            let line = textBuffer.slice(0, nl);
+            textBuffer = textBuffer.slice(nl + 1);
+            if (line.endsWith("\r")) line = line.slice(0, -1);
+            if (!line.startsWith("data: ")) continue;
+            const jsonStr = line.slice(6).trim();
+            if (jsonStr === "[DONE]") continue;
+            try {
+              const parsed = JSON.parse(jsonStr);
+              const c = parsed?.choices?.[0]?.delta?.content as string | undefined;
+              if (c) assistantContent += c;
+            } catch { /* partial chunk; ignore */ }
+          }
+        }
+      } catch (e) {
+        console.error("[topuni-chat] tee error", e);
+      } finally {
+        try { await onComplete(assistantContent); } catch (e) { console.error("[topuni-chat] persist hook", e); }
+        controller.close();
+      }
+      // Suppress unused-warning for encoder (kept for future SSE injection)
+      void encoder;
+    },
+  });
+}
+
 interface TrackerEntry {
   scholarship_id: string;
   status: string | null;
@@ -226,7 +276,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, language, profile, reportSummary } = await req.json();
+    const { messages, language, profile, reportSummary, sessionId } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
@@ -344,6 +394,71 @@ Guidelines:
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    /* If we have a userId AND a sessionId, persist this turn's user
+       message and then tee the streaming response so we can capture
+       the assistant's full reply and write that too. Anon callers and
+       no-session calls bypass this — the existing localStorage-only
+       behaviour stays. */
+    if (userId && sessionId && SUPABASE_URL && SERVICE_ROLE && messages?.length) {
+      const lastUser = messages[messages.length - 1];
+      if (lastUser?.role === "user" && typeof lastUser.content === "string") {
+        const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
+          auth: { persistSession: false, autoRefreshToken: false },
+        });
+        // Verify the session belongs to this user (RLS would block but
+        // we want a clean error rather than silent drop)
+        const { data: sess } = await admin
+          .from("counselor_sessions")
+          .select("session_id, user_id, message_count")
+          .eq("session_id", sessionId)
+          .maybeSingle<{ session_id: string; user_id: string; message_count: number }>();
+        if (sess && sess.user_id === userId) {
+          await admin.from("counselor_messages").insert({
+            session_id: sessionId,
+            user_id: userId,
+            role: "user",
+            content: lastUser.content,
+          });
+          // Auto-title from first user message if not yet set
+          if (sess.message_count === 0) {
+            const title = lastUser.content.slice(0, 80).trim();
+            await admin
+              .from("counselor_sessions")
+              .update({ title })
+              .eq("session_id", sessionId);
+          }
+
+          // Tee the streamed response: pass through to the client AND
+          // collect the assistant content into a buffer; insert when [DONE].
+          const teedStream = teeAndCapture(
+            response.body!,
+            async (assistantContent) => {
+              if (!assistantContent || assistantContent.length < 1) return;
+              try {
+                await admin.from("counselor_messages").insert({
+                  session_id: sessionId,
+                  user_id: userId,
+                  role: "assistant",
+                  content: assistantContent,
+                });
+              } catch (e) {
+                console.warn("[topuni-chat] persist assistant failed", e);
+              }
+            },
+          );
+
+          return new Response(teedStream, {
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "text/event-stream",
+              "X-TopUni-Case-Loaded": "1",
+              "X-TopUni-Session-Id": sessionId,
+            },
+          });
+        }
+      }
     }
 
     return new Response(response.body, {

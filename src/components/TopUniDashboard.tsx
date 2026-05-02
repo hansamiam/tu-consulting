@@ -1119,9 +1119,35 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     el.style.height = Math.min(el.scrollHeight, 140) + "px";
   }, [chatInput]);
 
-  const clearChat = () => {
+  /* ─── Counselor session — DB-backed when authed ─────────────────
+     Lazily created on first message of an authed user's chat. The
+     edge function reads it from the request body and persists every
+     turn (user + assistant) to counselor_messages. anon users keep
+     using localStorage only. */
+  const [chatSessionId, setChatSessionId] = useState<string | null>(null);
+
+  const ensureSession = async (): Promise<string | null> => {
+    if (chatSessionId) return chatSessionId;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
+      const { data, error } = await supabase
+        .from("counselor_sessions")
+        .insert({ user_id: session.user.id, language })
+        .select("session_id")
+        .single();
+      if (error || !data) return null;
+      setChatSessionId(data.session_id);
+      return data.session_id;
+    } catch { return null; }
+  };
+
+  const clearChat = async () => {
     setChatMessages([]);
     try { localStorage.removeItem("topuni-chat-history"); } catch { /* ignore */ }
+    // Don't archive the previous session — it's preserved for resume
+    // history. Just start fresh.
+    setChatSessionId(null);
   };
 
   /* ─── Public share — mints a /brief/:slug URL via the share-brief
@@ -1306,6 +1332,11 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     setChatInput("");
     setChatLoading(true);
 
+    // Lazy-create the DB session for authed users so each turn lands
+    // in counselor_messages. Anon users get null → server keeps the
+    // existing localStorage-only path.
+    const sessionId = await ensureSession();
+
     let assistantSoFar = "";
     const upsertAssistant = (chunk: string) => {
       assistantSoFar += chunk;
@@ -1327,7 +1358,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
 
     await streamSSE(
       CHAT_URL,
-      { messages: allMessages, language, profile, reportSummary },
+      { messages: allMessages, language, profile, reportSummary, sessionId },
       (chunk) => upsertAssistant(chunk),
       () => setChatLoading(false)
     );
