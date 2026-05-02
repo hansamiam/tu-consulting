@@ -38,6 +38,7 @@ import ScholarshipsByFilter from "./pages/ScholarshipsByFilter";
 import ScholarshipDetail from "./pages/ScholarshipDetail";
 import EssayCritique from "./pages/EssayCritique";
 import AIMatch from "./pages/AIMatch";
+import Calendar from "./pages/Calendar";
 import Admin from "./pages/Admin";
 import FunnelDashboard from "./pages/FunnelDashboard";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -105,6 +106,9 @@ const App = () => (
           {/* Application mission-control — kanban of saved scholarships */}
           <Route path="/pipeline"     element={<Pipeline language="en" />} />
           <Route path="/pipeline/ru"  element={<Pipeline language="ru" />} />
+          {/* Deadline calendar — paired with pipeline for time-based view */}
+          <Route path="/calendar"     element={<Calendar language="en" />} />
+          <Route path="/calendar/ru"  element={<Calendar language="ru" />} />
           {/* Programmatic SEO landing pages — country / field / theme */}
           <Route path="/scholarships/by-country/:country" element={<ScholarshipsByFilter mode="country" />} />
           <Route path="/scholarships/by-field/:field"     element={<ScholarshipsByFilter mode="field" />} />
