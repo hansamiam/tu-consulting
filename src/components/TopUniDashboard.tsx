@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { SaveBriefPrompt } from "@/components/topuni/SaveBriefPrompt";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
@@ -1106,6 +1107,11 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   /* ─── Public share — mints a /brief/:slug URL via the share-brief
      edge function. Used by the Share button in the report toolbar. */
   const { user } = useAuth();
+
+  /* ─── Save-your-work signup prompt. Fires once after the brief
+     finishes generating, only for anon users. Stores a "shown" flag
+     so we don't nag a user who explicitly dismissed. */
+  const [savePromptOpen, setSavePromptOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
@@ -1249,6 +1255,12 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         setPathwayLoading(false);
         setPathwayGenerated(true);
         setPathwayGeneratedAt(now);
+        // Show signup prompt 4s after brief lands — gives the student
+        // a moment to scroll the result before we ask them to save.
+        // Only for anon users; only once per session.
+        if (!user && !sessionStorage.getItem("topuni-save-prompt-dismissed")) {
+          setTimeout(() => setSavePromptOpen(true), 4000);
+        }
         // Persist the completed report keyed by current profile hash, so
         // subsequent visits restore the same text and the action-plan
         // checkboxes (keyed by text hash) line up.
@@ -1909,6 +1921,50 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         </TabsContent>
 
       </Tabs>
+
+      {/* ─── Save-your-brief signup prompt (anon users only) ─────── */}
+      {!user && (
+        <SaveBriefPrompt
+          open={savePromptOpen}
+          onOpenChange={(o) => {
+            setSavePromptOpen(o);
+            if (!o) {
+              try { sessionStorage.setItem("topuni-save-prompt-dismissed", "1"); } catch { /* ignore */ }
+            }
+          }}
+          defaultEmail={profile.email}
+          language={language}
+          payload={{
+            profile: {
+              fullName: profile.fullName,
+              email: profile.email,
+              gradeLevel: profile.gradeLevel,
+              gpa: profile.gpa,
+              ielts: profile.ielts,
+              sat: profile.sat,
+              targetCountries: profile.targetCountries,
+              major: profile.major,
+              budget: profile.budget,
+              scholarshipNeeded: profile.scholarshipNeeded,
+              timeline: profile.timeline,
+              prestige: profile.prestige,
+              scholarshipPriority: profile.scholarship,
+              careerRoi: profile.careerRoi,
+              visaAccess: profile.visaAccess,
+              locationPref: profile.locationPref,
+            },
+            pathway: pathwayContent && pathwayContent.length > 200
+              ? {
+                  content: pathwayContent,
+                  language,
+                  grade: "basic",
+                  profileHash,
+                }
+              : undefined,
+            createdAt: Date.now(),
+          }}
+        />
+      )}
 
       {/* ─── Share dialog ──────────────────────────────────────────
           Mints (or shows) a public /brief/:slug URL the student can
