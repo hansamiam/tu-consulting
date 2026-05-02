@@ -137,12 +137,8 @@ Three distinct narrative angles this student could lead with. For each, use this
 **Why it matters:** ...
 **Action this month:** ...
 
-## Next steps
-Two short paragraphs:
-- **In Discover** (TopUni's scholarship database): your full ranked match list with strategy notes is waiting there. Mention 2-3 specific scholarships the student should review first based on their profile.
-- **In Academy**: live monthly workshops with our founders go deeper on essay strategy, country deep-dives, and admissions interview prep — useful as the student moves into drafting.
-
-Then close with one sentence of specific encouragement based on this student's strongest signal.
+## Final word
+One short paragraph (3-4 sentences) of specific encouragement based on this student's strongest signal — what they should believe about their candidacy as they go execute. Do not give generic motivation. Do not say "good luck." Cite something concrete from their profile and tell them why it matters.
 
 Throughout the report:
 - Be specific, use real data from the database, name names, cite numbers
@@ -241,12 +237,8 @@ For the top 3 recommended cities:
 ## 90-day action plan
 Week-by-week from today, grouped as Weeks 1-2 / 3-6 / 7-12. 3-4 concrete actions per group, with specific deliverables.
 
-## Next steps
-Two short paragraphs:
-- **In Discover** (the scholarship database): name 3-5 specific scholarships the student should open first.
-- **In Academy**: live monthly workshops with our founders. Mention which workshop topic this student would benefit from most.
-
-Close with one sentence of specific encouragement based on the student's strongest signal.
+## Final word
+One short paragraph (3-4 sentences) of specific encouragement based on this student's strongest signal — what they should believe about their candidacy as they go execute. Do not give generic motivation. Do not say "good luck." Cite something concrete from their profile and tell them why it matters.
 
 Throughout:
 - Be exceptionally specific. This is the premium tier — every paragraph should feel hand-written for this student.
