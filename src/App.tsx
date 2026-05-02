@@ -58,6 +58,7 @@ const Calendar             = lazy(() => import("./pages/Calendar"));
 const Refer                = lazy(() => import("./pages/Refer"));
 const Admin                = lazy(() => import("./pages/Admin"));
 const FunnelDashboard      = lazy(() => import("./pages/FunnelDashboard"));
+const AdminInsights        = lazy(() => import("./pages/AdminInsights"));
 const Academy              = lazy(() => import("./pages/Academy"));
 const CountryGuide         = lazy(() => import("./pages/CountryGuide"));
 const NotFound             = lazy(() => import("./pages/NotFound"));
@@ -158,6 +159,7 @@ const App = () => (
 
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/funnel" element={<FunnelDashboard />} />
+          <Route path="/admin/insights" element={<AdminInsights />} />
           <Route path="/academy" element={<Academy />} />
           <Route path="/blog/guide/:slug" element={<CountryGuide language="en" />} />
           <Route path="/blog/guide/:slug/ru" element={<CountryGuide language="ru" />} />
