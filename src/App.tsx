@@ -37,6 +37,7 @@ import Pipeline from "./pages/Pipeline";
 import ScholarshipsByFilter from "./pages/ScholarshipsByFilter";
 import ScholarshipDetail from "./pages/ScholarshipDetail";
 import EssayCritique from "./pages/EssayCritique";
+import AIMatch from "./pages/AIMatch";
 import Admin from "./pages/Admin";
 import FunnelDashboard from "./pages/FunnelDashboard";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -112,6 +113,8 @@ const App = () => (
           <Route path="/scholarships/:id"                 element={<ScholarshipDetail />} />
           {/* Essay critique — premium-gated reader-perspective AI feedback */}
           <Route path="/essay"                            element={<EssayCritique />} />
+          {/* Fast AI scholarship matcher — type a sentence, get matches */}
+          <Route path="/match"                            element={<AIMatch />} />
 
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/funnel" element={<FunnelDashboard />} />
