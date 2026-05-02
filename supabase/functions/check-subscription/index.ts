@@ -114,6 +114,70 @@ Deno.serve(async (req) => {
 
     await admin.from("subscriptions").upsert(row, { onConflict: "stripe_subscription_id" });
 
+    /* ─── Referral conversion side-effect ────────────────────────
+       If this user was referred AND we haven't yet recorded their
+       premium conversion, stamp the referral row + bump the
+       referrer's premium_conversions counter + queue a
+       "your friend converted!" email to the referrer. Best-effort:
+       errors here don't fail the subscription sync. */
+    try {
+      const isPremiumActive =
+        ["active", "trialing"].includes(active.status) &&
+        (mapping.tier === "pro" || mapping.tier === "founding");
+      if (isPremiumActive) {
+        const { data: ref } = await admin
+          .from("referrals")
+          .select("referral_id, code, referrer_user_id, became_premium_at")
+          .eq("referee_user_id", user.id)
+          .maybeSingle();
+        if (ref && !ref.became_premium_at) {
+          await admin
+            .from("referrals")
+            .update({ became_premium_at: new Date().toISOString() })
+            .eq("referral_id", ref.referral_id);
+
+          // Bump denormalised counter
+          const { data: rc } = await admin
+            .from("referral_codes")
+            .select("premium_conversions")
+            .eq("code", ref.code)
+            .maybeSingle();
+          await admin
+            .from("referral_codes")
+            .update({ premium_conversions: (rc?.premium_conversions ?? 0) + 1 })
+            .eq("code", ref.code);
+
+          // Notify the referrer (best-effort — looks up email via
+          // student_profiles since we don't store it on auth.users
+          // directly without admin scopes).
+          const { data: refProfile } = await admin
+            .from("student_profiles")
+            .select("email, full_name")
+            .eq("user_id", ref.referrer_user_id)
+            .maybeSingle();
+          if (refProfile?.email) {
+            try {
+              await admin.functions.invoke("send-transactional-email", {
+                body: {
+                  to: refProfile.email,
+                  template: "referral-converted",
+                  data: {
+                    name: refProfile.full_name?.split(" ")[0] ?? undefined,
+                    referralCount: (rc?.premium_conversions ?? 0) + 1,
+                  },
+                },
+              });
+            } catch (e) {
+              // referral-converted template may not exist yet; not fatal
+              console.warn("[check-subscription] referral notify failed", e);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("[check-subscription] referral side-effect failed", e);
+    }
+
     return new Response(JSON.stringify({
       subscribed: true,
       tier: mapping.tier,

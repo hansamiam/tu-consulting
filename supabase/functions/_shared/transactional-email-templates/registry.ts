@@ -16,6 +16,7 @@ import { template as noShowRecovery } from './no-show-recovery.tsx'
 import { template as postCallUpsell } from './post-call-upsell.tsx'
 import { template as scholarshipDeadline } from './scholarship-deadline.tsx'
 import { template as weeklyNudge } from './weekly-nudge.tsx'
+import { template as referralConverted } from './referral-converted.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'booking-confirmation': bookingConfirmation,
@@ -25,4 +26,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'post-call-upsell': postCallUpsell,
   'scholarship-deadline': scholarshipDeadline,
   'weekly-nudge': weeklyNudge,
+  'referral-converted': referralConverted,
 }
