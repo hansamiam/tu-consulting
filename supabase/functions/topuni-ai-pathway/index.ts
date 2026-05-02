@@ -6,6 +6,54 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const EMBEDDING_MODEL = "text-embedding-3-small";
+
+/* ─── Profile → canonical query string ─────────────────────────────
+   Used for embedding. Same shape as match-scholarships' profileToQuery
+   so retrievals are stable across surfaces. */
+function profileToQuery(profile: any): string {
+  const parts: string[] = [];
+  const field = (profile.major || profile.field || "").trim();
+  if (field) parts.push(`Field of study: ${field}.`);
+  if (profile.gradeLevel) parts.push(`Current level: ${profile.gradeLevel}.`);
+  const tc = (profile.targetCountries || []).slice(0, 5);
+  if (tc.length) parts.push(`Target countries: ${tc.join(", ")}.`);
+  if (profile.budget) parts.push(`Budget: ${profile.budget}.`);
+  if (profile.scholarshipNeeded === "yes") parts.push(`Needs full scholarship.`);
+  if (profile.timeline) parts.push(`Timeline: ${profile.timeline}.`);
+  return parts.join(" ").trim() || "international scholarship for higher education";
+}
+
+/* Rough degree level inference for the eligibility pre-filter. */
+function inferDegreeLevel(profile: any): string | null {
+  const g = (profile.gradeLevel || "").toLowerCase();
+  if (g.includes("9th") || g.includes("10th") || g.includes("11th") || g.includes("12th") || g.includes("foundation")) return "bachelor";
+  if (g.includes("transfer")) return "bachelor";
+  if (g.includes("masters") || g.includes("master")) return "master";
+  if (g.includes("phd") || g.includes("doctor")) return "phd";
+  return null;
+}
+
+async function embedQuery(text: string, apiKey: string): Promise<number[] | null> {
+  try {
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: EMBEDDING_MODEL, input: text }),
+    });
+    if (!resp.ok) {
+      console.warn("Embedding API non-OK", resp.status);
+      return null;
+    }
+    const data = await resp.json();
+    const v = data?.data?.[0]?.embedding;
+    return Array.isArray(v) && v.length === 1536 ? v : null;
+  } catch (e) {
+    console.warn("Embedding failed; falling back to country-only retrieval", e);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -15,48 +63,131 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Fetch matching universities from DB
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get universities with programs, requirements, scholarships
+    const targetCountries = profile.targetCountries || [];
+    const studentGpa = parseFloat(profile.gpa) || null;
+    const studentIelts = parseFloat(profile.ielts) || null;
+
+    /* ─── Scholarship retrieval via pgvector RAG ───────────────────
+       Replaces the old "fetch all unis + nested scholarships, dump
+       30 of them into the prompt" approach. We:
+         1. Build a canonical query string from the profile.
+         2. Embed it.
+         3. Call match_scholarships() with eligibility filters.
+         4. Hydrate top 25 full rows in retrieval order.
+       Falls back gracefully to a country-filtered SELECT if any
+       step fails (cold-start: no embeddings yet, gateway down). */
+    const profileQuery = profileToQuery(profile);
+    const queryEmbedding = await embedQuery(profileQuery, LOVABLE_API_KEY);
+    const degreeLevel = inferDegreeLevel(profile);
+
+    let scholarshipRows: any[] = [];
+    let retrievalMethod = "fallback_country_filter";
+
+    if (queryEmbedding) {
+      const { data: matches, error: matchErr } = await supabase.rpc("match_scholarships", {
+        query_embedding: queryEmbedding as unknown as string,
+        p_nationality: profile.nationality || null,
+        p_min_gpa: studentGpa,
+        p_min_ielts: studentIelts,
+        p_degree_level: degreeLevel,
+        p_max_results: 25,
+      });
+      if (!matchErr && Array.isArray(matches) && matches.length > 0) {
+        const ids = matches.map((m: any) => m.scholarship_id);
+        const { data: hydrated } = await supabase
+          .from("scholarships")
+          .select(
+            "scholarship_id, scholarship_name, provider_name, host_country, " +
+            "coverage_type, award_amount_text, estimated_total_value_usd, " +
+            "target_degree_level, target_fields, application_deadline, " +
+            "eligibility_requirements, citizenship_requirements, official_url, " +
+            "why_this_fits, strategy_notes"
+          )
+          .in("scholarship_id", ids);
+        // Re-order to match retrieval order; tag each with similarity & eligibility flag.
+        const order = new Map(matches.map((m: any, i: number) => [m.scholarship_id, i]));
+        const elig = new Map(matches.map((m: any) => [m.scholarship_id, m.passes_eligibility]));
+        const sims = new Map(matches.map((m: any) => [m.scholarship_id, m.similarity]));
+        scholarshipRows = (hydrated || [])
+          .map((r) => ({ ...r, _similarity: sims.get(r.scholarship_id), _eligible: elig.get(r.scholarship_id) }))
+          .sort((a, b) => (order.get(a.scholarship_id)! - order.get(b.scholarship_id)!));
+        retrievalMethod = "pgvector_rag";
+      }
+    }
+
+    if (scholarshipRows.length === 0) {
+      // Fallback: country-filtered top 25 sorted by deadline urgency
+      let q = supabase
+        .from("scholarships")
+        .select(
+          "scholarship_id, scholarship_name, provider_name, host_country, " +
+          "coverage_type, award_amount_text, estimated_total_value_usd, " +
+          "target_degree_level, target_fields, application_deadline, " +
+          "eligibility_requirements, citizenship_requirements, official_url, " +
+          "why_this_fits, strategy_notes"
+        );
+      if (targetCountries.length > 0) {
+        q = q.in("host_country", [...targetCountries, "Global", "Multiple", "European Union"]);
+      }
+      const { data } = await q
+        .order("application_deadline", { ascending: true, nullsFirst: false })
+        .limit(25);
+      scholarshipRows = data || [];
+    }
+
+    /* Universities — kept lighter. Country-filter SELECT with the
+       fields the prompt actually uses. The university table is much
+       smaller than scholarships, so RAG is overkill here. */
     const { data: universities } = await supabase
       .from("universities")
       .select(`
-        university_id, university_name, country, city, tuition_usd_per_year,
-        cost_of_living_index, language_of_instruction, website_url,
-        foundation_year_available, gap_year_accepted,
+        university_name, country, city, tuition_usd_per_year,
+        language_of_instruction, foundation_year_available, gap_year_accepted,
         programs (
-          program_id, program_name, degree_level, field_of_study, duration_years,
-          admission_requirements ( ielts_score_min, sat_score_min, gpa_min, application_deadline ),
-          applications ( acceptance_rate, visa_difficulty_score, portal_url )
-        ),
-        scholarships ( scholarship_name, coverage_type, stipend_amount, eligibility_requirements, application_deadline )
-      `);
+          program_name, degree_level, field_of_study, duration_years,
+          admission_requirements ( ielts_score_min, gpa_min, application_deadline ),
+          applications ( acceptance_rate, visa_difficulty_score )
+        )
+      `)
+      .in("country", targetCountries.length > 0 ? targetCountries : []);
 
-    // Filter relevant universities based on student profile
-    const targetCountries = profile.targetCountries || [];
-    const studentGpa = parseFloat(profile.gpa) || 0;
-    const studentIelts = parseFloat(profile.ielts) || 0;
-    const needsScholarship = profile.scholarshipNeeded === "yes";
+    const relevantUnis = (universities || []).slice(0, 15);
 
-    const relevantUnis = (universities || []).filter((u: any) => {
-      if (targetCountries.length > 0 && !targetCountries.includes(u.country)) return false;
-      return true;
-    }).slice(0, 30); // Cap at 30 for prompt size
+    /* ─── Prompt context ───────────────────────────────────────────
+       Compact, retrieval-driven. Scholarships first (the AI report's
+       primary deliverable) then a slimmer universities block. */
+    const scholarshipContext = scholarshipRows.map((s: any, i: number) => {
+      const fields = (s.target_fields || []).filter(Boolean).join(", ");
+      const levels = (s.target_degree_level || []).filter(Boolean).join(", ");
+      const elig = String(s.eligibility_requirements || "").slice(0, 240);
+      const sim = typeof s._similarity === "number" ? ` (relevance ${(s._similarity * 100).toFixed(0)}%)` : "";
+      const eligTag = s._eligible === false ? " [eligibility unclear — review]" : "";
+      return `${i + 1}. ${s.scholarship_name}${sim}${eligTag}
+   Provider: ${s.provider_name || "—"}; host: ${s.host_country || "—"}
+   Coverage: ${s.coverage_type}${s.award_amount_text ? ` — ${s.award_amount_text}` : ""}
+   Levels: ${levels || "any"}; fields: ${fields || "any"}
+   Deadline: ${s.application_deadline || "varies"}; URL: ${s.official_url || "—"}
+   Eligibility: ${elig || "—"}`;
+    }).join("\n\n");
 
-    const dbContext = relevantUnis.map((u: any) => {
-      const programs = (u.programs || []).map((p: any) => {
+    const universityContext = relevantUnis.map((u: any) => {
+      const programs = (u.programs || []).slice(0, 4).map((p: any) => {
         const req = p.admission_requirements?.[0];
         const app = p.applications?.[0];
-        return `  - ${p.program_name} (${p.degree_level}, ${p.field_of_study}): IELTS min ${req?.ielts_score_min || 'N/A'}, GPA min ${req?.gpa_min || 'N/A'}, acceptance ${app?.acceptance_rate ? app.acceptance_rate + '%' : 'N/A'}, deadline ${req?.application_deadline || 'N/A'}`;
+        return `   - ${p.program_name} (${p.degree_level}, ${p.field_of_study}): IELTS ${req?.ielts_score_min ?? "—"}, GPA ${req?.gpa_min ?? "—"}, accept ${app?.acceptance_rate != null ? app.acceptance_rate + "%" : "—"}, deadline ${req?.application_deadline ?? "—"}`;
       }).join("\n");
-      const schols = (u.scholarships || []).map((s: any) =>
-        `  - ${s.scholarship_name} (${s.coverage_type}): ${s.eligibility_requirements || 'Open'}, deadline ${s.application_deadline || 'N/A'}`
-      ).join("\n");
-      return `${u.university_name} (${u.city}, ${u.country}) — Tuition: $${u.tuition_usd_per_year || 'N/A'}/yr, Foundation Year: ${u.foundation_year_available ? 'Yes' : 'No'}\nPrograms:\n${programs}\nScholarships:\n${schols}`;
-    }).join("\n\n");
+      return `- ${u.university_name} (${u.city}, ${u.country}) · tuition $${u.tuition_usd_per_year ?? "—"}/yr · foundation ${u.foundation_year_available ? "yes" : "no"}\n${programs}`;
+    }).join("\n");
+
+    const dbContext = `=== TOP-${scholarshipRows.length} RETRIEVED SCHOLARSHIPS (method: ${retrievalMethod}) ===
+${scholarshipContext || "(none retrieved)"}
+
+=== TARGET UNIVERSITIES (${relevantUnis.length}) ===
+${universityContext || "(none in database for the student's target countries)"}`;
 
     const lang = language === "ru" ? "Russian" : "English";
     
@@ -255,9 +386,8 @@ Throughout:
 
 You MUST respond in ${lang}.
 
-You have access to REAL university data from our database. Use it to make specific, data-backed recommendations.
+You have access to REAL data from our database — both scholarships (retrieved by relevance to this specific student via vector search) and universities. Use only this data when naming options. Cite scholarship names and universities verbatim from the lists below. Do not invent options not present in the data.
 
-AVAILABLE UNIVERSITIES AND PROGRAMS:
 ${dbContext}
 
 STUDENT PROFILE:
