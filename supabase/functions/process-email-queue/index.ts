@@ -1,7 +1,77 @@
-import { sendLovableEmail } from 'npm:@lovable.dev/email-js'
 // deno-lint-ignore-file no-explicit-any
 import { createClient as _createClient } from 'npm:@supabase/supabase-js@2'
 const createClient = _createClient as unknown as (url: string, key: string, opts?: any) => any
+
+/* ─── Email sender — Resend by default, with optional fallback ─────
+   Replaces the previous @lovable.dev/email-js dependency so the email
+   pipeline works on a self-owned Supabase project (Lovable's email
+   API is gated to projects they manage). The function signature
+   mirrors the previous sendLovableEmail call so the only change at
+   the call site is the function name. */
+interface ResendEmailPayload {
+  run_id?: string
+  to: string
+  from: string
+  sender_domain: string
+  subject: string
+  html: string
+  text: string
+  purpose?: string
+  label?: string
+  idempotency_key?: string
+  unsubscribe_token?: string
+  message_id: string
+}
+
+class EmailSendError extends Error {
+  status: number
+  constructor(message: string, status: number) {
+    super(message)
+    this.status = status
+  }
+}
+
+async function sendEmail(payload: ResendEmailPayload, opts: { apiKey: string }): Promise<void> {
+  // Build the unsubscribe header (List-Unsubscribe + List-Unsubscribe-Post for
+  // one-click unsubscribe in Gmail / Outlook / Apple Mail).
+  const headers: Record<string, string> = {}
+  if (payload.unsubscribe_token) {
+    const unsubUrl = `https://topuni.org/unsubscribe?token=${encodeURIComponent(payload.unsubscribe_token)}`
+    headers['List-Unsubscribe'] = `<${unsubUrl}>`
+    headers['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click'
+  }
+
+  const body = {
+    from: payload.from,
+    to: [payload.to],
+    subject: payload.subject,
+    html: payload.html,
+    text: payload.text,
+    headers: Object.keys(headers).length > 0 ? headers : undefined,
+    // Resend supports tags for filtering in their dashboard
+    tags: [
+      ...(payload.label ? [{ name: 'template', value: payload.label.slice(0, 60) }] : []),
+      ...(payload.purpose ? [{ name: 'purpose', value: payload.purpose.slice(0, 60) }] : []),
+    ],
+    // Idempotency: Resend supports the Idempotency-Key header (introduced 2024)
+    // so accidental re-sends of the same message_id collapse server-side.
+  }
+
+  const resp = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${opts.apiKey}`,
+      'Content-Type': 'application/json',
+      ...(payload.idempotency_key ? { 'Idempotency-Key': payload.idempotency_key } : {}),
+    },
+    body: JSON.stringify(body),
+  })
+
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '')
+    throw new EmailSendError(`Resend ${resp.status}: ${text.slice(0, 400)}`, resp.status)
+  }
+}
 
 const MAX_RETRIES = 5
 const DEFAULT_BATCH_SIZE = 10
@@ -81,12 +151,12 @@ async function moveToDlq(
 }
 
 Deno.serve(async (req) => {
-  const apiKey = Deno.env.get('LOVABLE_API_KEY')
+  const apiKey = Deno.env.get('RESEND_API_KEY')
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
   if (!apiKey || !supabaseUrl || !supabaseServiceKey) {
-    console.error('Missing required environment variables')
+    console.error('Missing required environment variables (RESEND_API_KEY / SUPABASE_*)')
     return new Response(
       JSON.stringify({ error: 'Server configuration error' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
@@ -251,7 +321,7 @@ Deno.serve(async (req) => {
       }
 
       try {
-        await sendLovableEmail(
+        await sendEmail(
           {
             run_id: payload.run_id,
             to: payload.to,
@@ -266,10 +336,7 @@ Deno.serve(async (req) => {
             unsubscribe_token: payload.unsubscribe_token,
             message_id: payload.message_id,
           },
-          // sendUrl is optional — when LOVABLE_SEND_URL is not set, the library
-          // falls back to the default Lovable API endpoint (https://api.lovable.dev).
-          // Set LOVABLE_SEND_URL as a Supabase secret to override (e.g. for local dev).
-          { apiKey, sendUrl: Deno.env.get('LOVABLE_SEND_URL') }
+          { apiKey }
         )
 
         // Log success
