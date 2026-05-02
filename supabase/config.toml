@@ -49,3 +49,6 @@ verify_jwt = true
 
 [functions.scholarship-deadline-cron]
 verify_jwt = true
+
+[functions.share-brief]
+verify_jwt = false

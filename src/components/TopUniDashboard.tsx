@@ -11,7 +11,10 @@ import {
   Search, ArrowRight, Download, BookOpen, ExternalLink, Calendar, Zap,
   RotateCcw, Compass, PenLine, Wallet, FileText, Plane,
   Lightbulb, AlertTriangle, Quote, Check,
+  Share2, Copy, Mail,
 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
@@ -1100,6 +1103,57 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     try { localStorage.removeItem("topuni-chat-history"); } catch { /* ignore */ }
   };
 
+  /* ─── Public share — mints a /brief/:slug URL via the share-brief
+     edge function. Used by the Share button in the report toolbar. */
+  const { user } = useAuth();
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareExpiresAt, setShareExpiresAt] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const openShare = async () => {
+    if (!pathwayContent || pathwayContent.length < 200) return;
+    setShareOpen(true);
+    if (shareUrl) return; // already generated this session
+    setShareLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke<{
+        slug: string; url: string; expiresAt: string | null; isOwner: boolean;
+      }>("share-brief", {
+        body: {
+          content: pathwayContent,
+          language,
+          reportGrade: "basic",
+          profileSnapshot: {
+            firstName: profile.fullName?.split(" ")[0],
+            gradeLevel: profile.gradeLevel,
+            major: profile.major,
+            targetCountries: profile.targetCountries,
+          },
+        },
+      });
+      if (error) throw new Error(error.message);
+      if (data) {
+        setShareUrl(data.url);
+        setShareExpiresAt(data.expiresAt);
+      }
+    } catch (e) {
+      console.error("share-brief failed", e);
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
+  const copyShareUrl = async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch { /* ignore */ }
+  };
+
   // Only generate pathway if profile is actually filled
   const isProfileFilled = profile.fullName && profile.fullName !== "Student" && profile.gpa && profile.targetCountries.length > 0;
 
@@ -1313,6 +1367,16 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" onClick={generatePathway} disabled={pathwayLoading}>
                     {pathwayLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : t("Regenerate", "Обновить")}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={openShare}
+                    disabled={pathwayLoading}
+                  >
+                    <Share2 className="w-4 h-4" />
+                    {t("Share", "Поделиться")}
                   </Button>
                   <Button
                     variant="gold"
@@ -1838,6 +1902,138 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         </TabsContent>
 
       </Tabs>
+
+      {/* ─── Share dialog ──────────────────────────────────────────
+          Mints (or shows) a public /brief/:slug URL the student can
+          send to parents/counselors. Shows expiry messaging for anon
+          users; gently prompts signup for permanence. */}
+      <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-xl tracking-tight">
+              {t("Share your strategic brief", "Поделиться стратегическим брифингом")}
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-relaxed">
+              {t(
+                "Anyone with the link can view this brief. Use it for parents, counselors, or your own reference.",
+                "Любой, у кого есть ссылка, увидит этот брифинг. Удобно для родителей, консультантов или себя."
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {shareLoading ? (
+            <div className="py-10 flex flex-col items-center gap-3">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">
+                {t("Generating share link…", "Создаём ссылку…")}
+              </p>
+            </div>
+          ) : shareUrl ? (
+            <div className="space-y-4 py-2">
+              {/* The URL with copy button */}
+              <div className="flex items-center gap-2 bg-muted/40 border border-border rounded-lg px-3 py-2.5">
+                <code className="text-xs sm:text-sm text-foreground flex-1 truncate font-mono">
+                  {shareUrl}
+                </code>
+                <Button
+                  variant={shareCopied ? "outline" : "gold"}
+                  size="sm"
+                  className="gap-1.5 shrink-0"
+                  onClick={copyShareUrl}
+                >
+                  {shareCopied ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      {t("Copied", "Скопировано")}
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      {t("Copy", "Копировать")}
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Quick share targets — mailto + native share */}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  asChild
+                >
+                  <a
+                    href={`mailto:?subject=${encodeURIComponent(
+                      t("My TopUni admissions strategy", "Моя стратегия поступления — TopUni")
+                    )}&body=${encodeURIComponent(shareUrl)}`}
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    {t("Email", "По почте")}
+                  </a>
+                </Button>
+                {typeof navigator !== "undefined" && "share" in navigator && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => navigator.share?.({ url: shareUrl, title: "My TopUni strategy" }).catch(() => {})}
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    {t("More", "Ещё")}
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 ml-auto"
+                  asChild
+                >
+                  <a href={shareUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    {t("Preview", "Превью")}
+                  </a>
+                </Button>
+              </div>
+
+              {/* Expiry / persistence messaging */}
+              {shareExpiresAt ? (
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3.5 text-xs leading-relaxed">
+                  <p className="text-amber-700 dark:text-amber-400 font-medium mb-1">
+                    {t(
+                      `This link expires in 30 days.`,
+                      `Эта ссылка истекает через 30 дней.`
+                    )}
+                  </p>
+                  <p className="text-muted-foreground">
+                    {t(
+                      "Sign up free to keep it permanent and editable, plus deadline reminders for any scholarship you save.",
+                      "Зарегистрируйтесь бесплатно, чтобы ссылка не истекала и пришли напоминания о дедлайнах."
+                    )}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-[11px] text-muted-foreground">
+                  {t(
+                    "This link is permanent — you can revoke it any time from your account.",
+                    "Ссылка постоянная — вы можете отозвать её в любой момент."
+                  )}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="py-6 text-sm text-muted-foreground">
+              {t("Couldn't create the share link. Try again?", "Не удалось создать ссылку. Попробуйте ещё раз?")}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShareOpen(false)}>
+              {t("Done", "Готово")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

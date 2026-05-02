@@ -32,6 +32,7 @@ import TopUniAIPartners from "./pages/TopUniAIPartners";
 import TopUniAIPartnersRu from "./pages/TopUniAIPartnersRu";
 import Discover from "./pages/Discover";
 import DiscoverApp from "./pages/DiscoverApp";
+import SharedBrief from "./pages/SharedBrief";
 import Admin from "./pages/Admin";
 import FunnelDashboard from "./pages/FunnelDashboard";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -94,6 +95,8 @@ const App = () => (
           <Route path="/discover/ru/app" element={<DiscoverApp language="ru" />} />
           <Route path="/scholarships" element={<Discover language="en" />} />
           <Route path="/scholarships/ru" element={<Discover language="ru" />} />
+          {/* Public shareable AI strategy brief — viral / SEO surface */}
+          <Route path="/brief/:slug" element={<SharedBrief />} />
 
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/funnel" element={<FunnelDashboard />} />
