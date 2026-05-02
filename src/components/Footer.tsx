@@ -29,6 +29,7 @@ const COMPANY_LINKS_EN = [
   { to: "/academy",  label: "Academy" },
   { to: "/blog",     label: "Journal" },
   { to: "/refer",    label: "Refer a friend" },
+  { to: "/submit",   label: "Submit a scholarship" },
 ];
 // Mirror EN exactly so Russian users see every surface. Where we don't yet
 // have a /ru variant, the link still works (page renders English).
@@ -39,6 +40,7 @@ const COMPANY_LINKS_RU = [
   { to: "/academy",     label: "Академия" },
   { to: "/blog/ru",     label: "Журнал" },
   { to: "/refer/ru",    label: "Пригласить друга" },
+  { to: "/submit/ru",   label: "Предложить стипендию" },
 ];
 
 export const Footer = ({ language, variant = "dark" }: FooterProps) => {

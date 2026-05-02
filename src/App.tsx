@@ -69,6 +69,7 @@ const AuthCallback         = lazy(() => import("./pages/AuthCallback"));
 const Account              = lazy(() => import("./pages/Account"));
 const AdminSources         = lazy(() => import("./pages/admin/Sources"));
 const AdminQueue           = lazy(() => import("./pages/admin/ScholarshipQueue"));
+const SubmitScholarship    = lazy(() => import("./pages/SubmitScholarship"));
 
 const queryClient = new QueryClient();
 
@@ -149,6 +150,9 @@ const App = () => (
           {/* Referral hub — share your code, see your referrals */}
           <Route path="/refer"        element={<Refer language="en" />} />
           <Route path="/refer/ru"     element={<Refer language="ru" />} />
+          {/* Public scholarship submission queue — anyone can suggest */}
+          <Route path="/submit"       element={<SubmitScholarship language="en" />} />
+          <Route path="/submit/ru"    element={<SubmitScholarship language="ru" />} />
           {/* Programmatic SEO landing pages — country / field / theme */}
           <Route path="/scholarships/by-country/:country" element={<ScholarshipsByFilter mode="country" />} />
           <Route path="/scholarships/by-field/:field"     element={<ScholarshipsByFilter mode="field" />} />

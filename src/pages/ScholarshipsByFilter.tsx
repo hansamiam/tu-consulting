@@ -12,26 +12,18 @@
  * action) and shows the matching scholarships below.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Globe, Sparkles, Loader2, ExternalLink, Calendar, Wallet } from "lucide-react";
+import { ArrowRight, Sparkles, Search } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { ScholarshipCard, ScholarshipCardSkeleton, type ScholarshipCardData } from "@/components/ScholarshipCard";
+import { ShareScholarshipModal } from "@/components/ShareScholarshipModal";
+import { EmptyState } from "@/components/EmptyState";
 
-interface ScholarshipRow {
-  scholarship_id: string;
-  scholarship_name: string;
-  provider_name: string | null;
-  host_country: string | null;
-  coverage_type: string;
-  award_amount_text: string | null;
-  estimated_total_value_usd: number | null;
-  application_deadline: string | null;
-  target_degree_level: string[] | null;
-  target_fields: string[] | null;
-  why_this_fits: string | null;
+interface ScholarshipRow extends ScholarshipCardData {
   official_url: string | null;
   data_source: string | null;
 }
@@ -133,9 +125,9 @@ interface Props {
 
 const ScholarshipsByFilter = ({ mode }: Props) => {
   const params = useParams<{ country?: string; field?: string; theme?: string }>();
-  const navigate = useNavigate();
   const [rows, setRows] = useState<ScholarshipRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [shareTarget, setShareTarget] = useState<ScholarshipRow | null>(null);
 
   /* Resolve the raw URL slug → human-readable canonical */
   const slug = (params.country || params.field || params.theme || "").toLowerCase();
@@ -214,8 +206,10 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
           "scholarship_id, scholarship_name, provider_name, host_country, " +
           "coverage_type, award_amount_text, estimated_total_value_usd, " +
           "application_deadline, target_degree_level, target_fields, " +
-          "why_this_fits, official_url, data_source",
+          "why_this_fits, official_url, data_source, is_featured",
         )
+        // Featured first, then by funding value — keeps the spotlights at the top
+        .order("is_featured", { ascending: false })
         .order("estimated_total_value_usd", { ascending: false, nullsFirst: false })
         .limit(60);
       if (mode === "country") {
@@ -238,7 +232,7 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
             "scholarship_id, scholarship_name, provider_name, host_country, " +
             "coverage_type, award_amount_text, estimated_total_value_usd, " +
             "application_deadline, target_degree_level, target_fields, " +
-            "why_this_fits, official_url, data_source",
+            "why_this_fits, official_url, data_source, is_featured",
           )
           .ilike("eligibility_requirements", `%${resolved.label}%`)
           .limit(40);
@@ -336,25 +330,38 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          <div className="grid sm:grid-cols-2 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => <ScholarshipCardSkeleton key={i} index={i} />)}
           </div>
         ) : rows.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-sm text-muted-foreground leading-relaxed mb-5 max-w-sm mx-auto">
-              We don't have curated scholarships matching this filter yet. Build a personalised strategy and our AI
-              will pull the closest matches across the full database.
-            </p>
-            <Button variant="gold" asChild>
-              <Link to="/topuni-ai">Build my strategy <ArrowRight className="ml-2 w-4 h-4" /></Link>
-            </Button>
-          </div>
+          <EmptyState
+            icon={<Search />}
+            title="No scholarships matched this filter yet"
+            description="Our database is growing every day. Build a personalised strategy and our AI will surface the closest matches across the full database."
+            cta={{ label: "Build my strategy", to: "/topuni-ai" }}
+            secondaryCta={{ label: "Browse all", to: "/discover" }}
+          />
         ) : (
-          <div className="space-y-3">
-            {rows.map((r) => (
-              <ScholarshipRowCard key={r.scholarship_id} row={r} />
+          <div className="grid sm:grid-cols-2 gap-4">
+            {rows.map((r, i) => (
+              <ScholarshipCard
+                key={r.scholarship_id}
+                row={r}
+                index={i}
+                onShare={(row) => setShareTarget(row as ScholarshipRow)}
+              />
             ))}
           </div>
+        )}
+
+        {shareTarget && (
+          <ShareScholarshipModal
+            open={!!shareTarget}
+            onOpenChange={(o) => !o && setShareTarget(null)}
+            scholarshipName={shareTarget.scholarship_name}
+            providerName={shareTarget.provider_name}
+            scholarshipId={shareTarget.scholarship_id}
+          />
         )}
 
         {/* CLOSING CTA */}
@@ -388,68 +395,6 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
 };
 
 export default ScholarshipsByFilter;
-
-/* ─── A row card — minimal, scannable, click-through to detail ─── */
-const ScholarshipRowCard = ({ row: r }: { row: ScholarshipRow }) => {
-  const navigate = useNavigate();
-  const value = r.estimated_total_value_usd;
-  const valueText =
-    value && value >= 1_000_000 ? `$${(value / 1_000_000).toFixed(1)}M`
-    : value && value >= 1000     ? `$${Math.round(value / 1000)}K`
-    : null;
-  const days = r.application_deadline ? Math.ceil((new Date(r.application_deadline).getTime() - Date.now()) / 86400_000) : null;
-  const daysText =
-    days === null         ? r.application_deadline ? "Rolling" : "Varies"
-    : days <= 0           ? "Closed"
-    : days <= 30          ? `${days} days`
-    : `${Math.ceil(days / 30)} months`;
-  const daysClass =
-    days === null ? "text-muted-foreground"
-    : days <= 7   ? "text-destructive"
-    : days <= 30  ? "text-amber-600 dark:text-amber-500"
-    : "text-muted-foreground";
-
-  return (
-    <article
-      onClick={() => navigate("/discover")}
-      className="group relative bg-card border border-border rounded-xl p-4 sm:p-5 hover:border-gold/40 hover:shadow-sm transition-all cursor-pointer"
-    >
-      <div className="flex items-baseline justify-between gap-3 mb-2">
-        <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
-          {r.host_country || "—"}
-        </p>
-        <span className={`text-[11px] tabular-nums font-semibold ${daysClass}`}>{daysText}</span>
-      </div>
-      <h3 className="font-heading font-semibold text-base sm:text-lg text-foreground tracking-tight leading-snug mb-1.5 group-hover:text-gold-dark transition-colors">
-        {r.scholarship_name}
-      </h3>
-      {r.provider_name && (
-        <p className="text-xs text-muted-foreground mb-2.5">{r.provider_name}</p>
-      )}
-      <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
-        <span className="inline-flex items-center gap-1">
-          <Wallet className="w-3 h-3" />
-          {r.coverage_type === "full_ride" ? "Full ride" : r.coverage_type === "tuition_only" ? "Tuition" : "Stipend"}
-          {valueText && ` · ${valueText}`}
-        </span>
-        {r.target_degree_level && r.target_degree_level.length > 0 && (
-          <span>{r.target_degree_level.slice(0, 2).join(", ")}</span>
-        )}
-        {r.official_url && (
-          <a
-            href={r.official_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1 ml-auto text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Official site <ExternalLink className="w-3 h-3" />
-          </a>
-        )}
-      </div>
-    </article>
-  );
-};
 
 /* ─── DOM helpers for SEO meta ─────────────────────────────────────── */
 function blankMeta(): PageMeta {

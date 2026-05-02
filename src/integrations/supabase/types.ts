@@ -803,6 +803,97 @@ export type Database = {
         }
         Relationships: []
       }
+      scholarship_submissions: {
+        Row: {
+          application_deadline: string | null
+          award_amount_text: string | null
+          coverage_type: string | null
+          created_at: string
+          host_country: string | null
+          notes: string | null
+          official_url: string
+          promoted_to: string | null
+          provider_name: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          scholarship_name: string
+          status: string
+          submission_id: string
+          submitted_by: string | null
+          submitter_email: string | null
+          submitter_name: string | null
+          target_degree_level: string[] | null
+          target_fields: string[] | null
+        }
+        Insert: {
+          application_deadline?: string | null
+          award_amount_text?: string | null
+          coverage_type?: string | null
+          created_at?: string
+          host_country?: string | null
+          notes?: string | null
+          official_url: string
+          promoted_to?: string | null
+          provider_name?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          scholarship_name: string
+          status?: string
+          submission_id?: string
+          submitted_by?: string | null
+          submitter_email?: string | null
+          submitter_name?: string | null
+          target_degree_level?: string[] | null
+          target_fields?: string[] | null
+        }
+        Update: {
+          application_deadline?: string | null
+          award_amount_text?: string | null
+          coverage_type?: string | null
+          created_at?: string
+          host_country?: string | null
+          notes?: string | null
+          official_url?: string
+          promoted_to?: string | null
+          provider_name?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          scholarship_name?: string
+          status?: string
+          submission_id?: string
+          submitted_by?: string | null
+          submitter_email?: string | null
+          submitter_name?: string | null
+          target_degree_level?: string[] | null
+          target_fields?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scholarship_submissions_promoted_to_fkey"
+            columns: ["promoted_to"]
+            isOneToOne: false
+            referencedRelation: "scholarships"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_submissions_promoted_to_fkey"
+            columns: ["promoted_to"]
+            isOneToOne: false
+            referencedRelation: "scholarships_needing_embedding"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_submissions_promoted_to_fkey"
+            columns: ["promoted_to"]
+            isOneToOne: false
+            referencedRelation: "scholarships_url_check_queue"
+            referencedColumns: ["scholarship_id"]
+          },
+        ]
+      }
       scholarships: {
         Row: {
           age_limit: string | null
@@ -835,6 +926,7 @@ export type Database = {
           how_to_win: string | null
           ideal_candidate_profile: string | null
           interview_required: boolean | null
+          is_featured: boolean
           language_requirements: string | null
           last_verified_date: string | null
           leadership_required: boolean | null
@@ -902,6 +994,7 @@ export type Database = {
           how_to_win?: string | null
           ideal_candidate_profile?: string | null
           interview_required?: boolean | null
+          is_featured?: boolean
           language_requirements?: string | null
           last_verified_date?: string | null
           leadership_required?: boolean | null
@@ -969,6 +1062,7 @@ export type Database = {
           how_to_win?: string | null
           ideal_candidate_profile?: string | null
           interview_required?: boolean | null
+          is_featured?: boolean
           language_requirements?: string | null
           last_verified_date?: string | null
           leadership_required?: boolean | null

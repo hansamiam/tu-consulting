@@ -18,7 +18,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, ExternalLink, Sparkles, Bookmark, BookmarkCheck,
   Calendar, Wallet, GraduationCap, Globe, CheckCircle2, AlertCircle,
-  Loader2, FileText, Users, ShieldAlert,
+  Loader2, FileText, Users, ShieldAlert, Share2, Search,
 } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
@@ -27,6 +27,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { ShareScholarshipModal } from "@/components/ShareScholarshipModal";
+import { EmptyState } from "@/components/EmptyState";
 
 interface Scholarship {
   scholarship_id: string;
@@ -95,6 +97,7 @@ const ScholarshipDetail = () => {
   const [similar, setSimilar] = useState<SimilarScholarship[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   /* Fetch the scholarship */
   useEffect(() => {
@@ -213,14 +216,14 @@ const ScholarshipDetail = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navigation />
-        <div className="max-w-xl mx-auto px-6 pt-20 pb-32 text-center">
-          <h1 className="font-heading text-2xl font-bold text-foreground mb-3">Scholarship not found</h1>
-          <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-            This scholarship doesn't exist or has been removed. Browse the full database in Discover.
-          </p>
-          <Button variant="gold" asChild>
-            <Link to="/discover">Open Discover <ArrowRight className="ml-2 w-4 h-4" /></Link>
-          </Button>
+        <div className="max-w-xl mx-auto px-6 pt-12">
+          <EmptyState
+            icon={<Search />}
+            title="Scholarship not found"
+            description="This scholarship doesn't exist or has been removed. Browse the full database in Discover."
+            cta={{ label: "Open Discover", to: "/discover" }}
+            secondaryCta={{ label: "Submit a scholarship", to: "/submit" }}
+          />
         </div>
         <Footer language="en" />
       </div>
@@ -286,9 +289,26 @@ const ScholarshipDetail = () => {
               {isShortlisted ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
               {isShortlisted ? "Saved" : "Save to pipeline"}
             </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => setShareOpen(true)}
+              className="gap-2 bg-transparent text-primary-foreground border-primary-foreground/30 hover:bg-primary-foreground/10"
+              aria-label="Share this scholarship"
+            >
+              <Share2 className="w-4 h-4" /> Share
+            </Button>
           </div>
         </div>
       </section>
+
+      <ShareScholarshipModal
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        scholarshipName={s.scholarship_name}
+        providerName={s.provider_name}
+        scholarshipId={s.scholarship_id}
+      />
 
       {/* URL health warning */}
       {s.official_url && (s.url_consecutive_fails ?? 0) >= 3 && (
