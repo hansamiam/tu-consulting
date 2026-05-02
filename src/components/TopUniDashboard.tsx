@@ -1298,11 +1298,32 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                     ))}
                   </div>
 
-                  {/* Live scholarship matches — the visual bridge into Discover.
-                      Header is dynamic: when ≥1 match has a deadline within
-                      30 days, lead with urgency; otherwise lead with the
-                      total funding stack value the matches add up to. */}
-                  {liveMatches.length > 0 && (() => {
+                  {/* Split the markdown into [positioning] and [rest] so the
+                      Strategic Brief leads (analysis first), then the live
+                      matches grid lights up urgency, then the rest of the
+                      structured report unfolds. Falls back to the original
+                      flow if the positioning section isn't found. */}
+                  {(() => {
+                    const all = pathwayContent.split(/(?=^##\s+)/m).filter(s => s.trim());
+                    const posIdx = all.findIndex(s => PATHWAY_POS_SECTION_REGEX.test(s));
+                    const before = posIdx >= 0 ? all.slice(0, posIdx + 1).join("") : "";
+                    const after = posIdx >= 0 ? all.slice(posIdx + 1).join("") : pathwayContent;
+                    return (
+                      <>
+                        {before && (
+                          <ReportRenderer
+                            markdown={before}
+                            completedTasks={completedTasks}
+                            onToggle={toggleTask}
+                            taskKey={taskKey}
+                            isRu={isRu}
+                            onOpenDiscover={() => navigate(isRu ? "/discover/ru" : "/discover")}
+                            liveMatches={liveMatches}
+                          />
+                        )}
+                        {/* Live matches grid sits between the brief and the
+                            structured plan. */}
+                        {liveMatches.length > 0 && (() => {
                     const now = Date.now();
                     const urgent = liveMatches.filter(m => {
                       if (!m.application_deadline) return false;
@@ -1373,15 +1394,20 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                     );
                   })()}
 
-                  <ReportRenderer
-                    markdown={pathwayContent}
-                    completedTasks={completedTasks}
-                    onToggle={toggleTask}
-                    taskKey={taskKey}
-                    isRu={isRu}
-                    onOpenDiscover={() => navigate(isRu ? "/discover/ru" : "/discover")}
-                    liveMatches={liveMatches}
-                  />
+                        {after && (
+                          <ReportRenderer
+                            markdown={after}
+                            completedTasks={completedTasks}
+                            onToggle={toggleTask}
+                            taskKey={taskKey}
+                            isRu={isRu}
+                            onOpenDiscover={() => navigate(isRu ? "/discover/ru" : "/discover")}
+                            liveMatches={liveMatches}
+                          />
+                        )}
+                      </>
+                    );
+                  })()}
                   {pathwayLoading && <span className="inline-block w-2 h-4 bg-accent animate-pulse ml-1" />}
 
                   {/* Next steps — drives users into the rest of the funnel */}
