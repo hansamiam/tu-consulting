@@ -129,6 +129,19 @@ async function buildLiveCaseContext(
     .eq("user_id", userId)
     .maybeSingle();
 
+  // 5. Uploaded documents — transcripts, drafts, references — that the
+  //    student has marked use_in_counselor=true and that finished
+  //    parsing successfully. The extracted_text is what the LLM reads.
+  const { data: docs } = await admin
+    .from("student_documents")
+    .select("kind, title, filename, extracted_text, uploaded_at")
+    .eq("user_id", userId)
+    .eq("use_in_counselor", true)
+    .eq("parse_status", "ready")
+    .not("extracted_text", "is", null)
+    .order("uploaded_at", { ascending: false })
+    .limit(6);
+
   // ─── Format ────────────────────────────────────────────────────
   const lines: string[] = [];
 
@@ -185,6 +198,24 @@ async function buildLiveCaseContext(
       `STUDENT'S STRATEGY BRIEF (cached, ${pathway.language || "en"}, last generated ${pathway.generated_at}):`,
     );
     lines.push(pathway.content.slice(0, 6000));
+    lines.push("");
+  }
+
+  // Uploaded documents — capped per-doc + total to keep prompt size sane
+  if (docs && docs.length > 0) {
+    lines.push(`STUDENT'S UPLOADED DOCUMENTS (${docs.length} active):`);
+    let totalDocChars = 0;
+    const PER_DOC_CAP = 4500;
+    const TOTAL_CAP = 18_000;
+    for (const d of docs) {
+      const text = (d.extracted_text || "").slice(0, PER_DOC_CAP);
+      if (totalDocChars + text.length > TOTAL_CAP) break;
+      const label = d.title || d.filename;
+      lines.push(`--- DOCUMENT: ${label} (${d.kind}) ---`);
+      lines.push(text);
+      lines.push(`--- END DOCUMENT ---`);
+      totalDocChars += text.length;
+    }
     lines.push("");
   }
 
@@ -259,13 +290,15 @@ Your expertise:
 - Career outcomes and program ROI
 
 How to use the case data above:
-${liveContext ? `- The student is logged in. You have their actual saved scholarships, real-time deadlines, status (researching/drafting/submitted), and completed action-plan tasks.
+${liveContext ? `- The student is logged in. You have their actual saved scholarships, real-time deadlines, status (researching/drafting/submitted), completed action-plan tasks, AND any documents they've uploaded (transcripts, essay drafts, references, CVs, test score reports).
 - When they ask "what should I focus on this week" — read the URGENT (≤7 days) and ≤30 day rows, look at status (researching means no draft yet; drafting means they need feedback; submitted means they wait), and prioritise concretely.
 - When they ask about a specific scholarship — find it in the list, cite its actual deadline and status.
 - If they're asking about a scholarship NOT in their tracker, treat it as exploratory ("you haven't saved this one yet — want to add it?").
+- When they reference a transcript, essay, or document, USE the actual text in the UPLOADED DOCUMENTS block. Cite specific courses, GPAs, paragraphs, recommender names, scores. Quote the document back when useful.
+- If they upload an essay draft, give specific paragraph-level feedback citing actual sentences. Don't refer them to the /essay page; do the work in chat.
 - Reference completed tasks when celebrating progress; reference uncompleted parts of the brief when nudging.
 - Cite the brief verbatim when it has relevant guidance.` : `- The student may be on the Strategy tab without an account. Use the static profile / brief above when present.
-- Encourage them to save scholarships and complete the action plan so you can give sharper, case-aware advice next time.`}
+- Encourage them to save scholarships, complete the action plan, AND upload their transcript / essay drafts so you can give sharper, case-aware advice next time.`}
 
 Guidelines:
 - Sound like a sharp, senior advisor — direct, specific, never generic.

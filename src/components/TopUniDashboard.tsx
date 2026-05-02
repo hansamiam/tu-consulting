@@ -16,6 +16,7 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { SaveBriefPrompt } from "@/components/topuni/SaveBriefPrompt";
+import { DocumentManager } from "@/components/topuni/DocumentManager";
 import { Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
@@ -1795,6 +1796,14 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                            "Вся база стипендий")}
                       </p>
                     </button>
+
+                    {/* Document upload — counselor reads transcript /
+                        essay drafts / references and cites them in
+                        answers. Auth-only; signed-out users see a
+                        sign-in prompt. */}
+                    <div className="pt-4 mt-4 border-t border-border">
+                      <DocumentManager isRu={isRu} compact />
+                    </div>
                   </div>
                 </aside>
 

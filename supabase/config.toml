@@ -61,3 +61,6 @@ verify_jwt = true
 
 [functions.og-brief]
 verify_jwt = false
+
+[functions.parse-document]
+verify_jwt = true
