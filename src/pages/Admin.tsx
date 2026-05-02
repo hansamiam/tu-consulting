@@ -10,10 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, Edit, LogIn, GraduationCap, Building, Award, FileText } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Plus, Trash2, Edit, LogIn, GraduationCap, Building, Award, FileText, Database, ListChecks, BarChart3 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const Admin = () => {
+  const nav = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -192,9 +194,14 @@ const Admin = () => {
     <div className="min-h-screen bg-background">
       <Navigation language="en" />
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <h1 className="text-2xl font-heading font-bold text-foreground">TopUni Admin</h1>
-          <Button variant="outline" size="sm" onClick={() => supabase.auth.signOut()}>Sign out</Button>
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={() => nav("/admin/sources")} className="gap-1.5"><Database className="h-4 w-4" />Sources pipeline</Button>
+            <Button variant="outline" size="sm" onClick={() => nav("/admin/queue")} className="gap-1.5"><ListChecks className="h-4 w-4" />Review queue</Button>
+            <Button variant="outline" size="sm" onClick={() => nav("/admin/insights")} className="gap-1.5"><BarChart3 className="h-4 w-4" />Insights</Button>
+            <Button variant="outline" size="sm" onClick={() => supabase.auth.signOut()}>Sign out</Button>
+          </div>
         </div>
 
         <Tabs defaultValue="universities">

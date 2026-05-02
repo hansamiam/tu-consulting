@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.78.0";
 import { chatCompletions, embeddings as gatewayEmbeddings } from "../_shared/ai-gateway.ts";
+import { checkRateLimit, clientIp } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,14 +50,26 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Rate limit: 5 brief generations per minute per IP. A real visitor will
+    // never hit this; abuse scripts will. Each blocked request saves ~$0.02
+    // of GPT-4o-mini spend.
+    const ip = clientIp(req);
+    const ok = await checkRateLimit(supabase, { key: `ai-pathway:${ip}`, perMinute: 5 });
+    if (!ok) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded — please wait a minute." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const { profile, language, reportGrade } = await req.json();
     const grade = reportGrade || "basic";
     // AI gateway env validated lazily inside chatCompletions / gatewayEmbeddings —
     // see _shared/ai-gateway.ts. Provider chosen via AI_PROVIDER env var.
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
 
     const targetCountries = profile.targetCountries || [];
     const studentGpa = parseFloat(profile.gpa) || null;

@@ -59,6 +59,9 @@ export default defineConfig(({ mode }) => ({
           if (id.includes("date-fns")) return "date-vendor";
           // Lucide icons (most heavy in main without splitting)
           if (id.includes("lucide-react")) return "icons-vendor";
+          // Recharts — heavy charting lib, only used on admin pages.
+          // Splitting it keeps the vendor chunk lean for non-admin visitors.
+          if (id.includes("recharts") || id.includes("d3-")) return "charts-vendor";
           // Default: everything else node_modules → grouped vendor
           return "vendor";
         },
