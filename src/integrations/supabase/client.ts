@@ -2,8 +2,18 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// Strip any whitespace pasted into env vars (Vercel's UI sometimes
+// inserts line breaks when long JWTs are pasted into the textarea —
+// the resulting JWT is 10+ chars longer than the real key and every
+// auth request fails. Trimming makes paste-from-clipboard forgiving.)
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL?.replace(/\s+/g, "");
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.replace(/\s+/g, "");
+
+if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+  throw new Error(
+    "Supabase env vars missing — set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in your hosting provider."
+  );
+}
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
