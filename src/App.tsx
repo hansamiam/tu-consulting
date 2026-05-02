@@ -158,7 +158,8 @@ const App = () => (
           {/* Essay critique — premium-gated reader-perspective AI feedback */}
           <Route path="/essay"                            element={<EssayCritique />} />
           {/* Fast AI scholarship matcher — type a sentence, get matches */}
-          <Route path="/match"                            element={<AIMatch />} />
+          <Route path="/match"                            element={<AIMatch language="en" />} />
+          <Route path="/match/ru"                         element={<AIMatch language="ru" />} />
 
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/funnel" element={<FunnelDashboard />} />

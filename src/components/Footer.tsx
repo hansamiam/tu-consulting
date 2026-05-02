@@ -19,7 +19,7 @@ const PRODUCT_LINKS_RU = [
   { to: "/pipeline/ru",  label: "Воронка заявок" },
   { to: "/calendar/ru",  label: "Календарь дедлайнов" },
   { to: "/essay",        label: "AI критика эссе" },
-  { to: "/match",        label: "AI подбор стипендий" },
+  { to: "/match/ru",     label: "AI подбор стипендий" },
 ];
 
 const COMPANY_LINKS_EN = [
