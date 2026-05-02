@@ -51,6 +51,7 @@ interface Scholarship {
   how_to_win: string | null; what_to_prepare_first: string | null;
   next_step: string | null; risk_note: string | null;
   last_verified_date: string | null;
+  data_source: string | null;
 }
 
 interface Profile {
@@ -1567,21 +1568,53 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           </div>
         )}
 
-        {/* ── FOOTER (data trust) ── */}
-        <div className="px-7 py-4 border-t border-border bg-muted/20 flex items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-            <ShieldAlert className={`h-3.5 w-3.5 ${isStale ? "text-warning" : "text-success"}`} />
-            <span>
-              {verifiedDate ? <>Verified {dateOnly(verifiedDate)} {isStale && <span className="text-warning">· may be stale</span>}</> : "Verification date unknown"}
-            </span>
-          </div>
-          <a
-            href={`mailto:hello@topuni.com?subject=${encodeURIComponent("Inaccurate scholarship data: " + s.scholarship_name)}&body=${encodeURIComponent("ID: " + s.scholarship_id + "\n\nWhat's wrong:\n")}`}
-            className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-4"
-          >
-            Report inaccuracy
-          </a>
-        </div>
+        {/* ── FOOTER (data trust + provenance) ────────────────────────
+            Two lines of trust signal:
+            1. last_verified_date / "may be stale" — when we last looked at
+               the official source.
+            2. data_source pill — where the row came from. "Curated" =
+               hand-checked by us. "External research" = ingested from a
+               third-party report (Manus AI), not yet hand-verified. */}
+        {(() => {
+          const src = (s as Scholarship).data_source ?? "hand_curated";
+          const isCurated = src === "hand_curated";
+          const sourceLabel =
+            isCurated ? "Curated" :
+            src === "manus_ai_2026_05_03" ? "External research · May 2026" :
+            "External research";
+          return (
+            <div className="px-7 py-4 border-t border-border bg-muted/20 flex flex-col gap-2 shrink-0">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                  <ShieldAlert className={`h-3.5 w-3.5 ${isStale ? "text-warning" : "text-success"}`} />
+                  <span>
+                    {verifiedDate ? <>Verified {dateOnly(verifiedDate)} {isStale && <span className="text-warning">· may be stale</span>}</> : "Verification date unknown"}
+                  </span>
+                </div>
+                <a
+                  href={`mailto:hello@topuni.com?subject=${encodeURIComponent("Inaccurate scholarship data: " + s.scholarship_name)}&body=${encodeURIComponent("ID: " + s.scholarship_id + "\n\nWhat's wrong:\n")}`}
+                  className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-4"
+                >
+                  Report inaccuracy
+                </a>
+              </div>
+              <div className="flex items-center gap-2 text-[10px]">
+                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border font-medium uppercase tracking-[0.12em] ${
+                  isCurated
+                    ? "border-success/30 text-success bg-success/5"
+                    : "border-amber-500/30 text-amber-600 dark:text-amber-500 bg-amber-500/5"
+                }`}>
+                  Source: {sourceLabel}
+                </span>
+                {!isCurated && (
+                  <span className="text-muted-foreground/80">
+                    Verify deadlines and amounts on the official site before applying.
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })()}
       </SheetContent>
     </Sheet>
   );
