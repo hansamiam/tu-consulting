@@ -759,12 +759,54 @@ const StrategicPositioning = ({ markdown, isRu }: { markdown: string; isRu: bool
   );
 };
 
+/* ─── Final word → editorial closing block ─────────────────────────────
+   The AI's "## Final word" is one paragraph of personalised
+   encouragement closing the report. Rendering it as a flat markdown
+   paragraph after all the cards looks abrupt; this gives it a quiet
+   editorial framing — gold rule, kicker, italic body — so it lands
+   like a signature block. */
+const FinalWord = ({ markdown, isRu }: { markdown: string; isRu: boolean }) => {
+  const { title, body } = useMemo(() => {
+    const lines = markdown.split("\n");
+    let title = "";
+    const bodyLines: string[] = [];
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line) { bodyLines.push(""); continue; }
+      if (line.startsWith("## ")) {
+        title = line.slice(3).trim();
+        continue;
+      }
+      bodyLines.push(line);
+    }
+    while (bodyLines.length && bodyLines[bodyLines.length - 1] === "") bodyLines.pop();
+    return { title, body: bodyLines.join("\n").trim() };
+  }, [markdown]);
+
+  if (!body) return null;
+
+  return (
+    <div className="not-prose my-12 pt-8 border-t border-border">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="h-px w-8 bg-gold-dark" />
+        <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark">
+          {title || (isRu ? "Заключительное слово" : "Final word")}
+        </span>
+      </div>
+      <div className="prose prose-sm sm:prose-base max-w-none text-foreground/90 [&_p]:leading-relaxed [&_p]:italic [&_p]:text-[15px] sm:[&_p]:text-base">
+        <ReactMarkdown>{body}</ReactMarkdown>
+      </div>
+    </div>
+  );
+};
+
 const PATHWAY_POS_SECTION_REGEX = /^##\s+.*?(strategic positioning|positioning|стратегическое позиционирование|позиционирование)/i;
 const PATHWAY_PLAN_SECTION_REGEX = /^##\s+.*?(action plan|90.day|план действий)/i;
 const PATHWAY_UNIS_SECTION_REGEX = /^##\s+.*?(university shortlist|your university|шорт.лист университетов)/i;
 const PATHWAY_FUND_SECTION_REGEX = /^##\s+.*?(funding pathway|funding deep|финансирование|стипендии)/i;
 const PATHWAY_ESSAYS_SECTION_REGEX = /^##\s+.*?(essay angle|essay angles|углов? для эссе|эссе)/i;
 const PATHWAY_GAPS_SECTION_REGEX = /^##\s+.*?(honest gap|gaps to close|пробел|недотяг|слабые)/i;
+const PATHWAY_FINAL_SECTION_REGEX = /^##\s+.*?(final word|closing|in closing|заключительное слово|заключение)/i;
 
 const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onOpenDiscover, liveMatches }: {
   markdown: string;
@@ -822,6 +864,13 @@ const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onO
           const hasContent = /^\s*([-*]|\d+\.|\#)\s+/m.test(section.split("\n").slice(1).join("\n"));
           if (hasContent) {
             return <HonestGaps key={i} markdown={section} isRu={isRu} />;
+          }
+        }
+        if (PATHWAY_FINAL_SECTION_REGEX.test(section)) {
+          // Stream-safe: render once we have at least a sentence of body.
+          const hasBody = section.split("\n").slice(1).join("\n").trim().length > 30;
+          if (hasBody) {
+            return <FinalWord key={i} markdown={section} isRu={isRu} />;
           }
         }
         return <ReactMarkdown key={i}>{section}</ReactMarkdown>;
