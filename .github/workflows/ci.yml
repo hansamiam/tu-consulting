@@ -1,0 +1,48 @@
+# CI gate for every push and PR.
+#
+# Lovable's IDE bot occasionally pushes commits that break the build
+# (broken syntax, missing imports, reverted env). This catches those before
+# Vercel even tries to deploy. Failing CI also blocks merge on protected
+# branches if you turn on branch protection later.
+#
+# Stays cheap — just install + lint + typecheck + build, no tests yet.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint (non-blocking — pre-existing debt; report only)
+        run: npm run lint || true
+        continue-on-error: true
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Build
+        env:
+          # Build needs valid env vars. These match what Vercel uses.
+          # The PUBLISHABLE key is short-form and PUBLIC by design — safe
+          # to commit / expose. Private secrets stay in Supabase.
+          VITE_SUPABASE_PROJECT_ID: bsfldtpemfxhnkdzccib
+          VITE_SUPABASE_URL: https://bsfldtpemfxhnkdzccib.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_Woa7nW8-UJAYjNBXfgFX1A_qR6nonzb
+        run: npm run build

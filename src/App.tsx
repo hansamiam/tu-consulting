@@ -67,6 +67,8 @@ const Unsubscribe          = lazy(() => import("./pages/Unsubscribe"));
 const Pricing              = lazy(() => import("./pages/Pricing"));
 const AuthCallback         = lazy(() => import("./pages/AuthCallback"));
 const Account              = lazy(() => import("./pages/Account"));
+const AdminSources         = lazy(() => import("./pages/admin/Sources"));
+const AdminQueue           = lazy(() => import("./pages/admin/ScholarshipQueue"));
 
 const queryClient = new QueryClient();
 
@@ -160,6 +162,8 @@ const App = () => (
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/funnel" element={<FunnelDashboard />} />
           <Route path="/admin/insights" element={<AdminInsights />} />
+          <Route path="/admin/sources" element={<AdminSources />} />
+          <Route path="/admin/queue" element={<AdminQueue />} />
           <Route path="/academy" element={<Academy />} />
           <Route path="/blog/guide/:slug" element={<CountryGuide language="en" />} />
           <Route path="/blog/guide/:slug/ru" element={<CountryGuide language="ru" />} />

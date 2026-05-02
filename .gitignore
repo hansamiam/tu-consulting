@@ -15,6 +15,12 @@ dist-ssr
 # Stray nested checkout — sibling project tree, ignored to keep `git add -A` clean
 /tu-consulting/
 
+# Local Claude Code per-project state
+.claude/
+
+# Supabase CLI scratch
+supabase/.temp/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
