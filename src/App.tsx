@@ -35,6 +35,7 @@ import DiscoverApp from "./pages/DiscoverApp";
 import SharedBrief from "./pages/SharedBrief";
 import Pipeline from "./pages/Pipeline";
 import ScholarshipsByFilter from "./pages/ScholarshipsByFilter";
+import ScholarshipDetail from "./pages/ScholarshipDetail";
 import EssayCritique from "./pages/EssayCritique";
 import Admin from "./pages/Admin";
 import FunnelDashboard from "./pages/FunnelDashboard";
@@ -107,6 +108,8 @@ const App = () => (
           <Route path="/scholarships/by-country/:country" element={<ScholarshipsByFilter mode="country" />} />
           <Route path="/scholarships/by-field/:field"     element={<ScholarshipsByFilter mode="field" />} />
           <Route path="/scholarships/theme/:theme"        element={<ScholarshipsByFilter mode="theme" />} />
+          {/* Per-scholarship detail page — also indexable, ~190 SEO surfaces */}
+          <Route path="/scholarships/:id"                 element={<ScholarshipDetail />} />
           {/* Essay critique — premium-gated reader-perspective AI feedback */}
           <Route path="/essay"                            element={<EssayCritique />} />
 
