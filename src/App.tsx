@@ -34,6 +34,7 @@ import Discover from "./pages/Discover";
 import DiscoverApp from "./pages/DiscoverApp";
 import SharedBrief from "./pages/SharedBrief";
 import Pipeline from "./pages/Pipeline";
+import ScholarshipsByFilter from "./pages/ScholarshipsByFilter";
 import Admin from "./pages/Admin";
 import FunnelDashboard from "./pages/FunnelDashboard";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -101,6 +102,10 @@ const App = () => (
           {/* Application mission-control — kanban of saved scholarships */}
           <Route path="/pipeline"     element={<Pipeline language="en" />} />
           <Route path="/pipeline/ru"  element={<Pipeline language="ru" />} />
+          {/* Programmatic SEO landing pages — country / field / theme */}
+          <Route path="/scholarships/by-country/:country" element={<ScholarshipsByFilter mode="country" />} />
+          <Route path="/scholarships/by-field/:field"     element={<ScholarshipsByFilter mode="field" />} />
+          <Route path="/scholarships/theme/:theme"        element={<ScholarshipsByFilter mode="theme" />} />
 
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/funnel" element={<FunnelDashboard />} />

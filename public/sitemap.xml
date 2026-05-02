@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+                            http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+
+  <!-- ─── Core surfaces ───────────────────────────────────────── -->
+  <url><loc>https://topuni.org/</loc>                       <changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://topuni.org/topuni-ai</loc>              <changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://topuni.org/discover</loc>               <changefreq>daily</changefreq>  <priority>0.9</priority></url>
+  <url><loc>https://topuni.org/pipeline</loc>               <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/pricing</loc>                <changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://topuni.org/team</loc>                   <changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/why-tu</loc>                 <changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/academy</loc>                <changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/blog</loc>                   <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/faq</loc>                    <changefreq>monthly</changefreq><priority>0.5</priority></url>
+
+  <!-- Russian-language mirrors -->
+  <url><loc>https://topuni.org/ru</loc>                     <changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://topuni.org/topuni-ai/ru</loc>           <changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://topuni.org/discover/ru</loc>            <changefreq>daily</changefreq>  <priority>0.8</priority></url>
+
+  <!-- ─── Programmatic SEO: by-country ────────────────────────── -->
+  <url><loc>https://topuni.org/scholarships/by-country/united-states</loc>     <changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/united-kingdom</loc>    <changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/canada</loc>            <changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/australia</loc>         <changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/germany</loc>           <changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/france</loc>            <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/netherlands</loc>       <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/switzerland</loc>       <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/ireland</loc>           <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/sweden</loc>            <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/norway</loc>            <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/denmark</loc>           <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/italy</loc>             <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/spain</loc>             <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/belgium</loc>           <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/singapore</loc>         <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/south-korea</loc>       <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/japan</loc>             <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/hong-kong</loc>         <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/china</loc>             <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/new-zealand</loc>       <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/uae</loc>               <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/czech-republic</loc>    <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/hungary</loc>           <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/poland</loc>            <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/estonia</loc>           <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/turkey</loc>            <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/malaysia</loc>          <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-country/global</loc>            <changefreq>weekly</changefreq><priority>0.7</priority></url>
+
+  <!-- ─── Programmatic SEO: by-field ──────────────────────────── -->
+  <url><loc>https://topuni.org/scholarships/by-field/computer-science</loc>    <changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-field/engineering</loc>         <changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-field/business</loc>            <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-field/economics</loc>           <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-field/medicine</loc>            <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-field/public-health</loc>       <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-field/law</loc>                 <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-field/social-sciences</loc>     <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-field/arts-and-humanities</loc> <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-field/stem</loc>                <changefreq>weekly</changefreq><priority>0.7</priority></url>
+
+  <!-- ─── Programmatic SEO: theme ─────────────────────────────── -->
+  <url><loc>https://topuni.org/scholarships/theme/full-funding</loc>           <changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://topuni.org/scholarships/theme/closing-soon</loc>           <changefreq>daily</changefreq>  <priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/theme/high-value</loc>             <changefreq>weekly</changefreq><priority>0.7</priority></url>
+
+</urlset>
