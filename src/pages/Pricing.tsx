@@ -49,7 +49,7 @@ const VALUE_TOTAL_LABEL = "$597+/mo";
 
 const COMPARISON = [
   { row: "Personalized strategy report",                 us: "Included",                     consultant: "$500–$2,000",                  diy: "Hours of research, no real plan" },
-  { row: "Verified scholarship database",                us: "Full access, ranked",          consultant: "Sometimes",                    diy: "Scattered across Google" },
+  { row: "Verified scholarship database",                us: "Full access, ranked",          consultant: "Sometimes",                    diy: "Scattered across Google and ChatGPT (with high possibility of outdated or incorrect information)" },
   { row: "Live workshops with admitted founders",        us: "Monthly, included",            consultant: "Per session, $300+",           diy: "—" },
   { row: "Recorded library (compounds every month)",     us: "Included forever",             consultant: "—",                            diy: "—" },
   { row: "Strategy notes (how-to-win, rejection patterns)", us: "Included",                  consultant: "Maybe",                        diy: "Guesswork" },
