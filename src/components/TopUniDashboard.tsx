@@ -1318,13 +1318,42 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                     ))}
                   </div>
 
-                  {/* Live scholarship matches — the visual bridge into Discover */}
-                  {liveMatches.length > 0 && (
+                  {/* Live scholarship matches — the visual bridge into Discover.
+                      Header is dynamic: when ≥1 match has a deadline within
+                      30 days, lead with urgency; otherwise lead with the
+                      total funding stack value the matches add up to. */}
+                  {liveMatches.length > 0 && (() => {
+                    const now = Date.now();
+                    const urgent = liveMatches.filter(m => {
+                      if (!m.application_deadline) return false;
+                      const days = Math.ceil((new Date(m.application_deadline).getTime() - now) / 86400000);
+                      return days > 0 && days <= 30;
+                    }).length;
+                    const stackUsd = liveMatches.reduce((sum, m) => sum + (m.estimated_total_value_usd || 0), 0);
+                    const stackText = stackUsd >= 1_000_000
+                      ? `$${(stackUsd / 1_000_000).toFixed(1)}M`
+                      : stackUsd >= 1000
+                        ? `$${Math.round(stackUsd / 1000)}K`
+                        : "";
+                    return (
                     <div className="not-prose mb-10">
-                      <div className="flex items-baseline justify-between mb-4">
-                        <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-1">Your top scholarship matches</p>
-                          <h3 className="font-heading text-base font-bold text-foreground tracking-tight">{t("Pulled live from our database — sorted by deadline", "Подобрано из базы — по дедлайнам")}</h3>
+                      <div className="flex items-baseline justify-between mb-4 gap-3">
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-1">
+                            {t("Your top scholarship matches", "Ваши лучшие совпадения")}
+                          </p>
+                          <h3 className="font-heading text-base sm:text-lg font-bold text-foreground tracking-tight leading-tight">
+                            {urgent > 0
+                              ? (isRu
+                                  ? `${urgent} ${urgent === 1 ? "дедлайн" : "дедлайна"} в ближайшие 30 дней`
+                                  : `${urgent} deadline${urgent === 1 ? "" : "s"} in the next 30 days`)
+                              : stackText
+                                ? (isRu
+                                    ? `Стек финансирования: ${stackText}`
+                                    : `${stackText} in potential funding`)
+                                : t("Pulled live from our database — sorted by deadline",
+                                    "Подобрано из базы — по дедлайнам")}
+                          </h3>
                         </div>
                         <Button variant="outline" size="sm" className="gap-1.5 shrink-0 hidden sm:flex" onClick={() => navigate(isRu ? "/discover/ru" : "/discover")}>
                           {t("See all in Discover", "Открыть Discover")} <ArrowRight className="w-3.5 h-3.5" />
@@ -1361,7 +1390,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                         {t("See all in Discover", "Открыть Discover")} <ArrowRight className="w-3.5 h-3.5" />
                       </Button>
                     </div>
-                  )}
+                    );
+                  })()}
 
                   <ReportRenderer
                     markdown={pathwayContent}
