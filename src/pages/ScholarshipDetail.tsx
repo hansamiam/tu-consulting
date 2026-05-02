@@ -29,6 +29,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { ShareScholarshipModal } from "@/components/ShareScholarshipModal";
 import { EmptyState } from "@/components/EmptyState";
+import { ScholarshipCard, type ScholarshipCardData } from "@/components/ScholarshipCard";
 
 interface Scholarship {
   scholarship_id: string;
@@ -79,14 +80,7 @@ interface Scholarship {
   url_consecutive_fails: number | null;
 }
 
-interface SimilarScholarship {
-  scholarship_id: string;
-  scholarship_name: string;
-  host_country: string | null;
-  coverage_type: string;
-  application_deadline: string | null;
-  estimated_total_value_usd: number | null;
-}
+type SimilarScholarship = ScholarshipCardData;
 
 const ScholarshipDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -146,8 +140,8 @@ const ScholarshipDetail = () => {
         if (ids.length === 0) return;
         const { data: rows } = await supabase
           .from("scholarships")
-          .select("scholarship_id, scholarship_name, host_country, coverage_type, application_deadline, estimated_total_value_usd")
-          .in("scholarship_id", ids.slice(0, 5));
+          .select("scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, application_deadline, target_degree_level, target_fields, is_featured, why_this_fits")
+          .in("scholarship_id", ids.slice(0, 4));
         if (!cancelled) setSimilar(((rows as SimilarScholarship[]) ?? []));
       } catch (e) {
         // Silent failure — similar list is enrichment, not critical
@@ -414,24 +408,21 @@ const ScholarshipDetail = () => {
                 Browse all <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
-            <div className="grid sm:grid-cols-2 gap-3">
-              {similar.map((sim) => (
-                <Link
+            <div className="grid sm:grid-cols-2 gap-4">
+              {similar.map((sim, i) => (
+                <ScholarshipCard
                   key={sim.scholarship_id}
-                  to={`/scholarships/${sim.scholarship_id}`}
-                  className="group bg-card border border-border rounded-xl p-4 hover:border-gold/40 hover:shadow-sm transition-all"
-                >
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-semibold mb-1">
-                    {sim.host_country ?? "—"}
-                  </p>
-                  <h4 className="font-heading font-semibold text-[15px] text-foreground tracking-tight leading-snug mb-1.5 group-hover:text-gold-dark transition-colors">
-                    {sim.scholarship_name}
-                  </h4>
-                  <p className="text-xs text-muted-foreground">
-                    {sim.coverage_type === "full_ride" ? "Full ride" : sim.coverage_type === "tuition_only" ? "Tuition" : "Stipend"}
-                    {sim.estimated_total_value_usd && ` · $${Math.round(sim.estimated_total_value_usd / 1000)}K`}
-                  </p>
-                </Link>
+                  row={sim}
+                  index={i}
+                  compact
+                  onShare={(row) => {
+                    setShareOpen(false);
+                    // Hand off to a shared modal — easier than per-card state.
+                    // For now: copy the URL to clipboard as a sensible fallback.
+                    const url = `${window.location.origin}/scholarships/${row.scholarship_id}`;
+                    navigator.clipboard?.writeText(url).then(() => toast.success("Link copied"));
+                  }}
+                />
               ))}
             </div>
           </div>

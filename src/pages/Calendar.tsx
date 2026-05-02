@@ -138,7 +138,7 @@ const Calendar = ({ language = "en" }: Props) => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <Navigation language={language} />
 
       {/* Header ───────────────────────────────────────────────── */}
       <section className="bg-gradient-to-br from-primary via-primary to-primary/95 py-12 sm:py-14">
