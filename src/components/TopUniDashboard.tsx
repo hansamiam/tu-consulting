@@ -1164,11 +1164,18 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   }, []);
 
   const streamSSE = async (url: string, body: any, onDelta: (chunk: string) => void, onDone: () => void) => {
+    // Pass the user's session JWT when authed so edge functions can
+    // resolve user_id via getUser() — needed for the counselor's
+    // live-case context (tracker / tasks / cached brief). Falls back
+    // to anon key for unauthenticated callers.
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
     const resp = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        Authorization: `Bearer ${token}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       },
       body: JSON.stringify(body),
     });
