@@ -65,13 +65,27 @@ function loadFromLocalStorage(): State {
   }
 }
 
-/** One-time migration of the old 4-key shape into the new single blob. */
+/** One-time migration of the old 4-key shape into the new single blob.
+ *  Reads both the `tu_*` family currently used by Discover.tsx AND the
+ *  hypothetical `topuni-app-*` family in case any other surface used it. */
 function loadAndMigrateLegacy(): State {
   try {
-    const status = JSON.parse(localStorage.getItem("topuni-app-status") || "{}") as Record<string, AppStatus>;
-    const notes = JSON.parse(localStorage.getItem("topuni-app-notes") || "{}") as Record<string, string>;
-    const shortlist = JSON.parse(localStorage.getItem("topuni-shortlist") || "[]") as string[];
-    const hidden = JSON.parse(localStorage.getItem("topuni-hidden") || "[]") as string[];
+    const status = {
+      ...JSON.parse(localStorage.getItem("tu_status_map") || "{}") as Record<string, AppStatus>,
+      ...JSON.parse(localStorage.getItem("topuni-app-status") || "{}") as Record<string, AppStatus>,
+    };
+    const notes = {
+      ...JSON.parse(localStorage.getItem("tu_notes_map") || "{}") as Record<string, string>,
+      ...JSON.parse(localStorage.getItem("topuni-app-notes") || "{}") as Record<string, string>,
+    };
+    const shortlist = [
+      ...JSON.parse(localStorage.getItem("tu_shortlist") || "[]") as string[],
+      ...JSON.parse(localStorage.getItem("topuni-shortlist") || "[]") as string[],
+    ];
+    const hidden = [
+      ...JSON.parse(localStorage.getItem("tu_hidden") || "[]") as string[],
+      ...JSON.parse(localStorage.getItem("topuni-hidden") || "[]") as string[],
+    ];
     const byScholarship: Record<string, TrackerEntry> = {};
     const ids = new Set<string>([
       ...Object.keys(status),
@@ -135,11 +149,15 @@ function entryIsEmpty(e: TrackerEntry): boolean {
 
 export interface ApplicationTrackerApi {
   state: State;
-  // Convenience getters — same shape as the old hooks expected
+  // Map-style getters
   status: Map<string, AppStatus>;
   notes: Map<string, string>;
   shortlist: Set<string>;
   hidden: Set<string>;
+  // Record views — backwards compat with existing Discover.tsx call
+  // sites that read `statusMap[id]` and `notesMap[id]`.
+  statusMap: Record<string, AppStatus>;
+  notesMap: Record<string, string>;
   // Mutators
   setStatus: (id: string, status: AppStatus | null) => void;
   setNote: (id: string, note: string) => void;
@@ -307,12 +325,26 @@ export function useApplicationTracker(): ApplicationTrackerApi {
     return m;
   }, [state.byScholarship]);
 
+  /* Record views for legacy call sites */
+  const statusMap = useMemo(() => {
+    const r: Record<string, AppStatus> = {};
+    for (const [id, e] of state.byScholarship) if (e.status) r[id] = e.status;
+    return r;
+  }, [state.byScholarship]);
+  const notesMap = useMemo(() => {
+    const r: Record<string, string> = {};
+    for (const [id, e] of state.byScholarship) if (e.notes) r[id] = e.notes;
+    return r;
+  }, [state.byScholarship]);
+
   return {
     state,
     status,
     notes,
     shortlist: state.shortlist,
     hidden: state.hidden,
+    statusMap,
+    notesMap,
     setStatus,
     setNote,
     toggleShortlist,

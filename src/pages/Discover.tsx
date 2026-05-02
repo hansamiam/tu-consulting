@@ -26,6 +26,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSemanticScholarshipMatch } from "@/hooks/useSemanticScholarshipMatch";
+import { useApplicationTracker } from "@/hooks/useApplicationTracker";
 import { Lock } from "lucide-react";
 
 const SHORTLIST_FREE_LIMIT = 5;
@@ -1696,10 +1697,11 @@ const Discover = ({ language = "en" }: Props) => {
   const [wizardStep, setWizardStep] = useState(0);
   const [wiz, setWiz] = useState<WizardData>(DEFAULT_WIZARD);
   const [openDetail, setOpenDetail] = useState<Scored | null>(null);
-  const [shortlist, setShortlist] = useState<Set<string>>(() => {
-    try { return new Set(JSON.parse(localStorage.getItem("tu_shortlist") || "[]")); }
-    catch { return new Set(); }
-  });
+  /* Application tracker — offline-first hook that mirrors localStorage
+     and (when authed) syncs to Postgres `application_tracker`. Replaces
+     the four separate useState + useEffect blobs that lived here. */
+  const tracker = useApplicationTracker();
+  const { shortlist, hidden, statusMap, notesMap, setStatus, setNote, toggleShortlist, toggleHidden } = tracker;
   const [analysisStep, setAnalysisStep] = useState(0);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [sortBy, setSortBy] = useState<SortBy>("match");
@@ -1711,23 +1713,15 @@ const Discover = ({ language = "en" }: Props) => {
   const [viewMode, setViewMode] = useState<ViewMode>(() => (localStorage.getItem("tu_view_mode") as ViewMode) || "list");
   const [appSection, setAppSection] = useState<AppSection>("browse");
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [statusMap, setStatusMap] = useState<Record<string, AppStatus>>(() => {
-    try { return JSON.parse(localStorage.getItem("tu_status_map") || "{}"); } catch { return {}; }
-  });
-  const [hidden, setHidden] = useState<Set<string>>(() => {
-    try { return new Set(JSON.parse(localStorage.getItem("tu_hidden") || "[]")); } catch { return new Set(); }
-  });
   const [showHidden, setShowHidden] = useState(false);
   const [compareSet, setCompareSet] = useState<Set<string>>(new Set());
   const [compareOpen, setCompareOpen] = useState(false);
-  const [notesMap, setNotesMap] = useState<Record<string, string>>(() => {
-    try { return JSON.parse(localStorage.getItem("tu_notes_map") || "{}"); } catch { return {}; }
-  });
+
+  // statusMap / notesMap / hidden / shortlist are now driven by the
+  // useApplicationTracker hook above. Their persistence (localStorage +
+  // Postgres when authed) is handled there.
 
   useEffect(() => { localStorage.setItem("tu_view_mode", viewMode); }, [viewMode]);
-  useEffect(() => { localStorage.setItem("tu_status_map", JSON.stringify(statusMap)); }, [statusMap]);
-  useEffect(() => { localStorage.setItem("tu_hidden", JSON.stringify([...hidden])); }, [hidden]);
-  useEffect(() => { localStorage.setItem("tu_notes_map", JSON.stringify(notesMap)); }, [notesMap]);
 
   // Keyboard: "/" focuses the search box (skip when an input is focused)
   useEffect(() => {
@@ -1743,24 +1737,10 @@ const Discover = ({ language = "en" }: Props) => {
     return () => window.removeEventListener("keydown", onKey);
   }, [phase]);
 
-  const setNote = (id: string, note: string) => {
-    setNotesMap(prev => {
-      const next = { ...prev };
-      if (note.trim() === "") delete next[id]; else next[id] = note;
-      return next;
-    });
-  };
-
-  const setStatus = (id: string, s: AppStatus | null) => {
-    setStatusMap(prev => {
-      const next = { ...prev };
-      if (s === null) delete next[id]; else next[id] = s;
-      return next;
-    });
-  };
-  const toggleHide = (id: string) => {
-    setHidden(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  };
+  // setNote / setStatus / toggleShortlist / toggleHidden are provided by
+  // the useApplicationTracker hook — already destructured above. Local
+  // alias kept for the old name "toggleHide" used at call sites.
+  const toggleHide = toggleHidden;
   const toggleCompare = (id: string) => {
     setCompareSet(prev => {
       const n = new Set(prev);
@@ -1805,21 +1785,13 @@ const Discover = ({ language = "en" }: Props) => {
   const [paywallOpen, setPaywallOpen] = useState<null | "shortlist" | "compare" | "strategy">(null);
 
   const toggleBookmark = (id: string) => {
-    setShortlist(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        // Free-tier limit: 5 saves. Members unlimited.
-        if (!isMember && next.size >= SHORTLIST_FREE_LIMIT) {
-          setPaywallOpen("shortlist");
-          return prev;
-        }
-        next.add(id);
-      }
-      localStorage.setItem("tu_shortlist", JSON.stringify([...next]));
-      return next;
-    });
+    // Free-tier limit gate stays here so we don't toggle into a state
+    // the user can't have. Members unlimited.
+    if (!shortlist.has(id) && !isMember && shortlist.size >= SHORTLIST_FREE_LIMIT) {
+      setPaywallOpen("shortlist");
+      return;
+    }
+    toggleShortlist(id);
   };
 
   const completeWizard = () => {
