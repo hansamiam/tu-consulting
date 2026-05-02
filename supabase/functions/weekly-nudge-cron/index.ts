@@ -14,6 +14,7 @@
 // users. Per-user errors logged but don't abort the run.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { chatCompletions } from "../_shared/ai-gateway.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -126,18 +127,14 @@ Hard rules:
 - Avoid hollow encouragement ("you've got this", "good luck"). Talk in evidence.
 - Open with the lead — no preamble, no "Hi {name}" (the email template handles greeting).`;
 
-async function generateNudge(caseBlock: string, lovableApiKey: string): Promise<string> {
-  const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${lovableApiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
-      messages: [
-        { role: "system", content: NUDGE_SYSTEM_PROMPT },
-        { role: "user", content: `Write the week's check-in for this student:\n\n${caseBlock}` },
-      ],
-      stream: false,
-    }),
+async function generateNudge(caseBlock: string): Promise<string> {
+  const resp = await chatCompletions({
+    tier: "flash",
+    messages: [
+      { role: "system", content: NUDGE_SYSTEM_PROMPT },
+      { role: "user", content: `Write the week's check-in for this student:\n\n${caseBlock}` },
+    ],
+    stream: false,
   });
   if (!resp.ok) {
     const t = await resp.text();
@@ -161,9 +158,10 @@ Deno.serve(async (req) => {
   const startedAt = Date.now();
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
   const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!SUPABASE_URL || !SERVICE_ROLE || !LOVABLE_API_KEY) {
-    return new Response(JSON.stringify({ error: "Required env not configured" }), {
+  // AI gateway env (LOVABLE_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY)
+  // is validated lazily inside chatCompletions when called.
+  if (!SUPABASE_URL || !SERVICE_ROLE) {
+    return new Response(JSON.stringify({ error: "Supabase env not configured" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -237,7 +235,7 @@ Deno.serve(async (req) => {
 
       const { block, stats } = buildCaseBlock(profile, tracker ?? [], taskCount ?? 0);
 
-      const aiBody = await generateNudge(block, LOVABLE_API_KEY);
+      const aiBody = await generateNudge(block);
 
       // Send via the existing transactional email pipeline
       const firstName = profile.full_name?.split(" ")[0]?.trim();

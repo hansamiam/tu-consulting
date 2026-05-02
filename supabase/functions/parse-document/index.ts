@@ -23,6 +23,7 @@
 // + final UPDATE so RLS doesn't block.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { vision as gatewayVision } from "../_shared/ai-gateway.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -58,45 +59,17 @@ async function transcribeViaVision(
   bytes: Uint8Array,
   mime: string,
   kind: string,
-  apiKey: string,
 ): Promise<string> {
-  // Use the Lovable AI gateway — OpenAI-compatible vision messages.
-  // gemini-2.5-flash supports image and PDF inputs natively.
   const base64 = base64Encode(bytes);
-  const dataUrl = `data:${mime};base64,${base64}`;
   const instruction = KIND_INSTRUCTION[kind] ?? KIND_INSTRUCTION.other;
-
-  const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are an OCR and document transcription assistant. Output ONLY the transcribed text — no preface, no commentary, no markdown headings unless they appear in the source.",
-        },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: instruction },
-            { type: "image_url", image_url: { url: dataUrl } },
-          ],
-        },
-      ],
-      stream: false,
-    }),
+  return gatewayVision({
+    tier: "flash",
+    systemPrompt:
+      "You are an OCR and document transcription assistant. Output ONLY the transcribed text — no preface, no commentary, no markdown headings unless they appear in the source.",
+    instruction,
+    imageBase64: base64,
+    mime,
   });
-
-  if (!resp.ok) {
-    const t = await resp.text();
-    throw new Error(`Vision API ${resp.status}: ${t.slice(0, 400)}`);
-  }
-  const data = await resp.json();
-  const text = data?.choices?.[0]?.message?.content as string | undefined;
-  if (!text || text.length < 5) throw new Error("Vision API returned empty content");
-  return text.trim();
 }
 
 /* base64 encode large Uint8Arrays without busting the call stack —
@@ -117,9 +90,8 @@ Deno.serve(async (req) => {
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
   const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!SUPABASE_URL || !SERVICE_ROLE || !ANON_KEY) return json(500, { error: "Supabase env not configured" });
-  if (!LOVABLE_API_KEY) return json(500, { error: "LOVABLE_API_KEY not configured" });
+  // AI gateway env validated lazily in gatewayVision — see _shared/ai-gateway.ts
 
   // Auth check — caller must own the document_id
   const authHeader = req.headers.get("Authorization");
@@ -169,7 +141,7 @@ Deno.serve(async (req) => {
       text = new TextDecoder().decode(buf).trim();
       if (text.length < 5) throw new Error("Empty plain-text file");
     } else if (mime === "application/pdf" || mime.startsWith("image/")) {
-      text = await transcribeViaVision(buf, mime, doc.kind, LOVABLE_API_KEY);
+      text = await transcribeViaVision(buf, mime, doc.kind);
     } else if (
       mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
       mime === "application/rtf"

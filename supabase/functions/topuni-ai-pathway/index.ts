@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.78.0";
+import { chatCompletions, embeddings as gatewayEmbeddings } from "../_shared/ai-gateway.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,19 +35,9 @@ function inferDegreeLevel(profile: any): string | null {
   return null;
 }
 
-async function embedQuery(text: string, apiKey: string): Promise<number[] | null> {
+async function embedQuery(text: string): Promise<number[] | null> {
   try {
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: EMBEDDING_MODEL, input: text }),
-    });
-    if (!resp.ok) {
-      console.warn("Embedding API non-OK", resp.status);
-      return null;
-    }
-    const data = await resp.json();
-    const v = data?.data?.[0]?.embedding;
+    const [v] = await gatewayEmbeddings({ input: text, modelOverride: EMBEDDING_MODEL });
     return Array.isArray(v) && v.length === 1536 ? v : null;
   } catch (e) {
     console.warn("Embedding failed; falling back to country-only retrieval", e);
@@ -60,8 +51,8 @@ serve(async (req) => {
   try {
     const { profile, language, reportGrade } = await req.json();
     const grade = reportGrade || "basic";
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    // AI gateway env validated lazily inside chatCompletions / gatewayEmbeddings —
+    // see _shared/ai-gateway.ts. Provider chosen via AI_PROVIDER env var.
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -81,7 +72,7 @@ serve(async (req) => {
        Falls back gracefully to a country-filtered SELECT if any
        step fails (cold-start: no embeddings yet, gateway down). */
     const profileQuery = profileToQuery(profile);
-    const queryEmbedding = await embedQuery(profileQuery, LOVABLE_API_KEY);
+    const queryEmbedding = await embedQuery(profileQuery);
     const degreeLevel = inferDegreeLevel(profile);
 
     let scholarshipRows: any[] = [];
@@ -405,24 +396,15 @@ STUDENT PROFILE:
 
 ${grade === "premium" ? premiumSections : basicSections}`;
 
-    // Use stronger model for premium reports
-    const model = grade === "premium" ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview";
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Generate my personalized university pathway plan.` },
-        ],
-        stream: true,
-        ...(grade === "premium" ? { reasoning: { effort: "high" } } : {}),
-      }),
+    // Premium reports get the stronger model (gateway translates per provider)
+    const response = await chatCompletions({
+      tier: grade === "premium" ? "pro" : "flash",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Generate my personalized university pathway plan.` },
+      ],
+      stream: true,
+      ...(grade === "premium" ? { reasoning: { effort: "high" as const } } : {}),
     });
 
     if (!response.ok) {

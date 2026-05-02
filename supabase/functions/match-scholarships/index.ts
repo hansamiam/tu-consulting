@@ -41,6 +41,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { embeddings as gatewayEmbeddings } from "../_shared/ai-gateway.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -88,15 +89,8 @@ function profileToQuery(p: NonNullable<MatchRequest["profile"]>): string {
   return parts.join(" ").trim() || "international scholarship for higher education";
 }
 
-async function embedQuery(text: string, apiKey: string): Promise<number[]> {
-  const resp = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: EMBEDDING_MODEL, input: text }),
-  });
-  if (!resp.ok) throw new Error(`Embedding API ${resp.status}: ${await resp.text().catch(() => "")}`);
-  const data = await resp.json();
-  const v = data?.data?.[0]?.embedding;
+async function embedQuery(text: string): Promise<number[]> {
+  const [v] = await gatewayEmbeddings({ input: text, modelOverride: EMBEDDING_MODEL });
   if (!Array.isArray(v) || v.length !== 1536) {
     throw new Error(`Unexpected embedding shape (got ${v?.length})`);
   }
@@ -111,9 +105,8 @@ serve(async (req) => {
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!SUPABASE_URL || !ANON_KEY) return json(500, { error: "Supabase env not configured" });
-    if (!LOVABLE_API_KEY) return json(500, { error: "LOVABLE_API_KEY not configured" });
+    // AI gateway env validated lazily in gatewayEmbeddings — see _shared/ai-gateway.ts
 
     const body = (await req.json().catch(() => ({}))) as MatchRequest;
 
@@ -122,7 +115,7 @@ serve(async (req) => {
 
     const limit = Math.min(Math.max(Number(body.limit) || 30, 1), 100);
 
-    const queryEmbedding = await embedQuery(queryText, LOVABLE_API_KEY);
+    const queryEmbedding = await embedQuery(queryText);
 
     const supa = createClient(SUPABASE_URL, ANON_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },

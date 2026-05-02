@@ -18,6 +18,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { embeddings as gatewayEmbeddings } from "../_shared/ai-gateway.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,33 +46,15 @@ const json = (status: number, body: unknown) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-async function embedBatch(texts: string[], apiKey: string): Promise<number[][]> {
-  const resp = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: EMBEDDING_MODEL,
-      input: texts,
-    }),
-  });
-  if (!resp.ok) {
-    const text = await resp.text();
-    throw new Error(`Embedding API ${resp.status}: ${text.slice(0, 400)}`);
-  }
-  const data = await resp.json();
-  // OpenAI-compatible shape: { data: [{ embedding: [...] }, ...] }
-  if (!Array.isArray(data.data) || data.data.length !== texts.length) {
-    throw new Error(`Unexpected embeddings response shape: ${JSON.stringify(data).slice(0, 200)}`);
-  }
-  return data.data.map((d: { embedding: number[] }) => {
-    if (!Array.isArray(d.embedding) || d.embedding.length !== EMBEDDING_DIM) {
-      throw new Error(`Bad embedding dim: got ${d.embedding?.length}, want ${EMBEDDING_DIM}`);
+async function embedBatch(texts: string[]): Promise<number[][]> {
+  const vectors = await gatewayEmbeddings({ input: texts, modelOverride: EMBEDDING_MODEL });
+  // Validate dimension at the boundary so a model swap doesn't corrupt the index
+  for (const v of vectors) {
+    if (v.length !== EMBEDDING_DIM) {
+      throw new Error(`Bad embedding dim: got ${v.length}, want ${EMBEDDING_DIM}`);
     }
-    return d.embedding;
-  });
+  }
+  return vectors;
 }
 
 // Postgres vector(N) literal — same syntax as `'[1,2,3]'::vector(3)`
@@ -84,9 +67,8 @@ serve(async (req) => {
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!SUPABASE_URL || !SERVICE_ROLE) return json(500, { error: "Supabase env not configured" });
-    if (!LOVABLE_API_KEY) return json(500, { error: "LOVABLE_API_KEY not configured" });
+    // AI gateway env validated lazily in gatewayEmbeddings — see _shared/ai-gateway.ts
 
     const body = await req.json().catch(() => ({} as { max_rows?: number }));
     const maxRows = Math.min(Math.max(Number(body.max_rows) || 200, 1), 500);
@@ -117,7 +99,7 @@ serve(async (req) => {
       const inputs = slice.map((r) => r.source_text || "");
       let vectors: number[][];
       try {
-        vectors = await embedBatch(inputs, LOVABLE_API_KEY);
+        vectors = await embedBatch(inputs);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         // Mark this batch as errored but keep going

@@ -13,6 +13,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { chatCompletions } from "../_shared/ai-gateway.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -277,11 +278,10 @@ serve(async (req) => {
 
   try {
     const { messages, language, profile, reportSummary, sessionId } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
     const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    // AI gateway env validated lazily in chatCompletions — see _shared/ai-gateway.ts
 
     /* Live-case context — only fires for authed users. Anon callers
        continue to get the static profile + reportSummary the client
@@ -359,20 +359,13 @@ Guidelines:
 - Keep responses tight — 2-4 paragraphs unless they explicitly ask for depth. Use markdown lists when listing concrete actions.
 - If you don't know something specific (current deadlines, fee changes), say so and tell them how to verify.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages,
-        ],
-        stream: true,
-      }),
+    const response = await chatCompletions({
+      tier: "flash",
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...messages,
+      ],
+      stream: true,
     });
 
     if (!response.ok) {

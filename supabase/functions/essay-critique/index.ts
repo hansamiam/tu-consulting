@@ -23,6 +23,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { chatCompletions } from "../_shared/ai-gateway.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -63,10 +64,11 @@ serve(async (req) => {
   if (req.method !== "POST") return json(405, { error: "POST only" });
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-    if (!LOVABLE_API_KEY) return json(500, { error: "LOVABLE_API_KEY not configured" });
+    // Provider config now comes from the shared ai-gateway module — see
+    // _shared/ai-gateway.ts. AI_PROVIDER (lovable | openai | anthropic)
+    // chooses the API; the corresponding *_API_KEY must be set.
 
     const body = (await req.json().catch(() => ({}))) as CritiqueBody;
     const essay = (body.essay || "").trim();
@@ -161,23 +163,16 @@ Rules:
 
 ${essay}`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        // Premium gets the stronger model; preview uses Flash to keep the cost
-        // sane on free users (some of whom won't convert).
-        model: isPremium ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMsg },
-        ],
-        stream: true,
-        ...(isPremium ? { reasoning: { effort: "high" } } : {}),
-      }),
+    // Premium gets the stronger model + reasoning effort high; preview
+    // uses flash to keep the cost sane on free users (some won't convert).
+    const response = await chatCompletions({
+      tier: isPremium ? "pro" : "flash",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMsg },
+      ],
+      stream: true,
+      ...(isPremium ? { reasoning: { effort: "high" as const } } : {}),
     });
 
     if (!response.ok) {
