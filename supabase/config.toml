@@ -41,3 +41,8 @@ verify_jwt = false
 
 [functions.track-milestone]
 verify_jwt = false
+[functions.match-scholarships]
+verify_jwt = false
+
+[functions.embed-scholarships]
+verify_jwt = true
