@@ -18,7 +18,7 @@ const PRODUCT_LINKS_RU = [
   { to: "/discover/ru",  label: "Стипендии" },
   { to: "/pipeline/ru",  label: "Воронка заявок" },
   { to: "/calendar/ru",  label: "Календарь дедлайнов" },
-  { to: "/essay",        label: "AI критика эссе" },
+  { to: "/essay/ru",     label: "AI критика эссе" },
   { to: "/match/ru",     label: "AI подбор стипендий" },
 ];
 

@@ -156,7 +156,8 @@ const App = () => (
           {/* Per-scholarship detail page — also indexable, ~190 SEO surfaces */}
           <Route path="/scholarships/:id"                 element={<ScholarshipDetail />} />
           {/* Essay critique — premium-gated reader-perspective AI feedback */}
-          <Route path="/essay"                            element={<EssayCritique />} />
+          <Route path="/essay"                            element={<EssayCritique language="en" />} />
+          <Route path="/essay/ru"                         element={<EssayCritique language="ru" />} />
           {/* Fast AI scholarship matcher — type a sentence, get matches */}
           <Route path="/match"                            element={<AIMatch language="en" />} />
           <Route path="/match/ru"                         element={<AIMatch language="ru" />} />
