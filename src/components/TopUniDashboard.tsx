@@ -998,15 +998,16 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       if (!raw) return null;
       const parsed = JSON.parse(raw);
       if (parsed && parsed.hash === profileHash && typeof parsed.content === "string" && parsed.content.length > 100) {
-        return parsed.content as string;
+        return { content: parsed.content as string, generatedAt: typeof parsed.generatedAt === "number" ? parsed.generatedAt : null };
       }
     } catch { /* ignore */ }
     return null;
   }, [profileHash]);
 
-  const [pathwayContent, setPathwayContent] = useState<string>(restored ?? "");
+  const [pathwayContent, setPathwayContent] = useState<string>(restored?.content ?? "");
   const [pathwayLoading, setPathwayLoading] = useState(false);
   const [pathwayGenerated, setPathwayGenerated] = useState<boolean>(!!restored);
+  const [pathwayGeneratedAt, setPathwayGeneratedAt] = useState<number | null>(restored?.generatedAt ?? null);
 
   // Interactive action plan: track which planned tasks the user has completed.
   // Keyed by stable hash of the task text (so the keys survive re-generation
@@ -1183,8 +1184,10 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       { profile, language },
       (chunk) => { soFar += chunk; setPathwayContent(soFar); },
       () => {
+        const now = Date.now();
         setPathwayLoading(false);
         setPathwayGenerated(true);
+        setPathwayGeneratedAt(now);
         // Persist the completed report keyed by current profile hash, so
         // subsequent visits restore the same text and the action-plan
         // checkboxes (keyed by text hash) line up.
@@ -1193,7 +1196,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             localStorage.setItem(PATHWAY_STORAGE_KEY, JSON.stringify({
               hash: profileHash,
               content: soFar,
-              generatedAt: Date.now(),
+              generatedAt: now,
             }));
           }
         } catch { /* ignore */ }
@@ -1283,10 +1286,29 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         <TabsContent value="pathway">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-accent" />
-                {t("Your strategic brief", "Ваш стратегический брифинг")}
-              </CardTitle>
+              <div className="flex flex-col gap-0.5">
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-accent" />
+                  {t("Your strategic brief", "Ваш стратегический брифинг")}
+                </CardTitle>
+                {pathwayGeneratedAt && !pathwayLoading && (() => {
+                  const elapsed = Math.max(0, Date.now() - pathwayGeneratedAt);
+                  const mins = Math.floor(elapsed / 60_000);
+                  const hrs = Math.floor(mins / 60);
+                  const days = Math.floor(hrs / 24);
+                  const stamp =
+                    mins < 1 ? t("just now", "только что")
+                    : mins < 60 ? t(`${mins} min ago`, `${mins} мин. назад`)
+                    : hrs < 24 ? t(`${hrs} hr ago`, `${hrs} ч. назад`)
+                    : t(`${days}d ago`, `${days} дн. назад`);
+                  return (
+                    <p className="text-[11px] text-muted-foreground pl-7">
+                      {t(`Generated ${stamp} · saved automatically`,
+                         `Сгенерировано ${stamp} · сохранено автоматически`)}
+                    </p>
+                  );
+                })()}
+              </div>
               {pathwayGenerated && pathwayContent && (
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" onClick={generatePathway} disabled={pathwayLoading}>
