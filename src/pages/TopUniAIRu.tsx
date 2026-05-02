@@ -16,12 +16,23 @@ import { useNavigate } from "react-router-dom";
 
 type Screen = "landing" | "intake" | "dashboard" | "chat-only";
 
-const COUNTRIES_RU = ["США", "Великобритания", "Канада", "Германия", "Южная Корея", "Китай", "Нидерланды", "Чехия", "Турция", "Малайзия", "Венгрия", "Италия", "Польша", "Швеция", "Эстония"];
+const COUNTRIES_RU = [
+  "США", "Великобритания", "Канада", "Австралия",
+  "Германия", "Франция", "Нидерланды", "Швейцария", "Ирландия",
+  "Швеция", "Норвегия", "Дания", "Италия", "Испания", "Бельгия",
+  "Сингапур", "Южная Корея", "Япония", "Гонконг", "Китай",
+  "Новая Зеландия", "ОАЭ",
+  "Чехия", "Венгрия", "Польша", "Эстония",
+  "Турция", "Малайзия",
+];
 const COUNTRY_MAP: Record<string, string> = {
-  "США": "United States", "Великобритания": "United Kingdom", "Канада": "Canada", "Германия": "Germany",
-  "Южная Корея": "South Korea", "Китай": "China", "Нидерланды": "Netherlands", "Чехия": "Czech Republic",
-  "Турция": "Turkey", "Малайзия": "Malaysia", "Венгрия": "Hungary", "Италия": "Italy",
-  "Польша": "Poland", "Швеция": "Sweden", "Эстония": "Estonia",
+  "США": "United States", "Великобритания": "United Kingdom", "Канада": "Canada", "Австралия": "Australia",
+  "Германия": "Germany", "Франция": "France", "Нидерланды": "Netherlands", "Швейцария": "Switzerland", "Ирландия": "Ireland",
+  "Швеция": "Sweden", "Норвегия": "Norway", "Дания": "Denmark", "Италия": "Italy", "Испания": "Spain", "Бельгия": "Belgium",
+  "Сингапур": "Singapore", "Южная Корея": "South Korea", "Япония": "Japan", "Гонконг": "Hong Kong", "Китай": "China",
+  "Новая Зеландия": "New Zealand", "ОАЭ": "United Arab Emirates",
+  "Чехия": "Czech Republic", "Венгрия": "Hungary", "Польша": "Poland", "Эстония": "Estonia",
+  "Турция": "Turkey", "Малайзия": "Malaysia",
 };
 
 const TopUniAIRu = () => {
@@ -141,7 +152,7 @@ const TopUniAIRu = () => {
                         <div className="space-y-2"><Label>Email *</Label><Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@email.com" /></div>
                       </div>
                       <div className="grid sm:grid-cols-2 gap-4">
-                        <div className="space-y-2"><Label>WhatsApp</Label><Input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="+996..." /></div>
+                        <div className="space-y-2"><Label>WhatsApp</Label><Input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="С кодом страны" /></div>
                         <div className="space-y-2">
                           <Label>Класс / курс *</Label>
                           <Select value={gradeLevel} onValueChange={setGradeLevel}><SelectTrigger><SelectValue placeholder="Выберите" /></SelectTrigger>
@@ -155,7 +166,15 @@ const TopUniAIRu = () => {
                         <div className="space-y-2"><Label>SAT</Label><Input value={sat} onChange={e => setSat(e.target.value)} placeholder="Необязательно" /></div>
                       </div>
                     </div>
-                    <div className="flex justify-end pt-4"><Button variant="gold" onClick={() => setStep(2)}>Далее <ArrowRight className="ml-2 w-4 h-4" /></Button></div>
+                    <div className="flex justify-end pt-4">
+                      <Button
+                        variant="gold"
+                        onClick={() => setStep(2)}
+                        disabled={!fullName.trim() || !email.trim() || !gradeLevel || !gpa.trim()}
+                      >
+                        Далее <ArrowRight className="ml-2 w-4 h-4" />
+                      </Button>
+                    </div>
                   </motion.div>
                 )}
                 {step === 2 && (
@@ -186,7 +205,13 @@ const TopUniAIRu = () => {
                     </div>
                     <div className="flex justify-between pt-4">
                       <Button variant="outline" onClick={() => setStep(1)}><ArrowLeft className="mr-2 w-4 h-4" /> Назад</Button>
-                      <Button variant="gold" onClick={() => setStep(3)}>Далее <ArrowRight className="ml-2 w-4 h-4" /></Button>
+                      <Button
+                        variant="gold"
+                        onClick={() => setStep(3)}
+                        disabled={targetCountries.length === 0 || !major.trim()}
+                      >
+                        Далее <ArrowRight className="ml-2 w-4 h-4" />
+                      </Button>
                     </div>
                   </motion.div>
                 )}

@@ -72,7 +72,7 @@ const FAQRu = () => {
             <div className="h-1 w-20 md:w-32 bg-gradient-to-r from-primary to-gold mx-auto rounded-full mb-3 md:mb-4"></div>
           </div>
           <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
-            Всё, что вам нужно знать
+            О чём чаще всего спрашивают студенты и родители.
           </p>
         </div>
 
