@@ -141,7 +141,7 @@ const TopUniAI = () => {
                         icon: ListChecks,
                         kicker: "01 · Target list",
                         title: "A balanced shortlist",
-                        body: "Reach, match, and safety schools across your target countries — ranked by your fit and funding need.",
+                        body: "Strong fits, aligned options, and ones worth keeping on the radar — ranked by your fit and funding need.",
                       },
                       {
                         icon: Map,
@@ -198,7 +198,7 @@ const TopUniAI = () => {
                       </div>
                       <h3 className="font-heading font-bold text-xl text-foreground mb-2 tracking-tight">Discover</h3>
                       <p className="text-sm text-muted-foreground leading-[1.65] mb-5">
-                        Every scholarship in our database, ranked against your profile. See exactly where you have a real shot.
+                        Every scholarship in our database, ranked against your profile, with deadlines and effort tagged.
                       </p>
                       <span className="text-sm font-semibold text-foreground group-hover:text-gold-dark transition-colors flex items-center gap-1.5">
                         See your matches <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -310,7 +310,7 @@ const TopUniAI = () => {
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                           <Label className="text-xs uppercase tracking-wider font-medium">WhatsApp</Label>
-                          <Input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="+996..." className="h-11 bg-card" />
+                          <Input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="With country code" className="h-11 bg-card" />
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-xs uppercase tracking-wider font-medium">Grade level *</Label>
@@ -341,7 +341,13 @@ const TopUniAI = () => {
                     </div>
                     <div className="flex justify-between pt-4">
                       <Button variant="outline" onClick={() => setScreen("landing")}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
-                      <Button variant="gold" onClick={() => setStep(2)}>Continue <ArrowRight className="ml-2 w-4 h-4" /></Button>
+                      <Button
+                        variant="gold"
+                        onClick={() => setStep(2)}
+                        disabled={!fullName.trim() || !email.trim() || !gradeLevel || !gpa.trim()}
+                      >
+                        Continue <ArrowRight className="ml-2 w-4 h-4" />
+                      </Button>
                     </div>
                   </motion.div>
                 )}
@@ -422,7 +428,13 @@ const TopUniAI = () => {
                     </div>
                     <div className="flex justify-between pt-4">
                       <Button variant="outline" onClick={() => setStep(1)}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
-                      <Button variant="gold" onClick={() => setStep(3)}>Continue <ArrowRight className="ml-2 w-4 h-4" /></Button>
+                      <Button
+                        variant="gold"
+                        onClick={() => setStep(3)}
+                        disabled={targetCountries.length === 0 || !major.trim()}
+                      >
+                        Continue <ArrowRight className="ml-2 w-4 h-4" />
+                      </Button>
                     </div>
                   </motion.div>
                 )}

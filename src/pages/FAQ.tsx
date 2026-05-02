@@ -72,7 +72,7 @@ const FAQ = () => {
             <div className="h-1 w-20 md:w-32 bg-gradient-to-r from-primary to-gold mx-auto rounded-full mb-3 md:mb-4"></div>
           </div>
           <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
-            Everything you need to know
+            What students and parents ask us most.
           </p>
         </div>
 
