@@ -52,25 +52,25 @@ const IndexRu = () => {
 
           <div className="relative max-w-5xl mx-auto px-5 sm:px-8 text-center pt-16 pb-24 sm:pt-20 sm:pb-28 w-full">
             <motion.h1 {...fadeUp(0.15)} className="font-heading text-5xl sm:text-6xl font-bold tracking-tight leading-[1.02] mb-7 text-balance max-w-4xl mx-auto text-foreground md:text-6xl">
-              Ваша индивидуальная <span className="text-gold-dark">стратегия поступления</span>
-              <br className="hidden sm:block" /> за минуты.
+              Найдите все стипендии, на которые подходите —<br className="hidden sm:block" />
+              <span className="text-gold-dark">за 60 секунд.</span>
             </motion.h1>
 
             <motion.p {...fadeUp(0.25)} className="text-lg sm:text-xl text-foreground/75 max-w-2xl mx-auto leading-relaxed mb-6 font-medium">
-              Опыт выпускников Yale, Harvard, Cambridge & Tsinghua
+              AI-стратегия поступления от выпускников Yale, Harvard, Cambridge и Tsinghua. 215+ полностью оплачиваемых программ — подобраны под ваш профиль.
             </motion.p>
 
             <motion.p {...fadeUp(0.32)} className="text-[10px] sm:text-[11px] tracking-[0.16em] uppercase text-foreground/55 mb-9 max-w-xl mx-auto font-medium">
-               · ДОСТУПНО НА РУССКОМ И АНГЛИЙСКОМ
+               БЕСПЛАТНО  ·  БЕЗ ЗАГРУЗКИ ДОКУМЕНТОВ  ·  РУССКИЙ И АНГЛИЙСКИЙ
             </motion.p>
 
             <motion.div {...fadeUp(0.35)} className="flex flex-wrap items-center justify-center gap-3 mb-10">
               <Button variant="gold" size="lg" className="text-sm sm:text-base px-7 py-5 gap-2" onClick={() => navigate('/topuni-ai/ru')}>
-                Создать план <ArrowRight className="h-4 w-4" />
+                Показать мои стипендии <ArrowRight className="h-4 w-4" />
               </Button>
               <Button variant="ghost" size="sm" className="text-sm px-4 text-foreground/65 hover:bg-foreground/5 hover:text-foreground"
                 onClick={() => document.getElementById('how')?.scrollIntoView({ behavior: 'smooth' })}>
-                Ниже
+                Как это работает
               </Button>
             </motion.div>
           </div>
@@ -147,15 +147,15 @@ const IndexRu = () => {
           <div className="max-w-6xl mx-auto px-5 sm:px-8">
             <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-start">
               <motion.div {...fadeUp()} className="lg:col-span-5">
-                <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">Academy</p>
+                <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">Академия</p>
                 <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-5">
-                  Application advantage.
+                  Преимущество в заявке.
                 </h2>
                 <p className="text-muted-foreground text-lg leading-relaxed mb-8">
                   Воркшопы с основателями, страновые гайды и принятые эссе — применяйте, пока пишете свои.
                 </p>
                 <Button onClick={() => navigate('/academy')} variant="gold" className="gap-2">
-                  Превью Academy <ArrowRight className="h-4 w-4" />
+                  Открыть Академию <ArrowRight className="h-4 w-4" />
                 </Button>
               </motion.div>
 

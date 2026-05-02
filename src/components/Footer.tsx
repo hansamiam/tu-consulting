@@ -15,9 +15,11 @@ const PRODUCT_LINKS_EN = [
 ];
 const PRODUCT_LINKS_RU = [
   { to: "/topuni-ai/ru", label: "AI стратегия" },
-  { to: "/discover/ru",  label: "Discover" },
+  { to: "/discover/ru",  label: "Стипендии" },
   { to: "/pipeline/ru",  label: "Воронка заявок" },
   { to: "/calendar/ru",  label: "Календарь дедлайнов" },
+  { to: "/essay",        label: "AI критика эссе" },
+  { to: "/match",        label: "AI подбор стипендий" },
 ];
 
 const COMPANY_LINKS_EN = [
@@ -28,10 +30,15 @@ const COMPANY_LINKS_EN = [
   { to: "/blog",     label: "Journal" },
   { to: "/refer",    label: "Refer a friend" },
 ];
+// Mirror EN exactly so Russian users see every surface. Where we don't yet
+// have a /ru variant, the link still works (page renders English).
 const COMPANY_LINKS_RU = [
   { to: "/team/ru",     label: "Команда" },
   { to: "/why-tu/ru",   label: "Почему TopUni" },
+  { to: "/pricing",     label: "Цены" },
+  { to: "/academy",     label: "Академия" },
   { to: "/blog/ru",     label: "Журнал" },
+  { to: "/refer",       label: "Пригласить друга" },
 ];
 
 export const Footer = ({ language, variant = "dark" }: FooterProps) => {

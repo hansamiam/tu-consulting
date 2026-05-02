@@ -32,41 +32,33 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
   }, [variant]);
 
   const isOverlay = variant === "overlay" && !scrolled;
-
   const isRussian = language === "ru";
   const basePath = isRussian ? "/ru" : "/";
 
-  // Prep is spinning off into its own product — link removed from main nav.
-  const primaryLinks = [
-    {
-      label: "TopUni AI",
-      path: isRussian ? "/topuni-ai/ru" : "/topuni-ai",
-    },
-    {
-      label: isRussian ? "Стипендии" : "Discover",
-      path: isRussian ? "/discover/ru" : "/discover",
-    },
-    {
-      label: isRussian ? "Академия" : "Academy",
-      path: "/academy",
-    },
-  ];
-
-  const secondaryLinks = [
-    {
-      label: isRussian ? "Команда" : "Team",
-      path: isRussian ? "/team/ru" : "/team",
-    },
-    {
-      label: isRussian ? "Блог" : "Blog",
-      path: isRussian ? "/blog/ru" : "/blog",
-    },
+  // Tighter IA: 4 product surfaces + Pricing always visible (drives conversion).
+  // Team/Blog moved to Footer where they belong — they're not what visitors
+  // come here for. The "Platform" group label is gone; everything reads as
+  // one cohesive product surface.
+  const navItems = [
+    { label: "TopUni AI",                                     path: isRussian ? "/topuni-ai/ru" : "/topuni-ai" },
+    { label: isRussian ? "Стипендии"  : "Scholarships",       path: isRussian ? "/discover/ru"  : "/discover"  },
+    { label: isRussian ? "Академия"   : "Academy",            path: "/academy" },
+    { label: isRussian ? "Цены"       : "Pricing",            path: "/pricing" },
   ];
 
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname === path;
 
-  // Color tokens swap when overlaying a navy hero
+  // Tier-aware account label — the Russian half was missing in 3 places before.
+  const tierLabel =
+    subscription.tier === "founding" ? (isRussian ? "Основатель" : "Founding") :
+    subscription.tier === "pro"      ? (isRussian ? "Pro"        : "Pro")      :
+                                       (isRussian ? "Аккаунт"    : "Account");
+  const tierLabelMobile =
+    subscription.tier === "founding" ? (isRussian ? "Основатель"   : "Founding Member") :
+    subscription.tier === "pro"      ? (isRussian ? "Pro аккаунт"  : "Pro Account")     :
+                                       (isRussian ? "Мой аккаунт"  : "My Account");
+
   const linkBase = "px-3 py-2 text-sm font-medium rounded-md transition-colors";
   const linkIdle = isOverlay
     ? "text-primary-foreground/80 hover:text-primary-foreground"
@@ -95,26 +87,9 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
             Top Uni
           </button>
 
-          {/* Desktop Navigation — clean, restrained, single typographic style */}
+          {/* Desktop nav */}
           <div className="hidden lg:flex items-center gap-1">
-            <button
-              onClick={() => navigate(basePath)}
-              className={cn(linkBase, isActive(basePath, true) ? linkActive : linkIdle)}
-            >
-              {isRussian ? "Главная" : "Home"}
-            </button>
-
-            {primaryLinks.map((link) => (
-              <button
-                key={link.path}
-                onClick={() => navigate(link.path)}
-                className={cn(linkBase, isActive(link.path) ? linkActive : linkIdle)}
-              >
-                {link.label}
-              </button>
-            ))}
-
-            {secondaryLinks.map((link) => (
+            {navItems.map((link) => (
               <button
                 key={link.path}
                 onClick={() => navigate(link.path)}
@@ -138,13 +113,7 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
                 )}
               >
                 {subscription.tier === "founding" ? <Crown className="w-3.5 h-3.5" /> : subscription.tier === "pro" ? <Sparkles className="w-3.5 h-3.5" /> : <UserIcon className="w-3.5 h-3.5" />}
-                <span className="hidden xl:inline">
-                  {subscription.tier === "founding"
-                    ? (isRussian ? "Founding" : "Founding")
-                    : subscription.tier === "pro"
-                    ? "Pro"
-                    : (isRussian ? "Аккаунт" : "Account")}
-                </span>
+                <span className="hidden xl:inline">{tierLabel}</span>
               </button>
             ) : (
               <button
@@ -163,7 +132,7 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
             </div>
           </div>
 
-          {/* Mobile Hamburger */}
+          {/* Mobile hamburger */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild className="lg:hidden">
               <button className={cn("p-2 transition-colors", isOverlay ? "text-primary-foreground" : "text-primary")}>
@@ -171,7 +140,7 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
               </button>
             </SheetTrigger>
             <SheetContent side="right" className="bg-surface border-border w-[280px]">
-              <div className="flex flex-col gap-6 mt-8">
+              <div className="flex flex-col gap-3 mt-8">
                 {/* Home */}
                 <button
                   onClick={() => { navigate(basePath); setIsOpen(false); }}
@@ -185,60 +154,35 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
                   {isRussian ? "Главная" : "Home"}
                 </button>
 
-                {/* TopUni AI — standalone */}
+                {/* TopUni AI as the standalone hero CTA — gold-outlined */}
                 <button
-                  onClick={() => { navigate(primaryLinks[0].path); setIsOpen(false); }}
+                  onClick={() => { navigate(navItems[0].path); setIsOpen(false); }}
                   className={cn(
                     "px-4 py-3 text-base font-bold rounded-md border transition-all duration-200 text-left",
-                    isActive(primaryLinks[0].path)
+                    isActive(navItems[0].path)
                       ? "text-gold-dark bg-gold/10 border-gold/60"
                       : "text-primary border-gold/35 hover:bg-gold/10"
                   )}
                 >
-                  {primaryLinks[0].label}
+                  {navItems[0].label}
                 </button>
 
-                {/* Other products */}
-                <div>
-                    <p className="px-4 text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">
-                    {isRussian ? "Платформа" : "Platform"}
-                  </p>
-                  <div className="flex flex-col gap-1">
-                    {primaryLinks.slice(1).map((link) => (
-                      <button
-                        key={link.path}
-                        onClick={() => { navigate(link.path); setIsOpen(false); }}
-                        className={cn(
-                          "px-4 py-3 text-base font-semibold rounded-md transition-all duration-200 text-left",
-                          isActive(link.path)
-                              ? "text-gold-dark bg-gold/10 border-l-4 border-gold"
-                              : "text-primary/75 hover:text-primary hover:bg-secondary"
-                        )}
-                      >
-                        {link.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Secondary links */}
-                <div className="border-t border-border pt-4">
-                  <div className="flex flex-col gap-1">
-                    {secondaryLinks.map((link) => (
-                      <button
-                        key={link.path}
-                        onClick={() => { navigate(link.path); setIsOpen(false); }}
-                        className={cn(
-                          "px-4 py-3 text-base font-medium rounded-md transition-all duration-200 text-left",
-                          isActive(link.path)
-                            ? "text-gold-dark bg-gold/10 border-l-4 border-gold"
-                            : "text-muted-foreground hover:text-primary hover:bg-secondary"
-                        )}
-                      >
-                        {link.label}
-                      </button>
-                    ))}
-                  </div>
+                {/* Remaining items — flat list, no group label */}
+                <div className="flex flex-col gap-1">
+                  {navItems.slice(1).map((link) => (
+                    <button
+                      key={link.path}
+                      onClick={() => { navigate(link.path); setIsOpen(false); }}
+                      className={cn(
+                        "px-4 py-3 text-base font-medium rounded-md transition-all duration-200 text-left",
+                        isActive(link.path)
+                          ? "text-gold-dark bg-gold/10 border-l-4 border-gold"
+                          : "text-muted-foreground hover:text-primary hover:bg-secondary"
+                      )}
+                    >
+                      {link.label}
+                    </button>
+                  ))}
                 </div>
 
                 <div className="pt-4 border-t border-border flex flex-col gap-2">
@@ -248,14 +192,14 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
                       className="px-4 py-3 text-base font-semibold rounded-md text-gold-dark bg-gold/10 border border-gold/35 text-left flex items-center gap-2"
                     >
                       {subscription.tier === "founding" ? <Crown className="w-4 h-4" /> : <UserIcon className="w-4 h-4" />}
-                      {subscription.tier === "founding" ? "Founding Member" : subscription.tier === "pro" ? "Pro Account" : "My Account"}
+                      {tierLabelMobile}
                     </button>
                   ) : (
                     <button
                       onClick={() => { setIsOpen(false); setAuthOpen(true); }}
                       className="px-4 py-3 text-base font-medium rounded-md text-muted-foreground hover:text-primary text-left"
                     >
-                      Sign in
+                      {isRussian ? "Войти" : "Sign in"}
                     </button>
                   )}
                   <LanguageSwitcher />

@@ -119,19 +119,19 @@ const Index = () => {
               {...fadeUp(0.15)}
               className="font-heading text-[2.125rem] sm:text-6xl font-bold tracking-tight leading-[1.08] sm:leading-[1.02] mb-6 sm:mb-7 text-balance max-w-4xl mx-auto text-foreground md:text-6xl"
             >
-              Your tailored <span className="text-gold-dark">admission strategy</span>
-              <br className="hidden sm:block" /> in minutes.
+              Find every scholarship you qualify for —<br className="hidden sm:block" />
+              <span className="text-gold-dark">in 60 seconds.</span>
             </motion.h1>
 
             <motion.p
               {...fadeUp(0.25)}
               className="text-base sm:text-xl text-foreground/90 max-w-2xl mx-auto leading-relaxed mb-6 font-medium"
             >
-              With insights from Yale, Harvard, Cambridge & Tsinghua alumni
+              AI-built admissions strategy from Yale, Harvard, Cambridge & Tsinghua alumni. 215+ funded programs in our database — matched to your profile.
             </motion.p>
 
             <motion.p {...fadeUp(0.32)} className="text-[11px] sm:text-xs tracking-[0.18em] uppercase text-foreground/75 mb-9 max-w-xl mx-auto font-medium">
-               · AVAILABLE IN RUSSIAN & ENGLISH
+               FREE  ·  NO TRANSCRIPT UPLOAD  ·  RUSSIAN & ENGLISH
             </motion.p>
 
             <motion.div {...fadeUp(0.35)} className="flex flex-wrap items-center justify-center gap-3 mb-10">
@@ -141,7 +141,7 @@ const Index = () => {
                 className="text-sm sm:text-base px-7 py-5 gap-2"
                 onClick={() => navigate('/topuni-ai')}
               >
-                Get my admissions plan <ArrowRight className="h-4 w-4" />
+                Show me my matches <ArrowRight className="h-4 w-4" />
               </Button>
               <Button
                 variant="ghost"
@@ -149,7 +149,7 @@ const Index = () => {
                 className="text-sm px-4 text-foreground/65 hover:bg-foreground/5 hover:text-foreground"
                 onClick={() => document.getElementById('how')?.scrollIntoView({ behavior: 'smooth' })}
               >
-                Scroll
+                How it works
               </Button>
             </motion.div>
           </div>
