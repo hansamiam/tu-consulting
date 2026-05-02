@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 
 export type SubscriptionInfo = {
   tier: "free" | "pro" | "founding";
@@ -151,14 +150,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+    // Supabase native Google OAuth — works on any host, no Lovable
+    // runtime dependency. Requires Google provider to be enabled in
+    // the Supabase dashboard (Authentication → Providers → Google).
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
-    if (result.error) {
-      const msg = result.error instanceof Error ? result.error.message : String(result.error);
-      return { error: msg };
-    }
-    return { error: null };
+    return { error: error?.message ?? null };
   }, []);
 
   const signOut = useCallback(async () => {
