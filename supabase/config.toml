@@ -64,3 +64,6 @@ verify_jwt = false
 
 [functions.parse-document]
 verify_jwt = true
+
+[functions.scholarship-url-health-cron]
+verify_jwt = true

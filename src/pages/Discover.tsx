@@ -54,6 +54,9 @@ interface Scholarship {
   next_step: string | null; risk_note: string | null;
   last_verified_date: string | null;
   data_source: string | null;
+  url_check_status: "ok" | "redirect" | "fail" | "no_url" | null;
+  url_consecutive_fails: number | null;
+  url_resolved_to: string | null;
 }
 
 interface Profile {
@@ -1254,6 +1257,24 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               {isBookmarked ? <BookmarkCheck className="h-4 w-4 text-gold-dark" /> : <Bookmark className="h-4 w-4" />}
             </Button>
           </div>
+
+          {/* URL health warning — surfaces the URL freshness checker's
+              verdict. 3+ consecutive fails = link probably moved.
+              Nothing renders for healthy or never-checked URLs. */}
+          {s.official_url && (s.url_consecutive_fails ?? 0) >= 3 && (
+            <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-500 leading-relaxed flex items-start gap-2">
+              <ShieldAlert className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+              <span>
+                Our weekly link-checker has failed to reach this URL {s.url_consecutive_fails}+ times.
+                The provider may have moved the page — verify before applying.
+              </span>
+            </div>
+          )}
+          {s.url_check_status === "redirect" && s.url_resolved_to && s.url_resolved_to !== s.official_url && (
+            <div className="mt-3 rounded-lg border border-border bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground leading-relaxed">
+              Note: this URL now redirects to <code className="font-mono text-foreground/80">{s.url_resolved_to.slice(0, 80)}</code>
+            </div>
+          )}
 
           {/* Application status + notes — application-software pattern */}
           <div className="relative mt-4 flex flex-col gap-3 bg-card border border-border rounded-xl p-4">
