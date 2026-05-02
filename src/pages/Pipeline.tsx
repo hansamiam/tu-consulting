@@ -257,11 +257,15 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
         ) : trackedIds.length === 0 ? (
           <EmptyState language={language} />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+          // Mobile: horizontal scroll-snap of 5 columns (one stage per swipe).
+          // Desktop (lg+): standard 5-col grid. Negative margins extend the
+          // scroll area to the screen edge so card shadows aren't cropped.
+          <div className="-mx-5 sm:-mx-8 lg:mx-0 px-5 sm:px-8 lg:px-0 overflow-x-auto lg:overflow-visible snap-x snap-mandatory lg:snap-none">
+            <div className="grid grid-flow-col auto-cols-[85vw] sm:auto-cols-[60vw] lg:grid-flow-row lg:grid-cols-5 lg:auto-cols-auto gap-4 pb-2 lg:pb-0">
             {COLUMNS.map((col) => {
               const items = buckets[col.key] || [];
               return (
-                <div key={col.key} className="space-y-3">
+                <div key={col.key} className="space-y-3 snap-start lg:snap-align-none">
                   <div className="flex items-center justify-between gap-2 px-1">
                     <div className="flex items-center gap-2">
                       <span className={`h-1.5 w-6 rounded-full ${col.bar}`} />
@@ -296,6 +300,7 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                 </div>
               );
             })}
+            </div>
           </div>
         )}
       </section>
