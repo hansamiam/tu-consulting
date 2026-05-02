@@ -178,7 +178,8 @@ const App = () => (
           <Route path="/pricing" element={<Pricing language="en" />} />
           <Route path="/pricing/ru" element={<Pricing language="ru" />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/account" element={<Account />} />
+          <Route path="/account" element={<Account language="en" />} />
+          <Route path="/account/ru" element={<Account language="ru" />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
