@@ -35,10 +35,10 @@ const COMPANY_LINKS_EN = [
 const COMPANY_LINKS_RU = [
   { to: "/team/ru",     label: "Команда" },
   { to: "/why-tu/ru",   label: "Почему TopUni" },
-  { to: "/pricing",     label: "Цены" },
+  { to: "/pricing/ru",  label: "Цены" },
   { to: "/academy",     label: "Академия" },
   { to: "/blog/ru",     label: "Журнал" },
-  { to: "/refer",       label: "Пригласить друга" },
+  { to: "/refer/ru",    label: "Пригласить друга" },
 ];
 
 export const Footer = ({ language, variant = "dark" }: FooterProps) => {

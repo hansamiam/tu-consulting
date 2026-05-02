@@ -147,7 +147,8 @@ const App = () => (
           <Route path="/calendar"     element={<Calendar language="en" />} />
           <Route path="/calendar/ru"  element={<Calendar language="ru" />} />
           {/* Referral hub — share your code, see your referrals */}
-          <Route path="/refer"        element={<Refer />} />
+          <Route path="/refer"        element={<Refer language="en" />} />
+          <Route path="/refer/ru"     element={<Refer language="ru" />} />
           {/* Programmatic SEO landing pages — country / field / theme */}
           <Route path="/scholarships/by-country/:country" element={<ScholarshipsByFilter mode="country" />} />
           <Route path="/scholarships/by-field/:field"     element={<ScholarshipsByFilter mode="field" />} />
@@ -172,7 +173,8 @@ const App = () => (
           <Route path="/why-us" element={<WhyTU />} />
           <Route path="/why-us/ru" element={<WhyTURu />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
-          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/pricing" element={<Pricing language="en" />} />
+          <Route path="/pricing/ru" element={<Pricing language="ru" />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/account" element={<Account />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

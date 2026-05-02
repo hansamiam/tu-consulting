@@ -43,7 +43,7 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
     { label: "TopUni AI",                                     path: isRussian ? "/topuni-ai/ru" : "/topuni-ai" },
     { label: isRussian ? "Стипендии"  : "Scholarships",       path: isRussian ? "/discover/ru"  : "/discover"  },
     { label: isRussian ? "Академия"   : "Academy",            path: "/academy" },
-    { label: isRussian ? "Цены"       : "Pricing",            path: "/pricing" },
+    { label: isRussian ? "Цены"       : "Pricing",            path: isRussian ? "/pricing/ru" : "/pricing" },
   ];
 
   const isActive = (path: string, exact?: boolean) =>
