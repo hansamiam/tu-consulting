@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useAuth } from "@/contexts/AuthContext";
 import { SaveBriefPrompt } from "@/components/topuni/SaveBriefPrompt";
 import { DocumentManager } from "@/components/topuni/DocumentManager";
+import { CounselorSessions } from "@/components/topuni/CounselorSessions";
 import { Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
@@ -1150,6 +1151,14 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     setChatSessionId(null);
   };
 
+  /* Load a past session: drop its messages into the chat + set the
+     active session_id so subsequent turns persist to the same thread. */
+  const loadChatSession = (sessionId: string, msgs: Msg[]) => {
+    setChatSessionId(sessionId);
+    setChatMessages(msgs);
+    try { localStorage.setItem("topuni-chat-history", JSON.stringify(msgs)); } catch { /* ignore */ }
+  };
+
   /* ─── Public share — mints a /brief/:slug URL via the share-brief
      edge function. Used by the Share button in the report toolbar. */
   // (user / subscription / isMember / reportGrade declared earlier
@@ -1775,9 +1784,18 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
 
             return (
               <div className="grid lg:grid-cols-[280px_1fr] gap-6">
-                {/* LEFT RAIL — categorized prompts ─────────────────────── */}
+                {/* LEFT RAIL — past chats + categorized prompts ─────────── */}
                 <aside className="hidden lg:block">
                   <div className="sticky top-6 space-y-5">
+                    {/* Past sessions disclosure (auth-only). Renders nothing
+                        for anon users so the rail stays clean. */}
+                    <CounselorSessions
+                      isRu={isRu}
+                      activeSessionId={chatSessionId}
+                      onLoadSession={loadChatSession}
+                      onNewSession={clearChat}
+                      refreshKey={chatSessionId}
+                    />
                     <div>
                       <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground font-semibold mb-2">
                         {t("Start a thread", "Начать диалог")}
