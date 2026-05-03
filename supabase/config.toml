@@ -65,6 +65,9 @@ verify_jwt = true
 [functions.extract-brief-data]
 verify_jwt = false
 
+[functions.scholarship-deep-dive]
+verify_jwt = false
+
 [functions.og-brief]
 verify_jwt = false
 

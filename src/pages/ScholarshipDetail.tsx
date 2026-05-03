@@ -31,6 +31,8 @@ import { ShareScholarshipModal } from "@/components/ShareScholarshipModal";
 import { EmptyState } from "@/components/EmptyState";
 import { ScholarshipCard, type ScholarshipCardData } from "@/components/ScholarshipCard";
 import { useTrackView, useScholarshipTracking } from "@/hooks/useScholarshipTracking";
+import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
+import { getStoredProfile } from "@/components/discover/DiscoverProfileGate";
 
 interface Scholarship {
   scholarship_id: string;
@@ -342,6 +344,34 @@ const ScholarshipDetail = () => {
           <Fact icon={<GraduationCap />} label="Levels" value={(s.target_degree_level ?? []).join(", ") || "any"} />
           <Fact icon={<Globe />} label="Citizenship" value={s.citizenship_requirements ? truncate(s.citizenship_requirements, 60) : "any"} />
         </div>
+
+        {/* Personalized deep dive — calls scholarship-deep-dive edge fn with
+            the visitor's locally-stored profile, renders match-score
+            breakdown + odds + strategy + 30-day plan above the static
+            scholarship info below. Soft-fails to a build-profile prompt
+            when no profile is on file, or hides on edge-fn error. */}
+        {(() => {
+          const stored = getStoredProfile();
+          // The DiscoverProfile shape from getStoredProfile uses different
+          // keys than our edge fn expects — adapt here.
+          const profileForDive = stored ? {
+            fullName: stored.fullName,
+            nationality: stored.nationality,
+            major: stored.fieldOfInterest,
+            field: stored.fieldOfInterest,
+            gradeLevel: stored.targetDegree,
+            targetCountries: [],
+            gpa: stored.gpa,
+            ielts: stored.ieltsScore,
+          } : null;
+          return (
+            <ScholarshipDeepDive
+              scholarshipId={s.scholarship_id}
+              profile={profileForDive}
+              onBuildProfile={() => navigate("/discover")}
+            />
+          );
+        })()}
 
         {/* Sections */}
         {s.why_this_fits && <Section title="Why this could fit" body={s.why_this_fits} />}
