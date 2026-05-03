@@ -238,10 +238,12 @@ const InteractiveActionPlan = ({ markdown, completedTasks, onToggle, taskKey, is
    on the radar) and renders each bullet item as a visual card with the
    university name, description, and a country-coded link out to a
    filtered Discover view. Way more scannable than bulleted prose. */
-const UniversityShortlist = ({ markdown, isRu, onOpenDiscover }: {
+const UniversityShortlist = ({ markdown, isRu, onOpenDiscover, onRegen, isRegenerating }: {
   markdown: string;
   isRu: boolean;
   onOpenDiscover: () => void;
+  onRegen?: (id: string) => void;
+  isRegenerating?: boolean;
 }) => {
   const { title, buckets } = useMemo(() => {
     const lines = markdown.split("\n");
@@ -299,12 +301,15 @@ const UniversityShortlist = ({ markdown, isRu, onOpenDiscover }: {
         <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground">
           {title || (isRu ? "Ваш шорт-лист университетов" : "Your university shortlist")}
         </h2>
-        <button
-          onClick={onOpenDiscover}
-          className="text-xs text-muted-foreground hover:text-gold-dark transition-colors hidden sm:inline-flex items-center gap-1"
-        >
-          {isRu ? "Открыть Discover" : "Open in Discover"} <ArrowRight className="w-3 h-3" />
-        </button>
+        <div className="flex items-center gap-3">
+          <SectionRegenButton sectionId="shortlist" onRegen={onRegen} isRegenerating={isRegenerating} isRu={isRu} />
+          <button
+            onClick={onOpenDiscover}
+            className="text-xs text-muted-foreground hover:text-gold-dark transition-colors hidden sm:inline-flex items-center gap-1"
+          >
+            {isRu ? "Открыть Discover" : "Open in Discover"} <ArrowRight className="w-3 h-3" />
+          </button>
+        </div>
       </div>
 
       <div className="space-y-7">
@@ -361,7 +366,7 @@ type LiveMatchLite = {
 const fmtMoney = (v: number) =>
   v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `$${Math.round(v / 1000)}K` : `$${v}`;
 
-const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combinedFunding }: {
+const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combinedFunding, onRegen, isRegenerating }: {
   markdown: string;
   liveMatches: LiveMatchLite[];
   isRu: boolean;
@@ -369,6 +374,8 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combine
   /** Optional structured Combined Funding payload from extract-brief-data —
    *  renders the stacked-bar scenarios chart at the top of this section. */
   combinedFunding?: import("@/types/briefStructured").CombinedFundingSection | null;
+  onRegen?: (id: string) => void;
+  isRegenerating?: boolean;
 }) => {
   const { title, items } = useMemo(() => {
     const lines = markdown.split("\n");
@@ -424,12 +431,15 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combine
         <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground">
           {title || (isRu ? "Финансирование" : "Your funding pathway")}
         </h2>
-        <button
-          onClick={onOpenDiscover}
-          className="text-xs text-muted-foreground hover:text-gold-dark transition-colors hidden sm:inline-flex items-center gap-1"
-        >
-          {isRu ? "Все стипендии" : "Browse all scholarships"} <ArrowRight className="w-3 h-3" />
-        </button>
+        <div className="flex items-center gap-3">
+          <SectionRegenButton sectionId="funding" onRegen={onRegen} isRegenerating={isRegenerating} isRu={isRu} />
+          <button
+            onClick={onOpenDiscover}
+            className="text-xs text-muted-foreground hover:text-gold-dark transition-colors hidden sm:inline-flex items-center gap-1"
+          >
+            {isRu ? "Все стипендии" : "Browse all scholarships"} <ArrowRight className="w-3 h-3" />
+          </button>
+        </div>
       </div>
 
       {/* Combined Funding scenarios chart — premium-only, renders above the
@@ -777,7 +787,7 @@ const HonestGaps = ({ markdown, isRu }: { markdown: string; isRu: boolean }) => 
    call:** …" line lifted out into a gold-bordered pull-quote. Falls
    back to plain markdown if the call marker isn't present (e.g. legacy
    reports generated before the prompt update). */
-const StrategicPositioning = ({ markdown, isRu }: { markdown: string; isRu: boolean }) => {
+const StrategicPositioning = ({ markdown, isRu, onRegen, isRegenerating }: { markdown: string; isRu: boolean; onRegen?: (id: string) => void; isRegenerating?: boolean }) => {
   const { title, body, call } = useMemo(() => {
     const lines = markdown.split("\n");
     let title = "";
@@ -813,6 +823,7 @@ const StrategicPositioning = ({ markdown, isRu }: { markdown: string; isRu: bool
         <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark">
           {isRu ? "Стратегический брифинг" : "Strategic brief"}
         </span>
+        <SectionRegenButton sectionId="positioning" onRegen={onRegen} isRegenerating={isRegenerating} isRu={isRu} />
       </div>
       <h2 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground mb-4 leading-tight">
         {title || (isRu ? "Стратегическое позиционирование" : "Strategic positioning")}
@@ -887,6 +898,34 @@ const PATHWAY_FUND_SECTION_REGEX = /^##\s+.*?(funding pathway|funding deep|фи�
 const PATHWAY_ESSAYS_SECTION_REGEX = /^##\s+.*?(essay angle|essay angles|углов? для эссе|эссе)/i;
 const PATHWAY_GAPS_SECTION_REGEX = /^##\s+.*?(honest gap|gaps to close|пробел|недотяг|слабые)/i;
 const PATHWAY_FINAL_SECTION_REGEX = /^##\s+.*?(final word|closing|in closing|заключительное слово|заключение)/i;
+
+/* Tiny shared affordance — surfaces a "regenerate this section" action in
+   the section header when the host passes onRegen. Hidden in print, mute
+   while a regen is in-flight on this section, gold accent on hover. */
+const SectionRegenButton = ({
+  sectionId, onRegen, isRegenerating, isRu,
+}: {
+  sectionId: string;
+  onRegen?: (id: string) => void;
+  isRegenerating?: boolean;
+  isRu: boolean;
+}) => {
+  if (!onRegen) return null;
+  return (
+    <button
+      onClick={() => onRegen(sectionId)}
+      disabled={isRegenerating}
+      className="ml-auto inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground hover:text-gold-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed print:hidden"
+      title={isRu ? "Перегенерировать этот раздел" : "Regenerate just this section"}
+      type="button"
+    >
+      {isRegenerating
+        ? <Loader2 className="w-3 h-3 animate-spin" />
+        : <RotateCcw className="w-3 h-3" />}
+      {isRegenerating ? (isRu ? "Создаём…" : "Regen…") : (isRu ? "Перегенерировать" : "Regen")}
+    </button>
+  );
+};
 const PATHWAY_CAREER_SECTION_REGEX = /^##\s+.*?(career roi|carreer roi|карьерн|career return)/i;
 const PATHWAY_VISA_SECTION_REGEX = /^##\s+.*?(visa.*pathway|visa.*post|post.*graduation|виза.*пути|виза|после выпуска)/i;
 
@@ -940,7 +979,7 @@ const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onO
         if (PATHWAY_POS_SECTION_REGEX.test(section)) {
           const hasBody = section.split("\n").slice(1).join("\n").trim().length > 30;
           if (hasBody) {
-            return <div key={i} {...anchorProps}><StrategicPositioning markdown={section} isRu={isRu} /></div>;
+            return <div key={i} {...anchorProps}><StrategicPositioning markdown={section} isRu={isRu} onRegen={onRegenSection} isRegenerating={regeneratingSectionId === "positioning"} /></div>;
           }
         }
         if (PATHWAY_PLAN_SECTION_REGEX.test(section)) {
@@ -955,13 +994,13 @@ const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onO
         if (PATHWAY_UNIS_SECTION_REGEX.test(section)) {
           const hasBuckets = /^###\s+/m.test(section);
           if (hasBuckets) {
-            return <div key={i} {...anchorProps}><UniversityShortlist markdown={section} isRu={isRu} onOpenDiscover={onOpenDiscover} /></div>;
+            return <div key={i} {...anchorProps}><UniversityShortlist markdown={section} isRu={isRu} onOpenDiscover={onOpenDiscover} onRegen={onRegenSection} isRegenerating={regeneratingSectionId === "shortlist"} /></div>;
           }
         }
         if (PATHWAY_FUND_SECTION_REGEX.test(section)) {
           const hasBullets = /^\s*([-*]|\d+\.)\s+/m.test(section);
           if (hasBullets) {
-            return <div key={i} {...anchorProps}><FundingShortlist markdown={section} liveMatches={liveMatches} isRu={isRu} onOpenDiscover={onOpenDiscover} combinedFunding={structured?.combinedFunding ?? null} /></div>;
+            return <div key={i} {...anchorProps}><FundingShortlist markdown={section} liveMatches={liveMatches} isRu={isRu} onOpenDiscover={onOpenDiscover} combinedFunding={structured?.combinedFunding ?? null} onRegen={onRegenSection} isRegenerating={regeneratingSectionId === "funding"} /></div>;
           }
         }
         if (PATHWAY_ESSAYS_SECTION_REGEX.test(section)) {
@@ -1532,12 +1571,21 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     if (!pathwayContent || regeneratingSectionId) return;
     setRegeneratingSectionId(sectionId);
 
-    /* Heading-pattern map for splicing. Only includes sections that have
-       a visible "regenerate" button right now — extend this map when we
-       expose more per-section regen affordances. */
+    /* Heading-pattern map for splicing. Each entry's key matches a
+       SectionSpec.id in supabase/functions/_shared/brief-sections.ts so
+       the backend's regenSection branch hits the right per-section
+       prompt. Patterns deliberately match both EN + RU phrasings. */
     const HEADING_PATTERNS: Record<string, RegExp> = {
-      career_roi: /^##\s+.*?(career\s+roi|career\s+return|carreer\s+roi|карьерн|карьерный)/im,
-      visa:       /^##\s+.*?(visa.*pathway|visa.*post|post.*graduation|виза.*пути|виза|после выпуска)/im,
+      positioning:    /^##\s+.*?(strategic\s+positioning|positioning|стратегическое\s+позиционирование|позиционирование)/im,
+      shortlist:      /^##\s+.*?(university\s+shortlist|your\s+university|шорт.лист\s+университетов)/im,
+      career_roi:     /^##\s+.*?(career\s+roi|career\s+return|carreer\s+roi|карьерн|карьерный)/im,
+      funding:        /^##\s+.*?(funding\s+pathway|funding\s+deep|финансирование|стипендии)/im,
+      visa:           /^##\s+.*?(visa.*pathway|visa.*post|post.*graduation|виза.*пути|виза|после выпуска)/im,
+      essays:         /^##\s+.*?(essay\s+angle|essay\s+angles|углов?\s+для\s+эссе|эссе)/im,
+      monthly_budget: /^##\s+.*?(monthly\s+budget|budget\s+breakdown|месячный\s+бюджет|бюджет)/im,
+      honest_gaps:    /^##\s+.*?(honest\s+gap|gaps\s+to\s+close|пробел|недотяг|слабые)/im,
+      action_plan:    /^##\s+.*?(action\s+plan|90.day|план\s+действий)/im,
+      final_word:     /^##\s+.*?(final\s+word|closing|in\s+closing|заключительное\s+слово|заключение)/im,
     };
     const headingRx = HEADING_PATTERNS[sectionId];
     if (!headingRx) {
