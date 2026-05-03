@@ -9,13 +9,13 @@
 //
 // Schedule via pg_cron after deploy:
 //   select cron.schedule('enrich-universities-cron', '0 3 * * *',
---//     $$ select net.http_post(
---//          url := '<fn-url>/enrich-universities-cron',
---//          headers := jsonb_build_object(
---//            'Authorization', 'Bearer ' || current_setting('app.cron_token', true),
---//            'Content-Type', 'application/json'
---//          )
---//        ) $$);
+//     $$ select net.http_post(
+//          url := '<fn-url>/enrich-universities-cron',
+//          headers := jsonb_build_object(
+//            'Authorization', 'Bearer ' || current_setting('app.cron_token', true),
+//            'Content-Type', 'application/json'
+//          )
+//        ) $$);
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
