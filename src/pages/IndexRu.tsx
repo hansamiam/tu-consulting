@@ -9,6 +9,7 @@ import aigulPhoto from "@/assets/aigul.jpeg";
 import Navigation from "@/components/Navigation";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { Footer } from "@/components/Footer";
+import { TrendingScholarships } from "@/components/TrendingScholarships";
 import { motion } from "framer-motion";
 
 const fadeUp = (delay = 0) => ({
@@ -73,6 +74,13 @@ const IndexRu = () => {
                 Как это работает
               </Button>
             </motion.div>
+          </div>
+        </section>
+
+        {/* TRENDING SCHOLARSHIPS — живая социальная активность */}
+        <section className="py-16 sm:py-20">
+          <div className="max-w-6xl mx-auto px-5 sm:px-8">
+            <TrendingScholarships language="ru" limit={4} />
           </div>
         </section>
 

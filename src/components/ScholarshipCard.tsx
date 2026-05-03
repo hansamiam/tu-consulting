@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Award, Calendar, GraduationCap, MapPin, Crown, ArrowRight, Share2,
+  Users, Flame,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,15 @@ export interface ScholarshipCardData {
   why_this_fits?: string | null;
 }
 
+/** Activity stats — passed in by the parent if available. The card hides
+ *  social-proof badges below threshold so we never show "1 tracking". */
+export interface ScholarshipCardStats {
+  save_count_total?: number | null;
+  save_count_7d?: number | null;
+  view_count_7d?: number | null;
+  trending_score?: number | null;
+}
+
 interface Props {
   row: ScholarshipCardData;
   language?: "en" | "ru";
@@ -47,6 +57,9 @@ interface Props {
   index?: number;
   /** Compact = used in narrow contexts (sidebars, AI results). */
   compact?: boolean;
+  /** Activity & Signal stats. If a card crosses thresholds, social-proof
+   *  badges render. Pass undefined to hide entirely. */
+  stats?: ScholarshipCardStats;
 }
 
 const COPY = {
@@ -61,6 +74,8 @@ const COPY = {
     viewDetails: "View details",
     share: "Share",
     levels: { bachelor: "Bachelor", master: "Master", phd: "PhD", postdoc: "Postdoc" },
+    tracking: (n: number) => `${n} tracking`,
+    hot: "HOT",
   },
   ru: {
     closesIn: (n: number) => {
@@ -91,6 +106,14 @@ const COPY = {
     viewDetails: "Подробнее",
     share: "Поделиться",
     levels: { bachelor: "Бакалавр", master: "Магистр", phd: "PhD", postdoc: "Постдок" },
+    tracking: (n: number) => {
+      const last = n % 10, lastTwo = n % 100;
+      if (lastTwo >= 11 && lastTwo <= 14) return `${n} студентов отслеживают`;
+      if (last === 1) return `${n} студент отслеживает`;
+      if (last >= 2 && last <= 4) return `${n} студента отслеживают`;
+      return `${n} студентов отслеживают`;
+    },
+    hot: "ХИТ",
   },
 } as const;
 
@@ -118,9 +141,16 @@ function fmtValue(v: number | null | undefined): string | null {
   return `$${v}`;
 }
 
-export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, compact = false }: Props) {
+export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, compact = false, stats }: Props) {
   const t = COPY[language];
   const featured = !!r.is_featured;
+  // Social-proof thresholds: a card with 1 saver shouldn't shout. We only
+  // surface "X tracking" once it crosses real critical mass. "Hot" requires
+  // both recent velocity AND total — guards against single-burst noise.
+  const totalSaves = stats?.save_count_total ?? 0;
+  const recentSaves = stats?.save_count_7d ?? 0;
+  const showTracking = totalSaves >= 5;
+  const isHot = totalSaves >= 10 && recentSaves >= 3;
 
   // Deadline urgency
   const days = r.application_deadline
@@ -176,8 +206,15 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
         border ${featured ? "border-gold/45 shadow-[0_2px_18px_-8px_hsl(var(--gold)/0.45)]" : "border-border hover:border-foreground/20"}
         hover:shadow-md`}
     >
-      {/* Featured ribbon */}
-      {featured && (
+      {/* Featured / Hot ribbon — Hot wins if both apply (more rare, more
+          interesting signal). Hot uses a flame gradient distinct from the
+          gold Featured ribbon so the two states are visually different. */}
+      {isHot ? (
+        <div className="absolute -top-2.5 right-5 inline-flex items-center gap-1 bg-gradient-to-r from-orange-500 to-rose-500 text-white text-[10px] font-bold tracking-[0.18em] uppercase px-2.5 py-1 rounded-full shadow-sm">
+          <Flame className="w-3 h-3" />
+          {t.hot}
+        </div>
+      ) : featured && (
         <div className="absolute -top-2.5 right-5 inline-flex items-center gap-1 bg-gradient-to-r from-gold-dark to-gold text-primary text-[10px] font-bold tracking-[0.18em] uppercase px-2.5 py-1 rounded-full shadow-sm">
           <Crown className="w-3 h-3" />
           {t.featured}
@@ -233,12 +270,18 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
         </p>
       )}
 
-      {/* Deadline pill */}
-      <div className="mb-4">
+      {/* Deadline pill + optional social proof on the right */}
+      <div className="mb-4 flex items-center gap-2 flex-wrap">
         <Badge variant="outline" className={`text-[10px] font-bold tracking-[0.12em] ${urgencyClass}`}>
           <Calendar className="w-3 h-3 mr-1" />
           {urgencyText}
         </Badge>
+        {showTracking && (
+          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums" title="Students tracking this scholarship in their pipeline">
+            <Users className="w-3 h-3" />
+            {t.tracking(totalSaves)}
+          </span>
+        )}
       </div>
 
       {/* Tags */}

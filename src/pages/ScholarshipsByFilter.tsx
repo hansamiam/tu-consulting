@@ -19,7 +19,7 @@ import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { ScholarshipCard, ScholarshipCardSkeleton, type ScholarshipCardData } from "@/components/ScholarshipCard";
+import { ScholarshipCard, ScholarshipCardSkeleton, type ScholarshipCardData, type ScholarshipCardStats } from "@/components/ScholarshipCard";
 import { ShareScholarshipModal } from "@/components/ShareScholarshipModal";
 import { EmptyState } from "@/components/EmptyState";
 
@@ -27,6 +27,8 @@ interface ScholarshipRow extends ScholarshipCardData {
   official_url: string | null;
   data_source: string | null;
 }
+
+type StatsById = Record<string, ScholarshipCardStats>;
 
 type Mode = "country" | "field" | "theme";
 
@@ -126,6 +128,7 @@ interface Props {
 const ScholarshipsByFilter = ({ mode }: Props) => {
   const params = useParams<{ country?: string; field?: string; theme?: string }>();
   const [rows, setRows] = useState<ScholarshipRow[]>([]);
+  const [statsById, setStatsById] = useState<StatsById>({});
   const [loading, setLoading] = useState(true);
   const [shareTarget, setShareTarget] = useState<ScholarshipRow | null>(null);
 
@@ -239,6 +242,20 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
         result = (fb as ScholarshipRow[]) ?? [];
       }
       setRows(result);
+      // Hydrate stats for the visible rows so cards can render social-proof
+      // badges. Single round-trip; the stats table is small (~200 rows).
+      if (result.length > 0) {
+        const ids = result.map((r) => r.scholarship_id);
+        const { data: stats } = await supabase
+          .from("scholarship_stats")
+          .select("scholarship_id, save_count_total, save_count_7d, view_count_7d, trending_score")
+          .in("scholarship_id", ids);
+        if (!cancelled && stats) {
+          const byId: StatsById = {};
+          for (const s of stats) byId[s.scholarship_id] = s as ScholarshipCardStats & { scholarship_id: string };
+          setStatsById(byId);
+        }
+      }
       // JSON-LD ItemList structured data — feeds Google's rich results
       if (result.length > 0) {
         injectJsonLd({
@@ -348,6 +365,7 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
                 key={r.scholarship_id}
                 row={r}
                 index={i}
+                stats={statsById[r.scholarship_id]}
                 onShare={(row) => setShareTarget(row as ScholarshipRow)}
               />
             ))}

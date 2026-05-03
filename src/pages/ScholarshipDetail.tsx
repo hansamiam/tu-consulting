@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { ShareScholarshipModal } from "@/components/ShareScholarshipModal";
 import { EmptyState } from "@/components/EmptyState";
 import { ScholarshipCard, type ScholarshipCardData } from "@/components/ScholarshipCard";
+import { useTrackView, useScholarshipTracking } from "@/hooks/useScholarshipTracking";
 
 interface Scholarship {
   scholarship_id: string;
@@ -92,6 +93,11 @@ const ScholarshipDetail = () => {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const track = useScholarshipTracking();
+
+  // Fire a 'viewed' event when the scholarship loads. The hook dedups
+  // within a 60-second window so re-renders don't inflate counts.
+  useTrackView(s?.scholarship_id, "detail");
 
   /* Fetch the scholarship */
   useEffect(() => {
@@ -286,7 +292,7 @@ const ScholarshipDetail = () => {
             <Button
               variant="outline"
               size="lg"
-              onClick={() => setShareOpen(true)}
+              onClick={() => { setShareOpen(true); track(s.scholarship_id, "shared", "detail"); }}
               className="gap-2 bg-transparent text-primary-foreground border-primary-foreground/30 hover:bg-primary-foreground/10"
               aria-label="Share this scholarship"
             >

@@ -749,6 +749,61 @@ export type Database = {
           },
         ]
       }
+      scholarship_events: {
+        Row: {
+          anonymous_id: string | null
+          context: Json | null
+          created_at: string
+          event_id: string
+          event_type: string
+          scholarship_id: string
+          source: string | null
+          user_id: string | null
+        }
+        Insert: {
+          anonymous_id?: string | null
+          context?: Json | null
+          created_at?: string
+          event_id?: string
+          event_type: string
+          scholarship_id: string
+          source?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          anonymous_id?: string | null
+          context?: Json | null
+          created_at?: string
+          event_id?: string
+          event_type?: string
+          scholarship_id?: string
+          source?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scholarship_events_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_events_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships_needing_embedding"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_events_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships_url_check_queue"
+            referencedColumns: ["scholarship_id"]
+          },
+        ]
+      }
       scholarship_sources: {
         Row: {
           category: string | null
@@ -802,6 +857,67 @@ export type Database = {
           url?: string
         }
         Relationships: []
+      }
+      scholarship_stats: {
+        Row: {
+          last_refreshed_at: string
+          save_count_30d: number
+          save_count_7d: number
+          save_count_total: number
+          scholarship_id: string
+          share_count_total: number
+          trending_score: number
+          view_count_30d: number
+          view_count_7d: number
+          view_count_total: number
+        }
+        Insert: {
+          last_refreshed_at?: string
+          save_count_30d?: number
+          save_count_7d?: number
+          save_count_total?: number
+          scholarship_id: string
+          share_count_total?: number
+          trending_score?: number
+          view_count_30d?: number
+          view_count_7d?: number
+          view_count_total?: number
+        }
+        Update: {
+          last_refreshed_at?: string
+          save_count_30d?: number
+          save_count_7d?: number
+          save_count_total?: number
+          scholarship_id?: string
+          share_count_total?: number
+          trending_score?: number
+          view_count_30d?: number
+          view_count_7d?: number
+          view_count_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scholarship_stats_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: true
+            referencedRelation: "scholarships"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_stats_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: true
+            referencedRelation: "scholarships_needing_embedding"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_stats_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: true
+            referencedRelation: "scholarships_url_check_queue"
+            referencedColumns: ["scholarship_id"]
+          },
+        ]
       }
       scholarship_submissions: {
         Row: {
@@ -2081,6 +2197,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      refresh_scholarship_stats: { Args: never; Returns: number }
       scholarship_embedding_source: {
         Args: { s: Database["public"]["Tables"]["scholarships"]["Row"] }
         Returns: string
@@ -2094,6 +2211,16 @@ export type Database = {
           s: Database["public"]["Tables"]["scholarships"]["Row"]
         }
         Returns: boolean
+      }
+      track_scholarship_event: {
+        Args: {
+          p_anonymous_id?: string
+          p_context?: Json
+          p_event_type: string
+          p_scholarship_id: string
+          p_source?: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
