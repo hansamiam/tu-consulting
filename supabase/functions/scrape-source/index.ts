@@ -194,7 +194,73 @@ function extractJson(s: string): unknown {
   return JSON.parse(m[0]);
 }
 
-/** Validate a single LLM-returned scholarship; returns null if it fails the minimum bar. */
+/** Validate a single LLM-returned scholarship; returns null if it fails the
+ *  minimum bar. Also CLAMPS obvious nonsense in numeric fields — the LLM can
+ *  hallucinate "estimated_total_value_usd: 100000000" or "min_gpa: 7.5 / 4.0"
+ *  and we don't want garbage rows propagating into Discover. We clamp
+ *  silently rather than reject the row entirely; the rest of the data is
+ *  often still useful. */
+const REASONABLE_VALUE_USD_MAX = 5_000_000;       // a 4-yr full-ride at MIT-tier is ~$400k. 5M = clearly hallucinated.
+const REASONABLE_VALUE_USD_MIN = 0;
+const IELTS_BAND_MIN = 0;
+const IELTS_BAND_MAX = 9;
+const TOEFL_MIN = 0;
+const TOEFL_MAX = 120;
+const RECS_MAX = 10;
+
+function clampNumeric(o: Record<string, unknown>): void {
+  // Total value: drop negatives, clamp absurd highs.
+  if (typeof o.estimated_total_value_usd === "number") {
+    if (Number.isNaN(o.estimated_total_value_usd) || o.estimated_total_value_usd < REASONABLE_VALUE_USD_MIN) {
+      o.estimated_total_value_usd = null;
+    } else if (o.estimated_total_value_usd > REASONABLE_VALUE_USD_MAX) {
+      o.estimated_total_value_usd = REASONABLE_VALUE_USD_MAX;
+    }
+  }
+  // GPA must be ≤ scale. If gpa_scale is missing default to 4.0; if min_gpa
+  // exceeds the scale, drop both — the LLM mis-extracted.
+  const gpa = typeof o.min_gpa === "number" ? o.min_gpa : null;
+  const scaleRaw = typeof o.gpa_scale === "number" ? o.gpa_scale : null;
+  const scale = scaleRaw ?? 4.0;
+  if (gpa !== null) {
+    if (gpa < 0 || gpa > scale + 0.01) {
+      o.min_gpa = null;
+      o.gpa_scale = null;
+    } else if (scaleRaw === null) {
+      o.gpa_scale = 4.0;
+    }
+  }
+  // IELTS in [0, 9].
+  if (typeof o.min_ielts === "number") {
+    if (o.min_ielts < IELTS_BAND_MIN || o.min_ielts > IELTS_BAND_MAX) o.min_ielts = null;
+  }
+  // TOEFL in [0, 120].
+  if (typeof o.min_toefl === "number") {
+    if (o.min_toefl < TOEFL_MIN || o.min_toefl > TOEFL_MAX) o.min_toefl = null;
+  }
+  // Recommendation letters in [0, 10].
+  if (typeof o.recommendation_letters_required === "number") {
+    if (o.recommendation_letters_required < 0 || o.recommendation_letters_required > RECS_MAX) {
+      o.recommendation_letters_required = null;
+    }
+  }
+  // age_limit in [0, 100].
+  if (typeof o.age_limit === "number") {
+    if (o.age_limit < 0 || o.age_limit > 100) o.age_limit = null;
+  }
+  // Application deadline must parse as a real date AND be within ±5 years
+  // of today. Past that horizon it's almost always an LLM artifact.
+  if (typeof o.application_deadline === "string") {
+    const t = Date.parse(o.application_deadline);
+    if (Number.isNaN(t)) {
+      o.application_deadline = null;
+    } else {
+      const ageYears = Math.abs((t - Date.now()) / (365.25 * 86400_000));
+      if (ageYears > 5) o.application_deadline = null;
+    }
+  }
+}
+
 function validateExtracted(x: unknown): ExtractedScholarship | null {
   if (!x || typeof x !== "object") return null;
   const o = x as Record<string, unknown>;
@@ -205,7 +271,26 @@ function validateExtracted(x: unknown): ExtractedScholarship | null {
   if (typeof o.confidence !== "number" || o.confidence < 0 || o.confidence > 1) return null;
   // coverage_type required for matching/ranking
   if (typeof o.coverage_type !== "string") return null;
+  // Trim string fields so dedup keys don't drift on trailing whitespace
+  o.scholarship_name = (o.scholarship_name as string).trim();
+  o.provider_name    = (o.provider_name as string).trim();
+  o.host_country     = (o.host_country as string).trim();
+  // Drop / clamp numeric nonsense
+  clampNumeric(o);
   return o as unknown as ExtractedScholarship;
+}
+
+/** Mirror of public.normalize_scholarship_key — the SQL function in the
+ *  20260503050000 migration. We compute the same key in TS so we can dedup
+ *  intra-run before hitting the DB. Keep the regex synced with the SQL. */
+function normalizeKey(name: string, provider: string, country: string): string {
+  const concat = `${name}|${provider}|${country}`.toLowerCase();
+  // Strip suffix words and 4-digit years, collapse non-alnum runs.
+  return concat
+    .replace(/\b(scholarships?|fellowships?|programmes?|programs?|awards?|scholars?|grants?|the|of)\b/g, " ")
+    .replace(/\b(19|20)\d{2}\b/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
 /** Build the embedding source_text the existing embed-scholarships worker expects. */
@@ -388,23 +473,61 @@ serve(async (req) => {
     return json(200, { ok: true, found: 0 });
   }
 
+  // ─── Intra-run dedup ──────────────────────────────────────────────────
+  // Some listing pages confuse the LLM into emitting the same program twice.
+  // Collapse on canonical key, keeping the highest-confidence variant.
+  const intraRunSeen = new Map<string, ExtractedScholarship>();
+  for (const s of extracted) {
+    const key = normalizeKey(s.scholarship_name, s.provider_name, s.host_country);
+    const prior = intraRunSeen.get(key);
+    if (!prior || s.confidence > prior.confidence) intraRunSeen.set(key, s);
+  }
+  const intraRunDedup = Array.from(intraRunSeen.values());
+  if (intraRunDedup.length < extracted.length) {
+    console.log(`[scrape-source] intra-run dedup: ${extracted.length} → ${intraRunDedup.length}`);
+  }
+
   // ─── Per-scholarship: dedup + diff + stage / publish ─────────────────────
   let newCount = 0, updatedCount = 0, autoPublished = 0, needsReview = 0;
 
-  for (const s of extracted) {
+  for (const s of intraRunDedup) {
     const fingerprint = await sha256Hex(
       `${s.scholarship_name.toLowerCase().trim()}|${s.provider_name.toLowerCase().trim()}|${s.host_country.toLowerCase().trim()}`
     );
 
-    // Look up existing scholarship by name+provider (loose match — fingerprint is canonical)
-    const { data: existing } = await supa
-      .from("scholarships")
-      .select("scholarship_id, scholarship_name, provider_name, application_deadline, award_amount_text, estimated_total_value_usd, deadline_type, min_gpa, min_ielts, min_toefl, essay_required, recommendation_letters_required, interview_required, coverage_type, duration_text, renewable")
-      .eq("scholarship_name", s.scholarship_name)
-      .eq("provider_name", s.provider_name)
-      .maybeSingle();
+    // Fuzzy dedup against the existing DB via canonical_key — handles
+    // common name drift ("Chevening Scholarships" vs "Chevening Scholarship
+    // 2026") that exact-match would treat as separate rows. Falls back to
+    // the strict name+provider lookup if canonical_key isn't populated yet
+    // (defensive: pre-migration data, fresh deploy lag).
+    const ck = normalizeKey(s.scholarship_name, s.provider_name, s.host_country);
+    const SCHOLARSHIP_COLS =
+      "scholarship_id, scholarship_name, provider_name, application_deadline, award_amount_text, estimated_total_value_usd, deadline_type, min_gpa, min_ielts, min_toefl, essay_required, recommendation_letters_required, interview_required, coverage_type, duration_text, renewable";
 
-    const existingId: string | null = existing?.scholarship_id ?? null;
+    let existing: Record<string, unknown> | null = null;
+    if (ck) {
+      const { data } = await supa
+        .from("scholarships")
+        .select(SCHOLARSHIP_COLS)
+        .eq("canonical_key", ck)
+        .order("last_verified_date", { ascending: false, nullsFirst: false })
+        .limit(1)
+        .maybeSingle();
+      existing = data ?? null;
+    }
+    if (!existing) {
+      // Fallback to exact match on name+provider — covers pre-migration
+      // rows where canonical_key is NULL.
+      const { data } = await supa
+        .from("scholarships")
+        .select(SCHOLARSHIP_COLS)
+        .eq("scholarship_name", s.scholarship_name)
+        .eq("provider_name", s.provider_name)
+        .maybeSingle();
+      existing = data ?? null;
+    }
+
+    const existingId: string | null = (existing?.scholarship_id as string) ?? null;
     const diffSummary = existing ? diffScholarship(existing, s) : null;
     // Skip the noise: existing match with no changes → nothing to do
     if (existing && !diffSummary) continue;
@@ -503,7 +626,9 @@ serve(async (req) => {
   }).eq("source_id", src.source_id);
 
   await finalize("success", {
-    scholarships_found: extracted.length,
+    // We persist the post-intra-dedup count so admin metrics reflect
+    // unique scholarships landed, not raw LLM emissions.
+    scholarships_found: intraRunDedup.length,
     scholarships_new: newCount,
     scholarships_updated: updatedCount,
     auto_published: autoPublished,
@@ -513,7 +638,8 @@ serve(async (req) => {
 
   return json(200, {
     ok: true,
-    found: extracted.length,
+    found: intraRunDedup.length,
+    raw_extracted: extracted.length,
     new: newCount,
     updated: updatedCount,
     auto_published: autoPublished,

@@ -49,6 +49,16 @@ type Run = {
   cost_estimate_usd: string | null;
 };
 
+/** Per-source rolling quality stats from the source_quality_v view.
+ *  avg_confidence_60d is the canonical "is this source any good?" signal. */
+type SourceQuality = {
+  source_id: string;
+  rows_last_60d: number | null;
+  avg_confidence_60d: number | null;
+  auto_publish_rate_60d: number | null;
+  pending_review_60d: number | null;
+};
+
 const fmt = (iso: string | null) => iso ? new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "—";
 const ago = (iso: string | null) => {
   if (!iso) return "never";
@@ -68,6 +78,8 @@ const Sources = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [sources, setSources] = useState<Source[]>([]);
   const [recentRuns, setRecentRuns] = useState<Run[]>([]);
+  // Map keyed by source_id for O(1) lookup when rendering the source list.
+  const [qualityBySource, setQualityBySource] = useState<Record<string, SourceQuality>>({});
   const [pendingCount, setPendingCount] = useState(0);
   const [autoPubToday, setAutoPubToday] = useState(0);
   const [scholarshipsTotal, setScholarshipsTotal] = useState(0);
@@ -85,18 +97,28 @@ const Sources = () => {
   const fetchAll = useCallback(async () => {
     const since24h = new Date(Date.now() - 24 * 3600_000).toISOString();
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-    const [s, r, p, ap, st] = await Promise.all([
+    const [s, r, p, ap, st, q] = await Promise.all([
       supabase.from("scholarship_sources").select("*").order("name"),
       supabase.from("scrape_runs").select("*").gte("started_at", since24h).order("started_at", { ascending: false }).limit(500),
       supabase.from("scholarships_staging").select("staging_id", { count: "exact", head: true }).eq("status", "pending"),
       supabase.from("scholarships_staging").select("staging_id", { count: "exact", head: true }).eq("status", "auto_published").gte("created_at", todayStart.toISOString()),
       supabase.from("scholarships").select("scholarship_id", { count: "exact", head: true }),
+      // Rolling 60-day quality stats per source — avg confidence + auto-pub rate.
+      // View is created by 20260503050000 migration; gracefully no-op if not deployed yet.
+      supabase.from("source_quality_v" as never).select("source_id, rows_last_60d, avg_confidence_60d, auto_publish_rate_60d, pending_review_60d"),
     ]);
     if (s.data) setSources(s.data as Source[]);
     if (r.data) setRecentRuns(r.data as Run[]);
     if (p.count !== null) setPendingCount(p.count);
     if (ap.count !== null) setAutoPubToday(ap.count);
     if (st.count !== null) setScholarshipsTotal(st.count);
+    if (Array.isArray(q.data)) {
+      const map: Record<string, SourceQuality> = {};
+      for (const row of q.data as SourceQuality[]) {
+        map[row.source_id] = row;
+      }
+      setQualityBySource(map);
+    }
   }, []);
 
   useEffect(() => {
@@ -393,6 +415,7 @@ const Sources = () => {
                 onToggle={toggleActive}
                 onDelete={remove}
                 index={idx}
+                quality={qualityBySource[s.source_id]}
               />
             ))}
           </AnimatePresence>
@@ -430,11 +453,12 @@ function StatCard({ icon, label, value, sub, accent }: {
 }
 
 function SourceRow({
-  source: s, runs, running, onRun, onToggle, onDelete, index,
+  source: s, runs, running, onRun, onToggle, onDelete, index, quality,
 }: {
   source: Source; runs: Run[]; running: string | null;
   onRun: (id: string, name: string) => void; onToggle: (id: string, current: boolean) => void;
   onDelete: (id: string) => void; index: number;
+  quality?: SourceQuality;
 }) {
   const failed = s.consecutive_failures > 0;
   const stale = s.last_success_at && (Date.now() - new Date(s.last_success_at).getTime()) > s.frequency_hours * 3.6e6 * 2;
@@ -473,6 +497,24 @@ function SourceRow({
                 <span>last crawl <b className="text-foreground">{ago(s.last_crawled_at)}</b></span>
                 {successRate !== null && <span>success <b className={`tabular-nums ${successRate >= 90 ? "text-emerald-600" : successRate >= 70 ? "text-amber-600" : "text-destructive"}`}>{successRate}%</b> <span className="text-muted-foreground/60">({runs.length} runs / 24h)</span></span>}
                 {sumFound > 0 && <span>found <b className="text-foreground tabular-nums">{sumFound}</b> in last 24h</span>}
+                {quality && quality.avg_confidence_60d != null && (() => {
+                  const conf = quality.avg_confidence_60d as unknown as number;
+                  const autoPub = (quality.auto_publish_rate_60d as unknown as number | null) ?? 0;
+                  const tone = conf >= 0.85 ? "text-emerald-600" : conf >= 0.7 ? "text-amber-600" : "text-destructive";
+                  return (
+                    <>
+                      <span title="Average extraction confidence over last 60 days">
+                        avg conf <b className={`tabular-nums ${tone}`}>{(conf * 100).toFixed(0)}%</b>
+                      </span>
+                      <span title="Auto-publish rate over last 60 days">
+                        auto-pub <b className="text-foreground tabular-nums">{(autoPub * 100).toFixed(0)}%</b>
+                      </span>
+                      {(quality.pending_review_60d ?? 0) > 0 && (
+                        <span>queued <b className="text-amber-700 tabular-nums">{quality.pending_review_60d}</b></span>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
 
