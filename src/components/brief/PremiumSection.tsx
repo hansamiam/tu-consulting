@@ -1,17 +1,20 @@
 import { Crown } from "lucide-react";
 import { motion } from "framer-motion";
 import { EnrichedMarkdown } from "@/components/EnrichedMarkdown";
+import { CareerRoiChart } from "@/components/brief/CareerRoiChart";
+import { VisaPathwayChart } from "@/components/brief/VisaPathwayChart";
 
 import type { InlineScholarshipData } from "@/components/InlineScholarshipCard";
+import type { CareerRoiSection, VisaPathwaySection } from "@/types/briefStructured";
 
 /* PremiumSection — visual treatment for sections that only appear at the
    premium tier (Career ROI, Visa Pathway, etc.). The container says
    "this is the deep stuff" without us writing the words.
 
-   Pull pattern: parse the leading "## title" out of the markdown so the
-   wrapper renders a styled header, then EnrichedMarkdown handles the rest.
-   No body changes; the AI keeps writing freely and we only re-skin
-   the chrome around it. */
+   When a structured-data payload is supplied (`careerRoiData` /
+   `visaPathwayData`), the corresponding chart renders ABOVE the narrative.
+   The chart is enrichment, not a hard dependency — if extraction fails
+   (returns null), the markdown narrative still renders cleanly. */
 
 type Kind = "career" | "visa";
 
@@ -27,12 +30,14 @@ const KIND_COPY: Record<Kind, { en: { eyebrow: string }; ru: { eyebrow: string }
 };
 
 export const PremiumSection = ({
-  kind, markdown, isRu, scholarships,
+  kind, markdown, isRu, scholarships, careerRoiData, visaPathwayData,
 }: {
   kind: Kind;
   markdown: string;
   isRu: boolean;
   scholarships: InlineScholarshipData[];
+  careerRoiData?: CareerRoiSection | null;
+  visaPathwayData?: VisaPathwaySection | null;
 }) => {
   // Strip the leading "## Heading" — we render our own styled header.
   const lines = markdown.split("\n");
@@ -75,6 +80,16 @@ export const PremiumSection = ({
         <h2 className="font-heading text-2xl sm:text-[28px] font-bold text-foreground leading-[1.1] tracking-[-0.02em] mb-5">
           {headingLine}
         </h2>
+
+        {/* Structured-data chart renders ABOVE the narrative when extraction
+            succeeded. Falls through to narrative-only when extraction
+            returned null or the structured pass hadn't completed yet. */}
+        {kind === "career" && careerRoiData && (
+          <CareerRoiChart data={careerRoiData} isRu={isRu} />
+        )}
+        {kind === "visa" && visaPathwayData && (
+          <VisaPathwayChart data={visaPathwayData} isRu={isRu} />
+        )}
 
         {/* Restore the prose container locally so EnrichedMarkdown styling
             still applies inside the not-prose wrapper. */}

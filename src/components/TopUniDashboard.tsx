@@ -27,6 +27,7 @@ import { BriefChapterNav } from "@/components/brief/BriefChapterNav";
 import { DeadlineTimeline } from "@/components/brief/DeadlineTimeline";
 import { FundingStack } from "@/components/brief/FundingStack";
 import { PremiumSection } from "@/components/brief/PremiumSection";
+import { CombinedFundingChart } from "@/components/brief/CombinedFundingChart";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -360,11 +361,14 @@ type LiveMatchLite = {
 const fmtMoney = (v: number) =>
   v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `$${Math.round(v / 1000)}K` : `$${v}`;
 
-const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover }: {
+const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combinedFunding }: {
   markdown: string;
   liveMatches: LiveMatchLite[];
   isRu: boolean;
   onOpenDiscover: () => void;
+  /** Optional structured Combined Funding payload from extract-brief-data —
+   *  renders the stacked-bar scenarios chart at the top of this section. */
+  combinedFunding?: import("@/types/briefStructured").CombinedFundingSection | null;
 }) => {
   const { title, items } = useMemo(() => {
     const lines = markdown.split("\n");
@@ -427,6 +431,12 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover }: {
           {isRu ? "Все стипендии" : "Browse all scholarships"} <ArrowRight className="w-3 h-3" />
         </button>
       </div>
+
+      {/* Combined Funding scenarios chart — premium-only, renders above the
+          per-scholarship list when extract-brief-data returned scenarios. */}
+      {combinedFunding && combinedFunding.scenarios && combinedFunding.scenarios.length > 0 && (
+        <CombinedFundingChart data={combinedFunding} isRu={isRu} />
+      )}
 
       <div className="space-y-2.5">
         {decorated.map((it, i) => {
@@ -880,7 +890,7 @@ const PATHWAY_FINAL_SECTION_REGEX = /^##\s+.*?(final word|closing|in closing|з�
 const PATHWAY_CAREER_SECTION_REGEX = /^##\s+.*?(career roi|carreer roi|карьерн|career return)/i;
 const PATHWAY_VISA_SECTION_REGEX = /^##\s+.*?(visa.*pathway|visa.*post|post.*graduation|виза.*пути|виза|после выпуска)/i;
 
-const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onOpenDiscover, liveMatches, onSaveScholarship, savedSet }: {
+const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onOpenDiscover, liveMatches, onSaveScholarship, savedSet, structured }: {
   markdown: string;
   completedTasks: Set<string>;
   onToggle: (id: string) => void;
@@ -890,6 +900,9 @@ const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onO
   liveMatches: LiveMatchLite[];
   onSaveScholarship?: (id: string, name: string) => void;
   savedSet?: Set<string>;
+  /** Optional structured payload from extract-brief-data. When supplied,
+   *  premium sections render charts above the narrative. */
+  structured?: import("@/types/briefStructured").BriefStructured | null;
 }) => {
   // Mapped to InlineScholarshipCard's expected shape — provider/url default to null
   const scholarshipsForCards = liveMatches.map((m) => ({
@@ -942,7 +955,7 @@ const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onO
         if (PATHWAY_FUND_SECTION_REGEX.test(section)) {
           const hasBullets = /^\s*([-*]|\d+\.)\s+/m.test(section);
           if (hasBullets) {
-            return <div key={i} {...anchorProps}><FundingShortlist markdown={section} liveMatches={liveMatches} isRu={isRu} onOpenDiscover={onOpenDiscover} /></div>;
+            return <div key={i} {...anchorProps}><FundingShortlist markdown={section} liveMatches={liveMatches} isRu={isRu} onOpenDiscover={onOpenDiscover} combinedFunding={structured?.combinedFunding ?? null} /></div>;
           }
         }
         if (PATHWAY_ESSAYS_SECTION_REGEX.test(section)) {
@@ -966,13 +979,13 @@ const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onO
         if (PATHWAY_CAREER_SECTION_REGEX.test(section)) {
           const hasBody = section.split("\n").slice(1).join("\n").trim().length > 60;
           if (hasBody) {
-            return <div key={i} {...anchorProps}><PremiumSection kind="career" markdown={section} isRu={isRu} scholarships={scholarshipsForCards} /></div>;
+            return <div key={i} {...anchorProps}><PremiumSection kind="career" markdown={section} isRu={isRu} scholarships={scholarshipsForCards} careerRoiData={structured?.careerRoi ?? null} /></div>;
           }
         }
         if (PATHWAY_VISA_SECTION_REGEX.test(section)) {
           const hasBody = section.split("\n").slice(1).join("\n").trim().length > 60;
           if (hasBody) {
-            return <div key={i} {...anchorProps}><PremiumSection kind="visa" markdown={section} isRu={isRu} scholarships={scholarshipsForCards} /></div>;
+            return <div key={i} {...anchorProps}><PremiumSection kind="visa" markdown={section} isRu={isRu} scholarships={scholarshipsForCards} visaPathwayData={structured?.visaPathway ?? null} /></div>;
           }
         }
         return <div key={i} {...anchorProps}><EnrichedMarkdown scholarships={scholarshipsForCards}>{section}</EnrichedMarkdown></div>;
@@ -1167,6 +1180,11 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
 
   const [pathwayContent, setPathwayContent] = useState<string>(restored?.content ?? "");
   const [pathwayLoading, setPathwayLoading] = useState(false);
+  // Structured-output payload extracted from the brief (premium tier only).
+  // Populated by a second-pass call to extract-brief-data after the markdown
+  // stream completes. Drives chart rendering inside PremiumSection / Funding.
+  const [structuredBrief, setStructuredBrief] = useState<import("@/types/briefStructured").BriefStructured | null>(null);
+  const [structuredLoading, setStructuredLoading] = useState(false);
   const [pathwayGenerated, setPathwayGenerated] = useState<boolean>(!!restored);
   const [pathwayGeneratedAt, setPathwayGeneratedAt] = useState<number | null>(restored?.generatedAt ?? null);
 
@@ -1540,6 +1558,58 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           }
         } catch { /* ignore */ }
 
+        // Premium-tier second pass — extract structured data for the chart
+        // sections (Career ROI, Combined Funding, Visa Pathway). Runs in
+        // parallel to the email send below so the user sees charts within
+        // a few seconds of the brief landing. Soft-fails: on any error the
+        // markdown narrative still renders cleanly.
+        if (reportGrade === "premium" && soFar.length > 800) {
+          setStructuredLoading(true);
+          (async () => {
+            try {
+              const retrievedScholarships = liveMatches.slice(0, 12).map(m => ({
+                scholarship_name: m.scholarship_name,
+                coverage_type: m.coverage_type,
+                award_amount_text: m.award_amount_text,
+                estimated_total_value_usd: m.estimated_total_value_usd,
+                host_country: m.host_country,
+              }));
+              const { data, error } = await supabase.functions.invoke<import("@/types/briefStructured").BriefStructured>(
+                "extract-brief-data",
+                {
+                  body: {
+                    briefMarkdown: soFar,
+                    profile: {
+                      fullName: profile.fullName,
+                      nationality: profile.country,
+                      major: profile.major,
+                      field: profile.major,
+                      targetCountries: profile.targetCountries,
+                      gpa: profile.gpa,
+                      ielts: profile.ielts,
+                    },
+                    retrievedScholarships,
+                    language,
+                  },
+                },
+              );
+              if (error) {
+                console.warn("[brief] extract-brief-data error", error.message);
+                return;
+              }
+              if (data) setStructuredBrief(data);
+            } catch (e) {
+              console.warn("[brief] extract-brief-data failed", e);
+            } finally {
+              setStructuredLoading(false);
+            }
+          })();
+        } else {
+          // Reset on basic-tier regen so stale premium data doesn't leak
+          // into a downgraded view.
+          setStructuredBrief(null);
+        }
+
         // Auto-send the brief to the user's inbox so it's permanent and
         // forwardable without them needing to find the share button.
         // Authed users only — anon users go through SaveBriefPrompt which
@@ -1901,6 +1971,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             liveMatches={liveMatches}
                             onSaveScholarship={handleSaveScholarship}
                             savedSet={tracker.shortlist}
+                            structured={structuredBrief}
                           />
                         )}
                         {/* Live matches grid sits between the brief and the
@@ -1987,6 +2058,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             liveMatches={liveMatches}
                             onSaveScholarship={handleSaveScholarship}
                             savedSet={tracker.shortlist}
+                            structured={structuredBrief}
                           />
                         )}
                       </>
