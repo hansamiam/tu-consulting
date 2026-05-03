@@ -71,6 +71,12 @@ verify_jwt = false
 [functions.generate-scholarship-checklist]
 verify_jwt = false
 
+[functions.enrich-university]
+verify_jwt = true
+
+[functions.enrich-universities-cron]
+verify_jwt = true
+
 [functions.og-brief]
 verify_jwt = false
 
