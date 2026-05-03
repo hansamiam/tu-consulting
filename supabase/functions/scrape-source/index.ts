@@ -285,8 +285,10 @@ function validateExtracted(x: unknown): ExtractedScholarship | null {
  *  intra-run before hitting the DB. Keep the regex synced with the SQL. */
 function normalizeKey(name: string, provider: string, country: string): string {
   const concat = `${name}|${provider}|${country}`.toLowerCase();
-  // Strip suffix words and 4-digit years, collapse non-alnum runs.
   return concat
+    // Strip English possessives ("master's" → "master") BEFORE suffix-words
+    // so the trailing `s` doesn't survive the non-alnum cleanup.
+    .replace(/'s\b/g, "")
     .replace(/\b(scholarships?|fellowships?|programmes?|programs?|awards?|scholars?|grants?|the|of)\b/g, " ")
     .replace(/\b(19|20)\d{2}\b/g, " ")
     .replace(/[^a-z0-9]+/g, " ")

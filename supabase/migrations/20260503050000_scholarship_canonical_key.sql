@@ -37,8 +37,17 @@ AS $$
       regexp_replace(
         regexp_replace(
           regexp_replace(
-            -- Lowercase the concatenated triple
-            lower(coalesce(p_name, '') || '|' || coalesce(p_provider, '') || '|' || coalesce(p_country, '')),
+            regexp_replace(
+              -- Lowercase the concatenated triple
+              lower(coalesce(p_name, '') || '|' || coalesce(p_provider, '') || '|' || coalesce(p_country, '')),
+              -- Strip English possessives ("master's" → "master") BEFORE the
+              -- suffix-word pass; otherwise the trailing `s` would survive
+              -- the [^a-z0-9] cleanup and cause keys to drift between
+              -- "DAAD Master's Scholarship" and "DAAD Master Scholarship".
+              '''s\M',
+              '',
+              'g'
+            ),
             -- Strip recurring suffix words that contribute no semantic
             -- distinction. Examples: "Chevening Scholarships" vs
             -- "Chevening Scholarship", or "DAAD Programme" vs "DAAD".
@@ -80,11 +89,36 @@ BEGIN
 END
 $$;
 
+-- Originally this was a GENERATED STORED column, but Supabase's transaction
+-- pooler caps maintenance_work_mem at 32MB which trips on backfilling a
+-- generated stored column over the existing scholarships table. Same end
+-- result via a regular column + BEFORE-INSERT-OR-UPDATE trigger:
 ALTER TABLE public.scholarships
-  ADD COLUMN IF NOT EXISTS canonical_key text
-  GENERATED ALWAYS AS (
-    public.normalize_scholarship_key(scholarship_name, provider_name, host_country)
-  ) STORED;
+  ADD COLUMN IF NOT EXISTS canonical_key text;
+
+CREATE OR REPLACE FUNCTION public.scholarships_set_canonical_key()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.canonical_key := public.normalize_scholarship_key(
+    NEW.scholarship_name, NEW.provider_name, NEW.host_country
+  );
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_scholarships_set_canonical_key ON public.scholarships;
+CREATE TRIGGER trg_scholarships_set_canonical_key
+  BEFORE INSERT OR UPDATE OF scholarship_name, provider_name, host_country
+  ON public.scholarships
+  FOR EACH ROW
+  EXECUTE FUNCTION public.scholarships_set_canonical_key();
+
+-- Backfill existing rows (one-shot; tiny table relative to the issue).
+UPDATE public.scholarships
+SET canonical_key = public.normalize_scholarship_key(scholarship_name, provider_name, host_country)
+WHERE canonical_key IS NULL;
 
 -- Non-unique on purpose — see header comment.
 CREATE INDEX IF NOT EXISTS idx_scholarships_canonical_key
