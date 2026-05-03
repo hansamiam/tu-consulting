@@ -405,7 +405,14 @@ STUDENT PROFILE:
 - Budget: ${profile.budget || 'Not specified'}
 - Needs Scholarship: ${profile.scholarshipNeeded || 'Not specified'}
 - Timeline: ${profile.timeline || 'Flexible'}
-- Priorities: Prestige ${profile.prestige}/5, Scholarship ${profile.scholarship}/5, Career ROI ${profile.careerRoi}/5, Visa Access ${profile.visaAccess}/5, Location ${profile.locationPref}/5
+- Priorities: Prestige ${profile.prestige}/5, Scholarship ${profile.scholarship}/5, Career ROI ${profile.careerRoi}/5, Visa Access ${profile.visaAccess}/5, Location ${profile.locationPref}/5${profile.topActivity ? `
+- Top activity / achievement: ${profile.topActivity}` : ''}${profile.personalStory ? `
+- Personal story (the student's own words): ${profile.personalStory}` : ''}${profile.namedSchools ? `
+- Specific schools on their list: ${profile.namedSchools}` : ''}
+
+${(profile.topActivity || profile.personalStory || profile.namedSchools) ? `
+CRITICAL: The student supplied personal context above. You MUST use it specifically:
+${profile.topActivity ? "- Reference the top activity by name in the essay angles. The 'Anchor it with' field for at least one angle should pull from this activity directly.\n" : ""}${profile.personalStory ? "- The strategic positioning paragraph and at least one essay angle should weave in the personal story. Use their actual phrasing where natural — not generic motivational language.\n" : ""}${profile.namedSchools ? "- Mention the specific schools they named in the shortlist. If a named school isn't in the database, place it in the appropriate bucket with a note that we don't have detailed data on it yet.\n" : ""}` : ''}
 
 ${grade === "premium" ? premiumSections : basicSections}`;
 

@@ -18,6 +18,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { SaveBriefPrompt } from "@/components/topuni/SaveBriefPrompt";
 import { DocumentManager } from "@/components/topuni/DocumentManager";
 import { CounselorSessions } from "@/components/topuni/CounselorSessions";
+import { GenerationPipeline } from "@/components/GenerationPipeline";
+import { EnrichedMarkdown } from "@/components/EnrichedMarkdown";
 import { Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
@@ -41,6 +43,10 @@ interface StudentProfile {
   careerRoi: number;
   visaAccess: number;
   locationPref: number;
+  // Optional depth fields (Step 4 of the wizard) — empty strings when skipped.
+  topActivity?: string;
+  personalStory?: string;
+  namedSchools?: string;
 }
 
 interface TopUniDashboardProps {
@@ -288,11 +294,13 @@ const UniversityShortlist = ({ markdown, isRu, onOpenDiscover }: {
 type LiveMatchLite = {
   scholarship_id: string;
   scholarship_name: string;
+  provider_name?: string | null;
   host_country: string | null;
   coverage_type: string;
   award_amount_text: string | null;
   estimated_total_value_usd: number | null;
   application_deadline: string | null;
+  official_url?: string | null;
 };
 
 const fmtMoney = (v: number) =>
@@ -824,6 +832,17 @@ const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onO
   onOpenDiscover: () => void;
   liveMatches: LiveMatchLite[];
 }) => {
+  // Mapped to InlineScholarshipCard's expected shape — provider/url default to null
+  const scholarshipsForCards = liveMatches.map((m) => ({
+    scholarship_id: m.scholarship_id,
+    scholarship_name: m.scholarship_name,
+    provider_name: m.provider_name ?? null,
+    host_country: m.host_country,
+    coverage_type: m.coverage_type,
+    award_amount_text: m.award_amount_text,
+    application_deadline: m.application_deadline,
+    official_url: m.official_url ?? null,
+  }));
   const sections = useMemo(() => {
     if (!markdown.trim()) return [] as string[];
     return markdown.split(/(?=^##\s+)/m).filter(s => s.trim().length > 0);
@@ -880,7 +899,7 @@ const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onO
             return <FinalWord key={i} markdown={section} isRu={isRu} />;
           }
         }
-        return <ReactMarkdown key={i}>{section}</ReactMarkdown>;
+        return <EnrichedMarkdown key={i} scholarships={scholarshipsForCards}>{section}</EnrichedMarkdown>;
       })}
     </>
   );
@@ -1071,6 +1090,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     estimated_total_value_usd: number | null;
     application_deadline: string | null;
     why_this_fits: string | null;
+    official_url: string | null;
   };
   const [liveMatches, setLiveMatches] = useState<LiveMatch[]>([]);
 
@@ -1079,7 +1099,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     if (!profile.fullName || profile.fullName === "Student") return;
     (async () => {
       let q = supabase.from("scholarships").select(
-        "scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, application_deadline, why_this_fits"
+        "scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, application_deadline, why_this_fits, official_url"
       ).eq("verified", true);
       if (profile.targetCountries && profile.targetCountries.length > 0) {
         q = q.in("host_country", profile.targetCountries);
@@ -1501,7 +1521,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                 </div>
               )}
               {pathwayLoading && !pathwayContent && (
-                <AnalysisProgress profile={profile} isRu={isRu} />
+                <GenerationPipeline profile={profile} isRu={isRu} />
               )}
               {pathwayContent && (
                 <div id="printable-report" className="prose prose-sm max-w-none dark:prose-invert [&_h2]:text-foreground [&_h2]:font-heading [&_h2]:text-xl [&_h2]:mt-8 [&_h2]:mb-3 [&_h3]:text-foreground [&_h3]:font-heading [&_h3]:text-lg [&_h3]:mt-6 [&_h3]:mb-2 [&_p]:text-muted-foreground [&_li]:text-muted-foreground [&_strong]:text-foreground">

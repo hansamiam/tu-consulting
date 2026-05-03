@@ -61,6 +61,11 @@ const TopUniAI = () => {
   const [careerRoi, setCareerRoi] = useState([3]);
   const [visaAccess, setVisaAccess] = useState([3]);
   const [locationPref, setLocationPref] = useState([3]);
+  // Step 4 — the depth fields. Each is optional; the brief degrades
+  // gracefully when empty, but lights up dramatically when filled.
+  const [topActivity, setTopActivity] = useState("");
+  const [personalStory, setPersonalStory] = useState("");
+  const [namedSchools, setNamedSchools] = useState("");
 
   const toggleCountry = (country: string) => {
     setTargetCountries(prev => prev.includes(country) ? prev.filter(c => c !== country) : [...prev, country]);
@@ -71,6 +76,7 @@ const TopUniAI = () => {
     targetCountries, major, budget, scholarshipNeeded, timeline,
     prestige: prestige[0], scholarship: scholarship[0],
     careerRoi: careerRoi[0], visaAccess: visaAccess[0], locationPref: locationPref[0],
+    topActivity, personalStory, namedSchools,
   };
 
   return (
@@ -494,6 +500,89 @@ const TopUniAI = () => {
                     </div>
                     <div className="flex justify-between pt-4">
                       <Button variant="outline" onClick={() => setStep(2)}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
+                      <Button variant="gold" size="lg" onClick={() => setStep(4)}>
+                        Continue <ArrowRight className="ml-2 w-5 h-5" />
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {step === 4 && (
+                  <motion.div
+                    key="step4"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.35 }}
+                    className="space-y-7"
+                  >
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Step 04 · Your story</p>
+                      <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight">
+                        The details that make this personal.
+                      </h2>
+                      <p className="text-muted-foreground mt-2 text-sm">
+                        Optional, but every field you fill makes the brief dramatically more specific to you. Skip what you don't have.
+                      </p>
+                    </div>
+
+                    <div className="space-y-5">
+                      {/* Top activity / extracurricular highlight */}
+                      <div className="bg-card border border-border/70 rounded-xl p-5">
+                        <Label className="text-sm font-semibold text-foreground mb-1.5 block">
+                          Top activity or achievement
+                        </Label>
+                        <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+                          One thing you've done that you're proud of. The role you held, what you built, who you led.
+                        </p>
+                        <textarea
+                          value={topActivity}
+                          onChange={(e) => setTopActivity(e.target.value.slice(0, 220))}
+                          placeholder="e.g. Founded the school robotics club, grew it from 3 to 28 members, won regional finals."
+                          rows={2}
+                          className="w-full text-sm bg-background border border-input rounded-md px-3 py-2 resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        />
+                        <p className="text-[10px] text-muted-foreground/70 mt-1.5 text-right tabular-nums">{topActivity.length}/220</p>
+                      </div>
+
+                      {/* Personal story */}
+                      <div className="bg-card border border-border/70 rounded-xl p-5">
+                        <Label className="text-sm font-semibold text-foreground mb-1.5 block">
+                          What's your story?
+                        </Label>
+                        <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+                          What's shaped your perspective? An obstacle, a turning point, what you're driven by. Three sentences max — your essay angles will pull from this.
+                        </p>
+                        <textarea
+                          value={personalStory}
+                          onChange={(e) => setPersonalStory(e.target.value.slice(0, 320))}
+                          placeholder="e.g. Grew up between two countries; spent gap year teaching English in rural classrooms; now want to study public policy to work on education access."
+                          rows={3}
+                          className="w-full text-sm bg-background border border-input rounded-md px-3 py-2 resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        />
+                        <p className="text-[10px] text-muted-foreground/70 mt-1.5 text-right tabular-nums">{personalStory.length}/320</p>
+                      </div>
+
+                      {/* Named target schools */}
+                      <div className="bg-card border border-border/70 rounded-xl p-5">
+                        <Label className="text-sm font-semibold text-foreground mb-1.5 block">
+                          Specific schools on your list?
+                        </Label>
+                        <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+                          Comma-separated. The brief will reference these by name in the shortlist and essay angles.
+                        </p>
+                        <Input
+                          value={namedSchools}
+                          onChange={(e) => setNamedSchools(e.target.value.slice(0, 240))}
+                          placeholder="e.g. Yale, Cambridge, NUS, ETH Zürich"
+                          className="text-sm"
+                        />
+                        <p className="text-[10px] text-muted-foreground/70 mt-1.5 text-right tabular-nums">{namedSchools.length}/240</p>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between pt-4">
+                      <Button variant="outline" onClick={() => setStep(3)}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
                       <Button variant="gold" size="lg" onClick={() => setScreen("dashboard")}>
                         <Sparkles className="mr-2 w-5 h-5" /> Generate my plan
                       </Button>
