@@ -360,15 +360,9 @@ const COLLECTIONS: CollectionDef[] = [
 ];
 
 /* ─── Constants ──────────────────────────────────────────────────────── */
-const FLAGS: Record<string, string> = {
-  "United Kingdom": "🇬🇧", "Germany": "🇩🇪", "Japan": "🇯🇵", "Canada": "🇨🇦",
-  "United States": "🇺🇸", "USA": "🇺🇸", "Australia": "🇦🇺", "Netherlands": "🇳🇱",
-  "South Korea": "🇰🇷", "Korea": "🇰🇷", "Singapore": "🇸🇬", "Switzerland": "🇨🇭",
-  "Sweden": "🇸🇪", "Poland": "🇵🇱", "Italy": "🇮🇹", "Czech Republic": "🇨🇿",
-  "New Zealand": "🇳🇿", "France": "🇫🇷", "Taiwan": "🇹🇼", "Kazakhstan": "🇰🇿",
-  "Hungary": "🇭🇺", "Malaysia": "🇲🇾", "Turkey": "🇹🇷", "China": "🇨🇳",
-  "India": "🇮🇳", "Indonesia": "🇮🇩", "Estonia": "🇪🇪",
-};
+/* Host-country flag emojis were removed — the dictionary missed too many
+   countries and the inconsistent flag/globe mix looked broken. Country name
+   as text is enough on cards. */
 
 const COUNTRIES = [
   { v: "Kazakhstan", f: "🇰🇿" }, { v: "Kyrgyzstan", f: "🇰🇬" },
@@ -415,7 +409,26 @@ const daysUntil = (d: string | null) => d ? Math.ceil((new Date(d).getTime() - D
 const WIZARD_STEPS = 4;
 const DEFAULT_WIZARD: WizardData = { fullName: "", email: "", nationality: "", customNationality: "", degree: "", field: "", gpa: "", gpaScale: "4.0", ielts: "", budget: "low" };
 const DEFAULT_FILTERS: FilterState = { search: "", coverage: "all", degree: "all", effort: "all", field: "all", selectivity: "all", hostCountry: "all", onlyEligible: false, closingSoon: false, onlyShortlisted: false };
-const COVERAGE_LABEL: Record<string, string> = { full_ride: "Full ride", tuition_only: "Tuition", stipend: "Stipend" };
+const COVERAGE_LABEL: Record<string, string> = { full_ride: "Full ride", tuition_only: "Tuition only", stipend: "Stipend" };
+
+/* Convert raw DB strings (often snake_case or all_lowercase) into human prose.
+   Used everywhere `target_fields`, `target_degree_level`, etc. render directly. */
+const STOP_WORDS = new Set(["and", "or", "of", "the", "in", "for", "to"]);
+const humanize = (s: string | null | undefined): string => {
+  if (!s) return "";
+  return s.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim().split(" ")
+    .map((w, i) => i > 0 && STOP_WORDS.has(w.toLowerCase()) ? w.toLowerCase() : w[0].toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+};
+
+/* Provider/scholarship initials — used as avatar fallback now that flag emojis
+   were stripped from card headers. Many providers in the DB are not in any
+   flag dictionary, so the inconsistent flag/globe mix looked broken. */
+const initials = (name: string | null | undefined): string => {
+  if (!name) return "·";
+  const words = name.trim().replace(/\s+/g, " ").split(" ").slice(0, 2);
+  return words.map(w => w[0]?.toUpperCase() || "").join("") || "·";
+};
 
 const fmtValue = (v: number) => v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `$${Math.round(v / 1000)}K` : `$${v}`;
 
@@ -592,7 +605,6 @@ const MatchDial = ({ value, size = 64, stroke = 5, gradId, color1, color2, delay
 const FeaturedCard = ({ s, onSelect, isBookmarked, onBookmark }: {
   s: Scored; onSelect: () => void; isBookmarked: boolean; onBookmark: (e: React.MouseEvent) => void;
 }) => {
-  const flag = FLAGS[s.host_country || ""] ?? "🌍";
   const dl = deadlineDisplay(s.application_deadline);
   const why = s.why_this_fits || s.reasons.slice(0, 2).join(". ") || "";
 
@@ -627,8 +639,7 @@ const FeaturedCard = ({ s, onSelect, isBookmarked, onBookmark }: {
         {/* Content */}
         <div className="min-w-0">
           <div className="flex items-center gap-2.5 flex-wrap mb-2">
-            <span className="text-xl">{flag}</span>
-            <p className="text-xs text-muted-foreground truncate">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground truncate">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
           </div>
 
           <h3 className="font-heading font-bold text-xl sm:text-2xl text-foreground leading-[1.15] tracking-[-0.02em] mb-3">{s.scholarship_name}</h3>
@@ -725,7 +736,6 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
   index?: number;
 }) => {
   const tier = TIER[s.priority];
-  const flag = FLAGS[s.host_country || ""] ?? "🌍";
   const dl = deadlineDisplay(s.application_deadline);
 
   return (
@@ -746,7 +756,6 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
       {/* Name + provider */}
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-base">{flag}</span>
           <h3 className="font-heading font-semibold text-[15px] text-foreground truncate tracking-tight">{s.scholarship_name}</h3>
         </div>
         <p className="text-xs text-muted-foreground truncate mt-0.5">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
@@ -886,7 +895,7 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           {s.target_fields && s.target_fields.length > 0 && s.target_fields[0].toLowerCase() !== "any" && (
             <>
               <span className="text-muted-foreground/30">·</span>
-              <span className="text-muted-foreground truncate">{s.target_fields[0]}</span>
+              <span className="text-muted-foreground truncate">{humanize(s.target_fields[0])}</span>
             </>
           )}
         </div>
@@ -1055,10 +1064,11 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
   fieldsAvailable: string[];
 }) => {
   const sections: { label: string; key: keyof FilterState; opts: { v: string; l: string }[] }[] = [
-    { label: "Coverage", key: "coverage", opts: [{ v: "all", l: "All types" }, { v: "full_ride", l: "Full ride" }, { v: "tuition_only", l: "Tuition" }, { v: "stipend", l: "Stipend" }] },
+    // "Stipend" dropped — confusing alongside Full ride which already includes living costs.
+    { label: "Coverage", key: "coverage", opts: [{ v: "all", l: "All types" }, { v: "full_ride", l: "Full ride (tuition + living)" }, { v: "tuition_only", l: "Tuition only" }] },
     { label: "Degree",   key: "degree",   opts: [{ v: "all", l: "All levels" }, { v: "undergraduate", l: "Bachelor\'s" }, { v: "master\'s", l: "Master\'s" }, { v: "PhD", l: "PhD" }] },
-    { label: "Competitiveness", key: "selectivity", opts: [{ v: "all", l: "Any level" }, { v: "low", l: "Accessible" }, { v: "medium", l: "Moderate" }, { v: "high", l: "Competitive" }, { v: "very_high", l: "Highly competitive" }] },
-    // Effort filter removed for now — effort still surfaces on the detail card.
+    // 3 levels — "Competitive" matches both high and very_high in the filter logic below.
+    { label: "Competitiveness", key: "selectivity", opts: [{ v: "all", l: "Any level" }, { v: "low", l: "Accessible" }, { v: "medium", l: "Moderate" }, { v: "high", l: "Competitive" }] },
   ];
   return (
     <div className="space-y-6">
@@ -1084,7 +1094,7 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
             <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All fields</SelectItem>
-              {fieldsAvailable.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+              {fieldsAvailable.map(f => <SelectItem key={f} value={f}>{humanize(f)}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -1098,7 +1108,7 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
             <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All countries</SelectItem>
-              {hostCountries.map(c => <SelectItem key={c} value={c}>{FLAGS[c] || "🌍"} {c}</SelectItem>)}
+              {hostCountries.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -1106,10 +1116,11 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
 
       <Separator />
       <div className="space-y-3.5">
+        {/* "My shortlist" toggle removed — the shortlist Sheet in the toolbar
+            covers this case and frees vertical space so the filter fits. */}
         {([
           { id: "oe", label: "Eligible only",         key: "onlyEligible"    as keyof FilterState },
           { id: "cs", label: "Closing in 90 days",    key: "closingSoon"     as keyof FilterState },
-          { id: "sl", label: "My shortlist",          key: "onlyShortlisted" as keyof FilterState },
         ] as const).map(t => (
           <div key={t.id} className="flex items-center justify-between">
             <Label htmlFor={t.id} className="text-sm cursor-pointer text-foreground/75 font-normal">{t.label}</Label>
@@ -1169,7 +1180,6 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
 }) => {
   if (!s) return null;
   const tier = TIER[s.priority];
-  const flag = FLAGS[s.host_country || ""] ?? "🌍";
   const dl = deadlineDisplay(s.application_deadline);
   const [dc1, dc2] = dialColors(s.priority);
   const why = s.why_this_fits || s.reasons.slice(0, 2).join(". ");
@@ -1198,7 +1208,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
   }
   if (s.target_fields && s.target_fields.length > 0 && profile.field) {
     const fm = fieldMatches(profile.field, s.target_fields);
-    reqs.push({ label: `Field of study`, status: fm === true ? "met" : fm === false ? "miss" : "unknown", detail: `Funds: ${s.target_fields.slice(0, 4).join(", ")}${s.target_fields.length > 4 ? "..." : ""}` });
+    reqs.push({ label: `Field of study`, status: fm === true ? "met" : fm === false ? "miss" : "unknown", detail: `Funds: ${s.target_fields.slice(0, 4).map(humanize).join(", ")}${s.target_fields.length > 4 ? "..." : ""}` });
   }
   if (s.eligible_countries && profile.country) {
     const list = s.eligible_countries.map(c => c.toLowerCase());
@@ -1251,7 +1261,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
 
             <SheetTitle className="text-foreground font-heading text-[26px] leading-[1.12] tracking-[-0.02em] pt-1 text-left">{s.scholarship_name}</SheetTitle>
             <p className="text-muted-foreground text-sm text-left">
-              <span className="mr-1.5">{flag}</span>{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}
+              {[s.provider_name, s.host_country].filter(Boolean).join(" · ")}
             </p>
           </SheetHeader>
 
@@ -1386,7 +1396,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Funds</p>
                 <div className="flex flex-wrap gap-1.5">
                   {s.target_fields.map((f, i) => (
-                    <span key={i} className="text-xs text-foreground/75 bg-muted/60 border border-border px-2.5 py-1 rounded-md">{f}</span>
+                    <span key={i} className="text-xs text-foreground/75 bg-muted/60 border border-border px-2.5 py-1 rounded-md">{humanize(f)}</span>
                   ))}
                 </div>
               </div>
@@ -1610,14 +1620,14 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-3">If you like this, also look at</p>
             <div className="space-y-1.5">
               {similar.map(sim => {
-                const flag = FLAGS[sim.host_country || ""] ?? "🌍";
+                const simTier = TIER[sim.priority];
                 return (
                   <button
                     key={sim.scholarship_id}
                     onClick={() => onSwitchTo(sim)}
                     className="w-full flex items-center gap-3 p-2.5 rounded-lg bg-card border border-border/60 hover:border-gold/30 hover:shadow-sm transition-all text-left group"
                   >
-                    <span className="text-xl shrink-0">{flag}</span>
+                    <div className={`h-9 w-9 rounded-lg bg-gradient-to-br ${simTier.grad} flex items-center justify-center text-[11px] font-bold text-white shrink-0 tracking-tight`}>{initials(sim.provider_name || sim.scholarship_name)}</div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-foreground truncate group-hover:text-gold-dark transition-colors">{sim.scholarship_name}</p>
                       <p className="text-[11px] text-muted-foreground truncate">
@@ -1901,7 +1911,13 @@ const Discover = ({ language = "en" }: Props) => {
     if (filters.coverage !== "all") list = list.filter(s => s.coverage_type === filters.coverage);
     if (filters.degree !== "all") list = list.filter(s => s.target_degree_level?.some(d => d.toLowerCase() === filters.degree.toLowerCase()));
     if (filters.effort !== "all") list = list.filter(s => s.effort === filters.effort);
-    if (filters.selectivity !== "all") list = list.filter(s => s.selectivity === filters.selectivity);
+    if (filters.selectivity !== "all") {
+      // "Competitive" (high) intentionally matches both `high` and `very_high`
+      // so the filter UI can stay at 3 levels instead of 4.
+      list = list.filter(s => filters.selectivity === "high"
+        ? (s.selectivity === "high" || s.selectivity === "very_high")
+        : s.selectivity === filters.selectivity);
+    }
     if (filters.field !== "all") list = list.filter(s => s.target_fields?.includes(filters.field));
     if (filters.hostCountry !== "all") list = list.filter(s => s.host_country === filters.hostCountry);
     if (filters.onlyEligible) list = list.filter(s => s.eligibility === "eligible" || s.eligibility === "likely");
@@ -2850,7 +2866,7 @@ const Discover = ({ language = "en" }: Props) => {
                   { label: "Min SAT", render: s => s.min_sat != null ? `≥ ${s.min_sat}` : <span className="text-muted-foreground/60">—</span> },
                   { label: "Eligibility", render: s => isInclusive(s.citizenship_requirements) ? <span className="text-success">Open to all</span> : (s.citizenship_requirements || <span className="text-muted-foreground/60">—</span>) },
                   { label: "Degree levels", render: s => s.target_degree_level?.join(", ") || <span className="text-muted-foreground/60">—</span> },
-                  { label: "Fields funded", render: s => s.target_fields?.length ? s.target_fields.slice(0, 3).join(", ") + (s.target_fields.length > 3 ? `, +${s.target_fields.length - 3}` : "") : <span className="text-muted-foreground/60">—</span> },
+                  { label: "Fields funded", render: s => s.target_fields?.length ? s.target_fields.slice(0, 3).map(humanize).join(", ") + (s.target_fields.length > 3 ? `, +${s.target_fields.length - 3}` : "") : <span className="text-muted-foreground/60">—</span> },
                   { label: "Application fee", render: s => s.application_fee_text || <span className="text-muted-foreground/60">—</span> },
                   { label: "Effort level", render: s => s.effort_level ? <span className="capitalize">{s.effort_level}</span> : <span className="text-muted-foreground/60">—</span> },
                   { label: "Essay required", render: s => s.essay_required ? <span className="text-warning">Yes</span> : <span className="text-success">No</span> },
@@ -2866,11 +2882,11 @@ const Discover = ({ language = "en" }: Props) => {
                         <tr>
                           <th className="text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground py-3 pr-4 align-top w-[120px] sticky left-0 bg-background z-10">Field</th>
                           {items.map(s => {
-                            const flag = FLAGS[s.host_country || ""] ?? "🌍";
+                            const cmpTier = TIER[s.priority];
                             return (
                               <th key={s.scholarship_id} className="text-left p-4 align-top min-w-[260px] border-l border-border/60">
                                 <div className="flex items-start justify-between gap-2 mb-2">
-                                  <span className="text-2xl shrink-0">{flag}</span>
+                                  <div className={`h-10 w-10 rounded-xl bg-gradient-to-br ${cmpTier.grad} flex items-center justify-center text-[12px] font-bold text-white shrink-0 tracking-tight`}>{initials(s.provider_name || s.scholarship_name)}</div>
                                   <button
                                     onClick={() => toggleCompare(s.scholarship_id)}
                                     className="text-muted-foreground hover:text-destructive transition-colors p-1 -m-1"
@@ -2938,13 +2954,12 @@ const Discover = ({ language = "en" }: Props) => {
             <div className="mt-6 space-y-3">
               {ranked.filter(s => shortlist.has(s.scholarship_id)).map(s => {
                 const tier = TIER[s.priority];
-                const flag = FLAGS[s.host_country || ""] ?? "🌍";
                 const dl = deadlineDisplay(s.application_deadline);
                 return (
                   <button key={s.scholarship_id}
                     onClick={() => { setOpenDetail(s); setShortlistOpen(false); }}
                     className="w-full text-left bg-card border border-border rounded-2xl p-3.5 hover:border-gold/40 hover:shadow-md transition-all flex items-start gap-3 group">
-                    <div className={`h-11 w-11 rounded-2xl bg-gradient-to-br ${tier.grad} flex items-center justify-center text-xl shrink-0`}>{flag}</div>
+                    <div className={`h-11 w-11 rounded-2xl bg-gradient-to-br ${tier.grad} flex items-center justify-center text-[13px] font-bold text-white shrink-0 tracking-tight`}>{initials(s.provider_name || s.scholarship_name)}</div>
                     <div className="min-w-0 flex-1">
                       <p className="font-heading font-bold text-sm text-foreground line-clamp-1">{s.scholarship_name}</p>
                       <p className="text-xs text-muted-foreground truncate mt-0.5">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>

@@ -12,6 +12,7 @@ import {
   RotateCcw, Compass, PenLine, Wallet, FileText, Plane,
   Lightbulb, AlertTriangle, Quote, Check,
   Share2, Copy, Mail,
+  Crown, Bookmark, BookmarkCheck,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,7 +23,7 @@ import { GenerationPipeline } from "@/components/GenerationPipeline";
 import { EnrichedMarkdown } from "@/components/EnrichedMarkdown";
 import { ProBriefUnlock, type ProBriefDepth } from "@/components/ProBriefUnlock";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
-import { Crown, Sparkles, Bookmark, BookmarkCheck } from "lucide-react";
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
@@ -435,8 +436,9 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover }: {
             : `${Math.ceil(days! / 30)} months`;
           const dlClass =
             !it.match?.application_deadline ? "text-muted-foreground"
-            : days! <= 30 ? "text-destructive"
-            : days! <= 90 ? "text-warning"
+            : days! <= 7 ? "text-destructive font-semibold"
+            : days! <= 30 ? "text-amber-700 dark:text-amber-400"
+            : days! <= 90 ? "text-foreground/60"
             : "text-muted-foreground";
           const isLinked = !!it.match;
           const Wrapper = isLinked ? "button" : "div";
@@ -1765,7 +1767,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                         {liveMatches.slice(0, 6).map((m) => {
                           const days = m.application_deadline ? Math.ceil((new Date(m.application_deadline).getTime() - Date.now()) / 86400000) : null;
                           const dl = !m.application_deadline ? "Rolling" : days! <= 0 ? "Closed" : days! <= 30 ? `${days} days` : days! <= 90 ? `${days} days` : `${Math.ceil(days! / 30)} months`;
-                          const dlClass = !m.application_deadline ? "text-muted-foreground" : days! <= 30 ? "text-destructive" : days! <= 90 ? "text-warning" : "text-muted-foreground";
+                          const dlClass = !m.application_deadline ? "text-muted-foreground" : days! <= 7 ? "text-destructive font-semibold" : days! <= 30 ? "text-amber-700 dark:text-amber-400" : days! <= 90 ? "text-foreground/60" : "text-muted-foreground";
                           return (
                             <button
                               key={m.scholarship_id}
