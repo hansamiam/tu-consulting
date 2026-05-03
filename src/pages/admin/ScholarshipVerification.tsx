@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   CheckCircle2, AlertTriangle, ExternalLink, Search, ChevronRight,
-  ZapOff, Loader2, Filter,
+  ZapOff, Loader2, Filter, RefreshCw,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -267,6 +267,33 @@ export default function AdminScholarshipVerification() {
                 await promote([r.scholarship_id], "broken");
                 setBusyId(null);
               }}
+              onReVerify={async () => {
+                setBusyId(r.scholarship_id);
+                try {
+                  const { data, error } = await supabase.functions.invoke<{
+                    ok: boolean;
+                    status: string;
+                    diff_count?: number;
+                    diffs?: Array<{ field: string; was: unknown; now: unknown }>;
+                  }>("verify-scholarship", { body: { scholarship_id: r.scholarship_id } });
+                  if (error) throw new Error(error.message);
+                  const status = data?.status ?? "unknown";
+                  const description =
+                    status === "verified_clean"  ? "Re-fetch matched stored data — promoted to verified."
+                  : status === "diffs_staged"    ? `${data?.diff_count ?? 0} field(s) changed — staged for review. Status set to stale.`
+                  : status === "low_confidence"  ? "AI couldn't confidently re-extract — try again later."
+                  : status === "fetch_failed"    ? "Source URL unreachable. URL-health cron will mark broken on 3rd fail."
+                  : status === "page_too_thin"   ? "Source page returned too little content."
+                  : status === "no_source_url"   ? "No source_url on file — nothing to verify against."
+                  : status === "extract_failed"  ? "LLM re-extraction failed. Will retry on next pass."
+                  : `Status: ${status}`;
+                  toast({ title: `Re-verify · ${r.scholarship_name}`, description });
+                  await fetchAll();
+                } catch (e) {
+                  toast({ title: "Re-verify failed", description: (e as Error).message, variant: "destructive" });
+                }
+                setBusyId(null);
+              }}
               index={i}
             />
           ))}
@@ -288,10 +315,10 @@ const Stat = ({ label, value, sub, tone = "neutral" }: { label: string; value: s
 };
 
 const RowCard = ({
-  row, checked, onCheck, busy, onPromote, onBreak, index,
+  row, checked, onCheck, busy, onPromote, onBreak, onReVerify, index,
 }: {
   row: Row; checked: boolean; onCheck: (v: boolean) => void;
-  busy: boolean; onPromote: () => void; onBreak: () => void; index: number;
+  busy: boolean; onPromote: () => void; onBreak: () => void; onReVerify: () => void; index: number;
 }) => {
   const status = row.verification_status ?? "pending";
   const statusCls = status === "verified" ? "text-success border-success/40 bg-success/5"
@@ -340,6 +367,12 @@ const RowCard = ({
                 <Button size="sm" variant="gold" disabled={busy} onClick={onPromote} className="gap-1.5 h-8">
                   {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
                   Promote
+                </Button>
+              )}
+              {row.source_url && (
+                <Button size="sm" variant="outline" disabled={busy} onClick={onReVerify} className="gap-1.5 h-8" title="Re-fetch the source URL, re-extract via LLM, and either auto-verify (no diffs) or stage the diffs for review.">
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Re-verify
                 </Button>
               )}
               {status !== "broken" && (

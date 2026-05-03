@@ -92,6 +92,8 @@ interface TrackerEntry {
     award_amount_text: string | null;
     application_deadline: string | null;
     official_url: string | null;
+    verification_status: string | null;
+    last_verified_at: string | null;
   } | null;
 }
 
@@ -126,14 +128,21 @@ async function buildLiveCaseContext(
       scholarship_id, status, notes, shortlisted, hidden,
       scholarship:scholarship_id (
         scholarship_name, host_country, coverage_type, award_amount_text,
-        application_deadline, official_url
+        application_deadline, official_url, verification_status, last_verified_at
       )
     `)
     .eq("user_id", userId)
     .returns<TrackerEntry[]>();
 
+  // Drop tracker entries whose scholarship row is broken (URL unreachable +
+  // confirmed 3+ failures by url-health-cron) so the counselor doesn't
+  // confidently cite a dead scholarship. Pending rows can stay — the user
+  // saved them deliberately so they're worth referencing — but with a
+  // freshness caveat in the prompt context.
   const visible = (tracker ?? []).filter(
-    (t) => !t.hidden && (t.status || (t.notes && t.notes.trim()) || t.shortlisted),
+    (t) => !t.hidden
+        && (t.status || (t.notes && t.notes.trim()) || t.shortlisted)
+        && t.scholarship?.verification_status !== "broken",
   );
 
   // Sort: status set first (active applications), then by deadline urgency
@@ -411,7 +420,13 @@ Guidelines:
 - Be honest. Don't sugarcoat weaknesses, but lead with what to do about them.
 - IMPORTANT: The user's interface language is "${language || "en"}". If "ru", respond in Russian by default. Otherwise English. Match the student's language if they write in another.
 - Keep responses tight — 2-4 paragraphs unless they explicitly ask for depth. Use markdown lists when listing concrete actions.
-- If you don't know something specific (current deadlines, fee changes), say so and tell them how to verify.`;
+- If you don't know something specific (current deadlines, fee changes), say so and tell them how to verify.
+
+CRITICAL — ANTI-HALLUCINATION RULES FOR SCHOLARSHIP NAMES:
+- You may ONLY mention scholarship NAMES that appear in the case-data above (the user's saved tracker entries) OR in the cached strategy brief context. Do NOT invent or recall scholarship names from general knowledge — they may not exist in our database, may have wrong deadlines, or may be defunct.
+- If the user asks about a scholarship that ISN'T in the case data, say something like: "I don't see [name] in your saved scholarships or our verified database. Want me to help you search for it in Discover?" Then suggest they save it if found.
+- Specific deadlines, funding amounts, and eligibility figures MUST come from the case data. If you don't have a verified value, say "verify on the official source" rather than guess. Never write a specific date or dollar figure for a scholarship not in the case data.
+- When you mention a scholarship, wrap its name in **bold** so the front-end renders it as a real linkable card if it matches our database.`;
 
     const response = await chatCompletions({
       tier: "flash",

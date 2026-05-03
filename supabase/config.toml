@@ -77,6 +77,12 @@ verify_jwt = true
 [functions.enrich-universities-cron]
 verify_jwt = true
 
+[functions.verify-scholarship]
+verify_jwt = true
+
+[functions.verify-scholarship-cron]
+verify_jwt = true
+
 [functions.og-brief]
 verify_jwt = false
 
