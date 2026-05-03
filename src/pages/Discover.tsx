@@ -2266,28 +2266,18 @@ const Discover = ({ language = "en" }: Props) => {
           {/* ══ RESULTS — distinctive app-shell experience ══ */}
           {phase === "results" && (
             <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7 }}>
-              {/* ─── App title bar — restrained navy strip, single-line wordmark ─── */}
-              <div className="relative bg-primary text-primary-foreground border-b border-primary/30">
-                <div className="max-w-7xl mx-auto px-6 sm:px-8 h-12 flex items-center gap-5">
-                  <p className="font-heading font-semibold text-[15px] text-primary-foreground tracking-tight">
-                    Discover
-                  </p>
-                  <span className="hidden sm:inline text-[11px] text-primary-foreground/40 tabular-nums">
-                    {rows.length} scholarships
-                  </span>
-                  <div className="flex-1" />
-                  {wiz.fullName && (
-                    <span className="hidden sm:inline text-[11px] text-primary-foreground/55">{wiz.fullName}</span>
-                  )}
-                </div>
-              </div>
-
-              {/* ─── Filter context strip — Linear/Notion pattern ─── */}
-              <div className="relative bg-canvas-soft border-b border-border/70">
-                <div className="max-w-7xl mx-auto px-6 sm:px-8 py-4 flex items-baseline gap-3 flex-wrap">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground shrink-0">Filtered by</span>
+              {/* ─── Profile context strip — single line, premium-tech feel.
+                  Replaces the previous two-bar header (navy "Discover" wordmark +
+                  cream "Filtered by" chips). The Nav already shows the page is
+                  Discover, so the wordmark was redundant. Now: one editorial line
+                  that anchors the user's profile + the live result count, with a
+                  quiet "Edit" affordance to reopen the wizard. */}
+              <div className="relative bg-gradient-to-b from-canvas-soft to-background border-b border-border/60">
+                <div className="max-w-7xl mx-auto px-5 sm:px-8 py-4 sm:py-5 flex items-baseline gap-3 flex-wrap">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark shrink-0">Your shortlist</span>
+                  <span className="text-muted-foreground/40">·</span>
                   {[profile.country, profile.degree, profile.field, profile.gpa ? `GPA ${profile.gpa}/${profile.gpaScale}` : null, profile.ielts ? `IELTS ${profile.ielts}` : null].filter(Boolean).map(chip => (
-                    <span key={chip} className="text-xs text-foreground/75 bg-card border border-border px-2.5 py-1 rounded-md font-medium">{chip}</span>
+                    <span key={chip} className="text-xs text-foreground/80 bg-card border border-border px-2 py-0.5 rounded-md font-medium">{chip}</span>
                   ))}
                   <button onClick={resetProfile} className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 underline-offset-4 hover:underline">
                     Edit
@@ -2295,14 +2285,19 @@ const Discover = ({ language = "en" }: Props) => {
                   <div className="flex-1" />
                   {!loading && (
                     <span className="text-[11px] text-muted-foreground tabular-nums">
-                      <span className="text-foreground font-semibold">{filtered.length}</span> of {ranked.length}
+                      <span className="font-heading font-bold text-foreground text-base mr-1">{filtered.length}</span>
+                      of {ranked.length} {ranked.length === 1 ? "scholarship" : "scholarships"}
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* Sticky toolbar — search · filters · sort · view-mode · hidden · compare */}
-              <div className="sticky top-0 z-30 bg-background/85 backdrop-blur-xl border-b border-border">
+              {/* Sticky toolbar — search · filters · sort · view-mode · hidden · compare.
+                  Sticks below the global Nav (h-16 = 64px) so the filter row is always
+                  reachable while scrolling. The navy app title bar + filter-chip context
+                  strip above it are intentionally non-sticky — they scroll away once
+                  the user starts working. */}
+              <div className="sticky top-16 z-30 bg-background/92 backdrop-blur-xl border-b border-border shadow-[0_1px_0_0_rgba(0,0,0,0.02)]">
                 <div className="max-w-7xl mx-auto px-6 sm:px-8 py-3 flex items-center gap-2.5 flex-wrap">
                   <div className="relative flex-1 min-w-[200px] max-w-md">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />

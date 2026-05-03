@@ -21,7 +21,8 @@ import { CounselorSessions } from "@/components/topuni/CounselorSessions";
 import { GenerationPipeline } from "@/components/GenerationPipeline";
 import { EnrichedMarkdown } from "@/components/EnrichedMarkdown";
 import { ProBriefUnlock, type ProBriefDepth } from "@/components/ProBriefUnlock";
-import { Crown, Sparkles } from "lucide-react";
+import { useApplicationTracker } from "@/hooks/useApplicationTracker";
+import { Crown, Sparkles, Bookmark, BookmarkCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
@@ -81,12 +82,39 @@ const renderInline = (txt: string): React.ReactNode => {
    a checkbox the user can tick off. Completion state is persisted in
    localStorage by stable text hash, so the user can come back to the
    report and see their progress. */
-const InteractiveActionPlan = ({ markdown, completedTasks, onToggle, taskKey, isRu }: {
+/** Light fuzzy scholarship-name detector used by action-item rendering.
+ *  Strips suffixes like "Scholarship(s)", "Fellowship", "Program", "Scholars"
+ *  before comparing — matches "Apply to Chevening" against "Chevening Scholarships". */
+const detectScholarshipInText = (
+  text: string,
+  pool: { scholarship_id: string; scholarship_name: string }[],
+): { scholarship_id: string; scholarship_name: string } | null => {
+  if (!text || pool.length === 0) return null;
+  const norm = (s: string) => s.toLowerCase()
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/\s*(scholarships?|fellowship|program|scholars|award|grant)\b/g, "")
+    .trim();
+  const haystack = ` ${norm(text)} `;
+  for (const s of pool) {
+    const needle = norm(s.scholarship_name);
+    if (needle.length < 4) continue;
+    if (haystack.includes(` ${needle} `) || haystack.includes(` ${needle}.`) || haystack.includes(` ${needle},`)) {
+      return s;
+    }
+  }
+  return null;
+};
+
+const InteractiveActionPlan = ({ markdown, completedTasks, onToggle, taskKey, isRu, liveMatches, onSaveScholarship, savedSet }: {
   markdown: string;
   completedTasks: Set<string>;
   onToggle: (id: string) => void;
   taskKey: (text: string) => string;
   isRu: boolean;
+  liveMatches?: { scholarship_id: string; scholarship_name: string }[];
+  onSaveScholarship?: (id: string, name: string) => void;
+  savedSet?: Set<string>;
 }) => {
   const { title, blocks } = useMemo(() => {
     const lines = markdown.split("\n");
@@ -155,18 +183,37 @@ const InteractiveActionPlan = ({ markdown, completedTasks, onToggle, taskKey, is
                 {b.items.map((text, iIdx) => {
                   const id = taskKey(text);
                   const done = completedTasks.has(id);
+                  const detected = detectScholarshipInText(text, liveMatches ?? []);
+                  const isSaved = detected ? savedSet?.has(detected.scholarship_id) : false;
                   return (
-                    <label key={iIdx} className="flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={done}
-                        onChange={() => onToggle(id)}
-                        className="mt-1 h-4 w-4 rounded border-border accent-gold-dark cursor-pointer shrink-0"
-                      />
-                      <span className={`text-sm leading-relaxed transition-colors ${done ? "text-muted-foreground line-through decoration-muted-foreground/40" : "text-foreground"}`}>
-                        {renderInline(text)}
-                      </span>
-                    </label>
+                    <div key={iIdx} className="flex items-start gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
+                      <label className="flex items-start gap-3 flex-1 min-w-0 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={done}
+                          onChange={() => onToggle(id)}
+                          className="mt-1 h-4 w-4 rounded border-border accent-gold-dark cursor-pointer shrink-0"
+                        />
+                        <span className={`text-sm leading-relaxed transition-colors ${done ? "text-muted-foreground line-through decoration-muted-foreground/40" : "text-foreground"}`}>
+                          {renderInline(text)}
+                        </span>
+                      </label>
+                      {detected && onSaveScholarship && (
+                        <button
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSaveScholarship(detected.scholarship_id, detected.scholarship_name); }}
+                          aria-label={isSaved ? `${detected.scholarship_name} saved to your pipeline` : `Save ${detected.scholarship_name} to your pipeline`}
+                          title={isSaved ? "Saved · click to remove" : `Save ${detected.scholarship_name} to your pipeline`}
+                          className={`shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] px-2 py-1 rounded-md border transition-colors ${
+                            isSaved
+                              ? "bg-gold/15 text-gold-dark border-gold/40 hover:bg-gold/25"
+                              : "bg-card text-muted-foreground border-border hover:text-gold-dark hover:border-gold/40 hover:bg-gold/5"
+                          }`}
+                        >
+                          {isSaved ? <BookmarkCheck className="w-3 h-3" /> : <Bookmark className="w-3 h-3" />}
+                          {isSaved ? (isRu ? "сохр." : "saved") : (isRu ? "сохранить" : "save")}
+                        </button>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -824,7 +871,7 @@ const PATHWAY_ESSAYS_SECTION_REGEX = /^##\s+.*?(essay angle|essay angles|угл�
 const PATHWAY_GAPS_SECTION_REGEX = /^##\s+.*?(honest gap|gaps to close|пробел|недотяг|слабые)/i;
 const PATHWAY_FINAL_SECTION_REGEX = /^##\s+.*?(final word|closing|in closing|заключительное слово|заключение)/i;
 
-const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onOpenDiscover, liveMatches }: {
+const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onOpenDiscover, liveMatches, onSaveScholarship, savedSet }: {
   markdown: string;
   completedTasks: Set<string>;
   onToggle: (id: string) => void;
@@ -832,6 +879,8 @@ const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onO
   isRu: boolean;
   onOpenDiscover: () => void;
   liveMatches: LiveMatchLite[];
+  onSaveScholarship?: (id: string, name: string) => void;
+  savedSet?: Set<string>;
 }) => {
   // Mapped to InlineScholarshipCard's expected shape — provider/url default to null
   const scholarshipsForCards = liveMatches.map((m) => ({
@@ -865,6 +914,9 @@ const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onO
           return <InteractiveActionPlanOrFallback
             key={i} markdown={section} completedTasks={completedTasks}
             onToggle={onToggle} taskKey={taskKey} isRu={isRu}
+            liveMatches={liveMatches}
+            onSaveScholarship={onSaveScholarship}
+            savedSet={savedSet}
           />;
         }
         if (PATHWAY_UNIS_SECTION_REGEX.test(section)) {
@@ -914,6 +966,9 @@ const InteractiveActionPlanOrFallback = (props: {
   onToggle: (id: string) => void;
   taskKey: (text: string) => string;
   isRu: boolean;
+  liveMatches?: LiveMatchLite[];
+  onSaveScholarship?: (id: string, name: string) => void;
+  savedSet?: Set<string>;
 }) => {
   const hasItems = /^\s*([-*]|\d+\.)\s+/m.test(props.markdown);
   if (!hasItems) return <ReactMarkdown>{props.markdown}</ReactMarkdown>;
@@ -1018,6 +1073,21 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     subscription.tier === "pro" ||
     subscription.tier === "founding"
   );
+  // Application tracker — used to wire the action-plan items' "Save"
+  // pill into the user's pipeline. The same hook powers /pipeline,
+  // /calendar, and the heart on every ScholarshipCard, so saves from
+  // here flow through to every other surface.
+  const tracker = useApplicationTracker();
+  const handleSaveScholarship = (id: string, name: string) => {
+    tracker.toggleShortlist(id);
+    const isNowSaved = !tracker.shortlist.has(id);
+    toast.success(
+      isNowSaved
+        ? (isRu ? `Сохранено: ${name}` : `Saved: ${name}`)
+        : (isRu ? `Удалено: ${name}` : `Removed: ${name}`),
+    );
+  };
+
   // Pro depth fields — captured on demand via the ProBriefUnlock dialog,
   // not in the standard wizard. When set, the brief auto-regenerates at
   // premium tier with these injected into the prompt. Persisted to
@@ -1648,6 +1718,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             isRu={isRu}
                             onOpenDiscover={() => navigate(isRu ? "/discover/ru" : "/discover")}
                             liveMatches={liveMatches}
+                            onSaveScholarship={handleSaveScholarship}
+                            savedSet={tracker.shortlist}
                           />
                         )}
                         {/* Live matches grid sits between the brief and the
@@ -1732,6 +1804,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             isRu={isRu}
                             onOpenDiscover={() => navigate(isRu ? "/discover/ru" : "/discover")}
                             liveMatches={liveMatches}
+                            onSaveScholarship={handleSaveScholarship}
+                            savedSet={tracker.shortlist}
                           />
                         )}
                       </>
