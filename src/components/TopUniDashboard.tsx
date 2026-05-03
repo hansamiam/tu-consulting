@@ -115,7 +115,7 @@ const detectScholarshipInText = (
   return null;
 };
 
-const InteractiveActionPlan = ({ markdown, completedTasks, onToggle, taskKey, isRu, liveMatches, onSaveScholarship, savedSet }: {
+const InteractiveActionPlan = ({ markdown, completedTasks, onToggle, taskKey, isRu, liveMatches, onSaveScholarship, savedSet, tier = "premium" }: {
   markdown: string;
   completedTasks: Set<string>;
   onToggle: (id: string) => void;
@@ -124,6 +124,9 @@ const InteractiveActionPlan = ({ markdown, completedTasks, onToggle, taskKey, is
   liveMatches?: { scholarship_id: string; scholarship_name: string }[];
   onSaveScholarship?: (id: string, name: string) => void;
   savedSet?: Set<string>;
+  /** When 'basic', Weeks 3-12 of the action plan are blurred behind a
+   *  Pro upgrade gate. */
+  tier?: "basic" | "premium";
 }) => {
   const { title, blocks } = useMemo(() => {
     const lines = markdown.split("\n");
@@ -175,12 +178,12 @@ const InteractiveActionPlan = ({ markdown, completedTasks, onToggle, taskKey, is
         />
       </div>
 
-      <div className="space-y-6">
-        {blocks.map((b, sIdx) => {
+      {(() => {
+        const renderBlock = (b: typeof blocks[number], sIdx: number) => {
           const blockKeys = b.items.map(i => taskKey(i));
           const blockDone = blockKeys.filter(k => completedTasks.has(k)).length;
           return (
-            <div key={sIdx}>
+            <div key={`week-${sIdx}`}>
               <div className="flex items-baseline justify-between mb-3">
                 <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold-dark">{b.heading}</h3>
                 <span className="text-[10px] text-muted-foreground tabular-nums">{blockDone} / {b.items.length}</span>
@@ -228,8 +231,38 @@ const InteractiveActionPlan = ({ markdown, completedTasks, onToggle, taskKey, is
               </div>
             </div>
           );
-        })}
-      </div>
+        };
+
+        // Premium gate: basic-tier briefs see Weeks 1-2 in full + the rest
+        // (Weeks 3-12) blurred behind an upgrade card. Premium tier sees
+        // everything as before.
+        const visibleBlocks = tier === "basic" ? blocks.slice(0, 1) : blocks;
+        const gatedBlocks = tier === "basic" ? blocks.slice(1) : [];
+        return (
+          <>
+            <div className="space-y-6">
+              {visibleBlocks.map((b, i) => renderBlock(b, i))}
+            </div>
+            {gatedBlocks.length > 0 && (
+              <div className="mt-6">
+                <PremiumGate
+                  gateId="brief-action-plan-weeks-3-12"
+                  headline={isRu
+                    ? `Открыть полные ${gatedBlocks.length} ${gatedBlocks.length === 1 ? "блок" : "блока"} плана`
+                    : `Unlock the rest of your ${gatedBlocks.length === 1 ? "plan" : "90-day plan"}`}
+                  subline={isRu
+                    ? "Вы видите план Weeks 1-2 бесплатно. Pro раскрывает Weeks 3-12 с неделя-за-неделя задачами и проверкой прогресса."
+                    : "Weeks 1-2 are free. Pro unlocks Weeks 3-12 with week-by-week deliverables and progress tracking."}
+                >
+                  <div className="space-y-6">
+                    {gatedBlocks.map((b, i) => renderBlock(b, i + visibleBlocks.length))}
+                  </div>
+                </PremiumGate>
+              </div>
+            )}
+          </>
+        );
+      })()}
     </div>
   );
 };
@@ -1026,6 +1059,7 @@ const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onO
             liveMatches={liveMatches}
             onSaveScholarship={onSaveScholarship}
             savedSet={savedSet}
+            tier={tier}
           /></div>;
         }
         if (PATHWAY_UNIS_SECTION_REGEX.test(section)) {
@@ -1087,6 +1121,7 @@ const InteractiveActionPlanOrFallback = (props: {
   liveMatches?: LiveMatchLite[];
   onSaveScholarship?: (id: string, name: string) => void;
   savedSet?: Set<string>;
+  tier?: "basic" | "premium";
 }) => {
   const hasItems = /^\s*([-*]|\d+\.)\s+/m.test(props.markdown);
   if (!hasItems) return <ReactMarkdown>{props.markdown}</ReactMarkdown>;
@@ -1861,8 +1896,28 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     );
   };
 
+  /* Counselor free-message limit: non-Pro users get 5 user-side messages
+     per session before the gate fires. Pro users (members or those who
+     filled the Pro depth) bypass entirely. We track via session count of
+     user-role messages — easy to inspect, easy to bypass on close+reopen
+     (intentional — the cap is friction, not a hard wall, and the upgrade
+     CTA is what matters for funnel telemetry). */
+  const COUNSELOR_FREE_MESSAGE_LIMIT = 5;
+  const userMessagesThisSession = chatMessages.filter(m => m.role === "user").length;
+  const counselorGated = !isMember && !hasProDepth && userMessagesThisSession >= COUNSELOR_FREE_MESSAGE_LIMIT;
+
   const sendChatMessage = async (text: string) => {
     if (!text.trim() || chatLoading) return;
+    if (counselorGated) {
+      void track("counselor_message_blocked", {
+        sent_count: userMessagesThisSession,
+        limit: COUNSELOR_FREE_MESSAGE_LIMIT,
+      });
+      // The UI shows the gate; we just don't send. Defensive in case the
+      // gate isn't visually rendered (race condition during transitions).
+      return;
+    }
+    void track("counselor_message_sent", { sent_count: userMessagesThisSession + 1 });
     const userMsg: Msg = { role: "user", content: text.trim() };
     const allMessages = [...chatMessages, userMsg];
     setChatMessages(allMessages);
@@ -2691,33 +2746,67 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                   </div>
 
                   <div className="border-t border-border p-3 shrink-0 bg-card">
-                    <form
-                      onSubmit={(e) => { e.preventDefault(); sendChatMessage(chatInput); }}
-                      className="flex items-end gap-2 rounded-xl border border-border bg-background focus-within:border-accent/40 focus-within:ring-2 focus-within:ring-accent/15 transition-all px-3 py-2"
-                    >
-                      <textarea
-                        ref={chatTextareaRef}
-                        value={chatInput}
-                        onChange={e => setChatInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            sendChatMessage(chatInput);
-                          }
-                        }}
-                        placeholder={isRu ? "Задайте вопрос... (Shift+Enter — новая строка)" : "Ask anything... (Shift+Enter for newline)"}
-                        rows={1}
-                        disabled={chatLoading}
-                        className="flex-1 resize-none bg-transparent border-0 outline-none text-sm leading-relaxed placeholder:text-muted-foreground/70 disabled:opacity-50 max-h-[140px]"
-                      />
-                      <Button type="submit" size="icon" variant="gold" disabled={chatLoading || !chatInput.trim()} className="h-8 w-8 shrink-0">
-                        <Send className="w-3.5 h-3.5" />
-                      </Button>
-                    </form>
-                    <p className="text-[10px] text-muted-foreground/70 mt-1.5 px-1">
-                      {t("Counselor uses your profile and report for context. Always sanity-check critical dates.",
-                         "Советник использует ваш профиль и отчёт. Всегда перепроверяйте важные даты.")}
-                    </p>
+                    {counselorGated ? (
+                      // Free-message cap reached — replace input with a
+                      // soft Pro upgrade card. PremiumGate fires gate_seen
+                      // + gate_upgrade_clicked into the analytics_events
+                      // table for funnel telemetry.
+                      <PremiumGate
+                        gateId="counselor-free-limit"
+                        headline={t(
+                          `You've sent ${COUNSELOR_FREE_MESSAGE_LIMIT} free counselor messages — unlock unlimited with Pro`,
+                          `Вы отправили ${COUNSELOR_FREE_MESSAGE_LIMIT} бесплатных сообщений — Pro даёт безлимит`,
+                        )}
+                        subline={t(
+                          "Pro lets you keep iterating with the counselor on essay drafts, deadline plans, country pivots — no limit.",
+                          "Pro даёт безлимит общения с советником: эссе, дедлайны, смена стран — без ограничений.",
+                        )}
+                      >
+                        <div className="h-32 rounded-xl border border-border bg-background opacity-50 flex items-center justify-center text-sm text-muted-foreground">
+                          {t("Continue the conversation with Pro", "Продолжите общение с Pro")}
+                        </div>
+                      </PremiumGate>
+                    ) : (
+                      <>
+                        <form
+                          onSubmit={(e) => { e.preventDefault(); sendChatMessage(chatInput); }}
+                          className="flex items-end gap-2 rounded-xl border border-border bg-background focus-within:border-accent/40 focus-within:ring-2 focus-within:ring-accent/15 transition-all px-3 py-2"
+                        >
+                          <textarea
+                            ref={chatTextareaRef}
+                            value={chatInput}
+                            onChange={e => setChatInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                sendChatMessage(chatInput);
+                              }
+                            }}
+                            placeholder={isRu ? "Задайте вопрос... (Shift+Enter — новая строка)" : "Ask anything... (Shift+Enter for newline)"}
+                            rows={1}
+                            disabled={chatLoading}
+                            className="flex-1 resize-none bg-transparent border-0 outline-none text-sm leading-relaxed placeholder:text-muted-foreground/70 disabled:opacity-50 max-h-[140px]"
+                          />
+                          <Button type="submit" size="icon" variant="gold" disabled={chatLoading || !chatInput.trim()} className="h-8 w-8 shrink-0">
+                            <Send className="w-3.5 h-3.5" />
+                          </Button>
+                        </form>
+                        <div className="flex items-baseline justify-between gap-2 mt-1.5 px-1">
+                          <p className="text-[10px] text-muted-foreground/70">
+                            {t("Counselor uses your profile and report for context. Always sanity-check critical dates.",
+                               "Советник использует ваш профиль и отчёт. Всегда перепроверяйте важные даты.")}
+                          </p>
+                          {!isMember && !hasProDepth && userMessagesThisSession >= 3 && (
+                            <p className="text-[10px] text-amber-700 dark:text-amber-400 tabular-nums shrink-0">
+                              {t(
+                                `${COUNSELOR_FREE_MESSAGE_LIMIT - userMessagesThisSession} free message${COUNSELOR_FREE_MESSAGE_LIMIT - userMessagesThisSession === 1 ? "" : "s"} left`,
+                                `${COUNSELOR_FREE_MESSAGE_LIMIT - userMessagesThisSession} бесплатн. сообщ.`,
+                              )}
+                            </p>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </Card>
               </div>
