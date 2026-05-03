@@ -26,21 +26,21 @@ const STEPS = [
   {
     n: "01",
     title: "Tell us about you",
-    body: "A two-minute intake — your scores, your story, your shortlist of dream schools.",
+    body: "Seven quick questions — your scores, your story, your dream schools. No transcript upload, no 90-minute call.",
     detail: "TopUni AI",
     path: "/topuni-ai",
   },
   {
     n: "02",
     title: "Get your strategy",
-    body: "Target list, timeline, action items, scholarship matches — generated for your profile.",
+    body: "215+ scholarships ranked against your profile. Deadlines mapped to your timeline. The three highest-leverage next steps, written for you.",
     detail: "Discover",
     path: "/discover",
   },
   {
     n: "03",
-    title: "Execute with our team",
-    body: "Workshops with our founders, country guides, and admitted essays — applied as you write your own.",
+    title: "Execute, don't guess",
+    body: "Yale · Cambridge · Harvard alumni run live workshops every month. Country guides. Admitted essays you study while writing yours.",
     detail: "Academy",
     path: "/academy",
   },
@@ -161,7 +161,7 @@ const Index = () => {
             <motion.div {...fadeUp()} className="max-w-2xl mx-auto text-center mb-14 sm:mb-16">
               <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">How it works</p>
               <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12]">
-                Three steps. One plan.
+                60 seconds. 3 steps. A real plan.
               </h2>
             </motion.div>
 
@@ -202,10 +202,10 @@ const Index = () => {
             <motion.div {...fadeUp()} className="max-w-3xl mx-auto text-center mb-14 sm:mb-16">
               <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">Team</p>
               <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-5">
-                Built with expert insight.
+                We've sat in the rooms you're applying to.
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed">
-                Yale, Harvard, Cambridge, Tsinghua.
+                Yale · Harvard · Cambridge · Tsinghua — admitted, funded, and on the other side of the table.
               </p>
             </motion.div>
 
@@ -249,10 +249,10 @@ const Index = () => {
               Academy
             </motion.p>
             <motion.h2 {...fadeUp(0.05)} className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-5">
-              The application advantage.
+              Stop reading 100 Reddit threads.
             </motion.h2>
             <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-lg leading-relaxed mb-8 max-w-xl mx-auto">
-              Workshops with our founders, country guides, and admitted essays. Recordings live in your library so you can return to them.
+              Live monthly workshops with Yale, Cambridge, and Harvard alumni founders. Admitted essays you study while writing your own. The library compounds every month — recordings yours forever.
             </motion.p>
             <motion.div {...fadeUp(0.18)}>
               <Button onClick={() => navigate('/academy')} variant="gold" className="gap-2">
@@ -278,13 +278,16 @@ const Index = () => {
         >
           <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
             <motion.div {...fadeUp()} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gold/30 bg-gold/10 text-gold-dark text-[11px] font-medium tracking-[0.18em] uppercase mb-7">
-              <Crown className="h-3.5 w-3.5" /> Founding Membership
+              <Crown className="h-3.5 w-3.5" /> Founding Membership · 100 spots
             </motion.div>
             <motion.h2 {...fadeUp(0.05)} className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.1] mb-5">
-              Become a founding member.
+              Lock in $19/month for life.
             </motion.h2>
-            <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-lg mb-10 max-w-xl mx-auto leading-relaxed">
-              TopUni AI, Discover, and Academy — locked at the founding price for our first cohort.
+            <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-lg mb-4 max-w-xl mx-auto leading-relaxed">
+              TopUni AI · Discover · Academy · monthly live workshops. Founding price never changes for our first 100 members. Public price moves to $39/month when the cohort fills.
+            </motion.p>
+            <motion.p {...fadeUp(0.14)} className="text-xs text-muted-foreground/70 mb-9 max-w-md mx-auto">
+              30-day money-back guarantee · Cancel anytime · Stripe secure
             </motion.p>
             <motion.div {...fadeUp(0.2)} className="flex flex-wrap items-center justify-center gap-3">
               <Button
@@ -293,7 +296,7 @@ const Index = () => {
                 className="text-base px-8 py-6 gap-2"
                 onClick={() => navigate('/pricing')}
               >
-                See Membership <ArrowRight className="h-4 w-4" />
+                Claim my founding spot <ArrowRight className="h-4 w-4" />
               </Button>
               <Button
                 variant="ghost"

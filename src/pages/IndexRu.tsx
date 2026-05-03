@@ -19,9 +19,9 @@ const fadeUp = (delay = 0) => ({
 });
 
 const STEPS = [
-  { n: "01", title: "Расскажите о себе", body: "Анкета на 2 минуты — баллы, история, школы мечты.", detail: "TopUni AI", path: "/topuni-ai/ru" },
-  { n: "02", title: "Получите стратегию", body: "Список целей, дедлайны, шаги, подбор стипендий — под ваш профиль.", detail: "Discover", path: "/discover/ru" },
-  { n: "03", title: "Действуйте по плану", body: "Воркшопы, гайды по странам, реальные эссе. Новое каждую неделю с 10 мая.", detail: "Academy", path: "/academy" },
+  { n: "01", title: "Расскажите о себе", body: "Семь быстрых вопросов — баллы, история, школы мечты. Без загрузки документов, без часового созвона.", detail: "TopUni AI", path: "/topuni-ai/ru" },
+  { n: "02", title: "Получите стратегию", body: "215+ стипендий ранжированы под ваш профиль. Дедлайны под ваш таймлайн. Три самых важных следующих шага — написанных для вас.", detail: "Discover", path: "/discover/ru" },
+  { n: "03", title: "Действуйте, не гадайте", body: "Выпускники Yale, Cambridge и Harvard ведут живые воркшопы каждый месяц. Гайды по странам. Принятые эссе — изучайте, пока пишете свои.", detail: "Academy", path: "/academy" },
 ];
 
 const TEAM = [
@@ -82,7 +82,7 @@ const IndexRu = () => {
             <motion.div {...fadeUp()} className="max-w-2xl mx-auto text-center mb-14 sm:mb-16">
               <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">Как это работает</p>
               <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12]">
-                Три шага. Один план.
+                60 секунд. 3 шага. Реальный план.
               </h2>
             </motion.div>
 
@@ -113,10 +113,10 @@ const IndexRu = () => {
             <motion.div {...fadeUp()} className="max-w-3xl mx-auto text-center mb-14 sm:mb-16">
               <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">Команда</p>
               <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-5">
-                С опорой на опыт выпускников.
+                Мы сидели в тех комнатах, в которые вы поступаете.
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed">
-                Yale, Harvard, Cambridge, Tsinghua — спокойная и точная навигация по процессу.
+                Yale · Harvard · Cambridge · Tsinghua — поступали, получали финансирование, теперь по другую сторону стола.
               </p>
             </motion.div>
 
@@ -149,10 +149,10 @@ const IndexRu = () => {
               <motion.div {...fadeUp()} className="lg:col-span-5">
                 <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">Академия</p>
                 <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-5">
-                  Преимущество в заявке.
+                  Хватит читать 100 тредов на Reddit.
                 </h2>
                 <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-                  Воркшопы с основателями, страновые гайды и принятые эссе — применяйте, пока пишете свои.
+                  Живые ежемесячные воркшопы с выпускниками Yale, Cambridge и Harvard. Принятые эссе — изучайте, пока пишете свои. Библиотека пополняется каждый месяц — записи остаются у вас навсегда.
                 </p>
                 <Button onClick={() => navigate('/academy')} variant="gold" className="gap-2">
                   Открыть Академию <ArrowRight className="h-4 w-4" />
@@ -162,10 +162,10 @@ const IndexRu = () => {
               <motion.div {...fadeUp(0.15)} className="lg:col-span-7">
                 <ul className="divide-y divide-border/70 border-y border-border/70">
                   {[
-                    { tag: "Эссе", t: "Yale supplemental — 3 поступивших разбора" },
-                    { tag: "Разбор", t: "Schwarzman — что реально сработало" },
-                    { tag: "Live · 17 мая", t: "Воркшоп: список активностей" },
-                    { tag: "Страна", t: "USA need-blind помощь иностранным студентам" },
+                    { tag: "Эссе", t: "Yale supplemental — 3 разбора принятых работ" },
+                    { tag: "Разбор", t: "Schwarzman — что реально сработало в победившей заявке" },
+                    { tag: "Live", t: "Ежемесячные воркшопы с основателями: эссе, стратегия, страны" },
+                    { tag: "Страна", t: "USA need-blind помощь иностранным студентам — где и как" },
                   ].map((item) => (
                     <li key={item.t} className="py-5 flex items-start gap-5">
                       <span className="text-[10px] uppercase tracking-[0.18em] text-gold-dark font-medium pt-1 w-24 shrink-0">{item.tag}</span>
@@ -183,20 +183,23 @@ const IndexRu = () => {
           style={{ backgroundImage: `linear-gradient(180deg, hsl(var(--background)), hsl(var(--primary) / 0.06))` }}>
           <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
             <motion.div {...fadeUp()} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gold/30 bg-gold/10 text-gold-dark text-[11px] font-medium tracking-[0.18em] uppercase mb-7">
-              <Crown className="h-3.5 w-3.5" /> Founding Membership
+              <Crown className="h-3.5 w-3.5" /> Основатели · 100 мест
             </motion.div>
             <motion.h2 {...fadeUp(0.05)} className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.1] mb-5">
-              Одна подписка. Всё внутри.
+              Зафиксируйте $19/мес навсегда.
             </motion.h2>
-            <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-lg mb-10 max-w-xl mx-auto leading-relaxed">
-              TopUni AI, Discover и Academy — по цене для первых участников.
+            <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-lg mb-4 max-w-xl mx-auto leading-relaxed">
+              TopUni AI · Discover · Академия · ежемесячные живые воркшопы. Цена основателя не меняется для первых 100 участников. Публичная цена вырастет до $39/мес когда когорта заполнится.
+            </motion.p>
+            <motion.p {...fadeUp(0.14)} className="text-xs text-muted-foreground/70 mb-9 max-w-md mx-auto">
+              Гарантия возврата 30 дней · Отмена в любой момент · Безопасная оплата Stripe
             </motion.p>
             <motion.div {...fadeUp(0.2)} className="flex flex-wrap items-center justify-center gap-3">
-              <Button variant="gold" size="lg" className="text-base px-8 py-6 gap-2" onClick={() => navigate('/pricing')}>
-                Подписка <ArrowRight className="h-4 w-4" />
+              <Button variant="gold" size="lg" className="text-base px-8 py-6 gap-2" onClick={() => navigate('/pricing/ru')}>
+                Забронировать место <ArrowRight className="h-4 w-4" />
               </Button>
               <Button variant="ghost" size="lg" className="text-base px-6 py-6 text-foreground hover:bg-secondary" onClick={() => navigate('/topuni-ai/ru')}>
-                Попробовать TopUni AI
+                Попробовать TopUni AI бесплатно
               </Button>
             </motion.div>
           </div>
