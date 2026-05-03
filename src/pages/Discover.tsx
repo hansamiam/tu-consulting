@@ -808,7 +808,7 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
   );
 };
 
-/* ─── Standard scholarship card — editorial restraint, key info only ─── */
+/* ─── Scholarship card — dense, product-grade, scannable in a 3-col grid ── */
 const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0 }: {
   s: Scored; onSelect: () => void;
   isBookmarked: boolean; onBookmark: (e: React.MouseEvent) => void;
@@ -821,86 +821,113 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
   const flag = FLAGS[s.host_country || ""] ?? "🌍";
   const dl = deadlineDisplay(s.application_deadline);
   const why = s.why_this_fits || s.reasons.slice(0, 2).join(". ");
+  const award = s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || "—";
+
+  // Provider initials for the avatar — same hash-to-hue pattern as
+  // ScholarshipCard for visual consistency across the product.
+  const provider = s.provider_name || s.scholarship_name;
+  const initials = (() => {
+    const parts = provider.trim().split(/\s+/).filter((w) => /^[A-Za-z]/.test(w));
+    if (parts.length === 0) return "?";
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  })();
+  const hue = (() => { let h = 0; for (let i = 0; i < provider.length; i++) h = (h * 31 + provider.charCodeAt(i)) >>> 0; return h % 360; })();
 
   return (
     <motion.article
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 8 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-30px" }}
-      transition={{ delay: Math.min(index * 0.04, 0.4), duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ delay: Math.min(index * 0.03, 0.3), duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ y: -2 }}
       onClick={onSelect}
-      className={`group relative rounded-2xl bg-card border hover:shadow-md transition-all cursor-pointer h-full flex flex-col ${isComparing ? "border-gold ring-2 ring-gold/20" : "border-border/70 hover:border-gold/35"} ${isHidden ? "opacity-50" : ""}`}
+      className={`group relative rounded-xl bg-card border hover:shadow-md transition-all cursor-pointer h-full flex flex-col ${isComparing ? "border-gold ring-2 ring-gold/20" : "border-border hover:border-foreground/20"} ${isHidden ? "opacity-50" : ""}`}
     >
-      <div className="p-7 flex flex-col flex-1">
-        {/* Top: tier kicker + match score */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2">
+      <div className="p-4 sm:p-5 flex flex-col flex-1 gap-3">
+        {/* Header: avatar + match score (top-right). Tier dot moves into the
+            metadata row below to free vertical real estate. */}
+        <div className="flex items-start gap-2.5">
+          <div
+            className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center font-heading font-bold text-[11px] text-white tracking-tight shadow-sm ring-1 ring-black/5"
+            style={{ background: `linear-gradient(135deg, hsl(${hue}, 55%, 45%), hsl(${(hue + 35) % 360}, 60%, 38%))` }}
+            aria-hidden="true"
+          >
+            {initials}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-heading text-[15px] sm:text-base font-bold leading-snug tracking-tight text-foreground line-clamp-2 group-hover:text-gold-dark transition-colors">
+              {s.scholarship_name}
+            </h3>
+            <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+              <span className="mr-1">{flag}</span>{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}
+            </p>
+          </div>
+          <div className="shrink-0 flex items-baseline gap-0.5 -mt-0.5">
+            <span className="text-xl font-bold tabular-nums leading-none text-foreground">{s.match}</span>
+            <span className="text-[10px] text-muted-foreground/70">/100</span>
+          </div>
+        </div>
+
+        {/* Award (prominent) */}
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-base font-bold text-foreground truncate">{award}</span>
+        </div>
+
+        {/* Metadata row: tier · deadline · field tag */}
+        <div className="flex items-center gap-2 flex-wrap text-[11px]">
+          <span className={`inline-flex items-center gap-1 ${tier.textLight}`}>
             <span className={`h-1.5 w-1.5 rounded-full ${tier.dot}`} />
-            <span className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${tier.textLight}`}>{tier.label}</span>
-          </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl font-bold tabular-nums leading-none text-foreground">{s.match}</span>
-            <span className="text-[11px] text-muted-foreground/70 tracking-wider">/100</span>
-          </div>
+            <span className="font-semibold uppercase tracking-[0.14em]">{tier.label}</span>
+          </span>
+          <span className="text-muted-foreground/40">·</span>
+          <span className={`font-semibold ${dl.cls}`}>{dl.text}</span>
+          {s.target_fields && s.target_fields.length > 0 && s.target_fields[0].toLowerCase() !== "any" && (
+            <>
+              <span className="text-muted-foreground/40">·</span>
+              <span className="text-muted-foreground truncate max-w-[140px]">{s.target_fields[0]}</span>
+            </>
+          )}
         </div>
 
-        {/* Name + provider */}
-        <h3 className="font-heading text-xl sm:text-[22px] font-bold leading-[1.2] tracking-[-0.015em] text-foreground line-clamp-2 mb-2">
-          {s.scholarship_name}
-        </h3>
-        <p className="text-sm text-muted-foreground truncate mb-6">
-          <span className="mr-1.5">{flag}</span>{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}
-        </p>
-
-        {/* Two key facts, divided */}
-        <div className="grid grid-cols-2 gap-3 py-4 border-y border-border/60 mb-6">
-          <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1.5">Award</p>
-            <p className="text-sm font-semibold text-foreground truncate">{s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || "—"}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1.5">Deadline</p>
-            <p className={`text-sm font-semibold ${dl.cls}`}>{dl.text}</p>
-          </div>
-        </div>
-
-        {/* Why it fits — editorial italic, single sentence ish */}
+        {/* Why it fits — clamped to 2 lines for density */}
         {why && (
-          <p className="text-sm text-foreground/75 leading-[1.6] italic font-light line-clamp-3 mb-7 flex-1">
+          <p className="text-[12.5px] text-foreground/75 leading-snug line-clamp-2 italic font-light flex-1">
             "{why.replace(/\.+$/, "")}."
           </p>
         )}
 
-        {/* Status row */}
-        <div className="flex items-center mb-4" onClick={(e) => e.stopPropagation()}>
-          <StatusBadge status={status} onChange={onStatusChange} />
-        </div>
+        {/* Status (only when set — otherwise we skip the row entirely) */}
+        {status && (
+          <div onClick={(e) => e.stopPropagation()}>
+            <StatusBadge status={status} onChange={onStatusChange} />
+          </div>
+        )}
 
-        {/* Footer: CTA + actions */}
-        <div className="flex items-center justify-between mt-auto pt-2 border-t border-border/40">
-          <span className="text-sm font-semibold text-foreground group-hover:text-gold-dark transition-colors flex items-center gap-1.5">
-            Open strategy
-            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+        {/* Action row */}
+        <div className="flex items-center justify-between mt-auto pt-2 border-t border-border/50" onClick={(e) => e.stopPropagation()}>
+          <span className="text-[12px] font-semibold text-muted-foreground group-hover:text-gold-dark transition-colors flex items-center gap-1">
+            Open <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
           </span>
-          <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-0.5">
             <button
               onClick={onToggleCompare}
               aria-label={isComparing ? "Remove from compare" : "Add to compare"}
               title={isComparing ? "Remove from compare" : "Add to compare"}
-              className={`p-2 rounded-md transition-colors ${isComparing ? "text-gold-dark bg-gold/10" : "text-muted-foreground hover:text-foreground hover:bg-muted/60"}`}
+              className={`p-1.5 rounded-md transition-colors ${isComparing ? "text-gold-dark bg-gold/10" : "text-muted-foreground hover:text-foreground hover:bg-muted/60"}`}
             >
               <GitCompare className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={onBookmark}
               aria-label={isBookmarked ? "Remove from shortlist" : "Save to shortlist"}
-              className="p-2 rounded-md text-muted-foreground hover:text-gold-dark hover:bg-muted/60 transition-colors"
+              className="p-1.5 rounded-md text-muted-foreground hover:text-gold-dark hover:bg-muted/60 transition-colors"
             >
               {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5 text-gold-dark" /> : <Bookmark className="h-3.5 w-3.5" />}
             </button>
             <DropdownMenu>
               <DropdownMenuTrigger
-                className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
                 aria-label="More actions"
               >
                 <MoreHorizontal className="h-3.5 w-3.5" />
@@ -1679,16 +1706,16 @@ const InlineStat = ({ label, value, color = "text-foreground", isMoney = false, 
 const SectionHeader = ({ kicker, title, subtitle, count, accentClass }: {
   kicker: string; title: string; subtitle: string; count: number; accentClass: string;
 }) => (
-  <Reveal className="flex items-end justify-between gap-4 mb-7 pb-4 border-b border-border/60">
-    <div>
-      <div className={`inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] ${accentClass} mb-3`}>
+  <Reveal className="flex items-end justify-between gap-4 mb-4 pb-3 border-b border-border/60">
+    <div className="min-w-0">
+      <div className={`inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${accentClass} mb-1.5`}>
         <span className={`h-1.5 w-1.5 rounded-full ${accentClass.replace("text-", "bg-")}`} />
         {kicker}
+        <span className="text-muted-foreground/60 font-normal tracking-normal normal-case ml-1">· {count}</span>
       </div>
-      <h2 className="font-heading font-bold text-2xl sm:text-3xl text-foreground leading-tight tracking-tight">{title}</h2>
-      <p className="text-sm text-muted-foreground mt-1.5">{subtitle}</p>
+      <h2 className="font-heading font-bold text-lg sm:text-xl text-foreground leading-tight tracking-tight">{title}</h2>
+      <p className="text-xs text-muted-foreground mt-0.5 truncate">{subtitle}</p>
     </div>
-    <span className="text-2xl font-bold text-foreground/30 tabular-nums whitespace-nowrap">{count.toString().padStart(2, "0")}</span>
   </Reveal>
 );
 
@@ -2481,7 +2508,7 @@ const Discover = ({ language = "en" }: Props) => {
 
                   <main className="flex-1 min-w-0">
                     {loading ? (
-                      <div className="grid sm:grid-cols-2 gap-5">
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                         {[1,2,3,4,5,6].map(i => <div key={i} className="h-80 bg-card border border-border rounded-3xl animate-pulse" />)}
                       </div>
                     ) : filtered.length === 0 ? (
@@ -2725,7 +2752,7 @@ const Discover = ({ language = "en" }: Props) => {
                                 <section>
                                   <SectionHeader kicker="Closely aligned" title="Strongest fits with your profile" subtitle="These hit on multiple dimensions — academics, field, eligibility, and budget."
                                     count={sections.strong.length} accentClass="text-gold-dark dark:text-gold" />
-                                  <div className="grid sm:grid-cols-2 gap-5 auto-rows-fr">
+                                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
                                     {sections.strong.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
                                   </div>
                                 </section>
@@ -2735,7 +2762,7 @@ const Discover = ({ language = "en" }: Props) => {
                                 <section>
                                   <SectionHeader kicker="Aligned" title="Competitive matches" subtitle="A strong, well-targeted application makes these very achievable."
                                     count={sections.competitive.length} accentClass="text-primary dark:text-primary-bright" />
-                                  <div className="grid sm:grid-cols-2 gap-5 auto-rows-fr">
+                                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
                                     {sections.competitive.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
                                   </div>
                                 </section>
@@ -2745,7 +2772,7 @@ const Discover = ({ language = "en" }: Props) => {
                                 <section>
                                   <SectionHeader kicker="Worth exploring" title="More to consider" subtitle="Selective fits worth a quick scan — review the requirements and decide."
                                     count={sections.stretch.length} accentClass="text-muted-foreground" />
-                                  <div className="grid sm:grid-cols-2 gap-5 auto-rows-fr opacity-90">
+                                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr opacity-90">
                                     {sections.stretch.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
                                   </div>
                                 </section>
