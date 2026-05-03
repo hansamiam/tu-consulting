@@ -20,7 +20,8 @@ import { DocumentManager } from "@/components/topuni/DocumentManager";
 import { CounselorSessions } from "@/components/topuni/CounselorSessions";
 import { GenerationPipeline } from "@/components/GenerationPipeline";
 import { EnrichedMarkdown } from "@/components/EnrichedMarkdown";
-import { Crown } from "lucide-react";
+import { ProBriefUnlock, type ProBriefDepth } from "@/components/ProBriefUnlock";
+import { Crown, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
@@ -1017,7 +1018,25 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     subscription.tier === "pro" ||
     subscription.tier === "founding"
   );
-  const reportGrade: "basic" | "premium" = isMember ? "premium" : "basic";
+  // Pro depth fields — captured on demand via the ProBriefUnlock dialog,
+  // not in the standard wizard. When set, the brief auto-regenerates at
+  // premium tier with these injected into the prompt. Persisted to
+  // localStorage so reopening the dashboard preserves them.
+  const PRO_DEPTH_KEY = "topuni-pro-depth-v1";
+  const [proDepth, setProDepth] = useState<ProBriefDepth>(() => {
+    try {
+      const raw = localStorage.getItem(PRO_DEPTH_KEY);
+      if (!raw) return { topActivity: "", personalStory: "", namedSchools: "" };
+      return JSON.parse(raw) as ProBriefDepth;
+    } catch { return { topActivity: "", personalStory: "", namedSchools: "" }; }
+  });
+  const [proUnlockOpen, setProUnlockOpen] = useState(false);
+  const hasProDepth = !!(proDepth.topActivity || proDepth.personalStory || proDepth.namedSchools);
+
+  // The active grade for THIS render: members always get premium; non-members
+  // get premium too if they've filled the Pro depth fields (the on-demand
+  // upgrade path). Otherwise basic.
+  const reportGrade: "basic" | "premium" = (isMember || hasProDepth) ? "premium" : "basic";
 
   /* Profile hash — bumps when ANY signal changes that should invalidate
      the cached brief: identity fields, language, AND the reportGrade
@@ -1028,11 +1047,16 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       n: profile.fullName, g: profile.gpa, i: profile.ielts, s: profile.sat,
       m: profile.major, c: profile.targetCountries, b: profile.budget,
       lang: language, grade: reportGrade,
+      // Pro depth fingerprints — when the user fills the upgrade dialog
+      // we want the cache to invalidate so the regenerated brief sticks.
+      d: proDepth.topActivity ? "1" : "0",
+      s2: proDepth.personalStory ? "1" : "0",
+      sc: proDepth.namedSchools ? "1" : "0",
     });
     let h = 0;
     for (let i = 0; i < fingerprint.length; i++) h = ((h << 5) - h + fingerprint.charCodeAt(i)) | 0;
     return `p${h.toString(36)}`;
-  }, [profile.fullName, profile.gpa, profile.ielts, profile.sat, profile.major, profile.targetCountries?.join(","), profile.budget, language, reportGrade]);
+  }, [profile.fullName, profile.gpa, profile.ielts, profile.sat, profile.major, profile.targetCountries?.join(","), profile.budget, language, reportGrade, proDepth.topActivity, proDepth.personalStory, proDepth.namedSchools]);
 
   const PATHWAY_STORAGE_KEY = "topuni-pathway-cache";
 
@@ -1322,9 +1346,20 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     setPathwayContent("");
     let soFar = "";
 
+    // Merge the wizard profile with any Pro depth fields the user has
+    // captured via the upgrade dialog. The edge function reads these from
+    // the same `profile` object — wizard fields default to empty strings
+    // when the standard 3-step flow finishes, so we always overlay.
+    const enrichedProfile = {
+      ...profile,
+      topActivity: proDepth.topActivity || "",
+      personalStory: proDepth.personalStory || "",
+      namedSchools: proDepth.namedSchools || "",
+    };
+
     await streamSSE(
       PATHWAY_URL,
-      { profile, language, reportGrade },
+      { profile: enrichedProfile, language, reportGrade },
       (chunk) => { soFar += chunk; setPathwayContent(soFar); },
       () => {
         const now = Date.now();
@@ -1523,6 +1558,46 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
               {pathwayLoading && !pathwayContent && (
                 <GenerationPipeline profile={profile} isRu={isRu} />
               )}
+
+              {/* Pro brief upgrade card — shown above the brief once it
+                  finishes streaming, ONLY for non-member visitors who
+                  haven't filled the depth fields yet. Clicking opens the
+                  3-question dialog; saving regenerates the brief at
+                  premium tier with the depth context. */}
+              {pathwayContent && !pathwayLoading && !isMember && !hasProDepth && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                  className="not-prose mb-8 rounded-xl border border-gold/40 bg-gradient-to-br from-gold/8 to-transparent p-5 sm:p-6 print:hidden"
+                >
+                  <div className="flex items-start gap-4 flex-wrap">
+                    <div className="min-w-0 flex-1">
+                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-[0.18em] uppercase bg-gradient-to-r from-gold-dark to-gold text-primary mb-2">
+                        <Crown className="w-3 h-3" />
+                        {t("Pro brief", "Pro-брифинг")}
+                      </div>
+                      <h3 className="font-heading text-lg sm:text-xl font-bold tracking-tight text-foreground mb-1.5">
+                        {t("Want this brief written more about you specifically?",
+                           "Хотите чтобы брифинг был написан конкретно про вас?")}
+                      </h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {t("Three more questions — your activities, your story, your named target schools — and the AI rewrites the brief at premium tier. Strategic positioning, essay angles, and shortlist all reference your story directly. Free, no signup.",
+                           "Ещё три вопроса — ваши активности, ваша история, конкретные университеты — и AI перепишет брифинг на премиум-уровне. Позиционирование, ракурсы эссе и шорт-лист будут ссылаться на вашу историю напрямую. Бесплатно, без регистрации.")}
+                      </p>
+                    </div>
+                    <Button
+                      variant="gold"
+                      onClick={() => setProUnlockOpen(true)}
+                      className="gap-1.5 shrink-0"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      {t("Unlock Pro brief", "Открыть Pro-брифинг")}
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+
               {pathwayContent && (
                 <div id="printable-report" className="prose prose-sm max-w-none dark:prose-invert [&_h2]:text-foreground [&_h2]:font-heading [&_h2]:text-xl [&_h2]:mt-8 [&_h2]:mb-3 [&_h3]:text-foreground [&_h3]:font-heading [&_h3]:text-lg [&_h3]:mt-6 [&_h3]:mb-2 [&_p]:text-muted-foreground [&_li]:text-muted-foreground [&_strong]:text-foreground">
                   {/* Print-only masthead */}
@@ -2038,6 +2113,26 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         </TabsContent>
 
       </Tabs>
+
+      {/* ─── Pro brief unlock dialog — captures the 3 depth fields on
+          demand. Saving persists to localStorage AND triggers a new
+          generation at premium tier with the depth context. ─────── */}
+      <ProBriefUnlock
+        open={proUnlockOpen}
+        onOpenChange={setProUnlockOpen}
+        initial={proDepth}
+        language={language}
+        onSubmit={(depth) => {
+          setProDepth(depth);
+          try { localStorage.setItem(PRO_DEPTH_KEY, JSON.stringify(depth)); } catch { /* ignore */ }
+          // Regenerate at the deeper tier with the new context. The
+          // reportGrade derivation already flips to premium when
+          // hasProDepth becomes true on the next render — but we kick
+          // off the call here directly to avoid one render of stale
+          // basic content showing before the regen starts.
+          setTimeout(() => generatePathway(), 50);
+        }}
+      />
 
       {/* ─── Save-your-brief signup prompt (anon users only) ─────── */}
       {!user && (

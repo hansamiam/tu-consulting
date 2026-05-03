@@ -189,8 +189,26 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
     urgencyClass = "bg-muted/30 text-muted-foreground border-transparent";
   }
 
-  const valueText = r.award_amount_text || fmtValue(r.estimated_total_value_usd);
+  // Funding presentation rules:
+  //   - If we have a numeric USD value, prefer the formatted dollar amount
+  //     ($35K, $1.2M) as the BIG headline. Concise, scannable, premium.
+  //   - If we don't have a number but DO have short award_amount_text
+  //     (≤24 chars, e.g. "Full tuition + $35K"), use it as the headline.
+  //   - If award_amount_text is long-form prose ("Partial scholarships,
+  //     significant reduction in fees, $100M+ awarded to 80,000 students"),
+  //     never put it in the headline — fall back to the coverage label as
+  //     the headline ("Partial funding") and surface the prose as a single
+  //     muted line below.
+  const fmtUsd = fmtValue(r.estimated_total_value_usd);
+  const shortAward = r.award_amount_text && r.award_amount_text.length <= 24
+    ? r.award_amount_text
+    : null;
+  const longAwardText = r.award_amount_text && r.award_amount_text.length > 24
+    ? r.award_amount_text
+    : null;
   const coverageLabel = (t.coverage as Record<string, string>)[r.coverage_type] ?? t.coverage.other;
+  const headlineValue: string | null = fmtUsd ?? shortAward ?? coverageLabel;
+  const showSubtitle = !!fmtUsd || !!shortAward; // when we have a real value, show "· coverage" beside it
   const hue = hueFromName(r.provider_name || r.scholarship_name);
 
   // Tags row — country + level + field. Coverage is omitted here on
@@ -214,7 +232,7 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: Math.min(index * 0.04, 0.4), ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ y: -2 }}
-      className={`group relative bg-card rounded-2xl ${compact ? "p-4" : "p-5 sm:p-6"} transition-all duration-200
+      className={`group relative bg-card rounded-xl ${compact ? "p-3.5" : "p-4 sm:p-5"} transition-all duration-200
         border ${featured ? "border-gold/45 shadow-[0_2px_18px_-8px_hsl(var(--gold)/0.45)]" : "border-border hover:border-foreground/20"}
         hover:shadow-md`}
     >
@@ -234,9 +252,9 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
       )}
 
       {/* Top row: avatar + headline + share */}
-      <div className="flex items-start gap-3 mb-4">
+      <div className="flex items-start gap-2.5 mb-3">
         <div
-          className="shrink-0 w-11 h-11 rounded-xl flex items-center justify-center font-heading font-bold text-sm text-white tracking-tight shadow-sm ring-1 ring-black/5"
+          className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center font-heading font-bold text-[11px] text-white tracking-tight shadow-sm ring-1 ring-black/5"
           style={{ background: `linear-gradient(135deg, hsl(${hue}, 55%, 45%), hsl(${(hue + 35) % 360}, 60%, 38%))` }}
           aria-label={r.provider_name || ""}
         >
@@ -244,12 +262,12 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
         </div>
         <div className="flex-1 min-w-0">
           <Link to={detailPath} className="block">
-            <h3 className={`font-heading font-bold text-foreground tracking-tight leading-snug group-hover:text-gold-dark transition-colors ${compact ? "text-base" : "text-lg sm:text-xl"}`}>
+            <h3 className={`font-heading font-bold text-foreground tracking-tight leading-snug group-hover:text-gold-dark transition-colors line-clamp-2 ${compact ? "text-sm" : "text-[15px] sm:text-base"}`}>
               {r.scholarship_name}
             </h3>
           </Link>
           {r.provider_name && (
-            <p className="text-xs text-muted-foreground mt-0.5 truncate">{r.provider_name}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{r.provider_name}</p>
           )}
         </div>
         {onShare && (
@@ -264,14 +282,28 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
         )}
       </div>
 
-      {/* Funding amount — prominent */}
-      {valueText && (
-        <div className="flex items-baseline gap-2 mb-3">
-          <Award className="w-4 h-4 text-gold-dark" />
-          <span className="font-heading font-bold text-2xl tabular-nums text-foreground tracking-tight leading-none">
-            {valueText}
-          </span>
-          <span className="text-xs text-muted-foreground">{coverageLabel}</span>
+      {/* Funding amount — prominent, but never overgrown when the source data
+          is a long descriptive paragraph. Two visual rules:
+            • Headline always fits on one line. If the value comes from
+              short award_amount_text (≤24 chars) it sits at xl; otherwise
+              the formatted USD or coverage label sits at 2xl.
+            • Long descriptive award text gets its own muted line below. */}
+      {headlineValue && (
+        <div className="mb-3 min-w-0">
+          <div className="flex items-baseline gap-2 min-w-0">
+            <Award className="w-4 h-4 text-gold-dark shrink-0" />
+            <span className="font-heading font-bold text-xl sm:text-2xl tabular-nums text-foreground tracking-tight leading-none truncate">
+              {headlineValue}
+            </span>
+            {showSubtitle && (
+              <span className="text-xs text-muted-foreground truncate">· {coverageLabel}</span>
+            )}
+          </div>
+          {longAwardText && (
+            <p className="text-[11px] text-muted-foreground/80 leading-snug mt-1.5 line-clamp-2">
+              {longAwardText}
+            </p>
+          )}
         </div>
       )}
 
