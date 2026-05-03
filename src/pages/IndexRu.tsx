@@ -10,6 +10,7 @@ import Navigation from "@/components/Navigation";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { Footer } from "@/components/Footer";
 import { TrendingScholarships } from "@/components/TrendingScholarships";
+import { PersonalProfileButton } from "@/components/PersonalProfileButton";
 import { motion } from "framer-motion";
 
 const fadeUp = (delay = 0) => ({
@@ -39,6 +40,7 @@ const IndexRu = () => {
     <div className="min-h-screen bg-background text-foreground antialiased">
       <ScrollProgress />
       <Navigation language="ru" />
+      <PersonalProfileButton language="ru" variant="floating" />
 
       <main className="relative">
 
@@ -53,25 +55,25 @@ const IndexRu = () => {
 
           <div className="relative max-w-5xl mx-auto px-5 sm:px-8 text-center pt-16 pb-24 sm:pt-20 sm:pb-28 w-full">
             <motion.h1 {...fadeUp(0.15)} className="font-heading text-5xl sm:text-6xl font-bold tracking-tight leading-[1.02] mb-7 text-balance max-w-4xl mx-auto text-foreground md:text-6xl">
-              Найдите все стипендии, на которые подходите —<br className="hidden sm:block" />
-              <span className="text-gold-dark">за 60 секунд.</span>
+              Ваша индивидуальная <span className="text-gold-dark">стратегия поступления</span>
+              <br className="hidden sm:block" /> за минуты.
             </motion.h1>
 
             <motion.p {...fadeUp(0.25)} className="text-lg sm:text-xl text-foreground/75 max-w-2xl mx-auto leading-relaxed mb-6 font-medium">
-              AI-стратегия поступления от выпускников Yale, Harvard, Cambridge и Tsinghua. 215+ полностью оплачиваемых программ — подобраны под ваш профиль.
+              Опыт выпускников Yale, Harvard, Cambridge & Tsinghua
             </motion.p>
 
             <motion.p {...fadeUp(0.32)} className="text-[10px] sm:text-[11px] tracking-[0.16em] uppercase text-foreground/55 mb-9 max-w-xl mx-auto font-medium">
-               БЕСПЛАТНО  ·  БЕЗ ЗАГРУЗКИ ДОКУМЕНТОВ  ·  РУССКИЙ И АНГЛИЙСКИЙ
+               · ДОСТУПНО НА РУССКОМ И АНГЛИЙСКОМ
             </motion.p>
 
             <motion.div {...fadeUp(0.35)} className="flex flex-wrap items-center justify-center gap-3 mb-10">
               <Button variant="gold" size="lg" className="text-sm sm:text-base px-7 py-5 gap-2" onClick={() => navigate('/topuni-ai/ru')}>
-                Показать мои стипендии <ArrowRight className="h-4 w-4" />
+                Создать план <ArrowRight className="h-4 w-4" />
               </Button>
               <Button variant="ghost" size="sm" className="text-sm px-4 text-foreground/65 hover:bg-foreground/5 hover:text-foreground"
                 onClick={() => document.getElementById('how')?.scrollIntoView({ behavior: 'smooth' })}>
-                Как это работает
+                Ниже
               </Button>
             </motion.div>
           </div>

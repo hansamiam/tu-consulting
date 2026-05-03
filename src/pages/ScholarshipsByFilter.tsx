@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ScholarshipCard, ScholarshipCardSkeleton, type ScholarshipCardData, type ScholarshipCardStats } from "@/components/ScholarshipCard";
 import { ShareScholarshipModal } from "@/components/ShareScholarshipModal";
 import { EmptyState } from "@/components/EmptyState";
+import { PersonalProfileButton } from "@/components/PersonalProfileButton";
 
 interface ScholarshipRow extends ScholarshipCardData {
   official_url: string | null;
@@ -209,7 +210,9 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
           "scholarship_id, scholarship_name, provider_name, host_country, " +
           "coverage_type, award_amount_text, estimated_total_value_usd, " +
           "application_deadline, target_degree_level, target_fields, " +
-          "why_this_fits, official_url, data_source, is_featured",
+          "why_this_fits, official_url, data_source, is_featured, " +
+          // Eligibility fields — drive the personal-match badge on every card
+          "eligible_countries, min_gpa, gpa_scale, min_ielts, min_toefl",
         )
         // Featured first, then by funding value — keeps the spotlights at the top
         .order("is_featured", { ascending: false })
@@ -235,7 +238,8 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
             "scholarship_id, scholarship_name, provider_name, host_country, " +
             "coverage_type, award_amount_text, estimated_total_value_usd, " +
             "application_deadline, target_degree_level, target_fields, " +
-            "why_this_fits, official_url, data_source, is_featured",
+            "why_this_fits, official_url, data_source, is_featured, " +
+            "eligible_countries, min_gpa, gpa_scale, min_ielts, min_toefl",
           )
           .ilike("eligibility_requirements", `%${resolved.label}%`)
           .limit(40);
@@ -337,13 +341,16 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
 
       {/* RESULTS ─────────────────────────────────────────────────── */}
       <section className="max-w-4xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
-        <div className="flex items-baseline justify-between gap-3 mb-6">
+        <div className="flex items-baseline justify-between gap-3 mb-6 flex-wrap">
           <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             {loading ? "Loading…" : `${rows.length} ${rows.length === 1 ? "scholarship" : "scholarships"} matched`}
           </h2>
-          <Link to="/discover" className="text-xs text-muted-foreground hover:text-gold-dark transition-colors hidden sm:inline-flex items-center gap-1">
-            See all <ArrowRight className="w-3 h-3" />
-          </Link>
+          <div className="flex items-center gap-3">
+            <PersonalProfileButton variant="inline" />
+            <Link to="/discover" className="text-xs text-muted-foreground hover:text-gold-dark transition-colors hidden sm:inline-flex items-center gap-1">
+              See all <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
         </div>
 
         {loading ? (
