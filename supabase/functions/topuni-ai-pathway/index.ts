@@ -210,8 +210,15 @@ serve(async (req) => {
       );
     }
 
-    const { profile, language, reportGrade } = await req.json();
+    const { profile, language, reportGrade, regenSection } = await req.json();
     const grade = reportGrade || "basic";
+    /* When regenSection is set, the caller is asking us to regenerate
+       JUST that one section of an already-generated premium brief
+       instead of building from scratch. We support this only for the
+       premium tier — the basic monolithic call doesn't have section-
+       level granularity. The response stream emits ONLY that section's
+       markdown (no prefix newline) so the client can splice it back
+       into the existing pathwayContent in place. */
     // AI gateway env validated lazily inside chatCompletions / gatewayEmbeddings —
     // see _shared/ai-gateway.ts. Provider chosen via AI_PROVIDER env var.
 
@@ -569,7 +576,24 @@ Throughout:
         lang,
         audienceLine,
       };
-      // Launch all section calls in parallel — they're independent.
+
+      // Per-section regen path — caller passed a section id; we run just
+      // that one and stream its markdown back. No section-prefix newline
+      // since the client is splicing this in place.
+      if (typeof regenSection === "string" && regenSection) {
+        const target = PREMIUM_SECTIONS.find(s => s.id === regenSection);
+        if (!target) {
+          return new Response(JSON.stringify({ error: `Unknown section id: ${regenSection}` }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const stream = buildOrderedSectionStream([generateSection(target, briefCtx)]);
+        return new Response(stream, {
+          headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+        });
+      }
+
+      // Full premium build — all sections in parallel, streamed in order.
       const sectionPromises = PREMIUM_SECTIONS.map(spec => generateSection(spec, briefCtx));
       const stream = buildOrderedSectionStream(sectionPromises);
       return new Response(stream, {

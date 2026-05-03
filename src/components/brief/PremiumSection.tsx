@@ -1,4 +1,4 @@
-import { Crown } from "lucide-react";
+import { Crown, RefreshCw, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { EnrichedMarkdown } from "@/components/EnrichedMarkdown";
 import { CareerRoiChart } from "@/components/brief/CareerRoiChart";
@@ -18,6 +18,14 @@ import type { CareerRoiSection, VisaPathwaySection } from "@/types/briefStructur
 
 type Kind = "career" | "visa";
 
+/* Section ids match the SectionSpec.id strings in
+   supabase/functions/_shared/brief-sections.ts so the regen call hits
+   the right per-section prompt on the backend. */
+const KIND_TO_SECTION_ID: Record<Kind, string> = {
+  career: "career_roi",
+  visa: "visa",
+};
+
 const KIND_COPY: Record<Kind, { en: { eyebrow: string }; ru: { eyebrow: string } }> = {
   career: {
     en: { eyebrow: "Career ROI · Premium analysis" },
@@ -31,6 +39,7 @@ const KIND_COPY: Record<Kind, { en: { eyebrow: string }; ru: { eyebrow: string }
 
 export const PremiumSection = ({
   kind, markdown, isRu, scholarships, careerRoiData, visaPathwayData,
+  onRegen, isRegenerating = false,
 }: {
   kind: Kind;
   markdown: string;
@@ -38,6 +47,12 @@ export const PremiumSection = ({
   scholarships: InlineScholarshipData[];
   careerRoiData?: CareerRoiSection | null;
   visaPathwayData?: VisaPathwaySection | null;
+  /** Optional regen handler. When provided, a per-section "regenerate"
+   *  affordance renders in the header. The handler receives the
+   *  SectionSpec id (e.g. "career_roi") that the backend's
+   *  topuni-ai-pathway recognizes via the regenSection body field. */
+  onRegen?: (sectionId: string) => void;
+  isRegenerating?: boolean;
 }) => {
   // Strip the leading "## Heading" — we render our own styled header.
   const lines = markdown.split("\n");
@@ -67,7 +82,7 @@ export const PremiumSection = ({
       <div className="absolute left-0 inset-y-0 w-[3px] bg-gradient-to-b from-gold-dark via-gold to-gold-dark" />
 
       <div className="px-6 sm:px-8 py-7 sm:py-8">
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-[0.18em] uppercase bg-gradient-to-r from-gold-dark to-gold text-primary">
             <Crown className="w-3 h-3" />
             {isRu ? "Pro" : "Pro"}
@@ -75,6 +90,19 @@ export const PremiumSection = ({
           <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark">
             {copy.eyebrow}
           </span>
+          {onRegen && (
+            <button
+              onClick={() => onRegen(KIND_TO_SECTION_ID[kind])}
+              disabled={isRegenerating}
+              className="ml-auto inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground hover:text-gold-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed print:hidden"
+              title={isRu ? "Перегенерировать этот раздел" : "Regenerate just this section"}
+            >
+              {isRegenerating
+                ? <Loader2 className="w-3 h-3 animate-spin" />
+                : <RefreshCw className="w-3 h-3" />}
+              {isRegenerating ? (isRu ? "Создаём…" : "Regenerating…") : (isRu ? "Перегенерировать" : "Regenerate")}
+            </button>
+          )}
         </div>
 
         <h2 className="font-heading text-2xl sm:text-[28px] font-bold text-foreground leading-[1.1] tracking-[-0.02em] mb-5">

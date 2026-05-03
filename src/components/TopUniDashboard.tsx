@@ -890,7 +890,7 @@ const PATHWAY_FINAL_SECTION_REGEX = /^##\s+.*?(final word|closing|in closing|з�
 const PATHWAY_CAREER_SECTION_REGEX = /^##\s+.*?(career roi|carreer roi|карьерн|career return)/i;
 const PATHWAY_VISA_SECTION_REGEX = /^##\s+.*?(visa.*pathway|visa.*post|post.*graduation|виза.*пути|виза|после выпуска)/i;
 
-const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onOpenDiscover, liveMatches, onSaveScholarship, savedSet, structured }: {
+const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onOpenDiscover, liveMatches, onSaveScholarship, savedSet, structured, onRegenSection, regeneratingSectionId }: {
   markdown: string;
   completedTasks: Set<string>;
   onToggle: (id: string) => void;
@@ -903,6 +903,12 @@ const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onO
   /** Optional structured payload from extract-brief-data. When supplied,
    *  premium sections render charts above the narrative. */
   structured?: import("@/types/briefStructured").BriefStructured | null;
+  /** When provided, premium sections render a per-section regen
+   *  affordance that calls onRegenSection(spec_id). */
+  onRegenSection?: (sectionId: string) => void;
+  /** SectionSpec.id currently regenerating (so PremiumSection shows
+   *  a loading state on that one button). */
+  regeneratingSectionId?: string | null;
 }) => {
   // Mapped to InlineScholarshipCard's expected shape — provider/url default to null
   const scholarshipsForCards = liveMatches.map((m) => ({
@@ -979,13 +985,13 @@ const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onO
         if (PATHWAY_CAREER_SECTION_REGEX.test(section)) {
           const hasBody = section.split("\n").slice(1).join("\n").trim().length > 60;
           if (hasBody) {
-            return <div key={i} {...anchorProps}><PremiumSection kind="career" markdown={section} isRu={isRu} scholarships={scholarshipsForCards} careerRoiData={structured?.careerRoi ?? null} /></div>;
+            return <div key={i} {...anchorProps}><PremiumSection kind="career" markdown={section} isRu={isRu} scholarships={scholarshipsForCards} careerRoiData={structured?.careerRoi ?? null} onRegen={onRegenSection} isRegenerating={regeneratingSectionId === "career_roi"} /></div>;
           }
         }
         if (PATHWAY_VISA_SECTION_REGEX.test(section)) {
           const hasBody = section.split("\n").slice(1).join("\n").trim().length > 60;
           if (hasBody) {
-            return <div key={i} {...anchorProps}><PremiumSection kind="visa" markdown={section} isRu={isRu} scholarships={scholarshipsForCards} visaPathwayData={structured?.visaPathway ?? null} /></div>;
+            return <div key={i} {...anchorProps}><PremiumSection kind="visa" markdown={section} isRu={isRu} scholarships={scholarshipsForCards} visaPathwayData={structured?.visaPathway ?? null} onRegen={onRegenSection} isRegenerating={regeneratingSectionId === "visa"} /></div>;
           }
         }
         return <div key={i} {...anchorProps}><EnrichedMarkdown scholarships={scholarshipsForCards}>{section}</EnrichedMarkdown></div>;
@@ -1185,6 +1191,9 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   // stream completes. Drives chart rendering inside PremiumSection / Funding.
   const [structuredBrief, setStructuredBrief] = useState<import("@/types/briefStructured").BriefStructured | null>(null);
   const [structuredLoading, setStructuredLoading] = useState(false);
+  // SectionSpec id currently being regenerated (Pro-tier per-section
+  // regen). null when no regen is in flight.
+  const [regeneratingSectionId, setRegeneratingSectionId] = useState<string | null>(null);
   const [pathwayGenerated, setPathwayGenerated] = useState<boolean>(!!restored);
   const [pathwayGeneratedAt, setPathwayGeneratedAt] = useState<number | null>(restored?.generatedAt ?? null);
 
@@ -1512,6 +1521,81 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       }
     }
     onDone();
+  };
+
+  /* Per-section regeneration (premium tier only). Calls topuni-ai-pathway
+     with `regenSection: <id>`; the backend regenerates JUST that section
+     via the multi-pass infrastructure and streams its markdown back. We
+     splice the returned text into pathwayContent at the existing
+     section's location and persist the updated brief to localStorage. */
+  const regenerateSection = async (sectionId: string) => {
+    if (!pathwayContent || regeneratingSectionId) return;
+    setRegeneratingSectionId(sectionId);
+
+    /* Heading-pattern map for splicing. Only includes sections that have
+       a visible "regenerate" button right now — extend this map when we
+       expose more per-section regen affordances. */
+    const HEADING_PATTERNS: Record<string, RegExp> = {
+      career_roi: /^##\s+.*?(career\s+roi|career\s+return|carreer\s+roi|карьерн|карьерный)/im,
+      visa:       /^##\s+.*?(visa.*pathway|visa.*post|post.*graduation|виза.*пути|виза|после выпуска)/im,
+    };
+    const headingRx = HEADING_PATTERNS[sectionId];
+    if (!headingRx) {
+      setRegeneratingSectionId(null);
+      return;
+    }
+
+    const enrichedProfile = {
+      ...profile,
+      topActivity: proDepth.topActivity || "",
+      personalStory: proDepth.personalStory || "",
+      namedSchools: proDepth.namedSchools || "",
+    };
+
+    let newSectionMd = "";
+    try {
+      await streamSSE(
+        PATHWAY_URL,
+        { profile: enrichedProfile, language, reportGrade, regenSection: sectionId },
+        (chunk) => { newSectionMd += chunk; },
+        () => {
+          // Splice the new section into pathwayContent in place. Find the
+          // existing section's heading; section body runs from heading to
+          // the next "## " heading or EOF.
+          const m = headingRx.exec(pathwayContent);
+          if (!m || m.index === undefined) {
+            // Defensive: heading missing → append the new section instead.
+            setPathwayContent(pathwayContent + "\n\n" + newSectionMd.trim());
+            return;
+          }
+          const start = m.index;
+          const headingLineEnd = pathwayContent.indexOf("\n", start);
+          const after = headingLineEnd === -1
+            ? ""
+            : pathwayContent.slice(headingLineEnd + 1);
+          const nextHeadingMatch = /^##\s+/m.exec(after);
+          const end = nextHeadingMatch && headingLineEnd !== -1
+            ? headingLineEnd + 1 + nextHeadingMatch.index
+            : pathwayContent.length;
+          const before = pathwayContent.slice(0, start);
+          const tail = pathwayContent.slice(end);
+          // Rejoin with consistent paragraph spacing between sections.
+          const tailJoiner = tail.startsWith("\n") ? "" : "\n\n";
+          const updated = before + newSectionMd.trim() + tailJoiner + tail;
+          setPathwayContent(updated);
+          // Persist so a refresh shows the regenerated section.
+          try {
+            localStorage.setItem(PATHWAY_STORAGE_KEY, JSON.stringify({
+              hash: profileHash,
+              content: updated,
+              generatedAt: Date.now(),
+            }));
+          } catch { /* ignore */ }
+        },
+      );
+    } finally {
+      setRegeneratingSectionId(null);
+    }
   };
 
   const generatePathway = async () => {
@@ -1972,6 +2056,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             onSaveScholarship={handleSaveScholarship}
                             savedSet={tracker.shortlist}
                             structured={structuredBrief}
+                            onRegenSection={reportGrade === "premium" ? regenerateSection : undefined}
+                            regeneratingSectionId={regeneratingSectionId}
                           />
                         )}
                         {/* Live matches grid sits between the brief and the
@@ -2059,6 +2145,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             onSaveScholarship={handleSaveScholarship}
                             savedSet={tracker.shortlist}
                             structured={structuredBrief}
+                            onRegenSection={reportGrade === "premium" ? regenerateSection : undefined}
+                            regeneratingSectionId={regeneratingSectionId}
                           />
                         )}
                       </>
