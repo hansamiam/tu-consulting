@@ -1539,6 +1539,73 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             }));
           }
         } catch { /* ignore */ }
+
+        // Auto-send the brief to the user's inbox so it's permanent and
+        // forwardable without them needing to find the share button.
+        // Authed users only — anon users go through SaveBriefPrompt which
+        // captures email + fires this same flow on submit.
+        // Gated by per-profileHash localStorage flag so we don't spam
+        // on every regenerate of the same brief.
+        if (user?.email && soFar.length > 500) {
+          const sentKey = `topuni-brief-emailed:${profileHash}`;
+          if (!localStorage.getItem(sentKey)) {
+            // Fire-and-forget; don't block the UI on email send.
+            (async () => {
+              try {
+                // Mint the share URL first so the email links somewhere real.
+                const { data: shareData } = await supabase.functions.invoke<{
+                  url: string;
+                }>("share-brief", {
+                  body: {
+                    content: soFar,
+                    language,
+                    reportGrade,
+                    profileSnapshot: {
+                      firstName: profile.fullName?.split(" ")[0],
+                      gradeLevel: profile.gradeLevel,
+                      major: profile.major,
+                      targetCountries: profile.targetCountries,
+                    },
+                  },
+                });
+                if (!shareData?.url) return;
+
+                // Compose stats line + top-3 from liveMatches (same shape
+                // the in-dialog "Email me" path uses).
+                const total = liveMatches.reduce((s, m) => s + (m.estimated_total_value_usd || 0), 0);
+                const totalText = total >= 1_000_000
+                  ? `$${(total / 1_000_000).toFixed(1)}M`
+                  : total >= 1000 ? `$${Math.round(total / 1000)}K` : "";
+                const closestDays = liveMatches
+                  .map(m => m.application_deadline ? Math.ceil((new Date(m.application_deadline).getTime() - Date.now()) / 86400000) : null)
+                  .filter((d): d is number => d !== null && d > 0)
+                  .sort((a, b) => a - b)[0] ?? null;
+                const statsParts: string[] = [`${liveMatches.length} matches`];
+                if (totalText) statsParts.push(`${totalText} potential funding`);
+                if (closestDays !== null) statsParts.push(`earliest deadline in ${closestDays} days`);
+
+                await supabase.functions.invoke("send-transactional-email", {
+                  body: {
+                    templateName: "brief-generated",
+                    recipientEmail: user.email,
+                    idempotencyKey: `brief-${profileHash}`,
+                    templateData: {
+                      firstName: profile.fullName?.trim().split(/\s+/)[0],
+                      briefUrl: shareData.url,
+                      statsLine: statsParts.join(" · "),
+                      topMatches: liveMatches.slice(0, 3).map(m => m.scholarship_name),
+                      major: profile.major,
+                      targetCountries: profile.targetCountries,
+                    },
+                  },
+                });
+                localStorage.setItem(sentKey, "1");
+              } catch (e) {
+                console.warn("auto brief email failed", e);
+              }
+            })();
+          }
+        }
       }
     );
   };

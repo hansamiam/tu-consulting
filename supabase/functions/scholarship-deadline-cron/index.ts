@@ -186,9 +186,10 @@ Deno.serve(async (req) => {
     try {
       await supa.functions.invoke("send-transactional-email", {
         body: {
-          to: profile.email,
-          template: "scholarship-deadline",
-          data: {
+          recipientEmail: profile.email,
+          templateName: "scholarship-deadline",
+          idempotencyKey: `deadline-${row.user_id}-${row.scholarship_id}-${bucket}`,
+          templateData: {
             name: profile.full_name?.split(" ")[0] || undefined,
             scholarshipName: sch.scholarship_name,
             deadlineDate: formatDate(sch.application_deadline!),

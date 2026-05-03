@@ -239,11 +239,23 @@ Deno.serve(async (req) => {
 
       // Send via the existing transactional email pipeline
       const firstName = profile.full_name?.split(" ")[0]?.trim();
+      // ISO week stamp gives a per-week idempotency key so re-running the cron
+      // in the same week doesn't double-send to the same user.
+      const isoWeek = (() => {
+        const d = new Date();
+        const target = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        const dayNum = (target.getUTCDay() + 6) % 7;
+        target.setUTCDate(target.getUTCDate() - dayNum + 3);
+        const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
+        const week = Math.round(((target.getTime() - firstThursday.getTime()) / 86400_000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7) + 1;
+        return `${target.getUTCFullYear()}-W${week.toString().padStart(2, "0")}`;
+      })();
       const { error: sendErr } = await supa.functions.invoke("send-transactional-email", {
         body: {
-          to: profile.email,
-          template: "weekly-nudge",
-          data: {
+          recipientEmail: profile.email,
+          templateName: "weekly-nudge",
+          idempotencyKey: `nudge-${profile.user_id}-${isoWeek}`,
+          templateData: {
             name: firstName,
             aiBody,
             trackedCount: stats.tracked,

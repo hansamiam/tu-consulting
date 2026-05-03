@@ -159,9 +159,10 @@ Deno.serve(async (req) => {
             try {
               await admin.functions.invoke("send-transactional-email", {
                 body: {
-                  to: refProfile.email,
-                  template: "referral-converted",
-                  data: {
+                  recipientEmail: refProfile.email,
+                  templateName: "referral-converted",
+                  idempotencyKey: `ref-${ref.referrer_user_id}-${ref.referred_user_id}`,
+                  templateData: {
                     name: refProfile.full_name?.split(" ")[0] ?? undefined,
                     referralCount: (rc?.premium_conversions ?? 0) + 1,
                   },
