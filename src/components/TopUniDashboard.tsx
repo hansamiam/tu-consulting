@@ -361,6 +361,8 @@ type LiveMatchLite = {
   estimated_total_value_usd: number | null;
   application_deadline: string | null;
   official_url?: string | null;
+  verification_status?: string | null;
+  last_verified_at?: string | null;
 };
 
 const fmtMoney = (v: number) =>
@@ -959,6 +961,8 @@ const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onO
     award_amount_text: m.award_amount_text,
     application_deadline: m.application_deadline,
     official_url: m.official_url ?? null,
+    verification_status: m.verification_status ?? null,
+    last_verified_at: m.last_verified_at ?? null,
   }));
   const sections = useMemo(() => {
     if (!markdown.trim()) return [] as string[];
@@ -1282,8 +1286,12 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     if (!profile.fullName || profile.fullName === "Student") return;
     (async () => {
       let q = supabase.from("scholarships").select(
-        "scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, application_deadline, why_this_fits, official_url"
-      ).eq("verified", true);
+        "scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, application_deadline, why_this_fits, official_url, verification_status, last_verified_at"
+      )
+      // Only surface verified + stale rows in the brief sidebar matches —
+      // matches the LLM's retrieval filter so what the brief mentions and
+      // what the cards show are aligned.
+      .or("verification_status.is.null,verification_status.in.(verified,stale)");
       if (profile.targetCountries && profile.targetCountries.length > 0) {
         q = q.in("host_country", profile.targetCountries);
       }

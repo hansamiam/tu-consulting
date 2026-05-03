@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 /**
  * The product's premium scholarship card. Used on every listing surface
@@ -47,6 +48,9 @@ export interface ScholarshipCardData {
   gpa_scale?: number | null;
   min_ielts?: number | null;
   min_toefl?: number | null;
+  // Verification metadata — both optional so existing select() calls don't break.
+  verification_status?: string | null;
+  last_verified_at?: string | null;
 }
 
 /** Activity stats — passed in by the parent if available. The card hides
@@ -324,6 +328,11 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
           <Calendar className="w-3 h-3 mr-1" />
           {urgencyText}
         </Badge>
+        <VerifiedBadge
+          status={r.verification_status}
+          verifiedAt={r.last_verified_at}
+          compact
+        />
         {showTracking && (
           <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums" title="Students tracking this scholarship in their pipeline">
             <Users className="w-3 h-3" />

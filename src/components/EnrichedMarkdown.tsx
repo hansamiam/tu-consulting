@@ -58,6 +58,27 @@ function nodeToText(node: ReactNode): string {
   return "";
 }
 
+/** Heuristic: does this <strong>-content LOOK like a scholarship/program/award
+ *  name (as opposed to a section label like "Why it works for you:" or a
+ *  generic emphasis)? If the LLM emits one of these and we can't match it to
+ *  the verified DB, we want to flag it visually instead of letting it look
+ *  authoritative. */
+const SCHOLARSHIP_KEYWORDS = /\b(scholarship|fellowship|fellow|scholars?|award|grant|programme?|bursary|stipend|chair|chair[-]?ship|prize)\b/i;
+
+function looksLikeScholarshipName(text: string): boolean {
+  // Reject very short strings — those are almost always emphasis (eg "Why", "Note").
+  if (text.length < 6) return false;
+  // Reject obvious labels: trailing colon ("Strategy:") or fully lowercase.
+  if (text.trim().endsWith(":")) return false;
+  if (text === text.toLowerCase()) return false;
+  // Strong signal: contains a scholarship-ish keyword.
+  if (SCHOLARSHIP_KEYWORDS.test(text)) return true;
+  // Or 3+ capitalized words in a row (proper-noun cluster like
+  // "Knight-Hennessy Scholars Program" or "DAAD Master").
+  const capWords = (text.match(/\b[A-Z][A-Za-z'-]+/g) || []).length;
+  return capWords >= 3;
+}
+
 export function EnrichedMarkdown({ children, scholarships }: Props) {
   // Pre-compute the lookup table once per scholarships array. Maps both
   // exact name AND normalized name to the scholarship row.
@@ -113,6 +134,21 @@ export function EnrichedMarkdown({ children, scholarships }: Props) {
           }
 
           if (!match || swappedRef.has(match.scholarship_id)) {
+            // No DB match. If this LOOKS like a scholarship name, the LLM may
+            // have hallucinated it — flag visually with a muted color + tooltip
+            // so the reader knows it's not in our verified database.
+            // (Already-swapped repeats render as plain strong — no flag needed.)
+            if (!swappedRef.has(text.toLowerCase()) && looksLikeScholarshipName(text)) {
+              swappedRef.add(text.toLowerCase());
+              return (
+                <span
+                  className="font-semibold text-foreground/65 underline decoration-dotted decoration-foreground/30 underline-offset-2"
+                  title="Not yet matched in TopUni's verified scholarship database — please verify on the official source before applying."
+                >
+                  {kids}
+                </span>
+              );
+            }
             return <strong>{kids}</strong>;
           }
           swappedRef.add(match.scholarship_id);

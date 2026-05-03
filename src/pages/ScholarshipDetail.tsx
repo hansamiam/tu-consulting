@@ -33,6 +33,7 @@ import { ScholarshipCard, type ScholarshipCardData } from "@/components/Scholars
 import { useTrackView, useScholarshipTracking } from "@/hooks/useScholarshipTracking";
 import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
 import { getStoredProfile } from "@/components/discover/DiscoverProfileGate";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 interface Scholarship {
   scholarship_id: string;
@@ -78,6 +79,9 @@ interface Scholarship {
   risk_note: string | null;
   eligibility_requirements: string | null;
   last_verified_date: string | null;
+  last_verified_at: string | null;
+  verification_status: string | null;
+  source_url: string | null;
   data_source: string | null;
   url_check_status: string | null;
   url_consecutive_fails: number | null;
@@ -280,6 +284,10 @@ const ScholarshipDetail = () => {
                 {days <= 0 ? "Closed" : days === 1 ? "1 day" : days <= 30 ? `${days} days left` : `${Math.round(days / 30)} months`}
               </Chip>
             )}
+            <VerifiedBadge
+              status={s.verification_status}
+              verifiedAt={s.last_verified_at ?? (s.last_verified_date ? `${s.last_verified_date}T00:00:00Z` : undefined)}
+            />
           </div>
           <div className="flex flex-wrap gap-2">
             {s.official_url && (
