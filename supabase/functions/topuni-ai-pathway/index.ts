@@ -2,6 +2,12 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.78.0";
 import { chatCompletions, embeddings as gatewayEmbeddings } from "../_shared/ai-gateway.ts";
 import { checkRateLimit, clientIp } from "../_shared/rate-limit.ts";
+import {
+  PREMIUM_SECTIONS,
+  buildRegenPrompt,
+  type SectionSpec,
+  type BriefContext,
+} from "../_shared/brief-sections.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,6 +50,144 @@ async function embedQuery(text: string): Promise<number[] | null> {
     console.warn("Embedding failed; falling back to country-only retrieval", e);
     return null;
   }
+}
+
+/* ─── Multi-pass premium pipeline ─────────────────────────────────────
+   Each section is a focused LLM call. We launch them in parallel, then
+   stream them to the client in PREMIUM_SECTIONS order. Validators run on
+   each completion; failures get ONE retry with a stricter prompt. */
+
+interface SectionResult {
+  spec: SectionSpec;
+  markdown: string;
+  /** Whether the markdown passed validation (after any regen). */
+  valid: boolean;
+  /** Whether we needed a second attempt to satisfy the validator. */
+  regenerated: boolean;
+  /** Reason from the FIRST validator if it failed. Telemetry-only. */
+  failureReason?: string;
+}
+
+/* Generate a single section. Calls the model once; if a validator fails,
+   regenerates ONCE with a stricter prompt; falls back to the first attempt
+   if both fail (better degraded section than blocking the whole brief). */
+async function generateSection(spec: SectionSpec, ctx: BriefContext): Promise<SectionResult> {
+  const sysContent = `You are TopUni AI, an expert admissions strategist. You output ONLY the requested markdown section, beginning with the H2 heading exactly as instructed. No preamble, no commentary, no fences.`;
+
+  let firstAttempt = "";
+  let firstReason: string | undefined;
+
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const prompt = attempt === 1
+      ? spec.buildPrompt(ctx)
+      : buildRegenPrompt(spec, ctx, firstReason ?? "validation failed");
+    try {
+      const resp = await chatCompletions({
+        tier: "pro",
+        messages: [
+          { role: "system", content: sysContent },
+          { role: "user",   content: prompt },
+        ],
+        stream: false,
+        ...(spec.reasoning ? { reasoning: spec.reasoning } : {}),
+      });
+      if (!resp.ok) {
+        const errBody = await resp.text();
+        console.warn(`[brief-sections] ${spec.id} attempt ${attempt} HTTP ${resp.status}: ${errBody.slice(0, 200)}`);
+        if (attempt === 1) { firstReason = `gateway HTTP ${resp.status}`; continue; }
+        // Attempt 2 also failed — keep first attempt if we have it.
+        return {
+          spec,
+          markdown: firstAttempt || `${spec.heading}\n\n*(This section couldn't be generated. We'll try again next time.)*`,
+          valid: false,
+          regenerated: true,
+          failureReason: firstReason,
+        };
+      }
+      const data = await resp.json();
+      const text = (
+        data?.choices?.[0]?.message?.content
+        ?? (Array.isArray(data?.content) ? data.content.map((c: any) => c?.text ?? "").join("") : "")
+        ?? ""
+      ) as string;
+      const trimmed = text.trim();
+
+      const validation = spec.validate?.(trimmed, ctx) ?? { ok: true };
+      if (validation.ok) {
+        return {
+          spec,
+          markdown: trimmed,
+          valid: true,
+          regenerated: attempt > 1,
+          failureReason: firstReason,
+        };
+      }
+      // First-attempt failure: stash it and retry with stricter prompt.
+      if (attempt === 1) {
+        firstAttempt = trimmed;
+        firstReason = validation.reason ?? "unspecified";
+        continue;
+      }
+      // Second attempt also failed — keep the better of the two by length.
+      const second = trimmed;
+      const better = second.length > firstAttempt.length ? second : firstAttempt;
+      return { spec, markdown: better, valid: false, regenerated: true, failureReason: firstReason };
+    } catch (e) {
+      console.warn(`[brief-sections] ${spec.id} attempt ${attempt} threw:`, (e as Error).message);
+      if (attempt === 2) {
+        return {
+          spec,
+          markdown: firstAttempt || `${spec.heading}\n\n*(This section couldn't be generated. We'll try again next time.)*`,
+          valid: false,
+          regenerated: true,
+          failureReason: (e as Error).message,
+        };
+      }
+    }
+  }
+  // Unreachable — both attempts above always return.
+  return {
+    spec,
+    markdown: `${spec.heading}\n\n*(Generation failed.)*`,
+    valid: false,
+    regenerated: true,
+  };
+}
+
+/* Stream a list of section promises to the client in defined order using
+   the OpenAI-compat SSE format (`data: {"choices":[{"delta":{"content":...}}]}`)
+   so the existing frontend parser works unchanged. */
+function buildOrderedSectionStream(promises: Array<Promise<SectionResult>>): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  return new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const emit = (text: string) => {
+        const chunk = JSON.stringify({ choices: [{ delta: { content: text } }] });
+        controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
+      };
+      try {
+        for (let i = 0; i < promises.length; i++) {
+          const result = await promises[i];
+          // Insert paragraph spacing between sections so the markdown
+          // renders with clean separation.
+          const prefix = i === 0 ? "" : "\n\n";
+          emit(prefix + result.markdown);
+          if (!result.valid) {
+            console.warn(`[brief-sections] section ${result.spec.id} delivered invalid (reason: ${result.failureReason ?? "?"})`);
+          }
+          if (result.regenerated) {
+            console.log(`[brief-sections] section ${result.spec.id} regenerated`);
+          }
+        }
+        controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
+      } catch (e) {
+        console.error("[brief-sections] stream error:", e);
+        emit(`\n\n*(An unexpected error interrupted brief generation. Please regenerate.)*\n`);
+      } finally {
+        controller.close();
+      }
+    },
+  });
 }
 
 serve(async (req) => {
@@ -412,6 +556,26 @@ Throughout:
     const audienceLine = studentNationality
       ? `for ambitious students applying internationally (this student is from ${studentNationality})`
       : `for ambitious students applying internationally from anywhere in the world`;
+
+    /* ─── Premium tier: multi-pass pipeline ─────────────────────────────
+       Each section is its own focused LLM call, validated, regenerated
+       on failure once, then streamed in order. Higher cost (~10 calls
+       vs 1) but dramatically more reliable structure + deeper per-
+       section content because each prompt is laser-focused. */
+    if (grade === "premium") {
+      const briefCtx: BriefContext = {
+        dbContext,
+        profile,
+        lang,
+        audienceLine,
+      };
+      // Launch all section calls in parallel — they're independent.
+      const sectionPromises = PREMIUM_SECTIONS.map(spec => generateSection(spec, briefCtx));
+      const stream = buildOrderedSectionStream(sectionPromises);
+      return new Response(stream, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
+    }
 
     const systemPrompt = `You are TopUni AI — a thoughtful university admissions strategist that produces ${grade === "premium" ? "exhaustive, deeply personalized strategy reports" : "focused, actionable pathway analyses"} ${audienceLine}.
 
