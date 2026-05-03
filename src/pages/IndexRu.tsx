@@ -10,7 +10,6 @@ import Navigation from "@/components/Navigation";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { Footer } from "@/components/Footer";
 import { TrendingScholarships } from "@/components/TrendingScholarships";
-import { PersonalProfileButton } from "@/components/PersonalProfileButton";
 import { motion } from "framer-motion";
 
 const fadeUp = (delay = 0) => ({
@@ -40,7 +39,6 @@ const IndexRu = () => {
     <div className="min-h-screen bg-background text-foreground antialiased">
       <ScrollProgress />
       <Navigation language="ru" />
-      <PersonalProfileButton language="ru" variant="floating" />
 
       <main className="relative">
 

@@ -22,7 +22,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { ScholarshipCard, ScholarshipCardSkeleton, type ScholarshipCardData, type ScholarshipCardStats } from "@/components/ScholarshipCard";
 import { ShareScholarshipModal } from "@/components/ShareScholarshipModal";
 import { EmptyState } from "@/components/EmptyState";
-import { PersonalProfileButton } from "@/components/PersonalProfileButton";
 
 interface ScholarshipRow extends ScholarshipCardData {
   official_url: string | null;
@@ -341,16 +340,13 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
 
       {/* RESULTS ─────────────────────────────────────────────────── */}
       <section className="max-w-4xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
-        <div className="flex items-baseline justify-between gap-3 mb-6 flex-wrap">
+        <div className="flex items-baseline justify-between gap-3 mb-6">
           <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             {loading ? "Loading…" : `${rows.length} ${rows.length === 1 ? "scholarship" : "scholarships"} matched`}
           </h2>
-          <div className="flex items-center gap-3">
-            <PersonalProfileButton variant="inline" />
-            <Link to="/discover" className="text-xs text-muted-foreground hover:text-gold-dark transition-colors hidden sm:inline-flex items-center gap-1">
-              See all <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
+          <Link to="/discover" className="text-xs text-muted-foreground hover:text-gold-dark transition-colors hidden sm:inline-flex items-center gap-1">
+            See all <ArrowRight className="w-3 h-3" />
+          </Link>
         </div>
 
         {loading ? (

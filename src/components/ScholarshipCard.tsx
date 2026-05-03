@@ -6,8 +6,6 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { usePersonalProfile } from "@/hooks/usePersonalProfile";
-import { computeMatch, TIER_STYLES, type ScholarshipForMatch } from "@/lib/personalMatch";
 
 /**
  * The product's premium scholarship card. Used on every listing surface
@@ -164,15 +162,6 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
   const showTracking = totalSaves >= 5;
   const isHot = totalSaves >= 10 && recentSaves >= 3;
 
-  // Personal match — computed live from the localStorage profile. Hook
-  // re-renders the card on profile change so the pill updates everywhere
-  // simultaneously.
-  const { profile, isUseful } = usePersonalProfile();
-  const matchResult = isUseful && profile
-    ? computeMatch(profile, r as ScholarshipForMatch)
-    : null;
-  const matchTierStyle = matchResult ? TIER_STYLES[matchResult.tier] : null;
-
   // Deadline urgency
   const days = r.application_deadline
     ? Math.ceil((new Date(r.application_deadline).getTime() - Date.now()) / 86400_000)
@@ -273,27 +262,16 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
         )}
       </div>
 
-      {/* Funding amount + personal-match pill on the right */}
-      <div className="flex items-baseline justify-between gap-2 mb-3">
-        {valueText ? (
-          <div className="flex items-baseline gap-2 min-w-0">
-            <Award className="w-4 h-4 text-gold-dark shrink-0" />
-            <span className="font-heading font-bold text-2xl tabular-nums text-foreground tracking-tight leading-none truncate">
-              {valueText}
-            </span>
-            <span className="text-xs text-muted-foreground truncate">{coverageLabel}</span>
-          </div>
-        ) : <span />}
-        {matchResult && matchTierStyle && (
-          <span
-            className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold tabular-nums ring-1 ${matchTierStyle.bg} ${matchTierStyle.ring}`}
-            title={matchResult.reason}
-          >
-            <span aria-hidden="true">{matchTierStyle.emoji}</span>
-            {matchResult.score}%
+      {/* Funding amount — prominent */}
+      {valueText && (
+        <div className="flex items-baseline gap-2 mb-3">
+          <Award className="w-4 h-4 text-gold-dark" />
+          <span className="font-heading font-bold text-2xl tabular-nums text-foreground tracking-tight leading-none">
+            {valueText}
           </span>
-        )}
-      </div>
+          <span className="text-xs text-muted-foreground">{coverageLabel}</span>
+        </div>
+      )}
 
       {/* Why-this-fits (if available) */}
       {r.why_this_fits && !compact && (

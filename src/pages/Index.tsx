@@ -14,7 +14,6 @@ import { shouldRedirectToRussian } from "@/utils/languageDetection";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { Footer } from "@/components/Footer";
 import { TrendingScholarships } from "@/components/TrendingScholarships";
-import { PersonalProfileButton } from "@/components/PersonalProfileButton";
 import { motion } from "framer-motion";
 
 const fadeUp = (delay = 0) => ({
@@ -94,7 +93,6 @@ const Index = () => {
 
       <div className="relative z-10">
         <Navigation language="en" variant="overlay" />
-        <PersonalProfileButton language="en" variant="floating" />
 
       <main className="relative">
 
