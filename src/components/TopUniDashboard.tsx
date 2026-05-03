@@ -25,6 +25,7 @@ import { ProBriefUnlock, type ProBriefDepth } from "@/components/ProBriefUnlock"
 import { BriefHeroStats } from "@/components/brief/BriefHeroStats";
 import { BriefChapterNav } from "@/components/brief/BriefChapterNav";
 import { DeadlineTimeline } from "@/components/brief/DeadlineTimeline";
+import { PremiumSection } from "@/components/brief/PremiumSection";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -875,6 +876,8 @@ const PATHWAY_FUND_SECTION_REGEX = /^##\s+.*?(funding pathway|funding deep|фи�
 const PATHWAY_ESSAYS_SECTION_REGEX = /^##\s+.*?(essay angle|essay angles|углов? для эссе|эссе)/i;
 const PATHWAY_GAPS_SECTION_REGEX = /^##\s+.*?(honest gap|gaps to close|пробел|недотяг|слабые)/i;
 const PATHWAY_FINAL_SECTION_REGEX = /^##\s+.*?(final word|closing|in closing|заключительное слово|заключение)/i;
+const PATHWAY_CAREER_SECTION_REGEX = /^##\s+.*?(career roi|carreer roi|карьерн|career return)/i;
+const PATHWAY_VISA_SECTION_REGEX = /^##\s+.*?(visa.*pathway|visa.*post|post.*graduation|виза.*пути|виза|после выпуска)/i;
 
 const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onOpenDiscover, liveMatches, onSaveScholarship, savedSet }: {
   markdown: string;
@@ -957,6 +960,18 @@ const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onO
           const hasBody = section.split("\n").slice(1).join("\n").trim().length > 30;
           if (hasBody) {
             return <div key={i} {...anchorProps}><FinalWord markdown={section} isRu={isRu} /></div>;
+          }
+        }
+        if (PATHWAY_CAREER_SECTION_REGEX.test(section)) {
+          const hasBody = section.split("\n").slice(1).join("\n").trim().length > 60;
+          if (hasBody) {
+            return <div key={i} {...anchorProps}><PremiumSection kind="career" markdown={section} isRu={isRu} scholarships={scholarshipsForCards} /></div>;
+          }
+        }
+        if (PATHWAY_VISA_SECTION_REGEX.test(section)) {
+          const hasBody = section.split("\n").slice(1).join("\n").trim().length > 60;
+          if (hasBody) {
+            return <div key={i} {...anchorProps}><PremiumSection kind="visa" markdown={section} isRu={isRu} scholarships={scholarshipsForCards} /></div>;
           }
         }
         return <div key={i} {...anchorProps}><EnrichedMarkdown scholarships={scholarshipsForCards}>{section}</EnrichedMarkdown></div>;
