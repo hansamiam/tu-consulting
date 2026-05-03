@@ -176,7 +176,12 @@ Deno.serve(async (req) => {
     } else {
       patch.url_check_status = "fail";
       patch.url_check_http_code = result.httpCode ?? null;
-      patch.url_consecutive_fails = (row.url_consecutive_fails ?? 0) + 1;
+      const nextFails = (row.url_consecutive_fails ?? 0) + 1;
+      patch.url_consecutive_fails = nextFails;
+      // 3+ consecutive URL failures → flip verification_status to 'broken'
+      // so downstream LLMs (brief, counselor) drop this scholarship from
+      // their retrieved context per the contract in DATA_PIPELINE_AUDIT.md.
+      if (nextFails >= 3) patch.verification_status = "broken";
       fail++;
     }
     updates.push(

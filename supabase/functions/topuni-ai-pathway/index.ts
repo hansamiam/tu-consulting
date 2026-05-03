@@ -287,9 +287,15 @@ serve(async (req) => {
             "coverage_type, award_amount_text, estimated_total_value_usd, " +
             "target_degree_level, target_fields, application_deadline, " +
             "eligibility_requirements, citizenship_requirements, official_url, " +
+            "source_url, last_verified_at, verification_status, " +
             "why_this_fits, strategy_notes"
           )
-          .in("scholarship_id", ids);
+          .in("scholarship_id", ids)
+          // Drop rows the LLM should never see in its prompt context. Per
+          // DATA_PIPELINE_AUDIT.md: only verified + stale rows reach the
+          // brief; broken (URL fails) and pending (un-vetted scrapes) are
+          // hidden until they're promoted to verified.
+          .or("verification_status.is.null,verification_status.in.(verified,stale)");
         // Re-order to match retrieval order; tag each with similarity & eligibility flag.
         const order = new Map(matches.map((m: any, i: number) => [m.scholarship_id, i]));
         const elig = new Map(matches.map((m: any) => [m.scholarship_id, m.passes_eligibility]));
@@ -302,7 +308,9 @@ serve(async (req) => {
     }
 
     if (scholarshipRows.length === 0) {
-      // Fallback: country-filtered top 25 sorted by deadline urgency
+      // Fallback: country-filtered top 25 sorted by deadline urgency.
+      // Same verification-status filter as the RAG path — the LLM never
+      // sees broken or pending rows.
       let q = supabase
         .from("scholarships")
         .select(
@@ -310,8 +318,10 @@ serve(async (req) => {
           "coverage_type, award_amount_text, estimated_total_value_usd, " +
           "target_degree_level, target_fields, application_deadline, " +
           "eligibility_requirements, citizenship_requirements, official_url, " +
+          "source_url, last_verified_at, verification_status, " +
           "why_this_fits, strategy_notes"
-        );
+        )
+        .or("verification_status.is.null,verification_status.in.(verified,stale)");
       if (targetCountries.length > 0) {
         q = q.in("host_country", [...targetCountries, "Global", "Multiple", "European Union"]);
       }

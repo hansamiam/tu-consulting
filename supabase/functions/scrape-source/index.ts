@@ -602,6 +602,15 @@ serve(async (req) => {
         eligibility_requirements:        s.eligibility_requirements ?? null,
         verified:                        false,
         last_verified_date:              new Date().toISOString().slice(0, 10),
+        // First-class verification metadata (see DATA_PIPELINE_AUDIT.md):
+        // source_url is the page we extracted FROM (may differ from the
+        // scholarship's apply-here URL); last_verified_at is timestamp-
+        // precision so the URL-health cron can update it without losing
+        // time-of-day info; verification_status starts at 'pending' until
+        // a human marks it 'verified' (or the auto-verify cron upgrades it).
+        source_url:                      src.url,
+        last_verified_at:                new Date().toISOString(),
+        verification_status:             "pending",
         // Embedding: clear so embed-scholarships re-embeds on next cron tick
         embedding:                       null,
         embedding_source_text:           buildEmbeddingSourceText(s),
