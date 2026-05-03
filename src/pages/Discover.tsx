@@ -26,6 +26,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
 import { OpportunityMap } from "@/components/discover/OpportunityMap";
 import { CuratedCollections } from "@/components/discover/CuratedCollections";
+import { MatchScoreBreakdown } from "@/components/discover/MatchScoreBreakdown";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSemanticScholarshipMatch } from "@/hooks/useSemanticScholarshipMatch";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
@@ -55,6 +57,9 @@ interface Scholarship {
   how_to_win: string | null; what_to_prepare_first: string | null;
   next_step: string | null; risk_note: string | null;
   last_verified_date: string | null;
+  last_verified_at: string | null;
+  verification_status: string | null;
+  source_url: string | null;
   data_source: string | null;
   url_check_status: "ok" | "redirect" | "fail" | "no_url" | null;
   url_consecutive_fails: number | null;
@@ -623,12 +628,38 @@ const FeaturedCard = ({ s, onSelect, isBookmarked, onBookmark }: {
       <div className="absolute left-0 inset-y-0 w-[2px] bg-gradient-to-b from-gold-light via-gold-dark to-gold-light" />
 
       <div className="px-6 py-6 sm:px-8 sm:py-7 grid sm:grid-cols-[auto,1fr] gap-x-7 gap-y-5 items-center">
-        {/* Match score — refined, not gigantic */}
+        {/* Match score — refined, not gigantic. Hover reveals breakdown
+            popover with per-factor reasons (see MATCH_SCORING.md). */}
         <div className="flex items-center gap-4 sm:flex-col sm:items-start sm:gap-2.5 shrink-0">
-          <div className="flex items-baseline gap-1.5">
-            <span className="font-heading text-4xl sm:text-5xl font-bold tabular-nums leading-none tracking-[-0.03em] text-foreground">{s.match}</span>
-            <span className="text-xs text-muted-foreground/70 tabular-nums">/100</span>
-          </div>
+          <HoverCard openDelay={120} closeDelay={80}>
+            <HoverCardTrigger asChild>
+              <button
+                type="button"
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-baseline gap-1.5 cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-gold rounded"
+                aria-label={`Match score: ${s.match} of 100. Hover for breakdown.`}
+              >
+                <span className="font-heading text-4xl sm:text-5xl font-bold tabular-nums leading-none tracking-[-0.03em] text-foreground">{s.match}</span>
+                <span className="text-xs text-muted-foreground/70 tabular-nums">/100</span>
+              </button>
+            </HoverCardTrigger>
+            <HoverCardContent side="right" align="start" className="p-0 border-0 shadow-none bg-transparent w-auto">
+              <MatchScoreBreakdown
+                scholarshipId={s.scholarship_id}
+                fallback={{
+                  match: s.match,
+                  application_deadline: s.application_deadline,
+                  estimated_total_value_usd: s.estimated_total_value_usd,
+                  last_verified_at: s.last_verified_at,
+                  verification_status: s.verification_status,
+                  passes_eligibility: s.eligibility === "eligible" || s.eligibility === "likely",
+                  why_this_fits: s.why_this_fits,
+                  reasons: s.reasons,
+                  warnings: s.warnings,
+                }}
+              />
+            </HoverCardContent>
+          </HoverCard>
           <div className="flex sm:flex-col items-baseline sm:items-start gap-2 sm:gap-1.5">
             <div className="inline-flex items-center gap-1.5 bg-gold/10 border border-gold/25 px-2 py-0.5 rounded-full">
               <Trophy className="h-2.5 w-2.5 text-gold-dark" />
@@ -749,11 +780,37 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
       onClick={onSelect}
       className={`group grid grid-cols-[44px,minmax(0,1fr),auto] sm:grid-cols-[44px,minmax(0,2fr),minmax(0,1.2fr),minmax(0,1fr),auto] items-center gap-4 px-4 py-3.5 border-b border-border/60 hover:bg-canvas-soft/60 cursor-pointer transition-colors ${isHidden ? "opacity-40" : ""}`}
     >
-      {/* Match score */}
-      <div className="flex flex-col items-center">
-        <span className="font-heading text-lg font-bold tabular-nums leading-none text-foreground">{s.match}</span>
-        <span className={`mt-1 h-1 w-1 rounded-full ${tier.dot}`} />
-      </div>
+      {/* Match score — hover for breakdown */}
+      <HoverCard openDelay={120} closeDelay={80}>
+        <HoverCardTrigger asChild>
+          <button
+            type="button"
+            onClick={(e) => e.stopPropagation()}
+            className="flex flex-col items-center cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-gold rounded"
+            aria-label={`Match score: ${s.match} of 100. Hover for breakdown.`}
+          >
+            <span className="font-heading text-lg font-bold tabular-nums leading-none text-foreground">{s.match}</span>
+            <span className={`mt-1 h-1 w-1 rounded-full ${tier.dot}`} />
+          </button>
+        </HoverCardTrigger>
+        <HoverCardContent side="right" align="start" className="p-0 border-0 shadow-none bg-transparent w-auto">
+          <MatchScoreBreakdown
+            scholarshipId={s.scholarship_id}
+            fallback={{
+              match: s.match,
+              application_deadline: s.application_deadline,
+              estimated_total_value_usd: s.estimated_total_value_usd,
+              last_verified_at: s.last_verified_at,
+              verification_status: s.verification_status,
+              passes_eligibility: s.eligibility === "eligible" || s.eligibility === "likely",
+              why_this_fits: s.why_this_fits,
+              reasons: s.reasons,
+              warnings: s.warnings,
+            }}
+            compact
+          />
+        </HoverCardContent>
+      </HoverCard>
 
       {/* Name + provider */}
       <div className="min-w-0">
@@ -876,10 +933,36 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
               {[s.provider_name, s.host_country].filter(Boolean).join(" · ")}
             </p>
           </div>
-          <div className="shrink-0 flex items-baseline gap-0.5 -mt-0.5">
-            <span className="text-lg font-bold tabular-nums leading-none text-foreground">{s.match}</span>
-            <span className="text-[9px] text-muted-foreground/70">/100</span>
-          </div>
+          <HoverCard openDelay={120} closeDelay={80}>
+            <HoverCardTrigger asChild>
+              <button
+                type="button"
+                onClick={(e) => e.stopPropagation()}
+                className="shrink-0 flex items-baseline gap-0.5 -mt-0.5 cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-gold rounded"
+                aria-label={`Match score: ${s.match} of 100. Hover for breakdown.`}
+              >
+                <span className="text-lg font-bold tabular-nums leading-none text-foreground">{s.match}</span>
+                <span className="text-[9px] text-muted-foreground/70">/100</span>
+              </button>
+            </HoverCardTrigger>
+            <HoverCardContent side="left" align="start" className="p-0 border-0 shadow-none bg-transparent w-auto">
+              <MatchScoreBreakdown
+                scholarshipId={s.scholarship_id}
+                fallback={{
+                  match: s.match,
+                  application_deadline: s.application_deadline,
+                  estimated_total_value_usd: s.estimated_total_value_usd,
+                  last_verified_at: s.last_verified_at,
+                  verification_status: s.verification_status,
+                  passes_eligibility: s.eligibility === "eligible" || s.eligibility === "likely",
+                  why_this_fits: s.why_this_fits,
+                  reasons: s.reasons,
+                  warnings: s.warnings,
+                }}
+                compact
+              />
+            </HoverCardContent>
+          </HoverCard>
         </div>
 
         {/* Award + tier in one line — denser */}
@@ -1838,7 +1921,13 @@ const Discover = ({ language = "en" }: Props) => {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from("scholarships").select("*").order("estimated_total_value_usd", { ascending: false });
+      // Hide rows the verification pipeline marked broken or pending. Same
+      // contract as the brief retrieval — see docs/DATA_PIPELINE_AUDIT.md.
+      const { data } = await supabase
+        .from("scholarships")
+        .select("*")
+        .or("verification_status.is.null,verification_status.in.(verified,stale)")
+        .order("estimated_total_value_usd", { ascending: false });
       if (data) setRows(data as unknown as Scholarship[]);
       setLoading(false);
     })();
