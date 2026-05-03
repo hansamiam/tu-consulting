@@ -166,33 +166,36 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
   const days = r.application_deadline
     ? Math.ceil((new Date(r.application_deadline).getTime() - Date.now()) / 86400_000)
     : null;
+  // Restrained urgency palette — red ONLY when truly urgent (≤7d).
+  // Past that we step down to amber and finally muted, instead of
+  // painting every card with a colored alarm.
   let urgencyText: string;
   let urgencyClass: string;
   if (days === null) {
-    urgencyText = r.application_deadline ? t.rolling : t.rolling;
-    urgencyClass = "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40";
+    urgencyText = t.rolling;
+    urgencyClass = "bg-muted/40 text-muted-foreground border-transparent";
   } else if (days <= 0) {
     urgencyText = t.closed;
-    urgencyClass = "bg-muted text-muted-foreground border-border";
-  } else if (days <= 14) {
+    urgencyClass = "bg-muted/40 text-muted-foreground border-transparent line-through";
+  } else if (days <= 7) {
     urgencyText = t.closesIn(days);
     urgencyClass = "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800/40";
   } else if (days <= 30) {
     urgencyText = t.daysLeft(days);
     urgencyClass = "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/40";
-  } else if (days <= 365) {
-    urgencyText = t.monthsLeft(Math.round(days / 30));
-    urgencyClass = "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40";
   } else {
-    urgencyText = t.monthsLeft(Math.round(days / 30));
-    urgencyClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
+    // 30+ days → no color noise, just a quiet count
+    urgencyText = days <= 365 ? t.monthsLeft(Math.round(days / 30)) : t.monthsLeft(Math.round(days / 30));
+    urgencyClass = "bg-muted/30 text-muted-foreground border-transparent";
   }
 
   const valueText = r.award_amount_text || fmtValue(r.estimated_total_value_usd);
   const coverageLabel = (t.coverage as Record<string, string>)[r.coverage_type] ?? t.coverage.other;
   const hue = hueFromName(r.provider_name || r.scholarship_name);
 
-  // Build 3-5 tags
+  // Tags row — country + level + field. Coverage is omitted here on
+  // purpose: it's already shown above as the subtitle to the funding
+  // amount, and seeing "Full ride" twice on the same card looks noisy.
   const tags: { icon: React.ReactNode; label: string; tone?: "primary" | "muted" }[] = [];
   if (r.host_country) tags.push({ icon: <MapPin className="w-3 h-3" />, label: r.host_country });
   if (r.target_degree_level && r.target_degree_level.length > 0) {
@@ -202,7 +205,6 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
   if (r.target_fields && r.target_fields.length > 0 && r.target_fields[0].toLowerCase() !== "any") {
     tags.push({ label: r.target_fields[0], icon: null as unknown as React.ReactNode });
   }
-  if (coverageLabel) tags.push({ icon: <Award className="w-3 h-3" />, label: coverageLabel, tone: "primary" });
 
   const detailPath = `/scholarships/${r.scholarship_id}`;
 

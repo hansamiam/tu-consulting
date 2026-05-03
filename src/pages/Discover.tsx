@@ -420,12 +420,16 @@ const COVERAGE_LABEL: Record<string, string> = { full_ride: "Full ride", tuition
 const fmtValue = (v: number) => v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `$${Math.round(v / 1000)}K` : `$${v}`;
 
 const deadlineDisplay = (d: string | null) => {
+  // Restrained color scale — red only when truly urgent (≤7d). Past that,
+  // we rely on muted tones. The previous palette painted half the
+  // database red, which made every card look like an alarm.
   if (!d) return { text: "Rolling", cls: "text-foreground/40", urgent: false };
   const days = Math.ceil((new Date(d).getTime() - Date.now()) / 86400000);
-  if (days <= 0) return { text: "Closed", cls: "text-foreground/30 line-through", urgent: false };
-  if (days <= 30) return { text: `${days} days`, cls: "text-destructive font-semibold", urgent: true };
-  if (days <= 90) return { text: `${days} days`, cls: "text-warning font-medium", urgent: true };
-  return { text: `${Math.ceil(days / 30)} months`, cls: "text-foreground/60", urgent: false };
+  if (days <= 0)  return { text: "Closed", cls: "text-foreground/30 line-through", urgent: false };
+  if (days <= 7)  return { text: `${days}d left`, cls: "text-destructive font-semibold", urgent: true };
+  if (days <= 30) return { text: `${days}d left`, cls: "text-amber-700 dark:text-amber-400 font-medium", urgent: true };
+  if (days <= 90) return { text: `${days}d left`, cls: "text-foreground/60", urgent: false };
+  return { text: `${Math.ceil(days / 30)}mo`, cls: "text-foreground/40", urgent: false };
 };
 
 /* Tier — positive framing only. No "stretch", "long shot", "lower fit". */
@@ -818,7 +822,6 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
   index?: number;
 }) => {
   const tier = TIER[s.priority];
-  const flag = FLAGS[s.host_country || ""] ?? "🌍";
   const dl = deadlineDisplay(s.application_deadline);
   const why = s.why_this_fits || s.reasons.slice(0, 2).join(". ");
   const award = s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || "—";
@@ -844,56 +847,54 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
       onClick={onSelect}
       className={`group relative rounded-xl bg-card border hover:shadow-md transition-all cursor-pointer h-full flex flex-col ${isComparing ? "border-gold ring-2 ring-gold/20" : "border-border hover:border-foreground/20"} ${isHidden ? "opacity-50" : ""}`}
     >
-      <div className="p-4 sm:p-5 flex flex-col flex-1 gap-3">
-        {/* Header: avatar + match score (top-right). Tier dot moves into the
-            metadata row below to free vertical real estate. */}
+      <div className="p-4 flex flex-col flex-1 gap-2.5">
+        {/* Header: avatar + headline + match score */}
         <div className="flex items-start gap-2.5">
           <div
-            className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center font-heading font-bold text-[11px] text-white tracking-tight shadow-sm ring-1 ring-black/5"
+            className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center font-heading font-bold text-[10px] text-white tracking-tight shadow-sm ring-1 ring-black/5"
             style={{ background: `linear-gradient(135deg, hsl(${hue}, 55%, 45%), hsl(${(hue + 35) % 360}, 60%, 38%))` }}
             aria-hidden="true"
           >
             {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-heading text-[15px] sm:text-base font-bold leading-snug tracking-tight text-foreground line-clamp-2 group-hover:text-gold-dark transition-colors">
+            <h3 className="font-heading text-[13.5px] font-semibold leading-snug tracking-tight text-foreground line-clamp-2 group-hover:text-gold-dark transition-colors">
               {s.scholarship_name}
             </h3>
             <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-              <span className="mr-1">{flag}</span>{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}
+              {[s.provider_name, s.host_country].filter(Boolean).join(" · ")}
             </p>
           </div>
           <div className="shrink-0 flex items-baseline gap-0.5 -mt-0.5">
-            <span className="text-xl font-bold tabular-nums leading-none text-foreground">{s.match}</span>
-            <span className="text-[10px] text-muted-foreground/70">/100</span>
+            <span className="text-lg font-bold tabular-nums leading-none text-foreground">{s.match}</span>
+            <span className="text-[9px] text-muted-foreground/70">/100</span>
           </div>
         </div>
 
-        {/* Award (prominent) */}
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-base font-bold text-foreground truncate">{award}</span>
+        {/* Award + tier in one line — denser */}
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-semibold text-foreground truncate min-w-0">{award}</span>
+          <span className={`shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${tier.textLight}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${tier.dot}`} />
+            {tier.label}
+          </span>
         </div>
 
-        {/* Metadata row: tier · deadline · field tag */}
+        {/* Deadline + field — meta line */}
         <div className="flex items-center gap-2 flex-wrap text-[11px]">
-          <span className={`inline-flex items-center gap-1 ${tier.textLight}`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${tier.dot}`} />
-            <span className="font-semibold uppercase tracking-[0.14em]">{tier.label}</span>
-          </span>
-          <span className="text-muted-foreground/40">·</span>
-          <span className={`font-semibold ${dl.cls}`}>{dl.text}</span>
+          <span className={`tabular-nums ${dl.cls}`}>{dl.text}</span>
           {s.target_fields && s.target_fields.length > 0 && s.target_fields[0].toLowerCase() !== "any" && (
             <>
-              <span className="text-muted-foreground/40">·</span>
-              <span className="text-muted-foreground truncate max-w-[140px]">{s.target_fields[0]}</span>
+              <span className="text-muted-foreground/30">·</span>
+              <span className="text-muted-foreground truncate">{s.target_fields[0]}</span>
             </>
           )}
         </div>
 
-        {/* Why it fits — clamped to 2 lines for density */}
+        {/* Why it fits — single line, light */}
         {why && (
-          <p className="text-[12.5px] text-foreground/75 leading-snug line-clamp-2 italic font-light flex-1">
-            "{why.replace(/\.+$/, "")}."
+          <p className="text-[12px] text-foreground/65 leading-snug line-clamp-2 flex-1">
+            {why.replace(/\.+$/, "")}.
           </p>
         )}
 
