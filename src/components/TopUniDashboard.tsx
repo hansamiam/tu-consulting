@@ -25,6 +25,7 @@ import { ProBriefUnlock, type ProBriefDepth } from "@/components/ProBriefUnlock"
 import { BriefHeroStats } from "@/components/brief/BriefHeroStats";
 import { BriefChapterNav } from "@/components/brief/BriefChapterNav";
 import { DeadlineTimeline } from "@/components/brief/DeadlineTimeline";
+import { FundingStack } from "@/components/brief/FundingStack";
 import { PremiumSection } from "@/components/brief/PremiumSection";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
 import { toast } from "sonner";
@@ -1726,6 +1727,12 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                       isRu={isRu}
                       onSelectMatch={() => navigate(isRu ? "/discover/ru" : "/discover")}
                     />
+                  )}
+
+                  {/* Combined funding stack viz — top 5 matches as a stacked
+                      horizontal bar so the reader sees the money pile up. */}
+                  {!pathwayLoading && (
+                    <FundingStack liveMatches={liveMatches} isRu={isRu} />
                   )}
 
                   {/* Profile recap chips — visual context, no chart, no fluff */}

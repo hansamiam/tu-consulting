@@ -169,6 +169,49 @@
 }
 
 @layer utilities {
+  /* Brief chapter counters — gives the rendered TopUni AI brief a magazine
+     rhythm. Each <div id="chapter-N"> wrapper rendered by ReportRenderer
+     gets a small editorial divider with its number above it, like
+     "01 / —————". Skipped on print since paginated breaks already separate
+     the chapters visually. */
+  #printable-report {
+    counter-reset: brief-chapter;
+  }
+  #printable-report > [id^="chapter-"] {
+    counter-increment: brief-chapter;
+    position: relative;
+  }
+  #printable-report > [id^="chapter-"]:not(:first-child)::before {
+    content: counter(brief-chapter, decimal-leading-zero);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 3rem;
+    margin-bottom: 1.25rem;
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground) / 0.7);
+  }
+  #printable-report > [id^="chapter-"]:not(:first-child)::after {
+    content: '';
+    position: absolute;
+    top: calc(3rem + 0.4rem);
+    left: 2.5rem;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(to right, hsl(var(--border)), transparent);
+    pointer-events: none;
+  }
+  @media print {
+    #printable-report > [id^="chapter-"]::before,
+    #printable-report > [id^="chapter-"]::after {
+      display: none !important;
+      content: none !important;
+    }
+  }
+
   /* Subtle backdrop utilities — for hero sections, replaces harsh white */
   .bg-canvas { background-color: hsl(var(--canvas)); }
   .bg-canvas-soft { background-color: hsl(var(--canvas-soft)); }
