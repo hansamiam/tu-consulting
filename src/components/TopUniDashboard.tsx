@@ -24,6 +24,7 @@ import { EnrichedMarkdown } from "@/components/EnrichedMarkdown";
 import { ProBriefUnlock, type ProBriefDepth } from "@/components/ProBriefUnlock";
 import { BriefHeroStats } from "@/components/brief/BriefHeroStats";
 import { BriefChapterNav } from "@/components/brief/BriefChapterNav";
+import { DeadlineTimeline } from "@/components/brief/DeadlineTimeline";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -1701,6 +1702,17 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                     />
                   )}
 
+                  {/* 12-month deadline timeline — visceral urgency. Hidden
+                      when there are <2 upcoming deadlines (component returns
+                      null). Clicks send the user to Discover. */}
+                  {!pathwayLoading && (
+                    <DeadlineTimeline
+                      liveMatches={liveMatches}
+                      isRu={isRu}
+                      onSelectMatch={() => navigate(isRu ? "/discover/ru" : "/discover")}
+                    />
+                  )}
+
                   {/* Profile recap chips — visual context, no chart, no fluff */}
                   <div className="not-prose flex flex-wrap gap-2 mb-8 pb-6 border-b border-border">
                     {[
@@ -2179,7 +2191,20 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             }`}>
                               {msg.role === "assistant" ? (
                                 <div className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_strong]:text-foreground [&_a]:text-accent">
-                                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                                  <EnrichedMarkdown
+                                    scholarships={liveMatches.map(m => ({
+                                      scholarship_id: m.scholarship_id,
+                                      scholarship_name: m.scholarship_name,
+                                      provider_name: m.provider_name ?? null,
+                                      host_country: m.host_country,
+                                      coverage_type: m.coverage_type,
+                                      award_amount_text: m.award_amount_text,
+                                      application_deadline: m.application_deadline,
+                                      official_url: m.official_url ?? null,
+                                    }))}
+                                  >
+                                    {msg.content}
+                                  </EnrichedMarkdown>
                                 </div>
                               ) : <span className="whitespace-pre-wrap">{msg.content}</span>}
                             </div>
@@ -2199,6 +2224,58 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             </div>
                           </div>
                         )}
+
+                        {/* Suggested follow-ups — render below the LAST assistant
+                            message when the bot isn't currently typing. Picked
+                            from a curated pool by simple keyword match against
+                            the most recent assistant content. ChatGPT pattern. */}
+                        {!chatLoading && chatMessages.length > 0 && chatMessages[chatMessages.length - 1].role === "assistant" && (() => {
+                          const lastContent = chatMessages[chatMessages.length - 1].content.toLowerCase();
+                          const FOLLOWUPS: { match: RegExp; en: string[]; ru: string[] }[] = [
+                            { match: /essay|personal statement|sop|letter/i,
+                              en: ["Help me draft this essay", "What hooks tend to work?", "Show me a strong opening line"],
+                              ru: ["Помогите написать черновик", "Какие зацепки работают?", "Покажите сильное начало"] },
+                            { match: /scholarship|funding|chevening|fulbright|daad/i,
+                              en: ["Show me similar scholarships", "What are my real odds here?", "What's the application strategy?"],
+                              ru: ["Покажите похожие стипендии", "Каковы реальные шансы?", "Какая стратегия подачи?"] },
+                            { match: /visa|opt|stem|immigration/i,
+                              en: ["Walk me through the timeline", "What documents do I need?", "Common rejection reasons?"],
+                              ru: ["Расскажите о таймлайне", "Какие документы нужны?", "Частые причины отказов?"] },
+                            { match: /gpa|grade|test|sat|ielts|toefl/i,
+                              en: ["Where should I retest?", "How do I offset this?", "Schools that look past low scores?"],
+                              ru: ["Где пересдать?", "Как это компенсировать?", "Школы, прощающие низкие баллы?"] },
+                            { match: /interview|admissions|application/i,
+                              en: ["Common interview questions?", "What signals strong fit?", "How early should I apply?"],
+                              ru: ["Частые вопросы на интервью?", "Что показывает хороший fit?", "Когда лучше подать?"] },
+                          ];
+                          const matched = FOLLOWUPS.find(g => g.match.test(lastContent));
+                          const generic = {
+                            en: ["What should I focus on this month?", "What gaps am I missing?", "What's the next concrete step?"],
+                            ru: ["На чём сфокусироваться в этом месяце?", "Какие пробелы я упускаю?", "Какой следующий шаг?"],
+                          };
+                          const opts = matched ? (isRu ? matched.ru : matched.en) : (isRu ? generic.ru : generic.en);
+                          return (
+                            <motion.div
+                              initial={{ opacity: 0, y: 4 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.4, delay: 0.2 }}
+                              className="flex flex-wrap gap-2 pl-9 pt-1"
+                            >
+                              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/70 self-center mr-1">
+                                {t("Try", "Спросить")}
+                              </span>
+                              {opts.map((p, i) => (
+                                <button
+                                  key={i}
+                                  onClick={() => sendChatMessage(p)}
+                                  className="text-xs px-3 py-1.5 rounded-full border border-border text-foreground/75 hover:border-gold/40 hover:bg-gold/5 hover:text-foreground transition-all"
+                                >
+                                  {p}
+                                </button>
+                              ))}
+                            </motion.div>
+                          );
+                        })()}
                       </>
                     )}
                   </div>
