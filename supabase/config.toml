@@ -59,6 +59,9 @@ verify_jwt = false
 [functions.weekly-nudge-cron]
 verify_jwt = true
 
+[functions.pro-upgrade-nudge-cron]
+verify_jwt = true
+
 [functions.og-brief]
 verify_jwt = false
 

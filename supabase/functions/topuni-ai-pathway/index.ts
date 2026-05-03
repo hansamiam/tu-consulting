@@ -71,6 +71,33 @@ serve(async (req) => {
     // AI gateway env validated lazily inside chatCompletions / gatewayEmbeddings —
     // see _shared/ai-gateway.ts. Provider chosen via AI_PROVIDER env var.
 
+    /* ─── Brief-generation timestamp (retention loop signal) ──────────────
+       Stamp last_brief_generated_at on student_profiles for authed users.
+       The pro-upgrade-nudge cron uses this column to find users whose
+       brief is N days old and queue the conversion email. Fire-and-forget
+       so it never blocks the streaming response.
+       Service-role client doesn't carry user identity, so we resolve the
+       userId via a separate anon client + the inbound JWT. */
+    (async () => {
+      try {
+        const auth = req.headers.get("Authorization");
+        if (!auth?.startsWith("Bearer ")) return;
+        const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+        if (!anonKey) return;
+        const userClient = createClient(supabaseUrl, anonKey, {
+          global: { headers: { Authorization: auth } },
+        });
+        const { data: { user } } = await userClient.auth.getUser();
+        if (!user?.id) return;
+        await supabase
+          .from("student_profiles")
+          .update({ last_brief_generated_at: new Date().toISOString() })
+          .eq("user_id", user.id);
+      } catch (e) {
+        console.warn("brief-generation timestamp update failed:", e);
+      }
+    })();
+
     const targetCountries = profile.targetCountries || [];
     const studentGpa = parseFloat(profile.gpa) || null;
     const studentIelts = parseFloat(profile.ielts) || null;
