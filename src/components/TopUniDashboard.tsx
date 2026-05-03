@@ -22,6 +22,7 @@ import { CounselorSessions } from "@/components/topuni/CounselorSessions";
 import { GenerationPipeline } from "@/components/GenerationPipeline";
 import { EnrichedMarkdown } from "@/components/EnrichedMarkdown";
 import { ProBriefUnlock, type ProBriefDepth } from "@/components/ProBriefUnlock";
+import { PremiumGate } from "@/components/PremiumGate";
 import { BriefHeroStats } from "@/components/brief/BriefHeroStats";
 import { BriefChapterNav } from "@/components/brief/BriefChapterNav";
 import { DeadlineTimeline } from "@/components/brief/DeadlineTimeline";
@@ -29,6 +30,7 @@ import { FundingStack } from "@/components/brief/FundingStack";
 import { PremiumSection } from "@/components/brief/PremiumSection";
 import { CombinedFundingChart } from "@/components/brief/CombinedFundingChart";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
+import { track } from "@/lib/analytics";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
@@ -368,7 +370,7 @@ type LiveMatchLite = {
 const fmtMoney = (v: number) =>
   v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `$${Math.round(v / 1000)}K` : `$${v}`;
 
-const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combinedFunding, onRegen, isRegenerating }: {
+const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combinedFunding, onRegen, isRegenerating, tier = "premium" }: {
   markdown: string;
   liveMatches: LiveMatchLite[];
   isRu: boolean;
@@ -378,6 +380,9 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combine
   combinedFunding?: import("@/types/briefStructured").CombinedFundingSection | null;
   onRegen?: (id: string) => void;
   isRegenerating?: boolean;
+  /** When 'basic', the funding list shows the top 3 items in full and
+   *  blurs the rest behind a Pro upgrade gate. */
+  tier?: "basic" | "premium";
 }) => {
   const { title, items } = useMemo(() => {
     const lines = markdown.split("\n");
@@ -450,8 +455,8 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combine
         <CombinedFundingChart data={combinedFunding} isRu={isRu} />
       )}
 
-      <div className="space-y-2.5">
-        {decorated.map((it, i) => {
+      {(() => {
+        const renderItem = (it: typeof decorated[number], i: number) => {
           const days = it.match?.application_deadline
             ? Math.ceil((new Date(it.match.application_deadline).getTime() - Date.now()) / 86400000)
             : null;
@@ -469,10 +474,9 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combine
             : "text-muted-foreground";
           const isLinked = !!it.match;
           const Wrapper = isLinked ? "button" : "div";
-
           return (
             <Wrapper
-              key={i}
+              key={`fund-${i}`}
               {...(isLinked ? { onClick: onOpenDiscover, type: "button" as const } : {})}
               className={`group relative w-full text-left bg-card border border-border rounded-xl px-5 py-4 overflow-hidden transition-all ${
                 isLinked ? "hover:border-gold/40 hover:shadow-sm cursor-pointer" : ""
@@ -488,9 +492,7 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combine
                     {it.match.estimated_total_value_usd ? (
                       <span className="text-gold-dark font-semibold">{fmtMoney(it.match.estimated_total_value_usd)}</span>
                     ) : null}
-                    {dl && (
-                      <span className={`font-semibold ${dlClass}`}>{dl}</span>
-                    )}
+                    {dl && <span className={`font-semibold ${dlClass}`}>{dl}</span>}
                   </div>
                 )}
               </div>
@@ -506,8 +508,38 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combine
               )}
             </Wrapper>
           );
-        })}
-      </div>
+        };
+
+        // Premium gate: basic-tier briefs see top 3 in full + the rest
+        // blurred behind an upgrade card. Premium tier sees everything.
+        const visibleCount = tier === "basic" ? Math.min(3, decorated.length) : decorated.length;
+        const visible = decorated.slice(0, visibleCount);
+        const gated = decorated.slice(visibleCount);
+        return (
+          <>
+            <div className="space-y-2.5">
+              {visible.map((it, i) => renderItem(it, i))}
+            </div>
+            {gated.length > 0 && (
+              <div className="mt-4">
+                <PremiumGate
+                  gateId="brief-funding-extra-matches"
+                  headline={isRu
+                    ? `Открыть ещё ${gated.length} ${gated.length === 1 ? "стипендию" : "совпадений"}`
+                    : `Unlock ${gated.length} more ${gated.length === 1 ? "match" : "matches"}`}
+                  subline={isRu
+                    ? "Топ-3 видны бесплатно. Pro раскрывает остальные совпадения с разбивкой стратегии под каждое."
+                    : "Top 3 are free. Pro unlocks the remaining matches with strategy notes for each."}
+                >
+                  <div className="space-y-2.5">
+                    {gated.map((it, i) => renderItem(it, i + visible.length))}
+                  </div>
+                </PremiumGate>
+              </div>
+            )}
+          </>
+        );
+      })()}
     </div>
   );
 };
@@ -931,7 +963,7 @@ const SectionRegenButton = ({
 const PATHWAY_CAREER_SECTION_REGEX = /^##\s+.*?(career roi|carreer roi|карьерн|career return)/i;
 const PATHWAY_VISA_SECTION_REGEX = /^##\s+.*?(visa.*pathway|visa.*post|post.*graduation|виза.*пути|виза|после выпуска)/i;
 
-const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onOpenDiscover, liveMatches, onSaveScholarship, savedSet, structured, onRegenSection, regeneratingSectionId }: {
+const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onOpenDiscover, liveMatches, onSaveScholarship, savedSet, structured, onRegenSection, regeneratingSectionId, tier = "premium" }: {
   markdown: string;
   completedTasks: Set<string>;
   onToggle: (id: string) => void;
@@ -950,6 +982,7 @@ const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onO
   /** SectionSpec.id currently regenerating (so PremiumSection shows
    *  a loading state on that one button). */
   regeneratingSectionId?: string | null;
+  tier?: "basic" | "premium";
 }) => {
   // Mapped to InlineScholarshipCard's expected shape — provider/url default to null
   const scholarshipsForCards = liveMatches.map((m) => ({
@@ -1004,7 +1037,7 @@ const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onO
         if (PATHWAY_FUND_SECTION_REGEX.test(section)) {
           const hasBullets = /^\s*([-*]|\d+\.)\s+/m.test(section);
           if (hasBullets) {
-            return <div key={i} {...anchorProps}><FundingShortlist markdown={section} liveMatches={liveMatches} isRu={isRu} onOpenDiscover={onOpenDiscover} combinedFunding={structured?.combinedFunding ?? null} onRegen={onRegenSection} isRegenerating={regeneratingSectionId === "funding"} /></div>;
+            return <div key={i} {...anchorProps}><FundingShortlist markdown={section} liveMatches={liveMatches} isRu={isRu} onOpenDiscover={onOpenDiscover} combinedFunding={structured?.combinedFunding ?? null} onRegen={onRegenSection} isRegenerating={regeneratingSectionId === "funding"} tier={tier} /></div>;
           }
         }
         if (PATHWAY_ESSAYS_SECTION_REGEX.test(section)) {
@@ -1658,6 +1691,9 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     setPathwayLoading(true);
     setPathwayContent("");
     let soFar = "";
+    const startedAtMs = Date.now();
+
+    void track("brief_generation_started", { tier: reportGrade, has_pro_depth: hasProDepth });
 
     // Merge the wizard profile with any Pro depth fields the user has
     // captured via the upgrade dialog. The edge function reads these from
@@ -1679,6 +1715,11 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         setPathwayLoading(false);
         setPathwayGenerated(true);
         setPathwayGeneratedAt(now);
+        void track("brief_generation_completed", {
+          tier: reportGrade,
+          word_count: soFar.trim().split(/\s+/).filter(Boolean).length,
+          duration_ms: now - startedAtMs,
+        });
         // Show signup prompt 4s after brief lands — gives the student
         // a moment to scroll the result before we ask them to save.
         // Only for anon users; only once per session.
@@ -2114,6 +2155,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             structured={structuredBrief}
                             onRegenSection={reportGrade === "premium" ? regenerateSection : undefined}
                             regeneratingSectionId={regeneratingSectionId}
+                            tier={reportGrade}
                           />
                         )}
                         {/* Live matches grid sits between the brief and the
@@ -2203,6 +2245,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             structured={structuredBrief}
                             onRegenSection={reportGrade === "premium" ? regenerateSection : undefined}
                             regeneratingSectionId={regeneratingSectionId}
+                            tier={reportGrade}
                           />
                         )}
                       </>
