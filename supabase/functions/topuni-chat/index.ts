@@ -209,6 +209,45 @@ async function buildLiveCaseContext(
     lines.push("");
   }
 
+  /* ─── Per-tracked-scholarship checklist progress ───────────────────
+     For the most-urgent visible tracked scholarships, pull the cached
+     application checklist + the user's completed_checklist_ids from
+     the tracker row. Lets the counselor answer "what's left on
+     Chevening?" / "what should I focus on this week?" with grounded
+     specifics instead of generic advice. */
+  type ChecklistItemLite = { id: string; category: string; title: string; critical?: boolean };
+  const topVisible = visible.slice(0, 6);
+  const topIds = topVisible.map(v => v.scholarship_id).filter(Boolean) as string[];
+  let checklistByScholarship = new Map<string, ChecklistItemLite[]>();
+  let completedByScholarship = new Map<string, Set<string>>();
+  if (topIds.length > 0) {
+    const [{ data: cls }, { data: progress }] = await Promise.all([
+      admin
+        .from("scholarship_checklists")
+        .select("scholarship_id, items")
+        .in("scholarship_id", topIds),
+      admin
+        .from("application_tracker")
+        .select("scholarship_id, completed_checklist_ids")
+        .eq("user_id", userId)
+        .in("scholarship_id", topIds),
+    ]);
+    if (Array.isArray(cls)) {
+      for (const row of cls) {
+        const items = (row.items as ChecklistItemLite[]) || [];
+        checklistByScholarship.set(row.scholarship_id, items);
+      }
+    }
+    if (Array.isArray(progress)) {
+      for (const row of progress) {
+        completedByScholarship.set(
+          row.scholarship_id,
+          new Set((row.completed_checklist_ids as string[]) ?? []),
+        );
+      }
+    }
+  }
+
   if (visible.length > 0) {
     lines.push(`STUDENT'S CURRENT APPLICATIONS (${visible.length} tracked, most urgent first):`);
     for (const t of visible.slice(0, 12)) {
@@ -227,8 +266,23 @@ async function buildLiveCaseContext(
                 : `deadline in ${Math.round(days / 30)} months (${sch.application_deadline})`;
       const statusText = t.status ? STATUS_LABELS[t.status] || t.status : t.shortlisted ? "Shortlisted (no status set)" : "—";
       const noteText = t.notes && t.notes.trim() ? `; note: ${t.notes.slice(0, 200)}` : "";
+      // Append checklist progress signal if we have it.
+      const items = checklistByScholarship.get(t.scholarship_id);
+      const completed = completedByScholarship.get(t.scholarship_id) ?? new Set();
+      let checklistSummary = "";
+      if (items && items.length > 0) {
+        const total = items.length;
+        const done = items.filter(it => completed.has(it.id)).length;
+        const blocking = items.filter(it => it.critical && !completed.has(it.id));
+        const blockingPreview = blocking.slice(0, 3).map(it => it.title).join("; ");
+        checklistSummary = `; checklist ${done}/${total}` + (
+          blocking.length > 0
+            ? ` — ${blocking.length} blocking item(s) left: ${blockingPreview}${blocking.length > 3 ? "…" : ""}`
+            : ""
+        );
+      }
       lines.push(
-        `- ${sch.scholarship_name} (${sch.host_country ?? "—"}, ${sch.coverage_type ?? "—"}) — status: ${statusText}; ${dlText}${noteText}`,
+        `- ${sch.scholarship_name} (${sch.host_country ?? "—"}, ${sch.coverage_type ?? "—"}) — status: ${statusText}; ${dlText}${noteText}${checklistSummary}`,
       );
     }
     if (visible.length > 12) lines.push(`  …and ${visible.length - 12} more saved.`);
