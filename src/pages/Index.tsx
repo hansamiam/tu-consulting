@@ -165,6 +165,23 @@ const Index = () => {
           </div>
         </section>
 
+        {/* WORLDVIEW THESIS — single-paragraph editorial band that names the
+            problem we're solving + the wedge. Sets the company stake so the
+            rest of the page reads as evidence, not feature-list. */}
+        <section className="py-14 sm:py-20 border-y border-border/60 bg-canvas-soft/40">
+          <div className="max-w-3xl mx-auto px-5 sm:px-8">
+            <motion.p {...fadeUp()} className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4 text-center">
+              Why we exist
+            </motion.p>
+            <motion.p {...fadeUp(0.05)} className="font-sans text-xl sm:text-2xl text-foreground/90 leading-[1.45] tracking-[-0.01em] text-center text-balance">
+              <span className="text-foreground font-semibold">Elite admissions consulting is broken.</span>{" "}
+              It is expensive, manual, and built for families who can pay thousands. TopUni is the software layer:
+              <span className="text-gold-dark font-semibold"> personalized strategy, ranked opportunities, and live execution support</span>{" "}
+              — at a fraction of the cost.
+            </motion.p>
+          </div>
+        </section>
+
         {/* HOW IT WORKS — vertical, editorial, not card-grid */}
         <section id="how" className="py-20 sm:py-28">
           <div className="max-w-6xl mx-auto px-5 sm:px-8">
@@ -199,6 +216,73 @@ const Index = () => {
                 </motion.button>
               ))}
               <div className="border-t border-border/70" />
+            </div>
+          </div>
+        </section>
+
+        {/* BEFORE vs AFTER — two-column comparison card. The pre-product
+            life vs the with-product life. Concrete and visual; sells better
+            than abstract feature lists. */}
+        <section className="py-16 sm:py-20">
+          <div className="max-w-5xl mx-auto px-5 sm:px-8">
+            <motion.div {...fadeUp()} className="max-w-2xl mx-auto text-center mb-10">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">The shift</p>
+              <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12]">
+                From scattered tabs to a ranked plan.
+              </h2>
+            </motion.div>
+
+            <div className="grid sm:grid-cols-2 gap-4 sm:gap-5">
+              {/* Without */}
+              <motion.div
+                {...fadeUp(0.05)}
+                className="rounded-2xl border border-border bg-card p-6 sm:p-7"
+              >
+                <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-4">
+                  Without TopUni
+                </p>
+                <ul className="space-y-3">
+                  {[
+                    "47 browser tabs of half-read pages",
+                    "Random Reddit advice",
+                    "Missed deadlines",
+                    "Unsure if you actually qualify",
+                    "No clear essay strategy",
+                  ].map((line, i) => (
+                    <li key={i} className="flex items-start gap-3 text-[15px] text-foreground/75 leading-snug">
+                      <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
+                      <span>{line}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+
+              {/* With */}
+              <motion.div
+                {...fadeUp(0.1)}
+                className="relative rounded-2xl border border-gold/30 bg-gradient-to-br from-gold/[0.07] via-card to-card p-6 sm:p-7 overflow-hidden"
+              >
+                <div className="absolute left-0 inset-y-0 w-[3px] bg-gradient-to-b from-gold-dark via-gold to-gold-dark" />
+                <p className="text-[11px] uppercase tracking-[0.18em] text-gold-dark font-semibold mb-4">
+                  With TopUni
+                </p>
+                <ul className="space-y-3">
+                  {[
+                    "Ranked opportunities tailored to your profile",
+                    "Why-it-fits notes for each scholarship",
+                    "Funding filters that actually narrow the universe",
+                    "Deadline plan that emails you before each one",
+                    "Live monthly workshops with admitted founders",
+                  ].map((line, i) => (
+                    <li key={i} className="flex items-start gap-3 text-[15px] text-foreground leading-snug">
+                      <span className="mt-1 text-gold-dark shrink-0">
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </span>
+                      <span>{line}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
             </div>
           </div>
         </section>
@@ -288,13 +372,13 @@ const Index = () => {
         >
           <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
             <motion.div {...fadeUp()} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gold/30 bg-gold/10 text-gold-dark text-[11px] font-medium tracking-[0.18em] uppercase mb-7">
-              <Crown className="h-3.5 w-3.5" /> Founding Membership · 100 spots
+              <Crown className="h-3.5 w-3.5" /> Founding cohort · launch pricing
             </motion.div>
             <motion.h2 {...fadeUp(0.05)} className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.1] mb-5">
-              Lock in $19/month for life.
+              The full toolkit, $39/month.
             </motion.h2>
             <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-lg mb-4 max-w-xl mx-auto leading-relaxed">
-              TopUni AI · Discover · Academy · monthly live workshops. Founding price never changes for our first 100 members. Public price moves to $39/month when the cohort fills.
+              TopUni AI · Discover · Academy · monthly live workshops with admitted founders. Founding cohort discount available with promo codes at checkout.
             </motion.p>
             <motion.p {...fadeUp(0.14)} className="text-xs text-muted-foreground/70 mb-9 max-w-md mx-auto">
               30-day money-back guarantee · Cancel anytime · Stripe secure

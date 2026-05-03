@@ -84,6 +84,78 @@ const IndexRu = () => {
           </div>
         </section>
 
+        {/* WORLDVIEW THESIS — почему мы существуем */}
+        <section className="py-14 sm:py-20 border-y border-border/60 bg-canvas-soft/40">
+          <div className="max-w-3xl mx-auto px-5 sm:px-8">
+            <motion.p {...fadeUp()} className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4 text-center">
+              Зачем мы существуем
+            </motion.p>
+            <motion.p {...fadeUp(0.05)} className="font-sans text-xl sm:text-2xl text-foreground/90 leading-[1.45] tracking-[-0.01em] text-center text-balance">
+              <span className="text-foreground font-semibold">Элитный admissions-консалтинг сломан.</span>{" "}
+              Он дорогой, ручной, и построен под семьи, готовые платить тысячи. TopUni — это софтверный слой:
+              <span className="text-gold-dark font-semibold"> персональная стратегия, ранжированные возможности и поддержка вживую</span>{" "}
+              — за долю стоимости.
+            </motion.p>
+          </div>
+        </section>
+
+        {/* BEFORE vs AFTER — переход */}
+        <section className="py-16 sm:py-20">
+          <div className="max-w-5xl mx-auto px-5 sm:px-8">
+            <motion.div {...fadeUp()} className="max-w-2xl mx-auto text-center mb-10">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Сдвиг</p>
+              <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12]">
+                От 47 вкладок к ранжированному плану.
+              </h2>
+            </motion.div>
+
+            <div className="grid sm:grid-cols-2 gap-4 sm:gap-5">
+              <motion.div {...fadeUp(0.05)} className="rounded-2xl border border-border bg-card p-6 sm:p-7">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-4">
+                  Без TopUni
+                </p>
+                <ul className="space-y-3">
+                  {[
+                    "47 наполовину прочитанных вкладок",
+                    "Случайные советы с Reddit",
+                    "Пропущенные дедлайны",
+                    "Непонятно, проходите ли вы вообще",
+                    "Нет внятной стратегии для эссе",
+                  ].map((line, i) => (
+                    <li key={i} className="flex items-start gap-3 text-[15px] text-foreground/75 leading-snug">
+                      <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
+                      <span>{line}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+
+              <motion.div {...fadeUp(0.1)} className="relative rounded-2xl border border-gold/30 bg-gradient-to-br from-gold/[0.07] via-card to-card p-6 sm:p-7 overflow-hidden">
+                <div className="absolute left-0 inset-y-0 w-[3px] bg-gradient-to-b from-gold-dark via-gold to-gold-dark" />
+                <p className="text-[11px] uppercase tracking-[0.18em] text-gold-dark font-semibold mb-4">
+                  С TopUni
+                </p>
+                <ul className="space-y-3">
+                  {[
+                    "Ранжированные возможности под ваш профиль",
+                    "Заметки «почему стоит изучить» по каждой стипендии",
+                    "Фильтры финансирования, которые реально сужают список",
+                    "План дедлайнов с напоминаниями на почту",
+                    "Ежемесячные живые воркшопы с поступившими основателями",
+                  ].map((line, i) => (
+                    <li key={i} className="flex items-start gap-3 text-[15px] text-foreground leading-snug">
+                      <span className="mt-1 text-gold-dark shrink-0">
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </span>
+                      <span>{line}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
         {/* HOW IT WORKS */}
         <section id="how" className="py-20 sm:py-28">
           <div className="max-w-6xl mx-auto px-5 sm:px-8">
@@ -191,13 +263,13 @@ const IndexRu = () => {
           style={{ backgroundImage: `linear-gradient(180deg, hsl(var(--background)), hsl(var(--primary) / 0.06))` }}>
           <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
             <motion.div {...fadeUp()} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gold/30 bg-gold/10 text-gold-dark text-[11px] font-medium tracking-[0.18em] uppercase mb-7">
-              <Crown className="h-3.5 w-3.5" /> Основатели · 100 мест
+              <Crown className="h-3.5 w-3.5" /> Основательная когорта · цена запуска
             </motion.div>
             <motion.h2 {...fadeUp(0.05)} className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.1] mb-5">
-              Зафиксируйте $19/мес навсегда.
+              Полный набор инструментов, $39/мес.
             </motion.h2>
             <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-lg mb-4 max-w-xl mx-auto leading-relaxed">
-              TopUni AI · Discover · Академия · ежемесячные живые воркшопы. Цена основателя не меняется для первых 100 участников. Публичная цена вырастет до $39/мес когда когорта заполнится.
+              TopUni AI · Discover · Академия · ежемесячные живые воркшопы с поступившими основателями. Скидка основательной когорты доступна по промокоду на оплате.
             </motion.p>
             <motion.p {...fadeUp(0.14)} className="text-xs text-muted-foreground/70 mb-9 max-w-md mx-auto">
               Гарантия возврата 30 дней · Отмена в любой момент · Безопасная оплата Stripe
