@@ -17,6 +17,7 @@ import { template as postCallUpsell } from './post-call-upsell.tsx'
 import { template as scholarshipDeadline } from './scholarship-deadline.tsx'
 import { template as weeklyNudge } from './weekly-nudge.tsx'
 import { template as referralConverted } from './referral-converted.tsx'
+import { template as briefGenerated } from './brief-generated.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'booking-confirmation': bookingConfirmation,
@@ -27,4 +28,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'scholarship-deadline': scholarshipDeadline,
   'weekly-nudge': weeklyNudge,
   'referral-converted': referralConverted,
+  'brief-generated': briefGenerated,
 }

@@ -1353,6 +1353,68 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     } catch { /* ignore */ }
   };
 
+  // Email-me-my-brief flow inside the share dialog. Pre-fills the user's
+  // saved email if available; otherwise asks for one. Uses the existing
+  // send-transactional-email edge function with template_name=brief-generated.
+  const [emailMeAddress, setEmailMeAddress] = useState("");
+  const [emailMeSending, setEmailMeSending] = useState(false);
+  const [emailMeStatus, setEmailMeStatus] = useState<"idle" | "sent" | "error">("idle");
+
+  const sendBriefEmail = async () => {
+    if (!shareUrl) return;
+    const target = (emailMeAddress || profile.email || user?.email || "").trim();
+    if (!target || !/^\S+@\S+\.\S+$/.test(target)) {
+      setEmailMeStatus("error");
+      return;
+    }
+    setEmailMeSending(true);
+    setEmailMeStatus("idle");
+    try {
+      // Compose a one-line stats string for the email preview/header so the
+      // inbox feels alive — pulled from liveMatches (same data the in-app
+      // brief hero stats use).
+      const total = liveMatches.reduce((s, m) => s + (m.estimated_total_value_usd || 0), 0);
+      const totalText = total > 1_000_000
+        ? `$${(total / 1_000_000).toFixed(1)}M`
+        : total >= 1000
+          ? `$${Math.round(total / 1000)}K`
+          : "";
+      const closestDays = liveMatches
+        .map(m => m.application_deadline ? Math.ceil((new Date(m.application_deadline).getTime() - Date.now()) / 86400000) : null)
+        .filter((d): d is number => d !== null && d > 0)
+        .sort((a, b) => a - b)[0] ?? null;
+      const statsParts: string[] = [];
+      statsParts.push(`${liveMatches.length} matches`);
+      if (totalText) statsParts.push(`${totalText} potential funding`);
+      if (closestDays !== null) statsParts.push(`earliest deadline in ${closestDays} days`);
+      const statsLine = statsParts.join(" · ");
+
+      const topMatches = liveMatches.slice(0, 3).map(m => m.scholarship_name);
+
+      const { error } = await supabase.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "brief-generated",
+          recipientEmail: target,
+          templateData: {
+            firstName: profile.fullName?.trim().split(/\s+/)[0],
+            briefUrl: shareUrl,
+            statsLine,
+            topMatches,
+            major: profile.major,
+            targetCountries: profile.targetCountries,
+          },
+        },
+      });
+      if (error) throw new Error(error.message);
+      setEmailMeStatus("sent");
+    } catch (e) {
+      console.error("send-brief-email failed", e);
+      setEmailMeStatus("error");
+    } finally {
+      setEmailMeSending(false);
+    }
+  };
+
   // Only generate pathway if profile is actually filled
   const isProfileFilled = profile.fullName && profile.fullName !== "Student" && profile.gpa && profile.targetCountries.length > 0;
 
@@ -2455,7 +2517,54 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                 </Button>
               </div>
 
-              {/* Quick share targets — mailto + native share */}
+              {/* Email-me-my-brief — sends a polished HTML email to the
+                  user's inbox (or any address they type). Uses the existing
+                  send-transactional-email pipeline + brief-generated template. */}
+              <div className="rounded-lg border border-border bg-card p-3.5 space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <Mail className="w-3.5 h-3.5 text-gold-dark shrink-0" />
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold-dark">
+                    {t("Email me my brief", "Прислать мне на почту")}
+                  </p>
+                </div>
+                {emailMeStatus === "sent" ? (
+                  <div className="flex items-center gap-2 text-xs text-success">
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{t("Sent — check your inbox", "Отправлено — проверьте почту")}</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="email"
+                        value={emailMeAddress || profile.email || user?.email || ""}
+                        onChange={(e) => setEmailMeAddress(e.target.value)}
+                        placeholder={t("you@example.com", "почта@example.com")}
+                        className="h-9 text-sm flex-1"
+                        disabled={emailMeSending}
+                      />
+                      <Button
+                        variant="gold"
+                        size="sm"
+                        className="gap-1.5 shrink-0"
+                        onClick={sendBriefEmail}
+                        disabled={emailMeSending}
+                      >
+                        {emailMeSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
+                        {emailMeSending ? t("Sending…", "Отправка…") : t("Send", "Отправить")}
+                      </Button>
+                    </div>
+                    {emailMeStatus === "error" && (
+                      <p className="text-[11px] text-destructive leading-snug">
+                        {t("Couldn't send — check the address and try again.",
+                           "Не удалось отправить — проверьте адрес и попробуйте снова.")}
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Quick share targets — mailto (forward to others) + native share */}
               <div className="flex flex-wrap gap-2">
                 <Button
                   variant="outline"
@@ -2469,7 +2578,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                     )}&body=${encodeURIComponent(shareUrl)}`}
                   >
                     <Mail className="w-3.5 h-3.5" />
-                    {t("Email", "По почте")}
+                    {t("Forward", "Переслать")}
                   </a>
                 </Button>
                 {typeof navigator !== "undefined" && "share" in navigator && (
