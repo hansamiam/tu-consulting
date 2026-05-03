@@ -9,15 +9,16 @@
  * Each page view increments view_count via an RPC. Soft-deleted /
  * expired briefs return 404.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import ReactMarkdown from "react-markdown";
 import { motion } from "framer-motion";
 import { ArrowRight, ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import { EnrichedMarkdown } from "@/components/EnrichedMarkdown";
+import type { InlineScholarshipData } from "@/components/InlineScholarshipCard";
 
 interface SharedBrief {
   brief_id: string;
@@ -40,6 +41,62 @@ const SharedBriefPage = () => {
   const [brief, setBrief] = useState<SharedBrief | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [scholarshipsForCards, setScholarshipsForCards] = useState<InlineScholarshipData[]>([]);
+
+  // Pull every name the brief wraps in **bold** so we can resolve them to
+  // real scholarship rows. Names that don't exist in the DB just render as
+  // bold text — EnrichedMarkdown handles that gracefully.
+  const candidateNames = useMemo(() => {
+    if (!brief?.content) return [] as string[];
+    const set = new Set<string>();
+    const re = /\*\*([^*\n]{6,80})\*\*/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(brief.content)) !== null) {
+      const v = m[1].trim();
+      // Filter out obvious non-scholarship bolds (sentences ending in punctuation, plain
+      // labels like "Why it works for you:")
+      if (v.endsWith(":") || v.endsWith(".")) continue;
+      if (v.split(/\s+/).length < 1) continue;
+      set.add(v);
+    }
+    return Array.from(set).slice(0, 30);
+  }, [brief?.content]);
+
+  // Resolve candidate names → real scholarship rows via ILIKE-any fuzzy match.
+  // Runs once per brief load. RLS on scholarships allows anon select.
+  useEffect(() => {
+    if (candidateNames.length === 0) {
+      setScholarshipsForCards([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      // Build OR clause: name.ilike.%X%,name.ilike.%Y%...
+      const orClause = candidateNames
+        .slice(0, 12)
+        .map(n => `scholarship_name.ilike.%${n.replace(/[%,()]/g, "")}%`)
+        .join(",");
+      const { data } = await supabase
+        .from("scholarships")
+        .select("scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, application_deadline, official_url")
+        .or(orClause)
+        .limit(40);
+      if (cancelled || !data) return;
+      setScholarshipsForCards(
+        data.map(d => ({
+          scholarship_id: d.scholarship_id,
+          scholarship_name: d.scholarship_name,
+          provider_name: d.provider_name,
+          host_country: d.host_country,
+          coverage_type: d.coverage_type,
+          award_amount_text: d.award_amount_text,
+          application_deadline: d.application_deadline,
+          official_url: d.official_url,
+        })),
+      );
+    })();
+    return () => { cancelled = true; };
+  }, [candidateNames]);
 
   useEffect(() => {
     if (!slug) {
@@ -228,7 +285,9 @@ const SharedBriefPage = () => {
                      [&_li]:text-foreground/90 [&_li]:leading-relaxed
                      [&_strong]:text-foreground"
         >
-          <ReactMarkdown>{brief.content}</ReactMarkdown>
+          <EnrichedMarkdown scholarships={scholarshipsForCards}>
+            {brief.content}
+          </EnrichedMarkdown>
         </div>
 
         {/* Branding + CTA */}
