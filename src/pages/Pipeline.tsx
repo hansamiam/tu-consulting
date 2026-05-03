@@ -27,6 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useApplicationTracker, type AppStatus } from "@/hooks/useApplicationTracker";
 import { useAuth } from "@/contexts/AuthContext";
 import { ScholarshipChecklist } from "@/components/pipeline/ScholarshipChecklist";
+import { DueThisWeek } from "@/components/pipeline/DueThisWeek";
 
 interface Scholarship {
   scholarship_id: string;
@@ -258,6 +259,28 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
         ) : trackedIds.length === 0 ? (
           <EmptyState language={language} />
         ) : (
+          <>
+            {/* Top-of-page weekly action surface — aggregates blocking
+                checklist items across every tracked scholarship that has
+                a deadline in the next 60 days. Soft-fails (returns null)
+                when there's nothing critical to do, so the kanban below
+                is the lead surface for users who are caught up. */}
+            <DueThisWeek
+              trackedScholarships={rows.map(r => ({
+                scholarship_id: r.scholarship_id,
+                scholarship_name: r.scholarship_name,
+                application_deadline: r.application_deadline,
+                host_country: r.host_country,
+              }))}
+              language={language}
+              onSelectScholarship={(id) => {
+                const found = rows.find(r => r.scholarship_id === id);
+                if (found) setOpenDetail(found);
+              }}
+            />
+          </>
+        )}
+        {trackedIds.length > 0 && !loading && (
           // Mobile: horizontal scroll-snap of 5 columns (one stage per swipe).
           // Desktop (lg+): standard 5-col grid. Negative margins extend the
           // scroll area to the screen edge so card shadows aren't cropped.
