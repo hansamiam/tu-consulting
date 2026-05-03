@@ -174,6 +174,16 @@ const ScholarshipDetail = () => {
     setMeta("og:description", desc, true);
     setMeta("og:type", "article", true);
     setMeta("og:url", `https://topuni.org/scholarships/${s.scholarship_id}`, true);
+    // Per-scholarship OG image — generated dynamically by the og-scholarship
+    // edge function. Every WhatsApp / X / LinkedIn / iMessage share now
+    // unfurls into a beautiful gold-accented preview card with the
+    // scholarship name, funding, country, and deadline urgency.
+    const ogImageUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-scholarship?id=${s.scholarship_id}`;
+    setMeta("og:image", ogImageUrl, true);
+    setMeta("og:image:width", "1200", true);
+    setMeta("og:image:height", "630", true);
+    setMeta("og:image:alt", `${s.scholarship_name} — TopUni`, true);
+    setMeta("twitter:image", ogImageUrl);
     setMeta("twitter:card", "summary_large_image");
     setMeta("twitter:title", title);
     setMeta("twitter:description", desc);
