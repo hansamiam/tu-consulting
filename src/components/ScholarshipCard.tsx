@@ -72,13 +72,17 @@ interface Props {
   stats?: ScholarshipCardStats;
 }
 
+// Urgency text deliberately drops the circle emojis (🔴🟡🟢⚫). The container
+// pill already carries color via urgencyClass, and a single inline dot renders
+// the urgency level via the dot prop on the pill — so the emoji was just visual
+// noise on top of styled UI. Cleaner labels, same urgency signal.
 const COPY = {
   en: {
-    closesIn: (n: number) => `🔴 CLOSES IN ${n} DAY${n === 1 ? "" : "S"}`,
-    daysLeft: (n: number) => `🟡 ${n} DAYS LEFT`,
-    monthsLeft: (n: number) => `🟢 ${n} MONTH${n === 1 ? "" : "S"}`,
-    rolling: "🟢 ROLLING DEADLINE",
-    closed: "⚫ CLOSED",
+    closesIn: (n: number) => `Closes in ${n} day${n === 1 ? "" : "s"}`,
+    daysLeft: (n: number) => `${n} days left`,
+    monthsLeft: (n: number) => `${n} month${n === 1 ? "" : "s"}`,
+    rolling: "Rolling deadline",
+    closed: "Closed",
     coverage: { full_ride: "Full ride", tuition_only: "Tuition", stipend: "Stipend", partial: "Partial", other: "Funding" },
     featured: "FEATURED",
     viewDetails: "View details",
@@ -90,27 +94,27 @@ const COPY = {
   ru: {
     closesIn: (n: number) => {
       const last = n % 10, lastTwo = n % 100;
-      if (lastTwo >= 11 && lastTwo <= 14) return `🔴 ЗАКРЫТИЕ ЧЕРЕЗ ${n} ДНЕЙ`;
-      if (last === 1) return `🔴 ЗАКРЫТИЕ ЧЕРЕЗ ${n} ДЕНЬ`;
-      if (last >= 2 && last <= 4) return `🔴 ЗАКРЫТИЕ ЧЕРЕЗ ${n} ДНЯ`;
-      return `🔴 ЗАКРЫТИЕ ЧЕРЕЗ ${n} ДНЕЙ`;
+      if (lastTwo >= 11 && lastTwo <= 14) return `Закрытие через ${n} дней`;
+      if (last === 1) return `Закрытие через ${n} день`;
+      if (last >= 2 && last <= 4) return `Закрытие через ${n} дня`;
+      return `Закрытие через ${n} дней`;
     },
     daysLeft: (n: number) => {
       const last = n % 10, lastTwo = n % 100;
-      if (lastTwo >= 11 && lastTwo <= 14) return `🟡 ${n} ДНЕЙ ОСТАЛОСЬ`;
-      if (last === 1) return `🟡 ${n} ДЕНЬ ОСТАЛСЯ`;
-      if (last >= 2 && last <= 4) return `🟡 ${n} ДНЯ ОСТАЛОСЬ`;
-      return `🟡 ${n} ДНЕЙ ОСТАЛОСЬ`;
+      if (lastTwo >= 11 && lastTwo <= 14) return `${n} дней осталось`;
+      if (last === 1) return `${n} день остался`;
+      if (last >= 2 && last <= 4) return `${n} дня осталось`;
+      return `${n} дней осталось`;
     },
     monthsLeft: (n: number) => {
       const last = n % 10, lastTwo = n % 100;
-      if (lastTwo >= 11 && lastTwo <= 14) return `🟢 ${n} МЕСЯЦЕВ`;
-      if (last === 1) return `🟢 ${n} МЕСЯЦ`;
-      if (last >= 2 && last <= 4) return `🟢 ${n} МЕСЯЦА`;
-      return `🟢 ${n} МЕСЯЦЕВ`;
+      if (lastTwo >= 11 && lastTwo <= 14) return `${n} месяцев`;
+      if (last === 1) return `${n} месяц`;
+      if (last >= 2 && last <= 4) return `${n} месяца`;
+      return `${n} месяцев`;
     },
-    rolling: "🟢 БЕЗ ЖЁСТКОГО ДЕДЛАЙНА",
-    closed: "⚫ ЗАКРЫТО",
+    rolling: "Без жёсткого дедлайна",
+    closed: "Закрыто",
     coverage: { full_ride: "Полное", tuition_only: "Обучение", stipend: "Стипендия", partial: "Частичное", other: "Финансирование" },
     featured: "ИЗБРАННОЕ",
     viewDetails: "Подробнее",

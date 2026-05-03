@@ -978,12 +978,15 @@ const TimelineView = ({ items, onSelect, openDetail, ...common }: {
   toggleCompare: (id: string) => void;
 }) => {
   const groups = useMemo(() => {
-    const buckets: { label: string; subtitle: string; cls: string; items: Scored[] }[] = [
-      { label: "This week",       subtitle: "Closing in seven days. Decide and act.",         cls: "text-destructive",  items: [] },
-      { label: "This month",      subtitle: "Closing in the next 31 days.",                   cls: "text-rose-600",     items: [] },
-      { label: "Next 90 days",    subtitle: "Plenty of runway to prepare a strong application.", cls: "text-warning",   items: [] },
-      { label: "Later this year", subtitle: "On the radar — start research now.",              cls: "text-foreground/60",items: [] },
-      { label: "Rolling / undated", subtitle: "Apply whenever you're ready.",                  cls: "text-muted-foreground", items: [] },
+    // Restrained palette — even the urgency buckets stay foreground-strong,
+    // not painted-red. A single small dot beside the heading carries the
+    // urgency signal so the page stops looking like an alarm panel.
+    const buckets: { label: string; subtitle: string; cls: string; dotCls: string; items: Scored[] }[] = [
+      { label: "This week",         subtitle: "Closing in seven days — decide and act.",            cls: "text-foreground",        dotCls: "bg-destructive",                                items: [] },
+      { label: "This month",        subtitle: "Closing in the next 31 days.",                       cls: "text-foreground",        dotCls: "bg-amber-500",                                  items: [] },
+      { label: "Next 90 days",      subtitle: "Plenty of runway to prepare a strong application.",  cls: "text-foreground",        dotCls: "bg-foreground/40",                              items: [] },
+      { label: "Later this year",   subtitle: "On the radar — start research now.",                 cls: "text-foreground",        dotCls: "bg-foreground/25",                              items: [] },
+      { label: "Rolling / undated", subtitle: "Apply whenever you're ready.",                       cls: "text-foreground/80",     dotCls: "bg-muted-foreground/30",                        items: [] },
     ];
     items.forEach(s => {
       const d = daysUntil(s.application_deadline);
@@ -1019,11 +1022,14 @@ const TimelineView = ({ items, onSelect, openDetail, ...common }: {
       {groups.map(g => (
         <section key={g.label}>
           <div className="flex items-baseline justify-between mb-4 pb-3 border-b border-border/60">
-            <div>
-              <h2 className={`font-heading text-xl font-bold tracking-tight ${g.cls}`}>{g.label}</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">{g.subtitle}</p>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className={`block h-2 w-2 rounded-full shrink-0 ${g.dotCls}`} />
+                <h2 className={`font-heading text-xl font-bold tracking-tight ${g.cls}`}>{g.label}</h2>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1 ml-4">{g.subtitle}</p>
             </div>
-            <span className="text-2xl font-bold text-foreground/30 tabular-nums">{g.items.length.toString().padStart(2, "0")}</span>
+            <span className="text-2xl font-bold text-foreground/25 tabular-nums shrink-0">{g.items.length.toString().padStart(2, "0")}</span>
           </div>
           <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
             {g.items.map((s, i) => {
@@ -1070,66 +1076,80 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
     // 3 levels — "Competitive" matches both high and very_high in the filter logic below.
     { label: "Competitiveness", key: "selectivity", opts: [{ v: "all", l: "Any level" }, { v: "low", l: "Accessible" }, { v: "medium", l: "Moderate" }, { v: "high", l: "Competitive" }] },
   ];
+  // The 3 primary segmented sections (Coverage / Degree / Competitiveness)
+  // render as wrapping pill chips instead of stacked rows. Same options,
+  // ~60% less vertical space — the panel now fits one screen even on
+  // a 1080p laptop without scroll.
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {sections.map(section => (
         <div key={section.label}>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2.5">{section.label}</p>
-          <div className="space-y-1">
-            {section.opts.map(o => (
-              <button key={o.v} onClick={() => setFilters(f => ({ ...f, [section.key]: o.v }))}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${(filters[section.key] as string) === o.v ? "bg-gold/15 text-gold-dark dark:text-gold font-semibold" : "text-foreground/65 hover:bg-foreground/[0.03]"}`}>
-                {o.l}
-              </button>
-            ))}
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-1.5">{section.label}</p>
+          <div className="flex flex-wrap gap-1">
+            {section.opts.map(o => {
+              const active = (filters[section.key] as string) === o.v;
+              return (
+                <button
+                  key={o.v}
+                  onClick={() => setFilters(f => ({ ...f, [section.key]: o.v }))}
+                  className={`px-2.5 py-1 rounded-md text-[12px] leading-tight transition-colors ${
+                    active
+                      ? "bg-gold/15 text-gold-dark dark:text-gold font-semibold ring-1 ring-gold/30"
+                      : "text-foreground/65 hover:bg-foreground/[0.04] ring-1 ring-border"
+                  }`}
+                >
+                  {o.l}
+                </button>
+              );
+            })}
           </div>
         </div>
       ))}
 
-      {/* Field filter — built from data */}
-      {fieldsAvailable.length > 0 && (
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2.5">Field</p>
-          <Select value={filters.field} onValueChange={v => setFilters(f => ({ ...f, field: v }))}>
-            <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All fields</SelectItem>
-              {fieldsAvailable.map(f => <SelectItem key={f} value={f}>{humanize(f)}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      {/* Host country filter */}
-      {hostCountries.length > 0 && (
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2.5">Host country</p>
-          <Select value={filters.hostCountry} onValueChange={v => setFilters(f => ({ ...f, hostCountry: v }))}>
-            <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All countries</SelectItem>
-              {hostCountries.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+      {/* Field + Host country — kept tight as compact dropdowns side-by-side.
+          The panel was previously 2 stacked dropdown sections; this shrinks
+          that to a single row at all but the narrowest widths. */}
+      <div className="grid grid-cols-1 gap-3">
+        {fieldsAvailable.length > 0 && (
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-1.5">Field</p>
+            <Select value={filters.field} onValueChange={v => setFilters(f => ({ ...f, field: v }))}>
+              <SelectTrigger className="h-8 text-[13px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All fields</SelectItem>
+                {fieldsAvailable.map(f => <SelectItem key={f} value={f}>{humanize(f)}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        {hostCountries.length > 0 && (
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-1.5">Host country</p>
+            <Select value={filters.hostCountry} onValueChange={v => setFilters(f => ({ ...f, hostCountry: v }))}>
+              <SelectTrigger className="h-8 text-[13px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All countries</SelectItem>
+                {hostCountries.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+      </div>
 
       <Separator />
-      <div className="space-y-3.5">
-        {/* "My shortlist" toggle removed — the shortlist Sheet in the toolbar
-            covers this case and frees vertical space so the filter fits. */}
+      <div className="space-y-2.5">
         {([
-          { id: "oe", label: "Eligible only",         key: "onlyEligible"    as keyof FilterState },
-          { id: "cs", label: "Closing in 90 days",    key: "closingSoon"     as keyof FilterState },
+          { id: "oe", label: "Eligible only",      key: "onlyEligible"    as keyof FilterState },
+          { id: "cs", label: "Closing in 90 days", key: "closingSoon"     as keyof FilterState },
         ] as const).map(t => (
           <div key={t.id} className="flex items-center justify-between">
-            <Label htmlFor={t.id} className="text-sm cursor-pointer text-foreground/75 font-normal">{t.label}</Label>
+            <Label htmlFor={t.id} className="text-[13px] cursor-pointer text-foreground/75 font-normal">{t.label}</Label>
             <Switch id={t.id} checked={filters[t.key] as boolean} onCheckedChange={v => setFilters(f => ({ ...f, [t.key]: v }))} />
           </div>
         ))}
       </div>
       {activeCount > 0 && (
-        <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => setFilters(DEFAULT_FILTERS)}>
+        <Button variant="outline" size="sm" className="w-full text-xs h-8" onClick={() => setFilters(DEFAULT_FILTERS)}>
           <X className="h-3 w-3 mr-1.5" /> Clear all filters
         </Button>
       )}
