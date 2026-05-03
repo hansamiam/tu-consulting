@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
+import { OpportunityMap } from "@/components/discover/OpportunityMap";
+import { CuratedCollections } from "@/components/discover/CuratedCollections";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSemanticScholarshipMatch } from "@/hooks/useSemanticScholarshipMatch";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
@@ -630,7 +632,7 @@ const FeaturedCard = ({ s, onSelect, isBookmarked, onBookmark }: {
           <div className="flex sm:flex-col items-baseline sm:items-start gap-2 sm:gap-1.5">
             <div className="inline-flex items-center gap-1.5 bg-gold/10 border border-gold/25 px-2 py-0.5 rounded-full">
               <Trophy className="h-2.5 w-2.5 text-gold-dark" />
-              <span className="text-gold-dark text-[10px] font-semibold uppercase tracking-[0.18em]">Top match</span>
+              <span className="text-gold-dark text-[10px] font-semibold uppercase tracking-[0.18em]">Top opportunity</span>
             </div>
             <SelectivityChip level={s.selectivity} />
           </div>
@@ -900,7 +902,8 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           )}
         </div>
 
-        {/* Why it fits — single line, light */}
+        {/* Why it may be worth exploring — abundance framing instead of
+            verdict. Same `why_this_fits` data, different emotional register. */}
         {why && (
           <p className="text-[12px] text-foreground/65 leading-snug line-clamp-2 flex-1">
             {why.replace(/\.+$/, "")}.
@@ -1379,7 +1382,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             {why && (
               <div className="bg-gold/5 border border-gold/20 rounded-2xl p-5">
                 <h4 className="text-[10px] font-semibold text-gold-dark dark:text-gold mb-2 flex items-center gap-2 uppercase tracking-[0.16em]">
-                  <Sparkles className="h-3 w-3" /> Why this fits you
+                  <Sparkles className="h-3 w-3" /> Why this may be worth exploring
                 </h4>
                 <p className="text-sm text-foreground/85 leading-relaxed">{why}</p>
               </div>
@@ -1653,7 +1656,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                       <p className="text-[11px] text-muted-foreground truncate">
                         {[sim.provider_name, sim.host_country].filter(Boolean).join(" · ")}
                         <span className="mx-1.5 text-muted-foreground/40">·</span>
-                        <span className="font-semibold text-foreground/70 tabular-nums">{sim.match}% match</span>
+                        <span className="font-semibold text-foreground/70 tabular-nums">{sim.match} opportunity</span>
                       </p>
                     </div>
                     <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 group-hover:translate-x-0.5 group-hover:text-gold-dark transition-all" />
@@ -2322,11 +2325,33 @@ const Discover = ({ language = "en" }: Props) => {
                   {!loading && (
                     <span className="text-[11px] text-muted-foreground tabular-nums">
                       <span className="font-heading font-bold text-foreground text-base mr-1">{filtered.length}</span>
-                      of {ranked.length} {ranked.length === 1 ? "scholarship" : "scholarships"}
+                      of {ranked.length} {ranked.length === 1 ? "opportunity" : "opportunities"}
                     </span>
                   )}
                 </div>
               </div>
+
+              {/* Opportunity Map — abundance-oriented metric strip. The student's
+                  first impression of the page is "the world is open to you,"
+                  not "rank yourself against this list." Numbers reflect the
+                  current filtered view if filters are active. */}
+              {!loading && ranked.length > 0 && (
+                <OpportunityMap
+                  total={ranked}
+                  filtered={filtered}
+                  hasActiveFilters={activeFiltersCount > 0}
+                />
+              )}
+
+              {/* Curated collections — preset filter combos for natural search
+                  intents. Each tile counts how many opportunities match and
+                  hides itself if the count is zero (no empty drawers). */}
+              {!loading && ranked.length > 0 && (
+                <CuratedCollections
+                  rows={ranked}
+                  onApply={(patch) => setFilters(f => ({ ...f, ...patch as Partial<FilterState> }))}
+                />
+              )}
 
               {/* Sticky toolbar — search · filters · sort · view-mode · hidden · compare.
                   Sticks below the global Nav (h-16 = 64px) so the filter row is always
@@ -2546,7 +2571,7 @@ const Discover = ({ language = "en" }: Props) => {
                     ) : filtered.length === 0 ? (
                       <div className="border border-dashed border-border rounded-3xl p-16 text-center bg-muted/10">
                         <Search className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />
-                        <h3 className="font-heading font-semibold text-lg text-foreground mb-1.5">No scholarships match</h3>
+                        <h3 className="font-heading font-semibold text-lg text-foreground mb-1.5">No opportunities match these filters</h3>
                         <p className="text-sm text-muted-foreground mb-5">Try adjusting your filters</p>
                         <Button variant="outline" size="sm" onClick={() => setFilters(DEFAULT_FILTERS)}>Clear filters</Button>
                       </div>
@@ -2707,7 +2732,7 @@ const Discover = ({ language = "en" }: Props) => {
                             className="group w-full flex items-baseline justify-between gap-4 py-3 border-y border-border/60 hover:border-gold/40 transition-colors text-left"
                           >
                             <div className="flex items-baseline gap-3 min-w-0">
-                              <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark shrink-0">Top match</span>
+                              <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark shrink-0">Top opportunity</span>
                               <span className="font-heading font-semibold text-foreground truncate group-hover:text-gold-dark transition-colors">{sections.hero[0].scholarship_name}</span>
                               <span className="hidden sm:inline text-xs text-muted-foreground truncate">{sections.hero[0].provider_name}</span>
                             </div>
@@ -2782,7 +2807,7 @@ const Discover = ({ language = "en" }: Props) => {
                             <>
                               {sections.strong.length > 0 && (
                                 <section>
-                                  <SectionHeader kicker="Closely aligned" title="Strongest fits with your profile" subtitle="These hit on multiple dimensions — academics, field, eligibility, and budget."
+                                  <SectionHeader kicker="Closely aligned" title="Strongest opportunities for you" subtitle="These align on academics, field, eligibility, and budget — strong starting points to explore."
                                     count={sections.strong.length} accentClass="text-gold-dark dark:text-gold" />
                                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
                                     {sections.strong.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
@@ -2792,7 +2817,7 @@ const Discover = ({ language = "en" }: Props) => {
 
                               {sections.competitive.length > 0 && (
                                 <section>
-                                  <SectionHeader kicker="Aligned" title="Competitive matches" subtitle="A strong, well-targeted application makes these very achievable."
+                                  <SectionHeader kicker="Aligned" title="Competitive opportunities worth exploring" subtitle="A focused, well-targeted application makes these very achievable."
                                     count={sections.competitive.length} accentClass="text-primary dark:text-primary-bright" />
                                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
                                     {sections.competitive.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
@@ -2802,7 +2827,7 @@ const Discover = ({ language = "en" }: Props) => {
 
                               {sections.stretch.length > 0 && (
                                 <section>
-                                  <SectionHeader kicker="Worth exploring" title="More to consider" subtitle="Selective fits worth a quick scan — review the requirements and decide."
+                                  <SectionHeader kicker="Worth exploring" title="More routes to consider" subtitle="Selective opportunities worth a quick scan — review the requirements and decide if a focused application makes sense."
                                     count={sections.stretch.length} accentClass="text-muted-foreground" />
                                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr opacity-90">
                                     {sections.stretch.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
@@ -2864,7 +2889,7 @@ const Discover = ({ language = "en" }: Props) => {
               ) : (() => {
                 const items = ranked.filter(s => compareSet.has(s.scholarship_id));
                 const rows: { label: string; render: (s: Scored) => React.ReactNode }[] = [
-                  { label: "Match", render: s => <span className="font-bold text-lg tabular-nums text-foreground">{s.match}<span className="text-muted-foreground/60 text-sm font-normal">/100</span></span> },
+                  { label: "Opportunity match", render: s => <span className="font-bold text-lg tabular-nums text-foreground">{s.match}<span className="text-muted-foreground/60 text-sm font-normal">/100</span></span> },
                   { label: "Tier", render: s => {
                       const t = TIER[s.priority];
                       return <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] ${t.textLight}`}>
@@ -2984,7 +3009,7 @@ const Discover = ({ language = "en" }: Props) => {
                       <p className="font-heading font-bold text-sm text-foreground line-clamp-1">{s.scholarship_name}</p>
                       <p className="text-xs text-muted-foreground truncate mt-0.5">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
                       <div className="flex items-center gap-2 mt-2">
-                        <span className="text-[11px] font-bold text-foreground bg-muted px-2 py-0.5 rounded-md tabular-nums">{s.match}% match</span>
+                        <span className="text-[11px] font-bold text-foreground bg-muted px-2 py-0.5 rounded-md tabular-nums">{s.match} opportunity</span>
                         <span className={`text-[11px] font-medium ${dl.cls}`}>· {dl.text}</span>
                       </div>
                     </div>
