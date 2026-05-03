@@ -26,6 +26,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { supabase } from "@/integrations/supabase/client";
 import { useApplicationTracker, type AppStatus } from "@/hooks/useApplicationTracker";
 import { useAuth } from "@/contexts/AuthContext";
+import { ScholarshipChecklist } from "@/components/pipeline/ScholarshipChecklist";
 
 interface Scholarship {
   scholarship_id: string;
@@ -412,6 +413,15 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
+
+                {/* AI-generated application checklist — universal per
+                    scholarship (cached server-side), with per-user
+                    completion state mirrored to localStorage and the
+                    application_tracker row for authed users. */}
+                <ScholarshipChecklist
+                  scholarshipId={openDetail.scholarship_id}
+                  language={language}
+                />
 
                 {/* Notes */}
                 <div>

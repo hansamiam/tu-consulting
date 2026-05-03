@@ -68,6 +68,9 @@ verify_jwt = false
 [functions.scholarship-deep-dive]
 verify_jwt = false
 
+[functions.generate-scholarship-checklist]
+verify_jwt = false
+
 [functions.og-brief]
 verify_jwt = false
 
