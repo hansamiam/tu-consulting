@@ -16,7 +16,7 @@ const RefundPolicy = () => {
               Refund Policy
             </h1>
             <p className="text-muted-foreground mb-8">
-              Last updated: January 2025
+              Last updated: {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
             </p>
           </ScrollReveal>
 
@@ -230,7 +230,7 @@ const RefundPolicy = () => {
             Led by consultants from Yale, Harvard, Cambridge, and Tsinghua
           </p>
           <p className="text-muted-foreground text-sm">
-            © 2025 Top Uni Consulting | All Rights Reserved
+            © {new Date().getFullYear()} Top Uni Consulting | All Rights Reserved
           </p>
         </div>
       </footer>

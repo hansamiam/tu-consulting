@@ -17,7 +17,7 @@ const PaymentInfoRu = () => {
               Оплата банковской картой
             </h1>
             <p className="text-muted-foreground mb-8">
-              Последнее обновление: Январь 2025
+              Последнее обновление: {new Date().toLocaleDateString("ru-RU", { month: "long", year: "numeric" })}
             </p>
           </ScrollReveal>
 
@@ -244,7 +244,7 @@ const PaymentInfoRu = () => {
             Под руководством консультантов из Йеля, Гарварда, Кембриджа и Цинхуа
           </p>
           <p className="text-muted-foreground text-sm">
-            © 2025 Top Uni Consulting | Все права защищены
+            © {new Date().getFullYear()} Top Uni Consulting | Все права защищены
           </p>
         </div>
       </footer>

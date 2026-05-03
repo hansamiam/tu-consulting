@@ -41,7 +41,7 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
   // one cohesive product surface.
   const navItems = [
     { label: "TopUni AI",                                     path: isRussian ? "/topuni-ai/ru" : "/topuni-ai" },
-    { label: isRussian ? "Стипендии"  : "Scholarships",       path: isRussian ? "/discover/ru"  : "/discover"  },
+    { label: isRussian ? "Стипендии"  : "Discover",           path: isRussian ? "/discover/ru"  : "/discover"  },
     { label: isRussian ? "Академия"   : "Academy",            path: "/academy" },
     { label: isRussian ? "Цены"       : "Pricing",            path: isRussian ? "/pricing/ru" : "/pricing" },
   ];

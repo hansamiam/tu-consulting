@@ -282,7 +282,7 @@ export const UniversityTable = ({ universities, language, compareIds, onToggleCo
                           {uni.website_url && (
                             <img
                               src={`https://logo.clearbit.com/${new URL(uni.website_url).hostname}`}
-                              alt=""
+                              alt={`${uni.university_name} logo`}
                               className="h-6 w-6 rounded-sm object-contain shrink-0 bg-white"
                               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                             />

@@ -1958,7 +1958,7 @@ const Discover = ({ language = "en" }: Props) => {
   const activeFiltersCount = [filters.search !== "", filters.coverage !== "all", filters.degree !== "all", filters.effort !== "all", filters.selectivity !== "all", filters.field !== "all", filters.hostCountry !== "all", filters.onlyEligible, filters.closingSoon, filters.onlyShortlisted].filter(Boolean).length;
 
   const analysisTexts = [
-    `Scanning ${rows.length || 75} verified scholarships`,
+    `Scanning ${rows.length || 200}+ verified scholarships`,
     `Filtering by nationality${wiz.nationality ? `: ${wiz.nationality}` : ""}`,
     `Matching ${wiz.degree || "your degree"} programs${wiz.field ? ` in ${wiz.field}` : ""}`,
     "Evaluating academic thresholds and selectivity",
@@ -1966,7 +1966,7 @@ const Discover = ({ language = "en" }: Props) => {
   ];
 
   const dark = phase === "landing" || phase === "wizard" || phase === "analyzing";
-  const totalVerified = rows.length || 75;
+  const totalVerified = rows.length || 200;
 
   return (
     <div className={`min-h-screen relative transition-colors duration-700 ${dark ? "" : "bg-background"}`}>
@@ -3021,7 +3021,7 @@ const Discover = ({ language = "en" }: Props) => {
             <div className="px-7 py-6 space-y-5">
               <div className="space-y-2.5 text-sm text-foreground/85">
                 {[
-                  "Full database — all 75 scholarships with strategy notes, rejection patterns, and how-to-win approaches.",
+                  `Full database — all ${rows.length || 200}+ scholarships with strategy notes, rejection patterns, and how-to-win approaches.`,
                   "Live monthly workshops with our founders — Yale, Schwarzman/Cambridge, Harvard.",
                   "Recordings library — every workshop saved for you.",
                   "Unlimited shortlist + status tracking + notes.",
