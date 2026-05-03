@@ -22,6 +22,8 @@ import { CounselorSessions } from "@/components/topuni/CounselorSessions";
 import { GenerationPipeline } from "@/components/GenerationPipeline";
 import { EnrichedMarkdown } from "@/components/EnrichedMarkdown";
 import { ProBriefUnlock, type ProBriefDepth } from "@/components/ProBriefUnlock";
+import { BriefHeroStats } from "@/components/brief/BriefHeroStats";
+import { BriefChapterNav } from "@/components/brief/BriefChapterNav";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -905,56 +907,58 @@ const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onO
   return (
     <>
       {sections.map((section, i) => {
+        // Wrap each section in a chapter anchor so BriefChapterNav can scroll
+        // to it whether it renders as plain markdown OR through a custom
+        // section component that consumes the h2.
+        const anchorId = `chapter-${i + 1}`;
+        const anchorProps = { id: anchorId, className: "scroll-mt-24" } as const;
+
         if (PATHWAY_POS_SECTION_REGEX.test(section)) {
-          // Stream-safe: render once we have at least one body line beyond the heading
           const hasBody = section.split("\n").slice(1).join("\n").trim().length > 30;
           if (hasBody) {
-            return <StrategicPositioning key={i} markdown={section} isRu={isRu} />;
+            return <div key={i} {...anchorProps}><StrategicPositioning markdown={section} isRu={isRu} /></div>;
           }
         }
         if (PATHWAY_PLAN_SECTION_REGEX.test(section)) {
-          return <InteractiveActionPlanOrFallback
-            key={i} markdown={section} completedTasks={completedTasks}
+          return <div key={i} {...anchorProps}><InteractiveActionPlanOrFallback
+            markdown={section} completedTasks={completedTasks}
             onToggle={onToggle} taskKey={taskKey} isRu={isRu}
             liveMatches={liveMatches}
             onSaveScholarship={onSaveScholarship}
             savedSet={savedSet}
-          />;
+          /></div>;
         }
         if (PATHWAY_UNIS_SECTION_REGEX.test(section)) {
           const hasBuckets = /^###\s+/m.test(section);
           if (hasBuckets) {
-            return <UniversityShortlist key={i} markdown={section} isRu={isRu} onOpenDiscover={onOpenDiscover} />;
+            return <div key={i} {...anchorProps}><UniversityShortlist markdown={section} isRu={isRu} onOpenDiscover={onOpenDiscover} /></div>;
           }
         }
         if (PATHWAY_FUND_SECTION_REGEX.test(section)) {
-          // Stream-safe: only flip once the AI has produced at least one bullet
           const hasBullets = /^\s*([-*]|\d+\.)\s+/m.test(section);
           if (hasBullets) {
-            return <FundingShortlist key={i} markdown={section} liveMatches={liveMatches} isRu={isRu} onOpenDiscover={onOpenDiscover} />;
+            return <div key={i} {...anchorProps}><FundingShortlist markdown={section} liveMatches={liveMatches} isRu={isRu} onOpenDiscover={onOpenDiscover} /></div>;
           }
         }
         if (PATHWAY_ESSAYS_SECTION_REGEX.test(section)) {
-          // Stream-safe: only flip once we have something to render
           const hasContent = /^\s*([-*]|\d+\.|\#)\s+/m.test(section.split("\n").slice(1).join("\n"));
           if (hasContent) {
-            return <EssayAngles key={i} markdown={section} isRu={isRu} />;
+            return <div key={i} {...anchorProps}><EssayAngles markdown={section} isRu={isRu} /></div>;
           }
         }
         if (PATHWAY_GAPS_SECTION_REGEX.test(section)) {
           const hasContent = /^\s*([-*]|\d+\.|\#)\s+/m.test(section.split("\n").slice(1).join("\n"));
           if (hasContent) {
-            return <HonestGaps key={i} markdown={section} isRu={isRu} />;
+            return <div key={i} {...anchorProps}><HonestGaps markdown={section} isRu={isRu} /></div>;
           }
         }
         if (PATHWAY_FINAL_SECTION_REGEX.test(section)) {
-          // Stream-safe: render once we have at least a sentence of body.
           const hasBody = section.split("\n").slice(1).join("\n").trim().length > 30;
           if (hasBody) {
-            return <FinalWord key={i} markdown={section} isRu={isRu} />;
+            return <div key={i} {...anchorProps}><FinalWord markdown={section} isRu={isRu} /></div>;
           }
         }
-        return <EnrichedMarkdown key={i} scholarships={scholarshipsForCards}>{section}</EnrichedMarkdown>;
+        return <div key={i} {...anchorProps}><EnrichedMarkdown scholarships={scholarshipsForCards}>{section}</EnrichedMarkdown></div>;
       })}
     </>
   );
@@ -1671,7 +1675,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
               )}
 
               {pathwayContent && (
-                <div id="printable-report" className="prose prose-sm max-w-none dark:prose-invert [&_h2]:text-foreground [&_h2]:font-heading [&_h2]:text-xl [&_h2]:mt-8 [&_h2]:mb-3 [&_h3]:text-foreground [&_h3]:font-heading [&_h3]:text-lg [&_h3]:mt-6 [&_h3]:mb-2 [&_p]:text-muted-foreground [&_li]:text-muted-foreground [&_strong]:text-foreground">
+                <div className="grid xl:grid-cols-[1fr_220px] gap-x-10 print:block">
+                <div id="printable-report" className="min-w-0 prose prose-sm max-w-none dark:prose-invert [&_h2]:text-foreground [&_h2]:font-heading [&_h2]:text-xl [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:scroll-mt-24 [&_h2]:tracking-[-0.01em] [&_h3]:text-foreground [&_h3]:font-heading [&_h3]:text-lg [&_h3]:mt-6 [&_h3]:mb-2 [&_p]:text-muted-foreground [&_li]:text-muted-foreground [&_strong]:text-foreground">
                   {/* Print-only masthead */}
                   <div className="print-only mb-8 pb-6 border-b-2 border-foreground hidden">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-foreground/60 mb-2">TopUni · Pathway Report</p>
@@ -1684,6 +1689,17 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                       {profile.major ? ` ${profile.major}` : ""}
                     </p>
                   </div>
+
+                  {/* Hero KPI strip — first thing the user sees when the brief
+                      lands. Numbers come from liveMatches + brief word count
+                      so they re-render live as new sections stream in. */}
+                  {!pathwayLoading && (
+                    <BriefHeroStats
+                      liveMatches={liveMatches}
+                      briefContent={pathwayContent}
+                      isRu={isRu}
+                    />
+                  )}
 
                   {/* Profile recap chips — visual context, no chart, no fluff */}
                   <div className="not-prose flex flex-wrap gap-2 mb-8 pb-6 border-b border-border">
@@ -1857,12 +1873,46 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                     </div>
                   )}
 
+                  {/* Brief artisanal footer — model + word count + timestamp.
+                      Tiny premium touch the user sees only when they finish
+                      reading. Print-only disclaimer stays separate below. */}
+                  {!pathwayLoading && (
+                    <div className="not-prose mt-10 pt-6 border-t border-border print:hidden">
+                      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-[11px] text-muted-foreground">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <span className="font-mono tabular-nums">
+                            {pathwayContent.trim().split(/\s+/).filter(Boolean).length.toLocaleString(isRu ? "ru" : "en")} {t("words", "слов")}
+                          </span>
+                          <span className="text-muted-foreground/30">·</span>
+                          <span>{t(`Generated ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`,
+                                  `Создано ${new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}`)}</span>
+                          <span className="text-muted-foreground/30">·</span>
+                          <span>
+                            {reportGrade === "premium"
+                              ? <span className="inline-flex items-center gap-1 font-semibold text-gold-dark"><Crown className="w-2.5 h-2.5" /> {t("Pro tier", "Pro-уровень")}</span>
+                              : <span>{t("Standard tier", "Базовый уровень")}</span>}
+                          </span>
+                        </div>
+                        <span className="text-muted-foreground/50">
+                          TopUni AI · v1.2
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Print-only footer disclaimer */}
                   <div className="print-only mt-12 pt-6 border-t border-foreground/20 hidden">
                     <p className="text-[10px] text-foreground/55 leading-relaxed m-0">
                       Generated by TopUni AI · topuni.com · This report is a starting point for your application strategy. Verify scholarship details, deadlines, and eligibility on official institution websites before applying. © {new Date().getFullYear()} TopUni Consulting.
                     </p>
                   </div>
+                </div>
+                {/* Sticky chapter nav — only when the brief has settled and
+                    has multiple sections. Hidden under xl so mobile/tablet
+                    keeps the brief full-width. */}
+                {!pathwayLoading && (
+                  <BriefChapterNav briefContent={pathwayContent} isRu={isRu} />
+                )}
                 </div>
               )}
             </CardContent>
