@@ -408,7 +408,7 @@ type LiveMatchLite = {
 const fmtMoney = (v: number) =>
   v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `$${Math.round(v / 1000)}K` : `$${v}`;
 
-const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combinedFunding, onRegen, isRegenerating, tier = "premium" }: {
+const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combinedFunding, onRegen, isRegenerating, tier = "premium", onSaveScholarship, savedSet }: {
   markdown: string;
   liveMatches: LiveMatchLite[];
   isRu: boolean;
@@ -421,6 +421,11 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combine
   /** When 'basic', the funding list shows the top 3 items in full and
    *  blurs the rest behind a Pro upgrade gate. */
   tier?: "basic" | "premium";
+  /** Inline save handler — turns each matched item into an actionable
+   *  workspace card instead of a read-only list entry. Mirrors the
+   *  top-matches grid pattern. SharedBrief leaves these undefined. */
+  onSaveScholarship?: (id: string, name: string) => void;
+  savedSet?: Set<string>;
 }) => {
   const { title, items } = useMemo(() => {
     const lines = markdown.split("\n");
@@ -511,40 +516,103 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combine
             : days! <= 90 ? "text-foreground/60"
             : "text-muted-foreground";
           const isLinked = !!it.match;
-          const Wrapper = isLinked ? "button" : "div";
-          return (
-            <Wrapper
-              key={`fund-${i}`}
-              {...(isLinked ? { onClick: onOpenDiscover, type: "button" as const } : {})}
-              className={`group relative w-full text-left bg-card border border-border rounded-xl px-5 py-4 overflow-hidden transition-all ${
-                isLinked ? "hover:border-gold/40 hover:shadow-sm cursor-pointer" : ""
-              }`}
-            >
-              <div className="absolute left-0 inset-y-0 w-[2px] bg-gold-dark/60" />
-              <div className="flex items-baseline justify-between gap-3 mb-2">
-                <h4 className="font-heading font-semibold text-[15px] text-foreground tracking-tight leading-snug min-w-0 truncate group-hover:text-gold-dark transition-colors">
-                  {it.name}
-                </h4>
-                {it.match && (
-                  <div className="flex items-center gap-3 text-[11px] tabular-nums shrink-0">
-                    {it.match.estimated_total_value_usd ? (
-                      <span className="text-gold-dark font-semibold">{fmtMoney(it.match.estimated_total_value_usd)}</span>
-                    ) : null}
-                    {dl && <span className={`font-semibold ${dlClass}`}>{dl}</span>}
+          const isSaved = isLinked && savedSet?.has(it.match!.scholarship_id);
+          // Matched items: clickable Link → detail page (specific, actionable),
+          // not /discover (generic dump). Inline save button + verified badge
+          // make each card a workspace surface instead of a read-only entry.
+          // Unmatched items (AI mentioned a scholarship not in our DB) render
+          // muted with a tooltip — same trust-signaling pattern the EnrichedMarkdown
+          // uses for fall-back bolds.
+          if (isLinked) {
+            const m = it.match!;
+            return (
+              <div
+                key={`fund-${i}`}
+                className="group relative bg-card border border-border rounded-xl hover:border-gold/40 hover:shadow-sm transition-all"
+              >
+                <div className="absolute left-0 inset-y-0 w-[2px] bg-gold-dark/60" />
+                <Link
+                  to={`/scholarships/${m.scholarship_id}`}
+                  onClick={() => void track("scholarship_detail_opened", { surface: "brief_funding_shortlist", scholarship_id: m.scholarship_id })}
+                  className="block px-5 py-4 pr-12"
+                >
+                  <div className="flex items-baseline justify-between gap-3 mb-2">
+                    <h4 className="font-heading font-semibold text-[15px] text-foreground tracking-tight leading-snug min-w-0 truncate group-hover:text-gold-dark transition-colors">
+                      {it.name}
+                    </h4>
+                    <div className="flex items-center gap-3 text-[11px] tabular-nums shrink-0">
+                      {m.estimated_total_value_usd ? (
+                        <span className="text-gold-dark font-semibold">{fmtMoney(m.estimated_total_value_usd)}</span>
+                      ) : null}
+                      {dl && <span className={`font-semibold ${dlClass}`}>{dl}</span>}
+                    </div>
                   </div>
+                  {it.detail && (
+                    <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+                      {renderInline(it.detail)}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-3 mt-1">
+                    {m.verification_status && m.verification_status !== "pending" && (
+                      <VerifiedBadge
+                        status={m.verification_status}
+                        verifiedAt={m.last_verified_at}
+                        size="xs"
+                        compact
+                      />
+                    )}
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground group-hover:text-gold-dark transition-colors inline-flex items-center gap-0.5">
+                      {isRu ? "Открыть детали" : "Open detail"} <ArrowRight className="w-3 h-3" />
+                    </span>
+                  </div>
+                </Link>
+                {onSaveScholarship && (
+                  <button
+                    type="button"
+                    aria-label={isSaved ? (isRu ? "Убрать из pipeline" : "Remove from pipeline") : (isRu ? "Сохранить в pipeline" : "Save to pipeline")}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onSaveScholarship(m.scholarship_id, m.scholarship_name);
+                      void track(isSaved ? "scholarship_unsaved" : "scholarship_saved", { surface: "brief_funding_shortlist", scholarship_id: m.scholarship_id });
+                    }}
+                    className={`absolute top-3 right-3 h-8 w-8 rounded-lg flex items-center justify-center transition-all ${
+                      isSaved
+                        ? "text-gold-dark bg-gold/10 hover:bg-gold/15"
+                        : "text-muted-foreground/60 hover:text-gold-dark hover:bg-gold/5 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
+                    }`}
+                    title={isSaved ? (isRu ? "Сохранено · убрать" : "Saved · click to remove") : (isRu ? "Сохранить в pipeline" : "Save to your pipeline")}
+                  >
+                    {isSaved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+                  </button>
                 )}
               </div>
+            );
+          }
+          // Unmatched item — AI mentioned a name we don't have in the DB.
+          // Render it muted with a tooltip so the user knows to verify
+          // independently. Same trust-signaling pattern as EnrichedMarkdown
+          // unmatched bolds.
+          return (
+            <div
+              key={`fund-${i}`}
+              className="group relative bg-muted/20 border border-dashed border-border rounded-xl px-5 py-4 overflow-hidden"
+              title={isRu
+                ? "Не найдено в проверенной базе TopUni — проверьте на официальном сайте перед подачей."
+                : "Not yet matched in TopUni's verified scholarship database — please verify on the official source before applying."}
+            >
+              <div className="absolute left-0 inset-y-0 w-[2px] bg-muted-foreground/30" />
+              <div className="flex items-baseline justify-between gap-3 mb-2">
+                <h4 className="font-heading font-semibold text-[15px] text-foreground/65 tracking-tight leading-snug min-w-0 truncate underline decoration-dotted decoration-foreground/30 underline-offset-2">
+                  {it.name}
+                </h4>
+              </div>
               {it.detail && (
-                <p className="text-xs text-muted-foreground leading-relaxed">
+                <p className="text-xs text-muted-foreground/70 leading-relaxed">
                   {renderInline(it.detail)}
                 </p>
               )}
-              {isLinked && (
-                <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mt-2 group-hover:text-gold-dark transition-colors">
-                  {isRu ? "Открыть в Discover" : "Open in Discover"} <ArrowRight className="w-3 h-3" />
-                </div>
-              )}
-            </Wrapper>
+            </div>
           );
         };
 
@@ -1154,7 +1222,7 @@ export const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, is
         if (PATHWAY_FUND_SECTION_REGEX.test(section)) {
           const hasBullets = /^\s*([-*]|\d+\.)\s+/m.test(section);
           if (hasBullets) {
-            return <div key={i} {...anchorProps}><FundingShortlist markdown={section} liveMatches={liveMatches} isRu={isRu} onOpenDiscover={onOpenDiscover} combinedFunding={structured?.combinedFunding ?? null} onRegen={onRegenSection} isRegenerating={regeneratingSectionId === "funding"} tier={tier} /></div>;
+            return <div key={i} {...anchorProps}><FundingShortlist markdown={section} liveMatches={liveMatches} isRu={isRu} onOpenDiscover={onOpenDiscover} combinedFunding={structured?.combinedFunding ?? null} onRegen={onRegenSection} isRegenerating={regeneratingSectionId === "funding"} tier={tier} onSaveScholarship={onSaveScholarship} savedSet={savedSet} /></div>;
           }
         }
         if (PATHWAY_ESSAYS_SECTION_REGEX.test(section)) {
