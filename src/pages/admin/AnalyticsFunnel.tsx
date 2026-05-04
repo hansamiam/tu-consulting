@@ -113,6 +113,8 @@ export default function AdminAnalyticsFunnel() {
   const briefViewed = totals.brief_viewed_full?.events ?? 0;
   const gateSeen = totals.gate_seen?.events ?? 0;
   const gateClicked = totals.gate_upgrade_clicked?.events ?? 0;
+  const proCompareOpened = totals.pro_comparison_opened?.events ?? 0;
+  const proCompareUpgrade = totals.pro_comparison_upgrade_clicked?.events ?? 0;
   const signupStarted = totals.signup_started?.events ?? 0;
   const paymentDone = totals.payment_completed?.events ?? 0;
 
@@ -151,7 +153,9 @@ export default function AdminAnalyticsFunnel() {
               <FunnelRow label="Brief streamed back" count={briefCompleted} pct={conversionRate(briefCompleted, briefStarted) ?? 0} />
               <FunnelRow label="Brief viewed past 50%" count={briefViewed} pct={conversionRate(briefViewed, briefStarted) ?? 0} />
               <FunnelRow label="Gate seen" count={gateSeen} pct={conversionRate(gateSeen, briefStarted) ?? 0} />
-              <FunnelRow label="Upgrade clicked" count={gateClicked} pct={conversionRate(gateClicked, briefStarted) ?? 0} />
+              <FunnelRow label="Upgrade clicked (gate)" count={gateClicked} pct={conversionRate(gateClicked, briefStarted) ?? 0} />
+              <FunnelRow label="Pro comparison opened" count={proCompareOpened} pct={conversionRate(proCompareOpened, briefStarted) ?? 0} />
+              <FunnelRow label="Upgrade clicked (modal)" count={proCompareUpgrade} pct={conversionRate(proCompareUpgrade, briefStarted) ?? 0} />
               <FunnelRow label="Signup started" count={signupStarted} pct={conversionRate(signupStarted, briefStarted) ?? 0} />
               <FunnelRow label="Payment completed" count={paymentDone} pct={conversionRate(paymentDone, briefStarted) ?? 0} highlight />
             </div>

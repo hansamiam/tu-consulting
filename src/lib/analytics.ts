@@ -17,6 +17,8 @@ export type EventName =
   | "brief_viewed_full"
   | "gate_seen"
   | "gate_upgrade_clicked"
+  | "pro_comparison_opened"
+  | "pro_comparison_upgrade_clicked"
   | "counselor_message_sent"
   | "counselor_message_blocked"
   | "signup_started"

@@ -1,9 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Crown, Lock, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { track } from "@/lib/analytics";
+import { ProComparisonModal } from "@/components/ProComparisonModal";
 
 /**
  * <PremiumGate /> — soft-blur overlay that wraps gated content.
@@ -39,11 +40,12 @@ interface Props {
 }
 
 export const PremiumGate = ({
-  gateId, headline, subline, ctaHref = "/pricing", ctaLabel, children,
+  gateId, headline, subline, ctaHref, ctaLabel, children,
 }: Props) => {
   const navigate = useNavigate();
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const seenRef = useRef(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   // Fire `gate_seen` once per render of this gate, when it first
   // intersects the viewport. We don't want to fire on render-but-not-visible
@@ -67,7 +69,11 @@ export const PremiumGate = ({
 
   const handleClick = () => {
     void track("gate_upgrade_clicked", { gate_id: gateId });
-    navigate(ctaHref);
+    if (ctaHref) {
+      navigate(ctaHref);
+    } else {
+      setModalOpen(true);
+    }
   };
 
   return (
@@ -101,7 +107,7 @@ export const PremiumGate = ({
           )}
           <Button variant="gold" onClick={handleClick} className="gap-1.5 w-full sm:w-auto">
             <Lock className="w-3.5 h-3.5" />
-            {ctaLabel ?? "Unlock with Pro"}
+            {ctaLabel ?? "See what unlocks"}
             <ArrowRight className="w-3.5 h-3.5" />
           </Button>
           <p className="text-[10px] text-muted-foreground/70 mt-3">
@@ -109,6 +115,7 @@ export const PremiumGate = ({
           </p>
         </div>
       </motion.div>
+      <ProComparisonModal open={modalOpen} onOpenChange={setModalOpen} gateId={gateId} />
     </div>
   );
 };
