@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   Award, Clock, Sparkles, GraduationCap, Globe, Cpu, Heart,
-  Layers, ArrowRight,
 } from "lucide-react";
 
 /* CuratedCollections — curated entry tiles above the card grid. Each tile
@@ -148,40 +147,32 @@ export const CuratedCollections = ({
 
   return (
     <section className="bg-background border-b border-border/60">
-      <div className="max-w-7xl mx-auto px-5 sm:px-8 py-5">
-        <div className="flex items-baseline justify-between gap-3 mb-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark">
-            Explore by route
-          </p>
-          <span className="text-[11px] text-muted-foreground hidden sm:inline">
-            {tilesWithCount.length} curated collections
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 py-3.5">
+        {/* Compact pill rail — text + count + icon, single row, horizontally
+            scrollable on mobile, wrap-row on desktop. Replaces the previous
+            gradient-tile grid that consumed ~110px of vertical space. The
+            same intents land in roughly half the height, so actual results
+            are reachable above the fold on common viewports. */}
+        <div className="-mx-5 sm:mx-0 px-5 sm:px-0 flex items-center gap-2 overflow-x-auto sm:overflow-visible sm:flex-wrap scrollbar-hide">
+          <span className="hidden sm:inline shrink-0 text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/80 mr-1">
+            Quick filter
           </span>
-        </div>
-
-        {/* Horizontal scroll on mobile, wrap-grid on desktop. */}
-        <div className="-mx-5 sm:mx-0 px-5 sm:px-0 flex gap-2.5 overflow-x-auto sm:grid sm:grid-cols-3 lg:grid-cols-5 sm:overflow-visible scrollbar-hide pb-1">
           {tilesWithCount.map(({ preset, count }, i) => (
             <motion.button
               key={preset.id}
-              initial={{ opacity: 0, y: 4 }}
+              initial={{ opacity: 0, y: 2 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.04 * i, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.3, delay: 0.025 * i, ease: [0.16, 1, 0.3, 1] }}
               onClick={() => preset.apply(p => onApply(p))}
-              className={`group relative shrink-0 sm:shrink min-w-[180px] text-left rounded-xl bg-gradient-to-br ${preset.accentCls} border p-3.5 hover:shadow-md hover:-translate-y-0.5 transition-all`}
+              className="group shrink-0 inline-flex items-center gap-1.5 rounded-full border border-border bg-card hover:border-gold/50 hover:bg-gold/5 px-3 py-1.5 transition-all whitespace-nowrap"
             >
-              <div className="flex items-start justify-between mb-2">
-                <preset.Icon className="h-4 w-4 text-foreground/70" />
-                <span className="text-[11px] tabular-nums font-semibold text-foreground/85 bg-card/80 backdrop-blur-sm border border-border/60 rounded-full px-2 py-0.5">
-                  {count}
-                </span>
-              </div>
-              <p className="font-semibold text-sm text-foreground leading-tight tracking-tight">
+              <preset.Icon className="h-3 w-3 text-foreground/55 group-hover:text-gold-dark transition-colors" />
+              <span className="text-[12px] font-medium text-foreground/85 group-hover:text-foreground transition-colors">
                 {preset.label}
-              </p>
-              <p className="text-[11px] text-muted-foreground leading-snug mt-1">{preset.sub}</p>
-              <div className="absolute right-3 bottom-3 text-foreground/30 group-hover:text-gold-dark transition-colors">
-                <ArrowRight className="h-3 w-3" />
-              </div>
+              </span>
+              <span className="text-[10px] tabular-nums font-semibold text-muted-foreground/80 group-hover:text-gold-dark transition-colors">
+                {count}
+              </span>
             </motion.button>
           ))}
         </div>

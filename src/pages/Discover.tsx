@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
-import { OpportunityMap } from "@/components/discover/OpportunityMap";
 import { CuratedCollections } from "@/components/discover/CuratedCollections";
 import { MatchScoreBreakdown } from "@/components/discover/MatchScoreBreakdown";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
@@ -2428,13 +2427,12 @@ const Discover = ({ language = "en" }: Props) => {
           {phase === "results" && (
             <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7 }}>
               {/* ─── Profile context strip — single line, premium-tech feel.
-                  Replaces the previous two-bar header (navy "Discover" wordmark +
-                  cream "Filtered by" chips). The Nav already shows the page is
-                  Discover, so the wordmark was redundant. Now: one editorial line
-                  that anchors the user's profile + the live result count, with a
-                  quiet "Edit" affordance to reopen the wizard. */}
+                  Anchors the user's profile chips + an Edit affordance.
+                  Result count moved to the toolbar (the persistent
+                  surface) so it stays visible while scrolling instead
+                  of being a duplicate-and-disappearing stat. */}
               <div className="relative bg-gradient-to-b from-canvas-soft to-background border-b border-border/60">
-                <div className="max-w-7xl mx-auto px-5 sm:px-8 py-4 sm:py-5 flex items-baseline gap-3 flex-wrap">
+                <div className="max-w-7xl mx-auto px-5 sm:px-8 py-4 flex items-baseline gap-3 flex-wrap">
                   <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark shrink-0">Your shortlist</span>
                   <span className="text-muted-foreground/40">·</span>
                   {[profile.country, profile.degree, profile.field, profile.gpa ? `GPA ${profile.gpa}/${profile.gpaScale}` : null, profile.ielts ? `IELTS ${profile.ielts}` : null].filter(Boolean).map(chip => (
@@ -2443,31 +2441,17 @@ const Discover = ({ language = "en" }: Props) => {
                   <button onClick={resetProfile} className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 underline-offset-4 hover:underline">
                     Edit
                   </button>
-                  <div className="flex-1" />
-                  {!loading && (
-                    <span className="text-[11px] text-muted-foreground tabular-nums">
-                      <span className="font-heading font-bold text-foreground text-base mr-1">{filtered.length}</span>
-                      of {ranked.length} {ranked.length === 1 ? "opportunity" : "opportunities"}
-                    </span>
-                  )}
                 </div>
               </div>
 
-              {/* Opportunity Map — abundance-oriented metric strip. The student's
-                  first impression of the page is "the world is open to you,"
-                  not "rank yourself against this list." Numbers reflect the
-                  current filtered view if filters are active. */}
-              {!loading && ranked.length > 0 && (
-                <OpportunityMap
-                  total={ranked}
-                  filtered={filtered}
-                  hasActiveFilters={activeFiltersCount > 0}
-                />
-              )}
-
-              {/* Curated collections — preset filter combos for natural search
-                  intents. Each tile counts how many opportunities match and
-                  hides itself if the count is zero (no empty drawers). */}
+              {/* Curated collections — preset filter combos for natural
+                  search intents, rendered as compact text-pills below the
+                  profile strip and above the sticky toolbar. Earlier
+                  iteration used a large tile grid + a separate
+                  OpportunityMap stat strip, which pushed actual results
+                  past the fold and competed with the toolbar count. The
+                  pill rail keeps the same intents but stays visually
+                  light — text + count, no gradients, no heavy borders. */}
               {!loading && ranked.length > 0 && (
                 <CuratedCollections
                   rows={ranked}
