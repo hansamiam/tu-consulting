@@ -13,7 +13,6 @@ import Navigation from "@/components/Navigation";
 import { shouldRedirectToRussian } from "@/utils/languageDetection";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { Footer } from "@/components/Footer";
-import { TrendingScholarships } from "@/components/TrendingScholarships";
 import { motion } from "framer-motion";
 
 const fadeUp = (delay = 0) => ({
@@ -153,15 +152,6 @@ const Index = () => {
                 Scroll
               </Button>
             </motion.div>
-          </div>
-        </section>
-
-        {/* TRENDING SCHOLARSHIPS — live social proof above the fold-2.
-            Falls back to Editor's Picks while activity data accumulates.
-            Always populated, never empty. */}
-        <section className="py-16 sm:py-20">
-          <div className="max-w-6xl mx-auto px-5 sm:px-8">
-            <TrendingScholarships language="en" limit={4} />
           </div>
         </section>
 

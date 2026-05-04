@@ -1561,7 +1561,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
 
   return (
     <Sheet open={open} onOpenChange={o => !o && onClose()}>
-      <SheetContent side="right" className="w-full sm:w-[min(95vw,920px)] overflow-y-auto p-0 flex flex-col">
+      <SheetContent side="right" className="w-full sm:w-[min(98vw,1200px)] overflow-y-auto p-0 flex flex-col">
         {/* ── POSTCARD HERO — country gradient + gothic-arch campus pattern
               + country landmark layered as a poster the student "flips
               over" when they open the sheet. Sells the dream of being
@@ -1664,28 +1664,6 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             </div>
           )}
 
-          {/* Application status + notes — application-software pattern */}
-          <div className="relative mt-4 flex flex-col gap-3 bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">My status</p>
-                <StatusBadge status={status} onChange={onStatusChange} />
-              </div>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Saved locally
-              </div>
-            </div>
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1.5">My notes</p>
-              <textarea
-                value={note}
-                onChange={(e) => onNoteChange(e.target.value)}
-                rows={3}
-                placeholder="Essay ideas, recommender contacts, research links…"
-                className="w-full text-sm text-foreground/90 bg-background border border-border/70 rounded-lg p-3 leading-relaxed resize-none focus:outline-none focus:border-gold/40 placeholder:text-muted-foreground/60"
-              />
-            </div>
-          </div>
         </div>
 
         {/* ── TABS ──
