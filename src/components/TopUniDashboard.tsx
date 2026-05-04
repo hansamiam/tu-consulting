@@ -720,7 +720,7 @@ const EssayAngles = ({ markdown, isRu }: { markdown: string; isRu: boolean }) =>
    a card with a severity strip (red/amber/blue) auto-detected from the
    gap text + an "Action" footer that pulls out the action-step bullet
    if the AI distinguished it. */
-const HonestGaps = ({ markdown, isRu }: { markdown: string; isRu: boolean }) => {
+const HonestGaps = ({ markdown, isRu, onAskCounselor }: { markdown: string; isRu: boolean; onAskCounselor?: (question: string) => void }) => {
   const { title, gaps } = useMemo(() => {
     const lines = markdown.split("\n");
     let title = "";
@@ -859,11 +859,28 @@ const HonestGaps = ({ markdown, isRu }: { markdown: string; isRu: boolean }) => 
                 </div>
               )}
               {g.action && (
-                <div className="mt-3 pt-3 border-t border-border/60 flex items-start gap-2">
-                  <Zap className="w-3.5 h-3.5 text-gold-dark mt-0.5 shrink-0" />
-                  <p className="text-xs font-medium text-foreground leading-relaxed">
-                    {renderInline(g.action)}
-                  </p>
+                <div className="mt-3 pt-3 border-t border-border/60">
+                  <div className="flex items-start gap-2">
+                    <Zap className="w-3.5 h-3.5 text-gold-dark mt-0.5 shrink-0" />
+                    <p className="text-xs font-medium text-foreground leading-relaxed">
+                      {renderInline(g.action)}
+                    </p>
+                  </div>
+                  {onAskCounselor && (
+                    <button
+                      type="button"
+                      onClick={() => onAskCounselor(
+                        isRu
+                          ? `Помогите закрыть пробел "${g.headline}". Действие из брифинга: "${g.action}". Какой следующий шаг?`
+                          : `Help me close the gap: "${g.headline}". The action from my brief is: "${g.action}". What's the next concrete step?`,
+                      )}
+                      className="mt-2.5 ml-5 inline-flex items-center gap-1.5 text-[11px] font-semibold text-gold-dark hover:text-foreground transition-colors group/cta"
+                    >
+                      <Bot className="w-3 h-3" />
+                      {isRu ? "Спросить советника" : "Ask the counselor"}
+                      <ArrowRight className="w-2.5 h-2.5 transition-transform group-hover/cta:translate-x-0.5" />
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -1134,7 +1151,7 @@ export const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, is
         if (PATHWAY_GAPS_SECTION_REGEX.test(section)) {
           const hasContent = /^\s*([-*]|\d+\.|\#)\s+/m.test(section.split("\n").slice(1).join("\n"));
           if (hasContent) {
-            return <div key={i} {...anchorProps}><HonestGaps markdown={section} isRu={isRu} /></div>;
+            return <div key={i} {...anchorProps}><HonestGaps markdown={section} isRu={isRu} onAskCounselor={onAskCounselor} /></div>;
           }
         }
         if (PATHWAY_FINAL_SECTION_REGEX.test(section)) {
