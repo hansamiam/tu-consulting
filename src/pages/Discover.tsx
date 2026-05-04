@@ -1899,13 +1899,6 @@ const Discover = ({ language = "en" }: Props) => {
     return { hero: top.slice(0, 1), strong: top.slice(1), competitive, stretch };
   }, [filtered]);
 
-  const stats = useMemo(() => ({
-    strong: ranked.filter(s => s.priority === "strong_match").length,
-    competitive: ranked.filter(s => s.priority === "competitive").length,
-    closing: ranked.filter(s => { const d = s.application_deadline ? Math.ceil((new Date(s.application_deadline).getTime() - Date.now()) / 86400000) : null; return d !== null && d > 0 && d <= 60; }).length,
-    totalValue: ranked.filter(s => s.priority !== "low_priority").reduce((sum, s) => sum + (s.estimated_total_value_usd ?? 0), 0),
-  }), [ranked]);
-
   /* My pipeline — count of scholarships per active status */
   const pipeline = useMemo(() => {
     const counts: Record<AppStatus, number> = { researching: 0, drafting: 0, submitted: 0, decision: 0, rejected: 0 };
