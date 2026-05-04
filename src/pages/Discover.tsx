@@ -1487,6 +1487,34 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
 
           {/* STRATEGY */}
           <TabsContent value="strategy" className="px-7 py-6 space-y-5 m-0 focus-visible:outline-none relative">
+            {/* "Still being drafted" state — when the row is freshly scraped
+                and the daily enrichment cron hasn't filled the soft fields
+                yet (typically 24-48h post-discovery), the Strategy tab would
+                otherwise render blank and look broken. This state acknowledges
+                the gap honestly and points the user at the My plan tab,
+                which always works (it uses the deep-dive endpoint, which
+                generates content live and doesn't depend on the soft fields). */}
+            {!s.what_to_prepare_first && !s.ideal_candidate_profile && !s.how_to_win
+              && !s.strategy_notes && !s.common_rejection_reasons
+              && !s.weak_candidate_warning && !s.risk_note && (
+              <div className="rounded-2xl border-2 border-dashed border-border bg-muted/20 px-5 py-7 text-center">
+                <Loader2 className="h-5 w-5 text-muted-foreground/50 mx-auto mb-3 animate-spin" />
+                <h4 className="font-heading font-semibold text-base text-foreground mb-1.5">
+                  Strategy notes still being drafted
+                </h4>
+                <p className="text-xs text-muted-foreground leading-relaxed max-w-md mx-auto mb-4">
+                  This scholarship was added to our database recently. Our AI is generating the
+                  ideal-candidate profile, how-to-win strategy, and common rejection patterns —
+                  usually within 24-48 hours. Your <span className="font-semibold text-foreground">My plan</span> tab
+                  works right now with personalized fit analysis.
+                </p>
+                <p className="text-[11px] text-muted-foreground/70 inline-flex items-center gap-1.5">
+                  <Sparkles className="h-3 w-3 text-gold-dark" />
+                  Tap <span className="font-semibold text-foreground">My plan</span> in the tabs above for personalized fit analysis
+                </p>
+              </div>
+            )}
+
             {/* First strategy block — preview, free for everyone (creates desire) */}
             {s.what_to_prepare_first && (
               <div className="border-l-2 border-l-gold bg-muted/30 rounded-r-2xl px-5 py-4">
@@ -1495,8 +1523,12 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               </div>
             )}
 
-            {/* Members-only content (or unlocked if isMember) */}
-            {isMember ? (
+            {/* Members-only content (or unlocked if isMember). Skip the
+                whole branch when no soft fields are populated — the
+                "still being drafted" state above already handles that. */}
+            {(s.ideal_candidate_profile || s.how_to_win || s.strategy_notes
+              || s.common_rejection_reasons || s.weak_candidate_warning || s.risk_note) && (
+              isMember ? (
               <>
                 {s.ideal_candidate_profile && (
                   <div className="bg-primary/[0.03] border border-primary/15 rounded-2xl p-5">
@@ -1578,7 +1610,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                   </div>
                 </div>
               </div>
-            )}
+            ))}
           </TabsContent>
 
           {/* APPLY */}
