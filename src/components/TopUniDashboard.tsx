@@ -1407,6 +1407,57 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     })();
   }, [profile.fullName, profile.targetCountries?.join(",")]);
 
+  /* Saved-but-not-top-matched scholarships — the user may have saved
+     scholarships from /discover that don't appear in their auto-fetched
+     liveMatches (which is country-filtered top 6 by deadline urgency).
+     Without this hydration, the counselor's response renderer treats
+     those names as un-resolvable bolds — falling back to muted text
+     and losing the rich InlineScholarshipCard treatment. Same applies
+     to the brief's funding-shortlist match-lookup.
+
+     Fetch only IDs that aren't already in liveMatches (skip the round-
+     trip when there's overlap) and only verified/stale rows. */
+  const [savedExtras, setSavedExtras] = useState<LiveMatch[]>([]);
+  useEffect(() => {
+    const liveIds = new Set(liveMatches.map((m) => m.scholarship_id));
+    const idsToFetch = Array.from(tracker.shortlist).filter((id) => !liveIds.has(id));
+    if (idsToFetch.length === 0) {
+      if (savedExtras.length > 0) setSavedExtras([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("scholarships")
+        .select(
+          "scholarship_id, scholarship_name, provider_name, host_country, " +
+          "coverage_type, award_amount_text, estimated_total_value_usd, " +
+          "application_deadline, why_this_fits, official_url, " +
+          "verification_status, last_verified_at"
+        )
+        .or("verification_status.is.null,verification_status.in.(verified,stale)")
+        .in("scholarship_id", idsToFetch)
+        .limit(40);
+      if (cancelled || !data) return;
+      setSavedExtras(data as LiveMatch[]);
+    })();
+    return () => { cancelled = true; };
+  // tracker.shortlist is a Set so we hash by sorted-key string for stable deps
+  }, [Array.from(tracker.shortlist).sort().join(","), liveMatches]);
+
+  /* Combined match set — feeds every surface that resolves scholarship
+     names to rich cards (counselor responses, brief funding-shortlist
+     cross-reference, brief inline-card decoration). De-duplicated by
+     scholarship_id with liveMatches winning (those have similarity
+     scoring + are the AI's retrieval set). */
+  const allMatches = useMemo(() => {
+    const seen = new Set(liveMatches.map((m) => m.scholarship_id));
+    return [
+      ...liveMatches,
+      ...savedExtras.filter((s) => !seen.has(s.scholarship_id)),
+    ];
+  }, [liveMatches, savedExtras]);
+
   // Chat state — persisted to localStorage so the conversation survives reloads.
   const [chatMessages, setChatMessages] = useState<Msg[]>(() => {
     try {
@@ -3068,7 +3119,14 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                               {msg.role === "assistant" ? (
                                 <div className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_strong]:text-foreground [&_a]:text-accent">
                                   <EnrichedMarkdown
-                                    scholarships={liveMatches.map(m => ({
+                                    /* allMatches = top-6 auto-fetched + the user's
+                                       saved scholarships not already in that 6.
+                                       Without the merge, saved-from-/discover
+                                       scholarships (G, H from the user's pipeline)
+                                       wouldn't get InlineScholarshipCard treatment
+                                       when the counselor mentions them — only the
+                                       auto-matched ones would. */
+                                    scholarships={allMatches.map(m => ({
                                       scholarship_id: m.scholarship_id,
                                       scholarship_name: m.scholarship_name,
                                       provider_name: m.provider_name ?? null,
@@ -3077,6 +3135,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                                       award_amount_text: m.award_amount_text,
                                       application_deadline: m.application_deadline,
                                       official_url: m.official_url ?? null,
+                                      verification_status: m.verification_status ?? null,
+                                      last_verified_at: m.last_verified_at ?? null,
                                     }))}
                                   >
                                     {msg.content}
