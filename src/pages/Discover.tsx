@@ -766,18 +766,17 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
   const tier = TIER[s.priority];
   const dl = deadlineDisplay(s.application_deadline);
   const why = s.why_this_fits || s.reasons.slice(0, 2).join(". ");
-  const award = s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || "—";
-
-  // Provider initials for the avatar — same hash-to-hue pattern as
-  // ScholarshipCard for visual consistency across the product.
-  const provider = s.provider_name || s.scholarship_name;
-  const initials = (() => {
-    const parts = provider.trim().split(/\s+/).filter((w) => /^[A-Za-z]/.test(w));
-    if (parts.length === 0) return "?";
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  })();
-  const hue = (() => { let h = 0; for (let i = 0; i < provider.length; i++) h = (h * 31 + provider.charCodeAt(i)) >>> 0; return h % 360; })();
+  const award = s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || null;
+  const isFullRide = s.coverage_type === "full_ride";
+  // Match score is meaningful only when the user has a real profile that
+  // can score AGAINST. Without that, the score is 0 for every row and
+  // showing "0/100" makes the card look broken. Use a heuristic: the
+  // score is real when the row's `reasons` or `warnings` arrays got
+  // populated (meaning scoreScholarship had profile data to evaluate).
+  const hasRealScore = s.match > 0 && (s.reasons.length > 0 || s.warnings.length > 0);
+  // Tier label only renders when we have a real score — otherwise every
+  // card shows "WORTH EXPLORING" (the default for priority=low_priority
+  // when match=0) which differentiates nothing.
 
   return (
     <motion.article
@@ -787,96 +786,126 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
       transition={{ delay: Math.min(index * 0.03, 0.3), duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ y: -2 }}
       onClick={onSelect}
-      className={`group relative rounded-xl bg-card border hover:shadow-md transition-all cursor-pointer h-full flex flex-col ${isComparing ? "border-gold ring-2 ring-gold/20" : "border-border hover:border-foreground/20"} ${isHidden ? "opacity-50" : ""}`}
+      className={`group relative rounded-xl bg-card border hover:shadow-md transition-all cursor-pointer h-full flex flex-col overflow-hidden ${isComparing ? "border-gold ring-2 ring-gold/20" : isFullRide ? "border-gold/35 hover:border-gold/55" : "border-border hover:border-foreground/20"} ${isHidden ? "opacity-50" : ""}`}
     >
-      <div className="p-4 flex flex-col flex-1 gap-2.5">
-        {/* Header: avatar + headline + match score */}
-        <div className="flex items-start gap-2.5">
-          <div
-            className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center font-heading font-bold text-[10px] text-white tracking-tight shadow-sm ring-1 ring-black/5"
-            style={{ background: `linear-gradient(135deg, hsl(${hue}, 55%, 45%), hsl(${(hue + 35) % 360}, 60%, 38%))` }}
-            aria-hidden="true"
-          >
-            {initials}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-heading text-[13.5px] font-semibold leading-snug tracking-tight text-foreground line-clamp-2 group-hover:text-gold-dark transition-colors">
-              {s.scholarship_name}
-            </h3>
-            <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-              {[s.provider_name, s.host_country].filter(Boolean).join(" · ")}
-            </p>
-          </div>
-          <HoverCard openDelay={120} closeDelay={80}>
-            <HoverCardTrigger asChild>
-              <button
-                type="button"
-                onClick={(e) => e.stopPropagation()}
-                className="shrink-0 flex items-baseline gap-0.5 -mt-0.5 cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-gold rounded"
-                aria-label={`Match score: ${s.match} of 100. Hover for breakdown.`}
-              >
-                <span className="text-lg font-bold tabular-nums leading-none text-foreground">{s.match}</span>
-                <span className="text-[9px] text-muted-foreground/70">/100</span>
-              </button>
-            </HoverCardTrigger>
-            <HoverCardContent side="left" align="start" className="p-0 border-0 shadow-none bg-transparent w-auto">
-              <MatchScoreBreakdown
-                scholarshipId={s.scholarship_id}
-                fallback={{
-                  match: s.match,
-                  application_deadline: s.application_deadline,
-                  estimated_total_value_usd: s.estimated_total_value_usd,
-                  last_verified_at: s.last_verified_at,
-                  verification_status: s.verification_status,
-                  passes_eligibility: s.eligibility === "eligible" || s.eligibility === "likely",
-                  why_this_fits: s.why_this_fits,
-                  reasons: s.reasons,
-                  warnings: s.warnings,
-                }}
-                compact
-              />
-            </HoverCardContent>
-          </HoverCard>
-        </div>
+      {/* Top accent strip — gold for full-ride, neutral otherwise. Subtle
+          but immediate visual differentiator so the grid doesn't read as
+          one undifferentiated wall of cards. */}
+      <div className={`absolute top-0 inset-x-0 h-[2px] ${isFullRide ? "bg-gradient-to-r from-gold-light via-gold-dark to-gold-light" : "bg-border/40"}`} />
 
-        {/* Award + tier in one line — denser */}
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-semibold text-foreground truncate min-w-0">{award}</span>
-          <span className={`shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${tier.textLight}`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${tier.dot}`} />
-            {tier.label}
-          </span>
-        </div>
-
-        {/* Deadline + field — meta line */}
-        <div className="flex items-center gap-2 flex-wrap text-[11px]">
-          <span className={`tabular-nums ${dl.cls}`}>{dl.text}</span>
-          {s.target_fields && s.target_fields.length > 0 && s.target_fields[0].toLowerCase() !== "any" && (
-            <>
-              <span className="text-muted-foreground/30">·</span>
-              <span className="text-muted-foreground truncate">{humanize(s.target_fields[0])}</span>
-            </>
+      <div className="p-4 pt-5 flex flex-col flex-1 gap-3">
+        {/* Top metadata strip — country · category · verified badge. Replaces
+            the provider-initials avatar (which read as random database keys
+            like "AG"/"SC"/"CF") with information the user actually decodes
+            at a glance: where would I live, what kind of program, is it real. */}
+        <div className="flex items-center gap-2 flex-wrap text-[10px] font-semibold uppercase tracking-[0.16em]">
+          {s.host_country && (
+            <span className="text-foreground/85 truncate">{s.host_country}</span>
+          )}
+          {s.host_country && (s.target_degree_level?.length || isFullRide) && (
+            <span className="text-muted-foreground/40">·</span>
+          )}
+          {isFullRide && (
+            <span className="text-gold-dark">Full ride</span>
           )}
           {s.verification_status && s.verification_status !== "pending" && (
-            <>
-              <span className="text-muted-foreground/30">·</span>
+            <span className="ml-auto">
               <VerifiedBadge
                 status={s.verification_status}
                 verifiedAt={s.last_verified_at}
                 size="xs"
                 compact
               />
-            </>
+            </span>
           )}
         </div>
 
-        {/* Why it may be worth exploring — abundance framing instead of
-            verdict. Same `why_this_fits` data, different emotional register. */}
+        {/* Title + provider. Title gets 3 lines (was 2 — too much truncation
+            on long names like "MEXT Japanese Government Scholarship -..."
+            in the screenshot). Provider truncates on a single line below. */}
+        <div className="min-w-0">
+          <h3 className="font-heading text-[15px] font-semibold leading-[1.2] tracking-[-0.01em] text-foreground line-clamp-3 group-hover:text-gold-dark transition-colors mb-1">
+            {s.scholarship_name}
+          </h3>
+          {s.provider_name && (
+            <p className="text-[11px] text-muted-foreground/85 line-clamp-1">
+              {s.provider_name}
+            </p>
+          )}
+        </div>
+
+        {/* Award amount — when present, surfaced as a real chip (not just
+            inline text). The number / label is the most decision-relevant
+            fact a student wants on the card. */}
+        {award && !isFullRide && (
+          <div className="inline-flex self-start items-center gap-1.5 text-[12px] font-semibold text-foreground bg-muted/40 border border-border/60 px-2.5 py-1 rounded-md">
+            {award}
+          </div>
+        )}
+        {/* For full-ride we showed "Full ride" in the top strip already —
+            only render the explicit award_amount_text if it adds detail. */}
+        {award && isFullRide && s.award_amount_text && s.award_amount_text.toLowerCase() !== "full ride" && (
+          <div className="inline-flex self-start items-center gap-1.5 text-[12px] font-semibold text-gold-dark bg-gold/10 border border-gold/25 px-2.5 py-1 rounded-md">
+            {s.award_amount_text}
+          </div>
+        )}
+
+        {/* Why-it-fits — italic single-paragraph editorial line. Same data,
+            slightly more breathing room. line-clamp-3 instead of 2 so we
+            stop chopping mid-thought. */}
         {why && (
-          <p className="text-[12px] text-foreground/65 leading-snug line-clamp-2 flex-1">
+          <p className="text-[12px] text-foreground/70 leading-relaxed line-clamp-3 flex-1 italic">
             {why.replace(/\.+$/, "")}.
           </p>
         )}
+
+        {/* Footer meta — deadline + field. Compact, scannable. Verified
+            badge moved to top strip so this row stays focused on
+            decision facts. */}
+        <div className="flex items-center gap-2 text-[11px]">
+          <span className={`tabular-nums font-medium ${dl.cls}`}>{dl.text}</span>
+          {s.target_fields && s.target_fields.length > 0 && s.target_fields[0].toLowerCase() !== "any" && (
+            <>
+              <span className="text-muted-foreground/30">·</span>
+              <span className="text-muted-foreground truncate">{humanize(s.target_fields[0])}</span>
+            </>
+          )}
+          {hasRealScore && (
+            <>
+              <span className="text-muted-foreground/30 ml-auto">·</span>
+              <HoverCard openDelay={120} closeDelay={80}>
+                <HoverCardTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-baseline gap-0.5 cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-gold rounded shrink-0"
+                    aria-label={`Match score: ${s.match} of 100. Hover for breakdown.`}
+                  >
+                    <span className={`tabular-nums font-bold leading-none ${tier.textLight}`}>{s.match}</span>
+                    <span className="text-[9px] text-muted-foreground/60">/100</span>
+                  </button>
+                </HoverCardTrigger>
+                <HoverCardContent side="left" align="start" className="p-0 border-0 shadow-none bg-transparent w-auto">
+                  <MatchScoreBreakdown
+                    scholarshipId={s.scholarship_id}
+                    fallback={{
+                      match: s.match,
+                      application_deadline: s.application_deadline,
+                      estimated_total_value_usd: s.estimated_total_value_usd,
+                      last_verified_at: s.last_verified_at,
+                      verification_status: s.verification_status,
+                      passes_eligibility: s.eligibility === "eligible" || s.eligibility === "likely",
+                      why_this_fits: s.why_this_fits,
+                      reasons: s.reasons,
+                      warnings: s.warnings,
+                    }}
+                    compact
+                  />
+                </HoverCardContent>
+              </HoverCard>
+            </>
+          )}
+        </div>
 
         {/* Status (only when set — otherwise we skip the row entirely) */}
         {status && (
@@ -885,30 +914,33 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           </div>
         )}
 
-        {/* Action row */}
-        <div className="flex items-center justify-between mt-auto pt-2 border-t border-border/50" onClick={(e) => e.stopPropagation()}>
-          <span className="text-[12px] font-semibold text-muted-foreground group-hover:text-gold-dark transition-colors flex items-center gap-1">
-            Open <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+        {/* Action row — Open CTA + bookmark/compare/more. Bookmark is
+            primary visible action; compare/more reveal on hover (mobile
+            stays at 70% opacity per the earlier mobile-visibility fix). */}
+        <div className="flex items-center justify-between mt-auto pt-2.5 border-t border-border/50" onClick={(e) => e.stopPropagation()}>
+          <span className="text-[12px] font-semibold text-foreground group-hover:text-gold-dark transition-colors flex items-center gap-1">
+            Open strategy <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
           </span>
           <div className="flex items-center gap-0.5">
+            <button
+              onClick={onBookmark}
+              aria-label={isBookmarked ? "Remove from shortlist" : "Save to shortlist"}
+              title={isBookmarked ? "Saved · click to remove" : "Save to shortlist"}
+              className={`p-1.5 rounded-md transition-all ${isBookmarked ? "text-gold-dark bg-gold/10 hover:bg-gold/15" : "text-muted-foreground hover:text-gold-dark hover:bg-muted/60"}`}
+            >
+              {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
+            </button>
             <button
               onClick={onToggleCompare}
               aria-label={isComparing ? "Remove from compare" : "Add to compare"}
               title={isComparing ? "Remove from compare" : "Add to compare"}
-              className={`p-1.5 rounded-md transition-colors ${isComparing ? "text-gold-dark bg-gold/10" : "text-muted-foreground hover:text-foreground hover:bg-muted/60"}`}
+              className={`p-1.5 rounded-md transition-all ${isComparing ? "text-gold-dark bg-gold/10" : "text-muted-foreground hover:text-foreground hover:bg-muted/60 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100"}`}
             >
               <GitCompare className="h-3.5 w-3.5" />
             </button>
-            <button
-              onClick={onBookmark}
-              aria-label={isBookmarked ? "Remove from shortlist" : "Save to shortlist"}
-              className="p-1.5 rounded-md text-muted-foreground hover:text-gold-dark hover:bg-muted/60 transition-colors"
-            >
-              {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5 text-gold-dark" /> : <Bookmark className="h-3.5 w-3.5" />}
-            </button>
             <DropdownMenu>
               <DropdownMenuTrigger
-                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
                 aria-label="More actions"
               >
                 <MoreHorizontal className="h-3.5 w-3.5" />
