@@ -29,6 +29,7 @@ import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDiv
 import { MatchScoreBreakdown } from "@/components/discover/MatchScoreBreakdown";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { CountryArt } from "@/lib/countryArt";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSemanticScholarshipMatch } from "@/hooks/useSemanticScholarshipMatch";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
@@ -895,46 +896,49 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
       onClick={onSelect}
       className={`group relative rounded-xl bg-card border hover:shadow-lg transition-all cursor-pointer h-full flex flex-col overflow-hidden ${isComparing ? "border-gold ring-2 ring-gold/20" : isFullRide ? "border-gold/35 hover:border-gold/55" : "border-border hover:border-foreground/20"} ${isHidden ? "opacity-50" : ""}`}
     >
-      {/* Hero gradient band — region-coloured per host country so the
-          grid reads as a colourful atlas instead of a wall of identical
-          white cards. Country + Full-ride tag + Verified badge sit IN
-          the band as white text on the saturated background. Replaces
-          the previous 2px-tall thin accent strip, which was technically
-          differentiating (gold for full-ride) but visually invisible.
-          OpportunitiesForYouth.org uses real hero images for the same
-          purpose; we get most of the visual lift without per-card
-          asset management. */}
-      <div className={`relative bg-gradient-to-r ${accent} px-4 py-2.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/95`}>
-        {s.host_country && (
-          <span className="truncate drop-shadow-sm">{s.host_country}</span>
-        )}
-        {isFullRide && (
-          <>
-            <span className="text-white/50">·</span>
-            <span className="inline-flex items-center gap-1 text-gold-light drop-shadow-sm">
-              <Award className="h-2.5 w-2.5" />
-              Full ride
+      {/* Hero gradient band — region-coloured per host country with a
+          subtle landmark silhouette watermarked on the right (Eiffel for
+          France, Mt Fuji for Japan, etc.). The band reads as a stylised
+          travel poster strip rather than a database row. Text stays on
+          the left where the silhouette opacity is lowest. */}
+      <div className={`relative bg-gradient-to-r ${accent} px-4 h-12 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/95 overflow-hidden`}>
+        <CountryArt country={s.host_country} className="absolute right-2 inset-y-0 h-full opacity-30 pointer-events-none" />
+        {/* fade-from-left so silhouette doesn't compete with text */}
+        <span className={`absolute inset-0 bg-gradient-to-r from-black/15 via-transparent to-transparent pointer-events-none`} />
+        <span className="relative flex items-center gap-2 min-w-0 flex-1">
+          {s.host_country && (
+            <span className="truncate drop-shadow-sm">{s.host_country}</span>
+          )}
+          {isFullRide && (
+            <>
+              <span className="text-white/50">·</span>
+              <span className="inline-flex items-center gap-1 text-gold-light drop-shadow-sm">
+                <Award className="h-2.5 w-2.5" />
+                Full ride
+              </span>
+            </>
+          )}
+        </span>
+        <span className="relative inline-flex items-center">
+          {s.verification_status === "verified" && (
+            <span className="inline-flex items-center gap-1 text-emerald-200 drop-shadow-sm">
+              <CheckCircle2 className="h-2.5 w-2.5" />
+              Verified
             </span>
-          </>
-        )}
-        {s.verification_status === "verified" && (
-          <span className="ml-auto inline-flex items-center gap-1 text-emerald-200 drop-shadow-sm">
-            <CheckCircle2 className="h-2.5 w-2.5" />
-            Verified
-          </span>
-        )}
-        {s.verification_status === "stale" && (
-          <span className="ml-auto inline-flex items-center gap-1 text-amber-200 drop-shadow-sm">
-            <HelpCircle className="h-2.5 w-2.5" />
-            Verify before applying
-          </span>
-        )}
-        {s.verification_status === "broken" && (
-          <span className="ml-auto inline-flex items-center gap-1 text-red-200 drop-shadow-sm">
-            <AlertCircle className="h-2.5 w-2.5" />
-            URL unreachable
-          </span>
-        )}
+          )}
+          {s.verification_status === "stale" && (
+            <span className="inline-flex items-center gap-1 text-amber-200 drop-shadow-sm">
+              <HelpCircle className="h-2.5 w-2.5" />
+              Verify before applying
+            </span>
+          )}
+          {s.verification_status === "broken" && (
+            <span className="inline-flex items-center gap-1 text-red-200 drop-shadow-sm">
+              <AlertCircle className="h-2.5 w-2.5" />
+              URL unreachable
+            </span>
+          )}
+        </span>
       </div>
 
       <div className="p-4 flex flex-col flex-1 gap-3">
