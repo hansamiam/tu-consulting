@@ -21,6 +21,7 @@ export type EventName =
   | "pro_comparison_upgrade_clicked"
   | "counselor_message_sent"
   | "counselor_message_blocked"
+  | "counselor_greeting_shown"
   | "signup_started"
   | "payment_completed"
   | "scholarship_saved"

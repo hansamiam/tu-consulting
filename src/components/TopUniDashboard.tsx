@@ -1433,6 +1433,33 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
      using localStorage only. */
   const [chatSessionId, setChatSessionId] = useState<string | null>(null);
 
+  /* ─── Auto-greet (counselor's first message) ────────────────────
+     When the user opens the counselor tab with a filled profile and
+     no chat history yet, fire topuni-counselor-greeting to generate
+     a personalised opening message. The greeting becomes the first
+     assistant message in chatMessages and gets the AI's bespoke
+     follow-up chips beneath it (instead of the keyword-matched
+     static FOLLOWUPS).
+
+     Cache key: hash(profile snapshot + first 800 chars of brief). When
+     either changes (profile edit, brief regen), the cache invalidates
+     and the next counselor open gets a fresh greeting.
+
+     Stored in localStorage so a refresh / tab switch doesn't re-fire
+     the API call (which would burn ~$0.0006 each time). */
+  const GREETING_CACHE_KEY = "topuni-counselor-greeting-v1";
+  type GreetingCache = { hash: string; greeting: string; followUps: string[] };
+  const [greetingFollowUps, setGreetingFollowUps] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(GREETING_CACHE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as GreetingCache;
+      return Array.isArray(parsed.followUps) ? parsed.followUps : [];
+    } catch { return []; }
+  });
+  const [greetingLoading, setGreetingLoading] = useState(false);
+  const [greetingFiredHash, setGreetingFiredHash] = useState<string | null>(null);
+
   const ensureSession = async (): Promise<string | null> => {
     if (chatSessionId) return chatSessionId;
     try {
@@ -1451,7 +1478,15 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
 
   const clearChat = async () => {
     setChatMessages([]);
-    try { localStorage.removeItem("topuni-chat-history"); } catch { /* ignore */ }
+    try {
+      localStorage.removeItem("topuni-chat-history");
+      // User asked for a fresh thread — invalidate the greeting cache so
+      // the next render fires a NEW greeting instead of restoring the
+      // previous one (which would feel like the click did nothing).
+      localStorage.removeItem(GREETING_CACHE_KEY);
+    } catch { /* ignore */ }
+    setGreetingFollowUps([]);
+    setGreetingFiredHash(null);
     // Don't archive the previous session — it's preserved for resume
     // history. Just start fresh.
     setChatSessionId(null);
@@ -1593,6 +1628,102 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       generatePathway();
     }
   }, []);
+
+  /* Auto-greet the counselor when the user opens chat empty-handed but
+     with enough context to ground a real opener. We compute a hash of
+     the inputs that affect the greeting; if the cached hash matches,
+     reuse the cached greeting + follow-ups (no API call). Otherwise
+     fire topuni-counselor-greeting and prepend the result as the first
+     assistant message in chatMessages.
+
+     Conditions:
+       - profile filled (we have a name + scores + country)
+       - brief streaming complete (or skipped — brief is optional but
+         strongly enhances the greeting quality)
+       - chatMessages empty (don't overwrite an existing thread)
+       - we haven't already fired for this exact (profile + brief) hash
+         in the current session (greetingFiredHash guard) */
+  useEffect(() => {
+    if (!isProfileFilled) return;
+    if (chatMessages.length > 0) return;
+    if (greetingLoading) return;
+    if (pathwayLoading) return; // wait until streaming is done so the brief is stable
+
+    // Hash the inputs that change the greeting. profile name + countries +
+    // major + GPA + the head of the brief. Cheap djb2-like hash.
+    const briefHead = (pathwayContent || "").slice(0, 800);
+    const hashInput = JSON.stringify({
+      n: profile.fullName,
+      gl: profile.gradeLevel,
+      g: profile.gpa,
+      i: profile.ielts,
+      tc: profile.targetCountries,
+      m: profile.major,
+      bh: briefHead.length,
+      bs: briefHead.slice(0, 300), // sample the first part of the brief
+    });
+    let h = 5381;
+    for (let i = 0; i < hashInput.length; i++) h = (h * 33) ^ hashInput.charCodeAt(i);
+    const inputHash = (h >>> 0).toString(36);
+
+    if (greetingFiredHash === inputHash) return;
+
+    // Check localStorage cache first.
+    try {
+      const raw = localStorage.getItem(GREETING_CACHE_KEY);
+      if (raw) {
+        const cached = JSON.parse(raw) as GreetingCache;
+        if (cached.hash === inputHash && typeof cached.greeting === "string" && cached.greeting.length >= 50) {
+          setChatMessages([{ role: "assistant", content: cached.greeting }]);
+          setGreetingFollowUps(Array.isArray(cached.followUps) ? cached.followUps : []);
+          setGreetingFiredHash(inputHash);
+          void track("counselor_greeting_shown", { source: "cache" });
+          return;
+        }
+      }
+    } catch { /* fall through to fetch */ }
+
+    // Fresh greeting — fire and forget; stash the result on completion.
+    setGreetingFiredHash(inputHash);
+    setGreetingLoading(true);
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke<{
+          ok: boolean; greeting: string; follow_ups: string[]; error?: string;
+        }>("topuni-counselor-greeting", {
+          body: {
+            profile,
+            briefContent: pathwayContent ?? "",
+            language,
+          },
+        });
+        if (error || !data?.ok || !data.greeting) {
+          // Soft fail — keep the static empty state, no toast (greeting is
+          // a nice-to-have, not load-bearing).
+          console.warn("[counselor-greeting] failed", error?.message ?? data?.error);
+          return;
+        }
+        const followUps = Array.isArray(data.follow_ups) ? data.follow_ups : [];
+        setChatMessages([{ role: "assistant", content: data.greeting }]);
+        setGreetingFollowUps(followUps);
+        try {
+          localStorage.setItem(GREETING_CACHE_KEY, JSON.stringify({
+            hash: inputHash, greeting: data.greeting, followUps,
+          } satisfies GreetingCache));
+        } catch { /* ignore */ }
+        void track("counselor_greeting_shown", { source: "fresh" });
+      } catch (e) {
+        console.warn("[counselor-greeting] threw", (e as Error).message);
+      } finally {
+        setGreetingLoading(false);
+      }
+    })();
+  }, [
+    isProfileFilled, chatMessages.length, pathwayLoading, pathwayContent,
+    profile.fullName, profile.gradeLevel, profile.gpa, profile.ielts,
+    profile.targetCountries, profile.major, language,
+    greetingFiredHash, greetingLoading,
+  ]);
 
   const streamSSE = async (url: string, body: any, onDelta: (chunk: string) => void, onDone: () => void) => {
     // Pass the user's session JWT when authed so edge functions can
@@ -2682,18 +2813,30 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                   <div ref={chatScrollRef} className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
                     {chatMessages.length === 0 ? (
                       <div className="h-full flex flex-col">
-                        {/* Editorial empty state — feels like walking into an office, not a chatbot. */}
+                        {/* Editorial empty state — feels like walking into an
+                            office, not a chatbot. When the AI auto-greet is
+                            in flight (greetingLoading), swap the static body
+                            for a "preparing your opening" indicator so the
+                            user knows something is being drafted just for
+                            them rather than wondering if the page is hung. */}
                         <div className="flex-1 flex flex-col items-center justify-center text-center max-w-md mx-auto">
                           <div className="h-12 w-12 rounded-full bg-primary/5 flex items-center justify-center mb-4 ring-1 ring-primary/15">
-                            <Bot className="w-5 h-5 text-primary" />
+                            {greetingLoading
+                              ? <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                              : <Bot className="w-5 h-5 text-primary" />}
                           </div>
                           <h3 className="font-heading text-xl text-foreground mb-1.5">
-                            {firstName
-                              ? t(`Hi ${firstName}.`, `Привет, ${firstName}.`)
-                              : t("Welcome.", "Добро пожаловать.")}
+                            {greetingLoading
+                              ? t("Preparing your opening…", "Готовлю открытие…")
+                              : firstName
+                                ? t(`Hi ${firstName}.`, `Привет, ${firstName}.`)
+                                : t("Welcome.", "Добро пожаловать.")}
                           </h3>
                           <p className="text-sm text-muted-foreground leading-relaxed">
-                            {referProfile
+                            {greetingLoading
+                              ? t("Reading your profile and brief — drafting a starting point in a second.",
+                                  "Читаю ваш профиль и брифинг — через секунду подготовлю отправную точку.")
+                              : referProfile
                               ? (pathwayContent && pathwayContent.length > 200
                                   ? t(`I have your profile and your strategy brief in front of me. Ask me anything — applications, essays, funding, tests, visa.`,
                                       `У меня уже есть ваш профиль и стратегический брифинг. Задайте любой вопрос — заявки, эссе, финансирование, тесты, виза.`)
@@ -2787,34 +2930,52 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                         )}
 
                         {/* Suggested follow-ups — render below the LAST assistant
-                            message when the bot isn't currently typing. Picked
-                            from a curated pool by simple keyword match against
-                            the most recent assistant content. ChatGPT pattern. */}
+                            message when the bot isn't currently typing.
+
+                            When the only assistant message is the AI auto-
+                            greet (greetingFollowUps populated, chatMessages
+                            length === 1), use the AI's bespoke follow-ups
+                            — they reference the student's actual profile
+                            and brief, much sharper than keyword-matched
+                            static chips.
+
+                            Otherwise fall back to the curated FOLLOWUPS
+                            pool keyed off the most recent assistant
+                            content. */}
                         {!chatLoading && chatMessages.length > 0 && chatMessages[chatMessages.length - 1].role === "assistant" && (() => {
                           const lastContent = chatMessages[chatMessages.length - 1].content.toLowerCase();
-                          const FOLLOWUPS: { match: RegExp; en: string[]; ru: string[] }[] = [
-                            { match: /essay|personal statement|sop|letter/i,
-                              en: ["Help me draft this essay", "What hooks tend to work?", "Show me a strong opening line"],
-                              ru: ["Помогите написать черновик", "Какие зацепки работают?", "Покажите сильное начало"] },
-                            { match: /scholarship|funding|chevening|fulbright|daad/i,
-                              en: ["Show me similar scholarships", "What are my real odds here?", "What's the application strategy?"],
-                              ru: ["Покажите похожие стипендии", "Каковы реальные шансы?", "Какая стратегия подачи?"] },
-                            { match: /visa|opt|stem|immigration/i,
-                              en: ["Walk me through the timeline", "What documents do I need?", "Common rejection reasons?"],
-                              ru: ["Расскажите о таймлайне", "Какие документы нужны?", "Частые причины отказов?"] },
-                            { match: /gpa|grade|test|sat|ielts|toefl/i,
-                              en: ["Where should I retest?", "How do I offset this?", "Schools that look past low scores?"],
-                              ru: ["Где пересдать?", "Как это компенсировать?", "Школы, прощающие низкие баллы?"] },
-                            { match: /interview|admissions|application/i,
-                              en: ["Common interview questions?", "What signals strong fit?", "How early should I apply?"],
-                              ru: ["Частые вопросы на интервью?", "Что показывает хороший fit?", "Когда лучше подать?"] },
-                          ];
-                          const matched = FOLLOWUPS.find(g => g.match.test(lastContent));
-                          const generic = {
-                            en: ["What should I focus on this month?", "What gaps am I missing?", "What's the next concrete step?"],
-                            ru: ["На чём сфокусироваться в этом месяце?", "Какие пробелы я упускаю?", "Какой следующий шаг?"],
-                          };
-                          const opts = matched ? (isRu ? matched.ru : matched.en) : (isRu ? generic.ru : generic.en);
+
+                          const useGreetingChips =
+                            chatMessages.length === 1 && greetingFollowUps.length > 0;
+
+                          let opts: string[];
+                          if (useGreetingChips) {
+                            opts = greetingFollowUps;
+                          } else {
+                            const FOLLOWUPS: { match: RegExp; en: string[]; ru: string[] }[] = [
+                              { match: /essay|personal statement|sop|letter/i,
+                                en: ["Help me draft this essay", "What hooks tend to work?", "Show me a strong opening line"],
+                                ru: ["Помогите написать черновик", "Какие зацепки работают?", "Покажите сильное начало"] },
+                              { match: /scholarship|funding|chevening|fulbright|daad/i,
+                                en: ["Show me similar scholarships", "What are my real odds here?", "What's the application strategy?"],
+                                ru: ["Покажите похожие стипендии", "Каковы реальные шансы?", "Какая стратегия подачи?"] },
+                              { match: /visa|opt|stem|immigration/i,
+                                en: ["Walk me through the timeline", "What documents do I need?", "Common rejection reasons?"],
+                                ru: ["Расскажите о таймлайне", "Какие документы нужны?", "Частые причины отказов?"] },
+                              { match: /gpa|grade|test|sat|ielts|toefl/i,
+                                en: ["Where should I retest?", "How do I offset this?", "Schools that look past low scores?"],
+                                ru: ["Где пересдать?", "Как это компенсировать?", "Школы, прощающие низкие баллы?"] },
+                              { match: /interview|admissions|application/i,
+                                en: ["Common interview questions?", "What signals strong fit?", "How early should I apply?"],
+                                ru: ["Частые вопросы на интервью?", "Что показывает хороший fit?", "Когда лучше подать?"] },
+                            ];
+                            const matched = FOLLOWUPS.find(g => g.match.test(lastContent));
+                            const generic = {
+                              en: ["What should I focus on this month?", "What gaps am I missing?", "What's the next concrete step?"],
+                              ru: ["На чём сфокусироваться в этом месяце?", "Какие пробелы я упускаю?", "Какой следующий шаг?"],
+                            };
+                            opts = matched ? (isRu ? matched.ru : matched.en) : (isRu ? generic.ru : generic.en);
+                          }
                           return (
                             <motion.div
                               initial={{ opacity: 0, y: 4 }}
@@ -2823,7 +2984,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                               className="flex flex-wrap gap-2 pl-9 pt-1"
                             >
                               <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/70 self-center mr-1">
-                                {t("Try", "Спросить")}
+                                {useGreetingChips ? t("Start with", "Начать с") : t("Try", "Спросить")}
                               </span>
                               {opts.map((p, i) => (
                                 <button
