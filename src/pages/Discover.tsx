@@ -499,25 +499,6 @@ const Reveal = ({ children, delay = 0, className = "", y = 24 }: { children: Rea
   </motion.div>
 );
 
-/* ─── Animated count-up ──────────────────────────────────────────────── */
-const useCountUp = (target: number, duration = 1200, enabled = true) => {
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    if (!enabled) return;
-    let raf = 0;
-    const start = performance.now();
-    const tick = (t: number) => {
-      const p = Math.min((t - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setVal(Math.round(target * eased));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [target, duration, enabled]);
-  return val;
-};
-
 /* ─── Navy background with soft gold glow ────────────────────────────── */
 const NavyBackdrop = () => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -1687,22 +1668,6 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
 };
 
 /* ─── Inline animated stat ───────────────────────────────────────────── */
-const InlineStat = ({ label, value, color = "text-foreground", isMoney = false, delay = 0, icon: Icon }: {
-  label: string; value: number; color?: string; isMoney?: boolean; delay?: number; icon: React.ComponentType<{ className?: string }>;
-}) => {
-  const animated = useCountUp(value, 1300);
-  return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay, duration: 0.5 }}
-      className="flex items-center gap-3">
-      <Icon className={`h-4 w-4 ${color} opacity-70`} />
-      <div>
-        <div className={`text-2xl sm:text-3xl font-bold tabular-nums leading-none ${color} tracking-tight`}>{isMoney ? fmtValue(animated) : animated}</div>
-        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mt-1.5">{label}</div>
-      </div>
-    </motion.div>
-  );
-};
-
 /* ─── Section header ─────────────────────────────────────────────────── */
 const SectionHeader = ({ kicker, title, subtitle, count, accentClass }: {
   kicker: string; title: string; subtitle: string; count: number; accentClass: string;
