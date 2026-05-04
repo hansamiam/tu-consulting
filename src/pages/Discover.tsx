@@ -28,6 +28,7 @@ import { OpportunityMap } from "@/components/discover/OpportunityMap";
 import { CuratedCollections } from "@/components/discover/CuratedCollections";
 import { MatchScoreBreakdown } from "@/components/discover/MatchScoreBreakdown";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSemanticScholarshipMatch } from "@/hooks/useSemanticScholarshipMatch";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
@@ -697,6 +698,17 @@ const FeaturedCard = ({ s, onSelect, isBookmarked, onBookmark }: {
                 </div>
               </>
             ) : null}
+            {s.verification_status && s.verification_status !== "pending" && (
+              <>
+                <span className="text-muted-foreground/40">·</span>
+                <VerifiedBadge
+                  status={s.verification_status}
+                  verifiedAt={s.last_verified_at}
+                  size="xs"
+                  compact
+                />
+              </>
+            )}
           </div>
 
           {/* Why this fits */}
@@ -823,7 +835,17 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
       {/* Award + deadline (desktop only) */}
       <div className="hidden sm:block min-w-0">
         <p className="text-sm text-foreground truncate">{s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || "—"}</p>
-        <p className={`text-xs mt-0.5 ${dl.cls}`}>{dl.text}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <p className={`text-xs ${dl.cls}`}>{dl.text}</p>
+          {s.verification_status && s.verification_status !== "pending" && (
+            <VerifiedBadge
+              status={s.verification_status}
+              verifiedAt={s.last_verified_at}
+              size="xs"
+              compact
+            />
+          )}
+        </div>
       </div>
 
       {/* Status (desktop only) */}
@@ -981,6 +1003,17 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
             <>
               <span className="text-muted-foreground/30">·</span>
               <span className="text-muted-foreground truncate">{humanize(s.target_fields[0])}</span>
+            </>
+          )}
+          {s.verification_status && s.verification_status !== "pending" && (
+            <>
+              <span className="text-muted-foreground/30">·</span>
+              <VerifiedBadge
+                status={s.verification_status}
+                verifiedAt={s.last_verified_at}
+                size="xs"
+                compact
+              />
             </>
           )}
         </div>
