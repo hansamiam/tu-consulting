@@ -612,7 +612,7 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combine
    differentiates + anchor story. Renders as 3 numbered narrative cards
    instead of a flat bulleted list, so each angle reads as a real
    strategic option the student can pick from. */
-const EssayAngles = ({ markdown, isRu }: { markdown: string; isRu: boolean }) => {
+const EssayAngles = ({ markdown, isRu, onAskCounselor }: { markdown: string; isRu: boolean; onAskCounselor?: (question: string) => void }) => {
   const { title, angles } = useMemo(() => {
     const lines = markdown.split("\n");
     let title = "";
@@ -708,6 +708,21 @@ const EssayAngles = ({ markdown, isRu }: { markdown: string; isRu: boolean }) =>
                 <p key={j}>{renderInline(b)}</p>
               ))}
             </div>
+            {onAskCounselor && (
+              <button
+                type="button"
+                onClick={() => onAskCounselor(
+                  isRu
+                    ? `Хочу развить эссе вокруг этого угла: "${a.concept}". Помогите со структурой и зацепкой.`
+                    : `I want to draft my essay around this angle: "${a.concept}". Help me with the structure and hook.`,
+                )}
+                className="mt-4 pt-3 border-t border-border/60 inline-flex items-center gap-1.5 text-[11px] font-semibold text-gold-dark hover:text-foreground transition-colors group/cta self-start"
+              >
+                <Bot className="w-3 h-3" />
+                {isRu ? "Развить с советником" : "Draft with the counselor"}
+                <ArrowRight className="w-2.5 h-2.5 transition-transform group-hover/cta:translate-x-0.5" />
+              </button>
+            )}
           </div>
         ))}
       </div>
@@ -1145,7 +1160,7 @@ export const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, is
         if (PATHWAY_ESSAYS_SECTION_REGEX.test(section)) {
           const hasContent = /^\s*([-*]|\d+\.|\#)\s+/m.test(section.split("\n").slice(1).join("\n"));
           if (hasContent) {
-            return <div key={i} {...anchorProps}><EssayAngles markdown={section} isRu={isRu} /></div>;
+            return <div key={i} {...anchorProps}><EssayAngles markdown={section} isRu={isRu} onAskCounselor={onAskCounselor} /></div>;
           }
         }
         if (PATHWAY_GAPS_SECTION_REGEX.test(section)) {
