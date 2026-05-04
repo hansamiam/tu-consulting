@@ -101,23 +101,38 @@ export const MatchScoreBreakdown = ({
   }, [scholarshipId, queryEmbedding]);
 
   // Rule-based fallback when we don't have the RPC result yet (or no embedding).
-  // Computes deadline + value + freshness signals from the row directly. These
-  // match the SQL function's bands exactly, so the popover stays consistent.
+  //
+  // The popover used to show only four generic factor rows (eligibility,
+  // deadline, funding, freshness). But the actual client-side scorer in
+  // Discover.tsx evaluates 7-10 signals — country match, degree match,
+  // field match, GPA threshold, IELTS threshold, selectivity, deadline,
+  // semantic similarity. The user saw "78" big and four bullets that
+  // didn't explain how the 78 was reached. Now we lead with the
+  // per-factor reasons + warnings the scorer actually computed (which
+  // already encode the high-leverage signals), then add the factual
+  // context rows beneath. The popover finally tells the story of how
+  // the score came out the way it did.
   const fallbackRows = (() => {
     const rows: { label: string; status: "good" | "warn" | "miss" | "info"; reason: string; delta?: string }[] = [];
 
-    // Eligibility
-    if (typeof fallback.passes_eligibility === "boolean") {
-      rows.push({
-        label: "Eligibility",
-        status: fallback.passes_eligibility ? "good" : "warn",
-        reason: fallback.passes_eligibility
-          ? "Your nationality + scores meet the gating thresholds."
-          : "One or more eligibility filters (nationality, GPA, IELTS) are not met or unknown.",
-      });
+    // Profile-fit signals come first — these are the dominant scoring
+    // factors (country, degree, field, GPA, IELTS, selectivity). Already
+    // computed by the parent's scoreScholarship; just need to surface
+    // them. Cap each at 3 so the popover stays readable.
+    if (Array.isArray(fallback.reasons)) {
+      for (const r of fallback.reasons.slice(0, 3)) {
+        rows.push({ label: "Profile fit", status: "good", reason: r });
+      }
+    }
+    if (Array.isArray(fallback.warnings)) {
+      for (const w of fallback.warnings.slice(0, 2)) {
+        rows.push({ label: "Watch out", status: "warn", reason: w });
+      }
     }
 
-    // Deadline
+    // Factual context — surfaces what the score-maths boosts/penalties
+    // were keyed on, so a user sees the freshness signal + deadline
+    // urgency in addition to their profile fit.
     if (fallback.application_deadline) {
       const days = Math.ceil((new Date(fallback.application_deadline).getTime() - Date.now()) / 86400_000);
       let status: "good" | "warn" | "miss" | "info" = "info";
@@ -129,11 +144,8 @@ export const MatchScoreBreakdown = ({
       else if (days <= 90) { status = "good"; reason = `Deadline in ${days} days — slight urgency boost.`; delta = "+2.5%"; }
       else if (days <= 180) { status = "good"; reason = `Deadline within 6 months — minor boost.`; delta = "+1.0%"; }
       rows.push({ label: "Deadline urgency", status, reason, delta });
-    } else {
-      rows.push({ label: "Deadline", status: "info", reason: "Rolling or undated.", delta: "0" });
     }
 
-    // Value
     if (typeof fallback.estimated_total_value_usd === "number" && fallback.estimated_total_value_usd > 0) {
       const v = fallback.estimated_total_value_usd;
       const boost = Math.min(0.040, Math.log(v + 1) / 200);
@@ -143,7 +155,6 @@ export const MatchScoreBreakdown = ({
       rows.push({ label: "Funding magnitude", status: "good", reason, delta: fmtBoost(boost) });
     }
 
-    // Recency
     if (fallback.last_verified_at) {
       const days = Math.floor((Date.now() - new Date(fallback.last_verified_at).getTime()) / 86400_000);
       let status: "good" | "warn" | "miss" | "info" = "info";
@@ -153,11 +164,6 @@ export const MatchScoreBreakdown = ({
       else if (days <= 90) { status = "good"; reason = "Verified within 90 days — small freshness boost."; delta = "+1.0%"; }
       else if (days > 365) { status = "warn"; reason = "Last verified over a year ago — small recency penalty."; delta = "−2.0%"; }
       rows.push({ label: "Data freshness", status, reason, delta });
-    }
-
-    // Why-this-fits, if present
-    if (fallback.why_this_fits) {
-      rows.push({ label: "Why it fits you", status: "info", reason: fallback.why_this_fits });
     }
 
     return rows;
@@ -231,16 +237,6 @@ export const MatchScoreBreakdown = ({
             </li>
           ))}
         </ul>
-        {!useRpc && fallback.warnings && fallback.warnings.length > 0 && (
-          <div className="border-t border-border/60 pt-2 mt-2">
-            {fallback.warnings.slice(0, 2).map((w, i) => (
-              <p key={i} className="text-[11px] text-amber-700 dark:text-amber-400 leading-snug flex items-start gap-1.5">
-                <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
-                {w}
-              </p>
-            ))}
-          </div>
-        )}
         <p className="text-[9px] text-muted-foreground/60 mt-2 pt-2 border-t border-border/40 leading-snug flex items-start gap-1.5">
           <Info className="w-2.5 h-2.5 mt-0.5 shrink-0" />
           Same math as our ranking. Hover any score for the breakdown.

@@ -2804,7 +2804,7 @@ const Discover = ({ language = "en" }: Props) => {
               ) : (() => {
                 const items = ranked.filter(s => compareSet.has(s.scholarship_id));
                 const rows: { label: string; render: (s: Scored) => React.ReactNode }[] = [
-                  { label: "Opportunity match", render: s => <span className="font-bold text-lg tabular-nums text-foreground">{s.match}<span className="text-muted-foreground/60 text-sm font-normal">/100</span></span> },
+                  { label: "Match score", render: s => <span className="font-bold text-lg tabular-nums text-foreground">{s.match}<span className="text-muted-foreground/60 text-sm font-normal">/100</span></span> },
                   { label: "Tier", render: s => {
                       const t = TIER[s.priority];
                       return <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] ${t.textLight}`}>
