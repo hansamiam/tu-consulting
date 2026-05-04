@@ -1,7 +1,7 @@
-// Academy — pre-launch page. No dates committed yet, but the page now
-// signals what Academy will *be*: founder-led workshops, country guides,
-// office hours. Reads as substance the user can opt into rather than
-// a bare "Coming soon" placeholder.
+// Academy — public sees the waitlist landing; founder sees the actual
+// Academy hub (workshops + office hours + guides). When Academy ships
+// publicly, the founder allowlist will be replaced with a "subscribed"
+// check via the subscriptions table.
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Navigation from "@/components/Navigation";
@@ -16,6 +16,9 @@ import {
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { isFounder } from "@/lib/founder";
+import { AcademyFounderHub } from "@/components/academy/AcademyFounderHub";
 import samuelPhoto from "@/assets/samuel.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
 import joshPhoto from "@/assets/josh.jpg";
@@ -45,9 +48,23 @@ const SAMPLE_WORKSHOPS = [
 ];
 
 const Academy = () => {
+  const { user } = useAuth();
+  const founder = isFounder(user?.email);
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+
+  // Founder sees the actual Academy hub behind the public waitlist wall;
+  // public still gets the waitlist landing below.
+  if (founder) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <AcademyFounderHub />
+        <Footer language="en" />
+      </div>
+    );
+  }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
