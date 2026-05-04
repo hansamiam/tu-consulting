@@ -21,7 +21,7 @@ import { SaveBriefPrompt } from "@/components/topuni/SaveBriefPrompt";
 import { DocumentManager } from "@/components/topuni/DocumentManager";
 import { CounselorSessions } from "@/components/topuni/CounselorSessions";
 import { GenerationPipeline } from "@/components/GenerationPipeline";
-import { EnrichedMarkdown } from "@/components/EnrichedMarkdown";
+import { EnrichedMarkdown, FocusScholarshipContext } from "@/components/EnrichedMarkdown";
 import { ProBriefUnlock, type ProBriefDepth } from "@/components/ProBriefUnlock";
 import { PremiumGate } from "@/components/PremiumGate";
 import { BriefHeroStats } from "@/components/brief/BriefHeroStats";
@@ -2387,6 +2387,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
               )}
 
               {pathwayContent && (
+                <FocusScholarshipContext.Provider value={focusScholarship?.scholarshipId ?? null}>
                 <div className="grid xl:grid-cols-[1fr_220px] gap-x-10 print:block">
                 <div id="printable-report" className="min-w-0 prose prose-sm max-w-none dark:prose-invert [&_h2]:text-foreground [&_h2]:font-heading [&_h2]:text-xl [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:scroll-mt-24 [&_h2]:tracking-[-0.01em] [&_h3]:text-foreground [&_h3]:font-heading [&_h3]:text-lg [&_h3]:mt-6 [&_h3]:mb-2 [&_p]:text-muted-foreground [&_li]:text-muted-foreground [&_strong]:text-foreground">
                   {/* Editorial masthead — frames the brief as a real report
@@ -2738,6 +2739,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                   <BriefChapterNav briefContent={pathwayContent} isRu={isRu} />
                 )}
                 </div>
+                </FocusScholarshipContext.Provider>
               )}
             </CardContent>
           </Card>

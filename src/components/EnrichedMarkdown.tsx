@@ -1,6 +1,14 @@
 import ReactMarkdown from "react-markdown";
-import { useMemo, type ReactNode } from "react";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { InlineScholarshipCard, type InlineScholarshipData } from "@/components/InlineScholarshipCard";
+
+/* FocusScholarshipContext — surfaces the user's "build my strategy
+   around this" pick to any descendant InlineScholarshipCard so it can
+   render with a "Your focus" badge + accent ring when the scholarship_id
+   matches. The brief uses this in TopUniDashboard; everywhere else the
+   context defaults to null and renders normally. */
+export const FocusScholarshipContext = createContext<string | null>(null);
+export const useFocusScholarship = () => useContext(FocusScholarshipContext);
 
 /**
  * <EnrichedMarkdown /> — drop-in replacement for ReactMarkdown that

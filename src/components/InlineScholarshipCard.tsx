@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Award, Calendar, ExternalLink, Bookmark, BookmarkCheck, ArrowUpRight,
+  Award, Calendar, ExternalLink, Bookmark, BookmarkCheck, ArrowUpRight, Target,
 } from "lucide-react";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
 import { toast } from "sonner";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { useFocusScholarship } from "@/components/EnrichedMarkdown";
 
 /**
  * <InlineScholarshipCard /> — the in-brief scholarship pill.
@@ -67,6 +68,11 @@ export function InlineScholarshipCard({ scholarship: s, showMeta = true }: Props
   const isSaved = tracker.shortlist.has(s.scholarship_id);
   const dl = deadlineDisplay(s.application_deadline);
   const coverage = COVERAGE_LABEL[s.coverage_type] ?? "Funded";
+  // Focus mode — when this card matches the brief's focus scholarship,
+  // wear a stronger ring and a "Your focus" badge. Visually completes
+  // the loop from the detail-page CTA → wizard → brief.
+  const focusedId = useFocusScholarship();
+  const isFocused = !!focusedId && focusedId === s.scholarship_id;
 
   const handleSave = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -85,7 +91,17 @@ export function InlineScholarshipCard({ scholarship: s, showMeta = true }: Props
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       className="inline-flex flex-col my-2 not-italic font-normal align-middle"
     >
-      <span className="group inline-flex flex-wrap items-stretch border border-gold/35 bg-gold/[0.04] hover:bg-gold/10 hover:border-gold/55 rounded-lg overflow-hidden transition-colors max-w-full">
+      {isFocused && (
+        <span className="inline-flex self-start items-center gap-1 px-2 py-0.5 mb-1 rounded-full text-[9px] font-bold tracking-[0.18em] uppercase bg-gradient-to-r from-gold-dark to-gold text-primary">
+          <Target className="w-2.5 h-2.5" />
+          Your focus
+        </span>
+      )}
+      <span className={`group inline-flex flex-wrap items-stretch ${
+        isFocused
+          ? "border-2 border-gold/55 bg-gold/[0.08] ring-2 ring-gold/25"
+          : "border border-gold/35 bg-gold/[0.04] hover:bg-gold/10 hover:border-gold/55"
+      } rounded-lg overflow-hidden transition-colors max-w-full`}>
         {/* Body — clickable through to detail page */}
         <Link
           to={`/scholarships/${s.scholarship_id}`}
