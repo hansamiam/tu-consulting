@@ -2786,50 +2786,17 @@ const Discover = ({ language = "en" }: Props) => {
                           </div>
                         )}
 
-                        {/* BROWSE — default render with collections rail + featured + sections */}
-                        {appSection === "browse" && viewMode === "grid" && liveCollections.length > 0 && (
-                          <section>
-                            <Reveal y={20}>
-                              <div className="flex items-baseline justify-between mb-5">
-                                <div>
-                                  <p className="text-gold-dark text-[11px] font-semibold uppercase tracking-[0.22em] mb-1">Curated collections</p>
-                                  <h2 className="font-heading text-xl font-bold tracking-tight text-foreground">Pre-built lists for different application strategies</h2>
-                                </div>
-                                <span className="text-xs text-muted-foreground tabular-nums">{liveCollections.length} collections</span>
-                              </div>
-                            </Reveal>
-                            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                              {liveCollections.map((c, i) => {
-                                const Icon = c.def.icon;
-                                const description = typeof c.def.description === "function" ? c.def.description(profile) : c.def.description;
-                                return (
-                                  <motion.button
-                                    key={c.def.id}
-                                    initial={{ opacity: 0, y: 14 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true, margin: "-30px" }}
-                                    transition={{ delay: Math.min(i * 0.04, 0.3), duration: 0.5 }}
-                                    onClick={() => setOpenCollection(c.def.id)}
-                                    className="group relative text-left bg-card border border-border/70 hover:border-gold/30 hover:shadow-md rounded-2xl p-5 transition-all"
-                                  >
-                                    <div className="flex items-start justify-between gap-3 mb-4">
-                                      <div className={`h-10 w-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0 ${c.def.accentClass}`}>
-                                        <Icon className="h-5 w-5" />
-                                      </div>
-                                      <span className="text-2xl font-bold tabular-nums text-foreground/40">{c.items.length.toString().padStart(2, "0")}</span>
-                                    </div>
-                                    <p className={`text-[10px] font-semibold uppercase tracking-[0.2em] mb-1 ${c.def.accentClass}`}>{c.def.kicker}</p>
-                                    <h3 className="font-heading font-bold text-base text-foreground tracking-tight mb-1.5 leading-tight">{c.def.title}</h3>
-                                    <p className="text-xs text-muted-foreground leading-[1.55] line-clamp-2 mb-4">{description}</p>
-                                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground group-hover:text-gold-dark transition-colors">
-                                      View {c.items.length} <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-                                    </span>
-                                  </motion.button>
-                                );
-                              })}
-                            </div>
-                          </section>
-                        )}
+                        {/* The Browse view used to render a full Collections
+                            grid here ("Pre-built lists for different
+                            application strategies", 8 editorial-card tiles)
+                            plus the sticky sidebar's "Collections" tab —
+                            two surfaces for the same data. Removed the
+                            in-browse render so Browse is just: spotlight +
+                            cards. The Collections tab in the workspace nav
+                            still surfaces the full list with the same
+                            opening drawer behaviour, so the editorial
+                            curation is one click away, not stacked on top
+                            of the actual results. */}
 
                         {/* Editor's spotlight — single line, no marketing card */}
                         {appSection === "browse" && viewMode === "grid" && sections.hero.length > 0 && (
