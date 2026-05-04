@@ -2835,9 +2835,33 @@ const Discover = ({ language = "en" }: Props) => {
                             );
                           }
 
-                          // Grid view — three sections by priority: Strong / Competitive / Worth exploring.
-                          // Subtitles trimmed from full sentences to scan-able utility lines so
-                          // section headers don't compete visually with the cards beneath them.
+                          // Grid view — three sections by priority when the
+                          // user has profile signal driving the bucketing.
+                          // Without profile signal, every row falls into
+                          // sections.stretch with the "Selective" subtitle —
+                          // misleading for unprofiled users since we're not
+                          // declaring those rows selective, we just don't
+                          // know enough about them to bucket. Detect that
+                          // case (no rows in strong/competitive) and render
+                          // the cards as one undifferentiated grid with a
+                          // neutral "All scholarships" header instead.
+                          const hasProfileBucketing = sections.strong.length > 0 || sections.competitive.length > 0;
+                          if (!hasProfileBucketing && sections.stretch.length > 0) {
+                            return (
+                              <section>
+                                <SectionHeader
+                                  kicker="Database"
+                                  title={`${sections.stretch.length} scholarships`}
+                                  subtitle="Build your profile (top right) to see which ones fit you best."
+                                  count={sections.stretch.length}
+                                  accentClass="text-foreground/60"
+                                />
+                                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
+                                  {sections.stretch.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
+                                </div>
+                              </section>
+                            );
+                          }
                           return (
                             <>
                               {sections.strong.length > 0 && (
