@@ -43,7 +43,11 @@ const COMPANY_LINKS_RU = [
   { to: "/submit/ru",   label: "Предложить стипендию" },
 ];
 
-export const Footer = ({ language, variant = "dark" }: FooterProps) => {
+/* Default to "light" because most pages render the footer directly on
+ * the cream page background. Pages that want a navy slab (Index +
+ * IndexRu) wrap the Footer in a `<footer className="bg-primary">` block
+ * AND pass variant="dark" explicitly. */
+export const Footer = ({ language, variant = "light" }: FooterProps) => {
   const text = {
     en: {
       legal: "Legal",

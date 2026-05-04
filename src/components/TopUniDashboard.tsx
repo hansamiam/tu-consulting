@@ -13,7 +13,7 @@ import {
   Lightbulb, AlertTriangle, Quote, Check,
   Share2, Copy, Mail,
   Crown, Bookmark, BookmarkCheck,
-  RefreshCw,
+  RefreshCw, ChevronDown,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1347,6 +1347,55 @@ const AnalysisProgress = ({ profile, isRu }: {
   );
 };
 
+/* Prompt accordion — collapses the 5 prompt categories so the counsellor
+ * rail stays tight (was rendering ~25 vertical lines, matching the chat
+ * box height). Single-open mode: opening a category collapses any other.
+ * The category header itself is the click target. */
+interface PromptGroup { label: string; icon: React.ReactNode; prompts: string[] }
+const PromptAccordion = ({ groups, onPromptSelect, disabled }: {
+  groups: PromptGroup[];
+  onPromptSelect: (p: string) => void;
+  disabled?: boolean;
+}) => {
+  const [open, setOpen] = useState<string | null>(null);
+  return (
+    <div className="space-y-1">
+      {groups.map((g) => {
+        const isOpen = open === g.label;
+        return (
+          <div key={g.label} className="border-b border-border/40 last:border-b-0">
+            <button
+              type="button"
+              onClick={() => setOpen((cur) => (cur === g.label ? null : g.label))}
+              className="w-full flex items-center justify-between gap-2 py-2 text-[11px] uppercase tracking-[0.14em] text-foreground font-semibold hover:text-gold-dark transition-colors"
+            >
+              <span className="flex items-center gap-1.5">
+                <span className="text-accent">{g.icon}</span>
+                {g.label}
+              </span>
+              <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+            </button>
+            {isOpen && (
+              <div className="space-y-0.5 pb-2">
+                {g.prompts.map((p, i) => (
+                  <button
+                    key={i}
+                    onClick={() => onPromptSelect(p)}
+                    disabled={disabled}
+                    className="block w-full text-left text-xs leading-snug px-2 py-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors disabled:opacity-50"
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) => {
   const isRu = language === "ru";
   const t = (en: string, ru: string) => isRu ? ru : en;
@@ -1512,7 +1561,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       // Only surface verified + stale rows in the brief sidebar matches —
       // matches the LLM's retrieval filter so what the brief mentions and
       // what the cards show are aligned.
-      .or("verification_status.is.null,verification_status.in.(verified,stale)");
+      .or("verification_status.is.null,verification_status.in.(verified,stale,pending)");
       if (profile.targetCountries && profile.targetCountries.length > 0) {
         q = q.in("host_country", profile.targetCountries);
       }
@@ -1551,7 +1600,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           "application_deadline, why_this_fits, official_url, " +
           "verification_status, last_verified_at"
         )
-        .or("verification_status.is.null,verification_status.in.(verified,stale)")
+        .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
         .in("scholarship_id", idsToFetch)
         .limit(40);
       if (cancelled || !data) return;
@@ -1976,7 +2025,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             .select("scholarship_id, scholarship_name, application_deadline")
             // Only hydrate verified/stale rows — the greeting should never
             // reference broken or pending data.
-            .or("verification_status.is.null,verification_status.in.(verified,stale)")
+            .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
             .in("scholarship_id", trackedSnapshot.ids)
             .limit(20);
           savedScholarships = (hydrated ?? []).map((r) => ({
@@ -3075,36 +3124,19 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                       refreshKey={chatSessionId}
                     />
                     <div>
-                      <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground font-semibold mb-2">
-                        {t("Start a thread", "Начать диалог")}
-                      </p>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        {t("Tap a prompt to send it, or type your own. Your conversation is saved.",
-                           "Нажмите подсказку или напишите свой вопрос. Диалог сохраняется.")}
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground font-semibold">
+                        {t("Try a prompt", "Подсказки")}
                       </p>
                     </div>
-                    <div className="space-y-4">
-                      {promptGroups.map((g) => (
-                        <div key={g.label}>
-                          <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] text-foreground font-semibold mb-1.5">
-                            <span className="text-accent">{g.icon}</span>
-                            {g.label}
-                          </div>
-                          <div className="space-y-1">
-                            {g.prompts.map((p, i) => (
-                              <button
-                                key={i}
-                                onClick={() => sendChatMessage(p)}
-                                disabled={chatLoading}
-                                className="block w-full text-left text-xs leading-snug px-2 py-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors disabled:opacity-50"
-                              >
-                                {p}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    {/* Collapsible per-category accordion. Defaults to all
+                        closed so the rail height matches the chat box; user
+                        clicks a category to expand the 3 prompt suggestions
+                        inside. Single-open state keeps it tight. */}
+                    <PromptAccordion
+                      groups={promptGroups}
+                      onPromptSelect={(p) => sendChatMessage(p)}
+                      disabled={chatLoading}
+                    />
                     {/* Quiet Discover entry — replaces the heavy page-header
                         CTA card so chat-tab users still have a clean path. */}
                     <button

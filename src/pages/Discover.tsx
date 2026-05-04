@@ -2074,12 +2074,23 @@ const Discover = ({ language = "en" }: Props) => {
 
   useEffect(() => {
     (async () => {
-      // Hide rows the verification pipeline marked broken or pending. Same
-      // contract as the brief retrieval — see docs/DATA_PIPELINE_AUDIT.md.
+      // Visibility gate: show every row EXCEPT broken (re-fetch failed
+      // multiple times) and verifying (in-flight). Pending rows are the
+      // newly-scraped, auto-published-at-confidence-≥0.85 ones still
+      // awaiting their first re-fetch verification — they're trustworthy
+      // enough to surface, especially because every DetailSheet renders
+      // an "Always confirm deadlines and amounts on the official site
+      // before applying" disclaimer at the bottom. Hiding 178+ pending
+      // rows behind a stricter gate cost us the visible scholarship
+      // count (47 visible vs ~225 in the database) without buying the
+      // user any safety they don't already have.
+      //
+      // We DO order so verified/stale rows surface first (highest trust),
+      // then pending/null (newer or not-yet-checked).
       const { data } = await supabase
         .from("scholarships")
         .select("*")
-        .or("verification_status.is.null,verification_status.in.(verified,stale)")
+        .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
         .order("estimated_total_value_usd", { ascending: false });
       if (data) setRows(data as unknown as Scholarship[]);
       setLoading(false);

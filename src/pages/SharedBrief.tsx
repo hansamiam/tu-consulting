@@ -99,7 +99,7 @@ const SharedBriefPage = () => {
         // surface to recipients. Pending/broken scholarships in the
         // brief markdown render as plain bold text (handled by
         // EnrichedMarkdown's looksLikeScholarshipName fallback).
-        .or("verification_status.is.null,verification_status.in.(verified,stale)")
+        .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
         .or(orClause)
         .limit(40);
       if (cancelled || !data) return;

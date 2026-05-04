@@ -68,7 +68,7 @@ export function SavedDeadlineBanner({ trackedIds, isRu = false, daysWindow = 14 
         // with every other user-facing surface. Don't surface broken or
         // pending rows here — we don't want to nag a user about a
         // scholarship whose URL is dead or hasn't been vetted yet.
-        .or("verification_status.is.null,verification_status.in.(verified,stale)")
+        .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
         .in("scholarship_id", trackedIds);
       if (cancelled || !data) return;
       setRows(data as ScholarshipDeadline[]);
