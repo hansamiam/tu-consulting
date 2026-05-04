@@ -25,6 +25,7 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
 import { CuratedCollections } from "@/components/discover/CuratedCollections";
+import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
 import { MatchScoreBreakdown } from "@/components/discover/MatchScoreBreakdown";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
@@ -1328,21 +1329,54 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           </div>
         </div>
 
-        {/* ── TABS ── */}
-        <Tabs defaultValue="overview" className="flex-1 flex flex-col">
+        {/* ── TABS ──
+            "My plan" is the first/default tab — when the user clicks a
+            scholarship card, the substantial personalized analysis (match
+            breakdown vs their stats, odds estimate with rationale,
+            counsellor-grade strategy points, 30-day execution plan) lands
+            immediately. Previously this analysis was only on the standalone
+            /scholarships/:id page; surfacing it inside the DetailSheet
+            keeps the user in the Discover flow and answers "should I
+            apply?" without a navigation step away. */}
+        <Tabs defaultValue="plan" className="flex-1 flex flex-col">
           <div className="px-7 pt-5 border-b border-border bg-background sticky top-0 z-10">
             <TabsList className="bg-transparent p-0 h-auto gap-7 w-full justify-start rounded-none -mb-px">
-              {(["overview","requirements","strategy","apply"] as const).map(v => (
+              {([
+                { v: "plan",         label: "My plan" },
+                { v: "overview",     label: "Overview" },
+                { v: "requirements", label: "Requirements" },
+                { v: "strategy",     label: "Strategy" },
+                { v: "apply",        label: "Apply" },
+              ] as const).map(t => (
                 <TabsTrigger
-                  key={v}
-                  value={v}
-                  className="data-[state=active]:text-foreground data-[state=active]:border-foreground data-[state=active]:shadow-none border-b-2 border-transparent text-muted-foreground hover:text-foreground rounded-none px-0 pb-3 pt-0 text-sm font-medium capitalize bg-transparent"
+                  key={t.v}
+                  value={t.v}
+                  className="data-[state=active]:text-foreground data-[state=active]:border-foreground data-[state=active]:shadow-none border-b-2 border-transparent text-muted-foreground hover:text-foreground rounded-none px-0 pb-3 pt-0 text-sm font-medium bg-transparent"
                 >
-                  {v}
+                  {t.label}
                 </TabsTrigger>
               ))}
             </TabsList>
           </div>
+
+          {/* MY PLAN — personalized analysis */}
+          <TabsContent value="plan" className="px-7 py-6 m-0 focus-visible:outline-none">
+            <ScholarshipDeepDive
+              scholarshipId={s.scholarship_id}
+              profile={{
+                fullName: undefined,
+                nationality: profile.country,
+                major: profile.field,
+                field: profile.field,
+                gradeLevel: profile.degree,
+                targetCountries: s.host_country ? [s.host_country] : undefined,
+                gpa: profile.gpa,
+                gpaScale: profile.gpaScale,
+                ielts: profile.ielts,
+                sat: profile.sat,
+              }}
+            />
+          </TabsContent>
 
           {/* OVERVIEW */}
           <TabsContent value="overview" className="px-7 py-6 space-y-5 m-0 focus-visible:outline-none">
