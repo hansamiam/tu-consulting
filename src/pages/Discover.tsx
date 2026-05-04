@@ -2684,37 +2684,53 @@ const Discover = ({ language = "en" }: Props) => {
                 ].filter(Boolean) as string[];
                 const isProfileFilled = profileChips.length > 0;
                 return (
-                  <div className="relative bg-gradient-to-b from-canvas-soft to-background border-b border-border/60">
-                    <div className="max-w-7xl mx-auto px-5 sm:px-8 py-4 flex items-baseline gap-3 flex-wrap">
-                      {isProfileFilled ? (
-                        <>
-                          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark shrink-0">TopUni Discover</span>
-                          <span className="text-muted-foreground/40">·</span>
-                          {profileChips.map(chip => (
-                            <span key={chip} className="text-xs text-foreground/80 bg-card border border-border px-2 py-0.5 rounded-md font-medium">{chip}</span>
-                          ))}
-                          <button onClick={resetProfile} className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 underline-offset-4 hover:underline">
-                            Edit
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark shrink-0">TopUni Discover</span>
-                          <span className="text-muted-foreground/40">·</span>
-                          <span className="text-xs text-foreground/80">
-                            <span className="font-semibold tabular-nums">{ranked.length}</span> scholarships
-                          </span>
-                          <span className="text-muted-foreground/40">·</span>
-                          <button
-                            onClick={() => setPhase("wizard")}
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gold-dark hover:text-foreground transition-colors group"
-                          >
-                            <Sparkles className="w-3 h-3" />
-                            Build profile to see fit scoring
-                            <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                          </button>
-                        </>
-                      )}
+                  <div className="relative bg-gradient-to-b from-primary/[0.04] via-canvas-soft to-background border-b border-border/60 overflow-hidden">
+                    {/* Subtle gold ambient — keeps the brand mark elevated
+                        without committing to a full hero block. */}
+                    <span className="absolute -top-1/2 -right-20 w-72 h-72 rounded-full blur-[100px] opacity-[0.10] pointer-events-none"
+                      style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 60%)" }}
+                      aria-hidden />
+                    <div className="relative max-w-7xl mx-auto px-5 sm:px-8 py-5 sm:py-6 flex items-end gap-4 flex-wrap">
+                      {/* Page brand mark — substantial, not a label */}
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-gradient-to-br from-gold-dark to-gold text-primary shadow-sm ring-1 ring-gold/40">
+                          <Compass className="h-4 w-4" />
+                        </span>
+                        <div className="leading-tight">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark">TopUni</p>
+                          <h1 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground -mt-0.5">Discover</h1>
+                        </div>
+                      </div>
+                      {/* Vertical rule */}
+                      <span className="hidden sm:block self-stretch w-px bg-border/60 my-1" aria-hidden />
+                      {/* Profile chips OR call-to-build-profile */}
+                      <div className="flex items-baseline gap-2 flex-wrap min-w-0 flex-1">
+                        {isProfileFilled ? (
+                          <>
+                            {profileChips.map(chip => (
+                              <span key={chip} className="text-xs text-foreground/85 bg-card border border-border px-2 py-0.5 rounded-md font-medium">{chip}</span>
+                            ))}
+                            <button onClick={resetProfile} className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 underline-offset-4 hover:underline">
+                              Edit
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-sm text-foreground/85">
+                              <span className="font-semibold tabular-nums text-foreground">{ranked.length}</span> scholarships
+                            </span>
+                            <span className="text-muted-foreground/40">·</span>
+                            <button
+                              onClick={() => setPhase("wizard")}
+                              className="inline-flex items-center gap-1.5 text-sm font-semibold text-gold-dark hover:text-foreground transition-colors group"
+                            >
+                              <Sparkles className="w-3.5 h-3.5" />
+                              Build profile to see fit scoring
+                              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
