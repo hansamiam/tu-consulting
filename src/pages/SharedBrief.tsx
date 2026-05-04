@@ -10,14 +10,14 @@
  * expired briefs return 404.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ArrowRight, ExternalLink, Loader2 } from "lucide-react";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { ArrowRight, Loader2, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import { EnrichedMarkdown } from "@/components/EnrichedMarkdown";
+import { ReportRenderer } from "@/components/TopUniDashboard";
+import { BriefMasthead } from "@/components/brief/BriefMasthead";
 import type { InlineScholarshipData } from "@/components/InlineScholarshipCard";
 
 interface SharedBrief {
@@ -36,12 +36,23 @@ interface SharedBrief {
   expires_at: string | null;
 }
 
+/* The ReportRenderer expects this shape (LiveMatchLite from
+   TopUniDashboard). We extend InlineScholarshipData with the extra
+   fields it uses (funding total, verification metadata) so the shared
+   view shows verified badges + funding values just like the dashboard. */
+interface RecipientLiveMatch extends InlineScholarshipData {
+  estimated_total_value_usd: number | null;
+  verification_status: string | null;
+  last_verified_at: string | null;
+}
+
 const SharedBriefPage = () => {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const [brief, setBrief] = useState<SharedBrief | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [scholarshipsForCards, setScholarshipsForCards] = useState<InlineScholarshipData[]>([]);
+  const [scholarshipsForCards, setScholarshipsForCards] = useState<RecipientLiveMatch[]>([]);
 
   // Pull every name the brief wraps in **bold** so we can resolve them to
   // real scholarship rows. Names that don't exist in the DB just render as
@@ -78,7 +89,17 @@ const SharedBriefPage = () => {
         .join(",");
       const { data } = await supabase
         .from("scholarships")
-        .select("scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, application_deadline, official_url")
+        .select(
+          "scholarship_id, scholarship_name, provider_name, host_country, " +
+          "coverage_type, award_amount_text, estimated_total_value_usd, " +
+          "application_deadline, official_url, verification_status, " +
+          "last_verified_at"
+        )
+        // Match the brief's read-side filter — only verified/stale rows
+        // surface to recipients. Pending/broken scholarships in the
+        // brief markdown render as plain bold text (handled by
+        // EnrichedMarkdown's looksLikeScholarshipName fallback).
+        .or("verification_status.is.null,verification_status.in.(verified,stale)")
         .or(orClause)
         .limit(40);
       if (cancelled || !data) return;
@@ -90,8 +111,11 @@ const SharedBriefPage = () => {
           host_country: d.host_country,
           coverage_type: d.coverage_type,
           award_amount_text: d.award_amount_text,
+          estimated_total_value_usd: d.estimated_total_value_usd ?? null,
           application_deadline: d.application_deadline,
           official_url: d.official_url,
+          verification_status: d.verification_status ?? null,
+          last_verified_at: d.last_verified_at ?? null,
         })),
       );
     })();
@@ -234,85 +258,137 @@ const SharedBriefPage = () => {
   const major = brief.profile_major;
   const isRu = brief.language === "ru";
 
+  // The recipient is a viewer, not the brief's owner. Save / regen / task-
+  // toggle UX is hidden by passing no-op handlers + empty state. The
+  // ReportRenderer's components gracefully degrade — interactive bits
+  // (action-plan checkboxes) render but don't mutate anything.
+  const noopToggle = () => {};
+  const taskKey = (text: string) => {
+    let h = 5381;
+    for (let i = 0; i < text.length; i++) h = (h * 33) ^ text.charCodeAt(i);
+    return (h >>> 0).toString(36);
+  };
+
+  // Premium-tier briefs from non-Pro authors still render in full to the
+  // recipient — this is THE acquisition surface, no point gating it. We
+  // pass tier="premium" so all rich sections (Career ROI, Visa, Budget)
+  // render without the basic-tier teaser strip.
+  const tier: "basic" | "premium" = brief.report_grade === "premium" ? "premium" : "basic";
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
 
-      {/* Hero / masthead — signals "this is a real brief from TopUni AI" */}
-      <section className="bg-gradient-to-br from-primary via-primary to-primary/95 py-14 sm:py-20">
-        <div className="max-w-3xl mx-auto px-5 sm:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <p className="text-[11px] uppercase tracking-[0.22em] text-gold font-semibold mb-3">
-              {isRu ? "Стратегический брифинг" : "Strategic Brief"}
-            </p>
-            <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold text-primary-foreground tracking-tight leading-tight">
-              {firstName
-                ? `${firstName}'s admissions strategy`
-                : isRu
-                  ? "Стратегия поступления"
-                  : "An admissions strategy"}
-            </h1>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {targetCountries.slice(0, 5).map((c) => (
-                <span
-                  key={c}
-                  className="text-[11px] uppercase tracking-[0.18em] font-semibold text-primary-foreground/85 border border-primary-foreground/25 px-2.5 py-1 rounded-full"
-                >
-                  {c}
-                </span>
-              ))}
-              {major && (
-                <span className="text-[11px] uppercase tracking-[0.18em] font-semibold text-gold border border-gold/40 px-2.5 py-1 rounded-full">
-                  {major}
-                </span>
-              )}
-            </div>
-          </motion.div>
-        </div>
-      </section>
+      {/* Slim navy band — preserves TopUni's visual signature without
+          competing with the BriefMasthead which does the actual cover. */}
+      <div
+        aria-hidden
+        className="h-2 bg-gradient-to-r from-primary via-gold-dark to-primary"
+      />
 
-      {/* Brief content */}
-      <article className="max-w-3xl mx-auto px-5 sm:px-8 py-14 sm:py-20">
+      <article className="max-w-4xl mx-auto px-5 sm:px-8 py-10 sm:py-14">
+        {/* Editorial masthead — same component the brief author sees on
+            their dashboard, so the recipient view is consistent. Share /
+            Download hidden because the recipient isn't the author; Print
+            stays so a parent can print to PDF. */}
+        <BriefMasthead
+          studentName={firstName ? `${firstName}'s strategy report` : (isRu ? "Стратегический брифинг" : "Strategy report")}
+          profile={{
+            gradeLevel: brief.profile_grade_level ?? undefined,
+            major: major ?? undefined,
+            targetCountries: targetCountries.length > 0 ? targetCountries : undefined,
+          }}
+          briefContent={brief.content}
+          isStreaming={false}
+          isRu={isRu}
+          isPro={false}
+          onPrint={() => window.print()}
+        />
+
+        {/* Trust strip — first-time visitor doesn't know what TopUni is.
+            One short line explains the deliverable came from a real
+            verified database, not generic AI fluff. Print-hidden. */}
+        <div className="not-prose flex items-center gap-2 mb-6 px-3 py-2 rounded-lg bg-muted/30 border border-border/60 text-[11px] text-muted-foreground leading-snug print:hidden">
+          <ShieldCheck className="w-3.5 h-3.5 text-gold-dark shrink-0" />
+          <span>
+            {isRu
+              ? "Брифинг сгенерирован TopUni AI на основе проверенной базы стипендий. Каждое название — реальная программа в нашей базе."
+              : "Drafted by TopUni AI grounded in our verified scholarship database. Every name in this brief maps to a real program — not invented."}
+          </span>
+        </div>
+
+        {/* Brief content — uses the SAME ReportRenderer the dashboard uses,
+            so the recipient sees the polished section components (gold
+            strategic-brief box, severity strips on gaps, numbered essay
+            angle cards, funding shortlist with deadline urgency, etc.)
+            instead of plain markdown.
+
+            Recipient is a viewer, not owner: no save / regen / task-toggle. */}
         <div
-          className="prose prose-sm sm:prose-base max-w-none
-                     [&_h2]:text-foreground [&_h2]:font-heading [&_h2]:text-2xl [&_h2]:mt-10 [&_h2]:mb-4 [&_h2]:tracking-tight
-                     [&_h3]:text-foreground [&_h3]:font-heading [&_h3]:text-lg [&_h3]:mt-8 [&_h3]:mb-3
-                     [&_p]:text-foreground/90 [&_p]:leading-relaxed
-                     [&_li]:text-foreground/90 [&_li]:leading-relaxed
+          className="prose prose-sm sm:prose-base max-w-none dark:prose-invert
+                     [&_h2]:text-foreground [&_h2]:font-heading [&_h2]:text-xl [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:tracking-[-0.01em]
+                     [&_h3]:text-foreground [&_h3]:font-heading [&_h3]:text-lg [&_h3]:mt-6 [&_h3]:mb-2
+                     [&_p]:text-muted-foreground [&_li]:text-muted-foreground
                      [&_strong]:text-foreground"
         >
-          <EnrichedMarkdown scholarships={scholarshipsForCards}>
-            {brief.content}
-          </EnrichedMarkdown>
+          <ReportRenderer
+            markdown={brief.content}
+            completedTasks={new Set()}
+            onToggle={noopToggle}
+            taskKey={taskKey}
+            isRu={isRu}
+            onOpenDiscover={() => navigate(isRu ? "/discover/ru" : "/discover")}
+            liveMatches={scholarshipsForCards}
+            tier={tier}
+          />
         </div>
 
-        {/* Branding + CTA */}
-        <div className="not-prose mt-16 pt-8 border-t border-border">
-          <div className="bg-card border border-border rounded-2xl p-7 sm:p-9 text-center">
-            <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">
-              {isRu ? "Сделано с TopUni AI" : "Made with TopUni AI"}
-            </p>
-            <h3 className="font-heading text-2xl font-bold tracking-tight text-foreground mb-3 leading-tight">
-              {isRu ? "Хочешь свой такой?" : "Want one of your own?"}
-            </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto mb-6">
-              {isRu
-                ? "Заполни короткую анкету, и TopUni AI соберёт стратегию: позиционирование, шорт-лист университетов, стипендии и план на 90 дней."
-                : "Fill out a short profile and TopUni AI will draft your own strategy — positioning, university shortlist, scholarship pathway, and 90-day action plan."}
-            </p>
-            <Button variant="gold" size="lg" asChild>
-              <Link to={isRu ? "/topuni-ai/ru" : "/topuni-ai"} className="gap-2">
-                {isRu ? "Создать мой брифинг" : "Build my strategic brief"}
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </Button>
-            <p className="text-[11px] text-muted-foreground/70 mt-4">
-              {isRu ? "Бесплатно. 60 секунд." : "Free. 60 seconds."}
-            </p>
+        {/* Branding + conversion CTA. Quantified — names what the visitor
+            would actually get rather than a generic "build yours" pitch. */}
+        <div className="not-prose mt-16 pt-8 border-t border-border print:hidden">
+          <div className="bg-card border border-border rounded-2xl p-7 sm:p-10 relative overflow-hidden">
+            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-gold-dark via-gold to-gold-dark" />
+
+            <div className="grid sm:grid-cols-[1fr_auto] gap-6 items-end">
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">
+                  {isRu ? "Сделано с TopUni AI" : "Made with TopUni AI"}
+                </p>
+                <h3 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground mb-3 leading-tight">
+                  {isRu
+                    ? `Получите свой брифинг — ${firstName ? "как у " + firstName : "на основе вашего профиля"}.`
+                    : `Get your own — ${firstName ? "the way " + firstName + " did" : "personalised to your profile"}.`}
+                </h3>
+                <ul className="space-y-1.5 text-sm text-muted-foreground leading-relaxed mb-5">
+                  <li className="flex items-start gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-gold-dark mt-1 shrink-0" />
+                    <span>
+                      {isRu
+                        ? "Стратегическое позиционирование, шорт-лист 15+ университетов, путь финансирования, план на 90 дней."
+                        : "Strategic positioning, 15+ university shortlist, funding pathway, 90-day action plan."}
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <ShieldCheck className="w-3.5 h-3.5 text-gold-dark mt-1 shrink-0" />
+                    <span>
+                      {isRu
+                        ? "Подобрано из проверенной базы стипендий — никаких выдуманных программ."
+                        : "Pulled from our verified scholarship database — never invented."}
+                    </span>
+                  </li>
+                </ul>
+                <p className="text-[11px] text-muted-foreground/70">
+                  {isRu ? "Бесплатно. 60 секунд. Аккаунт не нужен." : "Free. 60 seconds. No account needed."}
+                </p>
+              </div>
+
+              <Button variant="gold" size="lg" asChild className="shrink-0">
+                <Link to={isRu ? "/topuni-ai/ru" : "/topuni-ai"} className="gap-2">
+                  {isRu ? "Создать мой брифинг" : "Build my brief"}
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </Button>
+            </div>
           </div>
 
           <p className="text-[10px] text-muted-foreground/60 text-center mt-6">
