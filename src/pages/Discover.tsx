@@ -2685,12 +2685,14 @@ const Discover = ({ language = "en" }: Props) => {
                             );
                           }
 
-                          // Grid view — keep sectioned rendering (Featured + Strong + Competitive + Stretch)
+                          // Grid view — three sections by priority: Strong / Competitive / Worth exploring.
+                          // Subtitles trimmed from full sentences to scan-able utility lines so
+                          // section headers don't compete visually with the cards beneath them.
                           return (
                             <>
                               {sections.strong.length > 0 && (
                                 <section>
-                                  <SectionHeader kicker="Closely aligned" title="Strongest opportunities for you" subtitle="These align on academics, field, eligibility, and budget — strong starting points to explore."
+                                  <SectionHeader kicker="Closely aligned" title="Strong fits" subtitle="Aligned on academics, field, eligibility, and budget."
                                     count={sections.strong.length} accentClass="text-gold-dark dark:text-gold" />
                                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
                                     {sections.strong.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
@@ -2700,7 +2702,7 @@ const Discover = ({ language = "en" }: Props) => {
 
                               {sections.competitive.length > 0 && (
                                 <section>
-                                  <SectionHeader kicker="Aligned" title="Competitive opportunities worth exploring" subtitle="A focused, well-targeted application makes these very achievable."
+                                  <SectionHeader kicker="Aligned" title="Competitive options" subtitle="Achievable with a focused application."
                                     count={sections.competitive.length} accentClass="text-primary dark:text-primary-bright" />
                                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
                                     {sections.competitive.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
@@ -2710,7 +2712,7 @@ const Discover = ({ language = "en" }: Props) => {
 
                               {sections.stretch.length > 0 && (
                                 <section>
-                                  <SectionHeader kicker="Worth exploring" title="More routes to consider" subtitle="Selective opportunities worth a quick scan — review the requirements and decide if a focused application makes sense."
+                                  <SectionHeader kicker="Worth a scan" title="More routes" subtitle="Selective. Review the requirements before committing."
                                     count={sections.stretch.length} accentClass="text-muted-foreground" />
                                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr opacity-90">
                                     {sections.stretch.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
