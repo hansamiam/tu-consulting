@@ -14,3 +14,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://topuni.org/sitemap.xml
+Sitemap: https://topuni.org/sitemap-scholarships.xml

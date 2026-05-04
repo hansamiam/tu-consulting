@@ -2,7 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
-      "source": "/((?!api|assets|favicon\\.ico|robots\\.txt|sitemap\\.xml|og-default\\.png).*)",
+      "source": "/sitemap-scholarships.xml",
+      "destination": "https://bsfldtpemfxhnkdzccib.supabase.co/functions/v1/sitemap-scholarships"
+    },
+    {
+      "source": "/((?!api|assets|favicon\\.ico|robots\\.txt|sitemap\\.xml|sitemap-scholarships\\.xml|og-default\\.png).*)",
       "destination": "/index.html"
     }
   ],

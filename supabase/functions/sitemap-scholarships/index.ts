@@ -1,0 +1,69 @@
+// sitemap-scholarships
+//
+// Returns a fresh XML sitemap of every verified-or-stale scholarship in
+// the database, one <url> entry per row. Search engines crawl this to
+// discover all 200+ /scholarships/:id pages without us having to
+// regenerate the static public/sitemap.xml every time the catalog grows.
+//
+// Read-only · public · cached at the edge for 1 hour.
+//
+// Endpoint registered via the Vercel rewrite in vercel.json so the
+// canonical URL is https://topuni.org/sitemap-scholarships.xml — that's
+// what robots.txt advertises.
+
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const SITE = "https://topuni.org";
+
+const xmlHeaders = {
+  "Content-Type": "application/xml; charset=utf-8",
+  "Cache-Control": "public, max-age=3600, s-maxage=3600",
+  "Access-Control-Allow-Origin": "*",
+};
+
+const escape = (s: string) =>
+  s.replace(/&/g, "&amp;")
+   .replace(/</g, "&lt;")
+   .replace(/>/g, "&gt;")
+   .replace(/"/g, "&quot;")
+   .replace(/'/g, "&apos;");
+
+Deno.serve(async () => {
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!SUPABASE_URL || !SERVICE_ROLE) {
+    return new Response("Missing Supabase env", { status: 500 });
+  }
+
+  const supa = createClient(SUPABASE_URL, SERVICE_ROLE);
+
+  // Only verified + stale rows are surfaced to public detail pages, so
+  // those are the only URLs we want indexed. Pending/broken stay hidden.
+  // Pull last_verified_at + updated_at so the lastmod is meaningful.
+  const { data: rows, error } = await supa
+    .from("scholarships")
+    .select("scholarship_id, last_verified_at, created_at, verification_status")
+    .or("verification_status.is.null,verification_status.in.(verified,stale)")
+    .limit(5000);
+
+  if (error) {
+    console.error("[sitemap-scholarships] query failed", error);
+    return new Response(`<!-- query failed: ${escape(error.message)} -->`, {
+      status: 500, headers: xmlHeaders,
+    });
+  }
+
+  const urls = (rows ?? []).map((r) => {
+    const lastmod = r.last_verified_at ?? r.created_at ?? null;
+    const lastmodTag = lastmod ? `<lastmod>${escape(new Date(lastmod).toISOString().slice(0, 10))}</lastmod>` : "";
+    return `  <url><loc>${SITE}/scholarships/${escape(r.scholarship_id)}</loc>${lastmodTag}<changefreq>weekly</changefreq><priority>0.7</priority></url>`;
+  });
+
+  const body =
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    urls.join("\n") + (urls.length ? "\n" : "") +
+    `</urlset>\n`;
+
+  return new Response(body, { status: 200, headers: xmlHeaders });
+});

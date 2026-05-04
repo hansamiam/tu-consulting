@@ -89,6 +89,9 @@ verify_jwt = true
 [functions.enrich-scholarships-content-cron]
 verify_jwt = true
 
+[functions.sitemap-scholarships]
+verify_jwt = false
+
 [functions.og-brief]
 verify_jwt = false
 
