@@ -182,12 +182,31 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
     };
   }, [mode, slug]);
 
-  /* Set page meta — title, description, canonical, JSON-LD */
+  /* Set page meta — title, description, canonical, full OG / Twitter */
   useEffect(() => {
     if (!resolved.valid) return;
     document.title = resolved.meta.title;
     setMeta("description", resolved.meta.description);
     setLink("canonical", resolved.meta.canonical);
+    // Open Graph + Twitter — every share of these hub URLs (DMs, slack
+    // channels, parents forwarding to advisors) now unfurls into a
+    // proper preview card instead of bare URL text. Falls back to the
+    // global TopUni og-brief image since per-filter dynamic OG would
+    // be a separate lift.
+    const ogImage = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-brief`;
+    setMeta("og:title", resolved.meta.title, true);
+    setMeta("og:description", resolved.meta.description, true);
+    setMeta("og:type", "website", true);
+    setMeta("og:url", resolved.meta.canonical, true);
+    setMeta("og:site_name", "TopUni Consulting", true);
+    setMeta("og:image", ogImage, true);
+    setMeta("og:image:width", "1200", true);
+    setMeta("og:image:height", "630", true);
+    setMeta("og:image:alt", resolved.meta.h1, true);
+    setMeta("twitter:card", "summary_large_image");
+    setMeta("twitter:title", resolved.meta.title);
+    setMeta("twitter:description", resolved.meta.description);
+    setMeta("twitter:image", ogImage);
     return () => {
       // No teardown — leaving the title/meta on tab close is fine.
     };
@@ -259,10 +278,17 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
           setStatsById(byId);
         }
       }
-      // JSON-LD ItemList structured data — feeds Google's rich results
+      // JSON-LD: ItemList + FAQPage in a single graph. The ItemList URLs
+      // point to our INTERNAL /scholarships/:id detail pages — not the
+      // external official_url — so Google indexes the hub→detail link
+      // graph instead of treating these pages as outbound link farms.
+      // Each detail page already emits its own structured data.
+      // The FAQPage entries are seeded from the resolved hub label so
+      // the page can rank for "are there scholarships in {country}",
+      // "which {field} scholarships are best for international students",
+      // etc — natural-language queries that map cleanly to this hub.
       if (result.length > 0) {
-        injectJsonLd({
-          "@context": "https://schema.org",
+        const itemList = {
           "@type": "ItemList",
           name: resolved.meta.h1,
           description: resolved.meta.description,
@@ -270,8 +296,20 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
             "@type": "ListItem",
             position: i + 1,
             name: r.scholarship_name,
-            url: r.official_url || resolved.meta.canonical,
+            url: `${SITE}/scholarships/${r.scholarship_id}`,
           })),
+        };
+        const faqEntities = buildHubFaqEntities(mode, resolved.label, result);
+        const graph: object[] = [itemList];
+        if (faqEntities.length > 0) {
+          graph.push({
+            "@type": "FAQPage",
+            mainEntity: faqEntities,
+          });
+        }
+        injectJsonLd({
+          "@context": "https://schema.org",
+          "@graph": graph,
         });
       }
       setLoading(false);
@@ -340,6 +378,13 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
 
       {/* RESULTS ─────────────────────────────────────────────────── */}
       <section className="max-w-4xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
+        {/* Summary stats card — at-a-glance aggregates so a visitor scanning
+            the page can see the funding landscape before diving into cards.
+            Mirrors the data the FAQPage schema announces to Google.
+            Hidden when the result set is empty (the EmptyState below
+            handles that case). */}
+        {!loading && rows.length > 0 && <HubStatsCard rows={rows} />}
+
         <div className="flex items-baseline justify-between gap-3 mb-6">
           <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             {loading ? "Loading…" : `${rows.length} ${rows.length === 1 ? "scholarship" : "scholarships"} matched`}
@@ -385,7 +430,8 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
           />
         )}
 
-        {/* CLOSING CTA */}
+        {/* CLOSING CTA — contextualised to the filter (country / field /
+            theme) so the value prop reads page-specific, not generic. */}
         {rows.length > 0 && (
           <div className="mt-14 pt-12 border-t border-border">
             <div className="bg-card border border-border rounded-2xl p-7 sm:p-9 text-center">
@@ -393,11 +439,15 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
                 Don't browse — match
               </p>
               <h3 className="font-heading text-2xl font-bold tracking-tight text-foreground mb-3 leading-tight">
-                These are public listings.<br />Your strategy is personal.
+                {mode === "country"
+                  ? <>These are the {resolved.label} listings.<br />Your strategy is personal.</>
+                  : mode === "field"
+                  ? <>These are public {resolved.label} programs.<br />Your strategy is personal.</>
+                  : <>These are public listings.<br />Your strategy is personal.</>}
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto mb-6">
-                TopUni AI takes your GPA, scores, target countries, and field, then ranks every scholarship in the
-                database against your profile and writes you a 90-day action plan.
+                TopUni AI takes your GPA, scores, {mode === "country" ? `${resolved.label} as a target country, and field` : mode === "field" ? `${resolved.label} as your field, and target countries` : "target countries, and field"},
+                then ranks every scholarship in the database against your profile and writes you a 90-day action plan.
               </p>
               <Button variant="gold" size="lg" asChild className="gap-2">
                 <Link to="/topuni-ai">
@@ -406,6 +456,11 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
               </Button>
               <p className="text-[11px] text-muted-foreground/70 mt-4">60 seconds. No credit card.</p>
             </div>
+
+            {/* Hub-to-hub cross-links — strengthen the internal link graph
+                so search crawlers see related hubs and visitors can pivot
+                between countries/fields without bouncing back to /discover. */}
+            <HubCrossLinks mode={mode} currentSlug={slug} />
           </div>
         )}
       </section>
@@ -417,15 +472,124 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
 
 export default ScholarshipsByFilter;
 
+/* Cross-links between hub pages.
+   - Country hub → links to other countries + a few field hubs + themes
+   - Field hub   → links to popular countries + other fields + themes
+   - Theme hub   → links to top countries + top fields
+   Ranking: prioritise high-priority destinations from the sitemap (US,
+   UK, Canada, Australia, Germany; CS, Engineering, Business). The
+   current page is excluded.
+
+   Why this matters: the filter pages are sitemap-listed but currently
+   have NO internal cross-links — Google and visitors both leave through
+   /discover or the brief CTA. Adding a cross-link block strengthens the
+   hub graph for both crawlers and users. */
+const PRIMARY_COUNTRY_LINKS: { slug: string; label: string }[] = [
+  { slug: "united-states",  label: "United States" },
+  { slug: "united-kingdom", label: "United Kingdom" },
+  { slug: "canada",         label: "Canada" },
+  { slug: "australia",      label: "Australia" },
+  { slug: "germany",        label: "Germany" },
+  { slug: "netherlands",    label: "Netherlands" },
+  { slug: "ireland",        label: "Ireland" },
+  { slug: "singapore",      label: "Singapore" },
+];
+const PRIMARY_FIELD_LINKS: { slug: string; label: string }[] = [
+  { slug: "computer-science",     label: "Computer Science" },
+  { slug: "engineering",          label: "Engineering" },
+  { slug: "business",             label: "Business" },
+  { slug: "economics",            label: "Economics" },
+  { slug: "medicine",             label: "Medicine" },
+  { slug: "social-sciences",      label: "Social Sciences" },
+];
+const PRIMARY_THEME_LINKS: { slug: string; label: string }[] = [
+  { slug: "full-funding",  label: "Fully-funded" },
+  { slug: "closing-soon",  label: "Closing soon" },
+  { slug: "high-value",    label: "Highest-value" },
+];
+const HubCrossLinks = ({ mode, currentSlug }: { mode: Mode; currentSlug: string }) => {
+  const countries = PRIMARY_COUNTRY_LINKS.filter((l) => !(mode === "country" && l.slug === currentSlug));
+  const fields    = PRIMARY_FIELD_LINKS.filter((l) => !(mode === "field"    && l.slug === currentSlug));
+  const themes    = PRIMARY_THEME_LINKS.filter((l) => !(mode === "theme"    && l.slug === currentSlug));
+
+  return (
+    <div className="mt-12 pt-10 border-t border-border space-y-7">
+      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold text-center">
+        Browse other hubs
+      </p>
+      <CrossLinkRow heading="By country" basePath="/scholarships/by-country" items={countries.slice(0, 8)} />
+      <CrossLinkRow heading="By field"   basePath="/scholarships/by-field"   items={fields.slice(0, 6)} />
+      <CrossLinkRow heading="By theme"   basePath="/scholarships/theme"      items={themes.slice(0, 3)} />
+    </div>
+  );
+};
+const CrossLinkRow = ({ heading, basePath, items }: {
+  heading: string;
+  basePath: string;
+  items: { slug: string; label: string }[];
+}) => {
+  if (items.length === 0) return null;
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-3">{heading}</p>
+      <div className="flex flex-wrap gap-2">
+        {items.map((it) => (
+          <Link
+            key={it.slug}
+            to={`${basePath}/${it.slug}`}
+            className="text-xs text-foreground/85 hover:text-gold-dark border border-border hover:border-gold/40 bg-card px-3 py-1.5 rounded-full transition-colors"
+          >
+            {it.label}
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* Summary-stats card. Computes four numbers from the visible rows:
+   total funding (USD, summed), full-ride count, count closing in 60d,
+   and the largest single award. All numbers are computed locally — the
+   card is honest if data is sparse (renders "—" rather than fabricating). */
+const HubStatsCard = ({ rows }: { rows: ScholarshipRow[] }) => {
+  const fullRides = rows.filter((r) => r.coverage_type === "full_ride").length;
+  const closingSoon = rows.filter((r) => {
+    if (!r.application_deadline) return false;
+    const d = Math.ceil((new Date(r.application_deadline).getTime() - Date.now()) / 86400_000);
+    return d > 0 && d <= 60;
+  }).length;
+  const totalUsd = rows.reduce((sum, r) => sum + (r.estimated_total_value_usd ?? 0), 0);
+  const maxUsd = rows.reduce((m, r) => Math.max(m, r.estimated_total_value_usd ?? 0), 0);
+  const fmtMoney = (v: number) =>
+    !v ? "—" : v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `$${Math.round(v / 1000)}K` : `$${v}`;
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border/60 border border-border/60 rounded-xl overflow-hidden mb-8">
+      <Stat label="Total funding" value={fmtMoney(totalUsd)} hint="Estimated, summed across listed programs" />
+      <Stat label="Full rides" value={String(fullRides)} hint="Tuition + living covered" />
+      <Stat label="Closing in 60 days" value={String(closingSoon)} hint="Apply this season" />
+      <Stat label="Largest single award" value={fmtMoney(maxUsd)} hint="Top program by total value" />
+    </div>
+  );
+};
+const Stat = ({ label, value, hint }: { label: string; value: string; hint: string }) => (
+  <div className="bg-card p-4 sm:p-5">
+    <p className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground mb-1.5">{label}</p>
+    <p className="font-heading text-xl sm:text-2xl font-bold text-foreground tabular-nums leading-none mb-1.5">{value}</p>
+    <p className="text-[11px] text-muted-foreground/80 leading-snug">{hint}</p>
+  </div>
+);
+
 /* ─── DOM helpers for SEO meta ─────────────────────────────────────── */
 function blankMeta(): PageMeta {
   return { h1: "", intro: "", title: "TopUni", description: "", canonical: SITE };
 }
-function setMeta(name: string, content: string) {
-  let el = document.querySelector(`meta[name="${name}"]`);
+function setMeta(name: string, content: string, isProperty = false) {
+  const sel = isProperty ? `meta[property="${name}"]` : `meta[name="${name}"]`;
+  let el = document.querySelector(sel);
   if (!el) {
     el = document.createElement("meta");
-    el.setAttribute("name", name);
+    el.setAttribute(isProperty ? "property" : "name", name);
     document.head.appendChild(el);
   }
   el.setAttribute("content", content);
@@ -447,4 +611,77 @@ function injectJsonLd(payload: object) {
   s.dataset.topuniLd = "true";
   s.text = JSON.stringify(payload);
   document.head.appendChild(s);
+}
+
+/* Hub-level FAQ schema. The questions are templated against the page's
+   filter label (country / field / theme) and the answers are seeded from
+   the actual rows on the page so Google sees grounded, page-specific
+   answers — not boilerplate. We emit only Qs whose answers we can compute
+   from the data; an empty answer would dilute the schema. */
+function buildHubFaqEntities(
+  mode: Mode,
+  label: string,
+  rows: ScholarshipRow[],
+): { "@type": "Question"; name: string; acceptedAnswer: { "@type": "Answer"; text: string } }[] {
+  if (rows.length === 0) return [];
+  const fullRides = rows.filter((r) => r.coverage_type === "full_ride").length;
+  const closingSoon = rows.filter((r) => {
+    if (!r.application_deadline) return false;
+    const d = Math.ceil((new Date(r.application_deadline).getTime() - Date.now()) / 86400_000);
+    return d > 0 && d <= 60;
+  }).length;
+  const totalUsd = rows.reduce((sum, r) => sum + (r.estimated_total_value_usd ?? 0), 0);
+  const topFunding = [...rows]
+    .filter((r) => r.estimated_total_value_usd && r.estimated_total_value_usd > 0)
+    .sort((a, b) => (b.estimated_total_value_usd ?? 0) - (a.estimated_total_value_usd ?? 0))
+    .slice(0, 3)
+    .map((r) => r.scholarship_name);
+
+  const fmtMoney = (v: number) =>
+    v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `$${Math.round(v / 1000)}K` : `$${v}`;
+
+  const out: { "@type": "Question"; name: string; acceptedAnswer: { "@type": "Answer"; text: string } }[] = [];
+  const push = (q: string, a: string) => {
+    if (!a || a.length < 10) return;
+    out.push({
+      "@type": "Question",
+      name: q,
+      acceptedAnswer: { "@type": "Answer", text: a.slice(0, 1500) },
+    });
+  };
+
+  const subject =
+    mode === "country" ? `scholarships in ${label}`
+    : mode === "field" ? `scholarships for ${label}`
+    : `${label.toLowerCase()} scholarships`;
+
+  push(
+    `Are there ${subject} for international students?`,
+    `Yes — TopUni currently tracks ${rows.length} verified ${subject} for international applicants. ${
+      fullRides > 0 ? `Of those, ${fullRides} are full rides covering tuition and living costs. ` : ""
+    }${
+      topFunding.length > 0 ? `Notable programs include ${topFunding.join(", ")}.` : ""
+    }`.trim(),
+  );
+
+  if (closingSoon > 0) {
+    push(
+      `Which ${subject} are closing soon?`,
+      `${closingSoon} of the ${subject} on this page have deadlines in the next 60 days. Check each scholarship page for the exact closing date and start drafting applications now.`,
+    );
+  }
+
+  if (totalUsd > 0) {
+    push(
+      `How much funding is available across ${subject}?`,
+      `The combined estimated funding across the ${rows.length} ${subject} listed here is approximately ${fmtMoney(totalUsd)}. Individual award sizes vary — see each scholarship page for specifics.`,
+    );
+  }
+
+  push(
+    `How do I find the right ${subject} for my profile?`,
+    `Build a free TopUni AI strategy at topuni.org/topuni-ai — it ranks every scholarship in our database against your GPA, test scores, target countries, and field, then writes a 90-day action plan tailored to your strongest matches.`,
+  );
+
+  return out;
 }
