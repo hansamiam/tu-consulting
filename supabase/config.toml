@@ -115,3 +115,6 @@ verify_jwt = true
 
 [functions.register-referral]
 verify_jwt = true
+
+[functions.topuni-bot]
+verify_jwt = false
