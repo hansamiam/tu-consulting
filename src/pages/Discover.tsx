@@ -634,6 +634,11 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
 }) => {
   const tier = TIER[s.priority];
   const dl = deadlineDisplay(s.application_deadline);
+  // Match score is meaningful only when the user has a profile that
+  // produced real scoring signals (reasons / warnings populated). Without
+  // that, every row shows "0" which makes the list look broken.
+  const hasRealScore = s.match > 0 && (s.reasons.length > 0 || s.warnings.length > 0);
+  const isFullRide = s.coverage_type === "full_ride";
 
   return (
     <motion.div
@@ -644,37 +649,54 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
       onClick={onSelect}
       className={`group grid grid-cols-[44px,minmax(0,1fr),auto] sm:grid-cols-[44px,minmax(0,2fr),minmax(0,1.2fr),minmax(0,1fr),auto] items-center gap-4 px-4 py-3.5 border-b border-border/60 hover:bg-canvas-soft/60 cursor-pointer transition-colors ${isHidden ? "opacity-40" : ""}`}
     >
-      {/* Match score — hover for breakdown */}
-      <HoverCard openDelay={120} closeDelay={80}>
-        <HoverCardTrigger asChild>
-          <button
-            type="button"
-            onClick={(e) => e.stopPropagation()}
-            className="flex flex-col items-center cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-gold rounded"
-            aria-label={`Match score: ${s.match} of 100. Hover for breakdown.`}
-          >
-            <span className="font-heading text-lg font-bold tabular-nums leading-none text-foreground">{s.match}</span>
-            <span className={`mt-1 h-1 w-1 rounded-full ${tier.dot}`} />
-          </button>
-        </HoverCardTrigger>
-        <HoverCardContent side="right" align="start" className="p-0 border-0 shadow-none bg-transparent w-auto">
-          <MatchScoreBreakdown
-            scholarshipId={s.scholarship_id}
-            fallback={{
-              match: s.match,
-              application_deadline: s.application_deadline,
-              estimated_total_value_usd: s.estimated_total_value_usd,
-              last_verified_at: s.last_verified_at,
-              verification_status: s.verification_status,
-              passes_eligibility: s.eligibility === "eligible" || s.eligibility === "likely",
-              why_this_fits: s.why_this_fits,
-              reasons: s.reasons,
-              warnings: s.warnings,
-            }}
-            compact
-          />
-        </HoverCardContent>
-      </HoverCard>
+      {/* First column — match score when it's real, otherwise a visual
+          marker (gold Award for full-ride, simple dot otherwise) so the
+          column doesn't show a broken-looking "0" but still anchors the
+          row visually. The HoverCard breakdown is gated on hasRealScore;
+          without a profile the score popover would just show generic
+          factors with no profile-fit reasons. */}
+      {hasRealScore ? (
+        <HoverCard openDelay={120} closeDelay={80}>
+          <HoverCardTrigger asChild>
+            <button
+              type="button"
+              onClick={(e) => e.stopPropagation()}
+              className="flex flex-col items-center cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-gold rounded"
+              aria-label={`Match score: ${s.match} of 100. Hover for breakdown.`}
+            >
+              <span className="font-heading text-lg font-bold tabular-nums leading-none text-foreground">{s.match}</span>
+              <span className={`mt-1 h-1 w-1 rounded-full ${tier.dot}`} />
+            </button>
+          </HoverCardTrigger>
+          <HoverCardContent side="right" align="start" className="p-0 border-0 shadow-none bg-transparent w-auto">
+            <MatchScoreBreakdown
+              scholarshipId={s.scholarship_id}
+              fallback={{
+                match: s.match,
+                application_deadline: s.application_deadline,
+                estimated_total_value_usd: s.estimated_total_value_usd,
+                last_verified_at: s.last_verified_at,
+                verification_status: s.verification_status,
+                passes_eligibility: s.eligibility === "eligible" || s.eligibility === "likely",
+                why_this_fits: s.why_this_fits,
+                reasons: s.reasons,
+                warnings: s.warnings,
+              }}
+              compact
+            />
+          </HoverCardContent>
+        </HoverCard>
+      ) : (
+        <div className="flex items-center justify-center" aria-hidden>
+          {isFullRide ? (
+            <span className="inline-flex items-center justify-center h-7 w-7 rounded-md bg-gold/10 border border-gold/30" title="Full ride">
+              <Award className="h-3.5 w-3.5 text-gold-dark" />
+            </span>
+          ) : (
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />
+          )}
+        </div>
+      )}
 
       {/* Name + provider */}
       <div className="min-w-0">
