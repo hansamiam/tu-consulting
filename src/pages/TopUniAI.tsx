@@ -61,30 +61,31 @@ const TopUniAI = () => {
   const [careerRoi, setCareerRoi] = useState([3]);
   const [visaAccess, setVisaAccess] = useState([3]);
   const [locationPref, setLocationPref] = useState([3]);
-  /* When the user arrives from a /scholarships/by-* hub, show a small
-     "Pre-filled from {Country|Field|Theme} hub" indicator so they
-     understand why their wizard already has an answer. Cleared once
-     they finish step 2 (target countries / major) since that's the
-     last step that depends on hub context. */
+  /* When the user arrives from a /scholarships/by-* hub or from a
+     specific scholarship detail page, show a small "Pre-filled from
+     {label}" indicator so they understand why their wizard already has
+     an answer. Cleared once they finish step 2 (target countries /
+     major) since that's the last step that depends on this context. */
   const [hubContext, setHubContext] = useState<{
     label: string;
-    kind: "country" | "field" | "theme";
+    kind: "country" | "field" | "theme" | "scholarship";
   } | null>(null);
 
   /* Drain hub-context payload from sessionStorage on mount.
      Mirrors the focus-scholarship + counselor-prefill handoff patterns:
      5-minute stale guard, removed after read. The payload may carry a
      country (→ pre-select it in targetCountries), a field (→ pre-fill
-     the major input), or a theme like "full-funding" (→ pre-set
+     the major input), a theme like "full-funding" (→ pre-set
      scholarshipNeeded to "yes" and bias the scholarship-priority
-     slider). */
+     slider), or a "scholarship" kind from a detail-page CTA (→ same
+     country prefill, different indicator label). */
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem("topuni-hub-context");
       if (!raw) return;
       sessionStorage.removeItem("topuni-hub-context");
       const payload = JSON.parse(raw) as {
-        kind?: "country" | "field" | "theme";
+        kind?: "country" | "field" | "theme" | "scholarship";
         country?: string;
         field?: string;
         theme?: string;
@@ -110,6 +111,12 @@ const TopUniAI = () => {
           setScholarship((prev) => (prev[0] >= 4 ? prev : [4]));
         }
         setHubContext({ kind: "theme", label: payload.label || payload.theme });
+      } else if (payload.kind === "scholarship" && payload.country) {
+        // Detail-page handoff: scholarshipId/Name flow through topuni-focus-
+        // scholarship (drained on the dashboard side); this payload only
+        // carries the country to pre-select for the wizard.
+        setTargetCountries((prev) => (prev.includes(payload.country!) ? prev : [...prev, payload.country!]));
+        setHubContext({ kind: "scholarship", label: payload.label || payload.country });
       }
     } catch { /* ignore */ }
   }, []);
@@ -352,9 +359,18 @@ const TopUniAI = () => {
                 <div className="mb-6 rounded-lg border border-gold/30 bg-gradient-to-br from-gold/[0.06] to-transparent px-4 py-2.5 flex items-center gap-3">
                   <Sparkles className="w-4 h-4 text-gold-dark shrink-0" />
                   <p className="text-sm text-foreground/85 flex-1 min-w-0 leading-snug">
-                    Pre-filled from the{" "}
-                    <span className="font-semibold text-foreground">{hubContext.label}</span>{" "}
-                    {hubContext.kind === "country" ? "country hub" : hubContext.kind === "field" ? "field hub" : "theme hub"}.
+                    {hubContext.kind === "scholarship" ? (
+                      <>
+                        Building strategy around{" "}
+                        <span className="font-semibold text-foreground">{hubContext.label}</span>.
+                      </>
+                    ) : (
+                      <>
+                        Pre-filled from the{" "}
+                        <span className="font-semibold text-foreground">{hubContext.label}</span>{" "}
+                        {hubContext.kind === "country" ? "country hub" : hubContext.kind === "field" ? "field hub" : "theme hub"}.
+                      </>
+                    )}
                   </p>
                   <button
                     type="button"

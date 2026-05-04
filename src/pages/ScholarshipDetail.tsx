@@ -480,6 +480,11 @@ const ScholarshipDetail = () => {
             className="gap-2"
             onClick={() => {
               try {
+                // Two payloads in flight, drained independently by the wizard /
+                // dashboard side: focus stays in the brief, hub-context pre-fills
+                // the wizard so the user lands on step 2 with the right country
+                // already selected. Skip the country prefill for global / multi-
+                // country scholarships where pinning a single country misleads.
                 sessionStorage.setItem(
                   "topuni-focus-scholarship",
                   JSON.stringify({
@@ -488,6 +493,21 @@ const ScholarshipDetail = () => {
                     ts: Date.now(),
                   }),
                 );
+                const hostCountry = (s.host_country || "").trim();
+                const isPinnableCountry =
+                  hostCountry.length > 0 &&
+                  !/global|multiple|european union|various/i.test(hostCountry);
+                if (isPinnableCountry) {
+                  sessionStorage.setItem(
+                    "topuni-hub-context",
+                    JSON.stringify({
+                      kind: "scholarship",
+                      country: hostCountry,
+                      label: s.scholarship_name,
+                      ts: Date.now(),
+                    }),
+                  );
+                }
               } catch { /* sessionStorage may be unavailable; CTA still works */ }
               track(s.scholarship_id, "clicked", "detail-build-strategy");
               navigate("/topuni-ai");
