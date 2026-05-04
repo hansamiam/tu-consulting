@@ -69,8 +69,13 @@ interface Scholarship {
 }
 
 interface Profile {
-  country: string; degree: string; gpa: string; gpaScale: string;
-  ielts: string; sat: string; field: string; budget: string;
+  country: string;
+  /* Multi-select: students applying to multiple levels can mark all that
+   * apply. Scoring matches against any selected level. Empty array =
+   * unspecified (not a constraint). */
+  degrees: string[];
+  gpa: string; gpaScale: string;
+  ielts: string; sat: string; field: string;
 }
 
 interface Scored extends Scholarship {
@@ -86,8 +91,13 @@ interface Scored extends Scholarship {
 }
 
 interface WizardData {
-  fullName: string; email: string; nationality: string; customNationality: string;
-  degree: string; field: string; gpa: string; gpaScale: string; ielts: string; budget: string;
+  fullName: string; email: string;
+  nationality: string;
+  /* Multi-select: students often apply to several levels in parallel.
+   * Stored as an array to drive matching against scholarships that
+   * target any of the chosen levels. */
+  degrees: string[];
+  field: string; gpa: string; gpaScale: string; ielts: string;
 }
 
 interface FilterState {
@@ -181,11 +191,16 @@ const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: numbe
     else { eligibility = "not_eligible"; match -= 40; warnings.push(`Not open to ${p.country} nationals`); }
   }
 
-  // Degree level
-  if (s.target_degree_level && p.degree) {
-    if (s.target_degree_level.some(d => d.toLowerCase() === p.degree.toLowerCase())) {
-      match += 10; reasons.push(`Matches ${p.degree} level`);
-    } else { eligibility = "not_eligible"; match -= 25; warnings.push(`Not for ${p.degree} applicants`); }
+  // Degree level — match if scholarship targets ANY of the user's selected levels
+  if (s.target_degree_level && p.degrees && p.degrees.length > 0) {
+    const targets = s.target_degree_level.map(d => d.toLowerCase());
+    const matched = p.degrees.find(pd => targets.some(td => td === pd.toLowerCase()));
+    if (matched) {
+      match += 10; reasons.push(`Matches ${matched} level`);
+    } else {
+      eligibility = "not_eligible"; match -= 25;
+      warnings.push(`Not for ${p.degrees.join(" / ")} applicants`);
+    }
   }
 
   // Field of study (NEW)
@@ -213,7 +228,7 @@ const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: numbe
   const value = s.estimated_total_value_usd ?? 0;
   const reward: Scored["reward"] = value >= 80000 ? "high" : value >= 25000 ? "medium" : "low";
   if (s.coverage_type === "full_ride") match += 12;
-  if (p.budget === "low" && reward === "high") { match += 6; reasons.push("High value — fits your funding need"); }
+  if (reward === "high") { match += 4; reasons.push("High total value"); }
 
   // Selectivity penalty — steeper than before. Schwarzman-tier
   // ultra-selective programs were getting only -6 which left them
@@ -392,16 +407,74 @@ const COLLECTIONS: CollectionDef[] = [
    countries and the inconsistent flag/globe mix looked broken. Country name
    as text is enough on cards. */
 
-const COUNTRIES = [
-  { v: "Kazakhstan", f: "🇰🇿" }, { v: "Kyrgyzstan", f: "🇰🇬" },
-  { v: "Tajikistan", f: "🇹🇯" }, { v: "Uzbekistan", f: "🇺🇿" },
-  { v: "Azerbaijan", f: "🇦🇿" }, { v: "Georgia", f: "🇬🇪" },
-  { v: "Russia", f: "🇷🇺" }, { v: "Ukraine", f: "🇺🇦" },
-  { v: "Turkey", f: "🇹🇷" }, { v: "China", f: "🇨🇳" },
-  { v: "India", f: "🇮🇳" }, { v: "Pakistan", f: "🇵🇰" },
-  { v: "Bangladesh", f: "🇧🇩" }, { v: "Nigeria", f: "🇳🇬" },
+/* Comprehensive country list (UN members + commonly recognised territories).
+ * Used by the typeahead in the discover wizard so a student from any
+ * country can pick or type their nationality. The 12 popular shortcuts
+ * up top render as quick-pick chips above the search box. */
+const POPULAR_COUNTRIES = [
+  { v: "Kazakhstan", f: "🇰🇿" }, { v: "Russia", f: "🇷🇺" },
+  { v: "Uzbekistan", f: "🇺🇿" }, { v: "China", f: "🇨🇳" },
+  { v: "India", f: "🇮🇳" }, { v: "Nigeria", f: "🇳🇬" },
   { v: "Indonesia", f: "🇮🇩" }, { v: "Vietnam", f: "🇻🇳" },
-  { v: "Mongolia", f: "🇲🇳" }, { v: "Nepal", f: "🇳🇵" },
+];
+const ALL_COUNTRIES: { v: string; f: string }[] = [
+  { v: "Afghanistan", f: "🇦🇫" }, { v: "Albania", f: "🇦🇱" }, { v: "Algeria", f: "🇩🇿" },
+  { v: "Andorra", f: "🇦🇩" }, { v: "Angola", f: "🇦🇴" }, { v: "Argentina", f: "🇦🇷" },
+  { v: "Armenia", f: "🇦🇲" }, { v: "Australia", f: "🇦🇺" }, { v: "Austria", f: "🇦🇹" },
+  { v: "Azerbaijan", f: "🇦🇿" }, { v: "Bahamas", f: "🇧🇸" }, { v: "Bahrain", f: "🇧🇭" },
+  { v: "Bangladesh", f: "🇧🇩" }, { v: "Barbados", f: "🇧🇧" }, { v: "Belarus", f: "🇧🇾" },
+  { v: "Belgium", f: "🇧🇪" }, { v: "Belize", f: "🇧🇿" }, { v: "Benin", f: "🇧🇯" },
+  { v: "Bhutan", f: "🇧🇹" }, { v: "Bolivia", f: "🇧🇴" }, { v: "Bosnia and Herzegovina", f: "🇧🇦" },
+  { v: "Botswana", f: "🇧🇼" }, { v: "Brazil", f: "🇧🇷" }, { v: "Brunei", f: "🇧🇳" },
+  { v: "Bulgaria", f: "🇧🇬" }, { v: "Burkina Faso", f: "🇧🇫" }, { v: "Burundi", f: "🇧🇮" },
+  { v: "Cambodia", f: "🇰🇭" }, { v: "Cameroon", f: "🇨🇲" }, { v: "Canada", f: "🇨🇦" },
+  { v: "Cape Verde", f: "🇨🇻" }, { v: "Chad", f: "🇹🇩" }, { v: "Chile", f: "🇨🇱" },
+  { v: "China", f: "🇨🇳" }, { v: "Colombia", f: "🇨🇴" }, { v: "Comoros", f: "🇰🇲" },
+  { v: "Costa Rica", f: "🇨🇷" }, { v: "Croatia", f: "🇭🇷" }, { v: "Cuba", f: "🇨🇺" },
+  { v: "Cyprus", f: "🇨🇾" }, { v: "Czech Republic", f: "🇨🇿" }, { v: "Denmark", f: "🇩🇰" },
+  { v: "Djibouti", f: "🇩🇯" }, { v: "Dominican Republic", f: "🇩🇴" }, { v: "Ecuador", f: "🇪🇨" },
+  { v: "Egypt", f: "🇪🇬" }, { v: "El Salvador", f: "🇸🇻" }, { v: "Equatorial Guinea", f: "🇬🇶" },
+  { v: "Eritrea", f: "🇪🇷" }, { v: "Estonia", f: "🇪🇪" }, { v: "Eswatini", f: "🇸🇿" },
+  { v: "Ethiopia", f: "🇪🇹" }, { v: "Fiji", f: "🇫🇯" }, { v: "Finland", f: "🇫🇮" },
+  { v: "France", f: "🇫🇷" }, { v: "Gabon", f: "🇬🇦" }, { v: "Gambia", f: "🇬🇲" },
+  { v: "Georgia", f: "🇬🇪" }, { v: "Germany", f: "🇩🇪" }, { v: "Ghana", f: "🇬🇭" },
+  { v: "Greece", f: "🇬🇷" }, { v: "Guatemala", f: "🇬🇹" }, { v: "Guinea", f: "🇬🇳" },
+  { v: "Guyana", f: "🇬🇾" }, { v: "Haiti", f: "🇭🇹" }, { v: "Honduras", f: "🇭🇳" },
+  { v: "Hong Kong", f: "🇭🇰" }, { v: "Hungary", f: "🇭🇺" }, { v: "Iceland", f: "🇮🇸" },
+  { v: "India", f: "🇮🇳" }, { v: "Indonesia", f: "🇮🇩" }, { v: "Iran", f: "🇮🇷" },
+  { v: "Iraq", f: "🇮🇶" }, { v: "Ireland", f: "🇮🇪" }, { v: "Israel", f: "🇮🇱" },
+  { v: "Italy", f: "🇮🇹" }, { v: "Ivory Coast", f: "🇨🇮" }, { v: "Jamaica", f: "🇯🇲" },
+  { v: "Japan", f: "🇯🇵" }, { v: "Jordan", f: "🇯🇴" }, { v: "Kazakhstan", f: "🇰🇿" },
+  { v: "Kenya", f: "🇰🇪" }, { v: "Kuwait", f: "🇰🇼" }, { v: "Kyrgyzstan", f: "🇰🇬" },
+  { v: "Laos", f: "🇱🇦" }, { v: "Latvia", f: "🇱🇻" }, { v: "Lebanon", f: "🇱🇧" },
+  { v: "Lesotho", f: "🇱🇸" }, { v: "Liberia", f: "🇱🇷" }, { v: "Libya", f: "🇱🇾" },
+  { v: "Liechtenstein", f: "🇱🇮" }, { v: "Lithuania", f: "🇱🇹" }, { v: "Luxembourg", f: "🇱🇺" },
+  { v: "Madagascar", f: "🇲🇬" }, { v: "Malawi", f: "🇲🇼" }, { v: "Malaysia", f: "🇲🇾" },
+  { v: "Maldives", f: "🇲🇻" }, { v: "Mali", f: "🇲🇱" }, { v: "Malta", f: "🇲🇹" },
+  { v: "Mauritania", f: "🇲🇷" }, { v: "Mauritius", f: "🇲🇺" }, { v: "Mexico", f: "🇲🇽" },
+  { v: "Moldova", f: "🇲🇩" }, { v: "Monaco", f: "🇲🇨" }, { v: "Mongolia", f: "🇲🇳" },
+  { v: "Montenegro", f: "🇲🇪" }, { v: "Morocco", f: "🇲🇦" }, { v: "Mozambique", f: "🇲🇿" },
+  { v: "Myanmar", f: "🇲🇲" }, { v: "Namibia", f: "🇳🇦" }, { v: "Nepal", f: "🇳🇵" },
+  { v: "Netherlands", f: "🇳🇱" }, { v: "New Zealand", f: "🇳🇿" }, { v: "Nicaragua", f: "🇳🇮" },
+  { v: "Niger", f: "🇳🇪" }, { v: "Nigeria", f: "🇳🇬" }, { v: "North Korea", f: "🇰🇵" },
+  { v: "North Macedonia", f: "🇲🇰" }, { v: "Norway", f: "🇳🇴" }, { v: "Oman", f: "🇴🇲" },
+  { v: "Pakistan", f: "🇵🇰" }, { v: "Palestine", f: "🇵🇸" }, { v: "Panama", f: "🇵🇦" },
+  { v: "Papua New Guinea", f: "🇵🇬" }, { v: "Paraguay", f: "🇵🇾" }, { v: "Peru", f: "🇵🇪" },
+  { v: "Philippines", f: "🇵🇭" }, { v: "Poland", f: "🇵🇱" }, { v: "Portugal", f: "🇵🇹" },
+  { v: "Qatar", f: "🇶🇦" }, { v: "Romania", f: "🇷🇴" }, { v: "Russia", f: "🇷🇺" },
+  { v: "Rwanda", f: "🇷🇼" }, { v: "Saudi Arabia", f: "🇸🇦" }, { v: "Senegal", f: "🇸🇳" },
+  { v: "Serbia", f: "🇷🇸" }, { v: "Sierra Leone", f: "🇸🇱" }, { v: "Singapore", f: "🇸🇬" },
+  { v: "Slovakia", f: "🇸🇰" }, { v: "Slovenia", f: "🇸🇮" }, { v: "Somalia", f: "🇸🇴" },
+  { v: "South Africa", f: "🇿🇦" }, { v: "South Korea", f: "🇰🇷" }, { v: "South Sudan", f: "🇸🇸" },
+  { v: "Spain", f: "🇪🇸" }, { v: "Sri Lanka", f: "🇱🇰" }, { v: "Sudan", f: "🇸🇩" },
+  { v: "Sweden", f: "🇸🇪" }, { v: "Switzerland", f: "🇨🇭" }, { v: "Syria", f: "🇸🇾" },
+  { v: "Taiwan", f: "🇹🇼" }, { v: "Tajikistan", f: "🇹🇯" }, { v: "Tanzania", f: "🇹🇿" },
+  { v: "Thailand", f: "🇹🇭" }, { v: "Togo", f: "🇹🇬" }, { v: "Tunisia", f: "🇹🇳" },
+  { v: "Turkey", f: "🇹🇷" }, { v: "Turkmenistan", f: "🇹🇲" }, { v: "Uganda", f: "🇺🇬" },
+  { v: "Ukraine", f: "🇺🇦" }, { v: "United Arab Emirates", f: "🇦🇪" }, { v: "United Kingdom", f: "🇬🇧" },
+  { v: "United States", f: "🇺🇸" }, { v: "Uruguay", f: "🇺🇾" }, { v: "Uzbekistan", f: "🇺🇿" },
+  { v: "Venezuela", f: "🇻🇪" }, { v: "Vietnam", f: "🇻🇳" }, { v: "Yemen", f: "🇾🇪" },
+  { v: "Zambia", f: "🇿🇲" }, { v: "Zimbabwe", f: "🇿🇼" },
 ];
 
 const DEGREES = [
@@ -415,6 +488,7 @@ const FIELDS = [
   { v: "Engineering", i: "⚙️" }, { v: "Medicine & Health", i: "🏥" },
   { v: "Natural Sciences", i: "🔬" }, { v: "Social Sciences", i: "🌐" },
   { v: "Arts & Humanities", i: "📖" }, { v: "Law", i: "⚖️" },
+  { v: "Undecided", i: "✨" },
 ];
 
 const SELECTIVITY_LABEL: Record<Scored["selectivity"], string> = {
@@ -435,7 +509,7 @@ const dateOnly = (d: string | null) => d ? new Date(d).toLocaleDateString("en-US
 const daysUntil = (d: string | null) => d ? Math.ceil((new Date(d).getTime() - Date.now()) / 86400000) : null;
 
 const WIZARD_STEPS = 4;
-const DEFAULT_WIZARD: WizardData = { fullName: "", email: "", nationality: "", customNationality: "", degree: "", field: "", gpa: "", gpaScale: "4.0", ielts: "", budget: "low" };
+const DEFAULT_WIZARD: WizardData = { fullName: "", email: "", nationality: "", degrees: [], field: "", gpa: "", gpaScale: "4.0", ielts: "" };
 const DEFAULT_FILTERS: FilterState = { search: "", coverage: "all", degree: "all", field: "all", selectivity: "all", hostCountry: "all", onlyEligible: false, closingSoon: false };
 const COVERAGE_LABEL: Record<string, string> = { full_ride: "Full ride", tuition_only: "Tuition only", stipend: "Stipend" };
 
@@ -595,6 +669,17 @@ const shortCountry = (country: string): string => {
     return m ? `${m[1].trim()} +` : "Multiple";
   }
   if (/^global$/i.test(c)) return "Worldwide";
+  return c;
+};
+
+/* Canonical country bucket for filter dropdowns. Collapses every variant
+ * of "Multiple (Japan, ...)", "Multiple (Worldwide)", "Global", "International"
+ * to one "Multiple countries" entry. Filtering against the canonical form
+ * lets one dropdown selection match every variant. */
+const canonicalCountry = (country: string): string => {
+  const c = country.trim();
+  if (/^multiple/i.test(c)) return "Multiple countries";
+  if (/^global$/i.test(c) || /^international$/i.test(c) || /^worldwide$/i.test(c)) return "Multiple countries";
   return c;
 };
 
@@ -834,14 +919,6 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
           )}
           <div className="flex items-center gap-2">
             <p className={`text-xs tabular-nums font-medium ${dl.cls}`}>{dl.text}</p>
-            {s.verification_status && s.verification_status !== "pending" && (
-              <VerifiedBadge
-                status={s.verification_status}
-                verifiedAt={s.last_verified_at}
-                size="xs"
-                compact
-              />
-            )}
           </div>
         </div>
 
@@ -878,7 +955,7 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelect(); }} className="text-xs">
-                <FileText className="h-3 w-3 mr-2" /> Open strategy
+                <FileText className="h-3 w-3 mr-2" /> Open details
               </DropdownMenuItem>
               {s.official_url && (
                 <DropdownMenuItem asChild>
@@ -957,26 +1034,6 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
                 Full ride
               </span>
             </>
-          )}
-        </span>
-        <span className="relative inline-flex items-center shrink-0">
-          {s.verification_status === "verified" && (
-            <span className="inline-flex items-center gap-1 text-emerald-200 drop-shadow-sm">
-              <CheckCircle2 className="h-2.5 w-2.5" />
-              Verified
-            </span>
-          )}
-          {s.verification_status === "stale" && (
-            <span className="inline-flex items-center gap-1 text-amber-200 drop-shadow-sm">
-              <HelpCircle className="h-2.5 w-2.5" />
-              Verify
-            </span>
-          )}
-          {s.verification_status === "broken" && (
-            <span className="inline-flex items-center gap-1 text-red-200 drop-shadow-sm">
-              <AlertCircle className="h-2.5 w-2.5" />
-              Offline
-            </span>
           )}
         </span>
       </div>
@@ -1077,13 +1134,9 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           </div>
         )}
 
-        {/* Action row — Open CTA + bookmark/compare/more. Bookmark is
-            primary visible action; compare/more reveal on hover (mobile
-            stays at 70% opacity per the earlier mobile-visibility fix). */}
-        <div className="flex items-center justify-between mt-auto pt-2.5 border-t border-border/50" onClick={(e) => e.stopPropagation()}>
-          <span className="text-[12px] font-semibold text-foreground group-hover:text-gold-dark transition-colors flex items-center gap-1">
-            Open strategy <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-          </span>
+        {/* Action row — bookmark stays visible (stateful affordance); the
+            whole card is the click target so no separate CTA. */}
+        <div className="flex items-center justify-end mt-auto pt-2.5 border-t border-border/50" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-0.5">
             <button
               onClick={onBookmark}
@@ -1429,9 +1482,10 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
   }
   if (s.min_toefl != null) reqs.push({ label: `TOEFL ≥ ${s.min_toefl}`, status: "unknown", detail: "We don't track TOEFL yet" });
   if (s.min_sat != null) reqs.push({ label: `SAT ≥ ${s.min_sat}`, status: "unknown", detail: "Add your SAT to check" });
-  if (s.target_degree_level && profile.degree) {
-    const ok = s.target_degree_level.some(d => d.toLowerCase() === profile.degree.toLowerCase());
-    reqs.push({ label: `Degree level: ${s.target_degree_level.join(", ")}`, status: ok ? "met" : "miss", detail: `Your level: ${profile.degree}` });
+  if (s.target_degree_level && profile.degrees && profile.degrees.length > 0) {
+    const targets = s.target_degree_level.map(d => d.toLowerCase());
+    const ok = profile.degrees.some(pd => targets.includes(pd.toLowerCase()));
+    reqs.push({ label: `Degree level: ${s.target_degree_level.join(", ")}`, status: ok ? "met" : "miss", detail: `Your level: ${profile.degrees.join(" / ")}` });
   }
   if (s.target_fields && s.target_fields.length > 0 && profile.field) {
     const fm = fieldMatches(profile.field, s.target_fields);
@@ -1604,7 +1658,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                 nationality: profile.country,
                 major: profile.field,
                 field: profile.field,
-                gradeLevel: profile.degree,
+                gradeLevel: profile.degrees?.[0] || "",
                 targetCountries: s.host_country ? [s.host_country] : undefined,
                 gpa: profile.gpa,
                 gpaScale: profile.gpaScale,
@@ -1944,42 +1998,17 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                hand-checked by us. "External research" = ingested from a
                third-party report (Manus AI), not yet hand-verified. */}
         {(() => {
-          const src = (s as Scholarship).data_source ?? "hand_curated";
-          const isCurated = src === "hand_curated";
-          const sourceLabel =
-            isCurated ? "Curated" :
-            src === "manus_ai_2026_05_03" ? "External research · May 2026" :
-            "External research";
           return (
-            <div className="px-7 py-4 border-t border-border bg-muted/20 flex flex-col gap-2 shrink-0">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                  <ShieldAlert className={`h-3.5 w-3.5 ${isStale ? "text-warning" : "text-success"}`} />
-                  <span>
-                    {verifiedDate ? <>Verified {dateOnly(verifiedDate)} {isStale && <span className="text-warning">· may be stale</span>}</> : "Verification date unknown"}
-                  </span>
-                </div>
-                <a
-                  href={`mailto:hello@topuni.com?subject=${encodeURIComponent("Inaccurate scholarship data: " + s.scholarship_name)}&body=${encodeURIComponent("ID: " + s.scholarship_id + "\n\nWhat's wrong:\n")}`}
-                  className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-4"
-                >
-                  Report inaccuracy
-                </a>
-              </div>
-              <div className="flex items-center gap-2 text-[10px]">
-                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border font-medium uppercase tracking-[0.12em] ${
-                  isCurated
-                    ? "border-success/30 text-success bg-success/5"
-                    : "border-amber-500/30 text-amber-600 dark:text-amber-500 bg-amber-500/5"
-                }`}>
-                  Source: {sourceLabel}
-                </span>
-                {!isCurated && (
-                  <span className="text-muted-foreground/80">
-                    Verify deadlines and amounts on the official site before applying.
-                  </span>
-                )}
-              </div>
+            <div className="px-7 py-3 border-t border-border bg-muted/20 flex items-center justify-between gap-3 shrink-0">
+              <span className="text-[11px] text-muted-foreground">
+                Always confirm deadlines and amounts on the official program page before applying.
+              </span>
+              <a
+                href={`mailto:hello@topuni.com?subject=${encodeURIComponent("Inaccurate scholarship data: " + s.scholarship_name)}&body=${encodeURIComponent("ID: " + s.scholarship_id + "\n\nWhat's wrong:\n")}`}
+                className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-4 shrink-0"
+              >
+                Report inaccuracy
+              </a>
             </div>
           );
         })()}
@@ -2027,7 +2056,7 @@ const Discover = ({ language = "en" }: Props) => {
 
   const [rows, setRows] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<Profile>({ country: "", degree: "", gpa: "", gpaScale: "4.0", ielts: "", sat: "", field: "", budget: "low" });
+  const [profile, setProfile] = useState<Profile>({ country: "", degrees: [], gpa: "", gpaScale: "4.0", ielts: "", sat: "", field: "" });
   const [phase, setPhase] = useState<Phase>(() => getStoredProfile()?.nationality ? "results" : "landing");
   const [wizardStep, setWizardStep] = useState(0);
   const [wiz, setWiz] = useState<WizardData>(DEFAULT_WIZARD);
@@ -2116,12 +2145,23 @@ const Discover = ({ language = "en" }: Props) => {
   useEffect(() => {
     const stored = getStoredProfile();
     if (stored?.nationality) {
+      // targetDegree may be a single value (legacy) or comma-separated (new).
+      // Split, then normalize legacy "phd" / "master" tokens to canonical
+      // values used by scoring.
+      const rawLevels = (stored.targetDegree || "")
+        .split(/[,/]+/).map(s => s.trim()).filter(Boolean);
+      const canonicalize = (lvl: string) => {
+        const l = lvl.toLowerCase();
+        if (l === "phd") return "PhD";
+        if (l.startsWith("master")) return "master\'s";
+        if (l === "undergraduate" || l === "bachelor" || l.startsWith("bachelor")) return "undergraduate";
+        return lvl;
+      };
       setProfile({
         country: stored.nationality || "",
-        degree: stored.targetDegree === "phd" ? "PhD" : stored.targetDegree === "master" ? "master\'s" : stored.targetDegree || "undergraduate",
+        degrees: rawLevels.length > 0 ? rawLevels.map(canonicalize) : [],
         gpa: stored.gpa || "", gpaScale: "4.0", ielts: stored.ieltsScore || "",
         sat: "", field: stored.fieldOfInterest || "",
-        budget: stored.budgetRange?.startsWith("0") || stored.budgetRange?.startsWith("5000") ? "low" : "medium",
       });
     }
   }, []);
@@ -2146,10 +2186,10 @@ const Discover = ({ language = "en" }: Props) => {
   };
 
   const completeWizard = () => {
-    const country = wiz.nationality === "other" ? wiz.customNationality : wiz.nationality;
-    const p: Profile = { country, degree: wiz.degree, gpa: wiz.gpa, gpaScale: wiz.gpaScale, ielts: wiz.ielts, sat: "", field: wiz.field, budget: wiz.budget };
+    const country = wiz.nationality;
+    const p: Profile = { country, degrees: wiz.degrees, gpa: wiz.gpa, gpaScale: wiz.gpaScale, ielts: wiz.ielts, sat: "", field: wiz.field };
     setProfile(p);
-    saveProfile({ fullName: wiz.fullName, email: wiz.email, nationality: country, targetDegree: wiz.degree, gpa: wiz.gpa, ieltsScore: wiz.ielts, budgetRange: wiz.budget === "low" ? "0-5000" : "15000+", fieldOfInterest: wiz.field });
+    saveProfile({ fullName: wiz.fullName, email: wiz.email, nationality: country, targetDegree: wiz.degrees.join(", "), gpa: wiz.gpa, ieltsScore: wiz.ielts, fieldOfInterest: wiz.field });
     setAnalysisStep(0); setPhase("analyzing");
   };
 
@@ -2164,7 +2204,7 @@ const Discover = ({ language = "en" }: Props) => {
     {
       field: profile.field,
       targetCountries: profile.country ? [profile.country] : undefined,
-      degree: profile.degree,
+      degree: profile.degrees?.[0] || "",
       nationality: profile.country,
       gpa: profile.gpa,
       ielts: profile.ielts,
@@ -2173,7 +2213,8 @@ const Discover = ({ language = "en" }: Props) => {
   );
 
   const ranked = useMemo(() => {
-    const p = profile.country || profile.degree ? profile : { country: "", degree: "master\'s", gpa: "", gpaScale: "4.0", ielts: "", sat: "", field: "", budget: "low" };
+    const hasProfile = profile.country || (profile.degrees && profile.degrees.length > 0);
+    const p: Profile = hasProfile ? profile : { country: "", degrees: [], gpa: "", gpaScale: "4.0", ielts: "", sat: "", field: "" };
     return rows.map(r => {
       const sim = semantic.matches.get(r.scholarship_id)?.similarity;
       return scoreScholarship(r, p, sim);
@@ -2184,17 +2225,34 @@ const Discover = ({ language = "en" }: Props) => {
     });
   }, [rows, profile, semantic.matches]);
 
-  /* Available host countries + fields, derived from data */
+  /* Available host countries + fields, derived from data.
+   * Collapse all "Multiple (...)" / "Multiple (Worldwide)" / "Global" /
+   * "International" variants into one canonical "Multiple countries" so
+   * the dropdown isn't polluted with eight near-identical options. */
   const hostCountries = useMemo(() => {
     const set = new Set<string>();
-    rows.forEach(r => { if (r.host_country) set.add(r.host_country); });
+    rows.forEach(r => {
+      if (!r.host_country) return;
+      set.add(canonicalCountry(r.host_country));
+    });
     return [...set].sort();
   }, [rows]);
 
   const fieldsAvailable = useMemo(() => {
-    const set = new Set<string>();
-    rows.forEach(r => r.target_fields?.forEach(f => set.add(f)));
-    return [...set].sort();
+    // Field strings come from many sources (LLM extractions, manual seeds).
+    // Dedupe case-insensitively while preserving the most common casing.
+    // Also normalize trailing-s and hyphens so "Social Science" and
+    // "Social Sciences" or "social-science" don't double up.
+    const counts = new Map<string, { display: string; n: number }>();
+    rows.forEach(r => r.target_fields?.forEach(f => {
+      const raw = (f || "").trim();
+      if (!raw) return;
+      const key = raw.toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ").replace(/s$/, "");
+      const cur = counts.get(key);
+      if (cur) cur.n++;
+      else counts.set(key, { display: raw, n: 1 });
+    }));
+    return [...counts.values()].map(v => v.display).sort();
   }, [rows]);
 
   const filtered = useMemo(() => {
@@ -2226,8 +2284,12 @@ const Discover = ({ language = "en" }: Props) => {
         ? (s.selectivity === "high" || s.selectivity === "very_high")
         : s.selectivity === filters.selectivity);
     }
-    if (filters.field !== "all") list = list.filter(s => s.target_fields?.includes(filters.field));
-    if (filters.hostCountry !== "all") list = list.filter(s => s.host_country === filters.hostCountry);
+    if (filters.field !== "all") {
+      const norm = (f: string) => f.toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ").replace(/s$/, "");
+      const want = norm(filters.field);
+      list = list.filter(s => s.target_fields?.some(f => norm(f) === want));
+    }
+    if (filters.hostCountry !== "all") list = list.filter(s => s.host_country && canonicalCountry(s.host_country) === filters.hostCountry);
     if (filters.onlyEligible) list = list.filter(s => s.eligibility === "eligible" || s.eligibility === "likely");
     if (filters.closingSoon) list = list.filter(s => { const d = s.application_deadline ? Math.ceil((new Date(s.application_deadline).getTime() - Date.now()) / 86400000) : null; return d !== null && d > 0 && d <= 90; });
     if (!showHidden) list = list.filter(s => !hidden.has(s.scholarship_id));
@@ -2302,9 +2364,9 @@ const Discover = ({ language = "en" }: Props) => {
   const activeFiltersCount = [filters.search !== "", filters.coverage !== "all", filters.degree !== "all", filters.selectivity !== "all", filters.field !== "all", filters.hostCountry !== "all", filters.onlyEligible, filters.closingSoon].filter(Boolean).length;
 
   const analysisTexts = [
-    `Scanning ${rows.length || 200}+ verified scholarships`,
+    `Scanning ${rows.length || 200}+ scholarships`,
     `Filtering by nationality${wiz.nationality ? `: ${wiz.nationality}` : ""}`,
-    `Matching ${wiz.degree || "your degree"} programs${wiz.field ? ` in ${wiz.field}` : ""}`,
+    `Matching ${wiz.degrees.length > 0 ? wiz.degrees.join(" / ") : "your degree"} programs${wiz.field ? ` in ${wiz.field}` : ""}`,
     "Evaluating academic thresholds and selectivity",
     "Ranking your best opportunities",
   ];
@@ -2333,7 +2395,7 @@ const Discover = ({ language = "en" }: Props) => {
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-gold" />
                   </span>
                   <span className="text-primary-foreground/85 text-xs font-semibold tracking-wide">
-                    <span className="text-gold">{totalVerified}</span> verified scholarships · live database
+                    <span className="text-gold">{totalVerified}</span> scholarships · live database
                   </span>
                 </motion.div>
 
@@ -2415,32 +2477,60 @@ const Discover = ({ language = "en" }: Props) => {
 
                 {wizardStep === 1 && (
                   <motion.div key="ws1" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.5 }}
-                    className="flex-1 flex flex-col items-center justify-center px-6 py-10 max-w-2xl mx-auto w-full text-center relative z-10">
+                    className="flex-1 flex flex-col items-center justify-center px-6 py-10 max-w-xl mx-auto w-full text-center relative z-10">
                     <p className="text-gold text-xs font-semibold uppercase tracking-[0.25em] mb-5">Step 2 · Origin</p>
                     <h2 className="font-heading text-[clamp(2rem,5vw,3.25rem)] font-bold text-primary-foreground mb-4 tracking-[-0.02em] leading-[1.05]">Where are you from?</h2>
-                    <p className="text-primary-foreground/50 mb-10 text-base max-w-md mx-auto">Your nationality determines eligibility for most scholarships.</p>
-                    <div className="w-full grid grid-cols-3 sm:grid-cols-4 gap-3">
-                      {COUNTRIES.map((c, i) => (
-                        <motion.button key={c.v} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.025, duration: 0.4 }}
-                          onClick={() => { setWiz(w => ({ ...w, nationality: c.v })); setWizardStep(2); }}
-                          className={`group flex flex-col items-center gap-2 px-3 py-4 rounded-2xl border transition-all hover:scale-[1.04] active:scale-95 ${wiz.nationality === c.v ? "bg-gold text-primary border-gold" : "bg-primary-foreground/[0.03] border-primary-foreground/12 text-primary-foreground hover:bg-primary-foreground/[0.07] hover:border-primary-foreground/25 backdrop-blur-md"}`}>
-                          <span className="text-2xl">{c.f}</span>
-                          <span className="text-xs font-medium leading-tight">{c.v}</span>
-                        </motion.button>
-                      ))}
-                      <button onClick={() => setWiz(w => ({ ...w, nationality: "other" }))}
-                        className={`flex flex-col items-center gap-2 px-3 py-4 rounded-2xl border transition-all hover:scale-[1.04] ${wiz.nationality === "other" ? "bg-gold text-primary border-gold" : "bg-primary-foreground/[0.03] border-primary-foreground/12 text-primary-foreground hover:bg-primary-foreground/[0.07] hover:border-primary-foreground/25 backdrop-blur-md"}`}>
-                        <span className="text-2xl">🌍</span>
-                        <span className="text-xs font-medium">Other</span>
-                      </button>
+                    <p className="text-primary-foreground/50 mb-8 text-base max-w-md mx-auto">Your nationality unlocks the right eligibility. Type or pick — every country works.</p>
+
+                    {/* Typeahead — single input that filters the full country
+                        list. Click a result or press Enter to accept the typed
+                        value. No country is restricted. */}
+                    <div className="w-full">
+                      <Input
+                        value={wiz.nationality}
+                        onChange={e => setWiz(w => ({ ...w, nationality: e.target.value }))}
+                        onKeyDown={e => { if (e.key === "Enter" && wiz.nationality.trim()) setWizardStep(2); }}
+                        placeholder="Type your country (any)…"
+                        className="bg-primary-foreground/[0.04] border-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/30 h-14 text-base backdrop-blur-md focus-visible:border-gold/50"
+                      />
+                      {(() => {
+                        const q = wiz.nationality.trim().toLowerCase();
+                        const matches = q
+                          ? ALL_COUNTRIES.filter(c => c.v.toLowerCase().includes(q)).slice(0, 8)
+                          : POPULAR_COUNTRIES;
+                        const heading = q ? "Matches" : "Popular";
+                        const exact = ALL_COUNTRIES.find(c => c.v.toLowerCase() === q);
+                        return (
+                          <div className="mt-4">
+                            <p className="text-[10px] uppercase tracking-[0.2em] text-primary-foreground/35 text-left mb-2">{heading}</p>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                              {matches.map(c => (
+                                <button key={c.v} onClick={() => { setWiz(w => ({ ...w, nationality: c.v })); setWizardStep(2); }}
+                                  className={`flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl border transition-all hover:scale-[1.03] active:scale-95 ${wiz.nationality.toLowerCase() === c.v.toLowerCase() ? "bg-gold text-primary border-gold" : "bg-primary-foreground/[0.03] border-primary-foreground/12 text-primary-foreground hover:bg-primary-foreground/[0.07] hover:border-primary-foreground/25 backdrop-blur-md"}`}>
+                                  <span className="text-xl">{c.f}</span>
+                                  <span className="text-[11px] font-medium leading-tight">{c.v}</span>
+                                </button>
+                              ))}
+                            </div>
+                            {q && matches.length === 0 && (
+                              <p className="text-primary-foreground/45 text-sm mt-3">
+                                No exact match — that's fine, your typed entry will be used.
+                              </p>
+                            )}
+                            {wiz.nationality.trim() && (
+                              <Button
+                                variant="gold"
+                                size="lg"
+                                className="mt-6 px-12 gap-2"
+                                onClick={() => setWizardStep(2)}
+                              >
+                                {exact ? `Continue as ${exact.v}` : `Continue with "${wiz.nationality.trim()}"`} <ArrowRight className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
-                    {wiz.nationality === "other" && (
-                      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-5 w-full max-w-md mx-auto space-y-3">
-                        <Input value={wiz.customNationality} onChange={e => setWiz(w => ({ ...w, customNationality: e.target.value }))} placeholder="Type your country..."
-                          className="bg-primary-foreground/[0.04] border-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/25 h-12 backdrop-blur-md" />
-                        <Button variant="gold" onClick={() => setWizardStep(2)} disabled={!wiz.customNationality} className="w-full gap-2">Continue <ArrowRight className="h-4 w-4" /></Button>
-                      </motion.div>
-                    )}
                   </motion.div>
                 )}
 
@@ -2449,27 +2539,40 @@ const Discover = ({ language = "en" }: Props) => {
                     className="flex-1 flex flex-col items-center justify-center px-6 py-10 max-w-2xl mx-auto w-full text-center relative z-10">
                     <p className="text-gold text-xs font-semibold uppercase tracking-[0.25em] mb-5">Step 3 · Path</p>
                     <h2 className="font-heading text-[clamp(2rem,5vw,3.25rem)] font-bold text-primary-foreground mb-4 tracking-[-0.02em] leading-[1.05]">What will you study?</h2>
-                    <p className="text-primary-foreground/50 mb-10 text-base">Pick the level you're applying for.</p>
+                    <p className="text-primary-foreground/50 mb-10 text-base">Pick every level you're considering — multiple is fine.</p>
                     <div className="w-full grid grid-cols-3 gap-4 mb-10">
-                      {DEGREES.map((d, i) => (
-                        <motion.button key={d.v} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-                          onClick={() => setWiz(w => ({ ...w, degree: d.v }))}
-                          className={`flex flex-col items-center gap-2.5 p-6 rounded-3xl border transition-all hover:scale-[1.03] active:scale-95 ${wiz.degree === d.v ? "bg-gold text-primary border-gold" : "bg-primary-foreground/[0.03] border-primary-foreground/12 text-primary-foreground hover:bg-primary-foreground/[0.07] hover:border-primary-foreground/25 backdrop-blur-md"}`}>
-                          <span className="text-4xl">{d.icon}</span>
-                          <span className="font-semibold text-base">{d.l}</span>
-                          <span className={`text-xs leading-tight ${wiz.degree === d.v ? "opacity-70" : "opacity-50"}`}>{d.d}</span>
-                        </motion.button>
-                      ))}
+                      {DEGREES.map((d, i) => {
+                        const selected = wiz.degrees.includes(d.v);
+                        return (
+                          <motion.button key={d.v} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+                            onClick={() => setWiz(w => ({
+                              ...w,
+                              degrees: w.degrees.includes(d.v)
+                                ? w.degrees.filter(x => x !== d.v)
+                                : [...w.degrees, d.v],
+                            }))}
+                            className={`relative flex flex-col items-center gap-2.5 p-6 rounded-3xl border transition-all hover:scale-[1.03] active:scale-95 ${selected ? "bg-gold text-primary border-gold" : "bg-primary-foreground/[0.03] border-primary-foreground/12 text-primary-foreground hover:bg-primary-foreground/[0.07] hover:border-primary-foreground/25 backdrop-blur-md"}`}>
+                            {selected && (
+                              <span className="absolute top-2 right-2 inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary text-gold">
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                              </span>
+                            )}
+                            <span className="text-4xl">{d.icon}</span>
+                            <span className="font-semibold text-base">{d.l}</span>
+                            <span className={`text-xs leading-tight ${selected ? "opacity-70" : "opacity-50"}`}>{d.d}</span>
+                          </motion.button>
+                        );
+                      })}
                     </div>
                     <AnimatePresence>
-                      {wiz.degree && (
+                      {wiz.degrees.length > 0 && (
                         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} className="w-full">
                           <p className="text-primary-foreground/50 text-sm mb-4">And your field?</p>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                             {FIELDS.map((f, i) => (
                               <motion.button key={f.v} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
                                 onClick={() => setWiz(w => ({ ...w, field: f.v }))}
-                                className={`flex items-center gap-2 px-3 py-3 rounded-xl border text-xs font-medium transition-all hover:scale-[1.04] ${wiz.field === f.v ? "bg-gold text-primary border-gold" : "bg-primary-foreground/[0.03] border-primary-foreground/12 text-primary-foreground hover:bg-primary-foreground/[0.07] backdrop-blur-md"}`}>
+                                className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl border text-xs font-medium transition-all hover:scale-[1.04] whitespace-nowrap ${wiz.field === f.v ? "bg-gold text-primary border-gold" : "bg-primary-foreground/[0.03] border-primary-foreground/12 text-primary-foreground hover:bg-primary-foreground/[0.07] backdrop-blur-md"}`}>
                                 <span>{f.i}</span><span>{f.v.split(" &")[0]}</span>
                               </motion.button>
                             ))}
@@ -2478,7 +2581,7 @@ const Discover = ({ language = "en" }: Props) => {
                       )}
                     </AnimatePresence>
                     <AnimatePresence>
-                      {wiz.degree && wiz.field && (
+                      {wiz.degrees.length > 0 && wiz.field && (
                         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-7">
                           <Button variant="gold" size="lg" onClick={() => setWizardStep(3)} className="px-12 gap-2">
                             Continue <ArrowRight className="h-5 w-5" />
@@ -2515,18 +2618,6 @@ const Discover = ({ language = "en" }: Props) => {
                         <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">IELTS score (optional)</label>
                         <Input value={wiz.ielts} onChange={e => setWiz(w => ({ ...w, ielts: e.target.value }))} placeholder="e.g. 7.0"
                           className="bg-primary-foreground/[0.04] border-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/25 h-12 backdrop-blur-md focus-visible:border-gold/50" />
-                      </div>
-                      <div className="space-y-3">
-                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">Funding situation</label>
-                        <div className="grid grid-cols-2 gap-3">
-                          {[{ v: "low", l: "Need full funding", d: "Can't self-fund tuition" }, { v: "medium", l: "Can cover some", d: "Partial support is OK" }].map(b => (
-                            <button key={b.v} onClick={() => setWiz(w => ({ ...w, budget: b.v }))}
-                              className={`flex flex-col items-start gap-1 p-4 rounded-2xl border text-left transition-all ${wiz.budget === b.v ? "bg-gold text-primary border-gold" : "bg-primary-foreground/[0.03] border-primary-foreground/12 text-primary-foreground hover:bg-primary-foreground/[0.07] backdrop-blur-md"}`}>
-                              <span className="text-sm font-semibold">{b.l}</span>
-                              <span className={`text-xs ${wiz.budget === b.v ? "opacity-70" : "opacity-50"}`}>{b.d}</span>
-                            </button>
-                          ))}
-                        </div>
                       </div>
                     </div>
                     <Button variant="gold" size="lg" className="mt-10 px-12 gap-2 text-base" onClick={completeWizard}>
@@ -2631,7 +2722,7 @@ const Discover = ({ language = "en" }: Props) => {
               {(() => {
                 const profileChips = [
                   profile.country,
-                  profile.degree,
+                  profile.degrees && profile.degrees.length > 0 ? profile.degrees.join(" / ") : null,
                   profile.field,
                   profile.gpa ? `GPA ${profile.gpa}/${profile.gpaScale}` : null,
                   profile.ielts ? `IELTS ${profile.ielts}` : null,
@@ -2925,7 +3016,7 @@ const Discover = ({ language = "en" }: Props) => {
                                 {appSection === "pipeline" ? "Workspace · Pipeline" : appSection === "shortlist" ? "Workspace · Shortlist" : "Workspace · Collections"}
                               </p>
                               <h2 className="font-heading text-2xl font-bold tracking-tight text-foreground">
-                                {appSection === "pipeline" ? "Applications in progress" : appSection === "shortlist" ? "Saved scholarships" : "Curated collections"}
+                                {appSection === "pipeline" ? "Applications in progress" : appSection === "shortlist" ? "Saved scholarships" : "Collections"}
                               </h2>
                               <p className="text-sm text-muted-foreground mt-1">
                                 {appSection === "pipeline" ? "Scholarships you've moved into your pipeline. Status updates from here sync everywhere." :
