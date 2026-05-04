@@ -2489,6 +2489,54 @@ const Discover = ({ language = "en" }: Props) => {
           {/* ══ RESULTS — distinctive app-shell experience ══ */}
           {phase === "results" && (
             <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7 }}>
+              {/* ─── Trending strip — the OpportunitiesForYouth.org pattern.
+                  Single closest-deadline scholarship surfaced in a thin
+                  bar above the profile strip. Creates urgency + social-
+                  proof feel without needing live view-count data. Click
+                  opens the DetailSheet. Hidden when no upcoming deadlines
+                  exist (all rolling or past). */}
+              {(() => {
+                const now = Date.now();
+                const closest = ranked
+                  .map((s) => {
+                    if (!s.application_deadline) return null;
+                    const days = Math.ceil((new Date(s.application_deadline).getTime() - now) / 86400_000);
+                    if (days <= 0 || days > 60) return null;
+                    return { row: s, days };
+                  })
+                  .filter((x): x is { row: Scored; days: number } => x !== null)
+                  .sort((a, b) => a.days - b.days)[0];
+                if (!closest) return null;
+                return (
+                  <motion.button
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                    onClick={() => setOpenDetail(closest.row)}
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/95 transition-colors group"
+                    aria-label="Trending scholarship — click to open"
+                  >
+                    <div className="max-w-7xl mx-auto px-5 sm:px-8 py-2.5 flex items-center gap-3 text-[12px]">
+                      <span className="inline-flex items-center gap-1.5 text-gold font-semibold uppercase tracking-[0.22em] text-[10px] shrink-0">
+                        <Flame className="w-3 h-3" />
+                        Trending
+                      </span>
+                      <span className="text-primary-foreground/40 hidden sm:inline">·</span>
+                      <span className="font-semibold truncate min-w-0">{closest.row.scholarship_name}</span>
+                      {closest.row.host_country && (
+                        <span className="text-primary-foreground/55 hidden md:inline truncate">
+                          {closest.row.host_country}
+                        </span>
+                      )}
+                      <span className="ml-auto inline-flex items-center gap-1 shrink-0 font-semibold tabular-nums">
+                        {closest.days <= 7 ? <span className="text-destructive bg-destructive/15 px-1.5 py-0.5 rounded">{closest.days} days</span> : <span className="text-gold-light">{closest.days} days</span>}
+                        <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                      </span>
+                    </div>
+                  </motion.button>
+                );
+              })()}
+
               {/* ─── Profile context strip — branches based on whether the
                   user has profile data. When profile is filled: chips
                   showing the user's scoring inputs + "Edit" affordance.
