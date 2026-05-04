@@ -2016,14 +2016,6 @@ const Discover = ({ language = "en" }: Props) => {
                     <span>Free during beta</span>
                   </div>
                 </motion.div>
-
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2, duration: 0.7 }}
-                  className="absolute bottom-[-180px] left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-primary-foreground/30">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.3em]">Scroll</span>
-                  <motion.div animate={{ y: [0, 6, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}>
-                    <ChevronDown className="h-4 w-4" />
-                  </motion.div>
-                </motion.div>
               </motion.div>
             </motion.div>
           )}
