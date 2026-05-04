@@ -31,7 +31,8 @@ export type EventName =
   | "section_regenerated"
   | "share_brief_minted"
   | "deep_dive_opened"
-  | "brief_focus_scholarship_set";
+  | "brief_focus_scholarship_set"
+  | "brief_30_day_call_clicked";
 
 const ANON_ID_KEY = "topuni-anon-id";
 

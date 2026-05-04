@@ -880,7 +880,7 @@ const HonestGaps = ({ markdown, isRu }: { markdown: string; isRu: boolean }) => 
    call:** …" line lifted out into a gold-bordered pull-quote. Falls
    back to plain markdown if the call marker isn't present (e.g. legacy
    reports generated before the prompt update). */
-const StrategicPositioning = ({ markdown, isRu, onRegen, isRegenerating }: { markdown: string; isRu: boolean; onRegen?: (id: string) => void; isRegenerating?: boolean }) => {
+const StrategicPositioning = ({ markdown, isRu, onRegen, isRegenerating, onAskCounselor }: { markdown: string; isRu: boolean; onRegen?: (id: string) => void; isRegenerating?: boolean; onAskCounselor?: (question: string) => void }) => {
   const { title, body, call } = useMemo(() => {
     const lines = markdown.split("\n");
     let title = "";
@@ -937,6 +937,25 @@ const StrategicPositioning = ({ markdown, isRu, onRegen, isRegenerating }: { mar
           <p className="font-heading text-lg sm:text-xl leading-snug text-foreground tracking-tight">
             {renderInline(call)}
           </p>
+          {onAskCounselor && (
+            // The 30-day call is the most actionable thing in the entire
+            // brief. One tap routes the user to the counselor with a
+            // prefilled "help me execute this" question — closing the
+            // loop between strategic insight and concrete coaching.
+            <button
+              type="button"
+              onClick={() => onAskCounselor(
+                isRu
+                  ? `Помогите мне реализовать этот шаг на 30 дней из моего брифинга: "${call}"`
+                  : `Help me execute this 30-day call from my brief: "${call}"`,
+              )}
+              className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-semibold text-gold-dark hover:text-foreground transition-colors group/cta"
+            >
+              <Bot className="w-3.5 h-3.5" />
+              {isRu ? "Спланировать с советником" : "Plan this with the counselor"}
+              <ArrowRight className="w-3 h-3 transition-transform group-hover/cta:translate-x-0.5" />
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -1022,7 +1041,7 @@ const SectionRegenButton = ({
 const PATHWAY_CAREER_SECTION_REGEX = /^##\s+.*?(career roi|carreer roi|карьерн|career return)/i;
 const PATHWAY_VISA_SECTION_REGEX = /^##\s+.*?(visa.*pathway|visa.*post|post.*graduation|виза.*пути|виза|после выпуска)/i;
 
-export const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onOpenDiscover, liveMatches, onSaveScholarship, savedSet, structured, onRegenSection, regeneratingSectionId, tier = "premium" }: {
+export const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onOpenDiscover, liveMatches, onSaveScholarship, savedSet, structured, onRegenSection, regeneratingSectionId, tier = "premium", onAskCounselor }: {
   markdown: string;
   completedTasks: Set<string>;
   onToggle: (id: string) => void;
@@ -1042,6 +1061,12 @@ export const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, is
    *  a loading state on that one button). */
   regeneratingSectionId?: string | null;
   tier?: "basic" | "premium";
+  /** Optional cross-surface action — when provided, the brief's
+   *  Strategic Positioning section renders a "Plan this with the
+   *  counselor" CTA below the 30-day call. SharedBrief leaves this
+   *  undefined since recipients don't have access to the original
+   *  user's counselor. */
+  onAskCounselor?: (question: string) => void;
 }) => {
   // Mapped to InlineScholarshipCard's expected shape — provider/url default to null
   const scholarshipsForCards = liveMatches.map((m) => ({
@@ -1075,7 +1100,7 @@ export const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, is
         if (PATHWAY_POS_SECTION_REGEX.test(section)) {
           const hasBody = section.split("\n").slice(1).join("\n").trim().length > 30;
           if (hasBody) {
-            return <div key={i} {...anchorProps}><StrategicPositioning markdown={section} isRu={isRu} onRegen={onRegenSection} isRegenerating={regeneratingSectionId === "positioning"} /></div>;
+            return <div key={i} {...anchorProps}><StrategicPositioning markdown={section} isRu={isRu} onRegen={onRegenSection} isRegenerating={regeneratingSectionId === "positioning"} onAskCounselor={onAskCounselor} /></div>;
           }
         }
         if (PATHWAY_PLAN_SECTION_REGEX.test(section)) {
@@ -1697,6 +1722,24 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       generatePathway();
     }
   }, []);
+
+  /* In-page counselor handoff — used by brief surfaces (e.g. the
+     Strategic Positioning's "Plan this with the counselor" CTA below
+     the 30-day call) to switch tabs and seed the chat input without
+     a sessionStorage round-trip. Pipeline's cross-page handoff still
+     uses sessionStorage (different process — it navigates to /topuni-
+     ai from /pipeline). */
+  const askCounselorWithPrefill = (question: string) => {
+    setActiveTab("counselor");
+    setChatInput(question);
+    setTimeout(() => {
+      chatTextareaRef.current?.focus();
+      // Scroll the user up so the chat input is visible — they'll be
+      // looking at the counselor surface, not the brief.
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 80);
+    void track("brief_30_day_call_clicked", { source: "strategic_positioning_cta" });
+  };
 
   /* Counselor prefill from another surface — when the user clicks
      "Ask the AI counselor about this" on the Pipeline detail sheet
@@ -2584,6 +2627,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             onRegenSection={reportGrade === "premium" ? regenerateSection : undefined}
                             regeneratingSectionId={regeneratingSectionId}
                             tier={reportGrade}
+                            onAskCounselor={askCounselorWithPrefill}
                           />
                         )}
                         {/* Live matches grid sits between the brief and the
@@ -2741,6 +2785,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             onRegenSection={reportGrade === "premium" ? regenerateSection : undefined}
                             regeneratingSectionId={regeneratingSectionId}
                             tier={reportGrade}
+                            onAskCounselor={askCounselorWithPrefill}
                           />
                         )}
                         {/* Pro-only sections teaser — basic-tier non-Pro
