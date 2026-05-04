@@ -2785,7 +2785,9 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                                 className={`absolute top-3 right-3 h-8 w-8 rounded-lg flex items-center justify-center transition-all ${
                                   isSaved
                                     ? "text-gold-dark bg-gold/10 hover:bg-gold/15"
-                                    : "text-muted-foreground/60 hover:text-gold-dark hover:bg-gold/5 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                    // Mobile (no hover): always 70% visible so the save action is
+                                    // discoverable. Desktop: muted at rest, full-opacity on hover.
+                                    : "text-muted-foreground/60 hover:text-gold-dark hover:bg-gold/5 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
                                 }`}
                                 title={isSaved ? t("Saved · click to remove", "Сохранено · убрать") : t("Save to your pipeline", "Сохранить в pipeline")}
                               >

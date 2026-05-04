@@ -165,7 +165,7 @@ export function CounselorSessions({ isRu = false, activeSessionId, onLoadSession
                       <button
                         onClick={(e) => archiveSession(s.session_id, e)}
                         title={t("Delete", "Удалить")}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-0.5"
+                        className="opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-0.5"
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>
