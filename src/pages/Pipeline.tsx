@@ -15,7 +15,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, ExternalLink, Clock, Check, X, Calendar,
-  StickyNote, Loader2, Search, Inbox, ChevronDown,
+  StickyNote, Loader2, Search, Inbox, ChevronDown, Bot,
 } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
@@ -28,6 +28,7 @@ import { useApplicationTracker, type AppStatus } from "@/hooks/useApplicationTra
 import { useAuth } from "@/contexts/AuthContext";
 import { ScholarshipChecklist } from "@/components/pipeline/ScholarshipChecklist";
 import { DueThisWeek } from "@/components/pipeline/DueThisWeek";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 interface Scholarship {
   scholarship_id: string;
@@ -41,6 +42,8 @@ interface Scholarship {
   deadline_type: string | null;
   official_url: string | null;
   data_source: string | null;
+  verification_status: string | null;
+  last_verified_at: string | null;
 }
 
 const COLUMNS: { key: AppStatus | "shortlisted"; label: { en: string; ru: string }; tone: string; bar: string }[] = [
@@ -108,7 +111,8 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
         .select(
           "scholarship_id, scholarship_name, provider_name, host_country, " +
           "coverage_type, award_amount_text, estimated_total_value_usd, " +
-          "application_deadline, deadline_type, official_url, data_source",
+          "application_deadline, deadline_type, official_url, data_source, " +
+          "verification_status, last_verified_at",
         )
         .in("scholarship_id", trackedIds);
       if (cancelled) return;
@@ -335,9 +339,19 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
           {openDetail && (
             <>
               <SheetHeader className="px-6 py-5 border-b border-border bg-card/30 shrink-0">
-                <p className="text-[10px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-1">
-                  {openDetail.host_country || t("Multiple", "Множественно")}
-                </p>
+                <div className="flex items-center justify-between gap-3 mb-1">
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-gold-dark font-semibold">
+                    {openDetail.host_country || t("Multiple", "Множественно")}
+                  </p>
+                  {openDetail.verification_status && openDetail.verification_status !== "pending" && (
+                    <VerifiedBadge
+                      status={openDetail.verification_status}
+                      verifiedAt={openDetail.last_verified_at}
+                      size="xs"
+                      compact
+                    />
+                  )}
+                </div>
                 <SheetTitle className="font-heading text-xl tracking-tight leading-snug">
                   {openDetail.scholarship_name}
                 </SheetTitle>
@@ -464,7 +478,10 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                   />
                 </div>
 
-                {/* Links */}
+                {/* Links — actions the user might take from this card.
+                    "Ask the counselor" stashes a session prefill so when
+                    they land on /topuni-ai the counselor tab opens with a
+                    suggested question already in the chat input. */}
                 <div className="space-y-2 pt-2 border-t border-border">
                   {openDetail.official_url && (
                     <Button variant="outline" size="sm" asChild className="w-full justify-between">
@@ -474,9 +491,38 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                       </a>
                     </Button>
                   )}
-                  <Button variant="ghost" size="sm" asChild className="w-full justify-between">
-                    <Link to={isRu ? "/discover/ru" : "/discover"}>
-                      {t("View in Discover", "Открыть в Discover")}
+                  <Button variant="outline" size="sm" asChild className="w-full justify-between">
+                    <Link to={`/scholarships/${openDetail.scholarship_id}`}>
+                      {t("Open scholarship detail", "Открыть детали стипендии")}
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    asChild
+                    className="w-full justify-between"
+                    onClick={() => {
+                      try {
+                        sessionStorage.setItem(
+                          "topuni-counselor-prefill",
+                          JSON.stringify({
+                            scholarshipId: openDetail.scholarship_id,
+                            scholarshipName: openDetail.scholarship_name,
+                            question: isRu
+                              ? `Помогите с подачей на ${openDetail.scholarship_name} — стратегия, документы, тайминг.`
+                              : `Walk me through ${openDetail.scholarship_name} — strategy, documents, timing.`,
+                            ts: Date.now(),
+                          }),
+                        );
+                      } catch { /* ignore */ }
+                    }}
+                  >
+                    <Link to={isRu ? "/topuni-ai/ru" : "/topuni-ai"}>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Bot className="w-3.5 h-3.5" />
+                        {t("Ask the AI counselor about this", "Спросить AI советника об этом")}
+                      </span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </Button>
@@ -561,6 +607,16 @@ const PipelineCard = ({
       <h4 className="font-heading font-semibold text-[14px] text-foreground line-clamp-2 leading-snug mb-1.5 group-hover:text-gold-dark transition-colors">
         {s.scholarship_name}
       </h4>
+      {s.verification_status && s.verification_status !== "pending" && (
+        <div className="mb-1.5">
+          <VerifiedBadge
+            status={s.verification_status}
+            verifiedAt={s.last_verified_at}
+            size="xs"
+            compact
+          />
+        </div>
+      )}
       {note && (
         <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground mb-1.5">
           <StickyNote className="w-3 h-3 mt-0.5 shrink-0 text-gold-dark/70" />

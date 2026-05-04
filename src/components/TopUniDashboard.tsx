@@ -1623,10 +1623,48 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   // Only generate pathway if profile is actually filled
   const isProfileFilled = profile.fullName && profile.fullName !== "Student" && profile.gpa && profile.targetCountries.length > 0;
 
+  /* Tabs state — promoted to a useState so other surfaces (Pipeline's
+     "Ask the AI counselor about this" button) can switch us to the
+     counselor tab via sessionStorage on mount. Default mirrors the
+     previous defaultValue logic: profile filled → strategy tab,
+     otherwise → counselor (which is more useful for empty-profile
+     visitors). */
+  const [activeTab, setActiveTab] = useState<string>(isProfileFilled ? "pathway" : "counselor");
+
   useEffect(() => {
     if (!pathwayGenerated && isProfileFilled) {
       generatePathway();
     }
+  }, []);
+
+  /* Counselor prefill from another surface — when the user clicks
+     "Ask the AI counselor about this" on the Pipeline detail sheet
+     (or any future cross-surface CTA), the source stashes a payload
+     in sessionStorage. On mount we drain it: switch to the counselor
+     tab and seed the input with the suggested question, then delete
+     the key so a refresh doesn't re-fire.
+
+     Stale guard: ignore prefills older than 5 minutes (e.g. user
+     navigated away and back hours later — we shouldn't surprise them
+     with an old question). */
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("topuni-counselor-prefill");
+      if (!raw) return;
+      sessionStorage.removeItem("topuni-counselor-prefill");
+      const payload = JSON.parse(raw) as {
+        scholarshipId?: string;
+        scholarshipName?: string;
+        question?: string;
+        ts?: number;
+      };
+      if (!payload?.question) return;
+      if (typeof payload.ts === "number" && Date.now() - payload.ts > 5 * 60_000) return;
+      setActiveTab("counselor");
+      setChatInput(payload.question);
+      // Focus the textarea so the user can edit before sending.
+      setTimeout(() => chatTextareaRef.current?.focus(), 100);
+    } catch { /* ignore */ }
   }, []);
 
   /* Auto-greet the counselor when the user opens chat empty-handed but
@@ -2146,7 +2184,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       </motion.div>
 
       {/* Dashboard — two surfaces only: Strategy (the report) and Counselor (chat) */}
-      <Tabs defaultValue={isProfileFilled ? "pathway" : "counselor"} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="flex flex-wrap items-center gap-3 border-b border-border pb-1">
           <TabsList className="bg-transparent p-0 h-auto gap-7 rounded-none -mb-[1px]">
             <TabsTrigger value="pathway" className="data-[state=active]:text-foreground data-[state=active]:border-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent border-b-2 border-transparent text-muted-foreground hover:text-foreground rounded-none px-0 pb-3 pt-0 text-sm font-medium gap-1.5 bg-transparent">
