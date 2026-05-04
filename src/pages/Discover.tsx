@@ -1887,7 +1887,24 @@ const Discover = ({ language = "en" }: Props) => {
 
   const filtered = useMemo(() => {
     let list = ranked;
-    if (filters.search) { const q = filters.search.toLowerCase(); list = list.filter(s => s.scholarship_name.toLowerCase().includes(q) || (s.host_country?.toLowerCase() || "").includes(q) || (s.provider_name?.toLowerCase() || "").includes(q)); }
+    if (filters.search) {
+      // Search now hits the fields a user actually types when looking
+      // for a scholarship — name, provider, host country PLUS the
+      // semantic surfaces (fields of study, eligible nationalities,
+      // best-for tags) that previously returned zero results for
+      // intuitive queries like "STEM", "leadership", or "Africa".
+      const q = filters.search.toLowerCase();
+      const matchesArr = (arr: string[] | null | undefined) =>
+        Array.isArray(arr) && arr.some(v => typeof v === "string" && v.toLowerCase().includes(q));
+      list = list.filter(s =>
+        s.scholarship_name.toLowerCase().includes(q)
+        || (s.host_country?.toLowerCase() || "").includes(q)
+        || (s.provider_name?.toLowerCase() || "").includes(q)
+        || matchesArr(s.target_fields)
+        || matchesArr(s.eligible_countries)
+        || matchesArr(s.best_for_tags)
+      );
+    }
     if (filters.coverage !== "all") list = list.filter(s => s.coverage_type === filters.coverage);
     if (filters.degree !== "all") list = list.filter(s => s.target_degree_level?.some(d => d.toLowerCase() === filters.degree.toLowerCase()));
     if (filters.selectivity !== "all") {
@@ -2287,7 +2304,7 @@ const Discover = ({ language = "en" }: Props) => {
                 <div className="max-w-7xl mx-auto px-6 sm:px-8 py-3 flex items-center gap-2.5 flex-wrap">
                   <div className="relative flex-1 min-w-[200px] max-w-md">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                    <Input ref={searchInputRef} value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} placeholder="Search scholarships, providers, countries…  (press / to focus)"
+                    <Input ref={searchInputRef} value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} placeholder="Search names, providers, fields, tags…   (/ to focus)"
                       className="pl-10 h-10 text-sm rounded-lg" />
                     {filters.search && <button onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>}
                   </div>
