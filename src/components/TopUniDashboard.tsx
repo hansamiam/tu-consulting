@@ -27,6 +27,7 @@ import { PremiumGate } from "@/components/PremiumGate";
 import { BriefHeroStats } from "@/components/brief/BriefHeroStats";
 import { BriefChapterNav } from "@/components/brief/BriefChapterNav";
 import { BriefMasthead } from "@/components/brief/BriefMasthead";
+import { ProSectionsTeaser } from "@/components/brief/ProSectionsTeaser";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { DeadlineTimeline } from "@/components/brief/DeadlineTimeline";
 import { FundingStack } from "@/components/brief/FundingStack";
@@ -556,23 +557,44 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combine
             <div className="space-y-2.5">
               {visible.map((it, i) => renderItem(it, i))}
             </div>
-            {gated.length > 0 && (
-              <div className="mt-4">
-                <PremiumGate
-                  gateId="brief-funding-extra-matches"
-                  headline={isRu
+            {gated.length > 0 && (() => {
+              // Compute the concrete funding value the user is leaving on
+              // the table — sum of estimated_total_value_usd across the
+              // gated rows that we matched to live DB entries. Shows up in
+              // the gate headline so the user sees exactly what's behind
+              // the lock instead of a generic "unlock more".
+              const gatedUsd = gated.reduce(
+                (sum, it) => sum + (it.match?.estimated_total_value_usd || 0),
+                0,
+              );
+              const valueText = gatedUsd >= 1_000_000
+                ? `$${(gatedUsd / 1_000_000).toFixed(1)}M`
+                : gatedUsd >= 1000
+                  ? `$${Math.round(gatedUsd / 1000)}K`
+                  : null;
+              const headline = valueText
+                ? (isRu
+                    ? `Ещё ${gated.length} совпадений · ${valueText} потенциального финансирования`
+                    : `${gated.length} more matches · ${valueText} more in potential funding`)
+                : (isRu
                     ? `Открыть ещё ${gated.length} ${gated.length === 1 ? "стипендию" : "совпадений"}`
-                    : `Unlock ${gated.length} more ${gated.length === 1 ? "match" : "matches"}`}
-                  subline={isRu
-                    ? "Топ-3 видны бесплатно. Pro раскрывает остальные совпадения с разбивкой стратегии под каждое."
-                    : "Top 3 are free. Pro unlocks the remaining matches with strategy notes for each."}
-                >
-                  <div className="space-y-2.5">
-                    {gated.map((it, i) => renderItem(it, i + visible.length))}
-                  </div>
-                </PremiumGate>
-              </div>
-            )}
+                    : `Unlock ${gated.length} more ${gated.length === 1 ? "match" : "matches"}`);
+              return (
+                <div className="mt-4">
+                  <PremiumGate
+                    gateId="brief-funding-extra-matches"
+                    headline={headline}
+                    subline={isRu
+                      ? "Топ-3 видны бесплатно. Pro раскрывает все ранжированные совпадения со стратегией под каждое и разбивкой match-score."
+                      : "Top 3 are free. Pro unlocks every ranked match with strategy notes and per-factor match-score breakdown."}
+                  >
+                    <div className="space-y-2.5">
+                      {gated.map((it, i) => renderItem(it, i + visible.length))}
+                    </div>
+                  </PremiumGate>
+                </div>
+              );
+            })()}
           </>
         );
       })()}
@@ -2367,6 +2389,15 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             regeneratingSectionId={regeneratingSectionId}
                             tier={reportGrade}
                           />
+                        )}
+                        {/* Pro-only sections teaser — basic-tier non-Pro
+                            users get a final block previewing the three
+                            sections Pro adds (Career ROI, Visa, Budget).
+                            Each card opens the comparison modal with the
+                            matching gateId so funnel telemetry attributes
+                            which Pro section the user clicked. */}
+                        {!pathwayLoading && reportGrade === "basic" && !isMember && (
+                          <ProSectionsTeaser isRu={isRu} />
                         )}
                       </>
                     );

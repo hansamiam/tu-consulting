@@ -43,6 +43,24 @@ const ROWS: Row[] = [
     pro: "All 12 weeks with milestone tracking and weekly nudges",
   },
   {
+    id: "brief-pro-section-career-roi",
+    label: "Career ROI breakdown",
+    free: false,
+    pro: "Salary ranges, employment rates, notable employers, 5–10 year alumni trajectories per top-3 university",
+  },
+  {
+    id: "brief-pro-section-visa",
+    label: "Visa & post-graduation pathway",
+    free: false,
+    pro: "Per-country student-visa difficulty for your nationality, post-study work, PR pathway",
+  },
+  {
+    id: "brief-pro-section-monthly-budget",
+    label: "Monthly budget breakdown",
+    free: false,
+    pro: "Realistic rent, food, transport, insurance per top-3 city — with scholarship coverage map",
+  },
+  {
     id: "counselor-free-limit",
     label: "TopUni Counselor",
     free: "5 messages",
