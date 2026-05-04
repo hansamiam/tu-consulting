@@ -78,6 +78,7 @@ export default function AdminScholarshipVerification() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkFillBusy, setBulkFillBusy] = useState(false);
   const [discoverBusy, setDiscoverBusy] = useState(false);
+  const [scrapeBusy, setScrapeBusy] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -213,6 +214,39 @@ export default function AdminScholarshipVerification() {
           </div>
           {selected.size === 0 && (
             <div className="ml-auto flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={scrapeBusy}
+                onClick={async () => {
+                  setScrapeBusy(true);
+                  try {
+                    const { data, error } = await supabase.functions.invoke<{
+                      ok: boolean;
+                      dispatched?: number;
+                      results?: Array<{ source_id: string; name: string; ok: boolean; status: number; ms: number }>;
+                    }>("scrape-cron-dispatcher", { body: { force_all: false } });
+                    if (error) throw new Error(error.message);
+                    const dispatched = data?.dispatched ?? 0;
+                    const successful = (data?.results ?? []).filter(r => r.ok).length;
+                    toast({
+                      title: dispatched === 0 ? "No sources due" : `Scraped ${successful}/${dispatched} sources`,
+                      description: dispatched === 0
+                        ? "All active sources are within their frequency window. Re-run later or set is_active=false on stale ones."
+                        : `Per-source results in scrape_runs table. Newly-extracted scholarships land in pending status; promote via the row buttons.`,
+                    });
+                    await fetchAll();
+                  } catch (e) {
+                    toast({ title: "Scrape failed", description: (e as Error).message, variant: "destructive" });
+                  }
+                  setScrapeBusy(false);
+                }}
+                className="gap-1.5"
+                title="Walk the scholarship_sources registry, pick due sources (by frequency_hours), and fan out scrape-source calls. Newly-scraped scholarships at confidence ≥0.85 auto-publish to the database."
+              >
+                {scrapeBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                Run scrape dispatcher
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
