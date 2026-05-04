@@ -860,15 +860,15 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
             inline text). The number / label is the most decision-relevant
             fact a student wants on the card. */}
         {award && !isFullRide && (
-          <div className="inline-flex self-start items-center gap-1.5 text-[12px] font-semibold text-foreground bg-muted/40 border border-border/60 px-2.5 py-1 rounded-md">
-            {award}
+          <div className="inline-flex self-start items-center gap-1.5 text-[12px] font-semibold text-foreground bg-muted/40 border border-border/60 px-2.5 py-1 rounded-md max-w-full">
+            <span className="truncate">{award}</span>
           </div>
         )}
         {/* For full-ride we showed "Full ride" in the top strip already —
             only render the explicit award_amount_text if it adds detail. */}
         {award && isFullRide && s.award_amount_text && s.award_amount_text.toLowerCase() !== "full ride" && (
-          <div className="inline-flex self-start items-center gap-1.5 text-[12px] font-semibold text-gold-dark bg-gold/10 border border-gold/25 px-2.5 py-1 rounded-md">
-            {s.award_amount_text}
+          <div className="inline-flex self-start items-center gap-1.5 text-[12px] font-semibold text-gold-dark bg-gold/10 border border-gold/25 px-2.5 py-1 rounded-md max-w-full">
+            <span className="truncate">{s.award_amount_text}</span>
           </div>
         )}
 
