@@ -2346,7 +2346,11 @@ const Discover = ({ language = "en" }: Props) => {
                     </Button>
                   )}
 
-                  <span className="text-xs text-muted-foreground hidden md:inline ml-auto tabular-nums">{filtered.length} of {ranked.length}</span>
+                  <span className="text-xs text-muted-foreground hidden md:inline ml-auto tabular-nums">
+                    {filtered.length === ranked.length
+                      ? `${ranked.length} ${ranked.length === 1 ? "result" : "results"}`
+                      : `${filtered.length} of ${ranked.length}`}
+                  </span>
                 </div>
               </div>
 
