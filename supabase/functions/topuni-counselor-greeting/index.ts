@@ -50,6 +50,18 @@ interface GreetingOutput {
   follow_ups?: string[];
 }
 
+/* The user's pipeline state — names, deadlines, and statuses for
+ * scholarships they've saved or moved through application stages.
+ * Optional: if absent, the greeting falls back to brief + profile only.
+ * When present (engaged user with a populated pipeline) the greeting
+ * is allowed to lead with a deadline urgency or a specific saved
+ * scholarship the user has open. */
+interface SavedScholarship {
+  name: string;
+  application_deadline?: string | null;
+  status?: string | null;
+}
+
 function isolateJson(raw: string): string {
   let s = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
   const first = s.indexOf("{");
@@ -81,13 +93,41 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "POST only" });
 
-  let body: { profile?: Profile; briefContent?: string; language?: string };
+  let body: {
+    profile?: Profile;
+    briefContent?: string;
+    language?: string;
+    savedScholarships?: SavedScholarship[];
+  };
   try { body = await req.json(); }
   catch { return json(400, { error: "Invalid JSON body" }); }
 
   const profile = body.profile ?? {};
   const brief = (body.briefContent ?? "").trim();
   const lang = body.language === "ru" ? "Russian" : "English";
+
+  // Dedupe + cap saved scholarships at 8 — the greeting only needs to
+  // reference the most-relevant ones (closest deadline first), not the
+  // entire pipeline. Sort by deadline urgency so the closest is at top.
+  const savedRaw = Array.isArray(body.savedScholarships) ? body.savedScholarships : [];
+  const seenNames = new Set<string>();
+  const saved = savedRaw
+    .filter((s): s is SavedScholarship =>
+      !!s && typeof s.name === "string" && s.name.length > 2 && !seenNames.has(s.name) && (seenNames.add(s.name), true)
+    )
+    .map((s) => {
+      const days = s.application_deadline
+        ? Math.ceil((new Date(s.application_deadline).getTime() - Date.now()) / 86400000)
+        : null;
+      return { ...s, days };
+    })
+    .sort((a, b) => {
+      if (a.days === null && b.days === null) return 0;
+      if (a.days === null) return 1;
+      if (b.days === null) return -1;
+      return a.days - b.days;
+    })
+    .slice(0, 8);
 
   // Need at least a name + something else to write a real greeting.
   if (!profile.fullName) {
@@ -120,15 +160,16 @@ TONE RULES — read carefully, the model usually breaks these:
 - The CLOSING sentence must name a SPECIFIC thing to discuss next — a named scholarship, a deadline, a section of the brief, a gap, an essay angle. Example closers: "Want to start with the Schwarzman timeline, or unpack the IELTS retake plan?" / "The personal essay anchor in your brief is undersold — that's where I'd start." / "Where do you want to push first — Cambridge fit or the funding stack?"
 - Confident, direct, with a point of view. Warm but never sappy. Coach voice, not chatbot. The student should feel like the counselor knows their file and has opinions.
 - ${brief ? "You have READ the brief. Reference it explicitly — a named scholarship, the 30-day call, a noted gap, or a specific paragraph point. Skip brief reference and the greeting reads generic." : "No brief yet. Don't fake it. Invite them to generate one OR start with a specific question that doesn't need brief context."}
+- ${saved.length > 0 ? `The student HAS A LIVE PIPELINE — they've saved ${saved.length} scholarship${saved.length === 1 ? "" : "s"}. Prefer leading with a saved scholarship's deadline urgency or status if any are within 30 days. Examples: "Sara — Schwarzman closes in 11 days and you've moved it to drafting; that's the first thing I'd talk about." Use the actual saved names, not generic phrasing. The follow_ups should also reference saved-pipeline names where natural.` : "The student has no saved pipeline yet. Don't fabricate one — work from the profile + brief only."}
 - One short markdown paragraph. NO bullet lists in the greeting itself (the follow-ups serve that role).
 - Output language: ${lang}.
 
 STUDENT PROFILE:
 ${profileBlock(profile)}
-
+${saved.length > 0 ? `\nSAVED PIPELINE (sorted by deadline urgency — closest first):\n${saved.map((s) => `- ${s.name}${s.days !== null ? ` · ${s.days <= 0 ? "deadline passed" : `${s.days} day${s.days === 1 ? "" : "s"} until deadline`}` : ""}${s.status ? ` · status: ${s.status}` : ""}`).join("\n")}\n` : ""}
 ${brief ? `STRATEGY BRIEF (for grounding — reference it):\n${briefContext}\n` : "(No brief generated yet.)"}
 
-Output the JSON now. The greeting addresses ${firstName} by first name and opens with a concrete observation.`;
+Output the JSON now. The greeting addresses ${firstName} by first name and opens with a concrete observation${saved.length > 0 ? " — preferring a saved-pipeline urgency if any are within 30 days" : ""}.`;
 
   let parsed: GreetingOutput;
   try {

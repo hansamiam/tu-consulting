@@ -1720,14 +1720,27 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
        - chatMessages empty (don't overwrite an existing thread)
        - we haven't already fired for this exact (profile + brief) hash
          in the current session (greetingFiredHash guard) */
+  /* Snapshot of the user's pipeline state for the greeting hash + payload.
+     Must include tracker IDs AND statuses so the greeting refreshes when
+     the pipeline changes (saved a new scholarship → fresh greeting that
+     references it). Sorted+joined for stable hashing. */
+  const trackedSnapshot = useMemo(() => {
+    const ids = Array.from(tracker.shortlist).sort();
+    const statusFingerprint = Object.entries(tracker.statusMap)
+      .map(([id, status]) => `${id}:${status}`)
+      .sort()
+      .join("|");
+    return { ids, statusFingerprint };
+  }, [tracker.shortlist, tracker.statusMap]);
+
   useEffect(() => {
     if (!isProfileFilled) return;
     if (chatMessages.length > 0) return;
     if (greetingLoading) return;
     if (pathwayLoading) return; // wait until streaming is done so the brief is stable
 
-    // Hash the inputs that change the greeting. profile name + countries +
-    // major + GPA + the head of the brief. Cheap djb2-like hash.
+    // Hash the inputs that change the greeting. Profile + brief head +
+    // pipeline fingerprint. Cheap djb2-like hash.
     const briefHead = (pathwayContent || "").slice(0, 800);
     const hashInput = JSON.stringify({
       n: profile.fullName,
@@ -1737,7 +1750,9 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       tc: profile.targetCountries,
       m: profile.major,
       bh: briefHead.length,
-      bs: briefHead.slice(0, 300), // sample the first part of the brief
+      bs: briefHead.slice(0, 300),
+      tr: trackedSnapshot.ids.length,
+      ts: trackedSnapshot.statusFingerprint,
     });
     let h = 5381;
     for (let i = 0; i < hashInput.length; i++) h = (h * 33) ^ hashInput.charCodeAt(i);
@@ -1760,11 +1775,32 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       }
     } catch { /* fall through to fetch */ }
 
-    // Fresh greeting — fire and forget; stash the result on completion.
+    // Fresh greeting. Hydrate saved scholarship names + deadlines from
+    // the DB before calling the edge function — so an engaged user with
+    // a populated pipeline gets a greeting that names "Schwarzman closes
+    // in 11 days" instead of generic profile observations. Skip the
+    // hydrate for users with empty pipelines.
     setGreetingFiredHash(inputHash);
     setGreetingLoading(true);
     (async () => {
       try {
+        let savedScholarships: Array<{ name: string; application_deadline: string | null; status: string | null }> = [];
+        if (trackedSnapshot.ids.length > 0) {
+          const { data: hydrated } = await supabase
+            .from("scholarships")
+            .select("scholarship_id, scholarship_name, application_deadline")
+            // Only hydrate verified/stale rows — the greeting should never
+            // reference broken or pending data.
+            .or("verification_status.is.null,verification_status.in.(verified,stale)")
+            .in("scholarship_id", trackedSnapshot.ids)
+            .limit(20);
+          savedScholarships = (hydrated ?? []).map((r) => ({
+            name: r.scholarship_name,
+            application_deadline: r.application_deadline,
+            status: tracker.statusMap[r.scholarship_id] ?? null,
+          }));
+        }
+
         const { data, error } = await supabase.functions.invoke<{
           ok: boolean; greeting: string; follow_ups: string[]; error?: string;
         }>("topuni-counselor-greeting", {
@@ -1772,6 +1808,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             profile,
             briefContent: pathwayContent ?? "",
             language,
+            savedScholarships,
           },
         });
         if (error || !data?.ok || !data.greeting) {
@@ -1800,6 +1837,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     profile.fullName, profile.gradeLevel, profile.gpa, profile.ielts,
     profile.targetCountries, profile.major, language,
     greetingFiredHash, greetingLoading,
+    trackedSnapshot.ids.length, trackedSnapshot.statusFingerprint,
   ]);
 
   const streamSSE = async (url: string, body: any, onDelta: (chunk: string) => void, onDone: () => void) => {
