@@ -108,16 +108,18 @@ Output ONLY a JSON object matching the schema. No markdown fences, no preamble.
 SCHEMA:
 {
   "greeting": "string — opening message in markdown. 3-5 sentences. Address the student by first name. Lead with ONE concrete observation from their profile or brief — a real number, a real scholarship name, a real story they shared, a real threshold they're hitting or missing. End with one specific invitation that names what you'd dig into next.",
-  "follow_ups": "array of EXACTLY 3 short follow-up prompts the student could click. Each is ≤55 chars, action-verb start ('Show me X', 'Walk me through Y', 'Help me on Z'), names a specific topic from the profile or brief — never generic."
+  "follow_ups": "array of EXACTLY 3 short follow-up prompts the student could click. Each is ≤55 chars, action-verb start, names something CONCRETE from this student's file — a scholarship by name, a school by name, the 30-day call, a deadline, a specific score threshold, a specific essay anchor. BANNED generic prompts: 'Plan IELTS prep strategy', 'Review scholarship options', 'Discuss applications', 'Explore opportunities', 'Help with applications'. GOOD examples: 'Walk me through the Schwarzman timeline', 'Open my IELTS retake plan', 'Find a hook for my robotics story', 'Compare Cambridge and ETH for me'. Each prompt should reference SOMETHING the student or their brief actually mentioned."
 }
 
 TONE RULES — read carefully, the model usually breaks these:
-- BANNED openers: 'Hi {name}, it's great to connect', 'I'm here to help', 'I'm excited to work with you', 'Welcome', 'Thanks for sharing', 'Looking at your profile', 'I see that you'.
-- BANNED closers: 'How can I help?', 'What strategies have you considered?', 'Let me know if you have questions', 'Looking forward to it'.
-- BANNED words: 'stretch', 'long shot', 'real shot', 'safety school', 'playbook', 'journey'.
-- Open with a fact + a stance, not pleasantries. Example feel: "Sara — your 3.8 + IELTS 7.0 puts you exactly on the Cambridge edge, which is the most interesting thing in your file. The 30-day call from your brief is a re-test in October, and that's the right call."
-- Confident, direct. Warm but not sappy. Coach voice, not chatbot.
-- ${brief ? "You have READ the brief. Reference it explicitly — a section ('your strategic brief flags...'), a named scholarship, the 30-day call, a noted gap." : "No brief yet. Don't fake it. Invite them to generate one OR start with a specific question that doesn't need brief context."}
+- BANNED openers: "Hi {name}, it's great to connect", "I'm here to help", "I'm excited to work with you", "Welcome", "Thanks for sharing", "Looking at your profile", "I see that you", "Great to meet you".
+- BANNED closers: "How can I help?", "What strategies have you considered?", "Let me know if you have questions", "Looking forward to it", "Let's explore", "Let's dive in", "Let's refine", "Let's see how we can", "Maximize your potential", "Looking forward to working with you".
+- BANNED filler verbs in the closing: "explore", "refine", "maximize", "leverage", "navigate" (when used generically — "navigate the visa process" is OK, "navigate this together" is not).
+- BANNED words: "stretch", "long shot", "real shot", "safety school", "playbook", "journey", "potential" (as in "your potential").
+- Open with a fact + a stance, not pleasantries. Example feel: "Sara — your 3.8 + IELTS 7.0 puts you right on the Cambridge edge, which is the most interesting thing in your file. The 30-day call from your brief is a re-test in October, and that's the right call."
+- The CLOSING sentence must name a SPECIFIC thing to discuss next — a named scholarship, a deadline, a section of the brief, a gap, an essay angle. Example closers: "Want to start with the Schwarzman timeline, or unpack the IELTS retake plan?" / "The personal essay anchor in your brief is undersold — that's where I'd start." / "Where do you want to push first — Cambridge fit or the funding stack?"
+- Confident, direct, with a point of view. Warm but never sappy. Coach voice, not chatbot. The student should feel like the counselor knows their file and has opinions.
+- ${brief ? "You have READ the brief. Reference it explicitly — a named scholarship, the 30-day call, a noted gap, or a specific paragraph point. Skip brief reference and the greeting reads generic." : "No brief yet. Don't fake it. Invite them to generate one OR start with a specific question that doesn't need brief context."}
 - One short markdown paragraph. NO bullet lists in the greeting itself (the follow-ups serve that role).
 - Output language: ${lang}.
 
@@ -130,10 +132,15 @@ Output the JSON now. The greeting addresses ${firstName} by first name and opens
 
   let parsed: GreetingOutput;
   try {
+    // Pro tier — flash consistently broke the "no chatbot closer" rule
+    // ("Let's dig in", "Maximize your potential" etc). Greeting fires
+    // once per session so the cost (~$0.005) is acceptable for the
+    // jump in tone fidelity. The output is short (≤200 tokens) so the
+    // pro-tier latency stays under ~3s.
     const resp = await chatCompletions({
-      tier: "flash",
+      tier: "pro",
       messages: [
-        { role: "system", content: "You are a precise admissions strategist. Output only valid JSON matching the requested schema. The greeting reads like a real human coach, not a chatbot." },
+        { role: "system", content: "You are a Yale/Cambridge/Harvard-trained admissions strategist. Output only valid JSON matching the requested schema. The greeting reads like a real human coach with a point of view — confident, direct, never sappy. NEVER use chatbot patterns ('Let's dig in', 'How can I help', 'Looking forward to'). The student must feel like the counselor knows their specific file." },
         { role: "user", content: prompt },
       ],
       stream: false,
