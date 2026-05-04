@@ -89,9 +89,9 @@ interface WizardData {
 }
 
 interface FilterState {
-  search: string; coverage: string; degree: string; effort: string;
+  search: string; coverage: string; degree: string;
   field: string; selectivity: string; hostCountry: string;
-  onlyEligible: boolean; closingSoon: boolean; onlyShortlisted: boolean;
+  onlyEligible: boolean; closingSoon: boolean;
 }
 
 type Phase = "landing" | "wizard" | "analyzing" | "results";
@@ -434,7 +434,7 @@ const daysUntil = (d: string | null) => d ? Math.ceil((new Date(d).getTime() - D
 
 const WIZARD_STEPS = 4;
 const DEFAULT_WIZARD: WizardData = { fullName: "", email: "", nationality: "", customNationality: "", degree: "", field: "", gpa: "", gpaScale: "4.0", ielts: "", budget: "low" };
-const DEFAULT_FILTERS: FilterState = { search: "", coverage: "all", degree: "all", effort: "all", field: "all", selectivity: "all", hostCountry: "all", onlyEligible: false, closingSoon: false, onlyShortlisted: false };
+const DEFAULT_FILTERS: FilterState = { search: "", coverage: "all", degree: "all", field: "all", selectivity: "all", hostCountry: "all", onlyEligible: false, closingSoon: false };
 const COVERAGE_LABEL: Record<string, string> = { full_ride: "Full ride", tuition_only: "Tuition only", stipend: "Stipend" };
 
 /* Convert raw DB strings (often snake_case or all_lowercase) into human prose.
@@ -1890,7 +1890,6 @@ const Discover = ({ language = "en" }: Props) => {
     if (filters.search) { const q = filters.search.toLowerCase(); list = list.filter(s => s.scholarship_name.toLowerCase().includes(q) || (s.host_country?.toLowerCase() || "").includes(q) || (s.provider_name?.toLowerCase() || "").includes(q)); }
     if (filters.coverage !== "all") list = list.filter(s => s.coverage_type === filters.coverage);
     if (filters.degree !== "all") list = list.filter(s => s.target_degree_level?.some(d => d.toLowerCase() === filters.degree.toLowerCase()));
-    if (filters.effort !== "all") list = list.filter(s => s.effort === filters.effort);
     if (filters.selectivity !== "all") {
       // "Competitive" (high) intentionally matches both `high` and `very_high`
       // so the filter UI can stay at 3 levels instead of 4.
@@ -1902,14 +1901,13 @@ const Discover = ({ language = "en" }: Props) => {
     if (filters.hostCountry !== "all") list = list.filter(s => s.host_country === filters.hostCountry);
     if (filters.onlyEligible) list = list.filter(s => s.eligibility === "eligible" || s.eligibility === "likely");
     if (filters.closingSoon) list = list.filter(s => { const d = s.application_deadline ? Math.ceil((new Date(s.application_deadline).getTime() - Date.now()) / 86400000) : null; return d !== null && d > 0 && d <= 90; });
-    if (filters.onlyShortlisted) list = list.filter(s => shortlist.has(s.scholarship_id));
     if (!showHidden) list = list.filter(s => !hidden.has(s.scholarship_id));
     if (sortBy === "deadline") return [...list].sort((a, b) => { if (!a.application_deadline) return 1; if (!b.application_deadline) return -1; return new Date(a.application_deadline).getTime() - new Date(b.application_deadline).getTime(); });
     if (sortBy === "value") return [...list].sort((a, b) => (b.estimated_total_value_usd ?? 0) - (a.estimated_total_value_usd ?? 0));
     if (sortBy === "effort") { const o: Record<string, number> = { low: 0, medium: 1, high: 2 }; return [...list].sort((a, b) => (o[a.effort] ?? 1) - (o[b.effort] ?? 1)); }
     if (sortBy === "selectivity") { const o: Record<string, number> = { low: 0, medium: 1, high: 2, very_high: 3, unknown: 4 }; return [...list].sort((a, b) => (o[a.selectivity] ?? 4) - (o[b.selectivity] ?? 4)); }
     return list;
-  }, [ranked, filters, sortBy, shortlist, hidden, showHidden]);
+  }, [ranked, filters, sortBy, hidden, showHidden]);
 
   const sections = useMemo(() => {
     const top = filtered.filter(s => s.priority === "strong_match");
@@ -1972,7 +1970,7 @@ const Discover = ({ language = "en" }: Props) => {
   const [openCollection, setOpenCollection] = useState<string | null>(null);
   const activeCollection = liveCollections.find(c => c.def.id === openCollection) ?? null;
 
-  const activeFiltersCount = [filters.search !== "", filters.coverage !== "all", filters.degree !== "all", filters.effort !== "all", filters.selectivity !== "all", filters.field !== "all", filters.hostCountry !== "all", filters.onlyEligible, filters.closingSoon, filters.onlyShortlisted].filter(Boolean).length;
+  const activeFiltersCount = [filters.search !== "", filters.coverage !== "all", filters.degree !== "all", filters.selectivity !== "all", filters.field !== "all", filters.hostCountry !== "all", filters.onlyEligible, filters.closingSoon].filter(Boolean).length;
 
   const analysisTexts = [
     `Scanning ${rows.length || 200}+ verified scholarships`,
