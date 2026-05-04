@@ -2382,23 +2382,57 @@ const Discover = ({ language = "en" }: Props) => {
           {/* ══ RESULTS — distinctive app-shell experience ══ */}
           {phase === "results" && (
             <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7 }}>
-              {/* ─── Profile context strip — single line, premium-tech feel.
-                  Anchors the user's profile chips + an Edit affordance.
-                  Result count moved to the toolbar (the persistent
-                  surface) so it stays visible while scrolling instead
-                  of being a duplicate-and-disappearing stat. */}
-              <div className="relative bg-gradient-to-b from-canvas-soft to-background border-b border-border/60">
-                <div className="max-w-7xl mx-auto px-5 sm:px-8 py-4 flex items-baseline gap-3 flex-wrap">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark shrink-0">Your shortlist</span>
-                  <span className="text-muted-foreground/40">·</span>
-                  {[profile.country, profile.degree, profile.field, profile.gpa ? `GPA ${profile.gpa}/${profile.gpaScale}` : null, profile.ielts ? `IELTS ${profile.ielts}` : null].filter(Boolean).map(chip => (
-                    <span key={chip} className="text-xs text-foreground/80 bg-card border border-border px-2 py-0.5 rounded-md font-medium">{chip}</span>
-                  ))}
-                  <button onClick={resetProfile} className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 underline-offset-4 hover:underline">
-                    Edit
-                  </button>
-                </div>
-              </div>
+              {/* ─── Profile context strip — branches based on whether the
+                  user has profile data. When profile is filled: chips
+                  showing the user's scoring inputs + "Edit" affordance.
+                  When empty: a "Build profile" CTA so the user has a
+                  one-click path to fit-driven bucketing instead of just
+                  browsing the entire DB blind. */}
+              {(() => {
+                const profileChips = [
+                  profile.country,
+                  profile.degree,
+                  profile.field,
+                  profile.gpa ? `GPA ${profile.gpa}/${profile.gpaScale}` : null,
+                  profile.ielts ? `IELTS ${profile.ielts}` : null,
+                ].filter(Boolean) as string[];
+                const isProfileFilled = profileChips.length > 0;
+                return (
+                  <div className="relative bg-gradient-to-b from-canvas-soft to-background border-b border-border/60">
+                    <div className="max-w-7xl mx-auto px-5 sm:px-8 py-4 flex items-baseline gap-3 flex-wrap">
+                      {isProfileFilled ? (
+                        <>
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark shrink-0">Your shortlist</span>
+                          <span className="text-muted-foreground/40">·</span>
+                          {profileChips.map(chip => (
+                            <span key={chip} className="text-xs text-foreground/80 bg-card border border-border px-2 py-0.5 rounded-md font-medium">{chip}</span>
+                          ))}
+                          <button onClick={resetProfile} className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 underline-offset-4 hover:underline">
+                            Edit
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark shrink-0">Database</span>
+                          <span className="text-muted-foreground/40">·</span>
+                          <span className="text-xs text-foreground/80">
+                            <span className="font-semibold tabular-nums">{ranked.length}</span> scholarships
+                          </span>
+                          <span className="text-muted-foreground/40">·</span>
+                          <button
+                            onClick={() => setPhase("wizard")}
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gold-dark hover:text-foreground transition-colors group"
+                          >
+                            <Sparkles className="w-3 h-3" />
+                            Build profile to see fit scoring
+                            <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Curated collections — preset filter combos for natural
                   search intents, rendered as compact text-pills below the
