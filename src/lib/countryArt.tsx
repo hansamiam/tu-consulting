@@ -309,3 +309,38 @@ export const CountryArt = ({ country, className = "" }: { country: string | null
   const art = (country && COUNTRY_ART[country]) || globe;
   return <span className={className}>{art}</span>;
 };
+
+/* CampusPattern — a tiling SVG of gothic-arch windows + classical columns
+ * + a low silhouette of a campus quad. Layered into the card band between
+ * the gradient and the country landmark so each card whispers
+ * "imagine yourself walking these courtyards" without per-program
+ * photography. Stroke uses currentColor; render with text-white/X for
+ * the right luminance against the band. */
+export const CampusPattern = ({ className = "", patternId = "campus-pattern" }: { className?: string; patternId?: string }) => (
+  <svg
+    viewBox="0 0 600 60"
+    preserveAspectRatio="xMidYMid slice"
+    className={className}
+    aria-hidden
+  >
+    <defs>
+      <pattern id={patternId} x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
+        {/* Gothic arch window — pointed top + cross-mullion */}
+        <path
+          d="M10 50 L10 25 Q10 12 20 12 Q30 12 30 25 L30 50 Z"
+          fill="none" stroke="currentColor" strokeWidth="0.8"
+        />
+        <line x1="20" y1="14" x2="20" y2="50" stroke="currentColor" strokeWidth="0.5" />
+        <line x1="10" y1="32" x2="30" y2="32" stroke="currentColor" strokeWidth="0.5" />
+        {/* Classical column / pilaster between arches */}
+        <line x1="40" y1="12" x2="40" y2="50" stroke="currentColor" strokeWidth="0.7" />
+        <rect x="38" y="46" width="4" height="3" fill="currentColor" opacity="0.5" />
+        <rect x="38" y="13" width="4" height="2" fill="currentColor" opacity="0.5" />
+        {/* Tiny finial / spire above */}
+        <path d="M50 12 L52 6 L54 12 Z" fill="currentColor" opacity="0.6" />
+        <line x1="52" y1="12" x2="52" y2="50" stroke="currentColor" strokeWidth="0.4" />
+      </pattern>
+    </defs>
+    <rect x="0" y="0" width="600" height="60" fill={`url(#${patternId})`} />
+  </svg>
+);

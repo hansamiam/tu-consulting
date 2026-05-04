@@ -29,7 +29,7 @@ import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDiv
 import { MatchScoreBreakdown } from "@/components/discover/MatchScoreBreakdown";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
-import { CountryArt } from "@/lib/countryArt";
+import { CountryArt, CampusPattern } from "@/lib/countryArt";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSemanticScholarshipMatch } from "@/hooks/useSemanticScholarshipMatch";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
@@ -683,6 +683,45 @@ const canonicalCountry = (country: string): string => {
   return c;
 };
 
+/* Extract a domain from a scholarship's URL for favicon fetching.
+ * Returns null when the URL is missing or malformed. */
+const domainFor = (url: string | null | undefined): string | null => {
+  if (!url) return null;
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+};
+
+/* ProviderFavicon — small institutional crest pulled from Google's
+ * favicon service. For university scholarships this surfaces real
+ * Harvard / Cambridge / Oxford / etc. shields next to the provider
+ * name, anchoring the card with institutional identity instead of
+ * leaving the text to do the lifting alone.
+ *
+ * Falls back to nothing (component returns null) when:
+ *   · no URL provided
+ *   · URL is malformed
+ *   · favicon fetch errors (Google's service blocked, 404, etc.) */
+const ProviderFavicon = ({ url, size = 16, className = "" }: { url: string | null | undefined; size?: number; className?: string }) => {
+  const [failed, setFailed] = useState(false);
+  const domain = domainFor(url);
+  if (!domain || failed) return null;
+  return (
+    <img
+      src={`https://www.google.com/s2/favicons?domain=${domain}&sz=${size * 4}`}
+      alt=""
+      width={size}
+      height={size}
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className={`shrink-0 rounded-sm bg-white/60 ${className}`}
+      aria-hidden
+    />
+  );
+};
+
 /* Match dial colour pairs (HSL strings, navy/gold only) */
 const dialColors = (priority: Scored["priority"]): [string, string] =>
   priority === "strong_match" ? ["hsl(38 70% 40%)",  "hsl(42 80% 65%)"] :
@@ -903,6 +942,7 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
                 {shortCountry(s.host_country)}
               </span>
             )}
+            <ProviderFavicon url={s.official_url || s.source_url} size={14} className="ring-1 ring-border/60" />
             {s.provider_name && (
               <p className="text-xs text-muted-foreground truncate">{s.provider_name}</p>
             )}
@@ -1018,10 +1058,16 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           France, Mt Fuji for Japan, etc.). The band reads as a stylised
           travel poster strip rather than a database row. Text stays on
           the left where the silhouette opacity is lowest. */}
-      <div className={`relative bg-gradient-to-r ${accent} px-4 h-12 flex items-center gap-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/95 overflow-hidden whitespace-nowrap`}>
-        <CountryArt country={s.host_country} className="absolute right-2 inset-y-0 h-full opacity-30 pointer-events-none" />
-        {/* fade-from-left so silhouette doesn't compete with text */}
-        <span className={`absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-transparent pointer-events-none`} />
+      <div className={`relative bg-gradient-to-r ${accent} px-4 h-14 flex items-center gap-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/95 overflow-hidden whitespace-nowrap`}>
+        {/* Architectural texture — gothic arches + classical columns tiled
+            across the band at low opacity. Whispers "campus courtyard"
+            so the band feels less like a colored stripe and more like a
+            postcard the student is dreaming about walking through. */}
+        <CampusPattern patternId={`campus-${s.scholarship_id}`} className="absolute inset-0 w-full h-full text-white opacity-[0.18] pointer-events-none" />
+        {/* Country landmark sits ABOVE the campus pattern, anchored right */}
+        <CountryArt country={s.host_country} className="absolute right-2 inset-y-0 h-full opacity-35 pointer-events-none" />
+        {/* fade-from-left so silhouette + pattern don't compete with text */}
+        <span className={`absolute inset-0 bg-gradient-to-r from-black/30 via-black/5 to-transparent pointer-events-none`} />
         <span className="relative flex items-center gap-2 min-w-0 flex-1">
           {s.host_country && (
             <span className="truncate drop-shadow-sm">{shortCountry(s.host_country)}</span>
@@ -1048,9 +1094,12 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
             {s.scholarship_name}
           </h3>
           {s.provider_name && (
-            <p className="text-[11px] text-muted-foreground/85 line-clamp-1">
-              {s.provider_name}
-            </p>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <ProviderFavicon url={s.official_url || s.source_url} size={14} className="ring-1 ring-border/50" />
+              <p className="text-[11px] text-muted-foreground/85 line-clamp-1">
+                {s.provider_name}
+              </p>
+            </div>
           )}
         </div>
 
