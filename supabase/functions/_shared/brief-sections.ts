@@ -108,7 +108,7 @@ const positioning: SectionSpec = {
   reasoning: { effort: "high" },
   buildPrompt: (ctx) => `Output: just the "## Strategic positioning" section, in ${ctx.lang}.
 
-Write 2-3 paragraphs of competitive positioning analysis ${ctx.audienceLine}. Quantitative GPA percentile context, IELTS band relative to thresholds at the student's target countries, where the profile is strongest, where it is weakest. Cite numbers.
+OPEN with a single thesis sentence (≤30 words) that names this student's strongest signal AND biggest competitive reality in one breath — this sentence is the report's editorial pull-quote, so it must stand on its own without context. After that opening sentence, write 2-3 paragraphs of full competitive positioning analysis ${ctx.audienceLine}: quantitative GPA percentile context, IELTS band relative to thresholds at the student's target countries, where the profile is strongest, where it is weakest. Cite numbers.
 
 After the paragraphs, output exactly this on its own line:
 **Your 30-day call:** [one specific, single-sentence strategic action this student should take in the next 30 days]
