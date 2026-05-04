@@ -83,6 +83,12 @@ verify_jwt = true
 [functions.verify-scholarship-cron]
 verify_jwt = true
 
+[functions.enrich-scholarship-content]
+verify_jwt = true
+
+[functions.enrich-scholarships-content-cron]
+verify_jwt = true
+
 [functions.og-brief]
 verify_jwt = false
 

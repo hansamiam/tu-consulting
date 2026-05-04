@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   CheckCircle2, AlertTriangle, ExternalLink, Search, ChevronRight,
-  ZapOff, Loader2, Filter, RefreshCw,
+  ZapOff, Loader2, Filter, RefreshCw, Sparkles,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -46,6 +46,10 @@ interface Row {
   verification_status: string | null;
   last_verified_at: string | null;
   why_this_fits: string | null;
+  ideal_candidate_profile: string | null;
+  how_to_win: string | null;
+  what_to_prepare_first: string | null;
+  best_for_tags: string[] | null;
 }
 
 interface Coverage {
@@ -72,6 +76,7 @@ export default function AdminScholarshipVerification() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busyId, setBusyId] = useState<string | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkFillBusy, setBulkFillBusy] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -89,7 +94,7 @@ export default function AdminScholarshipVerification() {
     const [rowsRes, covRes] = await Promise.all([
       supabase
         .from("scholarships")
-        .select("scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, application_deadline, official_url, source_url, data_source, verification_status, last_verified_at, why_this_fits")
+        .select("scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, application_deadline, official_url, source_url, data_source, verification_status, last_verified_at, why_this_fits, ideal_candidate_profile, how_to_win, what_to_prepare_first, best_for_tags")
         .order("verification_status", { nullsFirst: false })
         .order("last_verified_at", { ascending: true, nullsFirst: true })
         .limit(500),
@@ -205,6 +210,47 @@ export default function AdminScholarshipVerification() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Filter by name, country, URL…" className="pl-9 h-9" />
           </div>
+          {selected.size === 0 && (
+            <div className="ml-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={bulkFillBusy}
+                onClick={async () => {
+                  setBulkFillBusy(true);
+                  try {
+                    const { data, error } = await supabase.functions.invoke<{
+                      ok: boolean;
+                      candidates: number;
+                      filled: number;
+                      fields_filled_total?: number;
+                      already_full?: number;
+                      failed?: number;
+                    }>("enrich-scholarships-content-cron", { body: {} });
+                    if (error) throw new Error(error.message);
+                    const c = data?.candidates ?? 0;
+                    const f = data?.filled ?? 0;
+                    const ff = data?.fields_filled_total ?? 0;
+                    toast({
+                      title: c === 0 ? "All rows have full content" : `Filled ${f} row${f === 1 ? "" : "s"} (${ff} fields)`,
+                      description: c === 0
+                        ? "No rows are missing soft descriptive fields."
+                        : `Processed ${c} candidate${c === 1 ? "" : "s"} this batch. Re-run to continue.`,
+                    });
+                    await fetchAll();
+                  } catch (e) {
+                    toast({ title: "Bulk fill failed", description: (e as Error).message, variant: "destructive" });
+                  }
+                  setBulkFillBusy(false);
+                }}
+                className="gap-1.5"
+                title="Fill missing why_this_fits / how_to_win / etc. for up to 50 rows. Idempotent — only writes empty fields."
+              >
+                {bulkFillBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                Run bulk content fill
+              </Button>
+            </div>
+          )}
           {selected.size > 0 && (
             <div className="flex items-center gap-2 ml-auto">
               <span className="text-xs text-muted-foreground tabular-nums">{selected.size} selected</span>
@@ -267,6 +313,35 @@ export default function AdminScholarshipVerification() {
                 await promote([r.scholarship_id], "broken");
                 setBusyId(null);
               }}
+              onFillContent={async () => {
+                setBusyId(r.scholarship_id);
+                try {
+                  const { data, error } = await supabase.functions.invoke<{
+                    ok: boolean;
+                    status: string;
+                    filled: string[];
+                  }>("enrich-scholarship-content", { body: { scholarship_id: r.scholarship_id } });
+                  if (error) throw new Error(error.message);
+                  const status = data?.status ?? "unknown";
+                  const filled = data?.filled ?? [];
+                  toast({
+                    title: status === "already_full"
+                      ? "Already full"
+                      : filled.length > 0
+                        ? `Filled ${filled.length} field${filled.length === 1 ? "" : "s"}`
+                        : "No fields filled",
+                    description: status === "already_full"
+                      ? "All soft descriptive fields are populated."
+                      : filled.length > 0
+                        ? filled.join(", ")
+                        : "AI did not return valid output. Try again later.",
+                  });
+                  await fetchAll();
+                } catch (e) {
+                  toast({ title: "Fill content failed", description: (e as Error).message, variant: "destructive" });
+                }
+                setBusyId(null);
+              }}
               onReVerify={async () => {
                 setBusyId(r.scholarship_id);
                 try {
@@ -315,12 +390,18 @@ const Stat = ({ label, value, sub, tone = "neutral" }: { label: string; value: s
 };
 
 const RowCard = ({
-  row, checked, onCheck, busy, onPromote, onBreak, onReVerify, index,
+  row, checked, onCheck, busy, onPromote, onBreak, onReVerify, onFillContent, index,
 }: {
   row: Row; checked: boolean; onCheck: (v: boolean) => void;
-  busy: boolean; onPromote: () => void; onBreak: () => void; onReVerify: () => void; index: number;
+  busy: boolean; onPromote: () => void; onBreak: () => void; onReVerify: () => void; onFillContent: () => void; index: number;
 }) => {
   const status = row.verification_status ?? "pending";
+  const missingSoftCount =
+    (row.why_this_fits ? 0 : 1) +
+    (row.ideal_candidate_profile ? 0 : 1) +
+    (row.how_to_win ? 0 : 1) +
+    (row.what_to_prepare_first ? 0 : 1) +
+    (Array.isArray(row.best_for_tags) && row.best_for_tags.length > 0 ? 0 : 1);
   const statusCls = status === "verified" ? "text-success border-success/40 bg-success/5"
     : status === "stale" ? "text-amber-700 border-amber-300/40 bg-amber-50 dark:bg-amber-950/20"
     : status === "broken" ? "text-destructive border-destructive/40 bg-destructive/5"
@@ -342,6 +423,11 @@ const RowCard = ({
                 {row.host_country && <Badge variant="secondary" className="text-[10px]">{row.host_country}</Badge>}
                 {row.data_source && <Badge variant="outline" className="text-[10px]">{row.data_source}</Badge>}
                 <Badge variant="outline" className="text-[10px] capitalize">{row.coverage_type}</Badge>
+                {missingSoftCount > 0 && (
+                  <Badge variant="outline" className="text-[10px] text-amber-700 border-amber-300/40 bg-amber-50 dark:bg-amber-950/20" title="Soft descriptive fields missing — brief/counselor have less grounding context for this row.">
+                    {missingSoftCount}/5 fields empty
+                  </Badge>
+                )}
               </div>
               {row.provider_name && <p className="text-[12px] text-muted-foreground mb-1.5 truncate">{row.provider_name}</p>}
               {row.why_this_fits && <p className="text-[12px] text-foreground/80 leading-snug mb-1.5 line-clamp-2">{row.why_this_fits}</p>}
@@ -373,6 +459,12 @@ const RowCard = ({
                 <Button size="sm" variant="outline" disabled={busy} onClick={onReVerify} className="gap-1.5 h-8" title="Re-fetch the source URL, re-extract via LLM, and either auto-verify (no diffs) or stage the diffs for review.">
                   <RefreshCw className="w-3.5 h-3.5" />
                   Re-verify
+                </Button>
+              )}
+              {missingSoftCount > 0 && (
+                <Button size="sm" variant="outline" disabled={busy} onClick={onFillContent} className="gap-1.5 h-8" title="Fill the missing soft descriptive fields (why_this_fits, how_to_win, etc.) via AI. Only writes empty fields — never overwrites.">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Fill content
                 </Button>
               )}
               {status !== "broken" && (
