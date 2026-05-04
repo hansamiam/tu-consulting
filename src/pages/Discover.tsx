@@ -721,7 +721,18 @@ const StatusBadge = ({ status, onChange, dense = false }: {
   );
 };
 
-/* ─── List row (compact, scannable, table-like) ──────────────────────── */
+/* ─── List row — country-themed, visual identity per program ───────────
+ *
+ * Old design read like a database admin table: identical rows, generic
+ * gold award icon on every row, no regional cue. New design carries the
+ * same "atlas" identity as the cards:
+ *   · 4px country-gradient stripe on the left edge
+ *   · Country landmark silhouette in a tinted square as the row's
+ *     visual anchor (replaces the generic Award icon)
+ *   · Country chip in the meta line so country reads at a glance
+ *   · Award amount as a real visual chip when present
+ *   · Match score circle (when real) replaces the silhouette square
+ */
 const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0 }: {
   s: Scored; onSelect: () => void;
   isBookmarked: boolean; onBookmark: (e: React.MouseEvent) => void;
@@ -730,13 +741,11 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
   isComparing: boolean; onToggleCompare: (e: React.MouseEvent) => void;
   index?: number;
 }) => {
-  const tier = TIER[s.priority];
   const dl = deadlineDisplay(s.application_deadline);
-  // Match score is meaningful only when the user has a profile that
-  // produced real scoring signals (reasons / warnings populated). Without
-  // that, every row shows "0" which makes the list look broken.
   const hasRealScore = s.match > 0 && (s.reasons.length > 0 || s.warnings.length > 0);
   const isFullRide = s.coverage_type === "full_ride";
+  const accent = accentForCountry(s.host_country);
+  const award = s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || null;
 
   return (
     <motion.div
@@ -745,130 +754,147 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
       viewport={{ once: true, margin: "-30px" }}
       transition={{ delay: Math.min(index * 0.018, 0.36), duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       onClick={onSelect}
-      className={`group grid grid-cols-[44px,minmax(0,1fr),auto] sm:grid-cols-[44px,minmax(0,2fr),minmax(0,1.2fr),minmax(0,1fr),auto] items-center gap-4 px-4 py-3.5 border-b border-border/60 hover:bg-canvas-soft/60 cursor-pointer transition-colors ${isHidden ? "opacity-40" : ""}`}
+      className={`group relative flex items-stretch border-b border-border/60 hover:bg-canvas-soft/60 cursor-pointer transition-colors overflow-hidden ${isHidden ? "opacity-40" : ""}`}
     >
-      {/* First column — match score when it's real, otherwise a visual
-          marker (gold Award for full-ride, simple dot otherwise) so the
-          column doesn't show a broken-looking "0" but still anchors the
-          row visually. The HoverCard breakdown is gated on hasRealScore;
-          without a profile the score popover would just show generic
-          factors with no profile-fit reasons. */}
-      {hasRealScore ? (
-        <HoverCard openDelay={120} closeDelay={80}>
-          <HoverCardTrigger asChild>
-            <button
-              type="button"
-              onClick={(e) => e.stopPropagation()}
-              className="flex flex-col items-center cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-gold rounded"
-              aria-label={`Match score: ${s.match} of 100. Hover for breakdown.`}
-            >
-              <span className="font-heading text-lg font-bold tabular-nums leading-none text-foreground">{s.match}</span>
-              <span className={`mt-1 h-1 w-1 rounded-full ${tier.dot}`} />
-            </button>
-          </HoverCardTrigger>
-          <HoverCardContent side="right" align="start" className="p-0 border-0 shadow-none bg-transparent w-auto">
-            <MatchScoreBreakdown
-              scholarshipId={s.scholarship_id}
-              fallback={{
-                match: s.match,
-                application_deadline: s.application_deadline,
-                estimated_total_value_usd: s.estimated_total_value_usd,
-                last_verified_at: s.last_verified_at,
-                verification_status: s.verification_status,
-                passes_eligibility: s.eligibility === "eligible" || s.eligibility === "likely",
-                why_this_fits: s.why_this_fits,
-                reasons: s.reasons,
-                warnings: s.warnings,
-              }}
-              compact
-            />
-          </HoverCardContent>
-        </HoverCard>
-      ) : (
-        <div className="flex items-center justify-center" aria-hidden>
-          {isFullRide ? (
-            <span className="inline-flex items-center justify-center h-7 w-7 rounded-md bg-gold/10 border border-gold/30" title="Full ride">
-              <Award className="h-3.5 w-3.5 text-gold-dark" />
-            </span>
-          ) : (
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />
-          )}
-        </div>
-      )}
+      {/* Country gradient stripe — gives every row regional identity at a
+          glance. Same palette as the card hero band. */}
+      <div className={`w-1 shrink-0 bg-gradient-to-b ${accent} ${isFullRide ? "ring-1 ring-inset ring-gold/30" : ""}`} aria-hidden />
 
-      {/* Name + provider */}
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <h3 className="font-heading font-semibold text-[15px] text-foreground truncate tracking-tight">{s.scholarship_name}</h3>
-        </div>
-        <p className="text-xs text-muted-foreground truncate mt-0.5">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
-      </div>
-
-      {/* Award + deadline (desktop only) */}
-      <div className="hidden sm:block min-w-0">
-        <p className="text-sm text-foreground truncate">{s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || "—"}</p>
-        <div className="flex items-center gap-2 mt-0.5">
-          <p className={`text-xs ${dl.cls}`}>{dl.text}</p>
-          {s.verification_status && s.verification_status !== "pending" && (
-            <VerifiedBadge
-              status={s.verification_status}
-              verifiedAt={s.last_verified_at}
-              size="xs"
-              compact
-            />
-          )}
-        </div>
-      </div>
-
-      {/* Status (desktop only) */}
-      <div className="hidden sm:flex items-center justify-start">
-        <StatusBadge status={status} onChange={onStatusChange} dense />
-      </div>
-
-      {/* Actions — bookmark stays always-visible (it's a stateful affordance);
-          compare + more reveal on hover. Premium-tool pattern. */}
-      <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-        <button
-          onClick={onToggleCompare}
-          aria-label="Add to compare"
-          title="Add to compare"
-          className={`p-2 rounded-md transition-all ${isComparing ? "text-gold-dark bg-gold/10 opacity-100" : "text-muted-foreground hover:text-foreground hover:bg-muted/60 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100"}`}
-        >
-          <GitCompare className="h-3.5 w-3.5" />
-        </button>
-        <button
-          onClick={onBookmark}
-          aria-label={isBookmarked ? "Remove from shortlist" : "Save to shortlist"}
-          className={`p-2 rounded-md transition-all ${isBookmarked ? "text-gold-dark hover:bg-muted/60 opacity-100" : "text-muted-foreground hover:text-gold-dark hover:bg-muted/60 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100"}`}
-        >
-          {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5 text-gold-dark" /> : <Bookmark className="h-3.5 w-3.5" />}
-        </button>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            onClick={(e) => e.stopPropagation()}
-            className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
-            aria-label="More actions"
+      <div className="flex-1 grid grid-cols-[52px,minmax(0,1fr),auto] sm:grid-cols-[52px,minmax(0,2fr),minmax(0,1.4fr),minmax(0,1fr),auto] items-center gap-4 px-4 py-3.5 min-w-0">
+        {/* Score circle (when real) or country-tinted landmark square */}
+        {hasRealScore ? (
+          <HoverCard openDelay={120} closeDelay={80}>
+            <HoverCardTrigger asChild>
+              <button
+                type="button"
+                onClick={(e) => e.stopPropagation()}
+                className="relative flex items-center justify-center w-11 h-11 rounded-full border-2 border-border/60 bg-card cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                aria-label={`Match score: ${s.match} of 100. Hover for breakdown.`}
+                style={{ background: `conic-gradient(${s.priority === "strong_match" ? "hsl(42 80% 50%)" : s.priority === "competitive" ? "hsl(210 70% 32%)" : "hsl(220 10% 50%)"} ${s.match * 3.6}deg, transparent 0deg)` }}
+              >
+                <span className="absolute inset-0.5 rounded-full bg-card flex flex-col items-center justify-center">
+                  <span className="font-heading text-[15px] font-bold tabular-nums leading-none text-foreground">{s.match}</span>
+                </span>
+              </button>
+            </HoverCardTrigger>
+            <HoverCardContent side="right" align="start" className="p-0 border-0 shadow-none bg-transparent w-auto">
+              <MatchScoreBreakdown
+                scholarshipId={s.scholarship_id}
+                fallback={{
+                  match: s.match,
+                  application_deadline: s.application_deadline,
+                  estimated_total_value_usd: s.estimated_total_value_usd,
+                  last_verified_at: s.last_verified_at,
+                  verification_status: s.verification_status,
+                  passes_eligibility: s.eligibility === "eligible" || s.eligibility === "likely",
+                  why_this_fits: s.why_this_fits,
+                  reasons: s.reasons,
+                  warnings: s.warnings,
+                }}
+                compact
+              />
+            </HoverCardContent>
+          </HoverCard>
+        ) : (
+          <div
+            className={`relative flex items-center justify-center w-11 h-11 rounded-lg overflow-hidden bg-gradient-to-br ${accent} ${isFullRide ? "ring-2 ring-gold/40" : ""}`}
+            aria-label={s.host_country || "Scholarship"}
           >
-            <MoreHorizontal className="h-3.5 w-3.5" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelect(); }} className="text-xs">
-              <FileText className="h-3 w-3 mr-2" /> Open strategy
-            </DropdownMenuItem>
-            {s.official_url && (
-              <DropdownMenuItem asChild>
-                <a href={s.official_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs cursor-pointer">
-                  <ExternalLink className="h-3 w-3 mr-2" /> Official page
-                </a>
-              </DropdownMenuItem>
+            <CountryArt country={s.host_country} className="absolute inset-0 h-full w-full opacity-50 text-white p-1.5" />
+            {isFullRide && (
+              <span className="absolute -top-1 -right-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-gold border border-card" title="Full ride">
+                <Award className="h-2.5 w-2.5 text-primary" />
+              </span>
             )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onToggleHide} className="text-xs">
-              {isHidden ? <Eye className="h-3 w-3 mr-2" /> : <EyeOff className="h-3 w-3 mr-2" />}
-              {isHidden ? "Show again" : "Hide from list"}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </div>
+        )}
+
+        {/* Name + provider + country chip */}
+        <div className="min-w-0">
+          <h3 className="font-heading font-semibold text-[15px] text-foreground truncate tracking-tight group-hover:text-gold-dark transition-colors">{s.scholarship_name}</h3>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            {s.host_country && (
+              <span className={`inline-flex items-center text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded text-white bg-gradient-to-r ${accent} shrink-0`}>
+                {shortCountry(s.host_country)}
+              </span>
+            )}
+            {s.provider_name && (
+              <p className="text-xs text-muted-foreground truncate">{s.provider_name}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Award + deadline (desktop only) — award becomes a real chip */}
+        <div className="hidden sm:flex flex-col gap-1.5 min-w-0">
+          {award && (
+            <span className={`inline-flex self-start items-center gap-1.5 text-[12px] font-semibold px-2 py-0.5 rounded-md max-w-full truncate ${isFullRide ? "text-gold-dark bg-gold/10 border border-gold/25" : "text-foreground bg-muted/40 border border-border/60"}`}>
+              {isFullRide && <Award className="h-3 w-3 shrink-0" />}
+              <span className="truncate">{award}</span>
+            </span>
+          )}
+          <div className="flex items-center gap-2">
+            <p className={`text-xs tabular-nums font-medium ${dl.cls}`}>{dl.text}</p>
+            {s.verification_status && s.verification_status !== "pending" && (
+              <VerifiedBadge
+                status={s.verification_status}
+                verifiedAt={s.last_verified_at}
+                size="xs"
+                compact
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Status (desktop only) */}
+        <div className="hidden sm:flex items-center justify-start">
+          <StatusBadge status={status} onChange={onStatusChange} dense />
+        </div>
+
+        {/* Actions — bookmark stays always-visible (it's a stateful affordance);
+            compare + more reveal on hover. Premium-tool pattern. */}
+        <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={onToggleCompare}
+            aria-label="Add to compare"
+            title="Add to compare"
+            className={`p-2 rounded-md transition-all ${isComparing ? "text-gold-dark bg-gold/10 opacity-100" : "text-muted-foreground hover:text-foreground hover:bg-muted/60 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100"}`}
+          >
+            <GitCompare className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={onBookmark}
+            aria-label={isBookmarked ? "Remove from shortlist" : "Save to shortlist"}
+            className={`p-2 rounded-md transition-all ${isBookmarked ? "text-gold-dark hover:bg-muted/60 opacity-100" : "text-muted-foreground hover:text-gold-dark hover:bg-muted/60 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100"}`}
+          >
+            {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5 text-gold-dark" /> : <Bookmark className="h-3.5 w-3.5" />}
+          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              onClick={(e) => e.stopPropagation()}
+              className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
+              aria-label="More actions"
+            >
+              <MoreHorizontal className="h-3.5 w-3.5" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelect(); }} className="text-xs">
+                <FileText className="h-3 w-3 mr-2" /> Open strategy
+              </DropdownMenuItem>
+              {s.official_url && (
+                <DropdownMenuItem asChild>
+                  <a href={s.official_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs cursor-pointer">
+                    <ExternalLink className="h-3 w-3 mr-2" /> Official page
+                  </a>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onToggleHide} className="text-xs">
+                {isHidden ? <Eye className="h-3 w-3 mr-2" /> : <EyeOff className="h-3 w-3 mr-2" />}
+                {isHidden ? "Show again" : "Hide from list"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </motion.div>
   );
@@ -1118,15 +1144,50 @@ const TimelineView = ({ items, onSelect, openDetail, ...common }: {
   toggleCompare: (id: string) => void;
 }) => {
   const groups = useMemo(() => {
-    // Restrained palette — even the urgency buckets stay foreground-strong,
-    // not painted-red. A single small dot beside the heading carries the
-    // urgency signal so the page stops looking like an alarm panel.
-    const buckets: { label: string; subtitle: string; cls: string; dotCls: string; items: Scored[] }[] = [
-      { label: "This week",         subtitle: "Closing in seven days — decide and act.",            cls: "text-foreground",        dotCls: "bg-destructive",                                items: [] },
-      { label: "This month",        subtitle: "Closing in the next 31 days.",                       cls: "text-foreground",        dotCls: "bg-amber-500",                                  items: [] },
-      { label: "Next 90 days",      subtitle: "Plenty of runway to prepare a strong application.",  cls: "text-foreground",        dotCls: "bg-foreground/40",                              items: [] },
-      { label: "Later this year",   subtitle: "On the radar — start research now.",                 cls: "text-foreground",        dotCls: "bg-foreground/25",                              items: [] },
-      { label: "Rolling / undated", subtitle: "Apply whenever you're ready.",                       cls: "text-foreground/80",     dotCls: "bg-muted-foreground/30",                        items: [] },
+    // Each urgency bucket carries its own visual treatment — a left-edge
+    // gradient stripe + tinted section card — so the page reads as a
+    // timeline of waypoints (last call → on the horizon → anytime) rather
+    // than a flat list of dates.
+    const buckets: {
+      label: string; subtitle: string; kicker: string;
+      stripe: string; bg: string; ring: string; kickerCls: string;
+      items: Scored[];
+    }[] = [
+      {
+        label: "Last call", kicker: "Closing in days",
+        subtitle: "Moving fast — these go silent within a week. Drop everything if there's a fit.",
+        stripe: "from-rose-600 via-red-600 to-rose-700", bg: "bg-rose-50/60 dark:bg-rose-950/20",
+        ring: "ring-rose-300/40", kickerCls: "text-rose-700 dark:text-rose-300",
+        items: [],
+      },
+      {
+        label: "Closing this month", kicker: "Real window",
+        subtitle: "31 days to assemble strong materials. Lock the core essay first.",
+        stripe: "from-amber-500 via-orange-500 to-amber-600", bg: "bg-amber-50/60 dark:bg-amber-950/20",
+        ring: "ring-amber-300/40", kickerCls: "text-amber-800 dark:text-amber-300",
+        items: [],
+      },
+      {
+        label: "Coming up", kicker: "On deck",
+        subtitle: "Three months of runway. Plenty of time to craft a sharp application.",
+        stripe: "from-primary via-primary-bright to-primary", bg: "bg-primary/5",
+        ring: "ring-primary/30", kickerCls: "text-primary dark:text-primary-bright",
+        items: [],
+      },
+      {
+        label: "On the horizon", kicker: "Plant the seed",
+        subtitle: "These reward early starts — research the program now, build relationships next.",
+        stripe: "from-emerald-600 via-teal-600 to-emerald-700", bg: "bg-emerald-50/40 dark:bg-emerald-950/20",
+        ring: "ring-emerald-300/30", kickerCls: "text-emerald-800 dark:text-emerald-300",
+        items: [],
+      },
+      {
+        label: "Apply anytime", kicker: "No clock",
+        subtitle: "Rolling or undated. Apply when your story is ready.",
+        stripe: "from-slate-500 via-zinc-500 to-slate-600", bg: "bg-muted/40",
+        ring: "ring-border", kickerCls: "text-muted-foreground",
+        items: [],
+      },
     ];
     items.forEach(s => {
       const d = daysUntil(s.application_deadline);
@@ -1158,20 +1219,26 @@ const TimelineView = ({ items, onSelect, openDetail, ...common }: {
   }
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       {groups.map(g => (
-        <section key={g.label}>
-          <div className="flex items-baseline justify-between mb-4 pb-3 border-b border-border/60">
+        <section key={g.label} className={`relative rounded-2xl overflow-hidden border border-border/70 ${g.bg} ring-1 ${g.ring}`}>
+          {/* Left urgency stripe — full-height gradient bar that reads as a
+              timeline marker. */}
+          <div className={`absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b ${g.stripe}`} aria-hidden />
+
+          <div className="pl-5 sm:pl-7 pr-4 sm:pr-6 pt-5 pb-3 flex items-baseline justify-between gap-4">
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className={`block h-2 w-2 rounded-full shrink-0 ${g.dotCls}`} />
-                <h2 className={`font-heading text-xl font-bold tracking-tight ${g.cls}`}>{g.label}</h2>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1 ml-4">{g.subtitle}</p>
+              <p className={`text-[10px] font-bold uppercase tracking-[0.2em] ${g.kickerCls} mb-1`}>{g.kicker}</p>
+              <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground">{g.label}</h2>
+              <p className="text-xs sm:text-sm text-muted-foreground/90 mt-1 max-w-xl">{g.subtitle}</p>
             </div>
-            <span className="text-2xl font-bold text-foreground/25 tabular-nums shrink-0">{g.items.length.toString().padStart(2, "0")}</span>
+            <div className="flex items-baseline gap-1 shrink-0">
+              <span className="text-3xl sm:text-4xl font-heading font-bold text-foreground/30 tabular-nums leading-none">{g.items.length}</span>
+              <span className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground/60">found</span>
+            </div>
           </div>
-          <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
+
+          <div className="bg-card/95 backdrop-blur-sm border-t border-border/40 ml-1.5">
             {g.items.map((s, i) => {
               const isBookmarked = common.shortlist.has(s.scholarship_id);
               const isHidden = common.hidden.has(s.scholarship_id);
