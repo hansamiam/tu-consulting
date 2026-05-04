@@ -6,7 +6,6 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 /**
  * The product's premium scholarship card. Used on every listing surface
@@ -328,11 +327,6 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
           <Calendar className="w-3 h-3 mr-1" />
           {urgencyText}
         </Badge>
-        <VerifiedBadge
-          status={r.verification_status}
-          verifiedAt={r.last_verified_at}
-          compact
-        />
         {showTracking && (
           <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums" title="Students tracking this scholarship in their pipeline">
             <Users className="w-3 h-3" />

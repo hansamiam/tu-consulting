@@ -28,7 +28,6 @@ import { BriefHeroStats } from "@/components/brief/BriefHeroStats";
 import { BriefChapterNav } from "@/components/brief/BriefChapterNav";
 import { BriefMasthead } from "@/components/brief/BriefMasthead";
 import { ProSectionsTeaser } from "@/components/brief/ProSectionsTeaser";
-import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { SavedDeadlineBanner } from "@/components/SavedDeadlineBanner";
 import { DeadlineTimeline } from "@/components/brief/DeadlineTimeline";
 import { FundingStack } from "@/components/brief/FundingStack";
@@ -553,14 +552,6 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combine
                     </p>
                   )}
                   <div className="flex items-center gap-3 mt-1">
-                    {m.verification_status && m.verification_status !== "pending" && (
-                      <VerifiedBadge
-                        status={m.verification_status}
-                        verifiedAt={m.last_verified_at}
-                        size="xs"
-                        compact
-                      />
-                    )}
                     <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground group-hover:text-gold-dark transition-colors inline-flex items-center gap-0.5">
                       {isRu ? "Открыть детали" : "Open detail"} <ArrowRight className="w-3 h-3" />
                     </span>
@@ -2832,14 +2823,6 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                                   {m.award_amount_text || (m.coverage_type === "full_ride" ? t("Full ride", "Полное покрытие") : m.coverage_type === "tuition_only" ? t("Tuition", "Обучение") : t("Stipend", "Стипендия"))}
                                   {m.provider_name && <span className="text-muted-foreground/60"> · {m.provider_name}</span>}
                                 </p>
-                                {m.verification_status && m.verification_status !== "pending" && (
-                                  <VerifiedBadge
-                                    status={m.verification_status}
-                                    verifiedAt={m.last_verified_at ?? null}
-                                    size="xs"
-                                    compact
-                                  />
-                                )}
                               </Link>
                               <button
                                 type="button"

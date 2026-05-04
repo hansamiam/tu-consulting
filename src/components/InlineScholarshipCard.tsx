@@ -5,7 +5,6 @@ import {
 } from "lucide-react";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
 import { toast } from "sonner";
-import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useFocusScholarship } from "@/components/EnrichedMarkdown";
 
 /**
@@ -125,14 +124,6 @@ export function InlineScholarshipCard({ scholarship: s, showMeta = true }: Props
             <span className={`text-[11px] tabular-nums whitespace-nowrap inline-flex items-center gap-0.5 ${dl.cls}`}>
               <Calendar className="w-2.5 h-2.5 inline-block" /> {dl.text}
             </span>
-            {(s.verification_status || s.last_verified_at) && (
-              <VerifiedBadge
-                status={s.verification_status}
-                verifiedAt={s.last_verified_at}
-                compact
-                size="xs"
-              />
-            )}
           </span>
           <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0 group-hover:text-gold-dark group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
         </Link>

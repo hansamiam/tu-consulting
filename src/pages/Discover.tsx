@@ -28,8 +28,8 @@ import { CuratedCollections } from "@/components/discover/CuratedCollections";
 import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
 import { MatchScoreBreakdown } from "@/components/discover/MatchScoreBreakdown";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { CountryArt, CampusPattern } from "@/lib/countryArt";
+import { accentForCountry, shortCountry, canonicalCountry } from "@/lib/countryAccent";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSemanticScholarshipMatch } from "@/hooks/useSemanticScholarshipMatch";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
@@ -576,112 +576,9 @@ const TIER = {
   },
 };
 
-/* ─── Regional accent palette ────────────────────────────────────────────
- * Maps host_country to a rich gradient + readable foreground colour for
- * the card hero band. The point isn't fashion — it's that each card
- * reads as visually distinct at a glance instead of looking like one
- * row in a database table. Same trick OpportunitiesForYouth.org uses
- * with hero images, just done with gradients so it scales to 1000+
- * cards without managing assets. Inspired by the regional colour
- * coding airline route maps and Notion's database tag schemes use.
- *
- * Returns Tailwind classes for a `bg-gradient-to-r` band. Foreground
- * stays white-ish on every gradient — the gradients are saturated
- * enough that white text reads cleanly on all of them. */
-const REGIONAL_ACCENT: Record<string, string> = {
-  // North America
-  "United States":  "from-rose-600 to-orange-600",
-  "USA":            "from-rose-600 to-orange-600",
-  "Canada":         "from-red-600 to-rose-700",
-  "Mexico":         "from-orange-600 to-rose-700",
-  // UK & Ireland
-  "United Kingdom": "from-violet-700 to-indigo-700",
-  "UK":             "from-violet-700 to-indigo-700",
-  "Ireland":        "from-emerald-700 to-teal-700",
-  // Continental Europe
-  "Germany":        "from-slate-700 to-zinc-800",
-  "France":         "from-blue-700 to-indigo-700",
-  "Netherlands":    "from-orange-600 to-amber-600",
-  "Switzerland":    "from-rose-700 to-red-700",
-  "Sweden":         "from-blue-600 to-cyan-700",
-  "Norway":         "from-blue-700 to-sky-700",
-  "Denmark":        "from-red-700 to-rose-700",
-  "Finland":        "from-blue-600 to-sky-700",
-  "Iceland":        "from-cyan-700 to-blue-700",
-  "Spain":          "from-yellow-600 to-red-700",
-  "Italy":          "from-emerald-600 to-red-700",
-  "Belgium":        "from-amber-600 to-yellow-700",
-  "Austria":        "from-red-600 to-rose-700",
-  "Czechia":        "from-blue-700 to-red-700",
-  "Poland":         "from-rose-700 to-red-700",
-  "Hungary":        "from-emerald-600 to-red-700",
-  "Romania":        "from-blue-700 to-yellow-600",
-  "Bulgaria":       "from-emerald-600 to-red-700",
-  "Croatia":        "from-blue-700 to-red-700",
-  "Lithuania":      "from-yellow-600 to-emerald-700",
-  "Latvia":         "from-red-700 to-rose-700",
-  "Slovakia":       "from-blue-700 to-red-700",
-  "Estonia":        "from-blue-700 to-slate-700",
-  "EU":             "from-blue-700 to-indigo-700",
-  // East Asia
-  "China":          "from-rose-700 to-amber-600",
-  "Japan":          "from-rose-600 to-pink-600",
-  "Korea":          "from-blue-700 to-rose-700",
-  "South Korea":    "from-blue-700 to-rose-700",
-  "Taiwan":         "from-rose-700 to-blue-700",
-  "Hong Kong":      "from-rose-600 to-emerald-700",
-  // Southeast Asia & Oceania
-  "Singapore":      "from-rose-700 to-pink-700",
-  "Malaysia":       "from-amber-600 to-blue-700",
-  "Indonesia":      "from-rose-700 to-emerald-700",
-  "Thailand":       "from-rose-700 to-blue-700",
-  "Vietnam":        "from-rose-700 to-yellow-600",
-  "Philippines":    "from-blue-700 to-rose-700",
-  "Brunei":         "from-yellow-600 to-rose-700",
-  "Australia":      "from-blue-700 to-amber-600",
-  "New Zealand":    "from-blue-700 to-emerald-700",
-  // South Asia & Middle East
-  "India":          "from-orange-600 to-emerald-700",
-  "Saudi Arabia":   "from-emerald-700 to-teal-700",
-  "UAE":            "from-emerald-700 to-amber-600",
-  "Israel":         "from-blue-700 to-cyan-700",
-  "Turkey":         "from-rose-700 to-red-800",
-  "Egypt":          "from-amber-600 to-rose-700",
-  // Latin America
-  "Brazil":         "from-emerald-700 to-yellow-600",
-  "Argentina":      "from-sky-600 to-blue-700",
-  "Chile":          "from-rose-700 to-blue-700",
-  // Multi/global
-  "Global":         "from-indigo-700 to-purple-700",
-  "Multiple":       "from-indigo-700 to-purple-700",
-};
-const DEFAULT_ACCENT = "from-slate-700 to-zinc-700";
-const accentForCountry = (country: string | null): string =>
-  (country && REGIONAL_ACCENT[country]) || DEFAULT_ACCENT;
-
-/* Database `host_country` values like "Multiple (Japan, Indonesia, ...)"
- * waste card real estate. Compact label keeps the visual rhythm tight. */
-const shortCountry = (country: string): string => {
-  const c = country.trim();
-  if (/^multiple\s*\(worldwide\)?$/i.test(c)) return "Worldwide";
-  if (/^multiple/i.test(c)) {
-    const m = c.match(/multiple\s*\(([^,)]+)/i);
-    return m ? `${m[1].trim()} +` : "Multiple";
-  }
-  if (/^global$/i.test(c)) return "Worldwide";
-  return c;
-};
-
-/* Canonical country bucket for filter dropdowns. Collapses every variant
- * of "Multiple (Japan, ...)", "Multiple (Worldwide)", "Global", "International"
- * to one "Multiple countries" entry. Filtering against the canonical form
- * lets one dropdown selection match every variant. */
-const canonicalCountry = (country: string): string => {
-  const c = country.trim();
-  if (/^multiple/i.test(c)) return "Multiple countries";
-  if (/^global$/i.test(c) || /^international$/i.test(c) || /^worldwide$/i.test(c)) return "Multiple countries";
-  return c;
-};
+/* Country palette + label helpers live in @/lib/countryAccent so any
+ * surface (Pipeline, Brief, marketing) can share the same regional
+ * identity. Imported above. */
 
 /* Extract a domain from a scholarship's URL for favicon fetching.
  * Returns null when the URL is missing or malformed. */
@@ -3169,24 +3066,6 @@ const Discover = ({ language = "en" }: Props) => {
                             opening drawer behaviour, so the editorial
                             curation is one click away, not stacked on top
                             of the actual results. */}
-
-                        {/* Editor's spotlight — single line, no marketing card */}
-                        {appSection === "browse" && viewMode === "grid" && sections.hero.length > 0 && (
-                          <button
-                            onClick={() => setOpenDetail(sections.hero[0])}
-                            className="group w-full flex items-baseline justify-between gap-4 py-3 border-y border-border/60 hover:border-gold/40 transition-colors text-left"
-                          >
-                            <div className="flex items-baseline gap-3 min-w-0">
-                              <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark shrink-0">Top opportunity</span>
-                              <span className="font-heading font-semibold text-foreground truncate group-hover:text-gold-dark transition-colors">{sections.hero[0].scholarship_name}</span>
-                              <span className="hidden sm:inline text-xs text-muted-foreground truncate">{sections.hero[0].provider_name}</span>
-                            </div>
-                            <span className="flex items-baseline gap-2 shrink-0">
-                              <span className="font-bold tabular-nums text-foreground">{sections.hero[0].match}</span>
-                              <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-gold-dark group-hover:translate-x-0.5 transition-all" />
-                            </span>
-                          </button>
-                        )}
 
                         {appSection === "browse" && (() => {
                           const cardProps = (s: Scored, i: number) => ({

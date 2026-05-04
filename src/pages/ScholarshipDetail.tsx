@@ -33,7 +33,6 @@ import { ScholarshipCard, type ScholarshipCardData } from "@/components/Scholars
 import { useTrackView, useScholarshipTracking } from "@/hooks/useScholarshipTracking";
 import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
 import { getStoredProfile } from "@/components/discover/DiscoverProfileGate";
-import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 interface Scholarship {
   scholarship_id: string;
@@ -329,10 +328,6 @@ const ScholarshipDetail = () => {
                 {days <= 0 ? "Closed" : days === 1 ? "1 day" : days <= 30 ? `${days} days left` : `${Math.round(days / 30)} months`}
               </Chip>
             )}
-            <VerifiedBadge
-              status={s.verification_status}
-              verifiedAt={s.last_verified_at ?? (s.last_verified_date ? `${s.last_verified_date}T00:00:00Z` : undefined)}
-            />
           </div>
 
           {/* Social proof — only shows once the row has crossed real

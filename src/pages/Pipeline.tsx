@@ -28,7 +28,8 @@ import { useApplicationTracker, type AppStatus } from "@/hooks/useApplicationTra
 import { useAuth } from "@/contexts/AuthContext";
 import { ScholarshipChecklist } from "@/components/pipeline/ScholarshipChecklist";
 import { DueThisWeek } from "@/components/pipeline/DueThisWeek";
-import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { CountryArt } from "@/lib/countryArt";
+import { accentForCountry, shortCountry } from "@/lib/countryAccent";
 
 interface Scholarship {
   scholarship_id: string;
@@ -343,14 +344,6 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                   <p className="text-[10px] uppercase tracking-[0.22em] text-gold-dark font-semibold">
                     {openDetail.host_country || t("Multiple", "Множественно")}
                   </p>
-                  {openDetail.verification_status && openDetail.verification_status !== "pending" && (
-                    <VerifiedBadge
-                      status={openDetail.verification_status}
-                      verifiedAt={openDetail.last_verified_at}
-                      size="xs"
-                      compact
-                    />
-                  )}
                 </div>
                 <SheetTitle className="font-heading text-xl tracking-tight leading-snug">
                   {openDetail.scholarship_name}
@@ -590,33 +583,35 @@ const PipelineCard = ({
           : days <= 30
             ? `${days} ${t("days", "дн.")}`
             : `${Math.ceil(days / 30)} ${t("mo", "мес.")}`;
+  const accent = accentForCountry(s.host_country);
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className="group bg-card border border-border rounded-xl p-3 hover:border-gold/40 hover:shadow-sm transition-all cursor-pointer"
+      className="group relative bg-card border border-border rounded-xl overflow-hidden hover:border-gold/40 hover:shadow-sm transition-all cursor-pointer"
       onClick={onOpen}
     >
-      <div className="flex items-baseline justify-between gap-2 mb-1.5">
-        <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground truncate font-semibold">
-          {s.host_country || "—"}
-        </p>
-        <span className={`text-[10px] tabular-nums font-semibold shrink-0 ${daysClass}`}>{daysText}</span>
+      {/* Country gradient stripe — same regional identity as Discover
+          cards so the user sees the same scholarship as the same
+          object across surfaces. Landmark silhouette overlaid right. */}
+      <div className={`relative h-7 bg-gradient-to-r ${accent} overflow-hidden`}>
+        <CountryArt country={s.host_country} className="absolute right-1 inset-y-0 h-full opacity-35 pointer-events-none text-white" />
+        <span className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-transparent pointer-events-none" />
+        <div className="relative h-full flex items-center justify-between gap-2 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/95 whitespace-nowrap">
+          <span className="truncate drop-shadow-sm">
+            {s.host_country ? shortCountry(s.host_country) : "—"}
+          </span>
+          <span className={`tabular-nums shrink-0 px-1.5 py-0.5 rounded ${days !== null && days <= 7 ? "bg-destructive text-destructive-foreground" : days !== null && days <= 30 ? "bg-amber-500 text-amber-950" : "bg-white/15 text-white/95"}`}>
+            {daysText}
+          </span>
+        </div>
       </div>
+
+      <div className="p-3">
       <h4 className="font-heading font-semibold text-[14px] text-foreground line-clamp-2 leading-snug mb-1.5 group-hover:text-gold-dark transition-colors">
         {s.scholarship_name}
       </h4>
-      {s.verification_status && s.verification_status !== "pending" && (
-        <div className="mb-1.5">
-          <VerifiedBadge
-            status={s.verification_status}
-            verifiedAt={s.last_verified_at}
-            size="xs"
-            compact
-          />
-        </div>
-      )}
       {note && (
         <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground mb-1.5">
           <StickyNote className="w-3 h-3 mt-0.5 shrink-0 text-gold-dark/70" />
@@ -639,6 +634,7 @@ const PipelineCard = ({
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+      </div>
       </div>
     </motion.div>
   );
