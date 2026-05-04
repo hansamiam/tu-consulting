@@ -29,6 +29,7 @@ import { BriefChapterNav } from "@/components/brief/BriefChapterNav";
 import { BriefMasthead } from "@/components/brief/BriefMasthead";
 import { ProSectionsTeaser } from "@/components/brief/ProSectionsTeaser";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { SavedDeadlineBanner } from "@/components/SavedDeadlineBanner";
 import { DeadlineTimeline } from "@/components/brief/DeadlineTimeline";
 import { FundingStack } from "@/components/brief/FundingStack";
 import { PremiumSection } from "@/components/brief/PremiumSection";
@@ -2238,6 +2239,17 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           </div>
         )}
       </motion.div>
+
+      {/* Saved-deadline urgency banner — surfaces if the user has a saved
+          scholarship with a deadline in the next 14 days. Hidden when the
+          user has no saved scholarships, no urgent ones, or has dismissed
+          it for the day. Same component for Strategy and Counselor tabs
+          (renders above the tablist so the urgency is visible whichever
+          surface they're on). */}
+      <SavedDeadlineBanner
+        trackedIds={Array.from(new Set([...tracker.shortlist, ...Object.keys(tracker.statusMap)]))}
+        isRu={isRu}
+      />
 
       {/* Dashboard — two surfaces only: Strategy (the report) and Counselor (chat) */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
