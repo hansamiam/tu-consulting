@@ -249,8 +249,8 @@ const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: numbe
     const rescaled = Math.max(0, (sim - 0.30) / 0.55);
     const bonus = Math.round(rescaled * 20);
     match += bonus;
-    if (bonus >= 12) reasons.push("Closely matches your stated field & goals");
-    else if (bonus >= 6) reasons.push("Semantically aligned with your field");
+    if (bonus >= 12) reasons.push("Hits the field and goals you described");
+    else if (bonus >= 6) reasons.push("Touches your field area");
   }
 
   if (eligibility === "likely" && match >= 70) eligibility = "eligible";
@@ -287,7 +287,7 @@ const COLLECTIONS: CollectionDef[] = [
     id: "recommended",
     title: "Recommended for you",
     kicker: "Top picks",
-    description: "Most aligned across academics, field, eligibility, and budget.",
+    description: "Where your profile lines up best — strongest fits across academics, field, eligibility, and budget.",
     icon: Sparkles,
     accentClass: "text-gold-dark",
     filter: (s) => s.priority === "strong_match",
@@ -473,10 +473,11 @@ const deadlineDisplay = (d: string | null) => {
   return { text: `${Math.ceil(days / 30)}mo`, cls: "text-foreground/40", urgent: false };
 };
 
-/* Tier — positive framing only. No "stretch", "long shot", "lower fit". */
+/* Tier labels — positive, concrete, exciting. No "stretch", "long shot",
+ * "lower fit", "real shot", "safety", "more routes", "worth a scan". */
 const TIER = {
   strong_match: {
-    label: "Closely aligned",
+    label: "Top match",
     dot: "bg-gold",
     text: "text-gold",
     textLight: "text-gold-dark dark:text-gold",
@@ -484,7 +485,7 @@ const TIER = {
     border: "border-gold/30",
   },
   competitive: {
-    label: "Aligned",
+    label: "Within reach",
     dot: "bg-primary-bright",
     text: "text-primary-foreground/85",
     textLight: "text-primary dark:text-primary-bright",
@@ -492,7 +493,7 @@ const TIER = {
     border: "border-primary/25",
   },
   low_priority: {
-    label: "Worth exploring",
+    label: "Aim high",
     dot: "bg-muted-foreground/50",
     text: "text-muted-foreground",
     textLight: "text-muted-foreground",
@@ -583,6 +584,19 @@ const REGIONAL_ACCENT: Record<string, string> = {
 const DEFAULT_ACCENT = "from-slate-700 to-zinc-700";
 const accentForCountry = (country: string | null): string =>
   (country && REGIONAL_ACCENT[country]) || DEFAULT_ACCENT;
+
+/* Database `host_country` values like "Multiple (Japan, Indonesia, ...)"
+ * waste card real estate. Compact label keeps the visual rhythm tight. */
+const shortCountry = (country: string): string => {
+  const c = country.trim();
+  if (/^multiple\s*\(worldwide\)?$/i.test(c)) return "Worldwide";
+  if (/^multiple/i.test(c)) {
+    const m = c.match(/multiple\s*\(([^,)]+)/i);
+    return m ? `${m[1].trim()} +` : "Multiple";
+  }
+  if (/^global$/i.test(c)) return "Worldwide";
+  return c;
+};
 
 /* Match dial colour pairs (HSL strings, navy/gold only) */
 const dialColors = (priority: Scored["priority"]): [string, string] =>
@@ -901,25 +915,25 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           France, Mt Fuji for Japan, etc.). The band reads as a stylised
           travel poster strip rather than a database row. Text stays on
           the left where the silhouette opacity is lowest. */}
-      <div className={`relative bg-gradient-to-r ${accent} px-4 h-12 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/95 overflow-hidden`}>
+      <div className={`relative bg-gradient-to-r ${accent} px-4 h-12 flex items-center gap-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/95 overflow-hidden whitespace-nowrap`}>
         <CountryArt country={s.host_country} className="absolute right-2 inset-y-0 h-full opacity-30 pointer-events-none" />
         {/* fade-from-left so silhouette doesn't compete with text */}
-        <span className={`absolute inset-0 bg-gradient-to-r from-black/15 via-transparent to-transparent pointer-events-none`} />
+        <span className={`absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-transparent pointer-events-none`} />
         <span className="relative flex items-center gap-2 min-w-0 flex-1">
           {s.host_country && (
-            <span className="truncate drop-shadow-sm">{s.host_country}</span>
+            <span className="truncate drop-shadow-sm">{shortCountry(s.host_country)}</span>
           )}
           {isFullRide && (
             <>
-              <span className="text-white/50">·</span>
-              <span className="inline-flex items-center gap-1 text-gold-light drop-shadow-sm">
+              <span className="text-white/40 shrink-0">·</span>
+              <span className="inline-flex items-center gap-1 text-gold-light drop-shadow-sm shrink-0">
                 <Award className="h-2.5 w-2.5" />
                 Full ride
               </span>
             </>
           )}
         </span>
-        <span className="relative inline-flex items-center">
+        <span className="relative inline-flex items-center shrink-0">
           {s.verification_status === "verified" && (
             <span className="inline-flex items-center gap-1 text-emerald-200 drop-shadow-sm">
               <CheckCircle2 className="h-2.5 w-2.5" />
@@ -929,13 +943,13 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           {s.verification_status === "stale" && (
             <span className="inline-flex items-center gap-1 text-amber-200 drop-shadow-sm">
               <HelpCircle className="h-2.5 w-2.5" />
-              Verify before applying
+              Verify
             </span>
           )}
           {s.verification_status === "broken" && (
             <span className="inline-flex items-center gap-1 text-red-200 drop-shadow-sm">
               <AlertCircle className="h-2.5 w-2.5" />
-              URL unreachable
+              Offline
             </span>
           )}
         </span>
@@ -1377,7 +1391,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
 
   return (
     <Sheet open={open} onOpenChange={o => !o && onClose()}>
-      <SheetContent side="right" className="w-full sm:w-[640px] overflow-y-auto p-0 flex flex-col">
+      <SheetContent side="right" className="w-full sm:w-[min(95vw,920px)] overflow-y-auto p-0 flex flex-col">
         {/* ── HEADER (cream, editorial — no thick navy block) ── */}
         <div className="relative bg-canvas-soft px-7 pt-7 pb-6 overflow-hidden shrink-0 border-b border-border">
           {/* Soft top wash so the header has navy presence without a slab */}
@@ -1494,8 +1508,8 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             keeps the user in the Discover flow and answers "should I
             apply?" without a navigation step away. */}
         <Tabs defaultValue="plan" className="flex-1 flex flex-col">
-          <div className="px-7 pt-5 border-b border-border bg-background sticky top-0 z-10">
-            <TabsList className="bg-transparent p-0 h-auto gap-7 w-full justify-start rounded-none -mb-px">
+          <div className="px-7 pt-5 border-b border-border bg-background sticky top-0 z-10 overflow-x-auto scrollbar-hide">
+            <TabsList className="bg-transparent p-0 h-auto gap-5 sm:gap-7 w-max sm:w-full justify-start rounded-none -mb-px">
               {([
                 { v: "plan",         label: "My plan" },
                 { v: "overview",     label: "Overview" },
@@ -1538,7 +1552,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             {why && (
               <div className="bg-gold/5 border border-gold/20 rounded-2xl p-5">
                 <h4 className="text-[10px] font-semibold text-gold-dark dark:text-gold mb-2 flex items-center gap-2 uppercase tracking-[0.16em]">
-                  <Sparkles className="h-3 w-3" /> Why this may be worth exploring
+                  <Sparkles className="h-3 w-3" /> Why this fits you
                 </h4>
                 <p className="text-sm text-foreground/85 leading-relaxed">{why}</p>
               </div>
@@ -2561,7 +2575,7 @@ const Discover = ({ language = "en" }: Props) => {
                     <div className="max-w-7xl mx-auto px-5 sm:px-8 py-4 flex items-baseline gap-3 flex-wrap">
                       {isProfileFilled ? (
                         <>
-                          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark shrink-0">Your shortlist</span>
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark shrink-0">TopUni Discover</span>
                           <span className="text-muted-foreground/40">·</span>
                           {profileChips.map(chip => (
                             <span key={chip} className="text-xs text-foreground/80 bg-card border border-border px-2 py-0.5 rounded-md font-medium">{chip}</span>
@@ -2572,7 +2586,7 @@ const Discover = ({ language = "en" }: Props) => {
                         </>
                       ) : (
                         <>
-                          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark shrink-0">Database</span>
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark shrink-0">TopUni Discover</span>
                           <span className="text-muted-foreground/40">·</span>
                           <span className="text-xs text-foreground/80">
                             <span className="font-semibold tabular-nums">{ranked.length}</span> scholarships
@@ -3059,7 +3073,7 @@ const Discover = ({ language = "en" }: Props) => {
                             <>
                               {sections.strong.length > 0 && (
                                 <section>
-                                  <SectionHeader kicker="Closely aligned" title="Strong fits" subtitle="Aligned on academics, field, eligibility, and budget."
+                                  <SectionHeader kicker="Top matches" title="Made for you" subtitle="Your numbers, story, and timing all click. Apply with confidence."
                                     count={sections.strong.length} accentClass="text-gold-dark dark:text-gold" />
                                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
                                     {sections.strong.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
@@ -3069,7 +3083,7 @@ const Discover = ({ language = "en" }: Props) => {
 
                               {sections.competitive.length > 0 && (
                                 <section>
-                                  <SectionHeader kicker="Aligned" title="Competitive options" subtitle="Achievable with a focused application."
+                                  <SectionHeader kicker="Within reach" title="Push for these" subtitle="Real chance with a sharp application."
                                     count={sections.competitive.length} accentClass="text-primary dark:text-primary-bright" />
                                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
                                     {sections.competitive.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
@@ -3079,7 +3093,7 @@ const Discover = ({ language = "en" }: Props) => {
 
                               {sections.stretch.length > 0 && (
                                 <section>
-                                  <SectionHeader kicker="Worth a scan" title="More routes" subtitle="Selective. Review the requirements before committing."
+                                  <SectionHeader kicker="Aim high" title="World-changers worth chasing" subtitle="Highly selective — but landing one rewrites the trajectory."
                                     count={sections.stretch.length} accentClass="text-muted-foreground" />
                                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr opacity-90">
                                     {sections.stretch.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}

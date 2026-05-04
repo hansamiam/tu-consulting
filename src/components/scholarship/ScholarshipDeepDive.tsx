@@ -56,20 +56,20 @@ const STATUS_META: Record<DeepDiveBreakdownStatus, { Icon: typeof CheckCircle2; 
 
 const ODDS_META: Record<DeepDiveOddsBucket, { en: string; ru: string; cls: string; ringCls: string }> = {
   primary: {
-    en: "Closely aligned",
+    en: "Top match",
     ru: "Чёткое соответствие",
     cls: "text-success",
     ringCls: "ring-success/30 bg-success/5",
   },
   competitive: {
-    en: "Aligned — competitive",
-    ru: "Соответствие, но конкурентно",
+    en: "Within reach",
+    ru: "Вполне достижимо",
     cls: "text-gold-dark",
     ringCls: "ring-gold/30 bg-gold/5",
   },
   aspirational: {
-    en: "Worth exploring with strategy",
-    ru: "Стоит рассматривать стратегически",
+    en: "Aim high",
+    ru: "Целься высоко",
     cls: "text-amber-700 dark:text-amber-400",
     ringCls: "ring-amber-300/40 bg-amber-50 dark:bg-amber-950/20",
   },
@@ -293,13 +293,13 @@ export const ScholarshipDeepDive = ({
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">
             {t("Your 30-day plan for this scholarship", "Ваш 30-дневный план под эту стипендию")}
           </p>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+          <div className="grid sm:grid-cols-2 gap-3">
             {data.thirty_day.items.slice(0, 4).map((item, i) => (
-              <div key={i} className="rounded-lg border border-border bg-card p-3.5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gold-dark mb-1.5">
+              <div key={i} className="rounded-lg border border-border bg-card p-4 min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gold-dark mb-2">
                   {t(`Week ${item.week}`, `Неделя ${item.week}`)}
                 </p>
-                <p className="text-[13px] text-foreground/85 leading-snug">{item.action}</p>
+                <p className="text-[13px] text-foreground/85 leading-relaxed break-words">{item.action}</p>
               </div>
             ))}
           </div>
