@@ -12,7 +12,7 @@
  * action) and shows the matching scholarships below.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles, Search } from "lucide-react";
 import Navigation from "@/components/Navigation";
@@ -127,6 +127,7 @@ interface Props {
 
 const ScholarshipsByFilter = ({ mode }: Props) => {
   const params = useParams<{ country?: string; field?: string; theme?: string }>();
+  const navigate = useNavigate();
   const [rows, setRows] = useState<ScholarshipRow[]>([]);
   const [statsById, setStatsById] = useState<StatsById>({});
   const [loading, setLoading] = useState(true);
@@ -357,11 +358,21 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
               {resolved.meta.intro}
             </p>
             <div className="flex flex-wrap gap-2 mt-6">
-              <Button variant="gold" size="lg" asChild className="gap-2">
-                <Link to="/topuni-ai">
-                  <Sparkles className="w-4 h-4" />
-                  Build my personalised strategy
-                </Link>
+              <Button
+                variant="gold"
+                size="lg"
+                className="gap-2"
+                onClick={() => {
+                  stashHubContext(mode, resolved.label, slug);
+                  navigate("/topuni-ai");
+                }}
+              >
+                <Sparkles className="w-4 h-4" />
+                {mode === "country"
+                  ? `Build my ${resolved.label} strategy`
+                  : mode === "field"
+                  ? `Build my ${resolved.label} strategy`
+                  : "Build my personalised strategy"}
               </Button>
               <Button
                 variant="outline"
@@ -449,10 +460,16 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
                 TopUni AI takes your GPA, scores, {mode === "country" ? `${resolved.label} as a target country, and field` : mode === "field" ? `${resolved.label} as your field, and target countries` : "target countries, and field"},
                 then ranks every scholarship in the database against your profile and writes you a 90-day action plan.
               </p>
-              <Button variant="gold" size="lg" asChild className="gap-2">
-                <Link to="/topuni-ai">
-                  Build my strategy free <ArrowRight className="w-4 h-4" />
-                </Link>
+              <Button
+                variant="gold"
+                size="lg"
+                className="gap-2"
+                onClick={() => {
+                  stashHubContext(mode, resolved.label, slug);
+                  navigate("/topuni-ai");
+                }}
+              >
+                Build my strategy free <ArrowRight className="w-4 h-4" />
               </Button>
               <p className="text-[11px] text-muted-foreground/70 mt-4">60 seconds. No credit card.</p>
             </div>
@@ -471,6 +488,21 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
 };
 
 export default ScholarshipsByFilter;
+
+/* Stash a hub-context payload for the brief wizard to drain. Mirrors
+   the focus-scholarship handoff from ScholarshipDetail — sessionStorage
+   key, 5-minute stale guard read on the consumer side. The wizard
+   pre-selects the matching field on mount and shows a "Pre-filled
+   from {hub}" indicator. */
+function stashHubContext(mode: Mode, label: string, slug: string) {
+  try {
+    const payload: Record<string, unknown> = { kind: mode, label, ts: Date.now() };
+    if (mode === "country") payload.country = label;
+    else if (mode === "field") payload.field = label;
+    else if (mode === "theme") payload.theme = slug;
+    sessionStorage.setItem("topuni-hub-context", JSON.stringify(payload));
+  } catch { /* sessionStorage unavailable; CTA still works */ }
+}
 
 /* Cross-links between hub pages.
    - Country hub → links to other countries + a few field hubs + themes
