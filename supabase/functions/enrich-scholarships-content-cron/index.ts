@@ -35,14 +35,24 @@ Deno.serve(async (req) => {
 
   const supa = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-  // Candidates: rows missing ANY of the five soft fields. Exclude broken
+  // Candidates: rows missing ANY of the eight soft fields. Exclude broken
   // rows (per the same contract LLMs use) so we don't burn AI budget
   // enriching content for scholarships we've hidden.
+  //
+  // The list now includes the three trust-telling fields
+  // (common_rejection_reasons / weak_candidate_warning / strategy_notes)
+  // — these are what makes the Strategy tab decision-grade rather than
+  // generic. Worth re-running across rows that already have the basic
+  // five filled but lack these.
   const { data: candidates, error: candErr } = await supa
     .from("scholarships")
     .select("scholarship_id, scholarship_name")
     .neq("verification_status", "broken")
-    .or("why_this_fits.is.null,ideal_candidate_profile.is.null,how_to_win.is.null,what_to_prepare_first.is.null,best_for_tags.is.null")
+    .or(
+      "why_this_fits.is.null,ideal_candidate_profile.is.null," +
+      "how_to_win.is.null,what_to_prepare_first.is.null,best_for_tags.is.null," +
+      "common_rejection_reasons.is.null,weak_candidate_warning.is.null,strategy_notes.is.null"
+    )
     .limit(MAX_PER_RUN);
 
   if (candErr) {
