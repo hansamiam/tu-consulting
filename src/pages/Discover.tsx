@@ -1604,7 +1604,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                       <p className="text-[11px] text-muted-foreground truncate">
                         {[sim.provider_name, sim.host_country].filter(Boolean).join(" · ")}
                         <span className="mx-1.5 text-muted-foreground/40">·</span>
-                        <span className="font-semibold text-foreground/70 tabular-nums">{sim.match} opportunity</span>
+                        <span className="font-semibold text-foreground/70 tabular-nums">{sim.match} match</span>
                       </p>
                     </div>
                     <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 group-hover:translate-x-0.5 group-hover:text-gold-dark transition-all" />
@@ -2886,7 +2886,7 @@ const Discover = ({ language = "en" }: Props) => {
                       <p className="font-heading font-bold text-sm text-foreground line-clamp-1">{s.scholarship_name}</p>
                       <p className="text-xs text-muted-foreground truncate mt-0.5">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
                       <div className="flex items-center gap-2 mt-2">
-                        <span className="text-[11px] font-bold text-foreground bg-muted px-2 py-0.5 rounded-md tabular-nums">{s.match} opportunity</span>
+                        <span className="text-[11px] font-bold text-foreground bg-muted px-2 py-0.5 rounded-md tabular-nums">{s.match} match</span>
                         <span className={`text-[11px] font-medium ${dl.cls}`}>· {dl.text}</span>
                       </div>
                     </div>
