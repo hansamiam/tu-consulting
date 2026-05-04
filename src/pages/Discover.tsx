@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, useScroll } from "framer-motion";
+import { motion, AnimatePresence, useTransform, useScroll } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight, Sparkles, CheckCircle2, AlertTriangle, ExternalLink,
@@ -516,30 +516,6 @@ const useCountUp = (target: number, duration = 1200, enabled = true) => {
     return () => cancelAnimationFrame(raf);
   }, [target, duration, enabled]);
   return val;
-};
-
-/* ─── 3D tilt wrapper (subtle) ───────────────────────────────────────── */
-const Tilt = ({ children, className = "", intensity = 3 }: { children: React.ReactNode; className?: string; intensity?: number }) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const sx = useSpring(x, { stiffness: 220, damping: 24 });
-  const sy = useSpring(y, { stiffness: 220, damping: 24 });
-  const rotX = useTransform(sy, [-0.5, 0.5], [intensity, -intensity]);
-  const rotY = useTransform(sx, [-0.5, 0.5], [-intensity, intensity]);
-  const onMove = (e: React.MouseEvent) => {
-    const r = ref.current?.getBoundingClientRect();
-    if (!r) return;
-    x.set((e.clientX - r.left) / r.width - 0.5);
-    y.set((e.clientY - r.top) / r.height - 0.5);
-  };
-  return (
-    <motion.div ref={ref} onMouseMove={onMove} onMouseLeave={() => { x.set(0); y.set(0); }}
-      style={{ rotateX: rotX, rotateY: rotY, transformStyle: "preserve-3d", perspective: 1200 }}
-      className={className}>
-      {children}
-    </motion.div>
-  );
 };
 
 /* ─── Navy background with soft gold glow ────────────────────────────── */
