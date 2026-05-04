@@ -1857,7 +1857,17 @@ const Discover = ({ language = "en" }: Props) => {
   const { shortlist, hidden, statusMap, notesMap, setStatus, setNote, toggleShortlist, toggleHidden } = tracker;
   const [analysisStep, setAnalysisStep] = useState(0);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
-  const [sortBy, setSortBy] = useState<SortBy>("match");
+  // Default sort depends on whether the user has profile data. With a
+  // profile, "best match" is meaningful (the score actually scores). Without
+  // a profile, every row's match=0, so "best match" produces effectively
+  // random order — bad first impression. Default to "deadline" when there's
+  // no profile so unprofiled visitors see actionable closing-soon programs
+  // first. Once they build a profile and the page reloads, the default flips
+  // to "match" automatically (lazy initializer reads stored profile).
+  const [sortBy, setSortBy] = useState<SortBy>(() => {
+    const stored = getStoredProfile();
+    return stored?.nationality ? "match" : "deadline";
+  });
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [shortlistOpen, setShortlistOpen] = useState(false);
 
