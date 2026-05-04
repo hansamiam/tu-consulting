@@ -18,7 +18,7 @@ import {
   BookmarkCheck, Bookmark, ChevronLeft, ChevronDown, Zap, RefreshCw,
   Lightbulb, X, SlidersHorizontal, Filter, Search, Trophy,
   Target, Flame, Users, FileText, Languages,
-  CreditCard, AlertOctagon, UserCheck, ShieldAlert, MinusCircle, HelpCircle,
+  CreditCard, AlertOctagon, AlertCircle, UserCheck, ShieldAlert, MinusCircle, HelpCircle,
   LayoutGrid, List, EyeOff, Eye, Columns3, Circle, MoreHorizontal, GitCompare,
   Gem, DollarSign, Crown, Award, Compass, Layers,
 } from "lucide-react";
@@ -500,6 +500,89 @@ const TIER = {
   },
 };
 
+/* ─── Regional accent palette ────────────────────────────────────────────
+ * Maps host_country to a rich gradient + readable foreground colour for
+ * the card hero band. The point isn't fashion — it's that each card
+ * reads as visually distinct at a glance instead of looking like one
+ * row in a database table. Same trick OpportunitiesForYouth.org uses
+ * with hero images, just done with gradients so it scales to 1000+
+ * cards without managing assets. Inspired by the regional colour
+ * coding airline route maps and Notion's database tag schemes use.
+ *
+ * Returns Tailwind classes for a `bg-gradient-to-r` band. Foreground
+ * stays white-ish on every gradient — the gradients are saturated
+ * enough that white text reads cleanly on all of them. */
+const REGIONAL_ACCENT: Record<string, string> = {
+  // North America
+  "United States":  "from-rose-600 to-orange-600",
+  "USA":            "from-rose-600 to-orange-600",
+  "Canada":         "from-red-600 to-rose-700",
+  "Mexico":         "from-orange-600 to-rose-700",
+  // UK & Ireland
+  "United Kingdom": "from-violet-700 to-indigo-700",
+  "UK":             "from-violet-700 to-indigo-700",
+  "Ireland":        "from-emerald-700 to-teal-700",
+  // Continental Europe
+  "Germany":        "from-slate-700 to-zinc-800",
+  "France":         "from-blue-700 to-indigo-700",
+  "Netherlands":    "from-orange-600 to-amber-600",
+  "Switzerland":    "from-rose-700 to-red-700",
+  "Sweden":         "from-blue-600 to-cyan-700",
+  "Norway":         "from-blue-700 to-sky-700",
+  "Denmark":        "from-red-700 to-rose-700",
+  "Finland":        "from-blue-600 to-sky-700",
+  "Iceland":        "from-cyan-700 to-blue-700",
+  "Spain":          "from-yellow-600 to-red-700",
+  "Italy":          "from-emerald-600 to-red-700",
+  "Belgium":        "from-amber-600 to-yellow-700",
+  "Austria":        "from-red-600 to-rose-700",
+  "Czechia":        "from-blue-700 to-red-700",
+  "Poland":         "from-rose-700 to-red-700",
+  "Hungary":        "from-emerald-600 to-red-700",
+  "Romania":        "from-blue-700 to-yellow-600",
+  "Bulgaria":       "from-emerald-600 to-red-700",
+  "Croatia":        "from-blue-700 to-red-700",
+  "Lithuania":      "from-yellow-600 to-emerald-700",
+  "Latvia":         "from-red-700 to-rose-700",
+  "Slovakia":       "from-blue-700 to-red-700",
+  "Estonia":        "from-blue-700 to-slate-700",
+  "EU":             "from-blue-700 to-indigo-700",
+  // East Asia
+  "China":          "from-rose-700 to-amber-600",
+  "Japan":          "from-rose-600 to-pink-600",
+  "Korea":          "from-blue-700 to-rose-700",
+  "South Korea":    "from-blue-700 to-rose-700",
+  "Taiwan":         "from-rose-700 to-blue-700",
+  "Hong Kong":      "from-rose-600 to-emerald-700",
+  // Southeast Asia & Oceania
+  "Singapore":      "from-rose-700 to-pink-700",
+  "Malaysia":       "from-amber-600 to-blue-700",
+  "Indonesia":      "from-rose-700 to-emerald-700",
+  "Thailand":       "from-rose-700 to-blue-700",
+  "Vietnam":        "from-rose-700 to-yellow-600",
+  "Philippines":    "from-blue-700 to-rose-700",
+  "Brunei":         "from-yellow-600 to-rose-700",
+  "Australia":      "from-blue-700 to-amber-600",
+  "New Zealand":    "from-blue-700 to-emerald-700",
+  // South Asia & Middle East
+  "India":          "from-orange-600 to-emerald-700",
+  "Saudi Arabia":   "from-emerald-700 to-teal-700",
+  "UAE":            "from-emerald-700 to-amber-600",
+  "Israel":         "from-blue-700 to-cyan-700",
+  "Turkey":         "from-rose-700 to-red-800",
+  "Egypt":          "from-amber-600 to-rose-700",
+  // Latin America
+  "Brazil":         "from-emerald-700 to-yellow-600",
+  "Argentina":      "from-sky-600 to-blue-700",
+  "Chile":          "from-rose-700 to-blue-700",
+  // Multi/global
+  "Global":         "from-indigo-700 to-purple-700",
+  "Multiple":       "from-indigo-700 to-purple-700",
+};
+const DEFAULT_ACCENT = "from-slate-700 to-zinc-700";
+const accentForCountry = (country: string | null): string =>
+  (country && REGIONAL_ACCENT[country]) || DEFAULT_ACCENT;
+
 /* Match dial colour pairs (HSL strings, navy/gold only) */
 const dialColors = (priority: Scored["priority"]): [string, string] =>
   priority === "strong_match" ? ["hsl(38 70% 40%)",  "hsl(42 80% 65%)"] :
@@ -800,6 +883,8 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
   // card shows "WORTH EXPLORING" (the default for priority=low_priority
   // when match=0) which differentiates nothing.
 
+  const accent = accentForCountry(s.host_country);
+
   return (
     <motion.article
       initial={{ opacity: 0, y: 8 }}
@@ -808,39 +893,51 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
       transition={{ delay: Math.min(index * 0.03, 0.3), duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ y: -2 }}
       onClick={onSelect}
-      className={`group relative rounded-xl bg-card border hover:shadow-md transition-all cursor-pointer h-full flex flex-col overflow-hidden ${isComparing ? "border-gold ring-2 ring-gold/20" : isFullRide ? "border-gold/35 hover:border-gold/55" : "border-border hover:border-foreground/20"} ${isHidden ? "opacity-50" : ""}`}
+      className={`group relative rounded-xl bg-card border hover:shadow-lg transition-all cursor-pointer h-full flex flex-col overflow-hidden ${isComparing ? "border-gold ring-2 ring-gold/20" : isFullRide ? "border-gold/35 hover:border-gold/55" : "border-border hover:border-foreground/20"} ${isHidden ? "opacity-50" : ""}`}
     >
-      {/* Top accent strip — gold for full-ride, neutral otherwise. Subtle
-          but immediate visual differentiator so the grid doesn't read as
-          one undifferentiated wall of cards. */}
-      <div className={`absolute top-0 inset-x-0 h-[2px] ${isFullRide ? "bg-gradient-to-r from-gold-light via-gold-dark to-gold-light" : "bg-border/40"}`} />
-
-      <div className="p-4 pt-5 flex flex-col flex-1 gap-3">
-        {/* Top metadata strip — country · category · verified badge. Replaces
-            the provider-initials avatar (which read as random database keys
-            like "AG"/"SC"/"CF") with information the user actually decodes
-            at a glance: where would I live, what kind of program, is it real. */}
-        <div className="flex items-center gap-2 flex-wrap text-[10px] font-semibold uppercase tracking-[0.16em]">
-          {s.host_country && (
-            <span className="text-foreground/85 truncate">{s.host_country}</span>
-          )}
-          {s.host_country && (s.target_degree_level?.length || isFullRide) && (
-            <span className="text-muted-foreground/40">·</span>
-          )}
-          {isFullRide && (
-            <span className="text-gold-dark">Full ride</span>
-          )}
-          {s.verification_status && s.verification_status !== "pending" && (
-            <span className="ml-auto">
-              <VerifiedBadge
-                status={s.verification_status}
-                verifiedAt={s.last_verified_at}
-                size="xs"
-                compact
-              />
+      {/* Hero gradient band — region-coloured per host country so the
+          grid reads as a colourful atlas instead of a wall of identical
+          white cards. Country + Full-ride tag + Verified badge sit IN
+          the band as white text on the saturated background. Replaces
+          the previous 2px-tall thin accent strip, which was technically
+          differentiating (gold for full-ride) but visually invisible.
+          OpportunitiesForYouth.org uses real hero images for the same
+          purpose; we get most of the visual lift without per-card
+          asset management. */}
+      <div className={`relative bg-gradient-to-r ${accent} px-4 py-2.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/95`}>
+        {s.host_country && (
+          <span className="truncate drop-shadow-sm">{s.host_country}</span>
+        )}
+        {isFullRide && (
+          <>
+            <span className="text-white/50">·</span>
+            <span className="inline-flex items-center gap-1 text-gold-light drop-shadow-sm">
+              <Award className="h-2.5 w-2.5" />
+              Full ride
             </span>
-          )}
-        </div>
+          </>
+        )}
+        {s.verification_status === "verified" && (
+          <span className="ml-auto inline-flex items-center gap-1 text-emerald-200 drop-shadow-sm">
+            <CheckCircle2 className="h-2.5 w-2.5" />
+            Verified
+          </span>
+        )}
+        {s.verification_status === "stale" && (
+          <span className="ml-auto inline-flex items-center gap-1 text-amber-200 drop-shadow-sm">
+            <HelpCircle className="h-2.5 w-2.5" />
+            Verify before applying
+          </span>
+        )}
+        {s.verification_status === "broken" && (
+          <span className="ml-auto inline-flex items-center gap-1 text-red-200 drop-shadow-sm">
+            <AlertCircle className="h-2.5 w-2.5" />
+            URL unreachable
+          </span>
+        )}
+      </div>
+
+      <div className="p-4 flex flex-col flex-1 gap-3">
 
         {/* Title + provider. Title gets 3 lines (was 2 — too much truncation
             on long names like "MEXT Japanese Government Scholarship -..."
