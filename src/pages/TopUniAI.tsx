@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { trackPageView } from "@/utils/analytics";
 import { motion, AnimatePresence } from "framer-motion";
 import Navigation from "@/components/Navigation";
@@ -37,6 +37,50 @@ const fadeUp = (delay = 0) => ({
   transition: { delay, duration: 0.6, ease: [0.22, 1, 0.36, 1] as const },
 });
 
+const WIZARD_DRAFT_KEY = "topuni-intake-draft-v1";
+
+interface WizardDraft {
+  fullName: string;
+  email: string;
+  whatsapp: string;
+  gradeLevel: string;
+  gpa: string;
+  ielts: string;
+  sat: string;
+  targetCountries: string[];
+  major: string;
+  budget: string;
+  scholarshipNeeded: string;
+  timeline: string;
+  prestige: number;
+  scholarship: number;
+  careerRoi: number;
+  visaAccess: number;
+  locationPref: number;
+  /** Wall-clock ms — drafts older than 14 days are dropped on read. */
+  ts?: number;
+}
+
+/** Drafts older than this are treated as cold and silently discarded
+ *  on next mount — users coming back weeks later see a fresh wizard
+ *  rather than stale half-finished answers from a different intent. */
+const DRAFT_TTL_MS = 14 * 86400_000;
+
+const loadDraft = (): Partial<WizardDraft> | null => {
+  try {
+    const raw = localStorage.getItem(WIZARD_DRAFT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    const ts = (parsed as { ts?: unknown }).ts;
+    if (typeof ts === "number" && Date.now() - ts > DRAFT_TTL_MS) {
+      localStorage.removeItem(WIZARD_DRAFT_KEY);
+      return null;
+    }
+    return parsed as Partial<WizardDraft>;
+  } catch { return null; }
+};
+
 const TopUniAI = () => {
   const navigate = useNavigate();
   const [screen, setScreen] = useState<Screen>("landing");
@@ -44,23 +88,38 @@ const TopUniAI = () => {
 
   useEffect(() => { trackPageView("/topuni-ai"); }, []);
 
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
-  const [gradeLevel, setGradeLevel] = useState("");
-  const [gpa, setGpa] = useState("");
-  const [ielts, setIelts] = useState("");
-  const [sat, setSat] = useState("");
-  const [targetCountries, setTargetCountries] = useState<string[]>([]);
-  const [major, setMajor] = useState("");
-  const [budget, setBudget] = useState("");
-  const [scholarshipNeeded, setScholarshipNeeded] = useState("");
-  const [timeline, setTimeline] = useState("");
-  const [prestige, setPrestige] = useState([3]);
-  const [scholarship, setScholarship] = useState([3]);
-  const [careerRoi, setCareerRoi] = useState([3]);
-  const [visaAccess, setVisaAccess] = useState([3]);
-  const [locationPref, setLocationPref] = useState([3]);
+  // Load any in-progress draft on first render. The hub-context handoff
+  // effect runs separately and may overwrite specific fields (country
+  // prefill etc.) after this — that's intentional: a fresh hub click
+  // should shape the draft, not be ignored. Empty string defaults are
+  // used when the draft is absent or partial.
+  const draft = useMemo(() => loadDraft(), []);
+
+  const [fullName, setFullName] = useState(draft?.fullName ?? "");
+  const [email, setEmail] = useState(draft?.email ?? "");
+  const [whatsapp, setWhatsapp] = useState(draft?.whatsapp ?? "");
+  const [gradeLevel, setGradeLevel] = useState(draft?.gradeLevel ?? "");
+  const [gpa, setGpa] = useState(draft?.gpa ?? "");
+  const [ielts, setIelts] = useState(draft?.ielts ?? "");
+  const [sat, setSat] = useState(draft?.sat ?? "");
+  const [targetCountries, setTargetCountries] = useState<string[]>(Array.isArray(draft?.targetCountries) ? draft!.targetCountries! : []);
+  const [major, setMajor] = useState(draft?.major ?? "");
+  const [budget, setBudget] = useState(draft?.budget ?? "");
+  const [scholarshipNeeded, setScholarshipNeeded] = useState(draft?.scholarshipNeeded ?? "");
+  const [timeline, setTimeline] = useState(draft?.timeline ?? "");
+  const [prestige, setPrestige] = useState<number[]>([typeof draft?.prestige === "number" ? draft.prestige : 3]);
+  const [scholarship, setScholarship] = useState<number[]>([typeof draft?.scholarship === "number" ? draft.scholarship : 3]);
+  const [careerRoi, setCareerRoi] = useState<number[]>([typeof draft?.careerRoi === "number" ? draft.careerRoi : 3]);
+  const [visaAccess, setVisaAccess] = useState<number[]>([typeof draft?.visaAccess === "number" ? draft.visaAccess : 3]);
+  const [locationPref, setLocationPref] = useState<number[]>([typeof draft?.locationPref === "number" ? draft.locationPref : 3]);
+
+  // If we restored a draft with meaningful content, jump the user past
+  // the landing screen so they don't have to re-click "Start my plan".
+  useEffect(() => {
+    if (draft && (draft.fullName || draft.email || draft.gpa || (Array.isArray(draft.targetCountries) && draft.targetCountries.length > 0))) {
+      setScreen("intake");
+    }
+  }, [draft]);
   /* When the user arrives from a /scholarships/by-* hub or from a
      specific scholarship detail page, show a small "Pre-filled from
      {label}" indicator so they understand why their wizard already has
@@ -124,6 +183,45 @@ const TopUniAI = () => {
   const toggleCountry = (country: string) => {
     setTargetCountries(prev => prev.includes(country) ? prev.filter(c => c !== country) : [...prev, country]);
   };
+
+  /* Auto-save the wizard draft to localStorage whenever any field
+     changes. This way the user can close the tab mid-wizard and come
+     back to where they were instead of losing 5 minutes of profile
+     entry. The dashboard-screen transition clears the draft (the
+     answers now live in the dashboard's profile state and the
+     server-side cache).
+
+     Skip writing while still on the landing screen — the draft fields
+     are still defaults and we don't want a stray empty draft to
+     trigger the auto-jump-to-intake on next visit. */
+  useEffect(() => {
+    if (screen === "landing") return;
+    try {
+      const draftPayload: WizardDraft = {
+        fullName, email, whatsapp, gradeLevel, gpa, ielts, sat,
+        targetCountries, major, budget, scholarshipNeeded, timeline,
+        prestige: prestige[0], scholarship: scholarship[0],
+        careerRoi: careerRoi[0], visaAccess: visaAccess[0], locationPref: locationPref[0],
+        ts: Date.now(),
+      };
+      localStorage.setItem(WIZARD_DRAFT_KEY, JSON.stringify(draftPayload));
+    } catch { /* ignore quota / private-mode errors */ }
+  }, [
+    screen,
+    fullName, email, whatsapp, gradeLevel, gpa, ielts, sat,
+    targetCountries, major, budget, scholarshipNeeded, timeline,
+    prestige, scholarship, careerRoi, visaAccess, locationPref,
+  ]);
+
+  /* Once the user transitions to the dashboard the wizard answers are
+     "committed" — the dashboard renders the brief from these inputs and
+     the server-side cache key is hashed off them. Drop the local draft
+     so the next /topuni-ai visit starts from landing if the user
+     finished the funnel. */
+  useEffect(() => {
+    if (screen !== "dashboard") return;
+    try { localStorage.removeItem(WIZARD_DRAFT_KEY); } catch { /* ignore */ }
+  }, [screen]);
 
   const profile = {
     fullName, email, whatsapp, gradeLevel, gpa, ielts, sat,
