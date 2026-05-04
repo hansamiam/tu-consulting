@@ -121,7 +121,7 @@ export default function ThankYou() {
 
           {/* Step 2: Schedule (revealed after intake, or immediately if no session to gate on) */}
           {(intakeDone || !result?.paid || !sessionId) && (
-            <div className="bg-white rounded-2xl shadow-2xl p-3 md:p-4 mb-6">
+            <div className="bg-card text-card-foreground rounded-2xl shadow-2xl p-3 md:p-4 mb-6">
               <div className="flex items-center gap-2 px-3 pt-2 pb-3">
                 <span className="bg-accent text-accent-foreground rounded-full h-7 w-7 inline-flex items-center justify-center text-sm font-bold">
                   {result?.paid && sessionId ? "2" : "1"}

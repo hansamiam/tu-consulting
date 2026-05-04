@@ -54,7 +54,7 @@ export default function PreCallIntake({ sessionId, email, onComplete }: PreCallI
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-2xl p-6 md:p-8 mb-6">
+    <div className="bg-card text-card-foreground rounded-2xl shadow-2xl p-6 md:p-8 mb-6">
       <div className="flex items-center gap-2 mb-2">
         <span className="bg-accent text-accent-foreground rounded-full h-7 w-7 inline-flex items-center justify-center text-sm font-bold">1</span>
         <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
