@@ -156,15 +156,26 @@ const normalizeSelectivity = (s: string | null): Scored["selectivity"] => {
 const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: number): Scored => {
   const reasons: string[] = [];
   const warnings: string[] = [];
-  let match = 50;
+  // Base score lowered from 50 → 45. Combined with the steeper
+  // selectivity penalty + differentiated country signal below, this
+  // spreads scores so 85+ actually means "really strong fit" rather
+  // than "passes basic eligibility." Without this recalibration,
+  // most matched rows hit 90+ and the score loses its signal.
+  let match = 45;
   let eligibility: Scored["eligibility"] = "likely";
 
-  // Country / nationality
+  // Country / nationality — split "open to ${user country} nationals"
+  // (a real targeted signal, often the program was DESIGNED for
+  // applicants from that region) from "open to all nationalities" (a
+  // weaker, non-discriminating signal). Previously both got +15. Now:
+  // specific = +15, open-to-all = +7. Raises the bar for what counts
+  // as a "matched on nationality" boost.
   if (s.eligible_countries && p.country) {
     const list = s.eligible_countries.map(c => c.toLowerCase());
-    const open = list.some(c => c.includes("all countries") || c.includes("all nationalities"));
-    const matched = open || list.some(c => c.includes(p.country.toLowerCase()));
-    if (matched) { match += 15; reasons.push(open ? "Open to all nationalities" : `Open to ${p.country} nationals`); }
+    const openToAll = list.some(c => c.includes("all countries") || c.includes("all nationalities"));
+    const specific = list.some(c => c.includes(p.country.toLowerCase()));
+    if (specific) { match += 15; reasons.push(`Open to ${p.country} nationals`); }
+    else if (openToAll) { match += 7; reasons.push("Open to all nationalities"); }
     else { eligibility = "not_eligible"; match -= 40; warnings.push(`Not open to ${p.country} nationals`); }
   }
 
@@ -202,10 +213,18 @@ const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: numbe
   if (s.coverage_type === "full_ride") match += 12;
   if (p.budget === "low" && reward === "high") { match += 6; reasons.push("High value — fits your funding need"); }
 
-  // Selectivity penalty (very high selectivity = harder to win)
+  // Selectivity penalty — steeper than before. Schwarzman-tier
+  // ultra-selective programs were getting only -6 which left them
+  // scoring 90+ for any reasonable applicant; the score then says
+  // "great fit, apply!" while reality is "1-in-2,000 chance." Honest
+  // selectivity adjustment matters more than any other single signal
+  // for "should I apply?" — a student deciding what's worth 20 hours
+  // of essays needs the score to reflect actual odds, not just
+  // eligibility.
   const selectivity = normalizeSelectivity(s.selectivity_level);
-  if (selectivity === "very_high") match -= 6;
-  if (selectivity === "high") match -= 3;
+  if (selectivity === "very_high") match -= 12;
+  if (selectivity === "high") match -= 6;
+  if (selectivity === "medium") match -= 2;
   if (selectivity === "low") match += 4;
 
   // Effort
