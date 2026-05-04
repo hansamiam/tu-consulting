@@ -1562,8 +1562,28 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
   return (
     <Sheet open={open} onOpenChange={o => !o && onClose()}>
       <SheetContent side="right" className="w-full sm:w-[min(95vw,920px)] overflow-y-auto p-0 flex flex-col">
+        {/* ── POSTCARD HERO — country gradient + gothic-arch campus pattern
+              + country landmark layered as a poster the student "flips
+              over" when they open the sheet. Sells the dream of being
+              there before any data hits the page. */}
+        {(() => {
+          const dsAccent = accentForCountry(s.host_country);
+          return (
+            <div className={`relative h-28 sm:h-32 overflow-hidden bg-gradient-to-r ${dsAccent} shrink-0`}>
+              <CampusPattern patternId={`ds-pattern-${s.scholarship_id}`} className="absolute inset-0 w-full h-full text-white opacity-[0.18] pointer-events-none" />
+              <CountryArt country={s.host_country} className="absolute right-4 inset-y-0 h-full opacity-40 pointer-events-none" />
+              <span className="absolute inset-0 bg-gradient-to-r from-black/30 via-black/10 to-transparent pointer-events-none" />
+              <div className="relative h-full flex flex-col justify-end px-7 pb-4">
+                {s.host_country && (
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/85 drop-shadow-sm">{shortCountry(s.host_country)}</p>
+                )}
+                <p className="text-white/70 text-[11px] mt-0.5 italic">Imagine yourself walking these courtyards.</p>
+              </div>
+            </div>
+          );
+        })()}
         {/* ── HEADER (cream, editorial — no thick navy block) ── */}
-        <div className="relative bg-canvas-soft px-7 pt-7 pb-6 overflow-hidden shrink-0 border-b border-border">
+        <div className="relative bg-canvas-soft px-7 pt-6 pb-6 overflow-hidden shrink-0 border-b border-border">
           {/* Soft top wash so the header has navy presence without a slab */}
           <div className="absolute inset-x-0 top-0 h-24 pointer-events-none"
             style={{ backgroundImage: "linear-gradient(180deg, hsl(var(--primary) / 0.06) 0%, transparent 100%)" }} />
