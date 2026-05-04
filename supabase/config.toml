@@ -101,6 +101,9 @@ verify_jwt = true
 [functions.discover-from-hubs-cron]
 verify_jwt = true
 
+[functions.promote-pending-cron]
+verify_jwt = true
+
 [functions.og-brief]
 verify_jwt = false
 

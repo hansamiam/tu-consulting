@@ -40,8 +40,14 @@ const json = (status: number, body: unknown) =>
 // staging for an admin to approve in /admin/queue.
 const AUTO_PUBLISH_THRESHOLD = 0.85;
 
-// Rough cost per LLM extraction call (gpt-4o-mini at ~3k input + 1k output tokens).
-const LLM_COST_PER_EXTRACTION_USD = 0.0015;
+// Rough cost per LLM extraction call. Pro tier (~$0.005) chosen over flash
+// (~$0.0015) because: (a) extraction is stamped against accuracy gates that
+// auto-publish at confidence ≥0.85, so higher-quality extraction directly
+// translates to more rows skipping the staging queue; (b) content-hash
+// short-circuits unchanged pages, so cost only fires on real content
+// changes — across 130 sources and typical change rates that's ~30-40
+// fresh extractions/day for ~$0.15/day. Trade-off favours quality.
+const LLM_COST_PER_EXTRACTION_USD = 0.005;
 
 // Cap on markdown length we pass to the LLM (avoid blowing context cost on
 // huge listing pages — the first 30k chars almost always cover the visible
@@ -440,7 +446,14 @@ serve(async (req) => {
   let extracted: ExtractedScholarship[] = [];
   try {
     const resp = await chatCompletions({
-      tier: "flash",
+      // Pro tier — see LLM_COST_PER_EXTRACTION_USD comment. Higher
+      // extraction fidelity → more rows clear the 0.85 confidence gate
+      // for auto-publish, fewer rows pile up in staging. Auto-published
+      // rows feed the verified database directly; staged rows wait for
+      // admin review. The cost diff is paid once per content-changed
+      // crawl, not per request — content-hash short-circuit makes the
+      // amortized cost negligible at steady state.
+      tier: "pro",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: USER_PROMPT_TEMPLATE(src.name, src.url, src.parser_hint, truncated) },

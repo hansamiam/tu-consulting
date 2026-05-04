@@ -79,6 +79,7 @@ export default function AdminScholarshipVerification() {
   const [bulkFillBusy, setBulkFillBusy] = useState(false);
   const [discoverBusy, setDiscoverBusy] = useState(false);
   const [scrapeBusy, setScrapeBusy] = useState(false);
+  const [promoteBusy, setPromoteBusy] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -213,7 +214,47 @@ export default function AdminScholarshipVerification() {
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Filter by name, country, URL…" className="pl-9 h-9" />
           </div>
           {selected.size === 0 && (
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex items-center gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={promoteBusy}
+                onClick={async () => {
+                  setPromoteBusy(true);
+                  try {
+                    const { data, error } = await supabase.functions.invoke<{
+                      ok: boolean;
+                      candidates: number;
+                      orphaned_no_source_url?: number;
+                      results?: { verified_clean: number; diffs_staged: number; fetch_failed: number; low_confidence: number };
+                    }>("promote-pending-cron", { body: {} });
+                    if (error) throw new Error(error.message);
+                    const c = data?.candidates ?? 0;
+                    const promoted = data?.results?.verified_clean ?? 0;
+                    const staged = data?.results?.diffs_staged ?? 0;
+                    const orphaned = data?.orphaned_no_source_url ?? 0;
+                    toast({
+                      title: c === 0
+                        ? (orphaned > 0 ? `${orphaned} pending rows need manual review` : "Pending queue drained")
+                        : `Promoted ${promoted} · staged ${staged} for review`,
+                      description: c === 0
+                        ? (orphaned > 0
+                            ? `${orphaned} pending rows lack source_url and can't auto-verify. Review manually.`
+                            : "All pending rows with source_url have been processed.")
+                        : `Re-fetched ${c} pending rows. ${promoted} matched stored data → verified. ${staged} had diffs → staged. Re-run to continue draining.`,
+                    });
+                    await fetchAll();
+                  } catch (e) {
+                    toast({ title: "Promote failed", description: (e as Error).message, variant: "destructive" });
+                  }
+                  setPromoteBusy(false);
+                }}
+                className="gap-1.5"
+                title="Re-fetch each pending scholarship's source URL, re-extract via pro-tier LLM, auto-promote to verified if data matches stored. Same accuracy guard the verified rows already pass."
+              >
+                {promoteBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                Promote pending rows
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
