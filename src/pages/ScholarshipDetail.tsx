@@ -89,6 +89,13 @@ interface Scholarship {
 
 type SimilarScholarship = ScholarshipCardData;
 
+interface ScholarshipStats {
+  save_count_total: number | null;
+  save_count_7d: number | null;
+  view_count_7d: number | null;
+  trending_score: number | null;
+}
+
 const ScholarshipDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -96,6 +103,7 @@ const ScholarshipDetail = () => {
   const tracker = useApplicationTracker();
   const [s, setS] = useState<Scholarship | null>(null);
   const [similar, setSimilar] = useState<SimilarScholarship[]>([]);
+  const [stats, setStats] = useState<ScholarshipStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -131,6 +139,26 @@ const ScholarshipDetail = () => {
     })();
     return () => { cancelled = true; };
   }, [id]);
+
+  /* Fetch aggregate stats for this scholarship (save count, recent
+     views, trending). Drives the small social-proof line in the hero
+     once the totals cross thresholds. The table is small (~200 rows),
+     a single keyed select is cheap. Soft-fails. */
+  useEffect(() => {
+    if (!s?.scholarship_id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("scholarship_stats")
+          .select("save_count_total, save_count_7d, view_count_7d, trending_score")
+          .eq("scholarship_id", s.scholarship_id)
+          .maybeSingle<ScholarshipStats>();
+        if (!cancelled) setStats(data ?? null);
+      } catch { /* stats are nice-to-have, never block the page */ }
+    })();
+    return () => { cancelled = true; };
+  }, [s?.scholarship_id]);
 
   /* Find similar scholarships using pgvector — same retrieval path
      Discover uses, just keyed off this row's content. */
@@ -306,6 +334,27 @@ const ScholarshipDetail = () => {
               verifiedAt={s.last_verified_at ?? (s.last_verified_date ? `${s.last_verified_date}T00:00:00Z` : undefined)}
             />
           </div>
+
+          {/* Social proof — only shows once the row has crossed real
+              critical mass on the platform. Kept quiet (single line, no
+              icons) so it reinforces trust without screaming "marketing
+              widget." Threshold mirrors ScholarshipCard's logic. */}
+          {(() => {
+            const totalSaves = stats?.save_count_total ?? 0;
+            const recentSaves = stats?.save_count_7d ?? 0;
+            const recentViews = stats?.view_count_7d ?? 0;
+            if (totalSaves < 5 && recentViews < 25) return null;
+            const parts: string[] = [];
+            if (totalSaves >= 5) parts.push(`${totalSaves.toLocaleString()} students tracking this`);
+            if (recentSaves >= 3) parts.push(`+${recentSaves} this week`);
+            else if (recentViews >= 25) parts.push(`${recentViews.toLocaleString()} viewed in the past 7 days`);
+            return (
+              <p className="text-[12px] text-primary-foreground/60 mb-5 tracking-wide">
+                {parts.join(" · ")}
+              </p>
+            );
+          })()}
+
           <div className="flex flex-wrap gap-2">
             {s.official_url && (
               <Button variant="gold" size="lg" asChild className="gap-2">
