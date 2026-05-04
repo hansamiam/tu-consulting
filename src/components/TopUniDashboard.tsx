@@ -3326,7 +3326,29 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       />
 
       {/* ─── Save-your-brief signup prompt (anon users only) ─────── */}
-      {!user && (
+      {!user && (() => {
+        // Surface concrete loss-aversion stats: matches found, scholarships
+        // saved, closest urgent deadline. The dialog uses these to make the
+        // ask "save THIS specific work" instead of "save your work" generic.
+        const liveMatchCount = liveMatches.length;
+        const savedCount = tracker.shortlist.size;
+        const now = Date.now();
+        const closestUrgent: { name: string; days: number } | null = (() => {
+          // Candidates: any matched scholarship in the user's pipeline,
+          // OR any liveMatch (since those are the ones surfaced in the
+          // brief and most likely to feel like "their" candidates).
+          const pool = allMatches.filter((m) =>
+            m.application_deadline && (tracker.shortlist.has(m.scholarship_id) || liveMatches.some((lm) => lm.scholarship_id === m.scholarship_id))
+          );
+          let best: { name: string; days: number } | null = null;
+          for (const m of pool) {
+            const d = Math.ceil((new Date(m.application_deadline!).getTime() - now) / 86400000);
+            if (d < 0 || d > 30) continue;
+            if (!best || d < best.days) best = { name: m.scholarship_name, days: d };
+          }
+          return best;
+        })();
+        return (
         <SaveBriefPrompt
           open={savePromptOpen}
           onOpenChange={(o) => {
@@ -3337,6 +3359,9 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           }}
           defaultEmail={profile.email}
           language={language}
+          liveMatchCount={liveMatchCount}
+          savedCount={savedCount}
+          closestUrgent={closestUrgent}
           payload={{
             profile: {
               fullName: profile.fullName,
@@ -3367,7 +3392,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             createdAt: Date.now(),
           }}
         />
-      )}
+        );
+      })()}
 
       {/* ─── Share dialog ──────────────────────────────────────────
           Mints (or shows) a public /brief/:slug URL the student can

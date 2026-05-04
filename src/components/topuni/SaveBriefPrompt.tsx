@@ -18,7 +18,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Check, Sparkles, Mail } from "lucide-react";
+import { Loader2, Check, Sparkles, Mail, Bookmark, Clock, Bot } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { setPendingAccount, type PendingAccountPayload } from "@/lib/pendingAccount";
 
@@ -30,9 +30,22 @@ interface Props {
   // The full payload to persist after magic-link verification
   payload: PendingAccountPayload;
   language?: "en" | "ru";
+  /* Optional concrete user stats — when supplied, the dialog quantifies
+     what the user actually has (and would lose) instead of generic copy.
+     Each is independently optional: missing → falls back to the generic
+     line for that bullet. */
+  liveMatchCount?: number;
+  savedCount?: number;
+  /** Closest urgent saved-deadline summary, e.g. { name: "Schwarzman", days: 11 }.
+   *  Shown when the user has any saved scholarship with a deadline in
+   *  the next 30 days — the line lands as concrete loss-aversion. */
+  closestUrgent?: { name: string; days: number } | null;
 }
 
-export function SaveBriefPrompt({ open, onOpenChange, defaultEmail, payload, language = "en" }: Props) {
+export function SaveBriefPrompt({
+  open, onOpenChange, defaultEmail, payload, language = "en",
+  liveMatchCount, savedCount, closestUrgent,
+}: Props) {
   const isRu = language === "ru";
   const t = (en: string, ru: string) => (isRu ? ru : en);
   const { user, signInWithMagicLink } = useAuth();
@@ -83,15 +96,68 @@ export function SaveBriefPrompt({ open, onOpenChange, defaultEmail, payload, lan
             </span>
           </div>
           <DialogTitle className="font-heading text-xl tracking-tight">
-            {t("Save your brief — and get deadline reminders.", "Сохраните брифинг — и получайте напоминания о дедлайнах.")}
+            {closestUrgent && closestUrgent.days <= 14
+              ? t(
+                  `${closestUrgent.name} closes in ${closestUrgent.days} day${closestUrgent.days === 1 ? "" : "s"} — don't lose it.`,
+                  `${closestUrgent.name} закрывается через ${closestUrgent.days} дн. — не теряйте.`,
+                )
+              : t("Save your brief — and get deadline reminders.", "Сохраните брифинг — и получайте напоминания о дедлайнах.")}
           </DialogTitle>
           <DialogDescription className="text-sm leading-relaxed">
             {t(
-              "Your brief, your saved scholarships, and your action-plan progress live on this device only. Sign up to make them permanent across devices, plus we'll email you when scholarship deadlines come up.",
-              "Сейчас брифинг, сохранённые стипендии и прогресс плана хранятся только на этом устройстве. Зарегистрируйтесь — синхронизация на всех устройствах + напоминания о дедлайнах."
+              "Right now everything lives on this browser only — clear your cookies and it's gone. Sign up (no password) and we'll keep it across devices plus email you before each deadline.",
+              "Сейчас всё хранится только в этом браузере — очистите cookies и оно пропадёт. Регистрация (без пароля) — синхронизация и напоминания за день до каждого дедлайна.",
             )}
           </DialogDescription>
         </DialogHeader>
+
+        {/* Concrete stats strip — shows the user EXACTLY what they have on
+            this device. Loss aversion is much sharper than generic
+            "save your work." Each item only renders if we have a real
+            count; the strip itself hides if there's nothing to show. */}
+        {!done && (liveMatchCount || savedCount || closestUrgent) && (
+          <div className="grid grid-cols-3 gap-2 -mx-1 mb-1">
+            {typeof liveMatchCount === "number" && liveMatchCount > 0 && (
+              <div className="flex flex-col items-start gap-1 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+                <Sparkles className="w-3.5 h-3.5 text-gold-dark" />
+                <p className="font-heading font-bold text-base text-foreground tabular-nums leading-none">{liveMatchCount}</p>
+                <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-semibold leading-snug">
+                  {t("matches", "совпадений", )}
+                </p>
+              </div>
+            )}
+            {typeof savedCount === "number" && savedCount > 0 && (
+              <div className="flex flex-col items-start gap-1 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+                <Bookmark className="w-3.5 h-3.5 text-gold-dark" />
+                <p className="font-heading font-bold text-base text-foreground tabular-nums leading-none">{savedCount}</p>
+                <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-semibold leading-snug">
+                  {t("saved", "сохранено")}
+                </p>
+              </div>
+            )}
+            {closestUrgent && closestUrgent.days >= 0 && closestUrgent.days <= 30 && (
+              <div className={`flex flex-col items-start gap-1 rounded-lg border px-3 py-2.5 ${
+                closestUrgent.days <= 7
+                  ? "border-destructive/30 bg-destructive/5"
+                  : "border-amber-500/30 bg-amber-500/5"
+              }`}>
+                <Clock className={`w-3.5 h-3.5 ${closestUrgent.days <= 7 ? "text-destructive" : "text-amber-700 dark:text-amber-500"}`} />
+                <p className={`font-heading font-bold text-base tabular-nums leading-none ${
+                  closestUrgent.days <= 7 ? "text-destructive" : "text-amber-700 dark:text-amber-500"
+                }`}>
+                  {closestUrgent.days === 0
+                    ? t("Today", "Сегодня")
+                    : closestUrgent.days === 1
+                      ? t("1 day", "1 дн.")
+                      : `${closestUrgent.days} ${t("days", "дн.")}`}
+                </p>
+                <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-semibold leading-snug">
+                  {t("next deadline", "след. дедлайн")}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {done ? (
           <div className="py-4 space-y-4">
@@ -157,12 +223,19 @@ export function SaveBriefPrompt({ open, onOpenChange, defaultEmail, payload, lan
           </form>
         )}
 
-        <div className="border-t border-border/60 pt-3 text-[11px] text-muted-foreground/80 flex items-center gap-1.5">
-          <Sparkles className="w-3 h-3 text-gold-dark" />
-          {t(
-            "What you get: deadline reminders, multi-device sync, the AI counselor with full context.",
-            "Что вы получите: напоминания о дедлайнах, синхронизация на устройствах, AI-советник с полным контекстом."
-          )}
+        <div className="border-t border-border/60 pt-3 text-[11px] text-muted-foreground/80 space-y-1.5">
+          <div className="flex items-start gap-1.5">
+            <Clock className="w-3 h-3 text-gold-dark shrink-0 mt-0.5" />
+            <span>{t("Deadline reminders before each scholarship closes.", "Напоминания за день до каждого дедлайна.")}</span>
+          </div>
+          <div className="flex items-start gap-1.5">
+            <Bot className="w-3 h-3 text-gold-dark shrink-0 mt-0.5" />
+            <span>{t("AI counselor with full memory of your profile + brief.", "AI-советник со всей вашей историей.")}</span>
+          </div>
+          <div className="flex items-start gap-1.5">
+            <Sparkles className="w-3 h-3 text-gold-dark shrink-0 mt-0.5" />
+            <span>{t("Brief + saved scholarships sync across every device.", "Брифинг и сохранённые стипендии — синхронно на всех устройствах.")}</span>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
