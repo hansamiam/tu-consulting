@@ -33,7 +33,7 @@ export interface DeepDiveStrategy {
   avoid: string[];
 }
 
-export type DeepDiveOddsBucket = "primary" | "competitive" | "stretch";
+export type DeepDiveOddsBucket = "primary" | "competitive" | "aspirational";
 
 export interface DeepDiveOdds {
   bucket: DeepDiveOddsBucket;

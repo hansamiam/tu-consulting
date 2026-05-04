@@ -24,7 +24,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 const COST_ESTIMATE_USD = 0.0008;
 
 interface InboundProfile {
@@ -64,7 +64,7 @@ interface DeepDiveOutput {
     avoid: string[];       // 0-2
   };
   odds: {
-    bucket: "primary" | "competitive" | "stretch";
+    bucket: "primary" | "competitive" | "aspirational";
     rationale: string;
     typical_admit_profile: string;
   };
@@ -86,7 +86,7 @@ const SCHEMA_DOC = `{
     "avoid": ["string array, 0-2 — things NOT to do given this student's profile"]
   },
   "odds": {
-    "bucket": "primary | competitive | stretch",
+    "bucket": "primary | competitive | aspirational",
     "rationale": "string — 1-2 sentences citing the specific student-vs-typical-admit gap or alignment",
     "typical_admit_profile": "string — one line on what the typical successful applicant looks like"
   },
@@ -244,7 +244,7 @@ CRITICAL RULES:
 1. Be specific and quantitative. Cite the student's actual numbers.
 2. If the scholarship has a min_gpa / min_ielts / etc. and the student is missing or below it, mark that breakdown line as "miss" or "near" honestly. Do not soften.
 3. Strategy points must be specific to THIS student's background — not generic scholarship-application advice.
-4. odds.bucket = "primary" if the student clearly meets thresholds AND fits the typical admit profile; "competitive" if they're in range but fighting for a slot; "stretch" if they're below thresholds or far from the typical admit profile.
+4. odds.bucket = "primary" if the student clearly meets thresholds AND fits the typical admit profile; "competitive" if they're in range but fighting for a slot; "aspirational" if they're below thresholds or far from the typical admit profile (the user-facing label is "Worth exploring with strategy" — never write that you think it's out of reach; honest gap-analysis is the value).
 5. thirty_day.items must include exactly 4 entries, one per week.
 6. Output language: ${lang}.
 

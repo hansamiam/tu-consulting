@@ -20,9 +20,9 @@ const FEASIBILITY_META = {
     cls: "text-gold-dark border-gold/30 bg-gold/5",
     barCls: "from-gold-dark to-gold",
   },
-  stretch: {
-    en: "Stretch combo",
-    ru: "Амбициозный сценарий",
+  aspirational: {
+    en: "Worth exploring",
+    ru: "Стоит рассмотреть",
     Icon: Crown,
     cls: "text-amber-700 dark:text-amber-400 border-amber-300/40 bg-amber-50 dark:bg-amber-950/20",
     barCls: "from-amber-500 to-amber-300",
@@ -50,7 +50,11 @@ export const CombinedFundingChart = ({
     <div className="not-prose mb-6 space-y-3">
       {data.scenarios.slice(0, 3).map((scenario, i) => {
         const widthPct = Math.max(20, (scenario.total_usd / cohortMax) * 100);
-        const feasMeta = FEASIBILITY_META[scenario.feasibility] ?? FEASIBILITY_META.secondary;
+        // Back-compat: cached briefs from before May 2026 used "stretch" as the
+        // feasibility key. Map that to "aspirational" so old persisted briefs
+        // still render the correct band rather than falling back to "secondary".
+        const feasKey = (scenario.feasibility as string) === "stretch" ? "aspirational" : scenario.feasibility;
+        const feasMeta = FEASIBILITY_META[feasKey as keyof typeof FEASIBILITY_META] ?? FEASIBILITY_META.secondary;
         const FeasIcon = feasMeta.Icon;
 
         return (

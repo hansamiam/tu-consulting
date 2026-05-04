@@ -30,7 +30,8 @@ export type EventName =
   | "checklist_item_toggled"
   | "section_regenerated"
   | "share_brief_minted"
-  | "deep_dive_opened";
+  | "deep_dive_opened"
+  | "brief_focus_scholarship_set";
 
 const ANON_ID_KEY = "topuni-anon-id";
 

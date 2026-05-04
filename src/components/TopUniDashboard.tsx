@@ -1322,6 +1322,15 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
 
   const [pathwayContent, setPathwayContent] = useState<string>(restored?.content ?? "");
   const [pathwayLoading, setPathwayLoading] = useState(false);
+  /* Focus scholarship — populated when the user arrived from a
+     /scholarships/:id detail page and clicked "Build my strategy around
+     this." Drained from sessionStorage on mount; passed to the pathway
+     edge fn so the brief explicitly elevates this scholarship in the
+     funding section. Mirrors the counselor-prefill handoff pattern. */
+  const [focusScholarship, setFocusScholarship] = useState<{
+    scholarshipId: string;
+    scholarshipName: string;
+  } | null>(null);
   // Structured-output payload extracted from the brief (premium tier only).
   // Populated by a second-pass call to extract-brief-data after the markdown
   // stream completes. Drives chart rendering inside PremiumSection / Funding.
@@ -1667,6 +1676,35 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     } catch { /* ignore */ }
   }, []);
 
+  /* Focus-scholarship drain — symmetric to the counselor prefill above.
+     The /scholarships/:id "Build my strategy around this" CTA stashes
+     {scholarshipId, scholarshipName, ts} so the brief generation can
+     pin this scholarship at the top of the retrieved set and call it
+     out by name. Drained once on mount with the same 5-minute stale
+     guard. */
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("topuni-focus-scholarship");
+      if (!raw) return;
+      sessionStorage.removeItem("topuni-focus-scholarship");
+      const payload = JSON.parse(raw) as {
+        scholarshipId?: string;
+        scholarshipName?: string;
+        ts?: number;
+      };
+      if (!payload?.scholarshipId || !payload.scholarshipName) return;
+      if (typeof payload.ts === "number" && Date.now() - payload.ts > 5 * 60_000) return;
+      setFocusScholarship({
+        scholarshipId: payload.scholarshipId,
+        scholarshipName: payload.scholarshipName,
+      });
+      void track("brief_focus_scholarship_set", {
+        scholarship_id: payload.scholarshipId,
+        scholarship_name: payload.scholarshipName,
+      });
+    } catch { /* ignore */ }
+  }, []);
+
   /* Auto-greet the counselor when the user opens chat empty-handed but
      with enough context to ground a real opener. We compute a hash of
      the inputs that affect the greeting; if the cached hash matches,
@@ -1877,7 +1915,16 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     try {
       await streamSSE(
         PATHWAY_URL,
-        { profile: enrichedProfile, language, reportGrade, regenSection: sectionId },
+        {
+          profile: enrichedProfile,
+          language,
+          reportGrade,
+          regenSection: sectionId,
+          // Carry the focus scholarship through per-section regens too —
+          // otherwise re-generating the funding section would lose the
+          // pinned scholarship and the user's "build around this" intent.
+          focusScholarshipId: focusScholarship?.scholarshipId ?? null,
+        },
         (chunk) => { newSectionMd += chunk; },
         () => {
           // Splice the new section into pathwayContent in place. Find the
@@ -1940,7 +1987,16 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
 
     await streamSSE(
       PATHWAY_URL,
-      { profile: enrichedProfile, language, reportGrade },
+      {
+        profile: enrichedProfile,
+        language,
+        reportGrade,
+        // When the user arrived from a /scholarships/:id detail page,
+        // hand the scholarship id off so the edge fn can elevate this
+        // row in the retrieved set and call it out by name in the
+        // funding pathway section. Null when the user came in fresh.
+        focusScholarshipId: focusScholarship?.scholarshipId ?? null,
+      },
       (chunk) => { soFar += chunk; setPathwayContent(soFar); },
       () => {
         const now = Date.now();
@@ -2261,6 +2317,32 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                   </Button>
                 </div>
               )}
+              {/* Focus-scholarship indicator — when the user arrived from
+                  /scholarships/:id and asked us to build the strategy
+                  around that scholarship, surface it explicitly so the
+                  user knows the brief is being shaped around their pick.
+                  Renders during generation AND on completed briefs. */}
+              {focusScholarship && (
+                <div className="not-prose mb-6 rounded-lg border border-gold/35 bg-gradient-to-br from-gold/[0.07] to-transparent px-4 py-3 flex items-start gap-3 print:hidden">
+                  <Sparkles className="w-4 h-4 text-gold-dark mt-0.5 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold-dark mb-1">
+                      {t("Strategy focused around", "Стратегия выстроена вокруг")}
+                    </p>
+                    <p className="text-sm text-foreground font-semibold leading-snug truncate">
+                      {focusScholarship.scholarshipName}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setFocusScholarship(null)}
+                    className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-4 hover:underline shrink-0"
+                  >
+                    {t("Clear", "Сбросить")}
+                  </button>
+                </div>
+              )}
+
               {pathwayLoading && !pathwayContent && (
                 <GenerationPipeline profile={profile} isRu={isRu} />
               )}

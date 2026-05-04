@@ -56,20 +56,20 @@ const STATUS_META: Record<DeepDiveBreakdownStatus, { Icon: typeof CheckCircle2; 
 
 const ODDS_META: Record<DeepDiveOddsBucket, { en: string; ru: string; cls: string; ringCls: string }> = {
   primary: {
-    en: "Primary target",
-    ru: "Основной таргет",
+    en: "Closely aligned",
+    ru: "Чёткое соответствие",
     cls: "text-success",
     ringCls: "ring-success/30 bg-success/5",
   },
   competitive: {
-    en: "Competitive — reachable",
-    ru: "Конкурентно, но реалистично",
+    en: "Aligned — competitive",
+    ru: "Соответствие, но конкурентно",
     cls: "text-gold-dark",
     ringCls: "ring-gold/30 bg-gold/5",
   },
-  stretch: {
-    en: "Stretch — apply with strategy",
-    ru: "Амбициозный — нужна стратегия",
+  aspirational: {
+    en: "Worth exploring with strategy",
+    ru: "Стоит рассматривать стратегически",
     cls: "text-amber-700 dark:text-amber-400",
     ringCls: "ring-amber-300/40 bg-amber-50 dark:bg-amber-950/20",
   },
@@ -174,7 +174,11 @@ export const ScholarshipDeepDive = ({
   // Error: silently hide. The static scholarship info below still renders.
   if (error || !data) return null;
 
-  const oddsMeta = ODDS_META[data.odds.bucket] ?? ODDS_META.competitive;
+  // Back-compat: any cached deep-dive rows from before SCHEMA_VERSION 2 used
+  // the bucket value "stretch" — a banned word. Map it to "aspirational"
+  // until the backend cache flushes naturally on next regeneration.
+  const bucket = (data.odds.bucket as string) === "stretch" ? "aspirational" : data.odds.bucket;
+  const oddsMeta = ODDS_META[bucket as DeepDiveOddsBucket] ?? ODDS_META.competitive;
   const overall = Math.max(0, Math.min(100, Math.round(data.match.overall_score)));
   const overallColor = overall >= 75 ? "text-success" : overall >= 55 ? "text-gold-dark" : overall >= 35 ? "text-amber-700 dark:text-amber-400" : "text-destructive";
 

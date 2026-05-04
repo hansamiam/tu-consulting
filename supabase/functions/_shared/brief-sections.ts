@@ -214,7 +214,7 @@ const fundingPathway: SectionSpec = {
 
 For 4-6 specific scholarships from the DATABASE CONTEXT that match this profile:
 - **Scholarship name** with award amount
-- Probability assessment: primary target / secondary / stretch
+- Probability assessment: primary target, secondary, or aspirational pick worth exploring with strategy
 - Specific application strategy and timeline
 - Key documents this student needs to start gathering now
 

@@ -49,7 +49,7 @@ export interface FundingScenario {
   /** Sum of component amounts in USD. */
   total_usd: number;
   /** Likelihood the student can pull this off. */
-  feasibility: "primary" | "secondary" | "stretch";
+  feasibility: "primary" | "secondary" | "aspirational";
   /** One sentence on how to execute this scenario. */
   strategy: string;
 }

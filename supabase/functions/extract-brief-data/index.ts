@@ -82,7 +82,7 @@ const SCHEMA_DESCRIPTION = `{
           { "name": "string — scholarship/aid name", "amount_usd": "number — USD value" }
         ],
         "total_usd": "number — sum of components",
-        "feasibility": "primary | secondary | stretch",
+        "feasibility": "primary | secondary | aspirational",
         "strategy": "string — one sentence on how to execute"
       }
     ]

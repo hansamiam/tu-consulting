@@ -210,7 +210,7 @@ serve(async (req) => {
       );
     }
 
-    const { profile, language, reportGrade, regenSection } = await req.json();
+    const { profile, language, reportGrade, regenSection, focusScholarshipId } = await req.json();
     const grade = reportGrade || "basic";
     /* When regenSection is set, the caller is asking us to regenerate
        JUST that one section of an already-generated premium brief
@@ -331,6 +331,37 @@ serve(async (req) => {
       scholarshipRows = data || [];
     }
 
+    /* Focus scholarship — when the student arrived from a /scholarships/:id
+       detail page and asked us to build the strategy around that specific
+       scholarship, hydrate it and pin it at index 0 of scholarshipRows.
+       De-dups against any matching row already in the retrieval set so we
+       don't end up with two copies. Soft-fails: a missing or non-verified
+       row just falls through (the page shouldn't have been linked from
+       in the first place if the row is broken). */
+    let focusScholarshipName: string | null = null;
+    if (typeof focusScholarshipId === "string" && focusScholarshipId) {
+      const { data: focusRow } = await supabase
+        .from("scholarships")
+        .select(
+          "scholarship_id, scholarship_name, provider_name, host_country, " +
+          "coverage_type, award_amount_text, estimated_total_value_usd, " +
+          "target_degree_level, target_fields, application_deadline, " +
+          "eligibility_requirements, citizenship_requirements, official_url, " +
+          "source_url, last_verified_at, verification_status, " +
+          "why_this_fits, strategy_notes, how_to_win, ideal_candidate_profile"
+        )
+        .eq("scholarship_id", focusScholarshipId)
+        .or("verification_status.is.null,verification_status.in.(verified,stale)")
+        .maybeSingle();
+      if (focusRow) {
+        focusScholarshipName = focusRow.scholarship_name;
+        scholarshipRows = [
+          { ...focusRow, _focus: true },
+          ...scholarshipRows.filter((r: any) => r.scholarship_id !== focusScholarshipId),
+        ].slice(0, 25);
+      }
+    }
+
     /* Universities — kept lighter. Country-filter SELECT with the
        fields the prompt actually uses. The university table is much
        smaller than scholarships, so RAG is overkill here. */
@@ -358,7 +389,8 @@ serve(async (req) => {
       const elig = String(s.eligibility_requirements || "").slice(0, 240);
       const sim = typeof s._similarity === "number" ? ` (relevance ${(s._similarity * 100).toFixed(0)}%)` : "";
       const eligTag = s._eligible === false ? " [eligibility unclear — review]" : "";
-      return `${i + 1}. ${s.scholarship_name}${sim}${eligTag}
+      const focusTag = s._focus ? " [STUDENT'S FOCUS — they arrived from this scholarship's detail page]" : "";
+      return `${i + 1}. ${s.scholarship_name}${sim}${eligTag}${focusTag}
    Provider: ${s.provider_name || "—"}; host: ${s.host_country || "—"}
    Coverage: ${s.coverage_type}${s.award_amount_text ? ` — ${s.award_amount_text}` : ""}
    Levels: ${levels || "any"}; fields: ${fields || "any"}
@@ -375,8 +407,18 @@ serve(async (req) => {
       return `- ${u.university_name} (${u.city}, ${u.country}) · tuition $${u.tuition_usd_per_year ?? "—"}/yr · foundation ${u.foundation_year_available ? "yes" : "no"}\n${programs}`;
     }).join("\n");
 
+    const focusBlock = focusScholarshipName
+      ? `\n\n=== STUDENT'S FOCUS SCHOLARSHIP ===
+The student navigated here from the "${focusScholarshipName}" detail page and explicitly asked us to build the strategy around it. In the funding pathway section:
+1. List "${focusScholarshipName}" FIRST, with a fuller paragraph than the others.
+2. Cite the student's specific stats vs this scholarship's requirements (GPA, IELTS, eligibility) and assess fit honestly.
+3. Give one concrete positioning angle they should lead with — anchored in their profile, not generic.
+4. If the student's profile doesn't fit this scholarship at all (clear ineligibility), say so directly and recommend the strongest 1-2 alternatives from the database below.
+Throughout the brief, reference this focus scholarship by name where relevant (e.g. essay angles that play to it, action-plan items that prepare for its requirements).`
+      : "";
+
     const dbContext = `=== TOP-${scholarshipRows.length} RETRIEVED SCHOLARSHIPS (method: ${retrievalMethod}) ===
-${scholarshipContext || "(none retrieved)"}
+${scholarshipContext || "(none retrieved)"}${focusBlock}
 
 === TARGET UNIVERSITIES (${relevantUnis.length}) ===
 ${universityContext || "(none in database for the student's target countries)"}`;
@@ -416,7 +458,7 @@ Do NOT invent universities. Pull only from the database section above.
 - **Scholarship name** — award amount and coverage type
 - Why this student is a real candidate
 - Application timing and deadline if known
-Be honest about probability. Mark each as a primary target, secondary option, or stretch.
+Be honest about probability. Mark each as a primary target, a secondary option, or an aspirational pick worth exploring with strategy.
 
 ## Your 90-day action plan
 A week-by-week sequence starting from today. Group as:
@@ -508,7 +550,7 @@ For each top-3 recommended university (the strongest 3 fits):
 ## Funding deep-dive
 For each shortlist of 4-6 scholarships:
 - **Scholarship name** with award amount
-- Probability assessment: primary target / secondary / stretch
+- Probability assessment: primary target, secondary, or aspirational pick worth exploring with strategy
 - Specific application strategy and timeline
 - Key documents this student needs to start gathering now
 

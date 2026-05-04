@@ -194,9 +194,14 @@ const ScholarshipDetail = () => {
     setMeta("twitter:title", title);
     setMeta("twitter:description", desc);
     setLink("canonical", `https://topuni.org/scholarships/${s.scholarship_id}`);
-    // JSON-LD: this scholarship as an EducationalOccupationalCredential
-    injectJsonLd({
-      "@context": "https://schema.org",
+
+    // ── JSON-LD payload(s) ─────────────────────────────────────────────
+    // Two structured-data graphs: the scholarship credential itself, and
+    // a FAQPage built from the same fields visible on the page. The FAQ
+    // graph lets Google surface the page as a rich result for natural
+    // questions like "who is eligible for {scholarship}" — pure SEO
+    // leverage on already-written content.
+    const credential = {
       "@type": "EducationalOccupationalCredential",
       name: s.scholarship_name,
       description: s.eligibility_requirements?.slice(0, 400) ?? desc,
@@ -209,6 +214,18 @@ const ScholarshipDetail = () => {
       provider: s.provider_name
         ? { "@type": "Organization", name: s.provider_name }
         : undefined,
+    };
+    const faqEntities = buildFaqEntities(s);
+    const graph: object[] = [credential];
+    if (faqEntities.length > 0) {
+      graph.push({
+        "@type": "FAQPage",
+        mainEntity: faqEntities,
+      });
+    }
+    injectJsonLd({
+      "@context": "https://schema.org",
+      "@graph": graph,
     });
   }, [s]);
 
@@ -330,6 +347,16 @@ const ScholarshipDetail = () => {
         scholarshipId={s.scholarship_id}
       />
 
+      {/* Deadline urgency banner — surfaces above the fold when the deadline
+          is within 14 days, or already passed, so visitors don't scroll past
+          the chip and miss it. Hidden when there's plenty of time or no
+          deadline on file. */}
+      <DeadlineUrgencyBanner
+        deadline={s.application_deadline}
+        deadlineType={s.deadline_type}
+        days={days}
+      />
+
       {/* URL health warning */}
       {s.official_url && (s.url_consecutive_fails ?? 0) >= 3 && (
         <div className="max-w-4xl mx-auto px-5 sm:px-8 pt-6">
@@ -357,7 +384,12 @@ const ScholarshipDetail = () => {
             the visitor's locally-stored profile, renders match-score
             breakdown + odds + strategy + 30-day plan above the static
             scholarship info below. Soft-fails to a build-profile prompt
-            when no profile is on file, or hides on edge-fn error. */}
+            when no profile is on file, or hides on edge-fn error.
+
+            Sits BEFORE the editorial sections so a visitor with a stored
+            profile sees the personalised verdict first — that is the
+            value. The static eligibility / how-to-win prose below is the
+            same for everyone and acts as the SEO body. */}
         {(() => {
           const stored = getStoredProfile();
           // The DiscoverProfile shape from getStoredProfile uses different
@@ -426,22 +458,42 @@ const ScholarshipDetail = () => {
           </Section>
         )}
 
-        {/* CTA — generate a personalised strategy */}
+        {/* CTA — generate a personalised strategy. Stashes a focus payload
+            in sessionStorage so the brief flow knows to elevate THIS
+            scholarship into the funding pathway and call it out by name.
+            Mirrors the counselor-prefill pattern from Pipeline — same
+            5-minute stale guard. */}
         <div className="bg-card border border-border rounded-2xl p-6 sm:p-8 text-center">
           <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">
-            Don't read — strategise
+            Don't just read — strategise
           </p>
           <h3 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground mb-3 leading-tight">
-            Build a personal strategy that includes this scholarship.
+            Build a personal strategy that includes the {s.scholarship_name}.
           </h3>
           <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto mb-6">
             TopUni AI takes your profile, ranks every scholarship in the database against you,
             and tells you specifically how to win this one — what to lead with, how to prep.
           </p>
-          <Button variant="gold" size="lg" asChild className="gap-2">
-            <Link to="/topuni-ai">
-              Build my strategy <ArrowRight className="w-4 h-4" />
-            </Link>
+          <Button
+            variant="gold"
+            size="lg"
+            className="gap-2"
+            onClick={() => {
+              try {
+                sessionStorage.setItem(
+                  "topuni-focus-scholarship",
+                  JSON.stringify({
+                    scholarshipId: s.scholarship_id,
+                    scholarshipName: s.scholarship_name,
+                    ts: Date.now(),
+                  }),
+                );
+              } catch { /* sessionStorage may be unavailable; CTA still works */ }
+              track(s.scholarship_id, "clicked", "detail-build-strategy");
+              navigate("/topuni-ai");
+            }}
+          >
+            Build my strategy around this <ArrowRight className="w-4 h-4" />
           </Button>
           <p className="text-[11px] text-muted-foreground/70 mt-4">60 seconds. Free.</p>
         </div>
@@ -508,6 +560,81 @@ const ScholarshipDetail = () => {
 export default ScholarshipDetail;
 
 /* ─── Internals ─────────────────────────────────────────────────── */
+
+/* Above-the-fold deadline banner. Three modes:
+   - closed:    the deadline has passed → muted "applications closed" notice,
+                with a nudge toward similar scholarships further down.
+   - critical:  ≤ 7 days → red, urgent.
+   - warning:   ≤ 30 days → amber, urgent-ish.
+   Returns null otherwise (no banner = no visual noise on healthy listings).
+   Rolling-deadline rows render a softer reminder regardless of countdown,
+   since the absolute date drifts. */
+const DeadlineUrgencyBanner = ({ deadline, deadlineType, days }: {
+  deadline: string | null;
+  deadlineType: string | null;
+  days: number | null;
+}) => {
+  if (!deadline) return null;
+  const isRolling = (deadlineType || "").toLowerCase().includes("rolling");
+
+  if (days !== null && days <= 0) {
+    return (
+      <div className="max-w-4xl mx-auto px-5 sm:px-8 pt-6">
+        <div className="rounded-lg border border-muted-foreground/20 bg-muted/30 px-4 py-3 text-sm text-muted-foreground leading-relaxed flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+          <div>
+            <span className="font-semibold text-foreground">Applications closed.</span>{" "}
+            The {deadline} deadline has passed. The strategy notes below still apply for next cycle —
+            scroll for similar scholarships still accepting applications.
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (days !== null && days <= 7) {
+    return (
+      <div className="max-w-4xl mx-auto px-5 sm:px-8 pt-6">
+        <div className="rounded-lg border border-red-400/40 bg-red-500/[0.06] px-4 py-3.5 text-sm text-red-700 dark:text-red-400 leading-relaxed flex items-start gap-2.5">
+          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+          <div>
+            <span className="font-semibold">
+              {days === 1 ? "1 day to deadline." : `${days} days to deadline.`}
+            </span>{" "}
+            Closes {deadline}. If you weren't already drafting, you are now.
+            Open the official site below to confirm submission requirements before you start.
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (days !== null && days <= 30) {
+    return (
+      <div className="max-w-4xl mx-auto px-5 sm:px-8 pt-6">
+        <div className="rounded-lg border border-amber-400/40 bg-amber-500/[0.06] px-4 py-3 text-sm text-amber-800 dark:text-amber-400 leading-relaxed flex items-start gap-2">
+          <Calendar className="w-4 h-4 mt-0.5 shrink-0" />
+          <div>
+            <span className="font-semibold">{days} days to deadline</span> — closes {deadline}.
+            Block out drafting time this week.
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (isRolling) {
+    return (
+      <div className="max-w-4xl mx-auto px-5 sm:px-8 pt-6">
+        <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground leading-relaxed flex items-start gap-2">
+          <Calendar className="w-4 h-4 mt-0.5 shrink-0" />
+          <span>
+            Rolling deadline — applications reviewed as they arrive. Earlier is generally stronger;
+            don't wait for the final advertised date.
+          </span>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
 
 const Section = ({ title, body, children, tone = "neutral" }: {
   title: string; body?: string; children?: React.ReactNode; tone?: "neutral" | "warn";
@@ -581,4 +708,59 @@ function injectJsonLd(payload: object) {
   s.dataset.topuniLd = "true";
   s.text = JSON.stringify(payload);
   document.head.appendChild(s);
+}
+
+/* FAQPage structured-data builder.
+   Maps existing scholarship fields to natural-language Q/A pairs so search
+   engines can surface this page as a FAQ rich-result. We only emit a
+   question when its answer field is non-empty — empty Qs would dilute
+   the schema. Answers are plain text (Google ignores HTML in answerText
+   anyway). */
+function buildFaqEntities(s: Scholarship): object[] {
+  const name = s.scholarship_name;
+  const out: { "@type": "Question"; name: string; acceptedAnswer: { "@type": "Answer"; text: string } }[] = [];
+  const push = (q: string, a: string | null | undefined) => {
+    const text = (a ?? "").trim();
+    if (!text) return;
+    out.push({
+      "@type": "Question",
+      name: q,
+      acceptedAnswer: { "@type": "Answer", text: text.slice(0, 1500) },
+    });
+  };
+  // Eligibility — most-searched question for any scholarship.
+  push(`Who is eligible for the ${name}?`, s.eligibility_requirements);
+  // Funding — combine coverage + amount into one rich answer.
+  const coverageWord =
+    s.coverage_type === "full_ride" ? "a full ride covering tuition and living costs"
+    : s.coverage_type === "tuition_only" ? "tuition costs"
+    : s.coverage_type === "stipend_only" ? "a living stipend"
+    : "scholarship funding";
+  const fundingParts: string[] = [`The ${name} provides ${coverageWord}.`];
+  if (s.award_amount_text) fundingParts.push(s.award_amount_text);
+  if (s.duration_text) fundingParts.push(`Duration: ${s.duration_text}.`);
+  if (s.renewable === true) fundingParts.push("The award is renewable.");
+  push(`What does the ${name} cover?`, fundingParts.join(" "));
+  // Deadline — Google often surfaces deadlines in featured snippets.
+  if (s.application_deadline) {
+    const deadlineKind = s.deadline_type ? ` (${s.deadline_type.replace(/_/g, " ")})` : "";
+    push(
+      `When is the ${name} application deadline?`,
+      `The ${name} application deadline is ${s.application_deadline}${deadlineKind}. Verify directly on the official site before submitting.`,
+    );
+  }
+  // Strategy fields — these are AI-enriched, exactly the kind of nuance
+  // students search for ("how to win {scholarship}").
+  push(`How can I increase my chances of winning the ${name}?`, s.how_to_win);
+  push(`Who is the ideal candidate for the ${name}?`, s.ideal_candidate_profile);
+  push(`What should I prepare first for the ${name}?`, s.what_to_prepare_first);
+  push(`Why do applicants get rejected from the ${name}?`, s.common_rejection_reasons);
+  // Required docs — joined as a sentence so the answer reads naturally.
+  if (s.required_documents && s.required_documents.length > 0) {
+    push(
+      `What documents are required for the ${name}?`,
+      `Applicants typically need: ${s.required_documents.join("; ")}.`,
+    );
+  }
+  return out;
 }
