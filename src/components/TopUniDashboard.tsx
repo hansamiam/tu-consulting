@@ -8,11 +8,12 @@ import { Input } from "@/components/ui/input";
 import {
   Sparkles, GraduationCap,
   Bot, Loader2, Send, ArrowLeft,
-  Search, ArrowRight, Download, BookOpen, ExternalLink, Calendar, Zap,
+  Search, ArrowRight, BookOpen, ExternalLink, Calendar, Zap,
   RotateCcw, Compass, PenLine, Wallet, FileText, Plane,
   Lightbulb, AlertTriangle, Quote, Check,
   Share2, Copy, Mail,
   Crown, Bookmark, BookmarkCheck,
+  RefreshCw,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,6 +26,8 @@ import { ProBriefUnlock, type ProBriefDepth } from "@/components/ProBriefUnlock"
 import { PremiumGate } from "@/components/PremiumGate";
 import { BriefHeroStats } from "@/components/brief/BriefHeroStats";
 import { BriefChapterNav } from "@/components/brief/BriefChapterNav";
+import { BriefMasthead } from "@/components/brief/BriefMasthead";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { DeadlineTimeline } from "@/components/brief/DeadlineTimeline";
 import { FundingStack } from "@/components/brief/FundingStack";
 import { PremiumSection } from "@/components/brief/PremiumSection";
@@ -32,7 +35,7 @@ import { CombinedFundingChart } from "@/components/brief/CombinedFundingChart";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
 import { track } from "@/lib/analytics";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -1346,6 +1349,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     application_deadline: string | null;
     why_this_fits: string | null;
     official_url: string | null;
+    verification_status: string | null;
+    last_verified_at: string | null;
   };
   const [liveMatches, setLiveMatches] = useState<LiveMatch[]>([]);
 
@@ -1494,6 +1499,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       setTimeout(() => setShareCopied(false), 2000);
     } catch { /* ignore */ }
   };
+
 
   // Email-me-my-brief flow inside the share dialog. Pre-fills the user's
   // saved email if available; otherwise asks for one. Uses the existing
@@ -2047,28 +2053,9 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                       {t("Upgrade for Premium brief", "Премиум брифинг")}
                     </Button>
                   )}
-                  <Button variant="outline" size="sm" onClick={generatePathway} disabled={pathwayLoading}>
-                    {pathwayLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : t("Regenerate", "Обновить")}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5"
-                    onClick={openShare}
-                    disabled={pathwayLoading}
-                  >
-                    <Share2 className="w-4 h-4" />
-                    {t("Share", "Поделиться")}
-                  </Button>
-                  <Button
-                    variant="gold"
-                    size="sm"
-                    className="gap-1.5"
-                    onClick={() => window.print()}
-                    disabled={pathwayLoading}
-                  >
-                    <Download className="w-4 h-4" />
-                    {t("Download PDF", "Скачать PDF")}
+                  <Button variant="outline" size="sm" onClick={generatePathway} disabled={pathwayLoading} className="gap-1.5">
+                    {pathwayLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                    {t("Regenerate", "Обновить")}
                   </Button>
                 </div>
               )}
@@ -2129,18 +2116,29 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
               {pathwayContent && (
                 <div className="grid xl:grid-cols-[1fr_220px] gap-x-10 print:block">
                 <div id="printable-report" className="min-w-0 prose prose-sm max-w-none dark:prose-invert [&_h2]:text-foreground [&_h2]:font-heading [&_h2]:text-xl [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:scroll-mt-24 [&_h2]:tracking-[-0.01em] [&_h3]:text-foreground [&_h3]:font-heading [&_h3]:text-lg [&_h3]:mt-6 [&_h3]:mb-2 [&_p]:text-muted-foreground [&_li]:text-muted-foreground [&_strong]:text-foreground">
-                  {/* Print-only masthead */}
-                  <div className="print-only mb-8 pb-6 border-b-2 border-foreground hidden">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-foreground/60 mb-2">TopUni · Pathway Report</p>
-                    <h1 className="font-heading text-3xl font-bold text-foreground tracking-tight leading-tight m-0">
-                      Admissions Strategy for {profile.fullName || "Student"}
-                    </h1>
-                    <p className="text-sm text-foreground/65 mt-2">
-                      Generated {new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })} ·
-                      {profile.targetCountries?.length > 0 ? ` Targeting ${profile.targetCountries.join(", ")} ·` : ""}
-                      {profile.major ? ` ${profile.major}` : ""}
-                    </p>
-                  </div>
+                  {/* Editorial masthead — frames the brief as a real report
+                      deliverable. Renders for both screen and print. Pulls
+                      a synthesis sentence from the AI's strategic-positioning
+                      paragraph (or falls back to a profile-derived line while
+                      the brief is still streaming). Hosts the Share / Print /
+                      Download actions inline so the user can act from the
+                      cover without scrolling back to the card header. */}
+                  <BriefMasthead
+                    studentName={profile.fullName}
+                    profile={{
+                      gradeLevel: profile.gradeLevel,
+                      major: profile.major,
+                      targetCountries: profile.targetCountries,
+                      nationality: profile.nationality,
+                    }}
+                    briefContent={pathwayContent}
+                    isStreaming={pathwayLoading}
+                    isRu={isRu}
+                    isPro={isMember}
+                    onShare={openShare}
+                    onPrint={() => window.print()}
+                    onDownloadPdf={() => window.print()}
+                  />
 
                   {/* Hero KPI strip — first thing the user sees when the brief
                       lands. Numbers come from liveMatches + brief word count
@@ -2228,9 +2226,28 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                       : stackUsd >= 1000
                         ? `$${Math.round(stackUsd / 1000)}K`
                         : "";
+                    const top = liveMatches.slice(0, 6);
+                    const unsavedTopCount = top.filter(m => !tracker.shortlist.has(m.scholarship_id)).length;
+                    const saveAllTop = () => {
+                      let added = 0;
+                      for (const m of top) {
+                        if (!tracker.shortlist.has(m.scholarship_id)) {
+                          tracker.toggleShortlist(m.scholarship_id);
+                          added++;
+                        }
+                      }
+                      if (added > 0) {
+                        toast.success(
+                          isRu
+                            ? `Сохранено ${added} в ваш pipeline`
+                            : `Saved ${added} to your pipeline`,
+                        );
+                        void track("scholarship_saved", { surface: "brief_top_matches_bulk", count: added });
+                      }
+                    };
                     return (
                     <div className="not-prose mb-10">
-                      <div className="flex items-baseline justify-between mb-4 gap-3">
+                      <div className="flex items-baseline justify-between mb-4 gap-3 flex-wrap">
                         <div className="min-w-0">
                           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-1">
                             {t("Your top scholarship matches", "Ваши лучшие совпадения")}
@@ -2248,34 +2265,82 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                                     "Подобрано из базы — по дедлайнам")}
                           </h3>
                         </div>
-                        <Button variant="outline" size="sm" className="gap-1.5 shrink-0 hidden sm:flex" onClick={() => navigate(isRu ? "/discover/ru" : "/discover")}>
-                          {t("See all in Discover", "Открыть Discover")} <ArrowRight className="w-3.5 h-3.5" />
-                        </Button>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {unsavedTopCount > 0 && (
+                            <Button
+                              variant="gold"
+                              size="sm"
+                              className="gap-1.5"
+                              onClick={saveAllTop}
+                              title={t("Save all top matches to your pipeline so you can track deadlines", "Сохранить все совпадения в pipeline для отслеживания дедлайнов")}
+                            >
+                              <Bookmark className="w-3.5 h-3.5" />
+                              {t(`Save ${unsavedTopCount} to pipeline`, `Сохранить ${unsavedTopCount} в pipeline`)}
+                            </Button>
+                          )}
+                          <Button variant="outline" size="sm" className="gap-1.5 hidden sm:flex" onClick={() => navigate(isRu ? "/discover/ru" : "/discover")}>
+                            {t("See all", "Все")} <ArrowRight className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                       </div>
                       <div className="grid sm:grid-cols-2 gap-2.5">
-                        {liveMatches.slice(0, 6).map((m) => {
+                        {top.map((m) => {
                           const days = m.application_deadline ? Math.ceil((new Date(m.application_deadline).getTime() - Date.now()) / 86400000) : null;
-                          const dl = !m.application_deadline ? "Rolling" : days! <= 0 ? "Closed" : days! <= 30 ? `${days} days` : days! <= 90 ? `${days} days` : `${Math.ceil(days! / 30)} months`;
+                          const dl = !m.application_deadline ? t("Rolling", "Без срока") : days! <= 0 ? t("Closed", "Закрыт") : days! <= 30 ? `${days} ${t("days", "дн.")}` : days! <= 90 ? `${days} ${t("days", "дн.")}` : `${Math.ceil(days! / 30)} ${t("months", "мес.")}`;
                           const dlClass = !m.application_deadline ? "text-muted-foreground" : days! <= 7 ? "text-destructive font-semibold" : days! <= 30 ? "text-amber-700 dark:text-amber-400" : days! <= 90 ? "text-foreground/60" : "text-muted-foreground";
+                          const isSaved = tracker.shortlist.has(m.scholarship_id);
+                          const detailPath = `/scholarships/${m.scholarship_id}`;
                           return (
-                            <button
+                            <div
                               key={m.scholarship_id}
-                              onClick={() => navigate(isRu ? "/discover/ru" : "/discover")}
-                              className="group text-left bg-card border border-border rounded-xl p-4 hover:border-gold/40 hover:shadow-sm transition-all"
+                              className="group relative bg-card border border-border rounded-xl hover:border-gold/40 hover:shadow-sm transition-all"
                             >
-                              <div className="flex items-baseline justify-between gap-2 mb-2">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground truncate">
-                                  {m.host_country || "—"}
+                              <Link
+                                to={detailPath}
+                                className="block p-4 pr-12"
+                                onClick={() => void track("scholarship_detail_opened", { surface: "brief_top_matches", scholarship_id: m.scholarship_id })}
+                              >
+                                <div className="flex items-baseline justify-between gap-2 mb-2">
+                                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground truncate">
+                                    {m.host_country || "—"}
+                                  </p>
+                                  <span className={`text-[11px] font-semibold tabular-nums ${dlClass}`}>{dl}</span>
+                                </div>
+                                <h4 className="font-heading font-semibold text-[15px] text-foreground line-clamp-2 leading-snug mb-1 group-hover:text-gold-dark transition-colors">
+                                  {m.scholarship_name}
+                                </h4>
+                                <p className="text-xs text-muted-foreground truncate mb-2">
+                                  {m.award_amount_text || (m.coverage_type === "full_ride" ? t("Full ride", "Полное покрытие") : m.coverage_type === "tuition_only" ? t("Tuition", "Обучение") : t("Stipend", "Стипендия"))}
+                                  {m.provider_name && <span className="text-muted-foreground/60"> · {m.provider_name}</span>}
                                 </p>
-                                <span className={`text-[11px] font-semibold tabular-nums ${dlClass}`}>{dl}</span>
-                              </div>
-                              <h4 className="font-heading font-semibold text-[15px] text-foreground line-clamp-2 leading-snug mb-1 group-hover:text-gold-dark transition-colors">
-                                {m.scholarship_name}
-                              </h4>
-                              <p className="text-xs text-muted-foreground truncate">
-                                {m.award_amount_text || (m.coverage_type === "full_ride" ? "Full ride" : m.coverage_type === "tuition_only" ? "Tuition" : "Stipend")}
-                              </p>
-                            </button>
+                                {m.verification_status && m.verification_status !== "pending" && (
+                                  <VerifiedBadge
+                                    status={m.verification_status}
+                                    verifiedAt={m.last_verified_at ?? null}
+                                    size="xs"
+                                    compact
+                                  />
+                                )}
+                              </Link>
+                              <button
+                                type="button"
+                                aria-label={isSaved ? t("Remove from pipeline", "Убрать из pipeline") : t("Save to pipeline", "Сохранить в pipeline")}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleSaveScholarship(m.scholarship_id, m.scholarship_name);
+                                  void track(isSaved ? "scholarship_unsaved" : "scholarship_saved", { surface: "brief_top_matches", scholarship_id: m.scholarship_id });
+                                }}
+                                className={`absolute top-3 right-3 h-8 w-8 rounded-lg flex items-center justify-center transition-all ${
+                                  isSaved
+                                    ? "text-gold-dark bg-gold/10 hover:bg-gold/15"
+                                    : "text-muted-foreground/60 hover:text-gold-dark hover:bg-gold/5 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                }`}
+                                title={isSaved ? t("Saved · click to remove", "Сохранено · убрать") : t("Save to your pipeline", "Сохранить в pipeline")}
+                              >
+                                {isSaved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+                              </button>
+                            </div>
                           );
                         })}
                       </div>
