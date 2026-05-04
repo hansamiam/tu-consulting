@@ -95,6 +95,12 @@ verify_jwt = false
 [functions.topuni-counselor-greeting]
 verify_jwt = false
 
+[functions.discover-from-hub]
+verify_jwt = true
+
+[functions.discover-from-hubs-cron]
+verify_jwt = true
+
 [functions.og-brief]
 verify_jwt = false
 

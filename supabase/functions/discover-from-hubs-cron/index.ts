@@ -1,0 +1,111 @@
+// discover-from-hubs-cron
+//
+// Weekly tick that loops through every scholarship_source with
+// category='aggregator' and dispatches a discover-from-hub call for each.
+// New per-program URLs found inside those hubs land in scholarship_sources
+// and are picked up by the regular scrape-cron-dispatcher on its cadence.
+//
+// This is the self-expansion loop:
+//
+//   discover-from-hubs-cron (weekly)
+//     → walks all aggregator hubs → finds new individual program URLs
+//
+//   scrape-cron-dispatcher (hourly)
+//     → walks all sources due → calls scrape-source on each
+//
+//   scrape-source
+//     → fetches, content-hash short-circuits, LLM extracts, validates,
+//       dedupes, auto-publishes high-confidence rows to scholarships.
+//
+//   verify-scholarship-cron (daily)
+//     → re-checks 50 oldest verified rows / day, diffs vs source,
+//       stages diffs for admin or auto-promotes clean re-fetches.
+//
+// Net: a curator adds 1-10 hub URLs once. The system self-discovers
+// hundreds of program URLs from those hubs, scrapes them, verifies them,
+// and keeps them current — all without manual intervention.
+
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireAdminOrService } from "../_shared/auth.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+const json = (status: number, body: unknown) =>
+  new Response(JSON.stringify(body), {
+    status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
+// One discover-from-hub call takes ~5-15s (Firecrawl + pro-tier LLM).
+// Cap per tick keeps us under the 60s edge function timeout even with
+// slow hubs and gives back-pressure on Firecrawl spend.
+const MAX_HUBS_PER_TICK = 6;
+const THROTTLE_MS = 1500;
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!SUPABASE_URL || !SERVICE_ROLE) return json(500, { error: "Supabase env not configured" });
+
+  const auth = await requireAdminOrService(req);
+  if (!auth.ok) return json(401, { error: `Unauthorized: ${auth.reason}` });
+
+  const supa = createClient(SUPABASE_URL, SERVICE_ROLE, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  // Pick aggregator-category hubs in last_crawled_at ascending order so
+  // hubs we haven't touched in the longest go first. is_active filter
+  // matches the regular dispatcher's behavior.
+  const { data: hubs, error } = await supa
+    .from("scholarship_sources")
+    .select("source_id, name, url, last_crawled_at")
+    .eq("category", "aggregator")
+    .eq("is_active", true)
+    .order("last_crawled_at", { ascending: true, nullsFirst: true })
+    .limit(MAX_HUBS_PER_TICK);
+  if (error) return json(500, { error: `Load hubs: ${error.message}` });
+  if (!hubs || hubs.length === 0) {
+    return json(200, { ok: true, hubs: 0, message: "No aggregator hubs configured" });
+  }
+
+  const startedAt = Date.now();
+  const results: { hub: string; ok: boolean; inserted?: number; error?: string }[] = [];
+  let totalInserted = 0;
+
+  for (let i = 0; i < hubs.length; i++) {
+    const h = hubs[i];
+    if (i > 0) await new Promise(r => setTimeout(r, THROTTLE_MS));
+    try {
+      const r = await fetch(`${SUPABASE_URL}/functions/v1/discover-from-hub`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${SERVICE_ROLE}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ hub_source_id: h.source_id }),
+      });
+      const payload = await r.json().catch(() => ({}));
+      const ok = r.ok && payload?.ok !== false;
+      const inserted = typeof payload?.inserted === "number" ? payload.inserted : 0;
+      if (ok) totalInserted += inserted;
+      results.push({ hub: h.name, ok, inserted });
+    } catch (e) {
+      results.push({ hub: h.name, ok: false, error: (e as Error).message });
+    }
+  }
+
+  return json(200, {
+    ok: true,
+    hubs_processed: results.length,
+    total_inserted: totalInserted,
+    duration_ms: Date.now() - startedAt,
+    results,
+  });
+});

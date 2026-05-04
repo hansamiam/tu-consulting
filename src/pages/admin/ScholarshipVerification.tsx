@@ -77,6 +77,7 @@ export default function AdminScholarshipVerification() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkFillBusy, setBulkFillBusy] = useState(false);
+  const [discoverBusy, setDiscoverBusy] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -211,7 +212,40 @@ export default function AdminScholarshipVerification() {
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Filter by name, country, URL…" className="pl-9 h-9" />
           </div>
           {selected.size === 0 && (
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={discoverBusy}
+                onClick={async () => {
+                  setDiscoverBusy(true);
+                  try {
+                    const { data, error } = await supabase.functions.invoke<{
+                      ok: boolean;
+                      hubs_processed?: number;
+                      total_inserted?: number;
+                      results?: Array<{ hub: string; ok: boolean; inserted?: number }>;
+                    }>("discover-from-hubs-cron", { body: {} });
+                    if (error) throw new Error(error.message);
+                    const hubs = data?.hubs_processed ?? 0;
+                    const inserted = data?.total_inserted ?? 0;
+                    toast({
+                      title: hubs === 0 ? "No aggregator hubs configured" : `${inserted} new source${inserted === 1 ? "" : "s"} discovered`,
+                      description: hubs === 0
+                        ? "Add scholarship_sources rows with category='aggregator' to enable hub-driven discovery."
+                        : `Walked ${hubs} aggregator hub${hubs === 1 ? "" : "s"}. New sources will be crawled by the hourly dispatcher.`,
+                    });
+                  } catch (e) {
+                    toast({ title: "Discovery failed", description: (e as Error).message, variant: "destructive" });
+                  }
+                  setDiscoverBusy(false);
+                }}
+                className="gap-1.5"
+                title="Walk every aggregator hub in the source registry, extract individual scholarship URLs via LLM, and insert each as a new scholarship_sources row. The hourly dispatcher then crawls them on cadence."
+              >
+                {discoverBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                Discover from hubs
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
