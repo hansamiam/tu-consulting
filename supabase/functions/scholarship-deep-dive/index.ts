@@ -24,8 +24,8 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const SCHEMA_VERSION = 2;
-const COST_ESTIMATE_USD = 0.0008;
+const SCHEMA_VERSION = 3;
+const COST_ESTIMATE_USD = 0.005;
 
 interface InboundProfile {
   fullName?: string;
@@ -238,15 +238,25 @@ Deno.serve(async (req) => {
     `Eligibility prose: ${scholarship.eligibility_requirements || "(none)"}`,
   ].join("\n");
 
-  const prompt = `You are an admissions strategist analyzing whether a specific scholarship is a good fit for a specific student. Output ONLY valid JSON matching the schema. No markdown fences. No preamble.
+  const prompt = `You are a Yale/Cambridge/Harvard-trained admissions strategist briefing a specific student on a specific scholarship. The output renders on the student's Discover DetailSheet inside a "My plan" tab — they read it to decide "should I spend 20 hours on this application?" Output ONLY valid JSON matching the schema. No markdown fences. No preamble.
 
 CRITICAL RULES:
 1. Be specific and quantitative. Cite the student's actual numbers.
 2. If the scholarship has a min_gpa / min_ielts / etc. and the student is missing or below it, mark that breakdown line as "miss" or "near" honestly. Do not soften.
-3. Strategy points must be specific to THIS student's background — not generic scholarship-application advice.
-4. odds.bucket = "primary" if the student clearly meets thresholds AND fits the typical admit profile; "competitive" if they're in range but fighting for a slot; "aspirational" if they're below thresholds or far from the typical admit profile (the user-facing label is "Worth exploring with strategy" — never write that you think it's out of reach; honest gap-analysis is the value).
-5. thirty_day.items must include exactly 4 entries, one per week.
-6. Output language: ${lang}.
+3. odds.bucket = "primary" if the student clearly meets thresholds AND fits the typical admit profile; "competitive" if they're in range but fighting for a slot; "aspirational" if they're below thresholds or far from the typical admit profile.
+4. thirty_day.items must include exactly 4 entries, one per week, with concrete deliverables — "draft personal statement v1" not "work on essay".
+5. Output language: ${lang}.
+
+QUALITY BAR — these are the rules generic AI breaks. We don't:
+- BANNED admissions clichés: "stretch", "long shot", "real shot", "safety school", "reach school", "target school", "playbook", "journey", "potential" (as in "your potential"). The user-facing aspirational label is "Worth exploring with strategy" — never write that you think a scholarship is out of reach; honest gap-analysis is the value.
+- BANNED platitudes: "write a strong essay", "showcase your strengths", "be authentic", "highlight your achievements", "tell your story", "stand out from the crowd". A counsellor would never say these.
+- BANNED filler verbs in strategy.points / strategy.avoid: "explore", "refine", "leverage", "maximize" — when used generically. "Leverage your robotics team experience" is fine. "Leverage your strengths" is not.
+- strategy.headline must be a real positioning angle — a thesis shape, a recommender pattern, a story type. Example GOOD: "Lead with the measurable impact of your social-enterprise project — show 6 months of traction, not aspirations." Example BAD: "Showcase your leadership and academic excellence."
+- strategy.points each must be a CONCRETE TACTICAL MOVE specific to this student's file. Example GOOD: "Cite your 3.8 GPA + IELTS 7.5 in the eligibility paragraph; the typical admit lands 3.7+/7.0+ so you exceed both thresholds." Example BAD: "Write a compelling personal statement that highlights your strengths."
+- strategy.avoid must name SPECIFIC failure patterns observed for this program type. Example GOOD: "Don't lead with your Goldman internship — the typical admit pool has 5+ similar profiles, it won't differentiate." Example BAD: "Don't be generic in your essays."
+- odds.rationale must cite the SPECIFIC student-vs-typical-admit gap or alignment. Example GOOD: "Your 3.6 GPA is 0.2 below the typical admit's 3.8 — competitive but you'll need essays to bridge that." Example BAD: "Your profile is competitive for this program."
+- match.breakdown must be specific. Example GOOD label/detail: "GPA threshold" / "Yours 3.7/4.0 vs required 3.5 — meets". Example BAD: "Academic profile" / "Your academic record is strong."
+- thirty_day.items each must name a concrete deliverable. Example GOOD: "Week 2: Order Cambridge prospectus + identify 2 recommenders who can speak to your robotics work specifically." Example BAD: "Week 2: Research the program."
 
 SCHEMA:
 ${SCHEMA_DOC}
@@ -261,10 +271,19 @@ Now output ONLY the JSON. Begin with { and end with }.`;
 
   let parsed: DeepDiveOutput;
   try {
+    // Pro tier — this output is cached server-side per (scholarship_id ×
+    // profile_hash), so each combination is generated ONCE and read
+    // forever. The flash-tier was producing competent-but-generic output
+    // (the "showcase your strengths" / "leverage your background" school
+    // of advice). Pro tier with the tightened prompt above produces
+    // counsellor-grade specifics — citing the exact GPA gap, naming the
+    // typical admit gap, prescribing a real positioning angle. The cost
+    // diff (~$0.005 vs ~$0.0008) is paid once per row and is the entire
+    // value prop of the My Plan tab.
     const resp = await chatCompletions({
-      tier: "flash",
+      tier: "pro",
       messages: [
-        { role: "system", content: "You are a precise admissions strategist. You output only valid JSON matching the requested schema." },
+        { role: "system", content: "You are a Yale/Cambridge/Harvard-trained admissions strategist briefing a real student on a specific scholarship. Output only valid JSON matching the requested schema. The student decides whether to spend 20 hours on this application based on what you write — generic content WASTES their time. Always be specific to their numbers and this program." },
         { role: "user", content: prompt },
       ],
       stream: false,
