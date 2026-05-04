@@ -72,12 +72,12 @@ const COPY = {
       { row: "Strategy notes (how-to-win, rejection patterns)",  us: "Included",                consultant: "Maybe",                 diy: "Guesswork" },
       { row: "Total cost (one application year)",                us: "$468",                    consultant: "$5,000 – $15,000",      diy: "Hidden cost: missed deadlines" },
     ],
-    socialKicker: "From students who joined early",
-    socialH2: "What founding members are saying.",
-    testimonials: [
-      { quote: "Walked into my Yale interview with a real plan instead of nervous energy. The strategy report was the deliverable I needed.", name: "M.", school: "Yale '28 (placeholder)" },
-      { quote: "Saved me 6 weeks of research. I had my matched scholarships and a 90-day timeline in 48 hours.",                              name: "A.", school: "Cambridge '28 (placeholder)" },
-      { quote: "The workshops alone justify the price. The founders actually answered my essay questions live.",                              name: "D.", school: "MIT '28 (placeholder)" },
+    socialKicker: "Where the membership pays for itself",
+    socialH2: "Built for the moments that usually cost families weeks.",
+    proofCards: [
+      { title: "Scholarship shortlist", body: "Replace scattered searching with ranked matches, fit reasons, deadlines, and next steps you can act on immediately.", meta: "Best when funding is non-negotiable" },
+      { title: "Application strategy",  body: "Turn grades, tests, budget, countries, and target field into a practical 90-day plan instead of a generic school list.",       meta: "Best before essay season starts" },
+      { title: "Live execution help",   body: "Use workshops, recordings, and founder Q&A to keep essays, scholarship choices, and deadlines moving every month.",             meta: "Best for students applying this cycle" },
     ],
     faqKicker: "Honest answers",
     faqH2: "Common questions before you join.",
@@ -152,12 +152,12 @@ const COPY = {
       { row: "Стратегические заметки (как победить, причины отказов)", us: "Включено",              consultant: "Может быть",          diy: "Догадки" },
       { row: "Общая стоимость (год подачи)",                         us: "$468",                      consultant: "$5,000 – $15,000",   diy: "Скрытая цена: упущенные дедлайны" },
     ],
-    socialKicker: "От студентов, которые присоединились рано",
-    socialH2: "Что говорят основательные члены.",
-    testimonials: [
-      { quote: "Пришла на интервью Yale с настоящим планом, а не нервной энергией. Отчёт-стратегия — то, что мне было нужно.",        name: "М.", school: "Yale '28 (плейсхолдер)" },
-      { quote: "Сэкономило 6 недель ресёрча. Подобранные стипендии и план на 90 дней — всё за 48 часов.",                                name: "А.", school: "Cambridge '28 (плейсхолдер)" },
-      { quote: "Одни воркшопы оправдывают цену. Основатели реально отвечали на мои вопросы по эссе вживую.",                                  name: "Д.", school: "MIT '28 (плейсхолдер)" },
+    socialKicker: "Где подписка окупается",
+    socialH2: "Создано для моментов, которые обычно забирают недели.",
+    proofCards: [
+      { title: "Шорт-лист стипендий", body: "Вместо хаотичного поиска — ранжированные совпадения, причины выбора, дедлайны и следующие шаги.", meta: "Когда финансирование критично" },
+      { title: "Стратегия подачи",   body: "Превратите оценки, тесты, бюджет, страны и специальность в практичный 90-дневный план, а не общий список вузов.", meta: "Лучше до начала сезона эссе" },
+      { title: "Поддержка в процессе", body: "Воркшопы, записи и Q&A с основателями помогают двигать эссе, выбор стипендий и дедлайны каждый месяц.", meta: "Для студентов, которые подают сейчас" },
     ],
     faqKicker: "Честные ответы",
     faqH2: "Частые вопросы перед тем как присоединиться.",
@@ -372,13 +372,13 @@ const Pricing = ({ language = "en" }: PricingProps) => {
           <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="max-w-4xl mx-auto">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gold-dark text-center mb-3">{t.socialKicker}</p>
             <h2 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight text-center mb-10 leading-tight">{t.socialH2}</h2>
-            {/* TODO: REPLACE WITH REAL TESTIMONIALS BEFORE PUBLIC LAUNCH */}
             <div className="grid sm:grid-cols-3 gap-4">
-              {t.testimonials.map((tt, i) => (
+              {t.proofCards.map((card, i) => (
                 <div key={i} className="bg-card border border-border rounded-2xl p-6 hover:border-gold/30 transition-colors">
-                  <div className="text-gold-dark mb-3">★★★★★</div>
-                  <p className="text-foreground/85 text-sm leading-relaxed mb-4">"{tt.quote}"</p>
-                  <p className="text-xs font-semibold text-foreground">{tt.name} · <span className="text-muted-foreground font-normal">{tt.school}</span></p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold-dark mb-3">0{i + 1}</p>
+                  <h3 className="font-heading text-lg font-semibold text-foreground mb-2">{card.title}</h3>
+                  <p className="text-foreground/80 text-sm leading-relaxed mb-4">{card.body}</p>
+                  <p className="text-xs font-semibold text-muted-foreground">{card.meta}</p>
                 </div>
               ))}
             </div>
