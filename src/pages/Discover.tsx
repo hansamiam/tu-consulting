@@ -1293,7 +1293,7 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
               <SelectTrigger className="h-8 text-[13px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All fields</SelectItem>
-                {fieldsAvailable.map(f => <SelectItem key={f} value={f}>{humanize(f)}</SelectItem>)}
+                {fieldsAvailable.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -1619,16 +1619,40 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               </div>
             )}
 
-            {s.target_fields && s.target_fields.length > 0 && (
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Funds</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {s.target_fields.map((f, i) => (
-                    <span key={i} className="text-xs text-foreground/75 bg-muted/60 border border-border px-2.5 py-1 rounded-md">{humanize(f)}</span>
-                  ))}
+            {(() => {
+              // Apply the same cleanup as the Field filter dropdown so the
+              // chips render consistently — split comma-lists, drop junk,
+              // dedupe, title-case.
+              const seen = new Set<string>();
+              const cleaned: string[] = [];
+              (s.target_fields ?? []).forEach(raw => {
+                if (!raw) return;
+                const splits = raw.split(/\s*[,/;]\s*/).filter(Boolean);
+                const items = splits.length > 1 ? splits : [raw];
+                items.forEach(item => {
+                  item = item.trim();
+                  if (!item || FIELD_JUNK.test(item) || item.length > 42) return;
+                  const key = item.toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ").replace(/s$/, "").replace(/&/g, "and");
+                  if (seen.has(key)) return;
+                  seen.add(key);
+                  cleaned.push(titleCaseField(item.replace(/[-_]+/g, " ").replace(/\s+/g, " ")));
+                });
+              });
+              if (cleaned.length === 0) return null;
+              return (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Funds</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {cleaned.slice(0, 12).map((f, i) => (
+                      <span key={i} className="text-xs text-foreground/75 bg-muted/60 border border-border px-2.5 py-1 rounded-md">{f}</span>
+                    ))}
+                    {cleaned.length > 12 && (
+                      <span className="text-xs text-muted-foreground self-center">+{cleaned.length - 12} more</span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {s.best_for_tags && s.best_for_tags.length > 0 && (
               <div>
