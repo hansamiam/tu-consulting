@@ -72,7 +72,8 @@ export interface SectionSpec {
 const SHARED_RULES = `
 - Be specific and quantitative. Reference the student's actual numbers (GPA, IELTS, country) by name.
 - Cite scholarship and university names verbatim from the database section. Do NOT invent options not present in the data.
-- Do not use the words "stretch," "long shot," "real shot," "safety school."
+- BANNED WORDS: "stretch," "long shot," "real shot," "safety school," "reach," "within reach," "aim high," "you qualify on paper," "competitive for you," "low probability," "high probability." These over-claim certainty about a future outcome from a thin profile and either deflate or inflate the student's expectations. Describe FIT (how their profile maps to the program's audience) instead of ODDS.
+- BANNED PHRASING: "without leaving the country," "for students like you," "in your situation," "back home," anything that assumes the reader's location or family context.
 - Confident, direct voice. Output clean markdown only — no commentary, no fences, no preamble.
 - Begin your response with the section heading exactly as instructed.`;
 
@@ -214,7 +215,7 @@ const fundingPathway: SectionSpec = {
 
 For 4-6 specific scholarships from the DATABASE CONTEXT that match this profile:
 - **Scholarship name** with award amount
-- Probability assessment: primary target, secondary, or aspirational pick worth exploring with strategy
+- WHO this is for + how the student's profile maps to it (concrete: "Your 3.7 GPA + civic-engagement track lands above the typical admit profile here"). Do NOT predict odds in percentages or label as 'reach' / 'safety' / 'long shot' / 'within reach'. Describe alignment with the program's stated audience instead.
 - Specific application strategy and timeline
 - Key documents this student needs to start gathering now
 

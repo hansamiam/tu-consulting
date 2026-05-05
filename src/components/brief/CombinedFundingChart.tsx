@@ -5,24 +5,27 @@ import type { CombinedFundingSection } from "@/types/briefStructured";
 const fmtMoney = (v: number) =>
   v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `$${Math.round(v / 1000)}K` : `$${v}`;
 
+// Labels rebranded round 7 — earlier copy ("Primary path / Realistic
+// backup / Worth exploring") still leaned on a predictive ranking. New
+// labels describe FIT alignment, not predicted outcome.
 const FEASIBILITY_META = {
   primary: {
-    en: "Primary path",
-    ru: "Основной путь",
+    en: "Strong alignment",
+    ru: "Сильное соответствие",
     Icon: Target,
     cls: "text-success border-success/30 bg-success/5",
     barCls: "from-success to-success/80",
   },
   secondary: {
-    en: "Realistic backup",
-    ru: "Запасной план",
+    en: "Solid alternative",
+    ru: "Хорошая альтернатива",
     Icon: Sparkles,
     cls: "text-gold-dark border-gold/30 bg-gold/5",
     barCls: "from-gold-dark to-gold",
   },
   aspirational: {
-    en: "Worth exploring",
-    ru: "Стоит рассмотреть",
+    en: "Flagship option",
+    ru: "Флагманский вариант",
     Icon: Crown,
     cls: "text-amber-700 dark:text-amber-400 border-amber-300/40 bg-amber-50 dark:bg-amber-950/20",
     barCls: "from-amber-500 to-amber-300",
