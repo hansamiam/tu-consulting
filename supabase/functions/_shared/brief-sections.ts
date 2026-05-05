@@ -69,12 +69,14 @@ export interface SectionSpec {
   reasoning?: { effort: "low" | "medium" | "high" };
 }
 
+import { EDITORIAL_RULES } from "./editorial-rules.ts";
+
+// SHARED_RULES = the centralized editorial rules + a section-spec
+// instruction (always start with the H2 heading the renderer expects).
+// Editing the banned-word list happens in editorial-rules.ts now —
+// see comment there.
 const SHARED_RULES = `
-- Be specific and quantitative. Reference the student's actual numbers (GPA, IELTS, country) by name.
-- Cite scholarship and university names verbatim from the database section. Do NOT invent options not present in the data.
-- BANNED WORDS: "stretch," "long shot," "real shot," "safety school," "reach," "within reach," "aim high," "you qualify on paper," "competitive for you," "low probability," "high probability." These over-claim certainty about a future outcome from a thin profile and either deflate or inflate the student's expectations. Describe FIT (how their profile maps to the program's audience) instead of ODDS.
-- BANNED PHRASING: "without leaving the country," "for students like you," "in your situation," "back home," anything that assumes the reader's location or family context.
-- Confident, direct voice. Output clean markdown only — no commentary, no fences, no preamble.
+${EDITORIAL_RULES}
 - Begin your response with the section heading exactly as instructed.`;
 
 const profileBlock = (ctx: BriefContext): string => {

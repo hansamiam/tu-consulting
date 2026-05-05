@@ -15,6 +15,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { chatCompletions } from "../_shared/ai-gateway.ts";
+import { EDITORIAL_RULES_TIGHT } from "../_shared/editorial-rules.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -123,9 +124,9 @@ Output format (markdown, plain — NO ## headings, NO emoji):
 Hard rules:
 - Total length: 120-200 words. NEVER more.
 - Cite exact scholarship names from the data; never invent options not listed.
-- Never use "stretch", "long shot", "real shot", "safety school", "reach school", "target school", "playbook".
-- Avoid hollow encouragement ("you've got this", "good luck"). Talk in evidence.
-- Open with the lead — no preamble, no "Hi {name}" (the email template handles greeting).`;
+- Open with the lead — no preamble, no "Hi {name}" (the email template handles greeting).
+
+${EDITORIAL_RULES_TIGHT}`;
 
 async function generateNudge(caseBlock: string): Promise<string> {
   const resp = await chatCompletions({

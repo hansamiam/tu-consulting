@@ -8,6 +8,7 @@ import {
   type SectionSpec,
   type BriefContext,
 } from "../_shared/brief-sections.ts";
+import { EDITORIAL_RULES } from "../_shared/editorial-rules.ts";
 import {
   cleanScholarshipName,
   cleanProvider,
@@ -682,11 +683,7 @@ Three distinct narrative angles this student could lead with. For each, use this
 ## Final word
 One short paragraph (3-4 sentences) of specific encouragement based on this student's strongest signal — what they should believe about their candidacy as they go execute. Do not give generic motivation. Do not say "good luck." Cite something concrete from their profile and tell them why it matters.
 
-Throughout the report:
-- Be specific, use real data from the database, name names, cite numbers
-- Avoid the words "stretch," "long shot," "real shot," "safety school"
-- Avoid generic advice — every sentence should be specific to this student
-- Write in a confident, direct voice the student would respect`;
+${EDITORIAL_RULES}`;
 
     const premiumSections = `Generate an EXHAUSTIVE, DEEPLY PERSONALIZED report. This is the premium tier — go significantly deeper than a basic report. The output is rendered both on screen AND as a printable PDF the student keeps as a reference document. Use clean markdown.
 

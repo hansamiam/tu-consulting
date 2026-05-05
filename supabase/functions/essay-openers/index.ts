@@ -28,6 +28,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { chatCompletions } from "../_shared/ai-gateway.ts";
 import { checkRateLimit, clientIp } from "../_shared/rate-limit.ts";
+import { EDITORIAL_RULES_TIGHT } from "../_shared/editorial-rules.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,8 +62,9 @@ Hard rules:
 - Each opener MUST start in motion — a concrete scene, sentence-level claim, or unexpected observation. NO "Ever since I was a child..." or "Throughout my life..." or any cliché backstory opener.
 - Quote at least one specific detail from the scholarship/student context per opener if context is provided. Otherwise stay credibly generic but never hollow.
 - Tone: Yale/Cambridge admissions reader. Tight, specific, restrained. NOT motivational poster.
-- Never use the words "playbook", "stretch", "long shot", "real shot", "safety", "reach", "target school", "alumni insight", "hone", "hone in".
 - No headings, no markdown. Just three paragraphs separated by a JSON structure.
+
+${EDITORIAL_RULES_TIGHT}
 
 Output format — RETURN ONLY JSON, no commentary:
 {
