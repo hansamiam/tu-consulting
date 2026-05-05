@@ -14,7 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowRight, ArrowLeft, Sparkles, GraduationCap, Target, Shield, CheckCircle2, Bot, Search, PenTool, BookOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-type Screen = "landing" | "intake" | "dashboard" | "chat-only";
+// 'landing' retired round 10 — page opens directly into intake.
+type Screen = "intake" | "dashboard" | "chat-only";
 
 const COUNTRIES_RU = [
   "США", "Великобритания", "Канада", "Австралия",
@@ -37,7 +38,8 @@ const COUNTRY_MAP: Record<string, string> = {
 
 const TopUniAIRu = () => {
   const navigate = useNavigate();
-  const [screen, setScreen] = useState<Screen>("landing");
+  // Landing retired round 10 — opens directly into intake. Mirror EN.
+  const [screen, setScreen] = useState<Screen>("intake");
   const [step, setStep] = useState(1);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -81,54 +83,13 @@ const TopUniAIRu = () => {
         <BetaBanner />
 
         <AnimatePresence mode="wait">
-          {screen === "landing" && (
-            <motion.div key="landing" {...fadeIn} className="flex flex-col items-center justify-center min-h-[70vh] px-4 text-center">
-              <div className="max-w-2xl mx-auto space-y-8">
-                <div className="space-y-2">
-                  <h1 className="text-5xl md:text-6xl font-heading font-bold text-foreground tracking-tight">TopUni <span className="text-accent">AI</span></h1>
-                  <p className="text-lg md:text-xl text-muted-foreground max-w-lg mx-auto leading-relaxed">Интеллектуальное планирование пути для амбициозных студентов.</p>
-                </div>
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                  <Button variant="gold" size="lg" className="text-base px-8" onClick={() => setScreen("intake")}>
-                    <GraduationCap className="mr-2 w-5 h-5" /> Начать планирование <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
-                  <Button variant="outline" size="lg" className="text-base px-8" onClick={() => setScreen("chat-only")}>
-                    <Bot className="mr-2 w-5 h-5" /> Чат с советником
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                  Получите персональный AI-план с подбором университетов из нашей базы данных или общайтесь напрямую с AI-советником.
-                </p>
-                <div className="grid sm:grid-cols-2 gap-3 max-w-xl mx-auto pt-4">
-                  <button
-                    onClick={() => navigate("/discover/ru")}
-                    className="group p-4 rounded-xl border border-border hover:border-accent/40 bg-background/80 backdrop-blur-sm transition-all text-left space-y-1.5"
-                  >
-                    <Search className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
-                    <p className="text-sm font-semibold text-foreground">Discover</p>
-                    <p className="text-[11px] text-muted-foreground leading-snug">Стипендии и финансирование, подобранные под ваш профиль</p>
-                  </button>
-                  <button
-                    onClick={() => navigate("/academy")}
-                    className="group p-4 rounded-xl border border-border hover:border-accent/40 bg-background/80 backdrop-blur-sm transition-all text-left space-y-1.5"
-                  >
-                    <BookOpen className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
-                    <p className="text-sm font-semibold text-foreground">Academy</p>
-                    <p className="text-[11px] text-muted-foreground leading-snug">Гайды, курсы и плейбуки для каждого этапа поступления</p>
-                  </button>
-                </div>
-
-                <a href="/topuni-ai/partners/ru" className="text-sm text-muted-foreground hover:text-accent transition-colors underline underline-offset-4 cursor-pointer inline-block">Для университетов-партнёров →</a>
-              </div>
-            </motion.div>
-          )}
 
           {screen === "chat-only" && (
             <motion.div key="chat-only" {...fadeIn} className="max-w-3xl mx-auto px-4 py-8">
               <TopUniDashboard
                 profile={{ ...profile, fullName: fullName || "Студент" }}
                 language="ru"
-                onBack={() => setScreen("landing")}
+                onBack={() => navigate("/ru")}
               />
             </motion.div>
           )}
@@ -253,13 +214,12 @@ const TopUniAIRu = () => {
 
           {screen === "dashboard" && (
             <motion.div key="dashboard" {...fadeIn}>
-              <TopUniDashboard profile={profile} language="ru" onBack={() => setScreen("landing")} />
+              <TopUniDashboard profile={profile} language="ru" onBack={() => navigate("/ru")} />
             </motion.div>
           )}
         </AnimatePresence>
 
         {screen !== "dashboard" && screen !== "chat-only" && <Footer language="ru" />}
-        {screen === "landing" && <TopUniChat language="ru" />}
       </div>
     </div>
   );
