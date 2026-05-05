@@ -27,6 +27,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
 import { CuratedCollections } from "@/components/discover/CuratedCollections";
 import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
+import { ExpandedScholarshipDialog } from "@/components/discover/ExpandedScholarshipDialog";
 import { MatchScoreBreakdown } from "@/components/discover/MatchScoreBreakdown";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { CountryArt, CampusPattern } from "@/lib/countryArt";
@@ -1661,7 +1662,7 @@ const ReqRow = ({ label, status, detail }: {
 };
 
 /* ─── Detail Sheet (tabbed, visual) ──────────────────────────────────── */
-const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, status, onStatusChange, note, onNoteChange, similar, onSwitchTo, isMember, onUnlock }: {
+const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, status, onStatusChange, note, onNoteChange, similar, onSwitchTo, isMember, onUnlock, onExpand }: {
   s: Scored | null; open: boolean; onClose: () => void;
   isBookmarked: boolean; onBookmark: () => void;
   profile: Profile;
@@ -1673,6 +1674,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
   onSwitchTo: (s: Scored) => void;
   isMember: boolean;
   onUnlock: () => void;
+  onExpand: () => void;
 }) => {
   if (!s) return null;
   const tier = TIER[s.priority];
@@ -1845,12 +1847,15 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               {isBookmarked ? <BookmarkCheck className="h-4 w-4 text-gold-dark" /> : <Bookmark className="h-4 w-4" />}
             </Button>
           </div>
-          <Link
-            to={`/scholarships/${s.scholarship_id}`}
-            className="relative inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-gold-dark mt-2 underline-offset-4 hover:underline transition-colors"
+          <button
+            type="button"
+            onClick={onExpand}
+            className="relative inline-flex items-center gap-1 text-[11px] font-semibold text-gold-dark hover:text-foreground mt-2 underline-offset-4 hover:underline transition-colors"
           >
-            Open full page <ArrowRight className="h-3 w-3" />
-          </Link>
+            <Sparkles className="h-3 w-3" />
+            View full strategy + 30-day plan
+            <ArrowRight className="h-3 w-3" />
+          </button>
 
           {/* URL health warning — surfaces the URL freshness checker's
               verdict. 3+ consecutive fails = link probably moved.
@@ -1873,19 +1878,17 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
         </div>
 
         {/* ── TABS ──
-            "My plan" is the first/default tab — when the user clicks a
-            scholarship card, the substantial personalized analysis (match
-            breakdown vs their stats, odds estimate with rationale,
-            counsellor-grade strategy points, 30-day execution plan) lands
-            immediately. Previously this analysis was only on the standalone
-            /scholarships/:id page; surfacing it inside the DetailSheet
-            keeps the user in the Discover flow and answers "should I
-            apply?" without a navigation step away. */}
-        <Tabs defaultValue="plan" className="flex-1 flex flex-col">
+            The right-side panel is intentionally CONCISE — it's the
+            "is this for me?" surface. The heavier personalized
+            analysis (match breakdown, 30-day plan, odds, counsellor-
+            grade strategy) lives in the enlarged centered detail
+            modal opened from the "View full strategy" CTA above.
+            Without that split, the right panel stretched vertically
+            with cut-off text on every long deep-dive section. */}
+        <Tabs defaultValue="overview" className="flex-1 flex flex-col">
           <div className="px-7 pt-5 border-b border-border bg-background sticky top-0 z-10 overflow-x-auto scrollbar-hide">
             <TabsList className="bg-transparent p-0 h-auto gap-5 sm:gap-7 w-max sm:w-full justify-start rounded-none -mb-px">
               {([
-                { v: "plan",         label: "My plan" },
                 { v: "overview",     label: "Overview" },
                 { v: "requirements", label: "Requirements" },
                 { v: "strategy",     label: "Strategy" },
@@ -1900,26 +1903,6 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               ))}
             </TabsList>
           </div>
-
-          {/* MY PLAN — personalized analysis */}
-          <TabsContent value="plan" className="px-7 py-6 m-0 focus-visible:outline-none">
-            <ScholarshipDeepDive
-              scholarshipId={s.scholarship_id}
-              profile={{
-                fullName: undefined,
-                nationality: profile.country,
-                major: profile.field,
-                field: profile.field,
-                gradeLevel: profile.degrees?.[0] || "",
-                targetCountries: s.host_country ? [s.host_country] : undefined,
-                gpa: profile.gpa,
-                gpaScale: profile.gpaScale,
-                ielts: profile.ielts,
-                toefl: profile.toefl,
-                sat: profile.sat,
-              }}
-            />
-          </TabsContent>
 
           {/* OVERVIEW */}
           <TabsContent value="overview" className="px-7 py-6 space-y-5 m-0 focus-visible:outline-none">
@@ -2357,6 +2340,7 @@ const Discover = ({ language = "en" }: Props) => {
   const [wizardStep, setWizardStep] = useState(0);
   const [wiz, setWiz] = useState<WizardData>(DEFAULT_WIZARD);
   const [openDetail, setOpenDetail] = useState<Scored | null>(null);
+  const [expandedDetail, setExpandedDetail] = useState<Scored | null>(null);
   /* Application tracker — offline-first hook that mirrors localStorage
      and (when authed) syncs to Postgres `application_tracker`. Replaces
      the four separate useState + useEffect blobs that lived here. */
@@ -4054,6 +4038,16 @@ const Discover = ({ language = "en" }: Props) => {
           onSwitchTo={(s) => setOpenDetail(s)}
           isMember={isMember}
           onUnlock={() => setPaywallOpen("strategy")}
+          onExpand={() => openDetail && setExpandedDetail(openDetail)}
+        />
+
+        <ExpandedScholarshipDialog
+          s={expandedDetail}
+          profile={profile}
+          onClose={() => setExpandedDetail(null)}
+          onApply={() => expandedDetail?.official_url && window.open(expandedDetail.official_url, "_blank", "noopener,noreferrer")}
+          onSave={() => expandedDetail && toggleBookmark(expandedDetail.scholarship_id)}
+          isBookmarked={expandedDetail ? shortlist.has(expandedDetail.scholarship_id) : false}
         />
       </div>
     </div>
