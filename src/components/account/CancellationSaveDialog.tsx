@@ -18,7 +18,8 @@ import { Button } from "@/components/ui/button";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Bookmark, Calendar, Coins, Trophy, FileText, Heart } from "lucide-react";
+import { Loader2, Bookmark, Calendar, Coins, Trophy, FileText, Heart, PauseCircle } from "lucide-react";
+import { toast } from "sonner";
 
 interface ScholarshipLite {
   scholarship_id: string;
@@ -57,6 +58,27 @@ export const CancellationSaveDialog = ({ open, onOpenChange, onContinue, languag
   const [rows, setRows] = useState<ScholarshipLite[]>([]);
   const [hasBrief, setHasBrief] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pausing, setPausing] = useState(false);
+
+  const handlePause = async () => {
+    setPausing(true);
+    const { data, error } = await supabase.functions.invoke("pause-subscription");
+    setPausing(false);
+    if (error || !data?.ok) {
+      const msg = (data && (data as { error?: string }).error) || error?.message || (ru ? "Не удалось приостановить" : "Couldn't pause");
+      toast.error(msg);
+      return;
+    }
+    const resumes = data.resumes_at_iso ? new Date(data.resumes_at_iso) : null;
+    toast.success(
+      resumes
+        ? ru
+          ? `Подписка приостановлена до ${resumes.toLocaleDateString("ru-RU")}`
+          : `Paused until ${resumes.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+        : ru ? "Подписка приостановлена на 30 дней" : "Paused for 30 days",
+    );
+    onOpenChange(false);
+  };
 
   // Hydrate the user's tracked scholarships + brief existence when the
   // dialog opens. Single Supabase round-trip; 200ms or so on a warm cache.
@@ -231,6 +253,18 @@ export const CancellationSaveDialog = ({ open, onOpenChange, onContinue, languag
             onClick={() => { onOpenChange(false); onContinue(); }}
           >
             {t("Continue to cancel", "Всё равно отменить")}
+          </Button>
+          {/* Middle option: pause for a month. Costs us nothing we
+              already had, doesn't poison the price ladder, and most
+              users who hover their finger over Cancel will accept it. */}
+          <Button
+            variant="outline"
+            onClick={handlePause}
+            disabled={pausing}
+            className="gap-1.5"
+          >
+            {pausing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PauseCircle className="h-3.5 w-3.5" />}
+            {t("Pause 30 days", "Пауза 30 дней")}
           </Button>
           <Button
             variant="gold"

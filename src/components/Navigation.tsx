@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthDialog } from "@/components/auth/AuthDialog";
+import { ActivityBell } from "@/components/ActivityBell";
 
 interface NavigationProps {
   language?: "en" | "ru";
@@ -98,6 +99,11 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
                 {link.label}
               </button>
             ))}
+
+            {/* Activity bell — surfaces unread saved-search hits,
+                tracked deadlines, lifecycle reopens. Auto-hides for
+                anon users (nothing to surface). */}
+            <ActivityBell language={language} variant={isOverlay ? "overlay" : "default"} />
 
             {/* Membership / Account */}
             {user ? (

@@ -22,6 +22,7 @@ import { Compass, ArrowLeft, Crown, User as UserIcon, KanbanSquare } from "lucid
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthDialog } from "@/components/auth/AuthDialog";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { ActivityBell } from "@/components/ActivityBell";
 
 interface Props {
   language?: "en" | "ru";
@@ -102,6 +103,8 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
           <KanbanSquare className="h-3.5 w-3.5" />
           {isRussian ? "Воронка" : "Pipeline"}
         </button>
+
+        <ActivityBell language={language} />
 
         <LanguageSwitcher />
 
