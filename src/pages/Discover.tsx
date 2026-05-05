@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
+import { DiscoverAppBar } from "@/components/discover/DiscoverAppBar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1375,39 +1376,45 @@ const TimelineView = ({ items, onSelect, openDetail, ...common }: {
       stripe: string; bg: string; ring: string; kickerCls: string;
       items: Scored[];
     }[] = [
+      // Color discipline: only the urgent buckets carry tinted
+      // backgrounds. Later tiers (>30 days, rolling) use a neutral
+      // canvas-soft surface — the urgency cue lives in the left
+      // stripe + the kicker color, which is plenty of signal without
+      // a full tinted block. Five colored sections in a row was
+      // making Deadlines view feel circus-y.
       {
         label: "Last call", kicker: "Closing in days",
         subtitle: "Moving fast — these go silent within a week. Drop everything if there's a fit.",
-        stripe: "from-rose-600 via-red-600 to-rose-700", bg: "bg-rose-50/60 dark:bg-rose-950/20",
-        ring: "ring-rose-300/40", kickerCls: "text-rose-700 dark:text-rose-300",
+        stripe: "from-rose-600 via-red-600 to-rose-700", bg: "bg-rose-50/50 dark:bg-rose-950/15",
+        ring: "ring-rose-300/30", kickerCls: "text-rose-700 dark:text-rose-300",
         items: [],
       },
       {
         label: "Closing this month", kicker: "Real window",
         subtitle: "31 days to assemble strong materials. Lock the core essay first.",
-        stripe: "from-amber-500 via-orange-500 to-amber-600", bg: "bg-amber-50/60 dark:bg-amber-950/20",
-        ring: "ring-amber-300/40", kickerCls: "text-amber-800 dark:text-amber-300",
+        stripe: "from-amber-500 via-orange-500 to-amber-600", bg: "bg-amber-50/40 dark:bg-amber-950/15",
+        ring: "ring-amber-300/30", kickerCls: "text-amber-800 dark:text-amber-300",
         items: [],
       },
       {
         label: "Coming up", kicker: "On deck",
         subtitle: "Three months of runway. Plenty of time to craft a sharp application.",
-        stripe: "from-primary via-primary-bright to-primary", bg: "bg-primary/5",
-        ring: "ring-primary/30", kickerCls: "text-primary dark:text-primary-bright",
+        stripe: "from-primary/70 to-primary/40", bg: "bg-canvas-soft/50",
+        ring: "ring-border/60", kickerCls: "text-primary/80 dark:text-primary-bright/80",
         items: [],
       },
       {
         label: "On the horizon", kicker: "Plant the seed",
         subtitle: "These reward early starts — research the program now, build relationships next.",
-        stripe: "from-emerald-600 via-teal-600 to-emerald-700", bg: "bg-emerald-50/40 dark:bg-emerald-950/20",
-        ring: "ring-emerald-300/30", kickerCls: "text-emerald-800 dark:text-emerald-300",
+        stripe: "from-foreground/30 to-foreground/15", bg: "bg-canvas-soft/40",
+        ring: "ring-border/50", kickerCls: "text-muted-foreground",
         items: [],
       },
       {
         label: "Apply anytime", kicker: "No clock",
         subtitle: "Rolling or undated. Apply when your story is ready.",
-        stripe: "from-slate-500 via-zinc-500 to-slate-600", bg: "bg-muted/40",
-        ring: "ring-border", kickerCls: "text-muted-foreground",
+        stripe: "from-foreground/20 to-foreground/10", bg: "bg-card/40",
+        ring: "ring-border/40", kickerCls: "text-muted-foreground",
         items: [],
       },
     ];
@@ -2695,7 +2702,15 @@ const Discover = ({ language = "en" }: Props) => {
       {dark && <NavyBackdrop />}
 
       <div className="relative z-10">
-        <Navigation language={language} />
+        {/* Global Navigation everywhere EXCEPT the results phase. In
+            results we're in app mode — the website's marketing nav
+            competes with the actual product surface. We swap to a
+            slim DiscoverAppBar that gives the same essential nav
+            (home, account, language, escape-to-other-products) in
+            half the height. Same pattern Linear / Notion / Stripe
+            Dashboard use. */}
+        {phase !== "results" && <Navigation language={language} />}
+        {phase === "results" && <DiscoverAppBar language={language} />}
 
         <AnimatePresence mode="wait">
           {/* ══ LANDING ══ */}
@@ -3059,25 +3074,13 @@ const Discover = ({ language = "en" }: Props) => {
                   : null;
                 const countryAccent = accentForCountry(profile.country);
                 return (
-                  <div className="relative bg-gradient-to-b from-primary/[0.04] via-canvas-soft to-background border-b border-border/60 overflow-hidden">
-                    {/* Subtle gold ambient — keeps the brand mark elevated
-                        without committing to a full hero block. */}
-                    <span className="absolute -top-1/2 -right-20 w-72 h-72 rounded-full blur-[100px] opacity-[0.10] pointer-events-none"
-                      style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 60%)" }}
-                      aria-hidden />
-                    <div className="relative max-w-7xl mx-auto px-5 sm:px-8 py-5 sm:py-6 flex items-end gap-4 flex-wrap">
-                      {/* Page brand mark — substantial, not a label */}
-                      <div className="flex items-center gap-3 shrink-0">
-                        <span className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-gradient-to-br from-gold-dark to-gold text-primary shadow-sm ring-1 ring-gold/40">
-                          <Compass className="h-4 w-4" />
-                        </span>
-                        <div className="leading-tight">
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark">TopUni</p>
-                          <h1 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground -mt-0.5">Discover</h1>
-                        </div>
-                      </div>
-                      {/* Vertical rule */}
-                      <span className="hidden sm:block self-stretch w-px bg-border/60 my-1" aria-hidden />
+                  <div className="relative bg-canvas-soft/60 border-b border-border/60 overflow-hidden">
+                    {/* Brand mark moved to the sticky DiscoverAppBar
+                        above — this page strip now focuses solely on
+                        the student's identity (profile chips) so the
+                        space reads less like "another website header"
+                        and more like "your context for this view". */}
+                    <div className="relative max-w-7xl mx-auto px-5 sm:px-8 py-3.5 sm:py-4 flex items-center gap-2 flex-wrap">
                       {/* Profile chips OR call-to-build-profile.
                           Profile chips lean into personal identity:
                           gradient passport-style country chip with a
