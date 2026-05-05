@@ -16,6 +16,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
+import { getProfileChangedAt } from "@/components/discover/DiscoverProfileGate";
 
 export type ActivityKind =
   | "saved_search_alert"   // saved-search-cron just emailed new matches
@@ -205,23 +206,27 @@ export function useActivityFeed() {
       }
     }
 
-    // 4. Brief staleness — only emit when (a) a brief was actually
-    // generated previously, AND (b) the profile updated_at is newer
-    // than the brief generated_at by more than a 1-hour grace window
-    // (so wizard finalisation that updates profile + generates brief
-    // in the same flow doesn't immediately fire a stale flag).
-    if (profileFreshness?.last_brief_generated_at && profileFreshness.profile_updated_at) {
-      const profileTs = new Date(profileFreshness.profile_updated_at).getTime();
+    // 4. Brief staleness — combines two signals so we don't miss
+    // changes that haven't round-tripped to the DB yet:
+    //   · DB-side: student_profiles.updated_at vs last_brief_generated_at
+    //   · Client-side: a localStorage timestamp bumped by saveProfile()
+    // Whichever is newer counts as the "profile last changed at" time.
+    // 1-hour grace window dodges the wizard's finalize-and-generate
+    // case where profile + brief get written within seconds of each other.
+    if (profileFreshness?.last_brief_generated_at) {
       const briefTs = new Date(profileFreshness.last_brief_generated_at).getTime();
+      const dbTs = profileFreshness.profile_updated_at ? new Date(profileFreshness.profile_updated_at).getTime() : 0;
+      const localTs = getProfileChangedAt() ?? 0;
+      const profileTs = Math.max(dbTs, localTs);
       const grace = 60 * 60 * 1000; // 1 hour
-      if (profileTs > briefTs + grace) {
+      if (profileTs > 0 && profileTs > briefTs + grace) {
         out.push({
           id: `bs-${profileFreshness.last_brief_generated_at}`,
           kind: "brief_stale",
           title: "Your strategy brief is out of date",
           meta: "Profile changed since last generation",
           href: "/topuni-ai",
-          occurredAt: profileFreshness.profile_updated_at,
+          occurredAt: new Date(profileTs).toISOString(),
         });
       }
     }

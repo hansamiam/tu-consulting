@@ -30,6 +30,11 @@ export interface DiscoverProfile {
 }
 
 const STORAGE_KEY = "topuni_discover_profile";
+// Bumped on every saveProfile write. Read by useActivityFeed so the
+// brief-staleness event fires even when the DB-side updated_at is
+// dormant (the wizard primarily persists profile to localStorage and
+// only round-trips to student_profiles at AuthCallback time).
+const PROFILE_CHANGED_TS_KEY = "topuni_profile_changed_at";
 
 export const getStoredProfile = (): DiscoverProfile | null => {
   try {
@@ -40,8 +45,26 @@ export const getStoredProfile = (): DiscoverProfile | null => {
   }
 };
 
+export const getProfileChangedAt = (): number | null => {
+  try {
+    const raw = localStorage.getItem(PROFILE_CHANGED_TS_KEY);
+    if (!raw) return null;
+    const t = Number.parseInt(raw, 10);
+    return Number.isFinite(t) ? t : null;
+  } catch { return null; }
+};
+
 export const saveProfile = (profile: DiscoverProfile) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+  // Compare to the previous payload — only bump the change timestamp
+  // when the data actually shifted. Re-saving the identical profile
+  // shouldn't fire a stale-brief signal.
+  let prevSerialized: string | null = null;
+  try { prevSerialized = localStorage.getItem(STORAGE_KEY); } catch { /* ignore */ }
+  const nextSerialized = JSON.stringify(profile);
+  localStorage.setItem(STORAGE_KEY, nextSerialized);
+  if (prevSerialized !== nextSerialized) {
+    try { localStorage.setItem(PROFILE_CHANGED_TS_KEY, Date.now().toString()); } catch { /* ignore */ }
+  }
 };
 
 const NATIONALITIES = [
