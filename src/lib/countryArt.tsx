@@ -285,6 +285,56 @@ const acacia = wrap(
   </>
 );
 
+// Yurt — Central Asia (Kazakhstan, Kyrgyzstan, Mongolia, Turkmenistan)
+const yurt = wrap(
+  <>
+    {/* dome + door — instantly recognisable nomadic dwelling */}
+    <path d="M52 52 L52 36 Q52 18 80 18 Q108 18 108 36 L108 52 Z" />
+    <rect x="74" y="38" width="12" height="14" fill="#fff" opacity="0.4" />
+    <path d="M52 36 L108 36" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+    <path d="M80 18 L80 36" stroke="currentColor" strokeWidth="1" opacity="0.4" />
+    <circle cx="80" cy="18" r="2" fill="#fff" opacity="0.5" />
+  </>
+);
+
+// Khan Shatyr — modern Kazakhstan (Astana's tent landmark)
+const khanShatyr = wrap(
+  <>
+    {/* tall conical tent */}
+    <path d="M80 6 L60 50 L100 50 Z" />
+    <path d="M80 6 L80 50" stroke="#fff" strokeWidth="0.8" opacity="0.45" />
+    <path d="M68 36 L92 36" stroke="#fff" strokeWidth="0.5" opacity="0.4" />
+    <path d="M64 44 L96 44" stroke="#fff" strokeWidth="0.5" opacity="0.4" />
+    <rect x="58" y="50" width="44" height="2" />
+  </>
+);
+
+// Mosque silhouette — minarets + dome (Indonesia, Malaysia, Pakistan, MENA fallback)
+const mosque = wrap(
+  <>
+    <rect x="56" y="42" width="48" height="10" />
+    {/* central dome */}
+    <path d="M68 42 Q80 22 92 42" />
+    <path d="M80 18 L80 22" stroke="currentColor" strokeWidth="1.5" />
+    <circle cx="80" cy="16" r="2" />
+    {/* left minaret */}
+    <rect x="50" y="22" width="4" height="20" />
+    <path d="M48 22 L56 22 L52 14 Z" />
+    {/* right minaret */}
+    <rect x="106" y="22" width="4" height="20" />
+    <path d="M104 22 L112 22 L108 14 Z" />
+  </>
+);
+
+// Caucasus mountains — sharper twin peaks for Caucasus region
+const caucasus = wrap(
+  <>
+    <path d="M40 52 L60 22 L72 38 L86 18 L102 42 L120 52 Z" />
+    <path d="M55 28 L60 22 L65 28" stroke="#fff" strokeWidth="0.5" fill="none" opacity="0.5" />
+    <path d="M82 22 L86 18 L90 22" stroke="#fff" strokeWidth="0.5" fill="none" opacity="0.5" />
+  </>
+);
+
 // Generic globe with pin (default fallback)
 const globe = wrap(
   <>
@@ -298,6 +348,10 @@ const globe = wrap(
 
 /* ─── Country → landmark dispatch ───────────────────────────────────────
  *
+ * Lookup goes via canonicalCountry (alias-aware, tolerates casing /
+ * "USA" vs "United States" / etc) so the LLM's noisy host_country
+ * values land on the right silhouette instead of falling to globe.
+ *
  * Reasonable fallbacks: countries without a specific landmark fall to
  * a regional sibling (e.g. Austria → Brandenburg-style columns,
  * Norway → Matterhorn) so the long tail still feels intentional.
@@ -305,19 +359,26 @@ const globe = wrap(
 const COUNTRY_ART: Record<string, React.ReactNode> = {
   // Asia-Pacific
   Japan: fuji, China: pagoda, "Hong Kong": hkSkyline, Taiwan: pagoda,
-  Korea: hanok, "South Korea": hanok,
-  Singapore: marinaBay, Malaysia: marinaBay, Indonesia: pagoda,
+  Korea: hanok, "South Korea": hanok, "North Korea": hanok,
+  Singapore: marinaBay, Malaysia: mosque, Indonesia: mosque,
   Thailand: pagoda, Vietnam: pagoda, Philippines: marinaBay,
   Australia: opera, "New Zealand": opera, Brunei: marinaBay,
-  India: taj, "Sri Lanka": taj, Pakistan: taj, Bangladesh: taj,
+  India: taj, "Sri Lanka": taj, Pakistan: mosque, Bangladesh: mosque, Nepal: caucasus,
+
+  // Central Asia
+  Kazakhstan: khanShatyr, Kyrgyzstan: yurt, Uzbekistan: mosque,
+  Tajikistan: caucasus, Turkmenistan: yurt, Mongolia: yurt,
+  Azerbaijan: caucasus, Armenia: caucasus, Georgia: caucasus,
 
   // Middle East / North Africa
-  UAE: burj, "Saudi Arabia": burj, Israel: burj, Turkey: stBasils,
-  Egypt: pyramids, Iran: stBasils, Qatar: burj,
+  UAE: burj, "United Arab Emirates": burj, "Saudi Arabia": burj, Israel: burj,
+  Turkey: stBasils, Iran: mosque, Iraq: mosque, Lebanon: mosque, Jordan: mosque,
+  Egypt: pyramids, Morocco: mosque, Qatar: burj, Kuwait: burj,
 
-  // Africa
+  // Sub-Saharan Africa
   "South Africa": acacia, Kenya: acacia, Ethiopia: acacia,
   Rwanda: acacia, Ghana: acacia, Nigeria: acacia, Tanzania: acacia,
+  Uganda: acacia, Senegal: acacia, "Cote d'Ivoire": acacia,
 
   // Europe — UK & Ireland
   "United Kingdom": bigBen, UK: bigBen, Ireland: bigBen, Scotland: bigBen,
@@ -328,11 +389,12 @@ const COUNTRY_ART: Record<string, React.ReactNode> = {
   Italy: colosseum, Spain: sagrada, Portugal: sagrada,
   Sweden: matterhorn, Norway: matterhorn, Finland: matterhorn,
   Denmark: windmill, Iceland: matterhorn,
-  Russia: stBasils, Poland: brandenburg, Czechia: brandenburg,
+  Russia: stBasils, Ukraine: stBasils, Poland: brandenburg,
+  Czechia: brandenburg, "Czech Republic": brandenburg,
   Hungary: brandenburg, Romania: brandenburg, Greece: colosseum,
   Bulgaria: stBasils, Croatia: colosseum, Lithuania: brandenburg,
   Latvia: brandenburg, Slovakia: brandenburg, Estonia: brandenburg,
-  EU: brandenburg,
+  EU: eiffel, "European Union": eiffel,
 
   // North America
   "United States": liberty, USA: liberty, US: liberty,
@@ -341,15 +403,23 @@ const COUNTRY_ART: Record<string, React.ReactNode> = {
   // Latin America
   Brazil: redeemer, Argentina: redeemer, Chile: redeemer,
   Colombia: redeemer, Peru: pyramids, Cuba: redeemer,
-  Uruguay: redeemer, Ecuador: redeemer,
+  Uruguay: redeemer, Ecuador: redeemer, Venezuela: redeemer,
 
   // Default / multi-country
-  Global: globe, Multiple: globe, International: globe,
+  Global: globe, Multiple: globe, "Multiple countries": globe,
+  International: globe, Worldwide: globe,
 };
 
+import { canonicalCountry } from "@/lib/countryAccent";
+
 export const CountryArt = ({ country, className = "" }: { country: string | null | undefined; className?: string }) => {
-  const art = (country && COUNTRY_ART[country]) || globe;
-  return <span className={className}>{art}</span>;
+  if (!country) return <span className={className}>{globe}</span>;
+  // Try exact (covers existing keys), then canonicalised form so
+  // "U.S.A." / "Türkiye" / "Republic of Korea" all map correctly.
+  const exact = COUNTRY_ART[country];
+  if (exact) return <span className={className}>{exact}</span>;
+  const canon = canonicalCountry(country);
+  return <span className={className}>{COUNTRY_ART[canon] || globe}</span>;
 };
 
 /* CampusPattern — a tiling SVG of gothic-arch windows + classical columns
