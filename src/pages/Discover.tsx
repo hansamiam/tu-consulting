@@ -2116,21 +2116,27 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             {!s.what_to_prepare_first && !s.ideal_candidate_profile && !s.how_to_win
               && !s.strategy_notes && !s.common_rejection_reasons
               && !s.weak_candidate_warning && !s.risk_note && (
-              <div className="rounded-2xl border-2 border-dashed border-border bg-muted/20 px-5 py-7 text-center">
-                <Loader2 className="h-5 w-5 text-muted-foreground/50 mx-auto mb-3 animate-spin" />
+              <div className="rounded-2xl border border-gold/25 bg-gradient-to-br from-gold/10 via-gold/[0.04] to-transparent px-5 py-7 text-center">
+                <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br from-gold-dark to-gold mx-auto mb-3 shadow-sm">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                </div>
                 <h4 className="font-heading font-semibold text-base text-foreground mb-1.5">
-                  Strategy notes still being drafted
+                  Get your live strategy
                 </h4>
                 <p className="text-xs text-muted-foreground leading-relaxed max-w-md mx-auto mb-4">
-                  This scholarship was added to our database recently. Our AI is generating the
-                  ideal-candidate profile, how-to-win strategy, and common rejection patterns —
-                  usually within 24-48 hours. The personalized fit analysis above works
-                  right now though.
+                  This scholarship's pre-written strategy notes are still being drafted by
+                  our cron, but you don't have to wait — open the full strategy panel and our
+                  AI will analyse this scholarship against your profile right now.
                 </p>
-                <p className="text-[11px] text-muted-foreground/70 inline-flex items-center gap-1.5">
-                  <Sparkles className="h-3 w-3 text-gold-dark" />
-                  Tap <span className="font-semibold text-foreground">View full strategy</span> at the top for live AI analysis
-                </p>
+                <button
+                  type="button"
+                  onClick={onExpand}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-primary bg-gradient-to-r from-gold-dark to-gold hover:opacity-90 transition-opacity shadow-sm"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Generate now
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </button>
               </div>
             )}
 
