@@ -256,79 +256,63 @@ const Pricing = ({ language = "en" }: PricingProps) => {
           </div>
         </section>
 
-        {/* VALUE STACK */}
-        <section className="px-5 sm:px-8 pb-12">
-          <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="max-w-3xl mx-auto">
-            <div className="relative bg-card border-2 border-gold/40 rounded-3xl p-7 sm:p-10 shadow-xl">
-              {foundingLeft != null && foundingLeft > 0 && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gold text-primary text-xs font-bold tracking-wide uppercase px-4 py-1.5 rounded-full shadow-md flex items-center gap-1.5">
-                  <Zap className="h-3 w-3" /> {t.spotsLeft(foundingLeft, foundingCap)}
-                </div>
-              )}
-
-              <div className="flex items-center justify-between gap-4 mb-7">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-1.5">{t.tier}</p>
-                  <h2 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight">{t.tierTagline}</h2>
-                </div>
-                <Crown className="w-8 h-8 text-gold-dark shrink-0 hidden sm:block" />
+        {/* THE SHIFT — leads with concrete before/after, same content as
+            the home page's shift section. Sets up the math (next section)
+            and the value stack (now at the bottom). Round-10 reorder:
+            value stack moved to the end so the page builds proof
+            before quoting price. */}
+        <section className="px-5 sm:px-8 py-12 sm:py-14">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="max-w-5xl mx-auto"
+          >
+            <div className="max-w-2xl mx-auto text-center mb-8">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">The shift</p>
+              <h2 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight leading-tight">
+                From scattered tabs to a ranked plan.
+              </h2>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4 sm:gap-5">
+              <div className="rounded-2xl border border-border bg-card p-6 sm:p-7">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-4">Without TopUni</p>
+                <ul className="space-y-3">
+                  {[
+                    "47 browser tabs of half-read pages",
+                    "Random Reddit advice",
+                    "Missed deadlines",
+                    "Unsure if you actually qualify",
+                    "No clear essay strategy",
+                  ].map((line, i) => (
+                    <li key={i} className="flex items-start gap-3 text-[15px] text-foreground/75 leading-snug">
+                      <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
+                      <span>{line}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-
-              <div className="space-y-3 mb-7">
-                {t.valueStack.map((item, i) => (
-                  <motion.div key={i} initial={{ opacity: 0, x: -12 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05, duration: 0.4 }} className="grid grid-cols-[auto,1fr,auto] gap-3 sm:gap-4 items-start py-3 border-b border-border/60 last:border-0">
-                    <Check className="w-4 h-4 mt-1 text-gold-dark shrink-0" />
-                    <div className="min-w-0">
-                      <p className="font-semibold text-foreground text-sm sm:text-base leading-snug">{item.title}</p>
-                      <p className="text-muted-foreground text-xs sm:text-[13px] leading-relaxed mt-0.5">{item.body}</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap pt-1">{t.valueWordPrefix} <strong className="text-foreground/80">{item.value}</strong></span>
-                  </motion.div>
-                ))}
+              <div className="relative rounded-2xl border border-gold/30 bg-gradient-to-br from-gold/[0.07] via-card to-card p-6 sm:p-7 overflow-hidden">
+                <div className="absolute left-0 inset-y-0 w-[3px] bg-gradient-to-b from-gold-dark via-gold to-gold-dark" />
+                <p className="text-[11px] uppercase tracking-[0.18em] text-gold-dark font-semibold mb-4">With TopUni</p>
+                <ul className="space-y-3">
+                  {[
+                    "Ranked opportunities tailored to your profile",
+                    "Why-it-fits notes for each scholarship",
+                    "Funding filters that actually narrow the universe",
+                    "Deadline plan that emails you before each one",
+                    "Live monthly workshops with admitted founders",
+                  ].map((line, i) => (
+                    <li key={i} className="flex items-start gap-3 text-[15px] text-foreground leading-snug">
+                      <span className="mt-1 text-gold-dark shrink-0">
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </span>
+                      <span>{line}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-
-              <div className="bg-gold/5 border border-gold/20 rounded-2xl px-5 py-4 mb-6">
-                <div className="flex items-center justify-between mb-2 text-sm">
-                  <span className="text-muted-foreground">{t.totalValueRow}</span>
-                  <span className="font-bold tabular-nums line-through text-muted-foreground">{t.valueTotalLabel}</span>
-                </div>
-                <div className="flex items-end justify-between">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-1">{t.foundingPriceLabel}</p>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-5xl sm:text-6xl font-bold text-foreground tabular-nums">$39</span>
-                      <span className="text-muted-foreground">{t.perMonth}</span>
-                    </div>
-                  </div>
-                  <p className="text-xs text-gold-dark font-semibold tabular-nums">{t.youSave}</p>
-                </div>
-                <p className="text-[11px] text-muted-foreground mt-3">
-                  {t.publicNote} {t.publicNoteRest}
-                </p>
-              </div>
-
-              {foundingLeft != null && (
-                <div className="mb-5">
-                  <div className="flex items-center justify-between text-[11px] mb-1.5">
-                    <span className="text-muted-foreground tabular-nums">{t.capacityClaimed(claimed, foundingCap)}</span>
-                    <span className="text-gold-dark font-semibold tabular-nums">{t.capacityLeft(foundingLeft)}</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-gold-dark to-gold transition-all" style={{ width: `${claimedPct}%` }} />
-                  </div>
-                </div>
-              )}
-
-              <Button variant="gold" size="lg" className="w-full gap-2 text-base h-12 shadow-md" disabled={loading || foundingLeft === 0 || isFounding} onClick={startCheckout}>
-                {ctaLabel}
-                {!isFounding && foundingLeft !== 0 && !loading && <ArrowRight className="h-4 w-4 ml-1" />}
-              </Button>
-
-              <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
-                <Shield className="w-3.5 h-3.5 text-success" />
-                <span><strong className="text-foreground">{t.riskReversalBold}</strong> {t.riskReversal}</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground/80 text-center mt-1.5">{t.stripeBilling}</p>
             </div>
           </motion.div>
         </section>
@@ -405,6 +389,80 @@ const Pricing = ({ language = "en" }: PricingProps) => {
                   </div>
                 );
               })}
+            </div>
+          </motion.div>
+        </section>
+
+        {/* VALUE STACK — moved to the bottom in round 10. Page now leads
+            with the shift + the math + social proof + FAQ before quoting
+            the price. By the time the user lands on this card they've
+            already seen what the product does and how it stacks up. */}
+        <section className="px-5 sm:px-8 pb-12">
+          <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="max-w-3xl mx-auto">
+            <div className="relative bg-card border-2 border-gold/40 rounded-3xl p-7 sm:p-10 shadow-xl">
+              {foundingLeft != null && foundingLeft > 0 && (
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gold text-primary text-xs font-bold tracking-wide uppercase px-4 py-1.5 rounded-full shadow-md flex items-center gap-1.5">
+                  <Zap className="h-3 w-3" /> {t.spotsLeft(foundingLeft, foundingCap)}
+                </div>
+              )}
+              <div className="flex items-center justify-between gap-4 mb-7">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-1.5">{t.tier}</p>
+                  <h2 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight">{t.tierTagline}</h2>
+                </div>
+                <Crown className="w-8 h-8 text-gold-dark shrink-0 hidden sm:block" />
+              </div>
+              <div className="space-y-3 mb-7">
+                {t.valueStack.map((item, i) => (
+                  <motion.div key={i} initial={{ opacity: 0, x: -12 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05, duration: 0.4 }} className="grid grid-cols-[auto,1fr,auto] gap-3 sm:gap-4 items-start py-3 border-b border-border/60 last:border-0">
+                    <Check className="w-4 h-4 mt-1 text-gold-dark shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-semibold text-foreground text-sm sm:text-base leading-snug">{item.title}</p>
+                      <p className="text-muted-foreground text-xs sm:text-[13px] leading-relaxed mt-0.5">{item.body}</p>
+                    </div>
+                    <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap pt-1">{t.valueWordPrefix} <strong className="text-foreground/80">{item.value}</strong></span>
+                  </motion.div>
+                ))}
+              </div>
+              <div className="bg-gold/5 border border-gold/20 rounded-2xl px-5 py-4 mb-6">
+                <div className="flex items-center justify-between mb-2 text-sm">
+                  <span className="text-muted-foreground">{t.totalValueRow}</span>
+                  <span className="font-bold tabular-nums line-through text-muted-foreground">{t.valueTotalLabel}</span>
+                </div>
+                <div className="flex items-end justify-between">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-1">{t.foundingPriceLabel}</p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-5xl sm:text-6xl font-bold text-foreground tabular-nums">$39</span>
+                      <span className="text-muted-foreground">{t.perMonth}</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gold-dark font-semibold tabular-nums">{t.youSave}</p>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-3">
+                  {t.publicNote} {t.publicNoteRest}
+                </p>
+              </div>
+              {foundingLeft != null && (
+                <div className="mb-5">
+                  <div className="flex items-center justify-between text-[11px] mb-1.5">
+                    <span className="text-muted-foreground tabular-nums">{t.capacityClaimed(claimed, foundingCap)}</span>
+                    <span className="text-gold-dark font-semibold tabular-nums">{t.capacityLeft(foundingLeft)}</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-gold-dark to-gold transition-all" style={{ width: `${claimedPct}%` }} />
+                  </div>
+                </div>
+              )}
+              <Button variant="gold" size="lg" className="w-full gap-2 text-base h-12 shadow-md" disabled={loading || foundingLeft === 0 || isFounding} onClick={startCheckout}>
+                {ctaLabel}
+                {!isFounding && foundingLeft !== 0 && !loading && <ArrowRight className="h-4 w-4 ml-1" />}
+              </Button>
+              <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
+                <Shield className="w-3.5 h-3.5 text-success" />
+                <span><strong className="text-foreground">{t.riskReversalBold}</strong> {t.riskReversal}</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground/80 text-center mt-1.5">{t.stripeBilling}</p>
             </div>
           </motion.div>
         </section>

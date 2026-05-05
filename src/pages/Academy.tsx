@@ -24,27 +24,12 @@ import nurzadaPhoto from "@/assets/nurzada.jpg";
 import joshPhoto from "@/assets/josh.jpg";
 import aigulPhoto from "@/assets/aigul.jpeg";
 
-const PILLARS = [
-  { icon: Video, title: "Live workshops", body: "Small-group sessions on essays, interviews, and scholarship strategy. Recorded for the cohort." },
-  { icon: FileText, title: "Country guides", body: "Step-by-step guides per destination — deadlines, documents, common rejections." },
-  { icon: MessageSquare, title: "Office hours", body: "Weekly group Q&A with our founders as you build your application." },
-  { icon: BookOpen, title: "Tailored tracks", body: "Pre-built learning paths by target country and degree level — pick one and follow it." },
-];
-
+// PILLARS / SAMPLE_WORKSHOPS retired round 10 alongside their sections.
 const FACULTY = [
   { name: "Samuel Han",            credential: "Yale",                photo: samuelPhoto, brings: "Personal statement strategy, US admissions" },
   { name: "Nurzada Abdivalieva",   credential: "Cambridge · Tsinghua", photo: nurzadaPhoto, brings: "Schwarzman path, UK & China admissions" },
   { name: "Josh Hughes",           credential: "Harvard",             photo: joshPhoto,   brings: "Interview signal, scholarship interviews" },
   { name: "Aigul Abdoubaetova",    credential: "Ex-OSCE Academy",     photo: aigulPhoto,  brings: "Funding stack design, country deep-dives" },
-];
-
-const SAMPLE_WORKSHOPS = [
-  { icon: FileText,        title: "Personal statement teardowns",  body: "Live read-throughs of real drafts — what readers actually mark up, what they forget." },
-  { icon: Mic,             title: "Interview signal under pressure", body: "What admissions and scholarship panels remember 24 hours later, and how to plant it." },
-  { icon: Wallet,          title: "Funding stack design",            body: "Combining scholarships, need-based aid, and need-blind admissions into one viable budget." },
-  { icon: Mail,            title: "Reading the decision letter",     body: "Acceptance, deferral, rejection — what to do in the first 48 hours of each, including how to negotiate aid." },
-  { icon: Compass,         title: "Country guide deep-dives",        body: "Live walk-throughs of UK, US, Germany, and Canada — each session covers one country end-to-end." },
-  { icon: GraduationCap,   title: "Recommendation letter strategy",  body: "How to brief a recommender so they write the letter you actually need, not the generic one." },
 ];
 
 const Academy = () => {
@@ -140,82 +125,12 @@ const Academy = () => {
         </div>
       </section>
 
-      {/* PILLARS ─────────────────────────────────────────────────── */}
-      <section className="max-w-5xl mx-auto px-4 py-10 sm:py-14">
-        <div className="max-w-2xl mb-8">
-          <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">What's inside</p>
-          <h2 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground leading-tight">
-            Four formats, one strategy.
-          </h2>
-        </div>
-        <div className="grid sm:grid-cols-2 gap-4">
-          {PILLARS.map(({ icon: Icon, title, body }) => (
-            <Card key={title} className="border-border/60">
-              <CardContent className="p-5 flex gap-4">
-                <div className="h-10 w-10 rounded-lg bg-gold/10 border border-gold/30 flex items-center justify-center shrink-0">
-                  <Icon className="h-5 w-5 text-gold-dark" />
-                </div>
-                <div>
-                  <h3 className="font-heading font-semibold text-foreground tracking-tight mb-1">{title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* SAMPLE LINEUP ───────────────────────────────────────────── */}
-      <section className="max-w-5xl mx-auto px-4 py-10 sm:py-14">
-        <div className="max-w-2xl mb-8">
-          <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">Sample lineup</p>
-          <h2 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground leading-tight">
-            What the first cohort actually covers.
-          </h2>
-          <p className="text-sm text-muted-foreground leading-relaxed mt-3">
-            These six sessions anchor the curriculum. We adjust based on what each cohort needs — but every cohort gets the workshops below.
-          </p>
-        </div>
-        <div className="grid sm:grid-cols-2 gap-3">
-          {SAMPLE_WORKSHOPS.map(({ icon: Icon, title, body }, i) => (
-            <motion.div
-              key={title}
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.35, delay: i * 0.04 }}
-              className="bg-card border border-border rounded-xl p-5"
-            >
-              <div className="flex items-center gap-2.5 mb-2">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground tabular-nums">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <Icon className="h-4 w-4 text-gold-dark" />
-              </div>
-              <h3 className="font-heading font-semibold text-[15px] text-foreground tracking-tight leading-snug mb-1.5">
-                {title}
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">{body}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* WHAT IT ISN'T ───────────────────────────────────────────── */}
-      <section className="max-w-3xl mx-auto px-4 py-10 sm:py-14">
-        <div className="bg-card border border-border rounded-2xl p-7 sm:p-9">
-          <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">What this is not</p>
-          <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground leading-tight mb-4">
-            We made some choices on purpose.
-          </h2>
-          <ul className="space-y-2.5 text-sm text-muted-foreground leading-relaxed">
-            <li className="flex gap-2.5"><span className="text-gold-dark mt-1">·</span><span><span className="text-foreground font-medium">Not a 500-person Zoom call.</span> Cohorts are small enough that the founders know your name and your target list.</span></li>
-            <li className="flex gap-2.5"><span className="text-gold-dark mt-1">·</span><span><span className="text-foreground font-medium">Not a paid certificate.</span> No one cares about an Academy badge on your CV. The reps you put in matter.</span></li>
-            <li className="flex gap-2.5"><span className="text-gold-dark mt-1">·</span><span><span className="text-foreground font-medium">Not pre-recorded clones.</span> Every workshop is live so we adjust to what your cohort actually needs.</span></li>
-            <li className="flex gap-2.5"><span className="text-gold-dark mt-1">·</span><span><span className="text-foreground font-medium">Not a forever subscription.</span> Build through one application cycle, then you're done.</span></li>
-          </ul>
-        </div>
-      </section>
+      {/* Round-10 simplification: PILLARS / SAMPLE LINEUP / WHAT IT
+          ISN'T sections retired. Earlier the page over-explained Academy
+          before it had even shipped — three editorial blocks about
+          formats / sample sessions / negative-space positioning. The
+          waitlist below is the only thing the page needs to do at this
+          stage. */}
 
       {/* WAITLIST ────────────────────────────────────────────────── */}
       <section className="max-w-2xl mx-auto px-4 pb-20">

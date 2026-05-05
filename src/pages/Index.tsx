@@ -141,7 +141,7 @@ const Index = () => {
                 className="text-sm sm:text-base px-7 py-5 gap-2"
                 onClick={() => navigate('/topuni-ai')}
               >
-                Get my admissions plan <ArrowRight className="h-4 w-4" />
+                Get my free strategy <ArrowRight className="h-4 w-4" />
               </Button>
               <Button
                 variant="ghost"
@@ -155,75 +155,23 @@ const Index = () => {
           </div>
         </section>
 
-        {/* WORLDVIEW THESIS — single-paragraph editorial band that names the
-            problem we're solving + the wedge. Sets the company stake so the
-            rest of the page reads as evidence, not feature-list. */}
-        <section className="py-14 sm:py-20 border-y border-border/60 bg-canvas-soft/40">
-          <div className="max-w-3xl mx-auto px-5 sm:px-8">
-            <motion.p {...fadeUp()} className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4 text-center">
-              Why we exist
-            </motion.p>
-            <motion.p {...fadeUp(0.05)} className="font-sans text-xl sm:text-2xl text-foreground/90 leading-[1.45] tracking-[-0.01em] text-center text-balance">
-              <span className="text-foreground font-semibold">Elite admissions consulting is broken.</span>{" "}
-              It is expensive, manual, and built for families who can pay thousands. TopUni is the software layer:
-              <span className="text-gold-dark font-semibold"> personalized strategy, ranked opportunities, and live execution support</span>{" "}
-              — at a fraction of the cost.
-            </motion.p>
-          </div>
-        </section>
-
-        {/* HOW IT WORKS — vertical, editorial, not card-grid */}
+        {/* CONSOLIDATED — one section that combines worldview + how-it-works
+            + before/after into a single tight narrative. Earlier these were
+            four separate sections that all said variations of "we exist
+            because admissions is broken; here are 5 things we do better."
+            Round 10 collapse: lead with the shift (the user's status quo
+            vs ours), follow with one editorial line on what makes us
+            different. The product takes 60 seconds; the page should too. */}
         <section id="how" className="py-20 sm:py-28">
-          <div className="max-w-6xl mx-auto px-5 sm:px-8">
-            <motion.div {...fadeUp()} className="max-w-2xl mx-auto text-center mb-14 sm:mb-16">
-              <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">How it works</p>
-              <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12]">
-                60 seconds. 3 steps. A real plan.
-              </h2>
-            </motion.div>
-
-            <div className="space-y-px">
-              {STEPS.map((step, i) => (
-                <motion.button
-                  key={step.n}
-                  {...fadeUp(0.08 * i)}
-                  onClick={() => navigate(step.path)}
-                  className="group w-full text-left grid grid-cols-12 gap-4 sm:gap-8 items-baseline py-7 sm:py-9 border-t border-border/70 hover:bg-canvas-soft/60 transition-colors px-2 sm:px-4 -mx-2 sm:-mx-4 rounded-md"
-                >
-                  <div className="col-span-2 sm:col-span-1 font-mono text-sm sm:text-base text-gold-dark">{step.n}</div>
-                  <div className="col-span-10 sm:col-span-7">
-                    <h3 className="font-heading text-xl sm:text-2xl font-semibold text-foreground mb-2">
-                      {step.title}
-                    </h3>
-                    <p className="text-muted-foreground leading-relaxed text-[15px] sm:text-base max-w-xl">
-                      {step.body}
-                    </p>
-                  </div>
-                  <div className="hidden sm:flex col-span-4 items-baseline justify-end gap-2 text-sm">
-                    <span className="text-primary/70 font-medium">{step.detail}</span>
-                    <ArrowRight className="h-4 w-4 text-gold-dark group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </motion.button>
-              ))}
-              <div className="border-t border-border/70" />
-            </div>
-          </div>
-        </section>
-
-        {/* BEFORE vs AFTER — two-column comparison card. The pre-product
-            life vs the with-product life. Concrete and visual; sells better
-            than abstract feature lists. */}
-        <section className="py-16 sm:py-20">
           <div className="max-w-5xl mx-auto px-5 sm:px-8">
-            <motion.div {...fadeUp()} className="max-w-2xl mx-auto text-center mb-10">
-              <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">The shift</p>
+            <motion.div {...fadeUp()} className="max-w-2xl mx-auto text-center mb-12 sm:mb-14">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">The shift</p>
               <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12]">
                 From scattered tabs to a ranked plan.
               </h2>
             </motion.div>
 
-            <div className="grid sm:grid-cols-2 gap-4 sm:gap-5">
-              {/* Without */}
+            <div className="grid sm:grid-cols-2 gap-4 sm:gap-5 mb-12 sm:mb-16">
               <motion.div
                 {...fadeUp(0.05)}
                 className="rounded-2xl border border-border bg-card p-6 sm:p-7"
@@ -247,7 +195,6 @@ const Index = () => {
                 </ul>
               </motion.div>
 
-              {/* With */}
               <motion.div
                 {...fadeUp(0.1)}
                 className="relative rounded-2xl border border-gold/30 bg-gradient-to-br from-gold/[0.07] via-card to-card p-6 sm:p-7 overflow-hidden"
@@ -274,6 +221,18 @@ const Index = () => {
                 </ul>
               </motion.div>
             </div>
+
+            {/* One-line worldview anchor — closes the section with WHY this
+                exists, after showing WHAT it does. Keeps the section
+                focused without adding a 2nd visual block. */}
+            <motion.p
+              {...fadeUp(0.18)}
+              className="font-sans text-lg sm:text-xl text-foreground/85 leading-[1.5] tracking-[-0.005em] text-center text-balance max-w-3xl mx-auto"
+            >
+              Elite admissions consulting is expensive, manual, and built for families who can pay thousands.
+              {" "}
+              <span className="text-gold-dark font-semibold">TopUni is the software layer</span> — the same personalized strategy, ranked opportunities, and live execution support, at a fraction of the cost.
+            </motion.p>
           </div>
         </section>
 
@@ -326,25 +285,9 @@ const Index = () => {
           </div>
         </section>
 
-        {/* ACADEMY — single inline editorial moment, no specific dates or sample list */}
-        <section className="py-20 sm:py-28">
-          <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
-            <motion.p {...fadeUp()} className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">
-              Academy
-            </motion.p>
-            <motion.h2 {...fadeUp(0.05)} className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-5">
-              Stop reading 100 Reddit threads.
-            </motion.h2>
-            <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-lg leading-relaxed mb-8 max-w-xl mx-auto">
-              Live monthly workshops with Yale, Cambridge, and Harvard alumni founders. Admitted essays you study while writing your own. The library compounds every month — recordings yours forever.
-            </motion.p>
-            <motion.div {...fadeUp(0.18)}>
-              <Button onClick={() => navigate('/academy')} variant="gold" className="gap-2">
-                Preview Academy <ArrowRight className="h-4 w-4" />
-              </Button>
-            </motion.div>
-          </div>
-        </section>
+        {/* Academy section retired round 10 — Academy lives at /academy
+            for users who want it; the home page no longer has a dedicated
+            Academy block. Pricing section below covers the full toolkit. */}
 
         {/* MEMBERSHIP — top stays cream for content legibility, then a long
             gradient ramp bridges all the way into the footer's full navy.

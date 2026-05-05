@@ -18,7 +18,8 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-type Screen = "landing" | "intake" | "dashboard";
+// 'landing' retired round 10 — TopUni AI opens directly in intake.
+type Screen = "intake" | "dashboard";
 
 import { POPULAR_DESTINATIONS, ALL_COUNTRIES } from "@/data/countries";
 
@@ -77,7 +78,11 @@ const loadDraft = (): Partial<WizardDraft> | null => {
 
 const TopUniAI = () => {
   const navigate = useNavigate();
-  const [screen, setScreen] = useState<Screen>("landing");
+  // Landing screen retired round 10 — TopUni AI now opens directly into
+  // the intake wizard. The pre-landing felt like an extra click before
+  // the actual product. Sales / context lives on the home landing page;
+  // /topuni-ai itself is the tool.
+  const [screen, setScreen] = useState<Screen>("intake");
   const [step, setStep] = useState(1);
 
   useEffect(() => { trackPageView("/topuni-ai"); }, []);
@@ -121,13 +126,9 @@ const TopUniAI = () => {
   const [visaAccess, setVisaAccess] = useState<number[]>([typeof draft?.visaAccess === "number" ? draft.visaAccess : 3]);
   const [locationPref, setLocationPref] = useState<number[]>([typeof draft?.locationPref === "number" ? draft.locationPref : 3]);
 
-  // If we restored a draft with meaningful content, jump the user past
-  // the landing screen so they don't have to re-click "Start my plan".
-  useEffect(() => {
-    if (draft && (draft.fullName || draft.email || draft.gpa || (Array.isArray(draft.targetCountries) && draft.targetCountries.length > 0))) {
-      setScreen("intake");
-    }
-  }, [draft]);
+  // Draft-restore auto-jump retired round 10 alongside the landing
+  // screen — the page now always opens directly in 'intake' so there's
+  // nothing to jump past.
   /* When the user arrives from a /scholarships/by-* hub or from a
      specific scholarship detail page, show a small "Pre-filled from
      {label}" indicator so they understand why their wizard already has
@@ -218,11 +219,10 @@ const TopUniAI = () => {
      answers now live in the dashboard's profile state and the
      server-side cache).
 
-     Skip writing while still on the landing screen — the draft fields
-     are still defaults and we don't want a stray empty draft to
-     trigger the auto-jump-to-intake on next visit. */
+     Skip writing while on a non-intake screen — the draft fields are
+     still defaults and we don't want a stray empty draft. */
   useEffect(() => {
-    if (screen === "landing") return;
+    if (screen !== "intake") return;
     try {
       const draftPayload: WizardDraft = {
         fullName, email, whatsapp, nationality, gradeLevel, gpa, ielts, toefl, sat,
@@ -276,180 +276,6 @@ const TopUniAI = () => {
         <BetaBanner />
 
         <AnimatePresence mode="wait">
-          {/* ═══ LANDING ═══ */}
-          {screen === "landing" && (
-            <motion.div
-              key="landing"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              {/* HERO — strategy plan positioning, with strong navy bookend at top */}
-              <section className="relative pt-16 pb-20 sm:pt-24 sm:pb-28 overflow-hidden">
-                {/* Navy band at the top — same bookend pattern as homepage */}
-                <div className="absolute inset-x-0 top-0 h-64 pointer-events-none"
-                  style={{
-                    backgroundImage: `linear-gradient(180deg,
-                      hsl(var(--primary) / 0.18) 0%,
-                      hsl(var(--primary) / 0.10) 35%,
-                      hsl(var(--primary) / 0.04) 70%,
-                      transparent 100%)`,
-                  }} />
-
-                <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center relative">
-                  <motion.p {...fadeUp(0.05)} className="text-[11px] uppercase tracking-[0.24em] text-gold-dark font-medium mb-5">
-                    TopUni AI · Free
-                  </motion.p>
-
-                  <motion.h1 {...fadeUp(0.12)} className="font-heading text-[clamp(2.5rem,6.5vw,4.5rem)] font-bold leading-[1.04] tracking-[-0.025em] text-foreground mb-6">
-                    Your <span className="text-gold-dark">admissions strategy.</span><br />
-                    In two minutes.
-                  </motion.h1>
-
-                  <motion.p {...fadeUp(0.22)} className="text-lg sm:text-xl text-foreground/75 leading-[1.6] max-w-xl mx-auto mb-10 font-light">
-                    Tell us your scores, goals, and constraints. Our AI returns a tailored plan: where to apply, how to fund it, and what to do next.
-                  </motion.p>
-
-                  <motion.div {...fadeUp(0.32)} className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-8">
-                    <Button variant="gold" size="lg" className="text-base px-8 py-6 gap-2" onClick={() => setScreen("intake")}>
-                      <Sparkles className="w-5 h-5" /> Start my plan <ArrowRight className="w-5 h-5" />
-                    </Button>
-                  </motion.div>
-
-                  <motion.p {...fadeUp(0.4)} className="text-xs text-muted-foreground tracking-wide">
-                    2 minutes · No account needed · Free during beta
-                  </motion.p>
-                </div>
-              </section>
-
-              {/* WHAT YOU'LL GET — three outcomes the strategy plan delivers */}
-              <section className="py-16 sm:py-20 border-t border-border/60">
-                <div className="max-w-5xl mx-auto px-5 sm:px-8">
-                  <motion.div {...fadeUp()} className="text-center mb-12">
-                    <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">Your plan delivers</p>
-                    <h2 className="font-heading text-3xl sm:text-4xl font-semibold tracking-tight text-foreground leading-[1.15]">
-                      Three concrete outputs.
-                    </h2>
-                  </motion.div>
-
-                  <div className="grid sm:grid-cols-3 gap-px bg-border/60 border border-border/60 rounded-2xl overflow-hidden">
-                    {[
-                      {
-                        icon: ListChecks,
-                        kicker: "01 · Target list",
-                        title: "A balanced shortlist",
-                        body: "Strong fits, aligned options, and ones worth keeping on the radar — ranked by your fit and funding need.",
-                      },
-                      {
-                        icon: Map,
-                        kicker: "02 · Funding pathway",
-                        title: "Where the money is",
-                        body: "Scholarships and need-based aid you can realistically win, with deadlines and effort tagged.",
-                      },
-                      {
-                        icon: Zap,
-                        kicker: "03 · Action plan",
-                        title: "What to do this month",
-                        body: "Tests to take, essays to draft, recommenders to ask — sequenced backwards from your earliest deadline.",
-                      },
-                    ].map((item, i) => (
-                      <motion.div
-                        key={item.kicker}
-                        {...fadeUp(0.08 * i)}
-                        className="bg-card p-7 flex flex-col"
-                      >
-                        <item.icon className="w-5 h-5 text-gold-dark mb-5" />
-                        <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium mb-2">{item.kicker}</p>
-                        <h3 className="font-heading font-semibold text-lg text-foreground mb-2 leading-tight">{item.title}</h3>
-                        <p className="text-sm text-muted-foreground leading-[1.65]">{item.body}</p>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              </section>
-
-              {/* THE FLOW — strategy → discover → academy */}
-              <section className="py-16 sm:py-20">
-                <div className="max-w-5xl mx-auto px-5 sm:px-8">
-                  <motion.div {...fadeUp()} className="max-w-2xl mb-12">
-                    <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">From plan to admission</p>
-                    <h2 className="font-heading text-3xl sm:text-4xl font-semibold tracking-tight text-foreground leading-[1.15]">
-                      One plan. Two products to execute it.
-                    </h2>
-                    <p className="text-muted-foreground mt-4 text-base leading-relaxed">
-                      Once your strategy is generated, your scholarships are waiting in Discover and your live workshops happen in Academy.
-                    </p>
-                  </motion.div>
-
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <motion.button
-                      {...fadeUp(0.1)}
-                      onClick={() => navigate("/discover")}
-                      className="group text-left p-7 rounded-2xl border border-border/70 bg-card hover:border-gold/30 hover:shadow-md transition-all"
-                    >
-                      <div className="flex items-center justify-between mb-5">
-                        <div className="h-10 w-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center">
-                          <Search className="w-5 h-5 text-gold-dark" />
-                        </div>
-                        <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">Step 02</span>
-                      </div>
-                      <h3 className="font-heading font-bold text-xl text-foreground mb-2 tracking-tight">Discover</h3>
-                      <p className="text-sm text-muted-foreground leading-[1.65] mb-5">
-                        Every scholarship in our database, ranked against your profile, with deadlines and effort tagged.
-                      </p>
-                      <span className="text-sm font-semibold text-foreground group-hover:text-gold-dark transition-colors flex items-center gap-1.5">
-                        See your matches <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-                      </span>
-                    </motion.button>
-
-                    <motion.button
-                      {...fadeUp(0.18)}
-                      onClick={() => navigate("/academy")}
-                      className="group text-left p-7 rounded-2xl border border-border/70 bg-card hover:border-gold/30 hover:shadow-md transition-all"
-                    >
-                      <div className="flex items-center justify-between mb-5">
-                        <div className="h-10 w-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center">
-                          <BookOpen className="w-5 h-5 text-gold-dark" />
-                        </div>
-                        <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">Step 03</span>
-                      </div>
-                      <h3 className="font-heading font-bold text-xl text-foreground mb-2 tracking-tight">Academy</h3>
-                      <p className="text-sm text-muted-foreground leading-[1.65] mb-5">
-                        Live workshops with our founders and a recorded library — execute your plan with people who've done it.
-                      </p>
-                      <span className="text-sm font-semibold text-foreground group-hover:text-gold-dark transition-colors flex items-center gap-1.5">
-                        Preview Academy <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-                      </span>
-                    </motion.button>
-                  </div>
-
-                  <motion.div {...fadeUp(0.3)} className="text-center mt-12">
-                    <a
-                      href="/topuni-ai/partners"
-                      className="text-sm text-muted-foreground hover:text-gold-dark transition-colors underline-offset-4 hover:underline"
-                    >
-                      For university partners →
-                    </a>
-                  </motion.div>
-                </div>
-              </section>
-
-              {/* Bottom bookend — gradient ramp into the navy footer */}
-              <div
-                className="h-32 sm:h-40"
-                style={{
-                  backgroundImage: `linear-gradient(180deg,
-                    transparent 0%,
-                    hsl(var(--primary) / 0.06) 40%,
-                    hsl(var(--primary) / 0.30) 75%,
-                    hsl(var(--primary)) 100%)`,
-                }}
-                aria-hidden="true"
-              />
-            </motion.div>
-          )}
-
           {/* ═══ INTAKE ═══ */}
           {screen === "intake" && (
             <motion.div
@@ -624,7 +450,7 @@ const TopUniAI = () => {
                       </div>
                     </div>
                     <div className="flex justify-between pt-4">
-                      <Button variant="outline" onClick={() => setScreen("landing")}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
+                      <Button variant="outline" onClick={() => navigate("/")}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
                       <Button
                         variant="gold"
                         onClick={() => setStep(2)}
@@ -830,14 +656,13 @@ const TopUniAI = () => {
               <TopUniDashboard
                 profile={profile}
                 language="en"
-                onBack={() => setScreen("landing")}
+                onBack={() => navigate("/")}
               />
             </motion.div>
           )}
         </AnimatePresence>
 
         {screen !== "dashboard" && <Footer language="en" />}
-        {screen === "landing" && <TopUniChat />}
       </div>
     </div>
   );
