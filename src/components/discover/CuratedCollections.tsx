@@ -157,7 +157,7 @@ export const CuratedCollections = ({
           <span className="hidden sm:inline shrink-0 text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/80 mr-1">
             Quick filter
           </span>
-          {tilesWithCount.map(({ preset, count }, i) => (
+          {tilesWithCount.map(({ preset }, i) => (
             <motion.button
               key={preset.id}
               initial={{ opacity: 0, y: 2 }}
@@ -169,9 +169,6 @@ export const CuratedCollections = ({
               <preset.Icon className="h-3 w-3 text-foreground/55 group-hover:text-gold-dark transition-colors" />
               <span className="text-[12px] font-medium text-foreground/85 group-hover:text-foreground transition-colors">
                 {preset.label}
-              </span>
-              <span className="text-[10px] tabular-nums font-semibold text-muted-foreground/80 group-hover:text-gold-dark transition-colors">
-                {count}
               </span>
             </motion.button>
           ))}

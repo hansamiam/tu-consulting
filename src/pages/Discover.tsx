@@ -1657,7 +1657,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
 
   return (
     <Sheet open={open} onOpenChange={o => !o && onClose()}>
-      <SheetContent side="right" className="w-full sm:w-[min(98vw,1200px)] overflow-y-auto p-0 flex flex-col">
+      <SheetContent side="right" className="w-full sm:w-[min(99vw,1400px)] overflow-y-auto p-0 flex flex-col">
         {/* ── POSTCARD HERO — country gradient + gothic-arch campus pattern
               + country landmark layered as a poster the student "flips
               over" when they open the sheet. Sells the dream of being
@@ -1735,7 +1735,10 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             </div>
           </div>
 
-          {/* Header CTAs */}
+          {/* Header CTAs — Apply (gold), Bookmark, and an escape hatch
+              to the dedicated /scholarships/:id full-page view for
+              users who want a more elaborate read instead of the
+              side-sheet experience. */}
           <div className="relative flex items-center gap-2 mt-4">
             <Button variant="gold" size="sm" asChild className="flex-1 h-9" disabled={!s.official_url}>
               {s.official_url ? (
@@ -1748,6 +1751,12 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               {isBookmarked ? <BookmarkCheck className="h-4 w-4 text-gold-dark" /> : <Bookmark className="h-4 w-4" />}
             </Button>
           </div>
+          <Link
+            to={`/scholarships/${s.scholarship_id}`}
+            className="relative inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-gold-dark mt-2 underline-offset-4 hover:underline transition-colors"
+          >
+            Open full page <ArrowRight className="h-3 w-3" />
+          </Link>
 
           {/* URL health warning — surfaces the URL freshness checker's
               verdict. 3+ consecutive fails = link probably moved.
@@ -3121,8 +3130,7 @@ const Discover = ({ language = "en" }: Props) => {
                       <SelectItem value="match">Best match</SelectItem>
                       <SelectItem value="deadline">Deadline first</SelectItem>
                       <SelectItem value="value">Highest value</SelectItem>
-                      <SelectItem value="effort">Easiest first</SelectItem>
-                      <SelectItem value="selectivity">Most accessible</SelectItem>
+                      <SelectItem value="selectivity">Less competitive first</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -3208,12 +3216,13 @@ const Discover = ({ language = "en" }: Props) => {
                       <nav className="bg-card border border-border rounded-2xl p-3 shadow-sm">
                         <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-2.5 px-2 mt-1">Workspace</p>
                         {([
-                          // Browse + Collections counts hidden — only
-                          // personal-progress counts (pipeline/shortlist)
-                          // belong here. The whole-database count is
-                          // marketing, not navigation.
+                          // Pipeline removed from this rail — application
+                          // tracking belongs on the dedicated /pipeline page
+                          // where the kanban + per-card notes/checklists
+                          // actually live. Embedding it inside Discover
+                          // duplicated the surface and overpromised
+                          // sync that wasn't shipped.
                           { id: "browse" as AppSection,      label: "Browse",       icon: Layers,        count: 0 },
-                          { id: "pipeline" as AppSection,    label: "My pipeline",  icon: Zap,           count: pipeline.total, accent: pipeline.total > 0 },
                           { id: "shortlist" as AppSection,   label: "Shortlist",    icon: BookmarkCheck, count: shortlist.size,  accent: shortlist.size > 0 },
                           { id: "collections" as AppSection, label: "Collections",  icon: Sparkles,      count: 0 },
                         ]).map(item => {
@@ -3354,35 +3363,33 @@ const Discover = ({ language = "en" }: Props) => {
                           <div className="flex items-baseline justify-between pb-5 border-b border-border/60">
                             <div>
                               <p className="text-gold-dark text-[11px] font-semibold uppercase tracking-[0.22em] mb-1">
-                                {appSection === "pipeline" ? "Workspace · Pipeline" : appSection === "shortlist" ? "Workspace · Shortlist" : "Workspace · Collections"}
+                                {appSection === "shortlist" ? "Workspace · Shortlist" : "Workspace · Collections"}
                               </p>
                               <h2 className="font-heading text-2xl font-bold tracking-tight text-foreground">
-                                {appSection === "pipeline" ? "Applications in progress" : appSection === "shortlist" ? "Saved scholarships" : "Collections"}
+                                {appSection === "shortlist" ? "Saved scholarships" : "Collections"}
                               </h2>
                               <p className="text-sm text-muted-foreground mt-1">
-                                {appSection === "pipeline" ? "Scholarships you've moved into your pipeline. Status updates from here sync everywhere." :
-                                 appSection === "shortlist" ? "Scholarships you've bookmarked. Save more from any view." :
-                                 "Pre-built lists organized by application strategy."}
+                                {appSection === "shortlist"
+                                  ? "Scholarships you've bookmarked. Save more from any view."
+                                  : "Pre-built lists organized by application strategy."}
                               </p>
                             </div>
                             <button onClick={() => setAppSection("browse")} className="text-xs text-muted-foreground hover:text-gold-dark transition-colors">← Back to browse</button>
                           </div>
                         )}
 
-                        {/* Pipeline / Shortlist — filter to those items, render as list */}
-                        {(appSection === "pipeline" || appSection === "shortlist") && (() => {
-                          const items = filtered.filter(s =>
-                            appSection === "pipeline" ? !!statusMap[s.scholarship_id] : shortlist.has(s.scholarship_id)
-                          );
+                        {/* Shortlist — filter to bookmarked items, render as list */}
+                        {appSection === "shortlist" && (() => {
+                          const items = filtered.filter(s => shortlist.has(s.scholarship_id));
                           if (items.length === 0) {
                             return (
                               <div className="border border-dashed border-border rounded-3xl p-14 text-center bg-canvas-soft/40">
-                                {appSection === "pipeline" ? <Zap className="h-10 w-10 text-muted-foreground/20 mx-auto mb-4" /> : <BookmarkCheck className="h-10 w-10 text-muted-foreground/20 mx-auto mb-4" />}
+                                <BookmarkCheck className="h-10 w-10 text-muted-foreground/20 mx-auto mb-4" />
                                 <h3 className="font-heading font-semibold text-lg text-foreground mb-1.5">
-                                  {appSection === "pipeline" ? "Nothing in your pipeline yet" : "No saved scholarships yet"}
+                                  No saved scholarships yet
                                 </h3>
                                 <p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">
-                                  {appSection === "pipeline" ? "Set a status on any scholarship and it'll show up here for tracking." : "Bookmark any scholarship and it'll appear here."}
+                                  Bookmark any scholarship and it'll appear here.
                                 </p>
                                 <Button variant="outline" size="sm" onClick={() => setAppSection("browse")}>Back to browse</Button>
                               </div>
