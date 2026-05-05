@@ -2630,6 +2630,17 @@ const Discover = ({ language = "en" }: Props) => {
         || matchesArr(s.target_fields)
         || matchesArr(s.eligible_countries)
         || matchesArr(s.best_for_tags)
+        // Searching 'women' / 'first-generation' / etc returns
+        // demographic-targeted programs.
+        || matchesArr(s.target_demographics)
+        // Searching for prose tokens lands on the static editorial
+        // fields — 'social impact', 'leadership', 'climate', etc
+        // commonly appear in why_this_fits / how_to_win / ideal-
+        // candidate without being captured by the structured fields
+        // above.
+        || (s.why_this_fits?.toLowerCase() || "").includes(q)
+        || (s.ideal_candidate_profile?.toLowerCase() || "").includes(q)
+        || (s.how_to_win?.toLowerCase() || "").includes(q)
       );
     }
     if (filters.coverage !== "all") {
