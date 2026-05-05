@@ -81,7 +81,7 @@ export function TrendingScholarships({ limit = 4, language = "en", compact = fal
         const ids = trending.map((s) => s.scholarship_id);
         const { data: hydrated } = await supabase
           .from("scholarships")
-          .select("scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, application_deadline, target_degree_level, target_fields, is_featured, why_this_fits")
+          .select("scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, application_deadline, target_degree_level, target_fields, is_featured, why_this_fits, official_url")
           .in("scholarship_id", ids);
         const byId = new Map<string, ScholarshipCardData>(((hydrated as ScholarshipCardData[]) ?? []).map((r) => [r.scholarship_id, r]));
         // Preserve the trending_score order
@@ -97,7 +97,7 @@ export function TrendingScholarships({ limit = 4, language = "en", compact = fal
       if (result.length === 0) {
         const { data: featured } = await supabase
           .from("scholarships")
-          .select("scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, application_deadline, target_degree_level, target_fields, is_featured, why_this_fits")
+          .select("scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, application_deadline, target_degree_level, target_fields, is_featured, why_this_fits, official_url")
           .eq("is_featured", true)
           .order("estimated_total_value_usd", { ascending: false, nullsFirst: false })
           .limit(limit);
