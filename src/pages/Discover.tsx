@@ -192,13 +192,20 @@ const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: numbe
     else { eligibility = "not_eligible"; match -= 40; warnings.push(`Not open to ${p.country} nationals`); }
   }
 
-  // Degree level — match if scholarship targets ANY of the user's selected levels
+  // Degree level — match if scholarship targets ANY of the user's selected
+  // levels. Uses degreeBucket on both sides so "Masters", "Master's
+  // Degree", "MS", "graduate" all collapse to the same bucket and a
+  // user picking "master's" doesn't get told they're not eligible
+  // because the scholarship happened to write "Graduate" instead.
   if (s.target_degree_level && p.degrees && p.degrees.length > 0) {
-    const targets = s.target_degree_level.map(d => d.toLowerCase());
-    const matched = p.degrees.find(pd => targets.some(td => td === pd.toLowerCase()));
+    const targetBuckets = s.target_degree_level.map(d => degreeBucket(d)).filter(Boolean);
+    const matched = p.degrees.find(pd => targetBuckets.includes(degreeBucket(pd)));
     if (matched) {
       match += 10; reasons.push(`Matches ${matched} level`);
-    } else {
+    } else if (targetBuckets.length > 0) {
+      // Only declare not-eligible when we actually parsed the scholarship's
+      // levels into known buckets. If we couldn't, leave eligibility alone
+      // rather than firing a false negative.
       eligibility = "not_eligible"; match -= 25;
       warnings.push(`Not for ${p.degrees.join(" / ")} applicants`);
     }
@@ -608,6 +615,19 @@ const titleCaseField = (s: string) => s
     return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
   })
   .replace(/^./, (c) => c.toUpperCase());
+
+/** Map any LLM-flavoured degree string into one of three canonical
+ *  buckets so filter matching tolerates the noise.
+ *  Returns "" if the value doesn't recognise as a degree. */
+const degreeBucket = (raw: string | null | undefined): string => {
+  if (!raw) return "";
+  const v = raw.toLowerCase().trim();
+  // Order matters: "phd" appearing in "phd or master's" should win bachelor's.
+  if (/(phd|doctora|dphil|d\.phil|dr\.|doctor)/.test(v)) return "phd";
+  if (/(master|graduate|m\.?[as]\b|m\.?phil|m\.?ba|m\.?eng|llm|m\.?fa|m\.?sc|m\.?\.?s\.?\b|magistr)/.test(v)) return "master";
+  if (/(bachelor|undergrad|b\.?[as]\b|b\.?sc|b\.?eng|b\.?ba|llb|first[- ]degree)/.test(v)) return "undergraduate";
+  return "";
+};
 
 /** Pretty single-field label for compact card displays. Skips junk
  *  values, takes the first piece of comma-list run-ons, and drops
@@ -1399,9 +1419,13 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
   if (s.min_toefl != null) reqs.push({ label: `TOEFL ≥ ${s.min_toefl}`, status: "unknown", detail: "We don't track TOEFL yet" });
   if (s.min_sat != null) reqs.push({ label: `SAT ≥ ${s.min_sat}`, status: "unknown", detail: "Add your SAT to check" });
   if (s.target_degree_level && profile.degrees && profile.degrees.length > 0) {
-    const targets = s.target_degree_level.map(d => d.toLowerCase());
-    const ok = profile.degrees.some(pd => targets.includes(pd.toLowerCase()));
-    reqs.push({ label: `Degree level: ${s.target_degree_level.join(", ")}`, status: ok ? "met" : "miss", detail: `Your level: ${profile.degrees.join(" / ")}` });
+    // Bucket-tolerant match — see degreeBucket comment in the scoring
+    // function. Without this the Requirements row showed "miss" for
+    // a Master's applicant against a scholarship listing "Graduate".
+    const targetBuckets = s.target_degree_level.map(d => degreeBucket(d)).filter(Boolean);
+    const ok = profile.degrees.some(pd => targetBuckets.includes(degreeBucket(pd)));
+    const status = targetBuckets.length === 0 ? "unknown" : ok ? "met" : "miss";
+    reqs.push({ label: `Degree level: ${s.target_degree_level.join(", ")}`, status, detail: `Your level: ${profile.degrees.join(" / ")}` });
   }
   if (s.target_fields && s.target_fields.length > 0 && profile.field) {
     const fm = fieldMatches(profile.field, s.target_fields);
@@ -2261,7 +2285,14 @@ const Discover = ({ language = "en" }: Props) => {
       );
     }
     if (filters.coverage !== "all") list = list.filter(s => s.coverage_type === filters.coverage);
-    if (filters.degree !== "all") list = list.filter(s => s.target_degree_level?.some(d => d.toLowerCase() === filters.degree.toLowerCase()));
+    if (filters.degree !== "all") {
+      // Tolerant degree match: the LLM populates target_degree_level
+      // with all kinds of variants ("Master's", "Masters", "MA", "MS",
+      // "Master's Degree", "Graduate", "graduate"). Strict equality
+      // missed most rows. Normalize both sides into one of three
+      // canonical buckets before comparing.
+      list = list.filter(s => s.target_degree_level?.some(d => degreeBucket(d) === degreeBucket(filters.degree)));
+    }
     if (filters.selectivity !== "all") {
       // "Competitive" (high) intentionally matches both `high` and `very_high`
       // so the filter UI can stay at 3 levels instead of 4.
