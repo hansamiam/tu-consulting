@@ -637,6 +637,11 @@ const COVERAGE_LABEL: Record<string, string> = {
   partial: "Partial funding",
   travel: "Travel grant",
   research: "Research funding",
+  // 'other' is a valid coverage_type from the scrape SYSTEM_PROMPT
+  // (used when none of the above shapes fit). Map it to a non-blank
+  // label so cards never fall to "—" on the award chip just because
+  // the LLM picked the catch-all bucket.
+  other: "Funding offered",
 };
 
 /* Convert raw DB strings (often snake_case or all_lowercase) into human prose.
