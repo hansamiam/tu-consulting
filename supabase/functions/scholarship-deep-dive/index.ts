@@ -17,6 +17,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { chatCompletions } from "../_shared/ai-gateway.ts";
+import { checkRateLimit, clientIp } from "../_shared/rate-limit.ts";
 import {
   cleanScholarshipName,
   cleanProvider,
@@ -169,6 +170,19 @@ Deno.serve(async (req) => {
   }
 
   const supa = createClient(SUPABASE_URL, SERVICE_ROLE);
+
+  // ─── Rate limit by IP ──────────────────────────────────────────────────
+  // Each cache miss costs ~$0.005 of AI spend. Without a cap an anon
+  // visitor (or a script) can burn budget in a loop hitting different
+  // scholarship_ids — the cache absorbs repeat-same-row traffic but
+  // not breadth-of-row probing. 12/min ≈ one open every 5 seconds,
+  // plenty for legitimate use.
+  const ip = clientIp(req);
+  const rateLimitOk = await checkRateLimit(supa, { key: `deep-dive:${ip}`, perMinute: 12 });
+  if (!rateLimitOk) {
+    return json(429, { error: "Rate limit exceeded. Please slow down." });
+  }
+
   const profileHash = await computeProfileHash(body.profile);
 
   // ─── Load scholarship FIRST so we have updated_at for the cache check ──
