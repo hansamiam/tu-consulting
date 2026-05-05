@@ -243,8 +243,7 @@ const TopUniAI = () => {
   /* Once the user transitions to the dashboard the wizard answers are
      "committed" — the dashboard renders the brief from these inputs and
      the server-side cache key is hashed off them. Drop the local draft
-     so the next /topuni-ai visit starts from landing if the user
-     finished the funnel. */
+     so the next /topuni-ai visit starts from a fresh intake. */
   useEffect(() => {
     if (screen !== "dashboard") return;
     try { localStorage.removeItem(WIZARD_DRAFT_KEY); } catch { /* ignore */ }
