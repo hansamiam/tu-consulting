@@ -21,6 +21,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { ru as ruLocale, enUS } from "date-fns/locale";
 import { cleanScholarshipName } from "@/lib/scholarshipFields";
 import { shortCountry } from "@/lib/countryAccent";
+import { CancellationSaveDialog } from "@/components/account/CancellationSaveDialog";
 
 interface AccountProps { language?: "en" | "ru"; }
 
@@ -175,6 +176,7 @@ const Account = ({ language = "en" }: AccountProps) => {
   const { user, loading, subscription, signOut, refreshSubscription } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const navigate = useNavigate();
 
   const [trackerStats, setTrackerStats] = useState<{ tracked: number; urgent: number; pending: number; nextRow?: TrackerLite } | null>(null);
@@ -429,12 +431,33 @@ const Account = ({ language = "en" }: AccountProps) => {
           )}
 
           {tier !== "free" && (
-            <Button variant="outline" onClick={openPortal} disabled={portalLoading} className="gap-2">
-              {portalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
-              {t.manageBilling}
-            </Button>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button variant="outline" onClick={openPortal} disabled={portalLoading} className="gap-2">
+                {portalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+                {t.manageBilling}
+              </Button>
+              {/* Pre-cancellation save flow — opens a personalized
+                  "what you've built" preview before sending to Stripe.
+                  Auto-bypasses + opens Stripe directly when there's
+                  no accumulated value to surface. */}
+              {!subscription.cancel_at_period_end && (
+                <button
+                  onClick={() => setSaveDialogOpen(true)}
+                  className="text-xs text-muted-foreground hover:text-foreground underline-offset-4 hover:underline transition-colors"
+                >
+                  {language === "ru" ? "Отменить подписку" : "Cancel subscription"}
+                </button>
+              )}
+            </div>
           )}
         </Card>
+
+        <CancellationSaveDialog
+          open={saveDialogOpen}
+          onOpenChange={setSaveDialogOpen}
+          onContinue={openPortal}
+          language={language}
+        />
 
         {/* Notifications */}
         <Card className="p-5">

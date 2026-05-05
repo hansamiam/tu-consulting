@@ -1540,47 +1540,50 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
   hostCountries: string[];
   fieldsAvailable: string[];
 }) => {
-  const sections: { label: string; key: keyof FilterState; opts: { v: string; l: string }[] }[] = [
-    // Three Coverage buckets — collapsed Partial + Stipend into one
-    // "Partial funding" since they overlap conceptually (both = not
-    // full ride) and the filter sidebar was getting too tall on
-    // smaller laptops. Filter logic below treats both DB values as
-    // matches when this option is selected.
+  // Round-11 redesign: pill chips for the 3 short-list segmented filters
+  // (Coverage / Degree / Competitiveness) — they're 4 options each so the
+  // chips stay scannable. Eligibility-group (10 options) is now a Select;
+  // it dominated the panel before. Strip rings off inactive chips so the
+  // panel reads premium-quiet rather than crowded-busy. Increased the
+  // section gap from 4 → 6 — more breathing room is the whole point.
+  const segmented: { label: string; key: keyof FilterState; opts: { v: string; l: string }[] }[] = [
     { label: "Coverage", key: "coverage", opts: [
-      { v: "all", l: "All types" },
-      { v: "full_ride", l: "Full ride (tuition + living)" },
+      { v: "all", l: "All" },
+      { v: "full_ride", l: "Full ride" },
       { v: "tuition_only", l: "Tuition only" },
-      { v: "partial", l: "Partial funding" },
+      { v: "partial", l: "Partial" },
     ] },
-    { label: "Degree",   key: "degree",   opts: [{ v: "all", l: "All levels" }, { v: "undergraduate", l: "Bachelor\'s" }, { v: "master\'s", l: "Master\'s" }, { v: "PhD", l: "PhD" }] },
-    // 3 levels — "Competitive" matches both high and very_high in the filter logic below.
-    { label: "Competitiveness", key: "selectivity", opts: [{ v: "all", l: "Any level" }, { v: "low", l: "Accessible" }, { v: "medium", l: "Moderate" }, { v: "high", l: "Competitive" }] },
-    // Demographic eligibility — surfaces the new target_demographics column.
-    // 'all' = no filter; otherwise shows only scholarships that target the
-    // selected group. Tag values match the constrained set in the DB CHECK.
-    { label: "Eligibility group", key: "demographic", opts: [
-      { v: "all", l: "All applicants" },
-      { v: "women", l: "Women" },
-      { v: "underrepresented-stem", l: "Women in STEM" },
-      { v: "first-generation", l: "First-generation" },
-      { v: "low-income", l: "Need-based" },
-      { v: "refugee", l: "Refugees" },
-      { v: "indigenous", l: "Indigenous" },
-      { v: "lgbtq", l: "LGBTQ+" },
-      { v: "underrepresented-minority", l: "Underrepresented" },
-      { v: "disability", l: "Disability" },
+    { label: "Degree", key: "degree", opts: [
+      { v: "all", l: "All" },
+      { v: "undergraduate", l: "Bachelor\'s" },
+      { v: "master\'s", l: "Master\'s" },
+      { v: "PhD", l: "PhD" },
+    ] },
+    { label: "Competitiveness", key: "selectivity", opts: [
+      { v: "all", l: "Any" },
+      { v: "low", l: "Accessible" },
+      { v: "medium", l: "Moderate" },
+      { v: "high", l: "Competitive" },
     ] },
   ];
-  // The 3 primary segmented sections (Coverage / Degree / Competitiveness)
-  // render as wrapping pill chips instead of stacked rows. Same options,
-  // ~60% less vertical space — the panel now fits one screen even on
-  // a 1080p laptop without scroll.
+  const demographicOpts = [
+    { v: "all", l: "All applicants" },
+    { v: "women", l: "Women" },
+    { v: "underrepresented-stem", l: "Women in STEM" },
+    { v: "first-generation", l: "First-generation" },
+    { v: "low-income", l: "Need-based" },
+    { v: "refugee", l: "Refugees" },
+    { v: "indigenous", l: "Indigenous" },
+    { v: "lgbtq", l: "LGBTQ+" },
+    { v: "underrepresented-minority", l: "Underrepresented" },
+    { v: "disability", l: "Disability" },
+  ];
   return (
-    <div className="space-y-4">
-      {sections.map(section => (
+    <div className="space-y-6">
+      {segmented.map(section => (
         <div key={section.label}>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-1.5">{section.label}</p>
-          <div className="flex flex-wrap gap-1">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">{section.label}</p>
+          <div className="flex flex-wrap gap-1.5">
             {section.opts.map(o => {
               const active = (filters[section.key] as string) === o.v;
               return (
@@ -1589,8 +1592,8 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
                   onClick={() => setFilters(f => ({ ...f, [section.key]: o.v }))}
                   className={`px-2.5 py-1 rounded-md text-[12px] leading-tight transition-colors ${
                     active
-                      ? "bg-gold/15 text-gold-dark dark:text-gold font-semibold ring-1 ring-gold/30"
-                      : "text-foreground/65 hover:bg-foreground/[0.04] ring-1 ring-border"
+                      ? "bg-gold/15 text-gold-dark dark:text-gold font-semibold"
+                      : "text-foreground/65 hover:text-foreground hover:bg-foreground/[0.04]"
                   }`}
                 >
                   {o.l}
@@ -1601,13 +1604,25 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
         </div>
       ))}
 
+      {/* Eligibility group — was a pill grid of 10 chips that dominated
+          the panel. Now a Select; same DB tags, ~80% less space. */}
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">Eligibility</p>
+        <Select value={filters.demographic} onValueChange={v => setFilters(f => ({ ...f, demographic: v }))}>
+          <SelectTrigger className="h-8 text-[13px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {demographicOpts.map(o => <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Field + Host country — kept tight as compact dropdowns side-by-side.
           The panel was previously 2 stacked dropdown sections; this shrinks
           that to a single row at all but the narrowest widths. */}
-      <div className="grid grid-cols-1 gap-3">
+      <div className="space-y-3">
         {fieldsAvailable.length > 0 && (
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-1.5">Field</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">Field</p>
             <Select value={filters.field} onValueChange={v => setFilters(f => ({ ...f, field: v }))}>
               <SelectTrigger className="h-8 text-[13px]"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -1619,7 +1634,7 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
         )}
         {hostCountries.length > 0 && (
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-1.5">Host country</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">Host country</p>
             <Select value={filters.hostCountry} onValueChange={v => setFilters(f => ({ ...f, hostCountry: v }))}>
               <SelectTrigger className="h-8 text-[13px]"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -1631,8 +1646,8 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
         )}
       </div>
 
-      <Separator />
-      <div className="space-y-2.5">
+      <Separator className="!my-5" />
+      <div className="space-y-3">
         {([
           { id: "oe", label: "Eligible only",      key: "onlyEligible"    as keyof FilterState },
           { id: "cs", label: "Closing in 90 days", key: "closingSoon"     as keyof FilterState },
@@ -1644,7 +1659,7 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
         ))}
       </div>
       {activeCount > 0 && (
-        <Button variant="outline" size="sm" className="w-full text-xs h-8" onClick={() => setFilters(DEFAULT_FILTERS)}>
+        <Button variant="ghost" size="sm" className="w-full text-xs h-8 text-muted-foreground hover:text-foreground" onClick={() => setFilters(DEFAULT_FILTERS)}>
           <X className="h-3 w-3 mr-1.5" /> Clear all filters
         </Button>
       )}
@@ -1889,7 +1904,8 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           {/* Promoted CTA into the centered enlarged modal. The right
               panel intentionally keeps the personalized deep dive OUT
               so it stays scannable; this button is how users get to
-              the heavy content (match breakdown, odds, 30-day plan). */}
+              the heavy content (match breakdown, how-to-win,
+              ideal-candidate profile). */}
           <button
             type="button"
             onClick={onExpand}
@@ -1897,7 +1913,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           >
             <span className="inline-flex items-center gap-2 text-[12px] font-semibold text-gold-dark dark:text-gold">
               <Sparkles className="h-3.5 w-3.5" />
-              View full strategy + 30-day plan
+              View full strategy
             </span>
             <ArrowRight className="h-3.5 w-3.5 text-gold-dark/70 dark:text-gold/70 group-hover:translate-x-0.5 transition-transform" />
           </button>

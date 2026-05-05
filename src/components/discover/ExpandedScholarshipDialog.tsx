@@ -163,9 +163,9 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
           </div>
 
           {/* Scrollable body — ScholarshipDeepDive carries the personalised
-              analysis (match breakdown, odds, strategy, 30-day plan).
-              That's the substantive content that didn't fit cleanly in
-              the right side panel. */}
+              analysis (match breakdown, how-to-win, ideal-candidate
+              profile). That's the substantive content that didn't fit
+              cleanly in the right side panel. */}
           <div className="overflow-y-auto flex-1 px-6 sm:px-9 py-6 sm:py-8 space-y-6">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-2 inline-flex items-center gap-1.5">

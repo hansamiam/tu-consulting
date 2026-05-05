@@ -18,13 +18,10 @@
  * scrolled cards underneath read clearly. */
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { Compass, ArrowLeft, Crown, User as UserIcon, ChevronDown } from "lucide-react";
+import { Compass, ArrowLeft, Crown, User as UserIcon, KanbanSquare } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthDialog } from "@/components/auth/AuthDialog";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 
 interface Props {
   language?: "en" | "ru";
@@ -93,33 +90,18 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Hop to other products dropdown — gives users an escape from
-            inside Discover without the full website ribbon. */}
-        <DropdownMenu>
-          <DropdownMenuTrigger className="hidden sm:inline-flex items-center gap-1 text-xs font-medium text-foreground/65 hover:text-foreground px-2 py-1.5 rounded-md transition-colors">
-            {isRussian ? "Другие продукты" : "Other products"}
-            <ChevronDown className="h-3 w-3" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => navigate(isRussian ? "/topuni-ai/ru" : "/topuni-ai")} className="text-sm">
-              TopUni AI <span className="text-[10px] text-muted-foreground ml-auto">free intake</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/pipeline")} className="text-sm">
-              Pipeline
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/academy")} className="text-sm">
-              Academy
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate(isRussian ? "/pricing/ru" : "/pricing")} className="text-sm">
-              Pricing
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate(home)} className="text-sm">
-              <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
-              {isRussian ? "На главную" : "Back to home"}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Pipeline link — the only adjacent surface that's actually
+            useful while inside Discover (saved scholarships → working
+            on them). Other products (TopUni AI, Academy, Pricing) are
+            irrelevant to someone already in the database, and "Home"
+            is already covered by the back button at the far left. */}
+        <button
+          onClick={() => navigate("/pipeline")}
+          className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-foreground/70 hover:text-foreground px-2.5 py-1.5 rounded-md hover:bg-foreground/[0.04] transition-colors"
+        >
+          <KanbanSquare className="h-3.5 w-3.5" />
+          {isRussian ? "Воронка" : "Pipeline"}
+        </button>
 
         <LanguageSwitcher />
 
