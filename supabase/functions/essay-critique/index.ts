@@ -24,6 +24,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { chatCompletions } from "../_shared/ai-gateway.ts";
+import { checkRateLimit, clientIp } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -74,6 +75,15 @@ serve(async (req) => {
     const essay = (body.essay || "").trim();
     if (essay.length < 50) return json(400, { error: "Essay too short — paste at least 50 characters" });
     if (essay.length > 12000) return json(400, { error: "Essay too long — please paste under 12,000 characters" });
+
+    // Rate limit by IP. Premium critique uses a reasoning model — single
+    // call ~$0.05. 5/min lets a session iterate, abuse caps at $0.25/min.
+    if (SUPABASE_URL && ANON_KEY) {
+      const supaRL = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+      const ip = clientIp(req);
+      const ok = await checkRateLimit(supaRL, { key: `essay-critique:${ip}`, perMinute: 5 });
+      if (!ok) return json(429, { error: "Rate limit exceeded. Please wait a minute and try again." });
+    }
 
     /* Tier resolution: trust the JWT, never the client-supplied tier.
        Authed users with active subscription get premium; everyone else

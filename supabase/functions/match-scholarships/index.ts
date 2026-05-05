@@ -42,6 +42,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { embeddings as gatewayEmbeddings } from "../_shared/ai-gateway.ts";
+import { checkRateLimit, clientIp } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -116,6 +117,17 @@ serve(async (req) => {
     if (!queryText) return json(400, { error: "Provide either `query` or `profile`" });
 
     const limit = Math.min(Math.max(Number(body.limit) || 30, 1), 100);
+
+    // Rate limit per IP. Each call runs an embedding (~$0.00002) + a vector
+    // RPC. Cheap individually but unbounded over time → real cost. Discover
+    // fires this once per profile change, so 20/min/IP comfortably absorbs
+    // legit use while capping abuse.
+    const supaRL = createClient(SUPABASE_URL, ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const ip = clientIp(req);
+    const rateLimitOk = await checkRateLimit(supaRL, { key: `match:${ip}`, perMinute: 20 });
+    if (!rateLimitOk) return json(429, { error: "Rate limit exceeded. Please slow down." });
 
     const queryEmbedding = await embedQuery(queryText);
 

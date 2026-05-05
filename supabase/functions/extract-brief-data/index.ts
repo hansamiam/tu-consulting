@@ -21,7 +21,9 @@
 // the JSON has to be complete to render charts. Non-streaming response
 // is simpler and the pass takes ~3-5 seconds with a flash-tier model.
 
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { chatCompletions } from "../_shared/ai-gateway.ts";
+import { checkRateLimit, clientIp } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -173,6 +175,22 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: "POST only" }), {
       status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+  }
+
+  // Rate limit per IP. Each call extracts structured data via the LLM
+  // for a brief — invoked when the user generates / re-generates.
+  // 8/min covers iterative use, abuse capped.
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+  const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+  if (SUPABASE_URL && ANON_KEY) {
+    const supaRL = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+    const ip = clientIp(req);
+    const ok = await checkRateLimit(supaRL, { key: `extract-brief:${ip}`, perMinute: 8 });
+    if (!ok) {
+      return new Response(JSON.stringify({ error: "Rate limit exceeded." }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
   }
 
   let body: ReqBody;

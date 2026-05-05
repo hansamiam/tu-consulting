@@ -15,7 +15,9 @@
 // Flash-tier (cheap, fast). Cost ~$0.0006/greeting. Public (verify_jwt
 // false) so anon users with a profile + brief can get one.
 
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { chatCompletions } from "../_shared/ai-gateway.ts";
+import { checkRateLimit, clientIp } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -92,6 +94,17 @@ function profileBlock(p: Profile): string {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "POST only" });
+
+  // Rate limit per IP. Greeting is one-shot per session in legitimate use;
+  // 6/min is plenty (the user opens the counselor, gets greeting, talks).
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+  const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+  if (SUPABASE_URL && ANON_KEY) {
+    const supaRL = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+    const ip = clientIp(req);
+    const ok = await checkRateLimit(supaRL, { key: `counselor-greeting:${ip}`, perMinute: 6 });
+    if (!ok) return json(429, { error: "Rate limit exceeded." });
+  }
 
   let body: {
     profile?: Profile;

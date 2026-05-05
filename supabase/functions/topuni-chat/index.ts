@@ -14,6 +14,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { chatCompletions } from "../_shared/ai-gateway.ts";
+import { checkRateLimit, clientIp } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -345,6 +346,20 @@ serve(async (req) => {
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
     const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     // AI gateway env validated lazily in chatCompletions — see _shared/ai-gateway.ts
+
+    // Rate limit by IP. Each call streams an LLM response. 15/min covers
+    // active conversation pace (one msg every 4 seconds is fast typing);
+    // abuse caps at $0.30/min/IP at flash-tier pricing.
+    if (SUPABASE_URL && ANON_KEY) {
+      const supaRL = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+      const ip = clientIp(req);
+      const ok = await checkRateLimit(supaRL, { key: `chat:${ip}`, perMinute: 15 });
+      if (!ok) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please slow down." }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
 
     /* Live-case context — only fires for authed users. Anon callers
        continue to get the static profile + reportSummary the client
