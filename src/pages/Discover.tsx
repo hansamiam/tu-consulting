@@ -128,7 +128,7 @@ interface FilterState {
 
 type Phase = "landing" | "wizard" | "analyzing" | "results";
 type SortBy = "match" | "deadline" | "value" | "effort" | "selectivity";
-type ViewMode = "grid" | "list" | "timeline";
+type ViewMode = "grid" | "list";
 type AppSection = "browse" | "pipeline" | "shortlist" | "collections";
 /* Three application stages — captures the meaningful work-in-progress
  * states. "Decision" / "Awaiting" / "Rejected" / "Accepted" were
@@ -709,33 +709,73 @@ const domainFor = (url: string | null | undefined): string | null => {
   }
 };
 
-/* ProviderFavicon — small institutional crest pulled from Google's
- * favicon service. For university scholarships this surfaces real
- * Harvard / Cambridge / Oxford / etc. shields next to the provider
- * name, anchoring the card with institutional identity instead of
- * leaving the text to do the lifting alone.
+/* ProviderAvatar — ALWAYS renders a fixed-size square. Inside, tries
+ * Google's favicon service first (real institutional crest for known
+ * universities); on failure / no URL falls back to a colored initials
+ * monogram derived from the provider name.
  *
- * Falls back to nothing (component returns null) when:
- *   · no URL provided
- *   · URL is malformed
- *   · favicon fetch errors (Google's service blocked, 404, etc.) */
-const ProviderFavicon = ({ url, size = 16, className = "" }: { url: string | null | undefined; size?: number; className?: string }) => {
+ * The whole point of "avatar" is consistent visual rhythm across the
+ * row — non-square favicons (logos that happen to be wide rectangles
+ * like VLIR-UOS) are object-cover-cropped into the square container,
+ * and rows without a favicon get the monogram fallback so there's
+ * never a visual gap. */
+const ProviderAvatar = ({
+  url, providerName, size = 18, className = "",
+}: {
+  url: string | null | undefined;
+  providerName: string | null | undefined;
+  size?: number;
+  className?: string;
+}) => {
   const [failed, setFailed] = useState(false);
   const domain = domainFor(url);
-  if (!domain || failed) return null;
+  const hue = hueFromName(providerName ?? "");
+  const inits = initials(providerName);
+  const showFavicon = !!domain && !failed;
   return (
-    <img
-      src={`https://www.google.com/s2/favicons?domain=${domain}&sz=${size * 4}`}
-      alt=""
-      width={size}
-      height={size}
-      loading="lazy"
-      onError={() => setFailed(true)}
-      className={`shrink-0 rounded-sm bg-white/60 ${className}`}
+    <span
+      className={`relative inline-flex items-center justify-center shrink-0 overflow-hidden rounded-md ring-1 ring-border/40 ${className}`}
+      style={{ width: size, height: size }}
       aria-hidden
-    />
+    >
+      {/* Gradient monogram fallback — always rendered as the BACKGROUND so
+          the favicon img layered on top covers it when present, and the
+          monogram shows through when the img fails or never loads. */}
+      <span
+        className="absolute inset-0 flex items-center justify-center text-white font-bold tracking-tight"
+        style={{
+          background: `linear-gradient(135deg, hsl(${hue}, 55%, 45%), hsl(${(hue + 35) % 360}, 60%, 38%))`,
+          fontSize: Math.max(8, Math.round(size * 0.5)),
+        }}
+      >
+        {inits}
+      </span>
+      {showFavicon && (
+        <img
+          src={`https://www.google.com/s2/favicons?domain=${domain}&sz=${size * 4}`}
+          alt=""
+          width={size}
+          height={size}
+          loading="lazy"
+          onError={() => setFailed(true)}
+          className="relative z-[1] w-full h-full object-cover bg-white"
+        />
+      )}
+    </span>
   );
 };
+
+const hueFromName = (name: string): number => {
+  if (!name) return 220;
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return h % 360;
+};
+
+/* Backwards-compat alias — old call sites used ProviderFavicon. The
+ * new ProviderAvatar always renders something, so call sites that
+ * previously checked for null no longer need to. */
+const ProviderFavicon = ProviderAvatar;
 
 /* Match dial colour pairs (HSL strings, navy/gold only) */
 const dialColors = (priority: Scored["priority"]): [string, string] =>
@@ -1070,7 +1110,7 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
                 {shortCountry(s.host_country)}
               </span>
             )}
-            <ProviderFavicon url={s.official_url || s.source_url} size={14} className="ring-1 ring-border/60" />
+            <ProviderAvatar url={s.official_url || s.source_url} providerName={cleanProvider(s.provider_name) || s.provider_name} size={16} />
             {(() => {
               const p = cleanProvider(s.provider_name);
               return p ? <p className="text-xs text-muted-foreground truncate">{p}</p> : null;
@@ -1078,21 +1118,31 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
           </div>
         </div>
 
-        {/* Award + deadline (desktop only). Two distinct visual rows
-            with clear separation — award sits as a chip on row 1,
-            deadline sits as its own labelled line on row 2 with a
-            uppercase "Deadline" caption so the two facts never read
-            as merged. Generous gap, no shared bounding box. */}
-        <div className="hidden sm:flex flex-col gap-2 min-w-0">
-          {award && (
-            <span className={`inline-flex self-start items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap ${isFullRide ? "text-gold-dark bg-gold/10 border border-gold/25" : "text-foreground bg-muted/40 border border-border/60"}`}>
-              {isFullRide && <Award className="h-3 w-3 shrink-0" />}
-              <span>{award}</span>
-            </span>
-          )}
-          <div className="flex flex-col gap-0.5">
+        {/* Award + deadline (desktop only). Two HORIZONTALLY-separated
+            cells — award is a clear chip on the left half, deadline is
+            its own date+caption on the right half. They never share a
+            box, never stack vertically, and have a vertical rule
+            between them so the eye reads them as two facts not one
+            stretched line. */}
+        <div className="hidden sm:flex items-center gap-3 min-w-0">
+          {/* Award chip cell */}
+          <div className="flex flex-col items-start gap-1 min-w-0">
+            <span className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground/60 font-semibold">Award</span>
+            {award ? (
+              <span className={`inline-flex items-center gap-1 text-[12px] font-semibold whitespace-nowrap ${isFullRide ? "text-gold-dark" : "text-foreground"}`}>
+                {isFullRide && <Award className="h-3 w-3 shrink-0" />}
+                {award}
+              </span>
+            ) : (
+              <span className="text-[12px] text-muted-foreground/50">—</span>
+            )}
+          </div>
+          {/* Vertical rule separating the two cells */}
+          <span className="block h-7 w-px bg-border/60 shrink-0" aria-hidden />
+          {/* Deadline cell */}
+          <div className="flex flex-col items-start gap-1 min-w-0">
             <span className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground/60 font-semibold">Deadline</span>
-            <span className={`text-[12px] tabular-nums font-medium leading-tight ${dl.cls}`}>{dl.text}</span>
+            <span className={`text-[12px] tabular-nums font-medium leading-tight whitespace-nowrap ${dl.cls}`}>{dl.text}</span>
           </div>
         </div>
 
@@ -1244,7 +1294,7 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
             if (!p) return null;
             return (
               <div className="flex items-center gap-1.5 min-w-0">
-                <ProviderFavicon url={s.official_url || s.source_url} size={14} className="ring-1 ring-border/50" />
+                <ProviderAvatar url={s.official_url || s.source_url} providerName={p} size={16} />
                 <p className="text-[11px] text-muted-foreground/85 line-clamp-1">
                   {p}
                 </p>
@@ -2378,7 +2428,12 @@ const Discover = ({ language = "en" }: Props) => {
 
   // Logic-Pro-grade app state, persisted in localStorage. Default to list —
   // serious databases lead with dense rows, not marketing card grids.
-  const [viewMode, setViewMode] = useState<ViewMode>(() => (localStorage.getItem("tu_view_mode") as ViewMode) || "list");
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    // Migrate legacy localStorage values: "timeline" view was removed
+    // (redundant with sort-by-deadline on grid/list); coerce to "list".
+    const stored = localStorage.getItem("tu_view_mode");
+    return stored === "grid" ? "grid" : "list";
+  });
   const [appSection, setAppSection] = useState<AppSection>("browse");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [showHidden, setShowHidden] = useState(false);
@@ -3278,14 +3333,6 @@ const Discover = ({ language = "en" }: Props) => {
                       >
                         <List className="h-3.5 w-3.5" /><span className="hidden sm:inline">List</span>
                       </button>
-                      <button
-                        onClick={() => setViewMode("timeline")}
-                        className={`h-full px-3 text-xs font-medium flex items-center gap-1.5 transition-colors border-l border-border ${viewMode === "timeline" ? "bg-foreground/[0.06] text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                        aria-pressed={viewMode === "timeline"}
-                        title="Timeline view"
-                      >
-                        <Flame className="h-3.5 w-3.5" /><span className="hidden sm:inline">Deadlines</span>
-                      </button>
                     </div>
                   )}
 
@@ -3620,24 +3667,6 @@ const Discover = ({ language = "en" }: Props) => {
                                 </div>
                                 {filtered.map((s, i) => <ScholarRow {...cardProps(s, i)} />)}
                               </div>
-                            );
-                          }
-
-                          if (viewMode === "timeline") {
-                            return (
-                              <TimelineView
-                                items={filtered}
-                                onSelect={(s) => setOpenDetail(s)}
-                                openDetail={openDetail}
-                                shortlist={shortlist}
-                                toggleBookmark={toggleBookmark}
-                                statusMap={statusMap}
-                                setStatus={setStatus}
-                                hidden={hidden}
-                                toggleHide={toggleHide}
-                                compareSet={compareSet}
-                                toggleCompare={toggleCompare}
-                              />
                             );
                           }
 

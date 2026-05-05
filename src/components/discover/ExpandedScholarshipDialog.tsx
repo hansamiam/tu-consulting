@@ -117,7 +117,12 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
                 {cleanedName}
               </h2>
               {cleanedProv && (
-                <p className="text-sm sm:text-base text-white/85 mb-5">{cleanedProv}</p>
+                <p
+                  className="text-sm sm:text-base text-white/85 mb-5 leading-snug"
+                  style={{ display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2, overflow: "hidden" } as React.CSSProperties}
+                >
+                  {cleanedProv}
+                </p>
               )}
               <div className="flex flex-wrap items-center gap-2">
                 <Button variant="gold" size="sm" onClick={onApply} disabled={!s.official_url} className="gap-1.5">
@@ -153,7 +158,7 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
             <Fact
               icon={<Globe className="h-3.5 w-3.5" />}
               label="Citizenship"
-              value={s.citizenship_requirements ? truncate(s.citizenship_requirements, 40) : "Open"}
+              value={s.citizenship_requirements || "Open"}
             />
           </div>
 
@@ -205,16 +210,18 @@ const Fact = ({
     : tone === "warn" ? "text-amber-700 dark:text-amber-400 font-medium"
     : "text-foreground";
   return (
-    <div className="px-5 py-3.5 border-r border-border last:border-r-0 [&:nth-child(2n)]:border-r-0 sm:[&:nth-child(2n)]:border-r sm:[&:nth-child(4n)]:border-r-0 [&:nth-child(n+3)]:border-t sm:[&:nth-child(n+3)]:border-t-0">
+    <div className="px-5 py-3.5 border-r border-border last:border-r-0 [&:nth-child(2n)]:border-r-0 sm:[&:nth-child(2n)]:border-r sm:[&:nth-child(4n)]:border-r-0 [&:nth-child(n+3)]:border-t sm:[&:nth-child(n+3)]:border-t-0 min-w-0">
       <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
         {icon}
         <span className="text-[10px] uppercase tracking-[0.18em] font-semibold">{label}</span>
       </div>
-      <p className={`text-sm tabular-nums leading-tight truncate ${valueCls}`}>{value}</p>
+      {/* Wrap up to 2 lines for fit values that are slightly too long
+          for one line ("Outstanding applicants from developing
+          countries"). Hard-truncate at 2 lines so the row stays a
+          fixed height. */}
+      <p className={`text-sm leading-tight ${valueCls}`} style={{ display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2, overflow: "hidden" } as React.CSSProperties}>
+        {value}
+      </p>
     </div>
   );
 };
-
-function truncate(s: string, n: number): string {
-  return s.length > n ? s.slice(0, n - 1) + "…" : s;
-}
