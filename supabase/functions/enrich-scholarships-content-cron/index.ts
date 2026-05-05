@@ -5,12 +5,12 @@
 // profile, how_to_win, what_to_prepare_first, best_for_tags) and fills
 // them via enrich-scholarship-content.
 //
-// One-shot or scheduled. With the existing 178 missing rows and
-// MAX_PER_RUN=50, the queue empties in ~4 daily passes. After the
-// first pass new rows from scrape-source enter pending and naturally
-// flow through this cron.
+// One-shot or scheduled. MAX_PER_RUN=100 drains the existing
+// missing-soft-fields backlog in ~2 daily passes. After backlog is
+// gone, new rows from scrape-source enter pending and naturally flow
+// through this cron at the same per-day cap.
 //
-// Cost shape: 50 × ~$0.0008 = $0.04/day cap on AI spend.
+// Cost shape: 100 × ~$0.0008 = $0.08/day cap on AI spend.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -23,7 +23,7 @@ const corsHeaders = {
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-const MAX_PER_RUN = 50;
+const MAX_PER_RUN = 100;
 const THROTTLE_MS = 1200;
 
 Deno.serve(async (req) => {

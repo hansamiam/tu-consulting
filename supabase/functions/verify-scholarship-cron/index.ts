@@ -5,9 +5,9 @@
 // and dispatches verify-scholarship on each with a sequential throttle.
 //
 // The DB self-heals over time: every row gets re-verified roughly once
-// every (TOTAL_ROWS / MAX_PER_RUN) days. With ~225 rows and MAX_PER_RUN=50
-// that's a ~5-day refresh cycle — fresh enough that deadline drift gets
-// caught quickly.
+// every (TOTAL_ROWS / MAX_PER_RUN) days. With ~225 rows and MAX_PER_RUN=100
+// that's a ~2.25-day refresh cycle — fast enough that deadline drift +
+// half-baked-row healing land within days, not weeks. Cost ceiling ~$0.35/day.
 //
 // Returns telemetry per run: candidates / verified / staged / failed.
 //
@@ -27,8 +27,8 @@ const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 // Cap per run so a misconfigured deploy can't burn the entire AI/Firecrawl
-// budget in one cron tick. 50 × ~$0.0035 = $0.18/day max spend.
-const MAX_PER_RUN = 50;
+// budget in one cron tick. 100 × ~$0.0035 = $0.35/day max spend.
+const MAX_PER_RUN = 100;
 // Throttle between calls so the AI gateway and Firecrawl don't see
 // burst traffic.
 const THROTTLE_MS = 1500;
