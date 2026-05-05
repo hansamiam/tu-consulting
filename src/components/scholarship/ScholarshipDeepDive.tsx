@@ -90,7 +90,7 @@ export const ScholarshipDeepDive = ({
   const profileFilled = useMemo(() => {
     if (!profile) return false;
     const hasIdentity = !!profile.nationality;
-    const hasAcademic = !!(profile.gpa || profile.ielts || profile.sat);
+    const hasAcademic = !!(profile.gpa || profile.ielts || profile.toefl || profile.sat);
     const hasIntent = !!(profile.major || profile.field || (profile.targetCountries && profile.targetCountries.length > 0));
     return hasIdentity && (hasAcademic || hasIntent);
   }, [profile]);

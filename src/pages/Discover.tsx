@@ -178,13 +178,29 @@ const FIELD_SYNONYMS: Record<string, string[]> = {
   "law":                    ["law", "legal", "jurisprudence"],
 };
 
+/* Field of study match. Short synonyms ("art", "law", "cs", "IT", "ai")
+ * must use word-boundary matching: a naive substring check has
+ * false-positives like "earth sciences" matching "art" (because "earth"
+ * contains the substring "art"), or "flaw" matching "law", or
+ * "anatomy" matching "anat". Long synonyms ("physics", "engineering")
+ * are unique enough that substring matching is fine and even desirable
+ * — we want "biophysics" to match "physics", "bioengineering" to match
+ * "engineering". The 5-char threshold draws that line. */
+const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const synMatches = (syn: string, targetField: string): boolean => {
+  if (syn.length < 5) {
+    return new RegExp(`\\b${escapeRegex(syn)}\\b`, "i").test(targetField);
+  }
+  return targetField.includes(syn) || syn.includes(targetField);
+};
+
 const fieldMatches = (userField: string | null, targets: string[] | null): boolean | null => {
   if (!userField || !targets || targets.length === 0) return null;
   const u = userField.toLowerCase();
   const t = targets.map(x => x.toLowerCase());
   if (t.some(x => x.includes("all fields") || x.includes("any field") || x.includes("open to all"))) return true;
   const synonyms = FIELD_SYNONYMS[u] || [u];
-  return t.some(targetField => synonyms.some(syn => targetField.includes(syn) || syn.includes(targetField)));
+  return t.some(targetField => synonyms.some(syn => synMatches(syn, targetField)));
 };
 
 const normalizeSelectivity = (s: string | null): Scored["selectivity"] => {
