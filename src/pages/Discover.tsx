@@ -1847,14 +1847,20 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               {isBookmarked ? <BookmarkCheck className="h-4 w-4 text-gold-dark" /> : <Bookmark className="h-4 w-4" />}
             </Button>
           </div>
+          {/* Promoted CTA into the centered enlarged modal. The right
+              panel intentionally keeps the personalized deep dive OUT
+              so it stays scannable; this button is how users get to
+              the heavy content (match breakdown, odds, 30-day plan). */}
           <button
             type="button"
             onClick={onExpand}
-            className="relative inline-flex items-center gap-1 text-[11px] font-semibold text-gold-dark hover:text-foreground mt-2 underline-offset-4 hover:underline transition-colors"
+            className="mt-3 w-full inline-flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-gold/10 via-gold/5 to-gold/10 border border-gold/30 hover:border-gold/50 hover:from-gold/15 hover:to-gold/15 transition-all group"
           >
-            <Sparkles className="h-3 w-3" />
-            View full strategy + 30-day plan
-            <ArrowRight className="h-3 w-3" />
+            <span className="inline-flex items-center gap-2 text-[12px] font-semibold text-gold-dark dark:text-gold">
+              <Sparkles className="h-3.5 w-3.5" />
+              View full strategy + 30-day plan
+            </span>
+            <ArrowRight className="h-3.5 w-3.5 text-gold-dark/70 dark:text-gold/70 group-hover:translate-x-0.5 transition-transform" />
           </button>
 
           {/* URL health warning — surfaces the URL freshness checker's
