@@ -167,10 +167,10 @@ const Index = () => {
                 </p>
                 <ul className="space-y-3">
                   {[
-                    "47 browser tabs of half-read pages",
+                    "Listing sites that show every scholarship to every visitor",
                     "Random Reddit advice",
                     "Missed deadlines",
-                    "Unsure if you actually qualify",
+                    "Unsure if you actually qualify for any of them",
                     "No clear essay strategy",
                   ].map((line, i) => (
                     <li key={i} className="flex items-start gap-3 text-[15px] text-foreground/75 leading-snug">
@@ -215,9 +215,9 @@ const Index = () => {
               {...fadeUp(0.18)}
               className="font-sans text-lg sm:text-xl text-foreground/85 leading-[1.5] tracking-[-0.005em] text-center text-balance max-w-3xl mx-auto"
             >
-              Elite admissions consulting is expensive, manual, and built for families who can pay thousands.
+              Elite admissions consulting costs thousands. Generic scholarship listing sites bury you in opportunities you don't qualify for.
               {" "}
-              <span className="text-gold-dark font-semibold">TopUni is the software layer</span> — the same personalized strategy, ranked opportunities, and live execution support, at a fraction of the cost.
+              <span className="text-gold-dark font-semibold">TopUni is the software in between</span> — personalized strategy, opportunities ranked against your actual profile, and live execution support, at a fraction of the cost.
             </motion.p>
           </div>
         </section>
