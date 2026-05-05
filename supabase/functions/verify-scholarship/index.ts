@@ -209,6 +209,32 @@ Deno.serve(async (req) => {
 
   if (loadErr || !stored) return json(404, { error: "Scholarship not found" });
 
+  // ─── Progressive self-clean on load ─────────────────────────────
+  // Apply the same hygiene cleaners to the stored name + provider.
+  // If they differ from the canonical form (because the row was
+  // ingested before the cleaners existed, or the LLM slipped through
+  // an older prompt), normalize them in-place. The canonical_key
+  // trigger fires on UPDATE OF scholarship_name/provider_name and
+  // recomputes — so cleaning the name also re-collapses the dedup
+  // key. Every verify pass heals more legacy rows.
+  const cleanedStoredName = cleanScholarshipName(stored.scholarship_name);
+  const cleanedStoredProvider = cleanProvider(stored.provider_name);
+  const selfCleanUpdate: Record<string, unknown> = {};
+  if (cleanedStoredName && cleanedStoredName !== stored.scholarship_name) {
+    selfCleanUpdate.scholarship_name = cleanedStoredName;
+  }
+  if (cleanedStoredProvider && cleanedStoredProvider !== stored.provider_name) {
+    selfCleanUpdate.provider_name = cleanedStoredProvider;
+  }
+  if (Object.keys(selfCleanUpdate).length > 0) {
+    await supa.from("scholarships").update(selfCleanUpdate).eq("scholarship_id", stored.scholarship_id);
+    // Reflect locally so downstream LLM prompt + diff comparison use
+    // the cleaned values too — otherwise we'd compute a name diff on
+    // every pass.
+    if (typeof selfCleanUpdate.scholarship_name === "string") stored.scholarship_name = selfCleanUpdate.scholarship_name;
+    if (typeof selfCleanUpdate.provider_name === "string") stored.provider_name = selfCleanUpdate.provider_name;
+  }
+
   const targetUrl = stored.source_url || stored.official_url;
   if (!targetUrl) {
     // Nothing to verify against — leave status alone but stamp last_verified_at
