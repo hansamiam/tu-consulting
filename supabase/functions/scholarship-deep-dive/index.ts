@@ -171,20 +171,10 @@ Deno.serve(async (req) => {
   const supa = createClient(SUPABASE_URL, SERVICE_ROLE);
   const profileHash = await computeProfileHash(body.profile);
 
-  // ─── Cache hit? ─────────────────────────────────────────────────────────
-  const { data: cached } = await supa
-    .from("scholarship_deep_dives")
-    .select("content, schema_version, generated_at")
-    .eq("scholarship_id", body.scholarshipId)
-    .eq("profile_hash", profileHash)
-    .maybeSingle();
-
-  if (cached && cached.schema_version === SCHEMA_VERSION) {
-    return json(200, { ...(cached.content as DeepDiveOutput), _cached: true, _generated_at: cached.generated_at });
-  }
-
-  // ─── Generate ───────────────────────────────────────────────────────────
-  // Load the scholarship row — we need ground-truth fields for the prompt.
+  // ─── Load scholarship FIRST so we have updated_at for the cache check ──
+  // Re-ordered so the cache freshness compare can use the row's updated_at
+  // cursor — bumped by every scholarship UPDATE (verify cron, enrich cron,
+  // self-clean, admin edits).
   const { data: scholarship, error: schErr } = await supa
     .from("scholarships")
     .select(
@@ -195,13 +185,38 @@ Deno.serve(async (req) => {
       "citizenship_requirements, eligible_countries, eligibility_requirements, " +
       "selectivity_level, effort_level, ideal_candidate_profile, " +
       "weak_candidate_warning, why_this_fits, how_to_win, what_to_prepare_first, " +
-      "essay_required, recommendation_letters_required, interview_required"
+      "essay_required, recommendation_letters_required, interview_required, " +
+      "updated_at"
     )
     .eq("scholarship_id", body.scholarshipId)
     .maybeSingle();
 
   if (schErr || !scholarship) {
     return json(404, { error: "Scholarship not found" });
+  }
+
+  // ─── Cache hit? ─────────────────────────────────────────────────────────
+  // Two conditions for a hit:
+  //   1. schema_version matches (output shape is current)
+  //   2. cached generated_at >= scholarship.updated_at (the underlying row
+  //      hasn't drifted since the analysis was generated). When the verify
+  //      cron self-cleans a name, or the enrich cron fills how_to_win, or
+  //      an admin tweaks min_gpa, the cached analysis is stale and we
+  //      regenerate.
+  const { data: cached } = await supa
+    .from("scholarship_deep_dives")
+    .select("content, schema_version, generated_at")
+    .eq("scholarship_id", body.scholarshipId)
+    .eq("profile_hash", profileHash)
+    .maybeSingle();
+
+  if (cached && cached.schema_version === SCHEMA_VERSION) {
+    const cachedAt = new Date(cached.generated_at).getTime();
+    const rowUpdatedAt = scholarship.updated_at ? new Date(scholarship.updated_at).getTime() : 0;
+    if (cachedAt >= rowUpdatedAt) {
+      return json(200, { ...(cached.content as DeepDiveOutput), _cached: true, _generated_at: cached.generated_at });
+    }
+    // else: drift detected → fall through to regenerate.
   }
 
   const lang = body.language === "ru" ? "Russian" : "English";
