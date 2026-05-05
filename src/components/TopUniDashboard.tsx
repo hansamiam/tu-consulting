@@ -44,6 +44,11 @@ interface StudentProfile {
   fullName: string;
   email: string;
   whatsapp: string;
+  /* Where the student is from. Used by the brief generator to tailor
+   * eligibility framing ("for ambitious students applying internationally
+   * (this student is from {nationality})") and to bias scholarships
+   * that name this nationality in their eligible_countries list. */
+  nationality: string;
   gradeLevel: string;
   gpa: string;
   ielts: string;

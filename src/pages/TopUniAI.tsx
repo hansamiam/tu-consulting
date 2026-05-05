@@ -35,6 +35,7 @@ interface WizardDraft {
   fullName: string;
   email: string;
   whatsapp: string;
+  nationality: string;
   gradeLevel: string;
   gpa: string;
   ielts: string;
@@ -90,6 +91,7 @@ const TopUniAI = () => {
   const [fullName, setFullName] = useState(draft?.fullName ?? "");
   const [email, setEmail] = useState(draft?.email ?? "");
   const [whatsapp, setWhatsapp] = useState(draft?.whatsapp ?? "");
+  const [nationality, setNationality] = useState(draft?.nationality ?? "");
   const [gradeLevel, setGradeLevel] = useState(draft?.gradeLevel ?? "");
   const [gpa, setGpa] = useState(draft?.gpa ?? "");
   const [ielts, setIelts] = useState(draft?.ielts ?? "");
@@ -97,12 +99,18 @@ const TopUniAI = () => {
   const [targetCountries, setTargetCountries] = useState<string[]>(Array.isArray(draft?.targetCountries) ? draft!.targetCountries! : []);
   const [countrySearch, setCountrySearch] = useState("");
   const [major, setMajor] = useState(draft?.major ?? "");
-  const [budget, setBudget] = useState(draft?.budget ?? "");
+  // Normalize legacy drafts: the budget option used to be labeled
+  // "Full scholarship needed" — renamed to "Need full scholarship" when
+  // the standalone scholarshipNeeded yes/no question was folded into
+  // budget. Migrate-on-read so cached drafts don't show a blank Select.
+  const [budget, setBudget] = useState(
+    draft?.budget === "Full scholarship needed" ? "Need full scholarship" : (draft?.budget ?? ""),
+  );
   // scholarshipNeeded is now derived from budget rather than asked
   // separately — the standalone yes/no question was redundant since
   // budget="Need full scholarship" already encodes the same intent.
-  // Kept in state (not just derived inline) so the existing draft
-  // persistence + downstream brief generator continue working unchanged.
+  // Kept in the persisted draft + downstream brief payload so the
+  // generator continues working unchanged.
   const scholarshipNeeded = budget === "Need full scholarship" ? "yes" : budget ? "no" : (draft?.scholarshipNeeded ?? "");
   const [timeline, setTimeline] = useState(draft?.timeline ?? "");
   const [prestige, setPrestige] = useState<number[]>([typeof draft?.prestige === "number" ? draft.prestige : 3]);
@@ -197,7 +205,7 @@ const TopUniAI = () => {
     if (screen === "landing") return;
     try {
       const draftPayload: WizardDraft = {
-        fullName, email, whatsapp, gradeLevel, gpa, ielts, sat,
+        fullName, email, whatsapp, nationality, gradeLevel, gpa, ielts, sat,
         targetCountries, major, budget, scholarshipNeeded, timeline,
         prestige: prestige[0], scholarship: scholarship[0],
         careerRoi: careerRoi[0], visaAccess: visaAccess[0], locationPref: locationPref[0],
@@ -207,7 +215,7 @@ const TopUniAI = () => {
     } catch { /* ignore quota / private-mode errors */ }
   }, [
     screen,
-    fullName, email, whatsapp, gradeLevel, gpa, ielts, sat,
+    fullName, email, whatsapp, nationality, gradeLevel, gpa, ielts, sat,
     targetCountries, major, budget, scholarshipNeeded, timeline,
     prestige, scholarship, careerRoi, visaAccess, locationPref,
   ]);
@@ -223,7 +231,7 @@ const TopUniAI = () => {
   }, [screen]);
 
   const profile = {
-    fullName, email, whatsapp, gradeLevel, gpa, ielts, sat,
+    fullName, email, whatsapp, nationality, gradeLevel, gpa, ielts, sat,
     targetCountries, major, budget, scholarshipNeeded, timeline,
     prestige: prestige[0], scholarship: scholarship[0],
     careerRoi: careerRoi[0], visaAccess: visaAccess[0], locationPref: locationPref[0],
@@ -516,24 +524,60 @@ const TopUniAI = () => {
                           <Label className="text-xs uppercase tracking-wider font-medium">WhatsApp</Label>
                           <Input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="With country code" className="h-11 bg-card" />
                         </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">Where you are *</Label>
-                          <Select value={gradeLevel} onValueChange={setGradeLevel}>
-                            <SelectTrigger className="h-11 bg-card"><SelectValue placeholder="Select" /></SelectTrigger>
-                            <SelectContent>
-                              {[
-                                "9th Grade", "10th Grade", "11th Grade", "12th Grade",
-                                "Gap Year", "University Transfer",
-                                "Bachelor's — current",  "Bachelor's — graduating",
-                                "Master's — current",    "Master's — graduating",
-                                "PhD applicant",
-                                "Working professional",
-                              ].map(g => (
-                                <SelectItem key={g} value={g}>{g}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                        {/* Nationality typeahead — accepts any country. The
+                            brief generator uses this to tailor eligibility
+                            framing and bias scholarships that name this
+                            nationality in their eligible_countries list. */}
+                        <div className="space-y-1.5 relative">
+                          <Label className="text-xs uppercase tracking-wider font-medium">Nationality *</Label>
+                          <Input
+                            value={nationality}
+                            onChange={e => setNationality(e.target.value)}
+                            placeholder="Type any country (Kazakhstan, Nigeria, …)"
+                            className="h-11 bg-card"
+                          />
+                          {(() => {
+                            const q = nationality.trim().toLowerCase();
+                            if (!q) return null;
+                            const exact = ALL_COUNTRIES.find(c => c.v.toLowerCase() === q);
+                            if (exact) return null;
+                            const matches = ALL_COUNTRIES.filter(c => c.v.toLowerCase().includes(q)).slice(0, 5);
+                            if (matches.length === 0) return null;
+                            return (
+                              <div className="absolute z-20 left-0 right-0 top-full mt-1 rounded-md border border-border bg-card shadow-lg overflow-hidden">
+                                {matches.map(c => (
+                                  <button
+                                    key={c.v}
+                                    type="button"
+                                    onClick={() => setNationality(c.v)}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/60 transition-colors"
+                                  >
+                                    <span>{c.f}</span>
+                                    <span>{c.v}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            );
+                          })()}
                         </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs uppercase tracking-wider font-medium">Where you are *</Label>
+                        <Select value={gradeLevel} onValueChange={setGradeLevel}>
+                          <SelectTrigger className="h-11 bg-card"><SelectValue placeholder="Select your stage" /></SelectTrigger>
+                          <SelectContent>
+                            {[
+                              "9th Grade", "10th Grade", "11th Grade", "12th Grade",
+                              "Gap Year", "University Transfer",
+                              "Bachelor's — current",  "Bachelor's — graduating",
+                              "Master's — current",    "Master's — graduating",
+                              "PhD applicant",
+                              "Working professional",
+                            ].map(g => (
+                              <SelectItem key={g} value={g}>{g}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="grid sm:grid-cols-3 gap-4">
                         <div className="space-y-1.5">
@@ -555,7 +599,7 @@ const TopUniAI = () => {
                       <Button
                         variant="gold"
                         onClick={() => setStep(2)}
-                        disabled={!fullName.trim() || !email.trim() || !gradeLevel || !gpa.trim()}
+                        disabled={!fullName.trim() || !email.trim() || !nationality.trim() || !gradeLevel || !gpa.trim()}
                       >
                         Continue <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>

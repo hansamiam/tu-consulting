@@ -18,6 +18,7 @@ import {
   Calendar, Copy, Check, RefreshCw, ExternalLink, Apple, Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { track } from "@/lib/analytics";
 import { toast } from "sonner";
 
 interface Props {
@@ -39,7 +40,9 @@ export const CalendarSubscribeDialog = ({ open, onOpenChange, language = "en" }:
 
   // Fetch / mint the token on first open.
   useEffect(() => {
-    if (!open || token) return;
+    if (!open) return;
+    track("calendar_subscribe_opened", { language });
+    if (token) return;
     let cancelled = false;
     (async () => {
       setLoading(true);
@@ -74,6 +77,7 @@ export const CalendarSubscribeDialog = ({ open, onOpenChange, language = "en" }:
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
       toast.success(t("Feed URL copied", "URL ленты скопирован"));
+      track("calendar_subscribe_clicked", { method: "copy_url" });
     } catch {
       toast.error(t("Couldn't copy — select and copy manually.", "Не удалось скопировать."));
     }
@@ -93,6 +97,7 @@ export const CalendarSubscribeDialog = ({ open, onOpenChange, language = "en" }:
     }
     if (typeof data === "string") {
       setToken(data);
+      track("calendar_token_rotated");
       toast.success(t("New token minted.", "Новый токен создан."));
     }
   };
@@ -149,7 +154,12 @@ export const CalendarSubscribeDialog = ({ open, onOpenChange, language = "en" }:
 
             {/* One-click subscribe shortcuts per OS */}
             <div className="grid sm:grid-cols-2 gap-2 mt-3">
-              <Button asChild variant="outline" className="justify-start gap-2 h-auto py-2.5">
+              <Button
+                asChild
+                variant="outline"
+                className="justify-start gap-2 h-auto py-2.5"
+                onClick={() => track("calendar_subscribe_clicked", { method: "webcal" })}
+              >
                 <a href={webcalUrl} target="_blank" rel="noopener noreferrer">
                   <Apple className="h-4 w-4 shrink-0" />
                   <span className="text-left">
@@ -158,7 +168,12 @@ export const CalendarSubscribeDialog = ({ open, onOpenChange, language = "en" }:
                   </span>
                 </a>
               </Button>
-              <Button asChild variant="outline" className="justify-start gap-2 h-auto py-2.5">
+              <Button
+                asChild
+                variant="outline"
+                className="justify-start gap-2 h-auto py-2.5"
+                onClick={() => track("calendar_subscribe_clicked", { method: "google" })}
+              >
                 <a href={googleUrl} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4 shrink-0" />
                   <span className="text-left">

@@ -42,6 +42,7 @@ const TopUniAIRu = () => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
+  const [nationality, setNationality] = useState("");
   const [gradeLevel, setGradeLevel] = useState("");
   const [gpa, setGpa] = useState("");
   const [ielts, setIelts] = useState("");
@@ -64,7 +65,7 @@ const TopUniAIRu = () => {
   const mappedCountries = targetCountries.map(c => COUNTRY_MAP[c] || c);
 
   const profile = {
-    fullName, email, whatsapp, gradeLevel, gpa, ielts, sat,
+    fullName, email, whatsapp, nationality, gradeLevel, gpa, ielts, sat,
     targetCountries: mappedCountries, major, budget, scholarshipNeeded, timeline,
     prestige: prestige[0], scholarship: scholarship[0],
     careerRoi: careerRoi[0], visaAccess: visaAccess[0], locationPref: locationPref[0],
@@ -153,12 +154,20 @@ const TopUniAIRu = () => {
                       </div>
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-2"><Label>WhatsApp</Label><Input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="С кодом страны" /></div>
-                        <div className="space-y-2">
-                          <Label>Класс / курс *</Label>
-                          <Select value={gradeLevel} onValueChange={setGradeLevel}><SelectTrigger><SelectValue placeholder="Выберите" /></SelectTrigger>
-                            <SelectContent>{["9 класс", "10 класс", "11 класс", "12 класс / Выпускник", "Gap Year", "Перевод из вуза"].map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
-                          </Select>
-                        </div>
+                        <div className="space-y-2"><Label>Гражданство *</Label><Input value={nationality} onChange={e => setNationality(e.target.value)} placeholder="Любая страна (Казахстан, Россия, …)" /></div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Этап обучения *</Label>
+                        <Select value={gradeLevel} onValueChange={setGradeLevel}><SelectTrigger><SelectValue placeholder="Выберите" /></SelectTrigger>
+                          <SelectContent>{[
+                            "9 класс", "10 класс", "11 класс", "12 класс / Выпускник",
+                            "Gap Year", "Перевод из вуза",
+                            "Бакалавриат — учусь",   "Бакалавриат — выпускаюсь",
+                            "Магистратура — учусь",  "Магистратура — выпускаюсь",
+                            "PhD",
+                            "Работаю",
+                          ].map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+                        </Select>
                       </div>
                       <div className="grid sm:grid-cols-3 gap-4">
                         <div className="space-y-2"><Label>GPA *</Label><Input value={gpa} onChange={e => setGpa(e.target.value)} placeholder="напр. 3.7" /></div>
@@ -170,7 +179,7 @@ const TopUniAIRu = () => {
                       <Button
                         variant="gold"
                         onClick={() => setStep(2)}
-                        disabled={!fullName.trim() || !email.trim() || !gradeLevel || !gpa.trim()}
+                        disabled={!fullName.trim() || !email.trim() || !nationality.trim() || !gradeLevel || !gpa.trim()}
                       >
                         Далее <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>

@@ -15,7 +15,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, ArrowLeft, Calendar as CalendarIcon,
-  AlertCircle, Inbox, Search, ArrowRight, Loader2,
+  CalendarPlus, Search, ArrowRight, Loader2,
 } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
@@ -23,6 +23,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useApplicationTracker, type AppStatus } from "@/hooks/useApplicationTracker";
+import { useAuth } from "@/contexts/AuthContext";
+import { CalendarSubscribeDialog } from "@/components/pipeline/CalendarSubscribeDialog";
 
 interface ScholarshipLite {
   scholarship_id: string;
@@ -38,6 +40,8 @@ const Calendar = ({ language = "en" }: Props) => {
   const isRu = language === "ru";
   const t = (en: string, ru: string) => (isRu ? ru : en);
   const tracker = useApplicationTracker();
+  const { user } = useAuth();
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const trackedIds = useMemo(
     () => Array.from(new Set([...tracker.shortlist, ...Object.keys(tracker.statusMap)])),
@@ -162,6 +166,32 @@ const Calendar = ({ language = "en" }: Props) => {
               "Все ваши отслеживаемые стипендии на реальном календаре — видно, что когда подавать.",
             )}
           </p>
+          {/* Sync CTA — the highest-leverage action on this page. Once the
+              student adds the feed to Apple/Google/Outlook, every deadline
+              becomes a native-OS reminder and new ones auto-sync. The
+              pipeline page surfaces the same dialog; we lead with it
+              harder here because /calendar IS the deadline view. Hidden
+              for anon users (the RPC requires auth) and when there's
+              nothing tracked yet (the empty state handles that case). */}
+          {user && trackedIds.length > 0 && (
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <Button
+                variant="gold"
+                size="sm"
+                className="gap-2"
+                onClick={() => setCalendarOpen(true)}
+              >
+                <CalendarPlus className="h-3.5 w-3.5" />
+                {t("Sync to Apple, Google, or Outlook", "Подписаться: Apple, Google, Outlook")}
+              </Button>
+              <span className="text-[11px] text-primary-foreground/65 leading-snug">
+                {t(
+                  "Adds these deadlines to your phone calendar with 7-day + 1-day reminders. Auto-updates when you save more.",
+                  "Дедлайны попадут в календарь на телефоне с напоминаниями за 7 и 1 день. Обновляется при добавлении новых.",
+                )}
+              </span>
+            </div>
+          )}
         </div>
       </section>
 
@@ -328,6 +358,12 @@ const Calendar = ({ language = "en" }: Props) => {
           </>
         )}
       </section>
+
+      <CalendarSubscribeDialog
+        open={calendarOpen}
+        onOpenChange={setCalendarOpen}
+        language={language}
+      />
 
       <Footer language={isRu ? "ru" : "en"} />
     </div>
