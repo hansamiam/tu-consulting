@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ScholarshipCard, ScholarshipCardSkeleton, type ScholarshipCardData, type ScholarshipCardStats } from "@/components/ScholarshipCard";
 import { ShareScholarshipModal } from "@/components/ShareScholarshipModal";
 import { EmptyState } from "@/components/EmptyState";
+import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
 
 interface ScholarshipRow extends ScholarshipCardData {
   official_url: string | null;
@@ -296,7 +297,7 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
           itemListElement: result.slice(0, 25).map((r, i) => ({
             "@type": "ListItem",
             position: i + 1,
-            name: r.scholarship_name,
+            name: cleanScholarshipName(r.scholarship_name),
             url: `${SITE}/scholarships/${r.scholarship_id}`,
           })),
         };
@@ -435,8 +436,8 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
           <ShareScholarshipModal
             open={!!shareTarget}
             onOpenChange={(o) => !o && setShareTarget(null)}
-            scholarshipName={shareTarget.scholarship_name}
-            providerName={shareTarget.provider_name}
+            scholarshipName={cleanScholarshipName(shareTarget.scholarship_name)}
+            providerName={cleanProvider(shareTarget.provider_name)}
             scholarshipId={shareTarget.scholarship_id}
           />
         )}
@@ -667,7 +668,7 @@ function buildHubFaqEntities(
     .filter((r) => r.estimated_total_value_usd && r.estimated_total_value_usd > 0)
     .sort((a, b) => (b.estimated_total_value_usd ?? 0) - (a.estimated_total_value_usd ?? 0))
     .slice(0, 3)
-    .map((r) => r.scholarship_name);
+    .map((r) => cleanScholarshipName(r.scholarship_name));
 
   const fmtMoney = (v: number) =>
     v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `$${Math.round(v / 1000)}K` : `$${v}`;

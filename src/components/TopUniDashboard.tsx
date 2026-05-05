@@ -39,6 +39,7 @@ import { toast } from "sonner";
 import { useNavigate, Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
+import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
 
 interface StudentProfile {
   fullName: string;
@@ -2871,11 +2872,11 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                                   <span className={`text-[11px] font-semibold tabular-nums ${dlClass}`}>{dl}</span>
                                 </div>
                                 <h4 className="font-heading font-semibold text-[15px] text-foreground line-clamp-2 leading-snug mb-1 group-hover:text-gold-dark transition-colors">
-                                  {m.scholarship_name}
+                                  {cleanScholarshipName(m.scholarship_name)}
                                 </h4>
                                 <p className="text-xs text-muted-foreground truncate mb-2">
                                   {m.award_amount_text || (m.coverage_type === "full_ride" ? t("Full ride", "Полное покрытие") : m.coverage_type === "tuition_only" ? t("Tuition", "Обучение") : t("Stipend", "Стипендия"))}
-                                  {m.provider_name && <span className="text-muted-foreground/60"> · {m.provider_name}</span>}
+                                  {(() => { const cp = cleanProvider(m.provider_name); return cp ? <span className="text-muted-foreground/60"> · {cp}</span> : null; })()}
                                 </p>
                               </Link>
                               <button

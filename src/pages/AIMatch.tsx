@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { ScholarshipCardSkeleton } from "@/components/ScholarshipCard";
 import { EmptyState } from "@/components/EmptyState";
+import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
 
 interface AIMatchProps { language?: "en" | "ru"; }
 
@@ -384,9 +385,12 @@ const ResultCard = ({ row: r, t }: { row: ScholarshipLite & { _similarity: numbe
         </div>
       </div>
       <h3 className="font-heading font-semibold text-base sm:text-lg text-foreground tracking-tight leading-snug mb-1 group-hover:text-gold-dark transition-colors">
-        {r.scholarship_name}
+        {cleanScholarshipName(r.scholarship_name)}
       </h3>
-      {r.provider_name && <p className="text-xs text-muted-foreground mb-2.5">{r.provider_name}</p>}
+      {(() => {
+        const cp = cleanProvider(r.provider_name);
+        return cp ? <p className="text-xs text-muted-foreground mb-2.5">{cp}</p> : null;
+      })()}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
         <span className="inline-flex items-center gap-1">
           <Wallet className="w-3 h-3" />

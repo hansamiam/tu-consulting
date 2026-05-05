@@ -30,6 +30,7 @@ import { ScholarshipChecklist } from "@/components/pipeline/ScholarshipChecklist
 import { DueThisWeek } from "@/components/pipeline/DueThisWeek";
 import { CountryArt } from "@/lib/countryArt";
 import { accentForCountry, shortCountry } from "@/lib/countryAccent";
+import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
 import { CalendarSubscribeDialog } from "@/components/pipeline/CalendarSubscribeDialog";
 
 interface Scholarship {
@@ -370,13 +371,16 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                   </p>
                 </div>
                 <SheetTitle className="font-heading text-xl tracking-tight leading-snug">
-                  {openDetail.scholarship_name}
+                  {cleanScholarshipName(openDetail.scholarship_name)}
                 </SheetTitle>
-                {openDetail.provider_name && (
-                  <SheetDescription className="text-xs leading-relaxed">
-                    {openDetail.provider_name}
-                  </SheetDescription>
-                )}
+                {(() => {
+                  const cp = cleanProvider(openDetail.provider_name);
+                  return cp ? (
+                    <SheetDescription className="text-xs leading-relaxed">
+                      {cp}
+                    </SheetDescription>
+                  ) : null;
+                })()}
               </SheetHeader>
 
               <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
@@ -521,14 +525,15 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                     className="w-full justify-between"
                     onClick={() => {
                       try {
+                        const cleanedName = cleanScholarshipName(openDetail.scholarship_name);
                         sessionStorage.setItem(
                           "topuni-counselor-prefill",
                           JSON.stringify({
                             scholarshipId: openDetail.scholarship_id,
-                            scholarshipName: openDetail.scholarship_name,
+                            scholarshipName: cleanedName,
                             question: isRu
-                              ? `Помогите с подачей на ${openDetail.scholarship_name} — стратегия, документы, тайминг.`
-                              : `Walk me through ${openDetail.scholarship_name} — strategy, documents, timing.`,
+                              ? `Помогите с подачей на ${cleanedName} — стратегия, документы, тайминг.`
+                              : `Walk me through ${cleanedName} — strategy, documents, timing.`,
                             ts: Date.now(),
                           }),
                         );
@@ -640,7 +645,7 @@ const PipelineCard = ({
 
       <div className="p-3">
       <h4 className="font-heading font-semibold text-[14px] text-foreground line-clamp-2 leading-snug mb-1.5 group-hover:text-gold-dark transition-colors">
-        {s.scholarship_name}
+        {cleanScholarshipName(s.scholarship_name)}
       </h4>
       {note && (
         <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground mb-1.5">

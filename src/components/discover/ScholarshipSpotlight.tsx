@@ -4,6 +4,7 @@ import { Award, DollarSign, Calendar, ShieldCheck, ShieldAlert } from "lucide-re
 import { UniversityResult } from "./types";
 import { motion } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cleanScholarshipName } from "@/lib/scholarshipFields";
 
 interface Props {
   universities: UniversityResult[];
@@ -79,7 +80,7 @@ export const ScholarshipSpotlight = ({ universities, language }: Props) => {
             className="bg-card border border-border rounded-lg p-4 space-y-2 hover:border-amber-500/40 transition-colors"
           >
             <div className="flex items-start justify-between gap-2">
-              <p className="font-semibold text-sm text-foreground leading-tight">{item.scholarship.scholarship_name}</p>
+              <p className="font-semibold text-sm text-foreground leading-tight">{cleanScholarshipName(item.scholarship.scholarship_name)}</p>
               <div className="flex items-center gap-1 shrink-0">
                 {item.scholarship.verified ? (
                   <TooltipProvider><Tooltip><TooltipTrigger><ShieldCheck className="h-3 w-3 text-green-500" /></TooltipTrigger><TooltipContent><p className="text-xs">Verified</p></TooltipContent></Tooltip></TooltipProvider>

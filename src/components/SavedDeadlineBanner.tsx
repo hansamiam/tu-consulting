@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Flame, ArrowRight, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { cleanScholarshipName } from "@/lib/scholarshipFields";
 
 /**
  * <SavedDeadlineBanner /> — top-of-dashboard urgency surface for users
@@ -137,7 +138,7 @@ export function SavedDeadlineBanner({ trackedIds, isRu = false, daysWindow = 14 
                 : t(`${closest.days} days`, `${closest.days} дн.`, isRu)}
           </span>
           {" · "}
-          <span className="font-semibold">{closest.scholarship_name}</span>
+          <span className="font-semibold">{cleanScholarshipName(closest.scholarship_name)}</span>
           {more > 0 && (
             <span className="text-muted-foreground font-normal">
               {" "}{t(`+ ${more} more in the next ${daysWindow} days`, `+ ещё ${more} в ближайшие ${daysWindow} дн.`, isRu)}

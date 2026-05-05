@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { Banknote } from "lucide-react";
+import { cleanScholarshipName } from "@/lib/scholarshipFields";
 
 type LiveMatchLite = {
   scholarship_id: string;
@@ -74,7 +75,7 @@ export const FundingStack = ({
                 transition={{ duration: 0.7, delay: 0.15 + i * 0.08, ease: [0.16, 1, 0.3, 1] }}
                 className={`${segmentColors[i] || "bg-muted-foreground/30"} relative ${i > 0 ? "border-l border-card" : ""}`}
                 style={{ minWidth: pct < 4 ? "4%" : undefined }}
-                title={`${it.scholarship_name} · ${fmtMoney(it.estimated_total_value_usd!)}`}
+                title={`${cleanScholarshipName(it.scholarship_name)} · ${fmtMoney(it.estimated_total_value_usd!)}`}
               />
             );
           })}
@@ -87,7 +88,7 @@ export const FundingStack = ({
             return (
               <li key={it.scholarship_id} className="flex items-center gap-3 text-[12px]">
                 <span className={`block h-2 w-2 rounded-sm shrink-0 ${segmentColors[i] || "bg-muted-foreground/30"}`} />
-                <span className="text-foreground/85 truncate min-w-0 flex-1">{it.scholarship_name}</span>
+                <span className="text-foreground/85 truncate min-w-0 flex-1">{cleanScholarshipName(it.scholarship_name)}</span>
                 <span className="text-muted-foreground tabular-nums shrink-0 text-[11px]">{pct}%</span>
                 <span className="text-foreground font-semibold tabular-nums shrink-0 w-14 text-right">
                   {fmtMoney(it.estimated_total_value_usd!)}

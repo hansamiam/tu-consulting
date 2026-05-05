@@ -18,6 +18,8 @@ import {
 import { motion } from "framer-motion";
 import { Link, Navigate } from "react-router-dom";
 import { getStoredProfile, type DiscoverProfile } from "@/components/discover/DiscoverProfileGate";
+import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
+import { shortCountry } from "@/lib/countryAccent";
 
 interface Scholarship {
   scholarship_id: string;
@@ -433,9 +435,9 @@ const DiscoverApp = ({ language = "en" }: Props) => {
                           <CardHeader className="pb-3">
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
-                                <p className="label-mono text-muted-foreground mb-1.5">{s.host_country || "—"}</p>
-                                <h4 className="font-heading font-semibold text-base leading-snug tracking-tight">{s.scholarship_name}</h4>
-                                <p className="text-xs text-muted-foreground mt-1">{s.provider_name}</p>
+                                <p className="label-mono text-muted-foreground mb-1.5">{s.host_country ? shortCountry(s.host_country) : "—"}</p>
+                                <h4 className="font-heading font-semibold text-base leading-snug tracking-tight">{cleanScholarshipName(s.scholarship_name)}</h4>
+                                <p className="text-xs text-muted-foreground mt-1">{cleanProvider(s.provider_name) ?? ""}</p>
                               </div>
                               <div className="text-right shrink-0 border-l border-border pl-3">
                                 <div className="text-3xl font-heading font-bold text-foreground leading-none tabular-nums">{s.match}</div>
@@ -523,8 +525,8 @@ const DiscoverApp = ({ language = "en" }: Props) => {
           {openDetail && (
             <>
               <DialogHeader>
-                <DialogTitle className="text-xl">{openDetail.scholarship_name}</DialogTitle>
-                <p className="text-sm text-muted-foreground">{openDetail.provider_name} · {openDetail.host_country}</p>
+                <DialogTitle className="text-xl">{cleanScholarshipName(openDetail.scholarship_name)}</DialogTitle>
+                <p className="text-sm text-muted-foreground">{[cleanProvider(openDetail.provider_name), openDetail.host_country && shortCountry(openDetail.host_country)].filter(Boolean).join(" · ")}</p>
               </DialogHeader>
               <div className="space-y-4 mt-3 text-sm">
                 {/* Hard requirements — always visible */}

@@ -6,6 +6,8 @@ import {
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
 import { toast } from "sonner";
 import { useFocusScholarship } from "@/components/EnrichedMarkdown";
+import { cleanScholarshipName } from "@/lib/scholarshipFields";
+import { shortCountry } from "@/lib/countryAccent";
 
 /**
  * <InlineScholarshipCard /> — the in-brief scholarship pill.
@@ -79,7 +81,7 @@ export function InlineScholarshipCard({ scholarship: s, showMeta = true }: Props
     tracker.toggleShortlist(s.scholarship_id);
     toast.success(
       isSaved ? `Removed from your pipeline` : `Saved to your pipeline`,
-      { description: s.scholarship_name }
+      { description: cleanScholarshipName(s.scholarship_name) }
     );
   };
 
@@ -110,10 +112,10 @@ export function InlineScholarshipCard({ scholarship: s, showMeta = true }: Props
           <Award className="w-3.5 h-3.5 text-gold-dark shrink-0" />
           <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0 min-w-0">
             <span className="font-semibold text-foreground text-sm leading-tight group-hover:text-gold-dark transition-colors truncate max-w-[280px]">
-              {s.scholarship_name}
+              {cleanScholarshipName(s.scholarship_name)}
             </span>
             {showMeta && s.host_country && (
-              <span className="text-[11px] text-muted-foreground whitespace-nowrap">· {s.host_country}</span>
+              <span className="text-[11px] text-muted-foreground whitespace-nowrap">· {shortCountry(s.host_country)}</span>
             )}
             {s.award_amount_text && (
               <span className="text-[11px] text-foreground/70 whitespace-nowrap">· {s.award_amount_text}</span>

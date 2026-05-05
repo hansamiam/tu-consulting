@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ScholarshipCard, ScholarshipCardSkeleton, type ScholarshipCardData, type ScholarshipCardStats } from "@/components/ScholarshipCard";
 import { ShareScholarshipModal } from "@/components/ShareScholarshipModal";
 import { Badge } from "@/components/ui/badge";
+import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
 
 /**
  * <TrendingScholarships /> — surfaces the live highest-momentum scholarships.
@@ -171,8 +172,8 @@ export function TrendingScholarships({ limit = 4, language = "en", compact = fal
         <ShareScholarshipModal
           open={!!shareTarget}
           onOpenChange={(o) => !o && setShareTarget(null)}
-          scholarshipName={shareTarget.scholarship_name}
-          providerName={shareTarget.provider_name}
+          scholarshipName={cleanScholarshipName(shareTarget.scholarship_name)}
+          providerName={cleanProvider(shareTarget.provider_name)}
           scholarshipId={shareTarget.scholarship_id}
           language={language}
         />

@@ -4,6 +4,7 @@ import { Flame, Check, AlertCircle, ArrowRight, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { ChecklistItem } from "./ScholarshipChecklist";
+import { cleanScholarshipName } from "@/lib/scholarshipFields";
 
 /**
  * <DueThisWeek /> — top-of-Pipeline aggregate that surfaces concrete
@@ -216,7 +217,7 @@ export const DueThisWeek = ({
               )}
               <div className="flex items-center gap-2 mt-1.5 flex-wrap text-[11px]">
                 <span className="text-foreground/65 truncate">
-                  {entry.scholarship.scholarship_name}
+                  {cleanScholarshipName(entry.scholarship.scholarship_name)}
                 </span>
                 {entry.daysUntilDeadline !== null && (
                   <>

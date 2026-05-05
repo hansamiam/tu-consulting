@@ -25,6 +25,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useApplicationTracker, type AppStatus } from "@/hooks/useApplicationTracker";
 import { useAuth } from "@/contexts/AuthContext";
 import { CalendarSubscribeDialog } from "@/components/pipeline/CalendarSubscribeDialog";
+import { cleanScholarshipName } from "@/lib/scholarshipFields";
+import { shortCountry } from "@/lib/countryAccent";
 
 interface ScholarshipLite {
   scholarship_id: string;
@@ -204,7 +206,7 @@ const Calendar = ({ language = "en" }: Props) => {
           <Stat
             label={t("Next deadline", "Ближайший")}
             value={upcomingStats.nextDate ? new Date(upcomingStats.nextDate).toLocaleDateString(isRu ? "ru-RU" : "en-US", { month: "short", day: "numeric" }) : "—"}
-            sub={upcomingStats.nextRow?.scholarship_name?.slice(0, 30)}
+            sub={upcomingStats.nextRow ? cleanScholarshipName(upcomingStats.nextRow.scholarship_name).slice(0, 30) : undefined}
           />
         </div>
       </section>
@@ -298,7 +300,7 @@ const Calendar = ({ language = "en" }: Props) => {
                       <div className="hidden sm:block mt-1.5 space-y-0.5">
                         {items.slice(0, 2).map((it) => (
                           <p key={it.scholarship_id} className="text-[10px] leading-tight text-foreground/80 line-clamp-1">
-                            {it.scholarship_name}
+                            {cleanScholarshipName(it.scholarship_name)}
                           </p>
                         ))}
                         {items.length > 2 && (
@@ -342,10 +344,10 @@ const Calendar = ({ language = "en" }: Props) => {
                         <CalendarIcon className="w-4 h-4 text-gold-dark shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-foreground truncate group-hover:text-gold-dark transition-colors">
-                            {s.scholarship_name}
+                            {cleanScholarshipName(s.scholarship_name)}
                           </p>
                           <p className="text-[11px] text-muted-foreground">
-                            {s.host_country ?? "—"} · {s.coverage_type === "full_ride" ? t("Full ride", "Полное") : s.coverage_type === "tuition_only" ? t("Tuition", "Обучение") : t("Stipend", "Стипендия")}
+                            {s.host_country ? shortCountry(s.host_country) : "—"} · {s.coverage_type === "full_ride" ? t("Full ride", "Полное") : s.coverage_type === "tuition_only" ? t("Tuition", "Обучение") : t("Stipend", "Стипендия")}
                           </p>
                         </div>
                         <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-gold-dark transition-colors shrink-0" />
