@@ -1376,17 +1376,48 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
 
         {/* Why-it-fits — italic single-paragraph editorial line. Same data,
             slightly more breathing room. line-clamp-3 instead of 2 so we
-            stop chopping mid-thought. When the row has no real why_this_fits
-            and no meaty scoring reasons, render a flex-1 spacer instead so
-            cards in an auto-rows-fr grid don't collapse — the action row
-            stays pinned to the bottom of the card the same way. */}
-        {why ? (
-          <p className="text-[12px] text-foreground/70 leading-relaxed line-clamp-3 flex-1 italic">
-            {why.replace(/\.+$/, "")}.
-          </p>
-        ) : (
-          <div className="flex-1" aria-hidden />
-        )}
+            stop chopping mid-thought.
+            When the row has no real why_this_fits / meatyReasons, build
+            a factual one-liner from structured fields (audience + level
+            + funding shape) so the card never looks empty even before
+            the enrich cron has filled the soft fields. */}
+        {(() => {
+          if (why) {
+            return (
+              <p className="text-[12px] text-foreground/70 leading-relaxed line-clamp-3 flex-1 italic">
+                {why.replace(/\.+$/, "")}.
+              </p>
+            );
+          }
+          // Build a sensible factual fallback. Pieces:
+          //   · level (Master's / PhD / Bachelor's)
+          //   · field (humanized first target_fields entry)
+          //   · funding shape (Full ride / Tuition covered / Stipend)
+          //   · audience demographic if set
+          const level = (s.target_degree_level && s.target_degree_level.length > 0)
+            ? s.target_degree_level.slice(0, 2).map(humanizeDegree).join(" + ")
+            : null;
+          const fld = displayField(s.target_fields);
+          const cover = COVERAGE_LABEL[s.coverage_type] ?? null;
+          const demo = (s.target_demographics && s.target_demographics.length > 0)
+            ? humanizeDemographic(s.target_demographics[0])
+            : null;
+          const parts: string[] = [];
+          if (cover) parts.push(cover);
+          if (level) parts.push(`${level} applicants`);
+          if (fld) parts.push(`focused on ${fld}`);
+          if (demo) parts.push(`for ${demo.toLowerCase()}`);
+          if (s.host_country) parts.push(`in ${shortCountry(s.host_country)}`);
+          const fallback = parts.length > 0 ? parts.join(" · ") : null;
+          if (fallback) {
+            return (
+              <p className="text-[12px] text-foreground/55 leading-relaxed line-clamp-3 flex-1">
+                {fallback}.
+              </p>
+            );
+          }
+          return <div className="flex-1" aria-hidden />;
+        })()}
 
         {/* Footer meta — deadline + field. Compact, scannable. Verified
             badge moved to top strip so this row stays focused on

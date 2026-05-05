@@ -22,9 +22,12 @@ const H = 200;
 
 const horizontal = (
   <g>
-    <rect x="0" y="20"  width={W} height="50" />
-    <rect x="0" y="90"  width={W} height="50" opacity="0.55" />
-    <rect x="0" y="160" width={W} height="50" />
+    {/* Three horizontal bands fit cleanly inside the H=200 viewbox.
+        Earlier the third band y=160 + height=50 = 210 clipped past
+        the viewBox. */}
+    <rect x="0" y="10"  width={W} height="50" />
+    <rect x="0" y="75"  width={W} height="50" opacity="0.55" />
+    <rect x="0" y="140" width={W} height="50" />
   </g>
 );
 

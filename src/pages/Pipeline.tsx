@@ -51,12 +51,17 @@ interface Scholarship {
   next_open_at: string | null;
 }
 
-const COLUMNS: { key: AppStatus | "shortlisted"; label: { en: string; ru: string }; tone: string; bar: string }[] = [
-  { key: "shortlisted", label: { en: "Shortlisted",         ru: "Шорт-лист" },             tone: "text-muted-foreground",                            bar: "bg-muted-foreground/40" },
-  { key: "researching", label: { en: "Researching",         ru: "Изучаю" },               tone: "text-muted-foreground",                            bar: "bg-muted-foreground/60" },
-  { key: "drafting",    label: { en: "Drafting",            ru: "Готовлю заявку" },        tone: "text-amber-700 dark:text-amber-400",               bar: "bg-amber-500" },
-  { key: "submitted",   label: { en: "Submitted",           ru: "Подал" },                 tone: "text-blue-700 dark:text-blue-400",                 bar: "bg-blue-500" },
-  { key: "decision",    label: { en: "Awaiting decision",   ru: "Жду ответа" },            tone: "text-primary",                                     bar: "bg-primary" },
+// Pipeline workspace simplified (round 9): collapsed from 5 columns
+// to 3. Researching / Drafting / Submitted merged into a single
+// "Working on it" column — the granular status is still tracked per
+// row (and shown as a chip) but doesn't fragment the visual workspace.
+// 'decision' rows continue under "Awaiting decision". Five vertical
+// columns was visual overload for what's practically a "saved /
+// active / decided" workflow.
+const COLUMNS: { key: AppStatus | "shortlisted" | "active"; label: { en: string; ru: string }; tone: string; bar: string }[] = [
+  { key: "shortlisted", label: { en: "Saved",              ru: "Сохранено" },           tone: "text-muted-foreground",                            bar: "bg-muted-foreground/40" },
+  { key: "active",      label: { en: "Working on it",      ru: "В работе" },             tone: "text-amber-700 dark:text-amber-400",               bar: "bg-amber-500" },
+  { key: "decision",    label: { en: "Submitted · awaiting",ru: "Подал · жду ответа" },  tone: "text-primary",                                     bar: "bg-primary" },
 ];
 
 const STATUS_OPTIONS: { value: AppStatus | null | "shortlisted"; label: { en: string; ru: string } }[] = [
@@ -135,13 +140,18 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
      Rejected / accepted are excluded from the kanban view but counted
      in the stats banner. */
   const buckets = useMemo(() => {
+    // Three columns: saved (no status) / active (researching/drafting/
+    // submitted) / decision (awaiting). Rejected + accepted drop off the
+    // workspace — they're outcomes, not active work.
     const map: Record<string, Scholarship[]> = {
-      shortlisted: [], researching: [], drafting: [], submitted: [], decision: [],
+      shortlisted: [], active: [], decision: [],
     };
     for (const r of rows) {
       const status = tracker.statusMap[r.scholarship_id] as AppStatus | undefined;
-      if (status && status !== "rejected" && status !== "accepted") {
-        if (status in map) map[status].push(r);
+      if (status === "researching" || status === "drafting" || status === "submitted") {
+        map.active.push(r);
+      } else if (status === "decision") {
+        map.decision.push(r);
       } else if (!status && tracker.shortlist.has(r.scholarship_id)) {
         map.shortlisted.push(r);
       }
@@ -314,11 +324,10 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
           </>
         )}
         {trackedIds.length > 0 && !loading && (
-          // Mobile: horizontal scroll-snap of 5 columns (one stage per swipe).
-          // Desktop (lg+): standard 5-col grid. Negative margins extend the
-          // scroll area to the screen edge so card shadows aren't cropped.
+          // Mobile: horizontal scroll-snap of 3 columns (one stage per swipe).
+          // Desktop (lg+): standard 3-col grid. Each column gets more room.
           <div className="-mx-5 sm:-mx-8 lg:mx-0 px-5 sm:px-8 lg:px-0 overflow-x-auto lg:overflow-visible snap-x snap-mandatory lg:snap-none">
-            <div className="grid grid-flow-col auto-cols-[85vw] sm:auto-cols-[60vw] lg:grid-flow-row lg:grid-cols-5 lg:auto-cols-auto gap-4 pb-2 lg:pb-0">
+            <div className="grid grid-flow-col auto-cols-[85vw] sm:auto-cols-[60vw] lg:grid-flow-row lg:grid-cols-3 lg:auto-cols-auto gap-5 pb-2 lg:pb-0">
             {COLUMNS.map((col) => {
               const items = buckets[col.key] || [];
               return (
