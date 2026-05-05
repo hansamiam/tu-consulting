@@ -1056,7 +1056,7 @@ const StatusBadge = ({ status, onChange, dense = false }: {
  *   · Award amount as a real visual chip when present
  *   · Match score circle (when real) replaces the silhouette square
  */
-const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0, showProTeaser = false }: {
+const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0, showProTeaser = false, outcomes }: {
   s: Scored; onSelect: () => void;
   isBookmarked: boolean; onBookmark: (e: React.MouseEvent) => void;
   status: AppStatus | undefined; onStatusChange: (s: AppStatus | null) => void;
@@ -1064,6 +1064,9 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
   isComparing: boolean; onToggleCompare: (e: React.MouseEvent) => void;
   index?: number;
   showProTeaser?: boolean;
+  /** Per-scholarship member outcome counts. Renders a tiny "X applied
+   *  · Y won" pill in the row header when applied >= 3. */
+  outcomes?: { applied: number; accepted: number; inPipeline: number };
 }) => {
   const dl = deadlineDisplay(s.application_deadline);
   const hasRealScore = s.match > 0 && (s.reasons.length > 0 || s.warnings.length > 0);
@@ -1175,6 +1178,14 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
                 <Lock className="h-2.5 w-2.5" /> Pro
               </span>
             )}
+            {outcomes && outcomes.applied >= 3 && (
+              <span
+                className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 shrink-0 tabular-nums"
+                title={outcomes.accepted > 0 ? `${outcomes.applied} TopUni members applied · ${outcomes.accepted} received offers` : `${outcomes.applied} TopUni members have applied`}
+              >
+                {outcomes.applied} applied{outcomes.accepted > 0 ? ` · ${outcomes.accepted} won` : ""}
+              </span>
+            )}
             <ProviderAvatar url={s.official_url || s.source_url} providerName={cleanProvider(s.provider_name) || s.provider_name} size={16} />
             {(() => {
               const p = cleanProvider(s.provider_name);
@@ -1273,7 +1284,7 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
 };
 
 /* ─── Scholarship card — dense, product-grade, scannable in a 3-col grid ── */
-const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0, showProTeaser = false }: {
+const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0, showProTeaser = false, outcomes }: {
   s: Scored; onSelect: () => void;
   isBookmarked: boolean; onBookmark: (e: React.MouseEvent) => void;
   status: AppStatus | undefined; onStatusChange: (s: AppStatus | null) => void;
@@ -1283,6 +1294,8 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
   /** Show the quiet "+ Pro insights" pill in the footer when the row has
    *  Pro fields populated and the viewer is on free tier. */
   showProTeaser?: boolean;
+  /** Per-scholarship member outcome counts (compounding trust signal). */
+  outcomes?: { applied: number; accepted: number; inPipeline: number };
 }) => {
   const tier = TIER[s.priority];
   const dl = deadlineDisplay(s.application_deadline);
@@ -1457,9 +1470,17 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
               <Lock className="h-2.5 w-2.5" /> Pro
             </span>
           )}
+          {outcomes && outcomes.applied >= 3 && (
+            <span
+              className={`inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 text-[10px] font-semibold tracking-wide tabular-nums ${showProTeaser ? "" : "ml-auto"}`}
+              title={outcomes.accepted > 0 ? `${outcomes.applied} TopUni members applied · ${outcomes.accepted} received offers` : `${outcomes.applied} TopUni members have applied`}
+            >
+              {outcomes.applied}{outcomes.accepted > 0 ? `·${outcomes.accepted}w` : ""}
+            </span>
+          )}
           {hasRealScore && s.match >= 70 && (s.eligibility === "eligible" || s.eligibility === "likely") && (
             <>
-              <span className={`text-muted-foreground/30 ${showProTeaser ? "" : "ml-auto"}`}>·</span>
+              <span className={`text-muted-foreground/30 ${(showProTeaser || (outcomes && outcomes.applied >= 3)) ? "" : "ml-auto"}`}>·</span>
               <HoverCard openDelay={120} closeDelay={80}>
                 <HoverCardTrigger asChild>
                   <button
@@ -2800,6 +2821,42 @@ const Discover = ({ language = "en" }: Props) => {
     return { hero: top.slice(0, 1), strong: top.slice(1), competitive, stretch };
   }, [filtered]);
 
+  /* Per-scholarship outcome counts — driven by scholarship_outcomes_bulk
+     RPC. Powers the tiny "12 applied · 3 won" pills on cards. Fetched
+     once per filtered set via a ref-cache so toggling sort/filters
+     doesn't refire the RPC for ids we already know. Pre-migration safe:
+     RPC errors are silent and the map stays empty. */
+  const outcomesCacheRef = useRef<Map<string, { applied: number; accepted: number; inPipeline: number }>>(new Map());
+  const [outcomesMap, setOutcomesMap] = useState<Map<string, { applied: number; accepted: number; inPipeline: number }>>(new Map());
+  useEffect(() => {
+    const visibleIds = filtered.slice(0, 60).map((s) => s.scholarship_id);
+    const need = visibleIds.filter((id) => !outcomesCacheRef.current.has(id));
+    if (need.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase.rpc("scholarship_outcomes_bulk", { p_scholarship_ids: need });
+      if (cancelled || error || !Array.isArray(data)) {
+        // Cache empty entries for the requested ids so we don't re-query
+        // a known-pre-migration RPC on every render.
+        for (const id of need) outcomesCacheRef.current.set(id, { applied: 0, accepted: 0, inPipeline: 0 });
+        return;
+      }
+      const seen = new Set<string>();
+      for (const row of data as Array<{ scholarship_id: string; applied_count: number; accepted_count: number; in_pipeline_count: number }>) {
+        outcomesCacheRef.current.set(row.scholarship_id, {
+          applied: Number(row.applied_count ?? 0),
+          accepted: Number(row.accepted_count ?? 0),
+          inPipeline: Number(row.in_pipeline_count ?? 0),
+        });
+        seen.add(row.scholarship_id);
+      }
+      // Any requested ids the RPC didn't return = no rows = zeros.
+      for (const id of need) if (!seen.has(id)) outcomesCacheRef.current.set(id, { applied: 0, accepted: 0, inPipeline: 0 });
+      setOutcomesMap(new Map(outcomesCacheRef.current));
+    })();
+    return () => { cancelled = true; };
+  }, [filtered]);
+
   /* My pipeline — count of scholarships per active status */
   const pipeline = useMemo(() => {
     const counts: Record<AppStatus, number> = { researching: 0, drafting: 0, submitted: 0, decision: 0, rejected: 0 };
@@ -3619,6 +3676,7 @@ const Discover = ({ language = "en" }: Props) => {
                             // the row has Pro fields populated AND the user
                             // can't see them yet. Pro members never see it.
                             showProTeaser: !isMember && !!(s.ideal_candidate_profile || s.how_to_win || s.common_rejection_reasons),
+                            outcomes: outcomesMap.get(s.scholarship_id),
                           });
                           return (
                             <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">

@@ -32,6 +32,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ScholarshipCard, type ScholarshipCardData } from "@/components/ScholarshipCard";
 import { useTrackView, useScholarshipTracking } from "@/hooks/useScholarshipTracking";
 import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
+import { ScholarshipOutcomesBlock } from "@/components/scholarship/ScholarshipOutcomesBlock";
 import { getStoredProfile } from "@/components/discover/DiscoverProfileGate";
 import {
   cleanScholarshipName,
@@ -495,6 +496,13 @@ const ScholarshipDetail = () => {
           </div>
         </div>
       )}
+
+      {/* TopUni member outcomes — auto-hides until a real cohort has
+          actually applied (threshold=3). Once outcomes flow this becomes
+          the trust signal aggregator sites can never produce. */}
+      <div className="max-w-4xl mx-auto px-5 sm:px-8 pt-8">
+        <ScholarshipOutcomesBlock scholarshipId={s.scholarship_id} />
+      </div>
 
       {/* DETAIL GRID ──────────────────────────────────────────────── */}
       <section className="max-w-4xl mx-auto px-5 sm:px-8 py-10 sm:py-14 space-y-10">
