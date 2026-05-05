@@ -820,14 +820,20 @@ const dedupeAndQualityFilter = (rows: Scholarship[]): Scholarship[] => {
     }
   });
 
-  // Pass 2: drop rows that would render as visually empty cards.
-  // The signal is "no host_country AND no provider AND no award" —
-  // those are the broken-looking ones the user flagged.
+  // Pass 2: drop rows that would render as visually thin cards.
+  // Tighter bar — require AT LEAST 2 of 4 substantive fields. Single-
+  // field rows ("we know the country and that's it") still rendered
+  // as visually thin cards under the previous OR-gate. Bumping the
+  // threshold drops more half-baked rows. The verify/enrich crons
+  // backfill them on subsequent passes; once a row crosses the
+  // 2-of-4 bar it re-appears automatically.
   return [...byKey.values()].filter(r => {
     const hasCountry  = !!(r.host_country && r.host_country.trim());
-    const hasProvider = !!(r.provider_name && r.provider_name.trim());
+    const hasProvider = !!cleanProvider(r.provider_name); // null when junk
     const hasAward    = !!(r.award_amount_text && r.award_amount_text.trim()) || !!r.estimated_total_value_usd;
-    return hasCountry || hasProvider || hasAward;
+    const hasDeadline = !!r.application_deadline;
+    const score = (hasCountry ? 1 : 0) + (hasProvider ? 1 : 0) + (hasAward ? 1 : 0) + (hasDeadline ? 1 : 0);
+    return score >= 2;
   });
 };
 
