@@ -86,7 +86,7 @@ const BriefGeneratedEmail = ({
             <strong>University shortlist</strong> — top fits, aligned options, worth-keeping-on-radar.<br />
             <strong>Funding pathway</strong> — exact scholarships, deadlines, and how to combine them.<br />
             <strong>3 essay angles</strong> — distinct concepts anchored in your story.<br />
-            <strong>90-day action plan</strong> — what to do this week, month, and quarter.
+            <strong>Honest gaps</strong> — what to close before you submit.
           </Text>
 
           <Hr style={hr} />

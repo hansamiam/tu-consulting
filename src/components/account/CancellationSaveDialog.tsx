@@ -208,7 +208,7 @@ export const CancellationSaveDialog = ({ open, onOpenChange, onContinue, languag
           <div className="space-y-4 py-2">
             <p className="text-sm text-muted-foreground leading-relaxed">
               {t(
-                "Cancelling won't delete your saved data — but you'll lose access to TopUni Pro features that turn it into a working plan: Pro retrieval on Discover, monthly founder workshops, the strategy brief, and outcome tracking.",
+                "Cancelling won't delete your saved data — but you'll lose access to membership features that turn it into a working plan: deeper retrieval on Discover, monthly founder workshops, the strategy brief, and outcome tracking.",
                 "Отмена не удалит ваши данные — но вы потеряете доступ к функциям TopUni Pro, которые превращают их в рабочий план: продвинутый поиск Discover, ежемесячные воркшопы с основателями, стратегию и трекинг результатов.",
               )}
             </p>

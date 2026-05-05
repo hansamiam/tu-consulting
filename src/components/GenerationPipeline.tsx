@@ -104,8 +104,8 @@ export function GenerationPipeline({ profile, isRu = false }: Props) {
     {
       id: "calendar",
       Icon: Calendar,
-      label: t("Mapping deadlines to your 90-day window", "Накладываем дедлайны на 90 дней"),
-      detail: t("Week-by-week action plan from today", "План действий по неделям с сегодняшнего дня"),
+      label: t("Mapping upcoming deadlines", "Сводим ближайшие дедлайны"),
+      detail: t("Sorted to surface what's most urgent first", "Сортируем по срочности"),
       doneAt: 10500,
     },
   ], [countryList, gpa, ielts, majorText, isRu]);

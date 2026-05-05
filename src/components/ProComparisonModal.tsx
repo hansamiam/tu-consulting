@@ -37,12 +37,6 @@ const ROWS: Row[] = [
     pro: "All ranked matches with per-factor match-score breakdown",
   },
   {
-    id: "brief-action-plan-weeks-3-12",
-    label: "90-day action plan",
-    free: "Weeks 1–2",
-    pro: "All 12 weeks with milestone tracking and weekly nudges",
-  },
-  {
     id: "brief-pro-section-career-roi",
     label: "Career ROI breakdown",
     free: false,
@@ -149,11 +143,11 @@ export const ProComparisonModal = ({ open, onOpenChange, gateId }: Props) => {
         <div className="bg-gradient-to-br from-gold/10 via-background to-background px-6 sm:px-8 pt-7 pb-5 border-b border-border">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-[0.18em] uppercase bg-gradient-to-r from-gold-dark to-gold text-primary mb-3">
             <Crown className="w-3 h-3" />
-            TopUni Pro
+            TopUni Membership
           </div>
           <DialogHeader className="space-y-1.5">
             <DialogTitle className="font-heading text-2xl sm:text-3xl font-bold tracking-tight leading-tight">
-              What unlocks with Pro
+              What membership unlocks
             </DialogTitle>
             <p className="text-sm text-muted-foreground leading-relaxed">
               The same strategy you'd get from a $5,000+ private consultant — at $39/month, with a 30-day money-back guarantee.

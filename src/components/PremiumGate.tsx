@@ -95,7 +95,7 @@ export const PremiumGate = ({
         <div className="max-w-md w-full bg-card border border-gold/40 rounded-2xl shadow-lg p-6 sm:p-7 text-center">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-[0.18em] uppercase bg-gradient-to-r from-gold-dark to-gold text-primary mb-3">
             <Crown className="w-3 h-3" />
-            TopUni Pro
+            TopUni Membership
           </div>
           <h3 className="font-heading text-lg sm:text-xl font-bold text-foreground tracking-tight leading-snug mb-2">
             {headline}

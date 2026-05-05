@@ -50,7 +50,7 @@ export const Footer = ({ language, variant = "light" }: FooterProps) => {
       publicOffer: "Public Offer",
       refundPolicy: "Refund Policy",
       paymentInfo: "Payment by Card",
-      tagline: "AI-driven admissions strategy for ambitious students applying internationally.",
+      tagline: "AI-driven admissions strategy, alumni-led, built to be accessible. Plan your education, your funding, and your career — without the traditional consulting price tag.",
       copyright: `© ${new Date().getFullYear()} TopUni · All rights reserved`,
     },
     ru: {
@@ -60,7 +60,7 @@ export const Footer = ({ language, variant = "light" }: FooterProps) => {
       publicOffer: "Публичная оферта",
       refundPolicy: "Правила возврата",
       paymentInfo: "Оплата банковской картой",
-      tagline: "AI-стратегия поступления для амбициозных студентов мира.",
+      tagline: "AI-стратегия поступления — выпускники Yale, Cambridge, Harvard и data-driven подход. Доступно. Образование, финансирование, карьера — без цен традиционного консалтинга.",
       copyright: `© ${new Date().getFullYear()} TopUni · Все права защищены`,
     },
   };

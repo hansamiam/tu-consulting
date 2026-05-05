@@ -638,20 +638,6 @@ Do NOT invent universities. Pull only from the database section above.
 - Application timing and deadline if known
 Be honest about probability. Mark each as a primary target, a secondary option, or an aspirational pick worth exploring with strategy.
 
-## Your 90-day action plan
-A week-by-week sequence starting from today. Group as:
-
-### Weeks 1–2 — Foundation
-2-3 concrete actions
-
-### Weeks 3–6 — Drafting
-2-3 concrete actions
-
-### Weeks 7–12 — Submission
-2-3 concrete actions
-
-Reference the student's specific scores and target countries. Concrete actions only — no "research more" filler.
-
 ## Three essay angles
 Three distinct narrative angles this student could lead with. For each, use this exact structure (do not deviate):
 
@@ -771,10 +757,6 @@ For the top 3 recommended cities:
 **Priority:** [high | medium | low]
 **Why it matters:** [2-3 sentences citing specific thresholds or context]
 **Action this month:** [one specific action they can start now]
-**30-60 day plan:** [the next-step plan after that]
-
-## 90-day action plan
-Week-by-week from today, grouped as Weeks 1-2 / 3-6 / 7-12. 3-4 concrete actions per group, with specific deliverables.
 
 ## Final word
 One short paragraph (3-4 sentences) of specific encouragement based on this student's strongest signal — what they should believe about their candidacy as they go execute. Do not give generic motivation. Do not say "good luck." Cite something concrete from their profile and tell them why it matters.

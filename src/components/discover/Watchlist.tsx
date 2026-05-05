@@ -57,7 +57,7 @@ export const WatchlistButton = ({ universityId, onToggle }: WatchlistButtonProps
       if (!subscription.is_active && !localStorage.getItem(SAVED_3_PROMPT_KEY)) {
         localStorage.setItem(SAVED_3_PROMPT_KEY, "1");
         toast("🎯 You've saved 3 universities!", {
-          description: "Unlock the full admissions strategy with TopUni Pro.",
+          description: "Unlock the full admissions strategy with TopUni Membership.",
           action: { label: "See plans", onClick: () => navigate("/pricing") },
           duration: 9000,
         });

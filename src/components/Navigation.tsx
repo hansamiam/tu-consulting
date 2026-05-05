@@ -83,13 +83,13 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
           <button
             onClick={() => navigate(basePath)}
             className={cn(
-              "font-heading text-lg sm:text-xl font-semibold transition-colors",
+              "font-heading text-lg sm:text-xl font-bold tracking-tight transition-colors",
               isOverlay
                 ? "text-gold-light hover:text-gold"
                 : "text-primary hover:text-gold-dark"
             )}
           >
-            Top Uni
+            TopUni
           </button>
 
           {/* Desktop nav */}

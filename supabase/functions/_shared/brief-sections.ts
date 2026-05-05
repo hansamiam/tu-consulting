@@ -412,6 +412,11 @@ Begin your response with: ## Final word`,
 
 /** Premium tier section list, in render order. Sections are produced in
  *  parallel; the edge function streams them to the client in this order. */
+// 90-day action-plan section retired — slapping a generic
+// week-by-week plan on every brief was bloat without enough
+// student-specific signal to be honest. Will return when we
+// have richer profile inputs (essay drafts, transcripts, etc.)
+// to make the plan actually personalised.
 export const PREMIUM_SECTIONS: SectionSpec[] = [
   positioning,
   shortlist,
@@ -421,7 +426,6 @@ export const PREMIUM_SECTIONS: SectionSpec[] = [
   essays,
   monthlyBudget,
   honestGaps,
-  actionPlan,
   finalWord,
 ];
 

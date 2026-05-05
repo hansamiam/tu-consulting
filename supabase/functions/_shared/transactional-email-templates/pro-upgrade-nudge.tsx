@@ -57,7 +57,7 @@ const ProUpgradeNudgeEmail = ({
           )}
 
           <Text style={bodyText}>
-            The basic brief gave you a strategic positioning paragraph, a university shortlist, and a 90-day action plan. That's the table-stakes. The <strong>Pro brief</strong> goes much deeper, and it's what every student we've talked to says made the difference between "I have a list" and "I have a strategy."
+            The basic brief gave you a strategic positioning paragraph, a university shortlist, and a funding pathway. That's the table-stakes. The <strong>full brief</strong> goes much deeper, and it's what every student we've talked to says made the difference between "I have a list" and "I have a strategy."
           </Text>
 
           <Section style={diffCard}>

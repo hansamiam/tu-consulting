@@ -212,15 +212,10 @@ export const MatchScoreBreakdown = ({
         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
         className={`bg-popover border border-border rounded-xl shadow-lg ${compact ? "p-3" : "p-4"} w-[320px] z-50`}
       >
-        <div className="flex items-baseline justify-between gap-3 mb-2">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Why this fits</p>
-            <p className="font-heading text-base font-semibold leading-tight text-foreground mt-0.5">
-              {fallback.passes_eligibility
-                ? "Your profile clears the hard requirements."
-                : "One or more hard requirements aren't a clean match yet."}
-            </p>
-          </div>
+        <div className="flex items-baseline justify-between gap-3 mb-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Why we surfaced this
+          </p>
           {loading && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
         </div>
         <ul className="space-y-2 mb-2">

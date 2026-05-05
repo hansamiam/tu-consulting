@@ -2,9 +2,10 @@
 //
 // Generates and caches a personalized analysis of a single scholarship for
 // a single student profile. Replaces the generic, identical-for-everyone
-// why_this_fits / how_to_win text with a tailored deep-dive: match-score
-// breakdown vs the student's stats, strategy specific to their background,
-// realistic odds bucket, and a 30-day plan.
+// why_this_fits / how_to_win text with a tailored deep-dive: how the
+// student's profile maps to the program's audience and strategy specific
+// to their background. (Time-boxed action plans + odds-quoting language
+// retired — they were fluff without enough profile signal to be honest.)
 //
 // Cache: scholarship_deep_dives keyed on (scholarship_id, profile_hash).
 // Profile-deterministic — same profile + same scholarship returns the
