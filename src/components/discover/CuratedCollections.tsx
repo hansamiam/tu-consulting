@@ -21,6 +21,7 @@ interface Row {
   application_deadline: string | null;
   target_degree_level: string[] | null;
   target_fields: string[] | null;
+  target_demographics: string[] | null;
 }
 
 export interface CollectionPreset {
@@ -125,6 +126,47 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
     accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
     predicate: s => (s.target_fields || []).some(f => /public[\s_]?health|develop|policy|epidemic|nutrition|medic/i.test(f || "")),
     apply: set => set({ field: "Medicine & Health" }),
+  },
+  // Demographic-eligibility collections — surface programs designed for
+  // specific groups. Each tile pre-applies the demographic filter so
+  // clicking lands directly in the curated subset.
+  {
+    id: "women-stem",
+    label: "Women in STEM",
+    sub: "Programs designed for women in tech / engineering / science",
+    Icon: Sparkles,
+    accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
+    predicate: s => Array.isArray(s.target_demographics)
+      && (s.target_demographics.includes("underrepresented-stem") || s.target_demographics.includes("women")),
+    apply: set => set({ demographic: "underrepresented-stem" }),
+  },
+  {
+    id: "first-generation",
+    label: "First-generation friendly",
+    sub: "First in your family to go abroad",
+    Icon: Sparkles,
+    accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
+    predicate: s => Array.isArray(s.target_demographics) && s.target_demographics.includes("first-generation"),
+    apply: set => set({ demographic: "first-generation" }),
+  },
+  {
+    id: "refugees",
+    label: "For refugees + displaced students",
+    sub: "Specifically supports refugee + displaced applicants",
+    Icon: Sparkles,
+    accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
+    predicate: s => Array.isArray(s.target_demographics)
+      && (s.target_demographics.includes("refugee") || s.target_demographics.includes("displaced")),
+    apply: set => set({ demographic: "refugee" }),
+  },
+  {
+    id: "need-based",
+    label: "Need-based",
+    sub: "Means-tested + financial-need programs",
+    Icon: Sparkles,
+    accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
+    predicate: s => Array.isArray(s.target_demographics) && s.target_demographics.includes("low-income"),
+    apply: set => set({ demographic: "low-income" }),
   },
 ];
 
