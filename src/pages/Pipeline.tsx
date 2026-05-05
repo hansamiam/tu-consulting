@@ -35,6 +35,8 @@ import { accentForCountry, shortCountry } from "@/lib/countryAccent";
 import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
 import { CalendarSubscribeDialog } from "@/components/pipeline/CalendarSubscribeDialog";
 import { EssayDraftPanel } from "@/components/pipeline/EssayDraftPanel";
+import { UpgradeChip } from "@/components/UpgradeChip";
+import { InstaFollowChip } from "@/components/InstaFollowChip";
 
 interface Scholarship {
   scholarship_id: string;
@@ -429,7 +431,32 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
             </div>
           </div>
         )}
+
+        {/* Subtle "come hang out" chip — placed below the kanban so it
+            only registers after the user has engaged with their data.
+            Auto-dismisses + 60-day cooldown via localStorage. */}
+        {trackedIds.length > 0 && !loading && (
+          <div className="mt-10 flex justify-center">
+            <InstaFollowChip surface="pipeline" language={language} />
+          </div>
+        )}
       </section>
+
+      {/* Quiet upgrade chip — only renders for free-tier users with at
+          least one tracked scholarship. Anchored as a thin footer strip
+          so it's present without being in the work surface. Auto-hides
+          for Pro/Founding members. */}
+      {trackedIds.length > 0 && (
+        <UpgradeChip
+          surface="pipeline-footer"
+          variant="footer"
+          language={language}
+          message={t(
+            "Free preview of essay critique. Pro unlocks the full reader-perspective rewrite + your saved-search alerts.",
+            "Бесплатно — только превью эссе. Pro открывает полный разбор и алерты по сохранённым поискам.",
+          )}
+        />
+      )}
 
       {/* Detail sheet */}
       <Sheet open={!!openDetail} onOpenChange={(o) => !o && setOpenDetail(null)}>

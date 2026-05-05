@@ -1056,13 +1056,14 @@ const StatusBadge = ({ status, onChange, dense = false }: {
  *   · Award amount as a real visual chip when present
  *   · Match score circle (when real) replaces the silhouette square
  */
-const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0 }: {
+const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0, showProTeaser = false }: {
   s: Scored; onSelect: () => void;
   isBookmarked: boolean; onBookmark: (e: React.MouseEvent) => void;
   status: AppStatus | undefined; onStatusChange: (s: AppStatus | null) => void;
   isHidden: boolean; onToggleHide: (e: React.MouseEvent) => void;
   isComparing: boolean; onToggleCompare: (e: React.MouseEvent) => void;
   index?: number;
+  showProTeaser?: boolean;
 }) => {
   const dl = deadlineDisplay(s.application_deadline);
   const hasRealScore = s.match > 0 && (s.reasons.length > 0 || s.warnings.length > 0);
@@ -1169,6 +1170,11 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
                 {s.target_demographics.length > 2 && ` +${s.target_demographics.length - 2}`}
               </span>
             )}
+            {showProTeaser && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-gold/10 text-gold-dark shrink-0" title="Pro: ideal candidate · how to win · rejection reasons">
+                <Lock className="h-2.5 w-2.5" /> Pro
+              </span>
+            )}
             <ProviderAvatar url={s.official_url || s.source_url} providerName={cleanProvider(s.provider_name) || s.provider_name} size={16} />
             {(() => {
               const p = cleanProvider(s.provider_name);
@@ -1267,13 +1273,16 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
 };
 
 /* ─── Scholarship card — dense, product-grade, scannable in a 3-col grid ── */
-const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0 }: {
+const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0, showProTeaser = false }: {
   s: Scored; onSelect: () => void;
   isBookmarked: boolean; onBookmark: (e: React.MouseEvent) => void;
   status: AppStatus | undefined; onStatusChange: (s: AppStatus | null) => void;
   isHidden: boolean; onToggleHide: (e: React.MouseEvent) => void;
   isComparing: boolean; onToggleCompare: (e: React.MouseEvent) => void;
   index?: number;
+  /** Show the quiet "+ Pro insights" pill in the footer when the row has
+   *  Pro fields populated and the viewer is on free tier. */
+  showProTeaser?: boolean;
 }) => {
   const tier = TIER[s.priority];
   const dl = deadlineDisplay(s.application_deadline);
@@ -1428,7 +1437,9 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
 
         {/* Footer meta — deadline + field. Compact, scannable. Verified
             badge moved to top strip so this row stays focused on
-            decision facts. */}
+            decision facts. The "Pro insight" pill renders here when
+            the row has Pro-tier strategy fields populated and the
+            user is on free — quiet, no animation, always inline. */}
         <div className="flex items-center gap-2 text-[11px]">
           <span className={`tabular-nums font-medium ${dl.cls}`}>{dl.text}</span>
           {(() => {
@@ -1441,9 +1452,14 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
               </>
             );
           })()}
+          {showProTeaser && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gold/10 text-gold-dark text-[10px] font-semibold tracking-wide ml-auto" title="Pro: ideal candidate · how to win · rejection reasons">
+              <Lock className="h-2.5 w-2.5" /> Pro
+            </span>
+          )}
           {hasRealScore && s.match >= 70 && (s.eligibility === "eligible" || s.eligibility === "likely") && (
             <>
-              <span className="text-muted-foreground/30 ml-auto">·</span>
+              <span className={`text-muted-foreground/30 ${showProTeaser ? "" : "ml-auto"}`}>·</span>
               <HoverCard openDelay={120} closeDelay={80}>
                 <HoverCardTrigger asChild>
                   <button
@@ -3599,6 +3615,10 @@ const Discover = ({ language = "en" }: Props) => {
                             onToggleHide: (e: React.MouseEvent) => { e.stopPropagation(); toggleHide(s.scholarship_id); },
                             isComparing: compareSet.has(s.scholarship_id),
                             onToggleCompare: (e: React.MouseEvent) => { e.stopPropagation(); toggleCompare(s.scholarship_id); },
+                            // Show the small "Pro insights" teaser only when
+                            // the row has Pro fields populated AND the user
+                            // can't see them yet. Pro members never see it.
+                            showProTeaser: !isMember && !!(s.ideal_candidate_profile || s.how_to_win || s.common_rejection_reasons),
                           });
                           return (
                             <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
@@ -3676,6 +3696,7 @@ const Discover = ({ language = "en" }: Props) => {
                             onToggleHide: (e: React.MouseEvent) => { e.stopPropagation(); toggleHide(s.scholarship_id); },
                             isComparing: compareSet.has(s.scholarship_id),
                             onToggleCompare: (e: React.MouseEvent) => { e.stopPropagation(); toggleCompare(s.scholarship_id); },
+                            showProTeaser: !isMember && !!(s.ideal_candidate_profile || s.how_to_win || s.common_rejection_reasons),
                           });
 
                           if (viewMode === "list") {
