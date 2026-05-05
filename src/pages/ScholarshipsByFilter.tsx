@@ -22,11 +22,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { ScholarshipCard, ScholarshipCardSkeleton, type ScholarshipCardData, type ScholarshipCardStats } from "@/components/ScholarshipCard";
 import { ShareScholarshipModal } from "@/components/ShareScholarshipModal";
 import { EmptyState } from "@/components/EmptyState";
+import { HubFactsBlock } from "@/components/discover/HubFactsBlock";
 import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
 
 interface ScholarshipRow extends ScholarshipCardData {
   official_url: string | null;
   data_source: string | null;
+  citizenship_requirements: string | null;
 }
 
 type StatsById = Record<string, ScholarshipCardStats>;
@@ -232,7 +234,9 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
           "application_deadline, target_degree_level, target_fields, " +
           "why_this_fits, official_url, data_source, is_featured, " +
           // Eligibility fields — drive the personal-match badge on every card
-          "eligible_countries, min_gpa, gpa_scale, min_ielts, min_toefl",
+          "eligible_countries, min_gpa, gpa_scale, min_ielts, min_toefl, " +
+          // Citizenship feeds the HubFactsBlock open-to-international heuristic
+          "citizenship_requirements",
         )
         // Featured first, then by funding value — keeps the spotlights at the top
         .order("is_featured", { ascending: false })
@@ -390,11 +394,33 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
 
       {/* RESULTS ─────────────────────────────────────────────────── */}
       <section className="max-w-4xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
-        {/* Summary stats card — at-a-glance aggregates so a visitor scanning
-            the page can see the funding landscape before diving into cards.
-            Mirrors the data the FAQPage schema announces to Google.
-            Hidden when the result set is empty (the EmptyState below
-            handles that case). */}
+        {/* HubFactsBlock — dynamic editorial-style block that summarises
+            the actual data in plain English. Each (country / field /
+            theme) page renders unique substantive content (top
+            providers, coverage breakdown, top fields, deadline season,
+            next deadline by name) that Google rewards over the generic
+            templated intros aggregator competitors run. */}
+        {!loading && rows.length > 0 && (
+          <HubFactsBlock
+            mode={mode}
+            label={resolved.label}
+            rows={rows.map(r => ({
+              scholarship_id: r.scholarship_id,
+              scholarship_name: r.scholarship_name,
+              provider_name: r.provider_name,
+              host_country: r.host_country,
+              coverage_type: r.coverage_type,
+              application_deadline: r.application_deadline,
+              target_fields: r.target_fields,
+              target_degree_level: r.target_degree_level,
+              citizenship_requirements: r.citizenship_requirements ?? null,
+            }))}
+          />
+        )}
+
+        {/* Summary stats card — numeric aggregates that complement the
+            facts block above. Mirrors the FAQPage schema announced to
+            Google. Hidden on empty result set. */}
         {!loading && rows.length > 0 && <HubStatsCard rows={rows} />}
 
         <div className="flex items-baseline justify-between gap-3 mb-6">
