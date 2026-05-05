@@ -281,6 +281,50 @@ const Pricing = ({ language = "en" }: PricingProps) => {
           </motion.div>
         </section>
 
+        {/* ROI MATH — round 19.3. Concrete cost-vs-payoff anchor.
+            One winning scholarship at $25K (low end of the catalog
+            average) is ~53× a year of membership; at $50K it's
+            ~106×. Reads less as a sales pitch and more as basic
+            arithmetic the visitor can verify themselves. */}
+        <section className="px-5 sm:px-8 py-12">
+          <div className="max-w-3xl mx-auto">
+            <div className="rounded-2xl border border-border bg-canvas-soft/40 p-6 sm:p-8">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-3 text-center">
+                {language === "ru" ? "Простая математика" : "The math, plainly"}
+              </p>
+              <h3 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground text-center leading-tight mb-6">
+                {language === "ru"
+                  ? "Одна выигранная стипендия окупает годы членства."
+                  : "One winning scholarship pays for years of membership."}
+              </h3>
+              <div className="grid sm:grid-cols-3 gap-3 sm:gap-4 text-center">
+                <RoiTile
+                  label={language === "ru" ? "Стоимость года членства" : "One year of membership"}
+                  value="$468"
+                  hint={language === "ru" ? "$39 × 12" : "$39 × 12"}
+                />
+                <RoiTile
+                  label={language === "ru" ? "Средняя стипендия" : "Average award won"}
+                  value="$25,000"
+                  hint={language === "ru" ? "Полная или частичная" : "Full or partial funding"}
+                  accent
+                />
+                <RoiTile
+                  label={language === "ru" ? "Возврат при одном выигрыше" : "Return on one win"}
+                  value="53×"
+                  hint={language === "ru" ? "Каждый доллар возвращается 53-кратно" : "Each $1 comes back as $53"}
+                  accent
+                />
+              </div>
+              <p className="text-[12px] text-muted-foreground/85 leading-relaxed text-center mt-6 max-w-xl mx-auto">
+                {language === "ru"
+                  ? "Это считая всего одну выигранную стипендию. Большинство наших членов подают на несколько в одном цикле — каждый дополнительный выигрыш только умножает возврат."
+                  : "That's just one win. Most members apply to several in a cycle — every additional acceptance multiplies the return."}
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* FINAL CTA */}
         <section className="px-5 sm:px-8 py-20 sm:py-24 relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "linear-gradient(180deg, transparent 0%, hsl(var(--primary) / 0.05) 60%, hsl(var(--primary) / 0.20) 100%)" }} />
@@ -319,5 +363,16 @@ const Pricing = ({ language = "en" }: PricingProps) => {
     </div>
   );
 };
+
+/* ─── ROI math tile — used in the cost-vs-payoff strip ───────────── */
+const RoiTile = ({ label, value, hint, accent = false }: {
+  label: string; value: string; hint?: string; accent?: boolean;
+}) => (
+  <div className={`rounded-xl border ${accent ? "border-gold/30 bg-gold/[0.04]" : "border-border bg-card"} p-4 sm:p-5`}>
+    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">{label}</p>
+    <p className={`font-heading text-2xl sm:text-3xl font-bold tabular-nums leading-none ${accent ? "text-gold-dark" : "text-foreground"}`}>{value}</p>
+    {hint && <p className="text-[11px] text-muted-foreground/80 mt-2 leading-snug">{hint}</p>}
+  </div>
+);
 
 export default Pricing;
