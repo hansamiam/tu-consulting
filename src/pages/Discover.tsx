@@ -621,6 +621,39 @@ const titleCaseField = (s: string) => s
   })
   .replace(/^./, (c) => c.toUpperCase());
 
+/** Clean a scholarship name extracted from a noisy page title.
+ *  LLMs sometimes return values like:
+ *    "Schwarzman Scholars | Tsinghua University - Apply Now"
+ *    "DAAD Scholarship Program — Study in Germany | DAAD"
+ *    "Knight-Hennessy Scholars - Stanford University Bulletin"
+ *  Strategy: split on the strongest separator ('|', ' — ', ' - '),
+ *  keep the leftmost segment, drop trailing "Apply" / "Apply Now" /
+ *  "Bulletin" / parentheticals, and cap length sensibly. */
+const cleanScholarshipName = (name: string): string => {
+  if (!name) return name;
+  let n = name.trim();
+  // Split on strongest separator and keep the LEFT side (the actual name)
+  for (const sep of [" | ", "|", " — ", " – ", " - "]) {
+    const idx = n.indexOf(sep);
+    if (idx > 8 && idx < n.length - 4) {
+      const left = n.slice(0, idx).trim();
+      const right = n.slice(idx + sep.length).trim().toLowerCase();
+      // Only split if the right side looks like branding/junk, not a
+      // real continuation of the name (e.g. "Erasmus Mundus - Joint
+      // Master's" should stay intact).
+      if (/(apply|home|bulletin|sign up|details|study in|admissions|undergraduate|graduate|university|website|official site|2025|2026|2027)/.test(right)) {
+        n = left;
+        break;
+      }
+    }
+  }
+  // Drop trailing parenthetical if it's just "Apply", "Bulletin", "Home", etc.
+  n = n.replace(/\s*\((apply|bulletin|home|details|website|official|sign\s*up).*$/i, "").trim();
+  // Drop trailing "- Apply" / "- Sign Up" without a separator
+  n = n.replace(/\s+[-–—]?\s+(apply\s*now|apply|sign\s*up|details|home|bulletin)\s*$/i, "").trim();
+  return n;
+};
+
 /** Compact award label for the grid card. Long award_amount_text
  *  values like "Full scholarships (tuition and living expenses)"
  *  truncate mid-word with an ugly "…". Strategy:
@@ -927,7 +960,7 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
 
         {/* Name + provider + country chip */}
         <div className="min-w-0">
-          <h3 className="font-heading font-semibold text-[15px] text-foreground truncate tracking-tight group-hover:text-gold-dark transition-colors">{s.scholarship_name}</h3>
+          <h3 className="font-heading font-semibold text-[15px] text-foreground truncate tracking-tight group-hover:text-gold-dark transition-colors">{cleanScholarshipName(s.scholarship_name)}</h3>
           <div className="flex items-center gap-1.5 mt-0.5">
             {s.host_country && (
               <span className={`inline-flex items-center text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded text-white bg-gradient-to-r ${accent} shrink-0`}>
@@ -1083,7 +1116,7 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
             in the screenshot). Provider truncates on a single line below. */}
         <div className="min-w-0">
           <h3 className="font-heading text-[15px] font-semibold leading-[1.2] tracking-[-0.01em] text-foreground line-clamp-3 group-hover:text-gold-dark transition-colors mb-1">
-            {s.scholarship_name}
+            {cleanScholarshipName(s.scholarship_name)}
           </h3>
           {s.provider_name && (
             <div className="flex items-center gap-1.5 min-w-0">
@@ -1602,7 +1635,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               </div>
             </div>
 
-            <SheetTitle className="text-foreground font-heading text-[26px] leading-[1.12] tracking-[-0.02em] pt-1 text-left">{s.scholarship_name}</SheetTitle>
+            <SheetTitle className="text-foreground font-heading text-[26px] leading-[1.12] tracking-[-0.02em] pt-1 text-left">{cleanScholarshipName(s.scholarship_name)}</SheetTitle>
             <p className="text-muted-foreground text-sm text-left">
               {[s.provider_name, s.host_country].filter(Boolean).join(" · ")}
             </p>
@@ -3579,7 +3612,7 @@ const Discover = ({ language = "en" }: Props) => {
                                   </button>
                                 </div>
                                 <h3 className="font-heading font-bold text-base text-foreground tracking-tight leading-tight line-clamp-2 mb-1">
-                                  {s.scholarship_name}
+                                  {cleanScholarshipName(s.scholarship_name)}
                                 </h3>
                                 <p className="text-xs text-muted-foreground truncate">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
                                 <div className="flex gap-2 mt-3">
