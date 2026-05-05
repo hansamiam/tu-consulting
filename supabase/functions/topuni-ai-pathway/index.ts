@@ -8,6 +8,12 @@ import {
   type SectionSpec,
   type BriefContext,
 } from "../_shared/brief-sections.ts";
+import {
+  cleanScholarshipName,
+  cleanProvider,
+  cleanHostCountry,
+  cleanAwardText,
+} from "../_shared/scholarshipFields.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -409,15 +415,24 @@ serve(async (req) => {
        Compact, retrieval-driven. Scholarships first (the AI report's
        primary deliverable) then a slimmer universities block. */
     const scholarshipContext = scholarshipRows.map((s: any, i: number) => {
+      // Apply hygiene cleaners on the way INTO the prompt context so the
+      // LLM doesn't see ("Schwarzman | Apply Now" / "$80M endowment") and
+      // pass that through to the user-facing brief. Same cleaners
+      // applied at scrape ingest, so most rows already arrive clean —
+      // this is defense in depth for legacy or edge-case rows.
+      const cleanedName = cleanScholarshipName(s.scholarship_name) || s.scholarship_name;
+      const cleanedProv = cleanProvider(s.provider_name) ?? s.provider_name ?? "—";
+      const cleanedCountry = cleanHostCountry(s.host_country) ?? "—";
+      const cleanedAward = cleanAwardText(s.award_amount_text);
       const fields = (s.target_fields || []).filter(Boolean).join(", ");
       const levels = (s.target_degree_level || []).filter(Boolean).join(", ");
       const elig = String(s.eligibility_requirements || "").slice(0, 240);
       const sim = typeof s._similarity === "number" ? ` (relevance ${(s._similarity * 100).toFixed(0)}%)` : "";
       const eligTag = s._eligible === false ? " [eligibility unclear — review]" : "";
       const focusTag = s._focus ? " [STUDENT'S FOCUS — they arrived from this scholarship's detail page]" : "";
-      return `${i + 1}. ${s.scholarship_name}${sim}${eligTag}${focusTag}
-   Provider: ${s.provider_name || "—"}; host: ${s.host_country || "—"}
-   Coverage: ${s.coverage_type}${s.award_amount_text ? ` — ${s.award_amount_text}` : ""}
+      return `${i + 1}. ${cleanedName}${sim}${eligTag}${focusTag}
+   Provider: ${cleanedProv}; host: ${cleanedCountry}
+   Coverage: ${s.coverage_type}${cleanedAward ? ` — ${cleanedAward}` : ""}
    Levels: ${levels || "any"}; fields: ${fields || "any"}
    Deadline: ${s.application_deadline || "varies"}; URL: ${s.official_url || "—"}
    Eligibility: ${elig || "—"}`;
