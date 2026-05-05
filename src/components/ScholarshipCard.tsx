@@ -6,6 +6,8 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { cleanScholarshipName, cleanProvider, displayField } from "@/lib/scholarshipFields";
+import { shortCountry } from "@/lib/countryAccent";
 
 /**
  * The product's premium scholarship card. Used on every listing surface
@@ -216,20 +218,21 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
   const coverageLabel = (t.coverage as Record<string, string>)[r.coverage_type] ?? t.coverage.other;
   const headlineValue: string | null = fmtUsd ?? shortAward ?? coverageLabel;
   const showSubtitle = !!fmtUsd || !!shortAward; // when we have a real value, show "· coverage" beside it
-  const hue = hueFromName(r.provider_name || r.scholarship_name);
+  const cleanedName = cleanScholarshipName(r.scholarship_name);
+  const cleanedProvider = cleanProvider(r.provider_name);
+  const hue = hueFromName(cleanedProvider || cleanedName);
 
   // Tags row — country + level + field. Coverage is omitted here on
   // purpose: it's already shown above as the subtitle to the funding
   // amount, and seeing "Full ride" twice on the same card looks noisy.
   const tags: { icon: React.ReactNode; label: string; tone?: "primary" | "muted" }[] = [];
-  if (r.host_country) tags.push({ icon: <MapPin className="w-3 h-3" />, label: r.host_country });
+  if (r.host_country) tags.push({ icon: <MapPin className="w-3 h-3" />, label: shortCountry(r.host_country) });
   if (r.target_degree_level && r.target_degree_level.length > 0) {
     const levels = r.target_degree_level.slice(0, 2).map((l) => (t.levels as Record<string, string>)[l.toLowerCase()] ?? l);
     tags.push({ icon: <GraduationCap className="w-3 h-3" />, label: levels.join(" · ") });
   }
-  if (r.target_fields && r.target_fields.length > 0 && r.target_fields[0].toLowerCase() !== "any") {
-    tags.push({ label: r.target_fields[0], icon: null as unknown as React.ReactNode });
-  }
+  const fld = displayField(r.target_fields);
+  if (fld) tags.push({ label: fld, icon: null as unknown as React.ReactNode });
 
   const detailPath = `/scholarships/${r.scholarship_id}`;
 
@@ -263,18 +266,18 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
         <div
           className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center font-heading font-bold text-[11px] text-white tracking-tight shadow-sm ring-1 ring-black/5"
           style={{ background: `linear-gradient(135deg, hsl(${hue}, 55%, 45%), hsl(${(hue + 35) % 360}, 60%, 38%))` }}
-          aria-label={r.provider_name || ""}
+          aria-label={cleanedProvider || ""}
         >
-          {initials(r.provider_name || r.scholarship_name)}
+          {initials(cleanedProvider || cleanedName)}
         </div>
         <div className="flex-1 min-w-0">
           <Link to={detailPath} className="block">
             <h3 className={`font-heading font-bold text-foreground tracking-tight leading-snug group-hover:text-gold-dark transition-colors line-clamp-2 ${compact ? "text-sm" : "text-[15px] sm:text-base"}`}>
-              {r.scholarship_name}
+              {cleanedName}
             </h3>
           </Link>
-          {r.provider_name && (
-            <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{r.provider_name}</p>
+          {cleanedProvider && (
+            <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{cleanedProvider}</p>
           )}
         </div>
         {onShare && (
