@@ -29,6 +29,7 @@ import { CuratedCollections } from "@/components/discover/CuratedCollections";
 import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
 import { ExpandedScholarshipDialog } from "@/components/discover/ExpandedScholarshipDialog";
 import { MatchScoreBreakdown } from "@/components/discover/MatchScoreBreakdown";
+import { SavedSearchControls } from "@/components/discover/SavedSearchControls";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { CountryArt } from "@/lib/countryArt";
 import { FlagPattern } from "@/lib/flagPattern";
@@ -1658,6 +1659,15 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
           </div>
         ))}
       </div>
+      {/* Saved-search controls — name + persist the current filter
+          combo, then re-apply later in one click. The cron emails new
+          matches against each saved search daily. */}
+      <SavedSearchControls
+        filters={filters as unknown as Record<string, unknown>}
+        hasActiveFilters={activeCount > 0}
+        onApply={(applied) => setFilters((cur) => ({ ...DEFAULT_FILTERS, ...applied, search: cur.search }) as FilterState)}
+      />
+
       {activeCount > 0 && (
         <Button variant="ghost" size="sm" className="w-full text-xs h-8 text-muted-foreground hover:text-foreground" onClick={() => setFilters(DEFAULT_FILTERS)}>
           <X className="h-3 w-3 mr-1.5" /> Clear all filters

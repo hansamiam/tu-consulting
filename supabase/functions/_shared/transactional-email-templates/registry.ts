@@ -19,6 +19,7 @@ import { template as weeklyNudge } from './weekly-nudge.tsx'
 import { template as referralConverted } from './referral-converted.tsx'
 import { template as briefGenerated } from './brief-generated.tsx'
 import { template as proUpgradeNudge } from './pro-upgrade-nudge.tsx'
+import { template as newMatchesDigest } from './new-matches-digest.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'booking-confirmation': bookingConfirmation,
@@ -31,4 +32,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'referral-converted': referralConverted,
   'brief-generated': briefGenerated,
   'pro-upgrade-nudge': proUpgradeNudge,
+  'new-matches-digest': newMatchesDigest,
 }
