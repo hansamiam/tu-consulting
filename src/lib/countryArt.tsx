@@ -45,14 +45,27 @@ const eiffel = wrap(
   <path d="M75 6 L82 6 L82 14 L84 22 L88 36 L94 52 L84 52 L82 42 L75 42 L75 36 L82 36 L82 28 L78 28 L78 22 L74 22 L74 14 L75 14 Z M68 6 L75 6 L75 14 L74 14 L74 22 L70 22 L70 28 L74 28 L74 36 L68 36 L68 42 L75 42 L73 52 L63 52 L69 36 L73 22 L75 14 L68 14 Z" />
 );
 
-// Big Ben tower (UK)
+// Big Ben — wider rectangular tower with stepped top, clock face,
+// and a clearly distinguishable spire. Earlier version was reading
+// as an upward arrow because the spire was too dominant relative
+// to the body.
 const bigBen = wrap(
   <>
-    <rect x="74" y="22" width="12" height="30" />
-    <polygon points="68,22 92,22 80,4" />
-    <rect x="78" y="30" width="4" height="6" fill="#fff" opacity="0.55" />
-    <rect x="74" y="22" width="12" height="2" fill="#fff" opacity="0.4" />
-    <rect x="74" y="42" width="12" height="2" fill="#fff" opacity="0.4" />
+    {/* Tower base — wider, taller, recognizably a building */}
+    <rect x="70" y="20" width="20" height="32" />
+    {/* Stepped clock-face section */}
+    <rect x="68" y="24" width="24" height="14" />
+    {/* Clock face circle */}
+    <circle cx="80" cy="31" r="3.5" fill="currentColor" opacity="0.35" />
+    <circle cx="80" cy="31" r="2" fill="#fff" opacity="0.55" />
+    {/* Belfry cap */}
+    <rect x="72" y="14" width="16" height="6" />
+    {/* Pyramidal roof */}
+    <polygon points="72,14 88,14 80,4" />
+    {/* Tiny spire on top */}
+    <rect x="79" y="0" width="2" height="4" />
+    {/* Ground line */}
+    <rect x="64" y="50" width="32" height="2" fill="currentColor" opacity="0.6" />
   </>
 );
 
@@ -91,9 +104,38 @@ const pagoda = wrap(
   </>
 );
 
-// Maple leaf (Canada)
+// Maple leaf (Canada) — recognizable 11-point silhouette of the
+// flag's central icon. Earlier version read as an 8-pointed star
+// because the points were too symmetrical and not pinched at the
+// stem. This version follows the canonical maple-leaf outline:
+// pointed tip up, lobes left/right at 30°/60°/120°, stem at the
+// bottom.
 const maple = wrap(
-  <path d="M80 10 L84 22 L94 18 L88 28 L98 30 L88 36 L92 46 L82 40 L80 50 L78 40 L68 46 L72 36 L62 30 L72 28 L66 18 L76 22 Z" />
+  <g transform="translate(80 30)">
+    <path d="M 0,-22
+             L 3,-12
+             L 11,-15
+             L 9,-7
+             L 19,-4
+             L 12,2
+             L 16,8
+             L 7,7
+             L 9,15
+             L 2,11
+             L 0,22
+             L -2,11
+             L -9,15
+             L -7,7
+             L -16,8
+             L -12,2
+             L -19,-4
+             L -9,-7
+             L -11,-15
+             L -3,-12
+             Z" />
+    {/* Stem */}
+    <rect x="-1" y="18" width="2" height="6" />
+  </g>
 );
 
 // Sydney Opera House (Australia)

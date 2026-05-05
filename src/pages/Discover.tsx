@@ -1147,7 +1147,13 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
 }) => {
   const tier = TIER[s.priority];
   const dl = deadlineDisplay(s.application_deadline);
-  const why = s.why_this_fits || s.reasons.slice(0, 2).join(". ");
+  /* Why-it-fits text. Falls back to scoring reasons ONLY when at
+   * least one of them is a meaty insight (not a generic "Matches X
+   * level" auto-reason). Without this filter the card surfaces
+   * "Matches undergraduate level." as the editorial line for
+   * thousands of rows — looks half-baked. */
+  const meatyReasons = s.reasons.filter(r => !/^Matches \w+( level)?$/i.test(r) && !/^Open to /.test(r) && !/^Touches your field/i.test(r));
+  const why = s.why_this_fits || (meatyReasons.length > 0 ? meatyReasons.slice(0, 2).join(". ") : null);
   const award = compactAward(s);
   const isFullRide = s.coverage_type === "full_ride";
   // Match score is meaningful only when the user has a real profile that
@@ -1647,7 +1653,13 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
   const tier = TIER[s.priority];
   const dl = deadlineDisplay(s.application_deadline);
   const [dc1, dc2] = dialColors(s.priority);
-  const why = s.why_this_fits || s.reasons.slice(0, 2).join(". ");
+  /* Why-it-fits text. Falls back to scoring reasons ONLY when at
+   * least one of them is a meaty insight (not a generic "Matches X
+   * level" auto-reason). Without this filter the card surfaces
+   * "Matches undergraduate level." as the editorial line for
+   * thousands of rows — looks half-baked. */
+  const meatyReasons = s.reasons.filter(r => !/^Matches \w+( level)?$/i.test(r) && !/^Open to /.test(r) && !/^Touches your field/i.test(r));
+  const why = s.why_this_fits || (meatyReasons.length > 0 ? meatyReasons.slice(0, 2).join(". ") : null);
 
   // Build profile-vs-requirement checklist
   const reqs: { label: string; status: "met"|"miss"|"near"|"unknown"|"info"; detail: string }[] = [];
