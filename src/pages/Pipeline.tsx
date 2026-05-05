@@ -34,6 +34,7 @@ import { CountryArt } from "@/lib/countryArt";
 import { accentForCountry, shortCountry } from "@/lib/countryAccent";
 import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
 import { CalendarSubscribeDialog } from "@/components/pipeline/CalendarSubscribeDialog";
+import { EssayDraftPanel } from "@/components/pipeline/EssayDraftPanel";
 
 interface Scholarship {
   scholarship_id: string;
@@ -569,6 +570,18 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                     className="resize-none"
                   />
                 </div>
+
+                {/* Essay draft + AI critique. Auto-saves through the
+                    same tracker hook that backs status/notes; the
+                    "Critique with AI" button streams a reader-perspective
+                    critique inline below the textarea. */}
+                <EssayDraftPanel
+                  scholarshipId={openDetail.scholarship_id}
+                  scholarshipName={cleanScholarshipName(openDetail.scholarship_name)}
+                  value={tracker.essayMap[openDetail.scholarship_id] || ""}
+                  onChange={(next) => tracker.setEssayDraft(openDetail.scholarship_id, next || null)}
+                  language={language}
+                />
 
                 {/* Links — actions the user might take from this card.
                     "Ask the counselor" stashes a session prefill so when

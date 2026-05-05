@@ -39,6 +39,10 @@ export interface TrackerEntry {
   /** Captured when status='accepted' so we can show personal "stack won
    * so far" + aggregate "$X won by TopUni members" on marketing pages. */
   awardedAmountUsd?: number | null;
+  /** Long-form essay draft attached to the scholarship. Stored locally
+   * for instant render + debounced to the DB. v1 = one composed draft
+   * per (user, scholarship). */
+  essayDraft?: string | null;
 }
 
 interface State {
@@ -135,9 +139,9 @@ function saveToLocalStorage(state: State) {
 }
 
 /* DB row shape — mirror of application_tracker columns we care about.
- * `awarded_amount_usd` is conditionally added once the schema supports
- * it (see hasAwardCol below); old deployments without the column return
- * the row without that key. */
+ * `awarded_amount_usd` and `essay_draft` are conditionally added once
+ * the schema supports them (see hasAwardCol / hasEssayCol below); old
+ * deployments without the columns return the row without those keys. */
 interface DbRow {
   scholarship_id: string;
   status: AppStatus | null;
@@ -145,6 +149,7 @@ interface DbRow {
   shortlisted: boolean;
   hidden: boolean;
   awarded_amount_usd?: number | null;
+  essay_draft?: string | null;
 }
 
 function entryFromDb(r: DbRow): TrackerEntry {
@@ -154,20 +159,20 @@ function entryFromDb(r: DbRow): TrackerEntry {
     shortlisted: r.shortlisted,
     hidden: r.hidden,
     awardedAmountUsd: r.awarded_amount_usd ?? null,
+    essayDraft: r.essay_draft ?? null,
   };
 }
 
 function entryIsEmpty(e: TrackerEntry): boolean {
-  return !e.status && !e.notes && !e.shortlisted && !e.hidden && !e.awardedAmountUsd;
+  return !e.status && !e.notes && !e.shortlisted && !e.hidden && !e.awardedAmountUsd && !e.essayDraft;
 }
 
-/** Schema-feature flag: true once we've confirmed the
- * `awarded_amount_usd` column exists. Starts undefined, set to
- * true/false after the first SELECT. While false, the hook keeps
- * award amounts in localStorage only — stats work locally; cross-
- * device sync resumes once the migration lands and the next reload
- * succeeds with the column. */
+/** Schema-feature flags: each starts undefined, flipped once we've
+ * confirmed the column exists. While false the hook keeps that field
+ * in localStorage only; cross-device sync resumes once the migration
+ * lands and the next reload succeeds with the column. */
 let hasAwardCol: boolean | undefined;
+let hasEssayCol: boolean | undefined;
 
 export interface ApplicationTrackerApi {
   state: State;
@@ -181,10 +186,12 @@ export interface ApplicationTrackerApi {
   statusMap: Record<string, AppStatus>;
   notesMap: Record<string, string>;
   awardedMap: Record<string, number>;
+  essayMap: Record<string, string>;
   // Mutators
   setStatus: (id: string, status: AppStatus | null) => void;
   setNote: (id: string, note: string) => void;
   setAwardedAmount: (id: string, amountUsd: number | null) => void;
+  setEssayDraft: (id: string, draft: string | null) => void;
   toggleShortlist: (id: string) => void;
   toggleHidden: (id: string) => void;
   // Sync state
@@ -211,30 +218,41 @@ export function useApplicationTracker(): ApplicationTrackerApi {
     let cancelled = false;
     setIsSyncing(true);
     (async () => {
-      // Try with the new column first; if PostgREST reports the column
-      // is missing (pre-migration deployments), fall back to the legacy
-      // shape. `hasAwardCol` is cached for the rest of the session so
-      // we don't pay this round-trip on every reload.
+      // Try with the new columns first; if PostgREST reports a column
+      // is missing (pre-migration deployments), fall back to the
+      // narrower legacy shape. `hasAwardCol` / `hasEssayCol` are
+      // cached for the rest of the session so we don't pay this
+      // round-trip on every reload. Both columns reach an explicit
+      // false → reissue with the legacy 5-column shape.
+      const buildSelect = () => {
+        const cols = ["scholarship_id", "status", "notes", "shortlisted", "hidden"];
+        if (hasAwardCol !== false) cols.push("awarded_amount_usd");
+        if (hasEssayCol !== false) cols.push("essay_draft");
+        return cols.join(", ");
+      };
       let data: DbRow[] | null = null;
       let error: { message: string; code?: string } | null = null;
-      if (hasAwardCol !== false) {
+      // First attempt — whichever flags aren't explicitly false get included.
+      {
         const r = await supabase
           .from("application_tracker")
-          .select("scholarship_id, status, notes, shortlisted, hidden, awarded_amount_usd")
+          .select(buildSelect())
           .eq("user_id", user.id)
           .returns<DbRow[]>();
-        if (r.error && /awarded_amount_usd/i.test(r.error.message)) {
-          hasAwardCol = false;
+        if (r.error) {
+          if (/awarded_amount_usd/i.test(r.error.message)) hasAwardCol = false;
+          if (/essay_draft/i.test(r.error.message)) hasEssayCol = false;
         } else {
-          hasAwardCol = true;
+          if (hasAwardCol === undefined) hasAwardCol = true;
+          if (hasEssayCol === undefined) hasEssayCol = true;
           data = r.data;
-          error = r.error;
         }
       }
-      if (hasAwardCol === false) {
+      // Retry once with whatever flags are now known false.
+      if (data == null) {
         const r = await supabase
           .from("application_tracker")
-          .select("scholarship_id, status, notes, shortlisted, hidden")
+          .select(buildSelect())
           .eq("user_id", user.id)
           .returns<DbRow[]>();
         data = r.data;
@@ -281,13 +299,12 @@ export function useApplicationTracker(): ApplicationTrackerApi {
       flushTimer.current = null;
       const pending = pendingRef.current;
       if (pending.size === 0) return;
-      // Build rows excluding awarded_amount_usd if the schema flag is
-      // explicitly false (pre-migration). When the flag is true or
-      // undecided we include it; on a column-missing error we flip
-      // the flag and retry with the legacy shape.
-      const buildRows = (includeAward: boolean) =>
+      // Build the upsert payload, conditionally including the optional
+      // columns based on the schema flags. On a column-missing error we
+      // flip the offending flag and retry with the narrower payload.
+      const buildRows = (includeAward: boolean, includeEssay: boolean) =>
         Array.from(pending.entries()).map(([scholarship_id, e]) => {
-          const base = {
+          const base: Record<string, unknown> = {
             user_id: user.id,
             scholarship_id,
             status: e.status ?? null,
@@ -295,28 +312,32 @@ export function useApplicationTracker(): ApplicationTrackerApi {
             shortlisted: !!e.shortlisted,
             hidden: !!e.hidden,
           };
-          return includeAward
-            ? { ...base, awarded_amount_usd: e.awardedAmountUsd ?? null }
-            : base;
+          if (includeAward) base.awarded_amount_usd = e.awardedAmountUsd ?? null;
+          if (includeEssay) base.essay_draft = e.essayDraft ?? null;
+          return base;
         });
       pendingRef.current = new Map();
       setIsSyncing(true);
       let { error } = await supabase
         .from("application_tracker")
-        .upsert(buildRows(hasAwardCol !== false), { onConflict: "user_id,scholarship_id" });
-      if (error && /awarded_amount_usd/i.test(error.message)) {
-        hasAwardCol = false;
-        const retry = await supabase
-          .from("application_tracker")
-          .upsert(buildRows(false), { onConflict: "user_id,scholarship_id" });
-        error = retry.error;
+        .upsert(buildRows(hasAwardCol !== false, hasEssayCol !== false), { onConflict: "user_id,scholarship_id" });
+      if (error) {
+        if (/awarded_amount_usd/i.test(error.message)) hasAwardCol = false;
+        if (/essay_draft/i.test(error.message)) hasEssayCol = false;
+        // Retry once with whichever flags are now known-false.
+        if (hasAwardCol === false || hasEssayCol === false) {
+          const retry = await supabase
+            .from("application_tracker")
+            .upsert(buildRows(hasAwardCol !== false, hasEssayCol !== false), { onConflict: "user_id,scholarship_id" });
+          error = retry.error;
+        }
       }
       setIsSyncing(false);
       if (error) {
         console.warn("[application_tracker] flush failed; will retry on next change", error.message);
         // Restore the rows back into pending so they retry on next mutation.
         // Pull from the original pending map (we still have its entries via
-        // the closure) so award amounts aren't lost on retry.
+        // the closure) so award amounts + essay drafts aren't lost on retry.
         for (const [scholarship_id, e] of pending) {
           pendingRef.current.set(scholarship_id, {
             status: e.status ?? null,
@@ -324,6 +345,7 @@ export function useApplicationTracker(): ApplicationTrackerApi {
             shortlisted: !!e.shortlisted,
             hidden: !!e.hidden,
             awardedAmountUsd: e.awardedAmountUsd ?? null,
+            essayDraft: e.essayDraft ?? null,
           });
         }
       } else {
@@ -350,12 +372,13 @@ export function useApplicationTracker(): ApplicationTrackerApi {
           : "awardedAmountUsd" in patch
             ? patch.awardedAmountUsd ?? null
             : cur.awardedAmountUsd ?? null,
+        essayDraft: "essayDraft" in patch ? patch.essayDraft ?? null : cur.essayDraft ?? null,
       };
       const nextMap = new Map(prev.byScholarship);
       if (entryIsEmpty(nextEntry)) {
         nextMap.delete(id);
         // Mark as null-out for DB
-        pendingRef.current.set(id, { status: null, notes: null, shortlisted: false, hidden: false, awardedAmountUsd: null });
+        pendingRef.current.set(id, { status: null, notes: null, shortlisted: false, hidden: false, awardedAmountUsd: null, essayDraft: null });
       } else {
         nextMap.set(id, nextEntry);
         pendingRef.current.set(id, nextEntry);
@@ -370,6 +393,7 @@ export function useApplicationTracker(): ApplicationTrackerApi {
   const setStatus = useCallback((id: string, status: AppStatus | null) => updateEntry(id, { status }), [updateEntry]);
   const setNote = useCallback((id: string, note: string) => updateEntry(id, { notes: note }), [updateEntry]);
   const setAwardedAmount = useCallback((id: string, amountUsd: number | null) => updateEntry(id, { awardedAmountUsd: amountUsd }), [updateEntry]);
+  const setEssayDraft = useCallback((id: string, draft: string | null) => updateEntry(id, { essayDraft: draft }), [updateEntry]);
   const toggleShortlist = useCallback((id: string) => {
     setState((prev) => {
       const cur = prev.byScholarship.get(id);
@@ -419,6 +443,11 @@ export function useApplicationTracker(): ApplicationTrackerApi {
     for (const [id, e] of state.byScholarship) if (e.awardedAmountUsd) r[id] = e.awardedAmountUsd;
     return r;
   }, [state.byScholarship]);
+  const essayMap = useMemo(() => {
+    const r: Record<string, string> = {};
+    for (const [id, e] of state.byScholarship) if (e.essayDraft) r[id] = e.essayDraft;
+    return r;
+  }, [state.byScholarship]);
 
   return {
     state,
@@ -429,9 +458,11 @@ export function useApplicationTracker(): ApplicationTrackerApi {
     statusMap,
     notesMap,
     awardedMap,
+    essayMap,
     setStatus,
     setNote,
     setAwardedAmount,
+    setEssayDraft,
     toggleShortlist,
     toggleHidden,
     isSyncing,

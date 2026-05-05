@@ -141,13 +141,17 @@ Deno.serve(async (req) => {
     );
   }
 
-  // Hydrate emails / names from student_profiles (one query, all users)
+  // Hydrate emails / names from student_profiles (one query, all users).
+  // Filter out opted-out users at the source — same pause control that
+  // gates the weekly-nudge-cron, so users who muted nudges don't keep
+  // getting deadline emails. Pre-migration profiles without nudge_opt_out
+  // default to false (opted-in) which matches the column default.
   const userIds = Array.from(new Set(candidates.map((c) => c.user_id)));
   const { data: profiles } = await supa
     .from("student_profiles")
-    .select("user_id, full_name, email")
+    .select("user_id, full_name, email, nudge_opt_out")
     .in("user_id", userIds);
-  const profileMap = new Map<string, { full_name: string | null; email: string | null }>(
+  const profileMap = new Map<string, { full_name: string | null; email: string | null; nudge_opt_out: boolean }>(
     (profiles ?? []).map((p) => [p.user_id, p as any]),
   );
 
@@ -155,9 +159,31 @@ Deno.serve(async (req) => {
   let skipped = 0;
   const errors: string[] = [];
 
+  // Anti-spam: at most ONE email per user per cron run. With buckets at
+  // 30/14/7/3/1 a user with 4 scholarships in the same window would get
+  // 4 emails today; we'd rather send the most-urgent one and let
+  // tomorrow's run handle the next. Sort by days-remaining ascending so
+  // the user gets the closest deadline first.
+  candidates.sort((a, b) => {
+    const da = a.scholarship?.application_deadline ? new Date(a.scholarship.application_deadline).getTime() : Infinity;
+    const db = b.scholarship?.application_deadline ? new Date(b.scholarship.application_deadline).getTime() : Infinity;
+    return da - db;
+  });
+  const sentToUser = new Set<string>();
+
   for (const row of candidates) {
     const profile = profileMap.get(row.user_id);
     if (!profile?.email) {
+      skipped++;
+      continue;
+    }
+    if (profile.nudge_opt_out) {
+      // User paused nudges → respect it for deadline emails too.
+      skipped++;
+      continue;
+    }
+    if (sentToUser.has(row.user_id)) {
+      // Already emailed this user about another deadline today.
       skipped++;
       continue;
     }
@@ -209,6 +235,7 @@ Deno.serve(async (req) => {
         .eq("user_id", row.user_id)
         .eq("scholarship_id", row.scholarship_id);
 
+      sentToUser.add(row.user_id);
       sent++;
     } catch (e) {
       errors.push(`${row.user_id}/${row.scholarship_id}: ${e instanceof Error ? e.message : String(e)}`);
