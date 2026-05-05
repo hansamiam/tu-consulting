@@ -30,6 +30,7 @@ import { ScholarshipChecklist } from "@/components/pipeline/ScholarshipChecklist
 import { DueThisWeek } from "@/components/pipeline/DueThisWeek";
 import { CountryArt } from "@/lib/countryArt";
 import { accentForCountry, shortCountry } from "@/lib/countryAccent";
+import { CalendarSubscribeDialog } from "@/components/pipeline/CalendarSubscribeDialog";
 
 interface Scholarship {
   scholarship_id: string;
@@ -183,6 +184,7 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
   /* Detail sheet state */
   const [openDetail, setOpenDetail] = useState<Scholarship | null>(null);
   const [draftNote, setDraftNote] = useState<string>("");
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   useEffect(() => {
     if (openDetail) setDraftNote(tracker.notesMap[openDetail.scholarship_id] || "");
@@ -223,6 +225,25 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                 : "Отслеживайте статус и заметки. Зарегистрируйтесь для синхронизации на устройствах.",
             )}
           </p>
+          {user && (
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <Button
+                variant="gold"
+                size="sm"
+                className="gap-2"
+                onClick={() => setCalendarOpen(true)}
+              >
+                <Calendar className="h-3.5 w-3.5" />
+                {t("Sync deadlines to my calendar", "Дедлайны в календарь")}
+              </Button>
+              <span className="text-[11px] text-primary-foreground/55 max-w-xs leading-snug">
+                {t(
+                  "Apple, Google, or Outlook — every saved deadline auto-syncs.",
+                  "Apple, Google или Outlook — каждый дедлайн синхронизируется автоматически.",
+                )}
+              </span>
+            </div>
+          )}
         </div>
       </section>
 
@@ -525,6 +546,12 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
           )}
         </SheetContent>
       </Sheet>
+
+      <CalendarSubscribeDialog
+        open={calendarOpen}
+        onOpenChange={setCalendarOpen}
+        language={language}
+      />
 
       <Footer language={isRu ? "ru" : "en"} />
     </div>

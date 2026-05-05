@@ -6,7 +6,11 @@
       "destination": "https://bsfldtpemfxhnkdzccib.supabase.co/functions/v1/sitemap-scholarships"
     },
     {
-      "source": "/((?!api|assets|favicon\\.ico|robots\\.txt|sitemap\\.xml|sitemap-scholarships\\.xml|og-default\\.png).*)",
+      "source": "/calendar.ics",
+      "destination": "https://bsfldtpemfxhnkdzccib.supabase.co/functions/v1/calendar-feed"
+    },
+    {
+      "source": "/((?!api|assets|favicon\\.ico|robots\\.txt|sitemap\\.xml|sitemap-scholarships\\.xml|calendar\\.ics|og-default\\.png).*)",
       "destination": "/index.html"
     }
   ],
