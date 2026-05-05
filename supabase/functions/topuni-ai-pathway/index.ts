@@ -252,6 +252,22 @@ serve(async (req) => {
     const targetCountries = profile.targetCountries || [];
     const studentGpa = parseFloat(profile.gpa) || null;
     const studentIelts = parseFloat(profile.ielts) || null;
+
+    // Quality predicate for AI retrieval. Same 2-of-4 substantive-fields
+    // bar the Discover client uses for its grid filter — except here it
+    // gates what reaches the LLM's prompt context. Half-baked rows
+    // (no country / no provider / no award / no deadline) ground the
+    // brief on nothing and produce generic advice. Drop them.
+    const isQualityRow = (r: Record<string, unknown>): boolean => {
+      const hasCountry  = !!(r.host_country && String(r.host_country).trim());
+      const hasProvider = !!(r.provider_name && String(r.provider_name).trim()
+        && !/^(various|multiple|several|n\/a|none|unknown|tbd)/i.test(String(r.provider_name).trim()));
+      const hasAward    = !!(r.award_amount_text && String(r.award_amount_text).trim())
+        || (typeof r.estimated_total_value_usd === "number" && r.estimated_total_value_usd > 0);
+      const hasDeadline = !!r.application_deadline;
+      const score = (hasCountry?1:0) + (hasProvider?1:0) + (hasAward?1:0) + (hasDeadline?1:0);
+      return score >= 2;
+    };
     const studentToefl = parseFloat(profile.toefl) || null;
     const studentSat = parseFloat(profile.sat) || null;
 
@@ -309,6 +325,7 @@ serve(async (req) => {
         const elig = new Map(matches.map((m: any) => [m.scholarship_id, m.passes_eligibility]));
         const sims = new Map(matches.map((m: any) => [m.scholarship_id, m.similarity]));
         scholarshipRows = (hydrated || [])
+          .filter(isQualityRow)
           .map((r) => ({ ...r, _similarity: sims.get(r.scholarship_id), _eligible: elig.get(r.scholarship_id) }))
           .sort((a, b) => (order.get(a.scholarship_id)! - order.get(b.scholarship_id)!));
         retrievalMethod = "pgvector_rag";
@@ -335,8 +352,8 @@ serve(async (req) => {
       }
       const { data } = await q
         .order("application_deadline", { ascending: true, nullsFirst: false })
-        .limit(25);
-      scholarshipRows = data || [];
+        .limit(40);   // over-fetch so the quality filter doesn't shrink below 25
+      scholarshipRows = (data || []).filter(isQualityRow).slice(0, 25);
     }
 
     /* Focus scholarship — when the student arrived from a /scholarships/:id
