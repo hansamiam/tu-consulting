@@ -100,12 +100,22 @@ export function BriefMasthead({
     // and the strategic-positioning section hasn't arrived yet.
     const level = profile.gradeLevel || "";
     const field = profile.major || "";
+    const nationality = (profile.nationality || "").trim();
     const targets = (profile.targetCountries || []).slice(0, 3).join(", ");
     if (level && field && targets) {
+      // Lead with nationality when available — it's the single highest-
+      // signal grounding fact for an admissions brief and immediately
+      // tells the reader "this was written for me, not generic".
+      const studentDescriptor = nationality
+        ? `${nationality} ${level.toLowerCase()}`
+        : level.toLowerCase();
+      const studentDescriptorRu = nationality
+        ? `${level.toLowerCase()} из ${nationality}`
+        : level.toLowerCase();
       return {
         synthesis: t(
-          `Strategy for a ${level.toLowerCase()} candidate in ${field} targeting ${targets}.`,
-          `Стратегия для ${level.toLowerCase()} в направлении ${field} с целью ${targets}.`,
+          `Strategy for a ${studentDescriptor} candidate in ${field} targeting ${targets}.`,
+          `Стратегия для ${studentDescriptorRu} в направлении ${field} с целью ${targets}.`,
           isRu,
         ),
         fromBrief: false,
@@ -119,16 +129,20 @@ export function BriefMasthead({
       ),
       fromBrief: false,
     };
-  }, [briefContent, profile.gradeLevel, profile.major, profile.targetCountries, isRu]);
+  }, [briefContent, profile.gradeLevel, profile.major, profile.nationality, profile.targetCountries, isRu]);
 
   const targetLine = useMemo(() => {
     const parts: string[] = [];
+    // Nationality leads when available — same rationale as the synthesis
+    // line: it grounds the brief as "for this specific student" before
+    // the level/field/targets, which read as universal-shape facts.
+    if (profile.nationality) parts.push(t(`From ${profile.nationality}`, `Из ${profile.nationality}`, isRu));
     if (profile.gradeLevel) parts.push(profile.gradeLevel);
     if (profile.major) parts.push(profile.major);
     const tc = (profile.targetCountries || []).slice(0, 3).join(" · ");
-    if (tc) parts.push(tc);
+    if (tc) parts.push(t(`→ ${tc}`, `→ ${tc}`, isRu));
     return parts.join(" · ");
-  }, [profile.gradeLevel, profile.major, profile.targetCountries]);
+  }, [profile.gradeLevel, profile.major, profile.nationality, profile.targetCountries, isRu]);
 
   const handlePrint = () => {
     if (onPrint) onPrint();
