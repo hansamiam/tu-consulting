@@ -58,6 +58,100 @@ async function embedQuery(text: string): Promise<number[] | null> {
   }
 }
 
+/* ─── Brief cache helpers ─────────────────────────────────────────────
+   The brief is the most expensive AI surface in the product (~$0.30-
+   0.50 per premium generation, ~$0.02 per basic). Cache on
+   profile_hash × language × grade; invalidate when any cited
+   scholarship has been UPDATEd more recently than the cache row's
+   generated_at (drift detection). Anon visitors with effectively-
+   identical profiles share the cache. */
+
+async function computeBriefHash(profile: any, grade: string, lang: string): Promise<string> {
+  const canonical = JSON.stringify({
+    n: (profile.nationality ?? "").toLowerCase().trim(),
+    g: profile.gpa ?? "",
+    i: profile.ielts ?? "",
+    t: profile.toefl ?? "",
+    s: profile.sat ?? "",
+    m: (profile.major ?? profile.field ?? "").toLowerCase().trim(),
+    gl: (profile.gradeLevel ?? "").toLowerCase().trim(),
+    tc: (profile.targetCountries ?? []).map((c: string) => c.toLowerCase().trim()).sort(),
+    bd: profile.budget ?? "",
+    sn: profile.scholarshipNeeded ?? "",
+    tl: profile.timeline ?? "",
+    pre: profile.prestige ?? 0,
+    sch: profile.scholarship ?? 0,
+    cr: profile.careerRoi ?? 0,
+    va: profile.visaAccess ?? 0,
+    lp: profile.locationPref ?? 0,
+    ta: (profile.topActivity ?? "").slice(0, 200),
+    ps: (profile.personalStory ?? "").slice(0, 200),
+    ns: (profile.namedSchools ?? "").slice(0, 200),
+    grade,
+    lang,
+  });
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonical));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+}
+
+/* Wrap a string of accumulated brief markdown back into the SSE format
+   the client parser expects. Emits a single content chunk + DONE. */
+function replayCachedAsSse(content: string): ReadableStream<Uint8Array> {
+  const enc = new TextEncoder();
+  return new ReadableStream({
+    start(c) {
+      const chunk = JSON.stringify({ choices: [{ delta: { content } }] });
+      c.enqueue(enc.encode(`data: ${chunk}\n\n`));
+      c.enqueue(enc.encode(`data: [DONE]\n\n`));
+      c.close();
+    },
+  });
+}
+
+/* Parse an accumulated raw SSE buffer back into the markdown string —
+   reverse of buildOrderedSectionStream / OpenAI-stream format. Used to
+   capture the FULL brief for caching after the client stream has
+   completed. */
+function extractContentFromSse(raw: string): string {
+  let out = "";
+  for (const line of raw.split("\n")) {
+    if (!line.startsWith("data: ")) continue;
+    const json = line.slice(6).trim();
+    if (!json || json === "[DONE]") continue;
+    try {
+      const parsed = JSON.parse(json);
+      const piece =
+        parsed?.choices?.[0]?.delta?.content
+        ?? parsed?.choices?.[0]?.message?.content
+        ?? "";
+      if (typeof piece === "string") out += piece;
+    } catch { /* skip malformed lines */ }
+  }
+  return out;
+}
+
+/* Tee a stream + accumulate the second half into a string for caching.
+   Returns the client-facing stream and a promise that resolves with
+   the full SSE text once the source completes. */
+function teeStreamForCache(source: ReadableStream<Uint8Array>): {
+  client: ReadableStream<Uint8Array>;
+  accumulated: Promise<string>;
+} {
+  const [forClient, forCache] = source.tee();
+  const accumulated = (async () => {
+    const reader = forCache.getReader();
+    const dec = new TextDecoder();
+    let buf = "";
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (value) buf += dec.decode(value, { stream: true });
+    }
+    return buf;
+  })();
+  return { client: forClient, accumulated };
+}
+
 /* ─── Multi-pass premium pipeline ─────────────────────────────────────
    Each section is a focused LLM call. We launch them in parallel, then
    stream them to the client in PREMIUM_SECTIONS order. Validators run on
@@ -218,6 +312,46 @@ serve(async (req) => {
 
     const { profile, language, reportGrade, regenSection, focusScholarshipId } = await req.json();
     const grade = reportGrade || "basic";
+    const cacheLang = language || "en";
+
+    // ─── Cache hit check ────────────────────────────────────────────────
+    // Skip for regenSection (the user is explicitly asking us to redo
+    // a single section) and for missing profile (we'd hash zeros).
+    const briefProfileHash = await computeBriefHash(profile || {}, grade, cacheLang);
+    if (!regenSection && profile) {
+      const { data: cached } = await supabase
+        .from("brief_cache")
+        .select("content, scholarship_ids, generated_at")
+        .eq("profile_hash", briefProfileHash)
+        .eq("language", cacheLang)
+        .eq("grade", grade)
+        .maybeSingle();
+      if (cached?.content) {
+        const cachedAt = new Date(cached.generated_at).getTime();
+        // Drift check: any cited scholarship updated since the cache?
+        let drifted = false;
+        if (Array.isArray(cached.scholarship_ids) && cached.scholarship_ids.length > 0) {
+          const { data: drift } = await supabase
+            .from("scholarships")
+            .select("scholarship_id")
+            .in("scholarship_id", cached.scholarship_ids)
+            .gt("updated_at", cached.generated_at)
+            .limit(1);
+          drifted = !!drift && drift.length > 0;
+        }
+        if (!drifted) {
+          // Cache hit + fresh — replay as SSE. Snappy load, $0 spend.
+          return new Response(replayCachedAsSse(cached.content), {
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "text/event-stream",
+              "X-Cache": "HIT",
+              "X-Cache-Age-Sec": String(Math.round((Date.now() - cachedAt) / 1000)),
+            },
+          });
+        }
+      }
+    }
     /* When regenSection is set, the caller is asking us to regenerate
        JUST that one section of an already-generated premium brief
        instead of building from scratch. We support this only for the
@@ -691,8 +825,33 @@ Throughout:
       // Full premium build — all sections in parallel, streamed in order.
       const sectionPromises = PREMIUM_SECTIONS.map(spec => generateSection(spec, briefCtx));
       const stream = buildOrderedSectionStream(sectionPromises);
-      return new Response(stream, {
-        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      // Tee for cache persistence — client gets the same stream, the
+      // accumulator buffers the full SSE text in the background and
+      // saves to brief_cache once complete. Fire-and-forget; cache
+      // failure never blocks the response.
+      const { client, accumulated } = teeStreamForCache(stream);
+      const scholarshipIdList = scholarshipRows.map((r: any) => r.scholarship_id).filter(Boolean);
+      (async () => {
+        try {
+          const raw = await accumulated;
+          const content = extractContentFromSse(raw);
+          if (content && content.length > 200) {
+            await supabase.from("brief_cache").upsert({
+              profile_hash: briefProfileHash,
+              language: cacheLang,
+              grade,
+              content,
+              scholarship_ids: scholarshipIdList,
+              retrieval_method: retrievalMethod,
+              generated_at: new Date().toISOString(),
+            }, { onConflict: "profile_hash,language,grade" });
+          }
+        } catch (e) {
+          console.warn("[brief-cache] persist failed", (e as Error).message);
+        }
+      })();
+      return new Response(client, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream", "X-Cache": "MISS" },
       });
     }
 
@@ -757,8 +916,35 @@ ${grade === "premium" ? premiumSections : basicSections}`;
       });
     }
 
-    return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+    // Tee + cache for the basic monolithic stream too.
+    if (!response.body) {
+      return new Response(JSON.stringify({ error: "No response body" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { client: basicClient, accumulated: basicAccum } = teeStreamForCache(response.body);
+    const basicScholarshipIds = scholarshipRows.map((r: any) => r.scholarship_id).filter(Boolean);
+    (async () => {
+      try {
+        const raw = await basicAccum;
+        const content = extractContentFromSse(raw);
+        if (content && content.length > 200) {
+          await supabase.from("brief_cache").upsert({
+            profile_hash: briefProfileHash,
+            language: cacheLang,
+            grade,
+            content,
+            scholarship_ids: basicScholarshipIds,
+            retrieval_method: retrievalMethod,
+            generated_at: new Date().toISOString(),
+          }, { onConflict: "profile_hash,language,grade" });
+        }
+      } catch (e) {
+        console.warn("[brief-cache] basic persist failed", (e as Error).message);
+      }
+    })();
+    return new Response(basicClient, {
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream", "X-Cache": "MISS" },
     });
   } catch (e) {
     console.error("topuni-ai-pathway error:", e);
