@@ -13,6 +13,7 @@ import Navigation from "@/components/Navigation";
 import { shouldRedirectToRussian } from "@/utils/languageDetection";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { Footer } from "@/components/Footer";
+import { OutcomesBar } from "@/components/OutcomesBar";
 import { motion } from "framer-motion";
 
 const fadeUp = (delay = 0) => ({
@@ -145,6 +146,12 @@ const Index = () => {
               <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12]">
                 From scattered tabs to a ranked plan.
               </h2>
+              {/* Auto-hides until at least one TopUni member logs an
+                  accepted award. Once outcomes flow, this becomes a
+                  compounding trust signal right above the section. */}
+              <div className="mt-6">
+                <OutcomesBar variant="card" language="en" />
+              </div>
             </motion.div>
 
             <div className="grid sm:grid-cols-2 gap-4 sm:gap-5 mb-12 sm:mb-16">

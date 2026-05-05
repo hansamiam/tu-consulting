@@ -9,6 +9,7 @@ import aigulPhoto from "@/assets/aigul.jpeg";
 import Navigation from "@/components/Navigation";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { Footer } from "@/components/Footer";
+import { OutcomesBar } from "@/components/OutcomesBar";
 import { motion } from "framer-motion";
 
 const fadeUp = (delay = 0) => ({
@@ -125,6 +126,9 @@ const IndexRu = () => {
                 <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12]">
                   От 47 вкладок к ранжированному плану.
                 </h2>
+                <div className="mt-6">
+                  <OutcomesBar variant="card" language="ru" />
+                </div>
               </motion.div>
 
               <div className="grid sm:grid-cols-2 gap-4 sm:gap-5 mb-12 sm:mb-16">

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { OutcomesBar } from "@/components/OutcomesBar";
 
 interface PricingProps { language?: "en" | "ru"; }
 
@@ -187,6 +188,9 @@ const Pricing = ({ language = "en" }: PricingProps) => {
                 {t.h1a} <span className="text-gold-dark">{t.h1b}</span>
               </h1>
               <p className="text-foreground/65 text-lg sm:text-xl max-w-2xl mx-auto mt-6 leading-relaxed">{t.sub}</p>
+              <div className="mt-6 flex justify-center">
+                <OutcomesBar variant="card" language={language} />
+              </div>
             </motion.div>
           </div>
         </section>
