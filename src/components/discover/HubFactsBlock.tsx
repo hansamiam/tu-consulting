@@ -31,8 +31,11 @@ interface Row {
 }
 
 interface Props {
-  mode: "country" | "field" | "theme";
+  mode: "country" | "field" | "theme" | "country-field";
   label: string;
+  /** Used for country-field mode — the secondary label (the field
+   *  when mode treats country as primary). */
+  secondaryLabel?: string;
   rows: Row[];
 }
 
@@ -151,7 +154,7 @@ const formatList = (items: string[]): string => {
   return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
 };
 
-export const HubFactsBlock = ({ mode, label, rows }: Props) => {
+export const HubFactsBlock = ({ mode, label, secondaryLabel, rows }: Props) => {
   if (rows.length === 0) return null;
 
   const providers = topProviders(rows, 3);
@@ -175,6 +178,10 @@ export const HubFactsBlock = ({ mode, label, rows }: Props) => {
       const country = countries.length > 0 ? ` Top host countries: ${formatList(countries)}.` : "";
       const provider = providers.length > 0 ? ` Notable funders include ${formatList(providers)}.` : "";
       return `${total} verified ${label} scholarship ${total === 1 ? "program" : "programs"} are currently in our catalog.${country}${provider}`;
+    }
+    if (mode === "country-field") {
+      const provider = providers.length > 0 ? ` Programs include ${formatList(providers)}.` : "";
+      return `${total} verified ${secondaryLabel ?? "field-specific"} scholarship ${total === 1 ? "program" : "programs"} hosted in ${label} are currently in our catalog.${provider}`;
     }
     // theme
     const country = countries.length > 0 ? ` Top host countries: ${formatList(countries)}.` : "";
@@ -201,12 +208,12 @@ export const HubFactsBlock = ({ mode, label, rows }: Props) => {
             ))}
           </Row>
         )}
-        {mode !== "field" && fields.length > 0 && (
+        {mode !== "field" && mode !== "country-field" && fields.length > 0 && (
           <Row label="Top fields">
             {formatList(fields)}
           </Row>
         )}
-        {mode !== "country" && countries.length > 0 && (
+        {mode !== "country" && mode !== "country-field" && countries.length > 0 && (
           <Row label="Top countries">
             {formatList(countries)}
           </Row>

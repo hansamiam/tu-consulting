@@ -161,6 +161,11 @@ const App = () => (
           <Route path="/scholarships/by-country/:country" element={<ScholarshipsByFilter mode="country" />} />
           <Route path="/scholarships/by-field/:field"     element={<ScholarshipsByFilter mode="field" />} />
           <Route path="/scholarships/theme/:theme"        element={<ScholarshipsByFilter mode="theme" />} />
+          {/* Country × Field combinations — programmatic SEO catch-up
+              for long-tail queries like "computer science scholarships
+              in Germany". Renders as a single page with both filters
+              applied. */}
+          <Route path="/scholarships/in/:country/:field"  element={<ScholarshipsByFilter mode="country-field" />} />
           {/* Per-scholarship detail page — also indexable, 200+ SEO surfaces */}
           <Route path="/scholarships/:id"                 element={<ScholarshipDetail />} />
           {/* Essay critique — premium-gated reader-perspective AI feedback */}

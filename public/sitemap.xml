@@ -81,6 +81,53 @@
   <url><loc>https://topuni.org/scholarships/by-field/arts-and-humanities</loc> <changefreq>weekly</changefreq><priority>0.6</priority></url>
   <url><loc>https://topuni.org/scholarships/by-field/stem</loc>                <changefreq>weekly</changefreq><priority>0.7</priority></url>
 
+  <!-- ─── Programmatic SEO: country × field combinations ─────────
+       Long-tail surface for queries like "computer-science
+       scholarships in Germany". Top destination countries × top
+       popular fields. Each renders unique content via HubFactsBlock. -->
+  <url><loc>https://topuni.org/scholarships/in/united-states/computer-science</loc>     <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/united-states/engineering</loc>          <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/united-states/business</loc>             <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/united-states/economics</loc>            <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/united-states/medicine</loc>             <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/united-states/law</loc>                  <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/united-kingdom/computer-science</loc>    <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/united-kingdom/engineering</loc>         <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/united-kingdom/business</loc>            <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/united-kingdom/economics</loc>           <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/united-kingdom/medicine</loc>            <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/united-kingdom/law</loc>                 <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/canada/computer-science</loc>            <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/canada/engineering</loc>                 <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/canada/business</loc>                    <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/canada/economics</loc>                   <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/canada/medicine</loc>                    <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/canada/law</loc>                         <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/australia/computer-science</loc>         <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/australia/engineering</loc>              <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/australia/business</loc>                 <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/australia/economics</loc>                <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/germany/computer-science</loc>           <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/germany/engineering</loc>                <changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/germany/business</loc>                   <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/germany/economics</loc>                  <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/germany/medicine</loc>                   <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/germany/law</loc>                        <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/france/computer-science</loc>            <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/france/engineering</loc>                 <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/france/business</loc>                    <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/france/economics</loc>                   <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/netherlands/computer-science</loc>       <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/netherlands/engineering</loc>            <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/netherlands/business</loc>               <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/switzerland/engineering</loc>            <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/switzerland/business</loc>               <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/switzerland/economics</loc>              <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/ireland/computer-science</loc>           <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/ireland/business</loc>                   <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/sweden/computer-science</loc>            <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/scholarships/in/sweden/engineering</loc>                 <changefreq>weekly</changefreq><priority>0.6</priority></url>
+
   <!-- ─── Programmatic SEO: theme ─────────────────────────────── -->
   <url><loc>https://topuni.org/scholarships/theme/full-funding</loc>           <changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://topuni.org/scholarships/theme/closing-soon</loc>           <changefreq>daily</changefreq>  <priority>0.7</priority></url>

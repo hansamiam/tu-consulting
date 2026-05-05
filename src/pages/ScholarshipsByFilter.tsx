@@ -39,7 +39,7 @@ interface ScholarshipRow extends ScholarshipCardData {
 
 type StatsById = Record<string, ScholarshipCardStats>;
 
-type Mode = "country" | "field" | "theme";
+type Mode = "country" | "field" | "theme" | "country-field";
 
 interface PageMeta {
   h1: string;
@@ -194,9 +194,12 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
   const [loading, setLoading] = useState(true);
   const [shareTarget, setShareTarget] = useState<ScholarshipRow | null>(null);
 
-  /* Resolve the raw URL slug → human-readable canonical */
+  /* Resolve the raw URL slug(s) → human-readable canonical(s).
+     country-field mode reads BOTH slugs so the long-tail SEO URLs
+     ("/scholarships/in/germany/computer-science") map cleanly. */
   const slug = (params.country || params.field || params.theme || "").toLowerCase();
-  const resolved = useMemo<{ label: string; valid: boolean; meta: PageMeta; theme?: keyof typeof THEMES }>(() => {
+  const fieldSlug = (params.field || "").toLowerCase();
+  const resolved = useMemo<{ label: string; secondaryLabel?: string; valid: boolean; meta: PageMeta; theme?: keyof typeof THEMES }>(() => {
     if (mode === "country") {
       const label = COUNTRY_SLUGS[slug];
       if (!label) return { label: slug, valid: false, meta: blankMeta() };
@@ -227,6 +230,23 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
         },
       };
     }
+    if (mode === "country-field") {
+      const country = COUNTRY_SLUGS[slug];
+      const field = FIELD_SLUGS[fieldSlug];
+      if (!country || !field) return { label: slug, valid: false, meta: blankMeta() };
+      return {
+        label: country,
+        secondaryLabel: field,
+        valid: true,
+        meta: {
+          h1: `${field} scholarships in ${country}`,
+          title: `${field} scholarships in ${country} for international students — TopUni`,
+          intro: `${field}-specific scholarship programs hosted in ${country}. Verified, ranked against your profile, with deadlines and eligibility rules.`,
+          description: `Find ${field.toLowerCase()} scholarships in ${country} for international students. Eligibility, award amounts, deadlines, plus a free AI strategy planner.`,
+          canonical: `${SITE}/scholarships/in/${slug}/${fieldSlug}`,
+        },
+      };
+    }
     // theme
     const theme = THEMES[slug as keyof typeof THEMES];
     if (!theme) return { label: slug, valid: false, meta: blankMeta() };
@@ -242,7 +262,7 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
         canonical: `${SITE}/scholarships/theme/${slug}`,
       },
     };
-  }, [mode, slug]);
+  }, [mode, slug, fieldSlug]);
 
   /* Set page meta — title, description, canonical, full OG / Twitter */
   useEffect(() => {
@@ -307,6 +327,9 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
       } else if (mode === "field") {
         // target_fields is a text[] — use overlaps for case-insensitive match by slug roots
         q = q.contains("target_fields", [resolved.label]);
+      } else if (mode === "country-field" && resolved.secondaryLabel) {
+        // Both filters — narrow to the (country × field) intersection.
+        q = q.eq("host_country", resolved.label).contains("target_fields", [resolved.secondaryLabel]);
       }
       const { data } = await q;
       if (cancelled) return;
@@ -414,7 +437,10 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
             transition={{ duration: 0.5 }}
           >
             <p className="text-[11px] uppercase tracking-[0.22em] text-gold font-semibold mb-3">
-              {mode === "country" ? "Country guide" : mode === "field" ? "Field guide" : "Theme"}
+              {mode === "country" ? "Country guide"
+                : mode === "field" ? "Field guide"
+                : mode === "country-field" ? "Country × Field"
+                : "Theme"}
             </p>
             <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold text-primary-foreground tracking-tight leading-tight mb-4">
               {resolved.meta.h1}
@@ -433,10 +459,9 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
                 }}
               >
                 <Sparkles className="w-4 h-4" />
-                {mode === "country"
-                  ? `Build my ${resolved.label} strategy`
-                  : mode === "field"
-                  ? `Build my ${resolved.label} strategy`
+                {mode === "country" ? `Build my ${resolved.label} strategy`
+                  : mode === "field" ? `Build my ${resolved.label} strategy`
+                  : mode === "country-field" ? `Build my ${resolved.secondaryLabel} in ${resolved.label} strategy`
                   : "Build my personalised strategy"}
               </Button>
               <Button
@@ -464,6 +489,7 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
           <HubFactsBlock
             mode={mode}
             label={resolved.label}
+            secondaryLabel={resolved.secondaryLabel}
             rows={rows.map(r => ({
               scholarship_id: r.scholarship_id,
               scholarship_name: r.scholarship_name,
