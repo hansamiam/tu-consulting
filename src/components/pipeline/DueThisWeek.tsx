@@ -65,7 +65,9 @@ export const DueThisWeek = ({
     return trackedScholarships
       .map(s => {
         if (!s.application_deadline) return { s, days: null };
-        const days = Math.ceil((new Date(s.application_deadline).getTime() - now) / 86400_000);
+        const t = new Date(s.application_deadline).getTime();
+        if (Number.isNaN(t)) return { s, days: null };
+        const days = Math.ceil((t - now) / 86400_000);
         return { s, days };
       })
       .filter(({ days }) => days === null || (days > 0 && days <= 60))

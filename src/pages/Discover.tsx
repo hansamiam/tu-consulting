@@ -451,8 +451,24 @@ const isInclusive = (v: string | null | undefined) =>
   !!v && INCLUSIVE_PATTERNS.some(p => p.test(v.trim()));
 
 /* Friendlier date display */
-const dateOnly = (d: string | null) => d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : null;
-const daysUntil = (d: string | null) => d ? Math.ceil((new Date(d).getTime() - Date.now()) / 86400000) : null;
+/* Defensive deadline parsers — the LLM occasionally returns junk
+ * strings ("Multiple, see official site", "TBA", etc.) instead of
+ * an ISO date. Naive `new Date(...)` returns Invalid Date and
+ * everything downstream gets NaN day-counts → the row renders as
+ * "NaN days left" or breaks sort order. Both helpers now return
+ * null on bad input so callers fall back to "Rolling" / hide. */
+const dateOnly = (d: string | null) => {
+  if (!d) return null;
+  const t = new Date(d).getTime();
+  if (Number.isNaN(t)) return null;
+  return new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
+const daysUntil = (d: string | null) => {
+  if (!d) return null;
+  const t = new Date(d).getTime();
+  if (Number.isNaN(t)) return null;
+  return Math.ceil((t - Date.now()) / 86400000);
+};
 
 const WIZARD_STEPS = 4;
 const DEFAULT_WIZARD: WizardData = { fullName: "", email: "", nationality: "", degrees: [], field: "", gpa: "", gpaScale: "4.0", ielts: "" };

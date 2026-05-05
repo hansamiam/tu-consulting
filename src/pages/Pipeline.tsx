@@ -76,7 +76,9 @@ const fmtMoney = (v: number | null | undefined): string | null => {
 
 const daysUntil = (iso: string | null): number | null => {
   if (!iso) return null;
-  return Math.ceil((new Date(iso).getTime() - Date.now()) / 86400_000);
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return null;
+  return Math.ceil((t - Date.now()) / 86400_000);
 };
 
 interface PipelineProps {
