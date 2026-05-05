@@ -20,15 +20,7 @@ import { useNavigate } from "react-router-dom";
 
 type Screen = "landing" | "intake" | "dashboard";
 
-const COUNTRIES = [
-  "United States", "United Kingdom", "Canada", "Australia",
-  "Germany", "France", "Netherlands", "Switzerland", "Ireland",
-  "Sweden", "Norway", "Denmark", "Italy", "Spain", "Belgium",
-  "Singapore", "South Korea", "Japan", "Hong Kong", "China",
-  "New Zealand", "United Arab Emirates",
-  "Czech Republic", "Hungary", "Poland", "Estonia",
-  "Turkey", "Malaysia",
-];
+import { POPULAR_DESTINATIONS, ALL_COUNTRIES } from "@/data/countries";
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 22 },
@@ -103,6 +95,7 @@ const TopUniAI = () => {
   const [ielts, setIelts] = useState(draft?.ielts ?? "");
   const [sat, setSat] = useState(draft?.sat ?? "");
   const [targetCountries, setTargetCountries] = useState<string[]>(Array.isArray(draft?.targetCountries) ? draft!.targetCountries! : []);
+  const [countrySearch, setCountrySearch] = useState("");
   const [major, setMajor] = useState(draft?.major ?? "");
   const [budget, setBudget] = useState(draft?.budget ?? "");
   const [scholarshipNeeded, setScholarshipNeeded] = useState(draft?.scholarshipNeeded ?? "");
@@ -576,20 +569,59 @@ const TopUniAI = () => {
                     <div className="space-y-6">
                       <div className="space-y-2">
                         <Label className="text-xs uppercase tracking-wider font-medium">Target countries *</Label>
-                        <div className="flex flex-wrap gap-2">
-                          {COUNTRIES.map(c => (
+                        {/* Type-to-search across the full ALL_COUNTRIES list;
+                            popular destinations show by default. Selected
+                            chips bubble up at the top regardless of search
+                            so the user always sees what they've picked. */}
+                        <Input
+                          value={countrySearch}
+                          onChange={(e) => setCountrySearch(e.target.value)}
+                          placeholder="Type any country to search… (Mexico, Czech Republic, etc.)"
+                          className="h-10 bg-card"
+                        />
+                        {targetCountries.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {targetCountries.map(c => (
+                              <button
+                                key={`sel-${c}`}
+                                onClick={() => toggleCountry(c)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gold-dark text-primary-foreground border border-gold-dark"
+                              >
+                                {c}
+                                <span className="text-primary-foreground/70 hover:text-primary-foreground">×</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {(() => {
+                            const q = countrySearch.trim().toLowerCase();
+                            const list = q
+                              ? ALL_COUNTRIES.filter(c => c.v.toLowerCase().includes(q)).slice(0, 24)
+                              : POPULAR_DESTINATIONS;
+                            return list.map(c => {
+                              const selected = targetCountries.includes(c.v);
+                              if (selected) return null; // already shown in selected row
+                              return (
+                                <button
+                                  key={c.v}
+                                  onClick={() => toggleCountry(c.v)}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all bg-card text-foreground/75 border-border hover:border-gold/40"
+                                >
+                                  <span>{c.f}</span>
+                                  <span>{c.v}</span>
+                                </button>
+                              );
+                            });
+                          })()}
+                          {countrySearch.trim() && !ALL_COUNTRIES.some(c => c.v.toLowerCase() === countrySearch.trim().toLowerCase()) && (
                             <button
-                              key={c}
-                              onClick={() => toggleCountry(c)}
-                              className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
-                                targetCountries.includes(c)
-                                  ? "bg-gold-dark text-primary-foreground border-gold-dark"
-                                  : "bg-card text-foreground/75 border-border hover:border-gold/40"
-                              }`}
+                              onClick={() => { toggleCountry(countrySearch.trim()); setCountrySearch(""); }}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium border border-dashed border-gold/50 text-gold-dark hover:bg-gold/10"
                             >
-                              {c}
+                              + Add "{countrySearch.trim()}"
                             </button>
-                          ))}
+                          )}
                         </div>
                       </div>
                       <div className="space-y-1.5">
