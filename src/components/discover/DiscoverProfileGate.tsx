@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GraduationCap, Lock, ArrowRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface DiscoverProfile {
   fullName: string;
@@ -64,8 +65,122 @@ export const saveProfile = (profile: DiscoverProfile) => {
   localStorage.setItem(STORAGE_KEY, nextSerialized);
   if (prevSerialized !== nextSerialized) {
     try { localStorage.setItem(PROFILE_CHANGED_TS_KEY, Date.now().toString()); } catch { /* ignore */ }
+    // Cross-device sync — fire-and-forget round-trip to student_profiles
+    // when authed. Pre-this commit, profile edits only ever lived in
+    // localStorage; a user editing on mobile would see a stale profile
+    // on desktop. Now every change touches the DB so the brief-staleness
+    // signal works cross-device + a re-sign-in on a new device pulls
+    // the latest profile back down.
+    void syncProfileToDb(profile);
   }
 };
+
+/* ─── Cross-device sync helpers ─────────────────────────────────────
+ * Map between the DiscoverProfile shape (localStorage / wizard state)
+ * and the student_profiles table columns (DB). We keep the localStorage
+ * shape stable for backwards compat with existing wizard / Discover
+ * surfaces; the adapters below project on / off it as needed. */
+
+interface StudentProfileRow {
+  full_name?: string | null;
+  email?: string | null;
+  nationality?: string | null;
+  grade_level?: string | null;
+  gpa?: number | null;
+  ielts?: number | null;
+  toefl?: number | null;
+  sat?: number | null;
+  major?: string | null;
+  field_of_study?: string | null;
+  budget?: string | null;
+  updated_at?: string | null;
+}
+
+const profileToDbColumns = (p: DiscoverProfile): StudentProfileRow => {
+  const num = (v?: string) => {
+    if (!v) return null;
+    const n = Number.parseFloat(v);
+    return Number.isFinite(n) ? n : null;
+  };
+  return {
+    full_name: p.fullName || null,
+    email: p.email || null,
+    nationality: p.nationality || null,
+    grade_level: p.targetDegree ?? p.educationLevel ?? null,
+    gpa: num(p.gpa),
+    ielts: num(p.ieltsScore),
+    toefl: num(p.toeflScore),
+    sat: p.satScore ? Math.round(num(p.satScore) ?? 0) || null : null,
+    major: p.fieldOfInterest || null,
+    field_of_study: p.fieldOfInterest || null,
+    budget: p.budgetRange || null,
+  };
+};
+
+const dbColumnsToProfile = (row: StudentProfileRow): Partial<DiscoverProfile> => {
+  const out: Partial<DiscoverProfile> = {};
+  if (row.full_name) out.fullName = row.full_name;
+  if (row.email) out.email = row.email;
+  if (row.nationality) out.nationality = row.nationality;
+  if (row.grade_level) {
+    out.targetDegree = row.grade_level;
+    out.educationLevel = row.grade_level;
+  }
+  if (row.gpa != null) out.gpa = String(row.gpa);
+  if (row.ielts != null) out.ieltsScore = String(row.ielts);
+  if (row.toefl != null) out.toeflScore = String(row.toefl);
+  if (row.sat != null) out.satScore = String(row.sat);
+  if (row.major || row.field_of_study) out.fieldOfInterest = row.major || row.field_of_study || undefined;
+  if (row.budget) out.budgetRange = row.budget;
+  return out;
+};
+
+/** Push the local profile to student_profiles (authed users only).
+ *  Fire-and-forget — sync failures are non-fatal; localStorage is the
+ *  source of truth for the current session. */
+export async function syncProfileToDb(profile: DiscoverProfile): Promise<void> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.id) return;
+    const cols = profileToDbColumns(profile);
+    // Only upsert non-empty payloads. An anon-era profile saved
+    // before sign-in might have just (fullName, email, nationality);
+    // those are still worth round-tripping so the brief-staleness
+    // mechanism works cross-device.
+    if (!cols.full_name && !cols.email && !cols.nationality) return;
+    await supabase.from("student_profiles").upsert(
+      { user_id: user.id, ...cols, updated_at: new Date().toISOString() },
+      { onConflict: "user_id" },
+    );
+  } catch {
+    /* Sync failure is non-fatal — localStorage already holds the value. */
+  }
+}
+
+/** On sign-in, pull the user's authoritative profile from the DB and
+ *  merge into localStorage. DB wins for fields it has populated;
+ *  localStorage fills in anything not yet round-tripped. Bumps the
+ *  change timestamp so brief-staleness recomputes correctly. */
+export async function pullProfileFromDb(userId: string): Promise<DiscoverProfile | null> {
+  try {
+    const { data, error } = await supabase
+      .from("student_profiles")
+      .select("full_name, email, nationality, grade_level, gpa, ielts, toefl, sat, major, field_of_study, budget, updated_at")
+      .eq("user_id", userId)
+      .maybeSingle<StudentProfileRow>();
+    if (error || !data) return null;
+    const local = getStoredProfile() ?? { fullName: "", email: "", nationality: "" };
+    const dbProfile = dbColumnsToProfile(data);
+    const merged = { ...local, ...dbProfile } as DiscoverProfile;
+    // Use saveProfile so the change timestamp + downstream sync fire
+    // consistently. saveProfile's own DB sync becomes a no-op no-change
+    // round-trip in the common case (we just wrote the same payload).
+    saveProfile(merged);
+    return merged;
+  } catch {
+    return null;
+  }
+}
 
 const NATIONALITIES = [
   "Afghan", "Azerbaijani", "Bangladeshi", "Chinese", "Georgian", "Indian",

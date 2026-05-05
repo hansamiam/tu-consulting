@@ -114,9 +114,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       (_event, newSession) => {
         setSession(newSession);
         setUser(newSession?.user ?? null);
-        // Defer subscription load to avoid blocking auth
+        // Defer subscription load + profile cross-device pull to avoid
+        // blocking auth resolution. The profile sync is dynamic-imported
+        // so the auth bundle doesn't pull discover-gate code unnecessarily.
         setTimeout(() => {
           loadSubscription(newSession?.user?.id ?? null);
+          if (newSession?.user?.id) {
+            void import("@/components/discover/DiscoverProfileGate")
+              .then((m) => m.pullProfileFromDb(newSession.user!.id))
+              .catch(() => { /* sync failure non-fatal */ });
+          }
         }, 0);
       }
     );
@@ -125,6 +132,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(existing);
       setUser(existing?.user ?? null);
       loadSubscription(existing?.user?.id ?? null).finally(() => setLoading(false));
+      if (existing?.user?.id) {
+        void import("@/components/discover/DiscoverProfileGate")
+          .then((m) => m.pullProfileFromDb(existing.user!.id))
+          .catch(() => { /* sync failure non-fatal */ });
+      }
     });
 
     return () => authSub.unsubscribe();
