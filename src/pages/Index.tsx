@@ -22,30 +22,6 @@ const fadeUp = (delay = 0) => ({
   transition: { delay, duration: 0.7, ease: [0.22, 1, 0.36, 1] as const },
 });
 
-const STEPS = [
-  {
-    n: "01",
-    title: "Tell us about you",
-    body: "Seven quick questions — your scores, your story, your dream schools. No transcript upload, no 90-minute call.",
-    detail: "TopUni AI",
-    path: "/topuni-ai",
-  },
-  {
-    n: "02",
-    title: "Get your strategy",
-    body: "Every scholarship in our database ranked against your profile. Deadlines mapped to your timeline. The three highest-leverage next steps, written for you.",
-    detail: "Discover",
-    path: "/discover",
-  },
-  {
-    n: "03",
-    title: "Execute, don't guess",
-    body: "Yale · Cambridge · Harvard alumni run live workshops every month. Country guides. Admitted essays you study while writing yours.",
-    detail: "Academy",
-    path: "/academy",
-  },
-];
-
 const TEAM = [
   { name: "Samuel Han", title: "Founder & CEO", school: "Yale", photo: samuelPhoto },
   { name: "Nurzada Abdivalieva", title: "Co-Founder", school: "Tsinghua · Cambridge", photo: nurzadaPhoto },

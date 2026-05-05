@@ -9,10 +9,7 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Sparkles, Check, Loader2, BookOpen, Video, FileText, MessageSquare,
-  Mic, Compass, Wallet, Mail, GraduationCap,
-} from "lucide-react";
+import { Sparkles, Check, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";

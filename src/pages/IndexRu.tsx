@@ -18,30 +18,6 @@ const fadeUp = (delay = 0) => ({
   transition: { delay, duration: 0.7, ease: [0.22, 1, 0.36, 1] as const },
 });
 
-const STEPS = [
-  {
-    n: "01",
-    title: "Расскажите о себе",
-    body: "Семь быстрых вопросов — баллы, история, школы мечты. Без загрузки документов, без часового созвона.",
-    detail: "TopUni AI",
-    path: "/topuni-ai/ru",
-  },
-  {
-    n: "02",
-    title: "Получите стратегию",
-    body: "Каждая стипендия из нашей базы — ранжирована под ваш профиль. Дедлайны под ваш таймлайн. Три самых важных следующих шага — написанных для вас.",
-    detail: "Discover",
-    path: "/discover/ru",
-  },
-  {
-    n: "03",
-    title: "Действуйте, не гадайте",
-    body: "Выпускники Yale, Cambridge и Harvard ведут живые воркшопы каждый месяц. Гайды по странам. Принятые эссе — изучайте, пока пишете свои.",
-    detail: "Academy",
-    path: "/academy",
-  },
-];
-
 const TEAM = [
   { name: "Samuel Han", title: "Founder & CEO", school: "Yale", photo: samuelPhoto },
   { name: "Nurzada Abdivalieva", title: "Co-Founder", school: "Tsinghua · Cambridge", photo: nurzadaPhoto },
@@ -126,7 +102,7 @@ const IndexRu = () => {
                   className="text-sm sm:text-base px-7 py-5 gap-2"
                   onClick={() => navigate('/topuni-ai/ru')}
                 >
-                  Создать план поступления <ArrowRight className="h-4 w-4" />
+                  Моя бесплатная стратегия <ArrowRight className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -140,70 +116,18 @@ const IndexRu = () => {
             </div>
           </section>
 
-          {/* WORLDVIEW THESIS */}
-          <section className="py-14 sm:py-20 border-y border-border/60 bg-canvas-soft/40">
-            <div className="max-w-3xl mx-auto px-5 sm:px-8">
-              <motion.p {...fadeUp()} className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4 text-center">
-                Зачем мы существуем
-              </motion.p>
-              <motion.p {...fadeUp(0.05)} className="font-sans text-xl sm:text-2xl text-foreground/90 leading-[1.45] tracking-[-0.01em] text-center text-balance">
-                <span className="text-foreground font-semibold">Элитный admissions-консалтинг сломан.</span>{" "}
-                Он дорогой, ручной, и построен под семьи, готовые платить тысячи. TopUni — это софтверный слой:
-                <span className="text-gold-dark font-semibold"> персональная стратегия, ранжированные возможности и поддержка вживую</span>{" "}
-                — за долю стоимости.
-              </motion.p>
-            </div>
-          </section>
-
-          {/* HOW IT WORKS */}
+          {/* CONSOLIDATED — Round 10 collapse: worldview + how-it-works
+              + before/after merged into one tight narrative, mirroring EN. */}
           <section id="how" className="py-20 sm:py-28">
-            <div className="max-w-6xl mx-auto px-5 sm:px-8">
-              <motion.div {...fadeUp()} className="max-w-2xl mx-auto text-center mb-14 sm:mb-16">
-                <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">Как это работает</p>
-                <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12]">
-                  60 секунд. 3 шага. Реальный план.
-                </h2>
-              </motion.div>
-
-              <div className="space-y-px">
-                {STEPS.map((step, i) => (
-                  <motion.button
-                    key={step.n}
-                    {...fadeUp(0.08 * i)}
-                    onClick={() => navigate(step.path)}
-                    className="group w-full text-left grid grid-cols-12 gap-4 sm:gap-8 items-baseline py-7 sm:py-9 border-t border-border/70 hover:bg-canvas-soft/60 transition-colors px-2 sm:px-4 -mx-2 sm:-mx-4 rounded-md"
-                  >
-                    <div className="col-span-2 sm:col-span-1 font-mono text-sm sm:text-base text-gold-dark">{step.n}</div>
-                    <div className="col-span-10 sm:col-span-7">
-                      <h3 className="font-heading text-xl sm:text-2xl font-semibold text-foreground mb-2">
-                        {step.title}
-                      </h3>
-                      <p className="text-muted-foreground leading-relaxed text-[15px] sm:text-base max-w-xl">
-                        {step.body}
-                      </p>
-                    </div>
-                    <div className="hidden sm:flex col-span-4 items-baseline justify-end gap-2 text-sm">
-                      <span className="text-primary/70 font-medium">{step.detail}</span>
-                      <ArrowRight className="h-4 w-4 text-gold-dark group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </motion.button>
-                ))}
-                <div className="border-t border-border/70" />
-              </div>
-            </div>
-          </section>
-
-          {/* BEFORE vs AFTER */}
-          <section className="py-16 sm:py-20">
             <div className="max-w-5xl mx-auto px-5 sm:px-8">
-              <motion.div {...fadeUp()} className="max-w-2xl mx-auto text-center mb-10">
-                <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Сдвиг</p>
+              <motion.div {...fadeUp()} className="max-w-2xl mx-auto text-center mb-12 sm:mb-14">
+                <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">Сдвиг</p>
                 <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12]">
                   От 47 вкладок к ранжированному плану.
                 </h2>
               </motion.div>
 
-              <div className="grid sm:grid-cols-2 gap-4 sm:gap-5">
+              <div className="grid sm:grid-cols-2 gap-4 sm:gap-5 mb-12 sm:mb-16">
                 <motion.div
                   {...fadeUp(0.05)}
                   className="rounded-2xl border border-border bg-card p-6 sm:p-7"
@@ -253,6 +177,15 @@ const IndexRu = () => {
                   </ul>
                 </motion.div>
               </div>
+
+              <motion.p
+                {...fadeUp(0.18)}
+                className="font-sans text-lg sm:text-xl text-foreground/85 leading-[1.5] tracking-[-0.005em] text-center text-balance max-w-3xl mx-auto"
+              >
+                Элитный консалтинг по поступлению — дорогой, ручной и построенный под семьи, готовые платить тысячи.
+                {" "}
+                <span className="text-gold-dark font-semibold">TopUni — это софтверный слой</span> — та же персональная стратегия, ранжированные возможности и поддержка вживую, но за долю стоимости.
+              </motion.p>
             </div>
           </section>
 
@@ -301,26 +234,6 @@ const IndexRu = () => {
                 >
                   Вся команда <ArrowRight className="h-4 w-4" />
                 </button>
-              </motion.div>
-            </div>
-          </section>
-
-          {/* ACADEMY */}
-          <section className="py-20 sm:py-28">
-            <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
-              <motion.p {...fadeUp()} className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">
-                Академия
-              </motion.p>
-              <motion.h2 {...fadeUp(0.05)} className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-5">
-                Хватит читать 100 тредов на Reddit.
-              </motion.h2>
-              <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-lg leading-relaxed mb-8 max-w-xl mx-auto">
-                Живые ежемесячные воркшопы с выпускниками Yale, Cambridge и Harvard. Принятые эссе — изучайте, пока пишете свои. Библиотека пополняется каждый месяц — записи остаются у вас навсегда.
-              </motion.p>
-              <motion.div {...fadeUp(0.18)}>
-                <Button onClick={() => navigate('/academy')} variant="gold" className="gap-2">
-                  Открыть Академию <ArrowRight className="h-4 w-4" />
-                </Button>
               </motion.div>
             </div>
           </section>
