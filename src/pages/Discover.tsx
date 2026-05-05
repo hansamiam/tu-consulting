@@ -594,6 +594,38 @@ const NavyBackdrop = () => (
   </div>
 );
 
+/* Field-of-study cleanup helpers. The LLM produces noisy values
+ * (run-on comma-lists, "any"/"open" junk, drifting case). Reused by
+ * the cards' inline chip and the filter dropdown so the user sees
+ * the same cleaned label everywhere. */
+const FIELD_JUNK = /^(any|all|open|various|n\/a|none|—|-|other|misc|miscellaneous)$/i;
+const FIELD_ACRONYMS = /^(IT|AI|ML|CS|MBA|PhD|STEM|UX|UI|HR|R&D|GIS|IoT|VR|AR)$/i;
+const FIELD_CONNECTORS = /^(of|and|the|in|for|to|with|on|at|a|an)$/i;
+const titleCaseField = (s: string) => s
+  .replace(/\w\S*/g, (w) => {
+    if (FIELD_ACRONYMS.test(w)) return w.toUpperCase();
+    if (FIELD_CONNECTORS.test(w)) return w.toLowerCase();
+    return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+  })
+  .replace(/^./, (c) => c.toUpperCase());
+
+/** Pretty single-field label for compact card displays. Skips junk
+ *  values, takes the first piece of comma-list run-ons, and drops
+ *  unreasonably long entries. Returns null when nothing's worth
+ *  showing so callers can hide the chip. */
+const displayField = (fields: string[] | null | undefined): string | null => {
+  if (!Array.isArray(fields) || fields.length === 0) return null;
+  for (const raw of fields) {
+    if (!raw) continue;
+    const first = raw.split(/\s*[,/;]\s*/).filter(Boolean)[0];
+    if (!first) continue;
+    const trimmed = first.trim();
+    if (!trimmed || FIELD_JUNK.test(trimmed) || trimmed.length > 42) continue;
+    return titleCaseField(trimmed.replace(/[-_]+/g, " ").replace(/\s+/g, " "));
+  }
+  return null;
+};
+
 /* ─── Selectivity icon ───────────────────────────────────────────────── */
 const SelectivityChip = ({ level, dark = false }: { level: Scored["selectivity"]; dark?: boolean }) => {
   if (level === "unknown") return null;
@@ -964,12 +996,16 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
             decision facts. */}
         <div className="flex items-center gap-2 text-[11px]">
           <span className={`tabular-nums font-medium ${dl.cls}`}>{dl.text}</span>
-          {s.target_fields && s.target_fields.length > 0 && s.target_fields[0].toLowerCase() !== "any" && (
-            <>
-              <span className="text-muted-foreground/30">·</span>
-              <span className="text-muted-foreground truncate">{humanize(s.target_fields[0])}</span>
-            </>
-          )}
+          {(() => {
+            const fld = displayField(s.target_fields);
+            if (!fld) return null;
+            return (
+              <>
+                <span className="text-muted-foreground/30">·</span>
+                <span className="text-muted-foreground truncate">{fld}</span>
+              </>
+            );
+          })()}
           {hasRealScore && (
             <>
               <span className="text-muted-foreground/30 ml-auto">·</span>
@@ -2128,20 +2164,56 @@ const Discover = ({ language = "en" }: Props) => {
   }, [rows]);
 
   const fieldsAvailable = useMemo(() => {
-    // Field strings come from many sources (LLM extractions, manual seeds).
-    // Dedupe case-insensitively while preserving the most common casing.
-    // Also normalize trailing-s and hyphens so "Social Science" and
-    // "Social Sciences" or "social-science" don't double up.
+    // Field strings come from LLM extractions of scholarship pages, so
+    // the raw values are noisy: case drifts ("computer science" vs
+    // "Computer Science"), pluralisation ("Social Science" vs "Social
+    // Sciences"), separators ("data-science" vs "data science"), and
+    // junk values ("any", "open", "various", or 80-char run-on strings
+    // like "computer science, electrical engineering, mechanical
+    // engineering, and related fields"). Without cleanup the filter
+    // dropdown shows 100+ near-duplicate options and the selected
+    // filter only matches a fraction of relevant rows.
+    //
+    // Pipeline:
+    //   1. Reject junk patterns + over-long entries (>40 chars usually
+    //      = comma-list the LLM crammed into one field)
+    //   2. Normalise case + separators + trailing-s for dedup key
+    //   3. Title-case the display value so the dropdown reads cleanly
+    //   4. Count occurrences and sort by frequency (most common first)
+    //      — students see the popular fields up top instead of an
+    //      alphabetical list led by "Aerospace Engineering"
+
     const counts = new Map<string, { display: string; n: number }>();
     rows.forEach(r => r.target_fields?.forEach(f => {
       const raw = (f || "").trim();
-      if (!raw) return;
-      const key = raw.toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ").replace(/s$/, "");
-      const cur = counts.get(key);
-      if (cur) cur.n++;
-      else counts.set(key, { display: raw, n: 1 });
+      if (!raw || FIELD_JUNK.test(raw)) return;
+      // LLM occasionally crams comma-lists into one field — split them.
+      const splits = raw.split(/\s*[,/;]\s*/).filter(Boolean);
+      const items = splits.length > 1 ? splits : [raw];
+
+      items.forEach(item => {
+        item = item.trim();
+        if (!item || FIELD_JUNK.test(item)) return;
+        if (item.length > 42) return;
+
+        const key = item.toLowerCase()
+          .replace(/[-_]+/g, " ")
+          .replace(/\s+/g, " ")
+          .replace(/s$/, "")
+          .replace(/&/g, "and");
+
+        const display = titleCaseField(item.replace(/[-_]+/g, " ").replace(/\s+/g, " "));
+        const cur = counts.get(key);
+        if (cur) cur.n++;
+        else counts.set(key, { display, n: 1 });
+      });
     }));
-    return [...counts.values()].map(v => v.display).sort();
+
+    // Sort by frequency desc, alphabetical tiebreak. Most common fields
+    // surface first — matches how users actually scan a dropdown.
+    return [...counts.values()]
+      .sort((a, b) => b.n - a.n || a.display.localeCompare(b.display))
+      .map(v => v.display);
   }, [rows]);
 
   const filtered = useMemo(() => {
@@ -2174,9 +2246,23 @@ const Discover = ({ language = "en" }: Props) => {
         : s.selectivity === filters.selectivity);
     }
     if (filters.field !== "all") {
-      const norm = (f: string) => f.toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ").replace(/s$/, "");
+      // Mirror the dedupe pipeline used to build the dropdown: comma-
+      // split run-on LLM strings, normalise separators + trailing-s +
+      // & vs and. Without this, picking "Engineering" wouldn't match
+      // a row whose target_fields contained "Computer Science,
+      // Engineering" (single comma-joined entry).
+      const norm = (f: string) => f.toLowerCase()
+        .replace(/[-_]+/g, " ")
+        .replace(/\s+/g, " ")
+        .replace(/&/g, "and")
+        .replace(/s$/, "");
       const want = norm(filters.field);
-      list = list.filter(s => s.target_fields?.some(f => norm(f) === want));
+      list = list.filter(s =>
+        s.target_fields?.some(f => {
+          const splits = f.split(/\s*[,/;]\s*/).filter(Boolean);
+          return splits.some(item => norm(item) === want);
+        }),
+      );
     }
     if (filters.hostCountry !== "all") list = list.filter(s => s.host_country && canonicalCountry(s.host_country) === filters.hostCountry);
     if (filters.onlyEligible) list = list.filter(s => s.eligibility === "eligible" || s.eligibility === "likely");
