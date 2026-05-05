@@ -201,7 +201,7 @@ const AIMatch = ({ language = "en" }: AIMatchProps) => {
         .select(
           "scholarship_id, scholarship_name, provider_name, host_country, coverage_type, " +
           "award_amount_text, estimated_total_value_usd, application_deadline, " +
-          "target_degree_level, target_fields, why_this_fits",
+          "target_degree_level, target_fields, why_this_fits, official_url",
         )
         .in("scholarship_id", ids);
       const byId = new Map<string, ScholarshipLite>(
