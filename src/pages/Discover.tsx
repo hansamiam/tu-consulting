@@ -30,7 +30,8 @@ import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDiv
 import { ExpandedScholarshipDialog } from "@/components/discover/ExpandedScholarshipDialog";
 import { MatchScoreBreakdown } from "@/components/discover/MatchScoreBreakdown";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { CountryArt, CampusPattern } from "@/lib/countryArt";
+import { CountryArt } from "@/lib/countryArt";
+import { FlagPattern } from "@/lib/flagPattern";
 import { accentForCountry, shortCountry, canonicalCountry } from "@/lib/countryAccent";
 import {
   FIELD_JUNK,
@@ -1268,7 +1269,7 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
             across the band at low opacity. Whispers "campus courtyard"
             so the band feels less like a colored stripe and more like a
             postcard the student is dreaming about walking through. */}
-        <CampusPattern patternId={`campus-${s.scholarship_id}`} className="absolute inset-0 w-full h-full text-white opacity-[0.18] pointer-events-none" />
+        <FlagPattern country={s.host_country} className="absolute inset-0 w-full h-full text-white" opacity={0.16} />
         {/* Country landmark sits ABOVE the campus pattern, anchored right */}
         <CountryArt country={s.host_country} className="absolute right-2 inset-y-0 h-full opacity-35 pointer-events-none" />
         {/* fade-from-left so silhouette + pattern don't compete with text */}
@@ -1676,7 +1677,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           const dsAccent = accentForCountry(s.host_country);
           return (
             <div className={`relative h-28 sm:h-32 overflow-hidden bg-gradient-to-r ${dsAccent} shrink-0`}>
-              <CampusPattern patternId={`ds-pattern-${s.scholarship_id}`} className="absolute inset-0 w-full h-full text-white opacity-[0.18] pointer-events-none" />
+              <FlagPattern country={s.host_country} className="absolute inset-0 w-full h-full text-white" opacity={0.14} />
               <CountryArt country={s.host_country} className="absolute right-4 inset-y-0 h-full opacity-40 pointer-events-none" />
               <span className="absolute inset-0 bg-gradient-to-r from-black/30 via-black/10 to-transparent pointer-events-none" />
               <div className="relative h-full flex flex-col justify-end px-7 pb-4">
@@ -2360,6 +2361,13 @@ const Discover = ({ language = "en" }: Props) => {
         .from("scholarships")
         .select("*")
         .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
+        // Lifecycle filter — closed-recent + closed-archived rows are
+        // hidden from discovery automatically. The DB trigger keeps
+        // lifecycle_status fresh on every UPDATE; the daily cron at
+        // 03:00 UTC handles time-based transitions (a deadline that
+        // passed last night gets flipped today). Direct /scholarships/:id
+        // lookups still work for saved-pipeline + shared-brief links.
+        .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null")
         .order("estimated_total_value_usd", { ascending: false });
       if (data) {
         const cleaned = dedupeAndQualityFilter(data as unknown as Scholarship[]);
@@ -2991,53 +2999,10 @@ const Discover = ({ language = "en" }: Props) => {
           {/* ══ RESULTS — distinctive app-shell experience ══ */}
           {phase === "results" && (
             <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7 }}>
-              {/* ─── Trending strip — the OpportunitiesForYouth.org pattern.
-                  Single closest-deadline scholarship surfaced in a thin
-                  bar above the profile strip. Creates urgency + social-
-                  proof feel without needing live view-count data. Click
-                  opens the DetailSheet. Hidden when no upcoming deadlines
-                  exist (all rolling or past). */}
-              {(() => {
-                const now = Date.now();
-                const closest = ranked
-                  .map((s) => {
-                    if (!s.application_deadline) return null;
-                    const days = Math.ceil((new Date(s.application_deadline).getTime() - now) / 86400_000);
-                    if (days <= 0 || days > 60) return null;
-                    return { row: s, days };
-                  })
-                  .filter((x): x is { row: Scored; days: number } => x !== null)
-                  .sort((a, b) => a.days - b.days)[0];
-                if (!closest) return null;
-                return (
-                  <motion.button
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4 }}
-                    onClick={() => setOpenDetail(closest.row)}
-                    className="w-full bg-primary text-primary-foreground hover:bg-primary/95 transition-colors group"
-                    aria-label="Trending scholarship — click to open"
-                  >
-                    <div className="max-w-7xl mx-auto px-5 sm:px-8 py-2.5 flex items-center gap-3 text-[12px]">
-                      <span className="inline-flex items-center gap-1.5 text-gold font-semibold uppercase tracking-[0.22em] text-[10px] shrink-0">
-                        <Flame className="w-3 h-3" />
-                        Trending
-                      </span>
-                      <span className="text-primary-foreground/40 hidden sm:inline">·</span>
-                      <span className="font-semibold truncate min-w-0">{closest.row.scholarship_name}</span>
-                      {closest.row.host_country && (
-                        <span className="text-primary-foreground/55 hidden md:inline truncate">
-                          {closest.row.host_country}
-                        </span>
-                      )}
-                      <span className="ml-auto inline-flex items-center gap-1 shrink-0 font-semibold tabular-nums">
-                        {closest.days <= 7 ? <span className="text-destructive bg-destructive/15 px-1.5 py-0.5 rounded">{closest.days} days</span> : <span className="text-gold-light">{closest.days} days</span>}
-                        <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                      </span>
-                    </div>
-                  </motion.button>
-                );
-              })()}
+              {/* Trending strip removed — felt tacky against the rest of
+                  the navy/gold product chrome. Closest-deadline scholarships
+                  still surface via the SavedDeadlineBanner and via the
+                  sort-by-deadline option. */}
 
               {/* ─── Profile context strip — branches based on whether the
                   user has profile data. When profile is filled: chips

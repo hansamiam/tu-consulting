@@ -325,7 +325,8 @@ serve(async (req) => {
           // DATA_PIPELINE_AUDIT.md: only verified + stale rows reach the
           // brief; broken (URL fails) and pending (un-vetted scrapes) are
           // hidden until they're promoted to verified.
-          .or("verification_status.is.null,verification_status.in.(verified,stale,pending)");
+          .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
+          .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null");
         // Re-order to match retrieval order; tag each with similarity & eligibility flag.
         const order = new Map(matches.map((m: any, i: number) => [m.scholarship_id, i]));
         const elig = new Map(matches.map((m: any) => [m.scholarship_id, m.passes_eligibility]));
@@ -352,7 +353,8 @@ serve(async (req) => {
           "source_url, last_verified_at, verification_status, " +
           "why_this_fits, strategy_notes"
         )
-        .or("verification_status.is.null,verification_status.in.(verified,stale,pending)");
+        .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
+          .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null");
       if (targetCountries.length > 0) {
         q = q.in("host_country", [...targetCountries, "Global", "Multiple", "European Union"]);
       }
@@ -383,6 +385,7 @@ serve(async (req) => {
         )
         .eq("scholarship_id", focusScholarshipId)
         .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
+          .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null")
         .maybeSingle();
       if (focusRow) {
         focusScholarshipName = focusRow.scholarship_name;
