@@ -22,6 +22,8 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useApplicationTracker, type AppStatus } from "@/hooks/useApplicationTracker";
@@ -172,7 +174,8 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
 
   /* Stats banner — total tracked, deadlines in next 30 days, total
      potential funding stack (sum of estimated_total_value_usd for
-     non-rejected non-hidden tracked scholarships). */
+     non-rejected non-hidden tracked scholarships) + the new "Won"
+     stat aggregating awardedAmountUsd across all accepted statuses. */
   const stats = useMemo(() => {
     const active = rows.filter(
       (r) => !tracker.hidden.has(r.scholarship_id) && tracker.statusMap[r.scholarship_id] !== "rejected",
@@ -187,20 +190,70 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
       const s = tracker.statusMap[r.scholarship_id];
       return s === "accepted" || s === "rejected";
     }).length;
+    let wonUsd = 0;
+    let wonCount = 0;
+    for (const id of Object.keys(tracker.statusMap)) {
+      if (tracker.statusMap[id] !== "accepted") continue;
+      wonCount += 1;
+      wonUsd += tracker.awardedMap[id] ?? 0;
+    }
     return {
       totalTracked: active.length,
       urgentCount: urgent.length,
       stackUsd,
       submitted,
       decisions,
+      wonUsd,
+      wonCount,
       stackText: fmtMoney(stackUsd),
+      wonText: fmtMoney(wonUsd),
     };
-  }, [rows, tracker.statusMap, tracker.hidden]);
+  }, [rows, tracker.statusMap, tracker.hidden, tracker.awardedMap]);
 
   /* Detail sheet state */
   const [openDetail, setOpenDetail] = useState<Scholarship | null>(null);
   const [draftNote, setDraftNote] = useState<string>("");
   const [calendarOpen, setCalendarOpen] = useState(false);
+
+  /* Award-capture prompt — opens whenever a member flips a row's status
+     to 'accepted'. We keep the scholarship_id the prompt is for so the
+     dialog can render the name + write the captured amount back via
+     tracker.setAwardedAmount. Skip leaves awardedAmountUsd null (the
+     row still counts as 'accepted'; it just doesn't contribute to the
+     "Won" stat). */
+  const [awardPromptId, setAwardPromptId] = useState<string | null>(null);
+  const [awardDraft, setAwardDraft] = useState<string>("");
+  const awardPromptScholarship = useMemo(
+    () => rows.find((r) => r.scholarship_id === awardPromptId) ?? null,
+    [rows, awardPromptId],
+  );
+
+  const handleStatusChange = (scholarshipId: string, status: AppStatus | null) => {
+    tracker.setStatus(scholarshipId, status);
+    if (status === "accepted") {
+      // Pre-fill the input with the existing captured amount (if any) or
+      // the row's estimated_total_value_usd as a sensible default.
+      const existing = tracker.awardedMap[scholarshipId];
+      const fallback = rows.find((r) => r.scholarship_id === scholarshipId)?.estimated_total_value_usd ?? null;
+      setAwardDraft(existing != null ? String(existing) : fallback != null ? String(fallback) : "");
+      setAwardPromptId(scholarshipId);
+    }
+  };
+
+  const submitAward = () => {
+    if (!awardPromptId) return;
+    const cleaned = awardDraft.replace(/[$,\s]/g, "");
+    const num = cleaned ? Number.parseInt(cleaned, 10) : NaN;
+    tracker.setAwardedAmount(awardPromptId, Number.isFinite(num) && num >= 0 ? num : null);
+    setAwardPromptId(null);
+    setAwardDraft("");
+  };
+  const skipAward = () => {
+    if (!awardPromptId) return;
+    tracker.setAwardedAmount(awardPromptId, null);
+    setAwardPromptId(null);
+    setAwardDraft("");
+  };
 
   useEffect(() => {
     if (openDetail) setDraftNote(tracker.notesMap[openDetail.scholarship_id] || "");
@@ -267,7 +320,7 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
       {/* ─── Stats banner ─────────────────────────────────────────── */}
       <section className="border-b border-border bg-card/40">
         <div className="max-w-6xl mx-auto px-5 sm:px-8 py-5">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             <Stat
               label={t("Tracked", "Отслеживается")}
               value={stats.totalTracked.toString()}
@@ -287,6 +340,12 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
               label={t("Funding stack", "Стек финансирования")}
               value={stats.stackText || "—"}
               hint={t("est. potential", "потенциал")}
+            />
+            <Stat
+              label={t("Won", "Выиграно")}
+              value={stats.wonText || (stats.wonCount > 0 ? "$0" : "—")}
+              tone={stats.wonUsd > 0 ? "good" : "neutral"}
+              hint={stats.wonCount > 0 ? `${stats.wonCount} ${t("accepted", "принято")}` : undefined}
             />
           </div>
         </div>
@@ -358,7 +417,7 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                           note={tracker.notesMap[s.scholarship_id]}
                           isRu={isRu}
                           onOpen={() => setOpenDetail(s)}
-                          onStatusChange={(status) => tracker.setStatus(s.scholarship_id, status)}
+                          onStatusChange={(status) => handleStatusChange(s.scholarship_id, status)}
                         />
                       ))
                     )}
@@ -473,7 +532,7 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                                 tracker.toggleShortlist(openDetail.scholarship_id);
                               }
                             } else {
-                              tracker.setStatus(openDetail.scholarship_id, opt.value as AppStatus | null);
+                              handleStatusChange(openDetail.scholarship_id, opt.value as AppStatus | null);
                             }
                           }}
                         >
@@ -572,6 +631,62 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
         onOpenChange={setCalendarOpen}
         language={language}
       />
+
+      {/* Award-capture prompt — fires when status flips to 'accepted'.
+          Skipping leaves awarded_amount_usd null, so the row still
+          counts as accepted but is invisible to the "Won" stat. */}
+      <Dialog open={!!awardPromptId} onOpenChange={(o) => !o && skipAward()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-lg leading-tight">
+              {t("Congrats — what was the award?", "Поздравляем — на какую сумму?")}
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-relaxed">
+              {awardPromptScholarship
+                ? cleanScholarshipName(awardPromptScholarship.scholarship_name)
+                : ""}
+              <span className="block mt-2 text-muted-foreground">
+                {t(
+                  "Logging the amount unlocks your personal 'won' total and helps future TopUni members see what's actually possible. Your name is never attached.",
+                  "Сумма даёт вам личный итог «выиграно» и помогает будущим членам TopUni увидеть, что реально. Ваше имя никогда не привязывается.",
+                )}
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <label className="text-[11px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
+              {t("Award amount (USD)", "Сумма (USD)")}
+            </label>
+            <div className="mt-2 relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+              <Input
+                type="text"
+                inputMode="numeric"
+                autoFocus
+                placeholder={t("e.g. 25000", "напр. 25000")}
+                value={awardDraft}
+                onChange={(e) => setAwardDraft(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") submitAward(); }}
+                className="pl-7"
+              />
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-2">
+              {t(
+                "Just the headline number is fine — tuition + stipend + travel rolled together.",
+                "Достаточно общей суммы — обучение + стипендия + проезд вместе.",
+              )}
+            </p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="ghost" onClick={skipAward} className="text-muted-foreground">
+              {t("Skip", "Пропустить")}
+            </Button>
+            <Button variant="gold" onClick={submitAward} disabled={!awardDraft.trim()}>
+              {t("Save", "Сохранить")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Footer language={isRu ? "ru" : "en"} />
     </div>
