@@ -1045,23 +1045,22 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
       <div className={`w-1 shrink-0 bg-gradient-to-b ${accent} ${isFullRide ? "ring-1 ring-inset ring-gold/30" : ""}`} aria-hidden />
 
       <div className="flex-1 grid grid-cols-[52px,minmax(0,1fr),auto] sm:grid-cols-[52px,minmax(0,3fr),minmax(0,1.4fr),minmax(0,0.8fr),auto] items-center gap-4 px-4 py-3.5 min-w-0">
-        {/* Score badge — visually consistent across rows. Always a
-            country-gradient circle with the country's landmark behind.
-            When the user has a real score, that score overlays in the
-            centre as a bold number on a cream pill so it pops; without
-            a score the landmark stands alone (no awkward "0/100" or
-            blank space). Full-ride rows get the gold corner pin
-            either way. Hover-card breakdown only mounts when the
-            score is real. */}
+        {/* Country-art badge. Score number ONLY shown when score is
+            meaningfully strong (≥70 with eligibility eligible/likely).
+            Mid-range scores (40-69) cluster across most rows and made
+            the number-on-every-card pattern feel weak — better to let
+            those land as just the country circle. Full-ride rows
+            still get the gold corner pin either way. */}
         {(() => {
+          const showScore = hasRealScore && s.match >= 70 && (s.eligibility === "eligible" || s.eligibility === "likely");
           const badge = (
             <div
               className={`relative flex items-center justify-center w-11 h-11 rounded-full overflow-hidden bg-gradient-to-br ${accent} ${isFullRide ? "ring-2 ring-gold/40" : "ring-1 ring-border/30"}`}
-              aria-label={hasRealScore ? `Match score: ${s.match} of 100` : (s.host_country || "Scholarship")}
+              aria-label={showScore ? `Match score: ${s.match} of 100` : (s.host_country || "Scholarship")}
             >
               <CountryArt country={s.host_country} className="absolute inset-0 h-full w-full opacity-45 text-white p-1.5" />
               <span className="absolute inset-0 bg-black/15" />
-              {hasRealScore && (
+              {showScore && (
                 <span className="relative inline-flex items-center justify-center min-w-7 h-7 px-1.5 rounded-full bg-card shadow-sm">
                   <span className="font-heading text-[13px] font-bold tabular-nums leading-none text-foreground">{s.match}</span>
                 </span>
@@ -1073,7 +1072,12 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
               )}
             </div>
           );
+          // Hover breakdown stays available even when score isn't shown
+          // — clicking the badge still surfaces the per-criteria gaps.
           if (!hasRealScore) return badge;
+          // For mid-range non-strong rows we keep the badge clickable
+          // for the breakdown, but the visible badge is silent (no
+          // number).
           return (
             <HoverCard openDelay={120} closeDelay={80}>
               <HoverCardTrigger asChild>
