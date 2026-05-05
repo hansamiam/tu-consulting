@@ -12,7 +12,7 @@ import { shortCountry } from "@/lib/countryAccent";
 
 /**
  * The product's premium scholarship card. Used on every listing surface
- * (Discover, ScholarshipsByFilter, AIMatch results, CountryGuide, etc.).
+ * (Discover, ScholarshipsByFilter, CountryGuide, etc.).
  *
  * Designed to feel like Linear / Vercel cards — not a school project:
  *  - Bold heading with provider initials avatar

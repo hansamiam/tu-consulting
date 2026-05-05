@@ -5,37 +5,33 @@ interface FooterProps {
   variant?: "light" | "dark";
 }
 
+// Round-17 consolidation: Product menu now lists three surfaces, not
+// six. Calendar + Essay critique are folded into the Workspace
+// (/pipeline) tab bar; the standalone /match route was retired since
+// Discover's match scoring + the brief generator already cover its job.
+// The Why-TopUni page was also retired — its argument now lives as a
+// Journal article ("What to look for in an admissions consultant").
 const PRODUCT_LINKS_EN = [
   { to: "/topuni-ai",  label: "AI strategy brief" },
   { to: "/discover",   label: "Discover scholarships" },
-  { to: "/pipeline",   label: "Application pipeline" },
-  { to: "/calendar",   label: "Deadline calendar" },
-  { to: "/essay",      label: "Essay critique" },
-  { to: "/match",      label: "AI matcher" },
+  { to: "/pipeline",   label: "Workspace" },
 ];
 const PRODUCT_LINKS_RU = [
   { to: "/topuni-ai/ru", label: "AI стратегия" },
   { to: "/discover/ru",  label: "Стипендии" },
-  { to: "/pipeline/ru",  label: "Воронка заявок" },
-  { to: "/calendar/ru",  label: "Календарь дедлайнов" },
-  { to: "/essay/ru",     label: "AI критика эссе" },
-  { to: "/match/ru",     label: "AI подбор стипендий" },
+  { to: "/pipeline/ru",  label: "Рабочая зона" },
 ];
 
 const COMPANY_LINKS_EN = [
   { to: "/team",     label: "Team" },
-  { to: "/why-tu",   label: "Why TopUni" },
   { to: "/pricing",  label: "Pricing" },
   { to: "/academy",  label: "Academy" },
   { to: "/blog",     label: "Journal" },
   { to: "/refer",    label: "Refer a friend" },
   { to: "/submit",   label: "Submit a scholarship" },
 ];
-// Mirror EN exactly so Russian users see every surface. Where we don't yet
-// have a /ru variant, the link still works (page renders English).
 const COMPANY_LINKS_RU = [
   { to: "/team/ru",     label: "Команда" },
-  { to: "/why-tu/ru",   label: "Почему TopUni" },
   { to: "/pricing/ru",  label: "Цены" },
   { to: "/academy",     label: "Академия" },
   { to: "/blog/ru",     label: "Журнал" },

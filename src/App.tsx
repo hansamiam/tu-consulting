@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -27,8 +27,6 @@ const Offerings            = lazy(() => import("./pages/Offerings"));
 const OfferingsRu          = lazy(() => import("./pages/OfferingsRu"));
 const FAQ                  = lazy(() => import("./pages/FAQ"));
 const FAQRu                = lazy(() => import("./pages/FAQRu"));
-const WhyTU                = lazy(() => import("./pages/WhyTU"));
-const WhyTURu              = lazy(() => import("./pages/WhyTURu"));
 const Blog                 = lazy(() => import("./pages/Blog"));
 const BlogRu               = lazy(() => import("./pages/BlogRu"));
 const BlogArticle          = lazy(() => import("./pages/BlogArticle"));
@@ -53,7 +51,6 @@ const Pipeline             = lazy(() => import("./pages/Pipeline"));
 const ScholarshipsByFilter = lazy(() => import("./pages/ScholarshipsByFilter"));
 const ScholarshipDetail    = lazy(() => import("./pages/ScholarshipDetail"));
 const EssayCritique        = lazy(() => import("./pages/EssayCritique"));
-const AIMatch              = lazy(() => import("./pages/AIMatch"));
 const Calendar             = lazy(() => import("./pages/Calendar"));
 const Refer                = lazy(() => import("./pages/Refer"));
 const Admin                = lazy(() => import("./pages/Admin"));
@@ -114,8 +111,10 @@ const App = () => (
           <Route path="/offerings/ru" element={<OfferingsRu />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/faq/ru" element={<FAQRu />} />
-          <Route path="/why-tu" element={<WhyTU />} />
-          <Route path="/why-tu/ru" element={<WhyTURu />} />
+          {/* /why-tu retired round 17 — folded into Journal article
+              "What to look for in an admissions consultant" */}
+          <Route path="/why-tu" element={<Navigate to="/blog/admissions-consultant-checklist" replace />} />
+          <Route path="/why-tu/ru" element={<Navigate to="/blog/admissions-consultant-checklist/ru" replace />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/ru" element={<BlogRu />} />
           <Route path="/blog/:id" element={<BlogArticle language="en" />} />
@@ -166,9 +165,11 @@ const App = () => (
           {/* Essay critique — premium-gated reader-perspective AI feedback */}
           <Route path="/essay"                            element={<EssayCritique language="en" />} />
           <Route path="/essay/ru"                         element={<EssayCritique language="ru" />} />
-          {/* Fast AI scholarship matcher — type a sentence, get matches */}
-          <Route path="/match"                            element={<AIMatch language="en" />} />
-          <Route path="/match/ru"                         element={<AIMatch language="ru" />} />
+          {/* /match retired round 17 — Discover's match scoring + the
+              brief generator already cover the standalone matcher's
+              job. Redirect saves any in-the-wild bookmarks. */}
+          <Route path="/match"                            element={<Navigate to="/discover" replace />} />
+          <Route path="/match/ru"                         element={<Navigate to="/discover/ru" replace />} />
 
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/funnel" element={<FunnelDashboard />} />
@@ -184,8 +185,8 @@ const App = () => (
           <Route path="/blog/guide/:slug/ru" element={<CountryGuide language="ru" />} />
           {/* /prep/* routes removed — Prep is spinning off as its own product */}
           {/* Legacy routes for backward compatibility */}
-          <Route path="/why-us" element={<WhyTU />} />
-          <Route path="/why-us/ru" element={<WhyTURu />} />
+          <Route path="/why-us" element={<Navigate to="/blog/admissions-consultant-checklist" replace />} />
+          <Route path="/why-us/ru" element={<Navigate to="/blog/admissions-consultant-checklist/ru" replace />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
           <Route path="/pricing" element={<Pricing language="en" />} />
           <Route path="/pricing/ru" element={<Pricing language="ru" />} />
