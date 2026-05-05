@@ -30,6 +30,8 @@ import {
   cleanAwardText,
   cleanEligibleCountries,
   cleanCitizenshipRequirements,
+  cleanTargetDemographics,
+  extractDemographicsFromCitizenship,
   stripUserRelative,
 } from "../_shared/scholarshipFields.ts";
 
@@ -81,6 +83,7 @@ interface ExtractedScholarship {
   award_type?: string[];
   target_degree_level?: string[];
   target_fields?: string[];
+  target_demographics?: string[];
   min_gpa?: number | null;
   gpa_scale?: number | null;
   min_ielts?: number | null;
@@ -144,6 +147,7 @@ Field hygiene (NON-NEGOTIABLE — these are the rules generic LLMs break):
 - target_fields: an ARRAY where each entry is exactly ONE field. ["Computer Science", "Engineering"], not ["Computer Science, Engineering"]. Don't comma-list inside one entry.
 - award_amount_text: a single concise phrase ("Full tuition + $35,000 stipend") — under 80 chars when possible. Drop trailing parentheticals that don't add unique numerical info ("(renewable upon satisfactory progress)" is junk; "($30,000/year × 4)" is fine).
 - host_country: a SINGLE country name. If the program is genuinely multi-country, use exactly "Multiple countries" — never "Multiple (Korea, Japan, etc.)" or "Various (primarily Africa)".
+- target_demographics: array of canonical tags from this CONSTRAINED SET ONLY (free text gets rejected): "women", "men", "lgbtq", "first-generation", "low-income", "refugee", "displaced", "indigenous", "underrepresented-stem", "underrepresented-minority", "disability", "military-veteran", "rural", "mature-student". Add a tag ONLY when the program text EXPLICITLY restricts to or specifically targets that group. Do NOT add tags as a vibe — a "leadership" scholarship that mentions women in passing is NOT "women"-targeted. citizenship_requirements is for COUNTRY of citizenship; demographic constraints (gender / identity / income / refugee status) belong here, not there.
 
 Set confidence honestly. Better to flag low-confidence than to publish noise.`;
 
@@ -171,6 +175,7 @@ Extract every scholarship program described on this page. Return strictly:
       "duration_text": "...",
       "target_degree_level": ["master","phd"],
       "target_fields": ["..."],
+      "target_demographics": ["women","first-generation"],
       "min_gpa": 3.5, "gpa_scale": 4.0,
       "min_ielts": 7.0, "min_toefl": 100,
       "citizenship_requirements": "...",
@@ -343,9 +348,24 @@ function validateExtracted(x: unknown): ExtractedScholarship | null {
 
   // Strip gender-only / category-only values that the LLM mistakenly
   // wrote into citizenship_requirements ("Women", "LGBTQ+", etc.).
+  // BEFORE clearing, try to recover an implicit target_demographics tag
+  // from the misclassified value so we don't silently lose the signal.
   if (typeof o.citizenship_requirements === "string") {
+    const recovered = extractDemographicsFromCitizenship(o.citizenship_requirements);
+    if (recovered) {
+      const existing = Array.isArray(o.target_demographics) ? o.target_demographics as string[] : [];
+      o.target_demographics = Array.from(new Set([...existing, recovered]));
+    }
     const cleaned = cleanCitizenshipRequirements(o.citizenship_requirements);
     o.citizenship_requirements = cleaned ?? undefined;
+  }
+
+  // Coerce target_demographics to canonical tags (drop anything not in
+  // the constrained set so the DB CHECK constraint doesn't reject the
+  // whole insert).
+  if (Array.isArray(o.target_demographics)) {
+    const cleaned = cleanTargetDemographics(o.target_demographics);
+    o.target_demographics = cleaned.length > 0 ? cleaned : undefined;
   }
 
   // Strip user-relative phrasing from soft fields rendered to all visitors.
@@ -688,6 +708,7 @@ serve(async (req) => {
         ideal_candidate_profile:         s.ideal_candidate_profile ?? null,
         weak_candidate_warning:          s.weak_candidate_warning ?? null,
         best_for_tags:                   s.best_for_tags ?? null,
+        target_demographics:             (s as any).target_demographics ?? null,
         why_this_fits:                   s.why_this_fits ?? null,
         how_to_win:                      s.how_to_win ?? null,
         what_to_prepare_first:           s.what_to_prepare_first ?? null,

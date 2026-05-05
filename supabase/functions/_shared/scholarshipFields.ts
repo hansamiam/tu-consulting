@@ -159,12 +159,9 @@ export function stripUserRelative(raw: string | null | undefined): string | null
 
 /** Citizenship_requirements should describe COUNTRY/NATIONALITY eligibility
  *  only. The LLM occasionally puts gender-only or other-attribute-only
- *  values there ("Women", "Female applicants", "LGBTQ+", "First-generation",
- *  "Low-income"). These are real eligibility constraints but they belong on
- *  separate fields, not citizenship. Until we have those fields, refuse to
- *  persist the misclassification — null means "no citizenship constraint
- *  on file" which is more honest than mis-attributing a gender constraint
- *  as a country one. Returns the cleaned text or null to drop. */
+ *  values there. cleanCitizenshipRequirements null-ifies pure-category
+ *  values; extractDemographicsFromCitizenship recovers the implied
+ *  target_demographics tag so the data isn't lost. */
 const NON_CITIZENSHIP_ONLY = /^\s*(women|female applicants?|female\b|men|male applicants?|male\b|lgbtq[+]?|queer|trans|first-generation|first generation|low[- ]income|underrepresented|disabled|disability|indigenous|refugees?|displaced|veterans?)\s*\.?\s*$/i;
 export function cleanCitizenshipRequirements(raw: string | null | undefined): string | null {
   if (!raw) return null;
@@ -172,6 +169,65 @@ export function cleanCitizenshipRequirements(raw: string | null | undefined): st
   if (!t) return null;
   if (NON_CITIZENSHIP_ONLY.test(t)) return null;
   return t;
+}
+
+/** Extract a canonical target_demographics tag from a misclassified
+ *  citizenship_requirements value. Returns null when no recognised tag.
+ *  Used by scrape-source / verify-scholarship to recover signals that
+ *  cleanCitizenshipRequirements would otherwise silently drop. */
+export function extractDemographicsFromCitizenship(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const t = raw.toLowerCase().trim();
+  if (/^(women|female( applicants?)?)\.?$/.test(t)) return "women";
+  if (/^(men|male( applicants?)?)\.?$/.test(t)) return "men";
+  if (/^(lgbtq[+]?|queer|trans)\.?$/.test(t)) return "lgbtq";
+  if (/^(first-generation|first generation)\.?$/.test(t)) return "first-generation";
+  if (/^low[- ]income\.?$/.test(t)) return "low-income";
+  if (/^(refugees?|asylum seekers?)\.?$/.test(t)) return "refugee";
+  if (/^displaced\.?$/.test(t)) return "displaced";
+  if (/^indigenous\.?$/.test(t)) return "indigenous";
+  if (/^(disabled|disability|deaf|blind)\.?$/.test(t)) return "disability";
+  if (/^veterans?\.?$/.test(t)) return "military-veteran";
+  if (/^underrepresented\.?$/.test(t)) return "underrepresented-minority";
+  return null;
+}
+
+/** Validates an array of demographic tags against the canonical set.
+ *  Returns only the recognised values. Used to coerce LLM output. */
+const VALID_DEMOGRAPHICS = new Set([
+  "women", "men", "lgbtq", "first-generation", "low-income", "refugee",
+  "displaced", "indigenous", "underrepresented-stem", "underrepresented-minority",
+  "disability", "military-veteran", "rural", "mature-student",
+]);
+export function cleanTargetDemographics(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const aliasMap: Record<string, string> = {
+    "lgbtq+": "lgbtq", "lgbt": "lgbtq",
+    "first_generation": "first-generation", "firstgen": "first-generation", "first-gen": "first-generation",
+    "low_income": "low-income", "lowincome": "low-income",
+    "veteran": "military-veteran", "veterans": "military-veteran", "military": "military-veteran",
+    "underrepresented": "underrepresented-minority", "minority": "underrepresented-minority", "minorities": "underrepresented-minority",
+    "stem-women": "underrepresented-stem", "women-stem": "underrepresented-stem", "women-in-stem": "underrepresented-stem",
+    "disabled": "disability", "deaf": "disability", "blind": "disability",
+    "asylum": "refugee", "asylum-seeker": "refugee", "refugees": "refugee",
+    "female": "women", "girls": "women",
+    "male": "men", "boys": "men",
+    "first-nations": "indigenous", "native-american": "indigenous", "aboriginal": "indigenous", "maori": "indigenous", "tribal": "indigenous",
+    "rural-area": "rural", "rural-background": "rural",
+    "mature": "mature-student", "adult-learner": "mature-student", "returning-student": "mature-student",
+  };
+  for (const e of raw) {
+    if (typeof e !== "string") continue;
+    const norm = e.toLowerCase().trim().replace(/\s+/g, "-");
+    const final = aliasMap[norm] ?? norm;
+    if (!VALID_DEMOGRAPHICS.has(final)) continue;
+    if (seen.has(final)) continue;
+    seen.add(final);
+    out.push(final);
+  }
+  return out;
 }
 
 /** Trim award text to a single concise phrase under 80 chars; drop

@@ -64,6 +64,27 @@ export const humanizeLabel = (raw: string | null | undefined): string => {
     .join(" ");
 };
 
+/* Demographic tag display. Each canonical tag has a curated label (to
+ * keep the UI consistent) and a short helper for accessibility. */
+export const DEMOGRAPHIC_LABEL: Record<string, string> = {
+  "women": "Women",
+  "men": "Men",
+  "lgbtq": "LGBTQ+",
+  "first-generation": "First-generation",
+  "low-income": "Need-based",
+  "refugee": "Refugees",
+  "displaced": "Displaced",
+  "indigenous": "Indigenous",
+  "underrepresented-stem": "Women in STEM",
+  "underrepresented-minority": "Underrepresented",
+  "disability": "Disability",
+  "military-veteran": "Veterans",
+  "rural": "Rural",
+  "mature-student": "Mature students",
+};
+export const humanizeDemographic = (tag: string): string =>
+  DEMOGRAPHIC_LABEL[tag] ?? humanizeLabel(tag);
+
 /** Pretty single-field label for compact card displays. Skips junk
  *  values, takes the first piece of comma-list run-ons, and drops
  *  unreasonably long entries. Returns null when nothing's worth

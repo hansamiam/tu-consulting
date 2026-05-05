@@ -40,6 +40,7 @@ import {
   cleanScholarshipName,
   cleanProvider,
   compactAward,
+  humanizeDemographic,
 } from "@/lib/scholarshipFields";
 import { ALL_COUNTRIES } from "@/data/countries";
 import { useAuth } from "@/contexts/AuthContext";
@@ -68,6 +69,7 @@ interface Scholarship {
   ideal_candidate_profile: string | null; common_rejection_reasons: string | null;
   weak_candidate_warning: string | null;
   strategy_notes: string | null; best_for_tags: string[] | null; why_this_fits: string | null;
+  target_demographics: string[] | null;
   how_to_win: string | null; what_to_prepare_first: string | null;
   next_step: string | null; risk_note: string | null;
   last_verified_date: string | null;
@@ -1118,10 +1120,16 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
           >
             {cleanScholarshipName(s.scholarship_name)}
           </h3>
-          <div className="flex items-center gap-1.5 mt-1 min-w-0">
+          <div className="flex items-center gap-1.5 mt-1 min-w-0 flex-wrap">
             {s.host_country && (
               <span className={`inline-flex items-center text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded text-white bg-gradient-to-r ${accent} shrink-0`}>
                 {shortCountry(s.host_country)}
+              </span>
+            )}
+            {s.target_demographics && s.target_demographics.length > 0 && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-gold/12 text-gold-dark border border-gold/25 shrink-0">
+                {s.target_demographics.slice(0, 2).map(humanizeDemographic).join(" · ")}
+                {s.target_demographics.length > 2 && ` +${s.target_demographics.length - 2}`}
               </span>
             )}
             <ProviderAvatar url={s.official_url || s.source_url} providerName={cleanProvider(s.provider_name) || s.provider_name} size={16} />

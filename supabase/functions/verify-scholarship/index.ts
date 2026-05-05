@@ -37,6 +37,8 @@ import {
   cleanAwardText,
   cleanEligibleCountries,
   cleanCitizenshipRequirements,
+  cleanTargetDemographics,
+  extractDemographicsFromCitizenship,
   stripUserRelative,
 } from "../_shared/scholarshipFields.ts";
 
@@ -84,6 +86,7 @@ const BACKFILL_NULL_FIELDS = [
   "eligible_countries",
   "target_fields",
   "target_degree_level",
+  "target_demographics",
 ] as const;
 
 type DiffField = typeof DIFF_FIELDS[number];
@@ -111,6 +114,7 @@ interface ExtractedFields {
   target_fields?: string[] | null;
   target_degree_level?: string[] | null;
   eligible_countries?: string[] | null;
+  target_demographics?: string[] | null;
   confidence: number;
 }
 
@@ -144,6 +148,7 @@ Re-extract from the page content below. Fields to populate (or leave null):
   "eligibility_requirements": "...",
   "target_fields": ["Computer Science"],
   "target_degree_level": ["master","phd"],
+  "target_demographics": ["women","first-generation"],
   "eligible_countries": ["India","Pakistan"],
   "confidence": 0.92
 }
@@ -203,7 +208,7 @@ Deno.serve(async (req) => {
       "estimated_total_value_usd, min_gpa, min_ielts, min_toefl, min_sat, " +
       "essay_required, recommendation_letters_required, interview_required, " +
       "citizenship_requirements, eligibility_requirements, " +
-      "target_fields, target_degree_level, eligible_countries, " +
+      "target_fields, target_degree_level, eligible_countries, target_demographics, " +
       "why_this_fits, how_to_win, ideal_candidate_profile, " +
       "what_to_prepare_first, strategy_notes, weak_candidate_warning, " +
       "source_url, official_url, verification_status, last_verified_at"
@@ -231,13 +236,24 @@ Deno.serve(async (req) => {
     selfCleanUpdate.provider_name = cleanedStoredProvider;
   }
   // Citizenship miscategorization — drop "Women" / "LGBTQ+" / etc when
-  // they're the entire field. They're real eligibility constraints but
-  // they belong elsewhere; surfacing them as "Citizenship: Women"
-  // misleads users.
+  // they're the entire field, BUT first recover an implicit
+  // target_demographics tag so we don't lose the eligibility signal.
   if (typeof stored.citizenship_requirements === "string") {
+    const recovered = extractDemographicsFromCitizenship(stored.citizenship_requirements);
     const cleanedCitizenship = cleanCitizenshipRequirements(stored.citizenship_requirements);
     if (cleanedCitizenship !== stored.citizenship_requirements) {
       selfCleanUpdate.citizenship_requirements = cleanedCitizenship;
+    }
+    if (recovered) {
+      const existing = Array.isArray((stored as any).target_demographics)
+        ? (stored as any).target_demographics as string[]
+        : [];
+      const merged = Array.from(new Set([...existing, recovered]));
+      // Only update if it's actually different (avoid touching updated_at
+      // for no reason).
+      if (merged.length !== existing.length || merged.some((t, i) => t !== existing[i])) {
+        selfCleanUpdate.target_demographics = merged;
+      }
     }
   }
   // Strip user-relative phrasing from already-stored soft fields.
@@ -322,6 +338,10 @@ Deno.serve(async (req) => {
     if (Array.isArray(fresh.eligible_countries)) {
       const cleaned = cleanEligibleCountries(fresh.eligible_countries);
       fresh.eligible_countries = cleaned.length > 0 ? cleaned : null;
+    }
+    if (Array.isArray(fresh.target_demographics)) {
+      const cleaned = cleanTargetDemographics(fresh.target_demographics);
+      fresh.target_demographics = cleaned.length > 0 ? cleaned : null;
     }
   } catch (e) {
     console.warn("[verify-scholarship] re-extract failed", (e as Error).message);
