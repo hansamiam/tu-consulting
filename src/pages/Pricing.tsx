@@ -56,6 +56,24 @@ const COPY = {
     riskReversalBold: "30-day money-back guarantee.",
     riskReversal: "Full refund, no questions asked. Cancel anytime after.",
     stripeBilling: "Stripe secure checkout · billed monthly · cancel anytime",
+    shiftKicker: "The shift",
+    shiftH2: "From scattered tabs to a ranked plan.",
+    shiftWithoutTitle: "Without TopUni",
+    shiftWithoutBullets: [
+      "47 browser tabs of half-read pages",
+      "Random Reddit advice",
+      "Missed deadlines",
+      "Unsure if you actually qualify",
+      "No clear essay strategy",
+    ],
+    shiftWithTitle: "With TopUni",
+    shiftWithBullets: [
+      "Ranked opportunities tailored to your profile",
+      "Why-it-fits notes for each scholarship",
+      "Funding filters that actually narrow the universe",
+      "Deadline plan that emails you before each one",
+      "Live monthly workshops with admitted founders",
+    ],
     compareKicker: "The math",
     compareH2a: "The same outcome — at",
     compareH2b: "a fraction",
@@ -136,6 +154,24 @@ const COPY = {
     riskReversalBold: "Гарантия возврата 30 дней.",
     riskReversal: "Полный возврат, без лишних вопросов. Отмена в любой момент.",
     stripeBilling: "Безопасная оплата Stripe · ежемесячно · отмена в любой момент",
+    shiftKicker: "Сдвиг",
+    shiftH2: "От 47 вкладок к ранжированному плану.",
+    shiftWithoutTitle: "Без TopUni",
+    shiftWithoutBullets: [
+      "47 наполовину прочитанных вкладок",
+      "Случайные советы с Reddit",
+      "Пропущенные дедлайны",
+      "Непонятно, проходите ли вы вообще",
+      "Нет внятной стратегии для эссе",
+    ],
+    shiftWithTitle: "С TopUni",
+    shiftWithBullets: [
+      "Ранжированные возможности под ваш профиль",
+      "Заметки «почему стоит изучить» по каждой стипендии",
+      "Фильтры финансирования, которые реально сужают список",
+      "План дедлайнов с напоминаниями на почту",
+      "Ежемесячные живые воркшопы с поступившими основателями",
+    ],
     compareKicker: "Математика",
     compareH2a: "Тот же результат — за",
     compareH2b: "малую долю",
@@ -270,22 +306,16 @@ const Pricing = ({ language = "en" }: PricingProps) => {
             className="max-w-5xl mx-auto"
           >
             <div className="max-w-2xl mx-auto text-center mb-8">
-              <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">The shift</p>
+              <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">{t.shiftKicker}</p>
               <h2 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight leading-tight">
-                From scattered tabs to a ranked plan.
+                {t.shiftH2}
               </h2>
             </div>
             <div className="grid sm:grid-cols-2 gap-4 sm:gap-5">
               <div className="rounded-2xl border border-border bg-card p-6 sm:p-7">
-                <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-4">Without TopUni</p>
+                <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-4">{t.shiftWithoutTitle}</p>
                 <ul className="space-y-3">
-                  {[
-                    "47 browser tabs of half-read pages",
-                    "Random Reddit advice",
-                    "Missed deadlines",
-                    "Unsure if you actually qualify",
-                    "No clear essay strategy",
-                  ].map((line, i) => (
+                  {t.shiftWithoutBullets.map((line, i) => (
                     <li key={i} className="flex items-start gap-3 text-[15px] text-foreground/75 leading-snug">
                       <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
                       <span>{line}</span>
@@ -295,15 +325,9 @@ const Pricing = ({ language = "en" }: PricingProps) => {
               </div>
               <div className="relative rounded-2xl border border-gold/30 bg-gradient-to-br from-gold/[0.07] via-card to-card p-6 sm:p-7 overflow-hidden">
                 <div className="absolute left-0 inset-y-0 w-[3px] bg-gradient-to-b from-gold-dark via-gold to-gold-dark" />
-                <p className="text-[11px] uppercase tracking-[0.18em] text-gold-dark font-semibold mb-4">With TopUni</p>
+                <p className="text-[11px] uppercase tracking-[0.18em] text-gold-dark font-semibold mb-4">{t.shiftWithTitle}</p>
                 <ul className="space-y-3">
-                  {[
-                    "Ranked opportunities tailored to your profile",
-                    "Why-it-fits notes for each scholarship",
-                    "Funding filters that actually narrow the universe",
-                    "Deadline plan that emails you before each one",
-                    "Live monthly workshops with admitted founders",
-                  ].map((line, i) => (
+                  {t.shiftWithBullets.map((line, i) => (
                     <li key={i} className="flex items-start gap-3 text-[15px] text-foreground leading-snug">
                       <span className="mt-1 text-gold-dark shrink-0">
                         <ArrowRight className="w-3.5 h-3.5" />
