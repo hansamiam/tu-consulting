@@ -46,6 +46,7 @@ import { ALL_COUNTRIES } from "@/data/countries";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSemanticScholarshipMatch } from "@/hooks/useSemanticScholarshipMatch";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
+import { useScholarshipTracking, useTrackView } from "@/hooks/useScholarshipTracking";
 import { Lock } from "lucide-react";
 
 const SHORTLIST_FREE_LIMIT = 5;
@@ -1693,6 +1694,12 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
   onUnlock: () => void;
   onExpand: () => void;
 }) => {
+  // Hook is unconditional — must run on every render even when s is null
+  // (Rules of Hooks). The track call is only fired with a real id later.
+  const trackEvent = useScholarshipTracking();
+  // Fire a 'viewed' event on detail-sheet open. Hook handles the 60s
+  // dedup so re-renders don't inflate counts.
+  useTrackView(s?.scholarship_id, "detail-sheet");
   if (!s) return null;
   const dl = deadlineDisplay(s.application_deadline);
   const [dc1, dc2] = dialColors(s.priority);
@@ -1859,11 +1866,18 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           {/* Header CTAs — Apply (gold), Bookmark, and an escape hatch
               to the dedicated /scholarships/:id full-page view for
               users who want a more elaborate read instead of the
-              side-sheet experience. */}
+              side-sheet experience. The Apply click is tracked via
+              the scholarship-tracking hook so we can chart click-
+              through-to-apply per scholarship. */}
           <div className="relative flex items-center gap-2 mt-4">
             <Button variant="gold" size="sm" asChild className="flex-1 h-9" disabled={!s.official_url}>
               {s.official_url ? (
-                <a href={s.official_url} target="_blank" rel="noopener noreferrer">
+                <a
+                  href={s.official_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => trackEvent(s.scholarship_id, "clicked", "discover-detail-apply")}
+                >
                   Apply on official site <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
                 </a>
               ) : <span>No official link</span>}
