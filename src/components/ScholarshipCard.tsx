@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -52,6 +53,10 @@ export interface ScholarshipCardData {
   // Verification metadata — both optional so existing select() calls don't break.
   verification_status?: string | null;
   last_verified_at?: string | null;
+  // Provider URL — used as the favicon source for the consistent square
+  // avatar. Optional so callers can opt into the favicon path; missing
+  // URL just falls back to the colored monogram.
+  official_url?: string | null;
 }
 
 /** Activity stats — passed in by the parent if available. The card hides
@@ -160,6 +165,47 @@ function fmtValue(v: number | null | undefined): string | null {
   return `$${v}`;
 }
 
+/* Provider avatar — always a consistent square. Layered favicon over
+ * a colored monogram fallback (same pattern as Discover's
+ * ProviderAvatar). When the favicon img is non-square, object-cover
+ * fills the square with the centre of the logo so wide-rectangle
+ * marks don't break visual rhythm. */
+const ProviderAvatarSquare = ({ url, providerName, hue, inits }: {
+  url: string | null;
+  providerName: string;
+  hue: number;
+  inits: string;
+}) => {
+  const [failed, setFailed] = useState(false);
+  let domain: string | null = null;
+  if (url) {
+    try { domain = new URL(url).hostname.replace(/^www\./, ""); } catch { /* malformed URL */ }
+  }
+  const showFavicon = !!domain && !failed;
+  return (
+    <span
+      className="relative shrink-0 w-9 h-9 rounded-lg overflow-hidden ring-1 ring-black/5 shadow-sm"
+      aria-label={providerName}
+    >
+      <span
+        className="absolute inset-0 flex items-center justify-center font-heading font-bold text-[11px] text-white tracking-tight"
+        style={{ background: `linear-gradient(135deg, hsl(${hue}, 55%, 45%), hsl(${(hue + 35) % 360}, 60%, 38%))` }}
+      >
+        {inits}
+      </span>
+      {showFavicon && (
+        <img
+          src={`https://www.google.com/s2/favicons?domain=${domain}&sz=72`}
+          alt=""
+          loading="lazy"
+          onError={() => setFailed(true)}
+          className="relative z-[1] w-full h-full object-cover bg-white"
+        />
+      )}
+    </span>
+  );
+};
+
 export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, compact = false, stats }: Props) {
   const t = COPY[language];
   const featured = !!r.is_featured;
@@ -261,15 +307,18 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
         </div>
       )}
 
-      {/* Top row: avatar + headline + share */}
+      {/* Top row: avatar + headline + share. Avatar always renders a
+          consistent square. Tries Google's favicon service first
+          (real Harvard / Cambridge / DAAD shields when available) and
+          layers it OVER a colored monogram fallback so rows without a
+          favicon still get a square instead of a gap. */}
       <div className="flex items-start gap-2.5 mb-3">
-        <div
-          className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center font-heading font-bold text-[11px] text-white tracking-tight shadow-sm ring-1 ring-black/5"
-          style={{ background: `linear-gradient(135deg, hsl(${hue}, 55%, 45%), hsl(${(hue + 35) % 360}, 60%, 38%))` }}
-          aria-label={cleanedProvider || ""}
-        >
-          {initials(cleanedProvider || cleanedName)}
-        </div>
+        <ProviderAvatarSquare
+          url={r.official_url ?? null}
+          providerName={cleanedProvider || cleanedName}
+          hue={hue}
+          inits={initials(cleanedProvider || cleanedName)}
+        />
         <div className="flex-1 min-w-0">
           <Link to={detailPath} className="block">
             <h3 className={`font-heading font-bold text-foreground tracking-tight leading-snug group-hover:text-gold-dark transition-colors line-clamp-2 ${compact ? "text-sm" : "text-[15px] sm:text-base"}`}>
