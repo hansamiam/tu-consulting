@@ -899,28 +899,27 @@ const rowQualityScore = (s: Scholarship): number => {
  *     wallpaper of empty cards in the grid. The verify-cron will
  *     either fill them in on the next pass or mark them broken. */
 const dedupeAndQualityFilter = (rows: Scholarship[]): Scholarship[] => {
-  // Pass 1: tighter dedup. The canonical_key from the SQL trigger
-  // includes host_country, which causes "Schwarzman Scholars" with
-  // host_country="China" to NOT collide with the same scholarship
-  // re-scraped with host_country="Multiple countries" or with a blank
-  // country. We rebuild a tighter client-side key from the cleaned
-  // name + provider only, dropping host_country from the dedup
-  // signature — same scholarship name + same provider = same award,
-  // regardless of how the country got captured. The server-side
-  // canonical_key index still helps narrow the set in queries; this
-  // pass collapses the residual cross-country drift.
+  // Mirrors the v3 server-side normalize_scholarship_key (migration
+  // 20260505230000) — same stop-word + suffix list, same token-sort,
+  // same length-floor — so client-side render dedup catches the same
+  // word-order / suffix-drift / stop-word variants the server does.
+  // Keeping these in lockstep is mandatory: divergence creates "duped
+  // on the server, deduped on the client" or vice-versa, and either
+  // failure mode is invisible until users report it.
   const tightKey = (s: Scholarship) => {
     const cleanedName = cleanScholarshipName(s.scholarship_name).toLowerCase();
     const cleanedProv = (cleanProvider(s.provider_name) ?? "").toLowerCase();
-    return `${cleanedName}|${cleanedProv}`
-      // Match the canonical_key normalizer's key strips so client
-      // dedup catches the same name variants (Scholarships/Scholarship,
-      // Master's/Master, year suffixes) the server function does.
+    const raw = `${cleanedName} ${cleanedProv}`
       .replace(/'s\b/g, "")
-      .replace(/\b(scholarships?|fellowships?|programmes?|programs?|awards?|scholars?|grants?|the|of)\b/g, " ")
+      .replace(/\b(scholarships?|fellowships?|programmes?|programs?|awards?|scholars?|grants?|bursari?es?|bursarys?|prizes?|internships?|the|of|for|in|by|at|to|on|and|with|a|an|from|into|between|across|foundation|stiftung|trust|council|society|association|organi[sz]ations?|institute|university|college|school|ltd|inc|plc|gmbh|international|global|world|official)\b/g, " ")
       .replace(/\b(19|20)\d{2}\b/g, " ")
       .replace(/[^a-z0-9]+/g, " ")
       .trim();
+    if (!raw) return "";
+    // Token-sort + length floor — same as the server function. Empty
+    // tokens / single-char tokens get dropped so noise doesn't survive.
+    const tokens = raw.split(/\s+/).filter((t) => t.length >= 2).sort();
+    return tokens.join(" ");
   };
   const byKey = new Map<string, Scholarship>();
   rows.forEach(r => {
