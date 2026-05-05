@@ -29,6 +29,8 @@ import {
   cleanHostCountry,
   cleanAwardText,
   cleanEligibleCountries,
+  cleanCitizenshipRequirements,
+  stripUserRelative,
 } from "../_shared/scholarshipFields.ts";
 
 const corsHeaders = {
@@ -337,6 +339,23 @@ function validateExtracted(x: unknown): ExtractedScholarship | null {
   if (typeof o.award_amount_text === "string") {
     const cleaned = cleanAwardText(o.award_amount_text);
     o.award_amount_text = cleaned ?? undefined;
+  }
+
+  // Strip gender-only / category-only values that the LLM mistakenly
+  // wrote into citizenship_requirements ("Women", "LGBTQ+", etc.).
+  if (typeof o.citizenship_requirements === "string") {
+    const cleaned = cleanCitizenshipRequirements(o.citizenship_requirements);
+    o.citizenship_requirements = cleaned ?? undefined;
+  }
+
+  // Strip user-relative phrasing from soft fields rendered to all visitors.
+  for (const f of ["why_this_fits", "how_to_win", "ideal_candidate_profile",
+                   "what_to_prepare_first", "strategy_notes", "weak_candidate_warning"] as const) {
+    const v = (o as Record<string, unknown>)[f];
+    if (typeof v === "string") {
+      const cleaned = stripUserRelative(v);
+      (o as Record<string, unknown>)[f] = cleaned ?? undefined;
+    }
   }
 
   // Drop / clamp numeric nonsense

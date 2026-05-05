@@ -120,6 +120,60 @@ export function cleanEligibleCountries(raw: unknown): string[] {
   return out;
 }
 
+/** Strip user-relative phrasing from LLM-generated static text.
+ *  The Discover/Detail pages are read by visitors from anywhere, but
+ *  enrichment LLMs sometimes write copy that assumes the reader is a
+ *  specific nationality ("without leaving the country", "back home",
+ *  "students like you"). That reads broken to anyone outside the
+ *  imagined audience.
+ *
+ *  Rather than reject the whole field (the rest of the sentence is
+ *  often useful), we clip the offending clause and tidy the seam.
+ *  Returns null if the cleaned result is too short to be useful.
+ */
+const USER_RELATIVE_PATTERNS: RegExp[] = [
+  /\s*[—,;.]?\s*without leaving\s+(the|your)\s+country\b/gi,
+  /\s*[—,;.]?\s*without (?:having to )?leaving home\b/gi,
+  /\s*[—,;.]?\s*for students like you(rself)?\b/gi,
+  /\s*[—,;.]?\s*for applicants like you(rself)?\b/gi,
+  /\s*[—,;.]?\s*international students like yourself\b/gi,
+  /\s*[—,;.]?\s*in your (?:situation|case|position)\b/gi,
+  /\s*[—,;.]?\s*given your (?:background|profile|situation)\b/gi,
+  /\s*[—,;.]?\s*applicants from your (?:region|country|background)\b/gi,
+  /\s*[—,;.]?\s*from your home country\b/gi,
+  /\s*[—,;.]?\s*back home\b/gi,
+  /\s*[—,;.]?\s*coming from\s+\w+,\s+/gi,  // "coming from Kazakhstan, ..."
+];
+export function stripUserRelative(raw: string | null | undefined): string | null {
+  if (!raw) return raw ?? null;
+  let t = raw;
+  for (const re of USER_RELATIVE_PATTERNS) t = t.replace(re, "");
+  // Collapse double-punctuation and whitespace artefacts
+  t = t.replace(/\s*([,;.])\s*\1+/g, "$1");
+  t = t.replace(/\s{2,}/g, " ").trim();
+  // Re-tidy sentence-ending punctuation
+  t = t.replace(/\s+([.,;!?])/g, "$1");
+  if (!t || t.length < 8) return null;
+  return t;
+}
+
+/** Citizenship_requirements should describe COUNTRY/NATIONALITY eligibility
+ *  only. The LLM occasionally puts gender-only or other-attribute-only
+ *  values there ("Women", "Female applicants", "LGBTQ+", "First-generation",
+ *  "Low-income"). These are real eligibility constraints but they belong on
+ *  separate fields, not citizenship. Until we have those fields, refuse to
+ *  persist the misclassification — null means "no citizenship constraint
+ *  on file" which is more honest than mis-attributing a gender constraint
+ *  as a country one. Returns the cleaned text or null to drop. */
+const NON_CITIZENSHIP_ONLY = /^\s*(women|female applicants?|female\b|men|male applicants?|male\b|lgbtq[+]?|queer|trans|first-generation|first generation|low[- ]income|underrepresented|disabled|disability|indigenous|refugees?|displaced|veterans?)\s*\.?\s*$/i;
+export function cleanCitizenshipRequirements(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const t = raw.trim();
+  if (!t) return null;
+  if (NON_CITIZENSHIP_ONLY.test(t)) return null;
+  return t;
+}
+
 /** Trim award text to a single concise phrase under 80 chars; drop
  *  trailing parentheticals that don't contain numerical detail. */
 export function cleanAwardText(raw: string | null | undefined): string | null {

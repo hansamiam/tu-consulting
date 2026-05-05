@@ -36,6 +36,8 @@ import {
   cleanHostCountry,
   cleanAwardText,
   cleanEligibleCountries,
+  cleanCitizenshipRequirements,
+  stripUserRelative,
 } from "../_shared/scholarshipFields.ts";
 
 const corsHeaders = {
@@ -202,6 +204,8 @@ Deno.serve(async (req) => {
       "essay_required, recommendation_letters_required, interview_required, " +
       "citizenship_requirements, eligibility_requirements, " +
       "target_fields, target_degree_level, eligible_countries, " +
+      "why_this_fits, how_to_win, ideal_candidate_profile, " +
+      "what_to_prepare_first, strategy_notes, weak_candidate_warning, " +
       "source_url, official_url, verification_status, last_verified_at"
     )
     .eq("scholarship_id", body.scholarship_id)
@@ -225,6 +229,25 @@ Deno.serve(async (req) => {
   }
   if (cleanedStoredProvider && cleanedStoredProvider !== stored.provider_name) {
     selfCleanUpdate.provider_name = cleanedStoredProvider;
+  }
+  // Citizenship miscategorization — drop "Women" / "LGBTQ+" / etc when
+  // they're the entire field. They're real eligibility constraints but
+  // they belong elsewhere; surfacing them as "Citizenship: Women"
+  // misleads users.
+  if (typeof stored.citizenship_requirements === "string") {
+    const cleanedCitizenship = cleanCitizenshipRequirements(stored.citizenship_requirements);
+    if (cleanedCitizenship !== stored.citizenship_requirements) {
+      selfCleanUpdate.citizenship_requirements = cleanedCitizenship;
+    }
+  }
+  // Strip user-relative phrasing from already-stored soft fields.
+  for (const f of ["why_this_fits", "how_to_win", "ideal_candidate_profile",
+                   "what_to_prepare_first", "strategy_notes", "weak_candidate_warning"] as const) {
+    const v = (stored as Record<string, unknown>)[f];
+    if (typeof v === "string") {
+      const cleaned = stripUserRelative(v);
+      if (cleaned !== v) selfCleanUpdate[f] = cleaned;
+    }
   }
   if (Object.keys(selfCleanUpdate).length > 0) {
     await supa.from("scholarships").update(selfCleanUpdate).eq("scholarship_id", stored.scholarship_id);

@@ -170,8 +170,9 @@ QUALITY BAR — these rules are not optional:
 7. weak_candidate_warning must name HONEST GATES — GPA / language-test / citizenship / level / experience thresholds where applying is wasted effort. Be willing to disqualify. Example: "Skip if your GPA is below 3.6/4.0 — the rejection rate at that band is near total." If you can't be honest, skip.
 8. strategy_notes is for tactical insider knowledge — application timing windows, recommender selection patterns, narrative threads that work. Skip rather than fill with platitudes.
 9. Banned words: "stretch", "long shot", "real shot", "safety school", "reach school", "target school", "playbook", "journey", "potential" (as in "your potential").
-10. SKIP > FLUFF. If you cannot say something specific and useful, OMIT the field. The schema treats missing fields as acceptable; generic content is worse than nothing.
-11. Output language: English.
+10. NEVER write user-relative phrasing. The reader's nationality, location, current school, family situation are UNKNOWN. Banned phrases include: "without leaving the country", "your home country", "back home", "for students like you", "in your situation", "given your background", "international students like yourself", "applicants from your region". The text is read by visitors from anywhere — write program-relative not reader-relative copy. If a fact is true ABOUT the scholarship (e.g. "fully English-medium so applicants don't need to relocate for language reasons"), state it neutrally.
+11. SKIP > FLUFF. If you cannot say something specific and useful, OMIT the field. The schema treats missing fields as acceptable; generic content is worse than nothing.
+12. Output language: English.
 
 SCHEMA:
 ${SCHEMA_DOC}
