@@ -58,7 +58,7 @@ export const Footer = ({ language, variant = "light" }: FooterProps) => {
       refundPolicy: "Refund Policy",
       paymentInfo: "Payment by Card",
       tagline: "AI-driven admissions strategy for ambitious students applying internationally.",
-      copyright: `© ${new Date().getFullYear()} TopUni Consulting · All rights reserved`,
+      copyright: `© ${new Date().getFullYear()} TopUni · All rights reserved`,
     },
     ru: {
       legal: "Правовая информация",
@@ -69,7 +69,7 @@ export const Footer = ({ language, variant = "light" }: FooterProps) => {
       refundPolicy: "Правила возврата",
       paymentInfo: "Оплата банковской картой",
       tagline: "AI-стратегия поступления для амбициозных студентов мира.",
-      copyright: `© ${new Date().getFullYear()} TopUni Consulting · Все права защищены`,
+      copyright: `© ${new Date().getFullYear()} TopUni · Все права защищены`,
     },
   };
 
@@ -93,7 +93,7 @@ export const Footer = ({ language, variant = "light" }: FooterProps) => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
           <div className="space-y-3">
             <p className={`${isDark ? "text-primary-foreground" : "text-foreground"} font-heading text-base font-bold tracking-tight`}>
-              TopUni Consulting
+              TopUni
             </p>
             <p className={`${textColor} leading-relaxed text-xs sm:text-sm`}>
               {t.tagline}

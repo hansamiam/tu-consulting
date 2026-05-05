@@ -1056,20 +1056,22 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
           </div>
         </div>
 
-        {/* Award + deadline (desktop only). Stacks award chip and the
-            deadline tightly so the column reads as a single
-            "what / when" cluster. Deadline gets its own line below
-            the chip — same line would push past the column on long
-            awards like "Tuition + stipend". Reduced gap between
-            them so the visual cluster reads tighter than before. */}
-        <div className="hidden sm:flex flex-col gap-1 min-w-0">
+        {/* Award + deadline (desktop only). Two distinct visual rows
+            with clear separation — award sits as a chip on row 1,
+            deadline sits as its own labelled line on row 2 with a
+            uppercase "Deadline" caption so the two facts never read
+            as merged. Generous gap, no shared bounding box. */}
+        <div className="hidden sm:flex flex-col gap-2 min-w-0">
           {award && (
             <span className={`inline-flex self-start items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap ${isFullRide ? "text-gold-dark bg-gold/10 border border-gold/25" : "text-foreground bg-muted/40 border border-border/60"}`}>
               {isFullRide && <Award className="h-3 w-3 shrink-0" />}
               <span>{award}</span>
             </span>
           )}
-          <p className={`text-[11px] tabular-nums font-medium leading-none ${dl.cls}`}>{dl.text}</p>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground/60 font-semibold">Deadline</span>
+            <span className={`text-[12px] tabular-nums font-medium leading-tight ${dl.cls}`}>{dl.text}</span>
+          </div>
         </div>
 
         {/* Status — only render once the row's been bookmarked. In
@@ -3172,7 +3174,7 @@ const Discover = ({ language = "en" }: Props) => {
                       <SelectItem value="match">Best match</SelectItem>
                       <SelectItem value="deadline">Deadline first</SelectItem>
                       <SelectItem value="value">Highest value</SelectItem>
-                      <SelectItem value="selectivity">Less competitive first</SelectItem>
+                      <SelectItem value="selectivity">Most accessible</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -3256,15 +3258,16 @@ const Discover = ({ language = "en" }: Props) => {
                     <div className="sticky top-24 space-y-3.5">
                       <nav className="bg-card border border-border rounded-2xl p-3 shadow-sm">
                         {([
-                          // Pipeline removed from this rail — application
-                          // tracking belongs on the dedicated /pipeline page
-                          // where the kanban + per-card notes/checklists
-                          // actually live. Embedding it inside Discover
-                          // duplicated the surface and overpromised
-                          // sync that wasn't shipped.
+                          // Two surfaces: Browse the database, or
+                          // review what you've Saved. The Quick filter
+                          // chip rail at the top of the grid replaces
+                          // what "Collections" used to do — the two
+                          // were doing the same job (preset filter
+                          // combos) and the rail entry was visual
+                          // duplication. Pipeline removed earlier;
+                          // tracking lives on /pipeline.
                           { id: "browse" as AppSection,      label: "Browse",       icon: Layers,        count: 0 },
                           { id: "shortlist" as AppSection,   label: "Shortlist",    icon: BookmarkCheck, count: shortlist.size,  accent: shortlist.size > 0 },
-                          { id: "collections" as AppSection, label: "Collections",  icon: Sparkles,      count: 0 },
                         ]).map(item => {
                           const Icon = item.icon;
                           const active = appSection === item.id;

@@ -177,7 +177,7 @@ const SharedBriefPage = () => {
           .map((p) => p.trim())
           .find((p) => p.length > 40);
         if (firstPara) return firstPara.replace(/\s+/g, " ").slice(0, 220) + "…";
-        return `An AI-generated university admissions strategy from TopUni Consulting${major}${target}.`;
+        return `An AI-generated university admissions strategy from TopUni${major}${target}.`;
       })();
       const url = `https://topuni.org/brief/${data.slug}`;
       const ogImage = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-brief?slug=${encodeURIComponent(data.slug)}`;
@@ -192,7 +192,7 @@ const SharedBriefPage = () => {
         { property: "og:description",  content: desc },
         { property: "og:type",         content: "article" },
         { property: "og:url",          content: url },
-        { property: "og:site_name",    content: "TopUni Consulting" },
+        { property: "og:site_name",    content: "TopUni" },
         { property: "og:image",        content: ogImage },
         { property: "og:image:width",  content: "1200" },
         { property: "og:image:height", content: "630" },

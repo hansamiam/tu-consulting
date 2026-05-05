@@ -199,7 +199,7 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
     setMeta("og:description", resolved.meta.description, true);
     setMeta("og:type", "website", true);
     setMeta("og:url", resolved.meta.canonical, true);
-    setMeta("og:site_name", "TopUni Consulting", true);
+    setMeta("og:site_name", "TopUni", true);
     setMeta("og:image", ogImage, true);
     setMeta("og:image:width", "1200", true);
     setMeta("og:image:height", "630", true);

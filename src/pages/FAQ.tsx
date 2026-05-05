@@ -12,7 +12,7 @@ const FAQ = () => {
 
   const faqs = [
     {
-      question: "Why TopUni Consulting?",
+      question: "Why TopUni?",
       answer: "We're different. It's true that our consultants from Yale, Harvard, Cambridge, and Tsinghua have seen a lot of success over the years—but just as much, we've faced our fair share of challenges, setbacks, made mistakes, and learned from them. That's exactly why we can help you. We've been through the real struggles of the application process, conquered them, and know how to navigate them. Plus, we bridge the gap others can't: large firms give you minimal attention despite premium prices, while smaller services often lack global experience and proven results. We offer world-class expertise with genuine personal attention at accessible prices."
     },
     {

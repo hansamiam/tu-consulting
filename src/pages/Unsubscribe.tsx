@@ -36,7 +36,7 @@ export default function Unsubscribe() {
         {state === "loading" && <p className="text-muted-foreground">Checking your link…</p>}
         {state === "valid" && (
           <>
-            <p>Unsubscribe {email ? <strong>{email}</strong> : "this address"} from TopUni Consulting emails?</p>
+            <p>Unsubscribe {email ? <strong>{email}</strong> : "this address"} from TopUni emails?</p>
             <Button onClick={confirm} className="w-full">Confirm unsubscribe</Button>
           </>
         )}
