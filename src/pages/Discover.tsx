@@ -473,7 +473,14 @@ const daysUntil = (d: string | null) => {
 const WIZARD_STEPS = 4;
 const DEFAULT_WIZARD: WizardData = { fullName: "", email: "", nationality: "", degrees: [], field: "", gpa: "", gpaScale: "4.0", ielts: "" };
 const DEFAULT_FILTERS: FilterState = { search: "", coverage: "all", degree: "all", field: "all", selectivity: "all", hostCountry: "all", onlyEligible: false, closingSoon: false };
-const COVERAGE_LABEL: Record<string, string> = { full_ride: "Full ride", tuition_only: "Tuition only", stipend: "Stipend" };
+const COVERAGE_LABEL: Record<string, string> = {
+  full_ride: "Full ride",
+  tuition_only: "Tuition only",
+  stipend: "Stipend",
+  partial: "Partial funding",
+  travel: "Travel grant",
+  research: "Research funding",
+};
 
 /* Convert raw DB strings (often snake_case or all_lowercase) into human prose.
    Used everywhere `target_fields`, `target_degree_level`, etc. render directly. */
@@ -1459,8 +1466,13 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
   fieldsAvailable: string[];
 }) => {
   const sections: { label: string; key: keyof FilterState; opts: { v: string; l: string }[] }[] = [
-    // "Stipend" dropped — confusing alongside Full ride which already includes living costs.
-    { label: "Coverage", key: "coverage", opts: [{ v: "all", l: "All types" }, { v: "full_ride", l: "Full ride (tuition + living)" }, { v: "tuition_only", l: "Tuition only" }] },
+    { label: "Coverage", key: "coverage", opts: [
+      { v: "all", l: "All types" },
+      { v: "full_ride", l: "Full ride (tuition + living)" },
+      { v: "tuition_only", l: "Tuition only" },
+      { v: "partial", l: "Partial funding" },
+      { v: "stipend", l: "Stipend / living costs" },
+    ] },
     { label: "Degree",   key: "degree",   opts: [{ v: "all", l: "All levels" }, { v: "undergraduate", l: "Bachelor\'s" }, { v: "master\'s", l: "Master\'s" }, { v: "PhD", l: "PhD" }] },
     // 3 levels — "Competitive" matches both high and very_high in the filter logic below.
     { label: "Competitiveness", key: "selectivity", opts: [{ v: "all", l: "Any level" }, { v: "low", l: "Accessible" }, { v: "medium", l: "Moderate" }, { v: "high", l: "Competitive" }] },
