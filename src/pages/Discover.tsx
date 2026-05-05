@@ -230,10 +230,20 @@ const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: numbe
   // weaker, non-discriminating signal). Previously both got +15. Now:
   // specific = +15, open-to-all = +7. Raises the bar for what counts
   // as a "matched on nationality" boost.
+  //
+  // Word-boundary match on the country/nationality token so "Niger"
+  // doesn't match "Nigeria", "Iran" doesn't match "Irani Cubans", etc.
+  // The token also matches the adjectival form ("Indian" matches
+  // "India" entries via the prefix check).
   if (s.eligible_countries && p.country) {
     const list = s.eligible_countries.map(c => c.toLowerCase());
     const openToAll = list.some(c => c.includes("all countries") || c.includes("all nationalities"));
-    const specific = list.some(c => c.includes(p.country.toLowerCase()));
+    const userToken = p.country.toLowerCase().trim();
+    // Take the first 4-5 chars as a stem so adjectival ("Indian") and
+    // country ("India") forms both hit. Fall back to full match for
+    // short countries like "Iran" / "USA".
+    const stem = userToken.length >= 5 ? userToken.slice(0, userToken.length - 1) : userToken;
+    const specific = list.some(c => new RegExp(`\\b${escapeRegex(stem)}`, "i").test(c));
     if (specific) { match += 15; reasons.push(`Open to ${p.country} nationals`); }
     else if (openToAll) { match += 7; reasons.push("Open to all nationalities"); }
     else { eligibility = "not_eligible"; match -= 40; warnings.push(`Not open to ${p.country} nationals`); }
@@ -1625,7 +1635,12 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
   if (s.eligible_countries && profile.country) {
     const list = s.eligible_countries.map(c => c.toLowerCase());
     const open = list.some(c => c.includes("all") || c.includes("any"));
-    const ok = open || list.some(c => c.includes(profile.country.toLowerCase()));
+    // Word-boundary stem match — same trick as scoreScholarship's
+    // country check so "Niger" doesn't match "Nigeria" entries.
+    const userToken = profile.country.toLowerCase().trim();
+    const stem = userToken.length >= 5 ? userToken.slice(0, userToken.length - 1) : userToken;
+    const stemRe = new RegExp(`\\b${escapeRegex(stem)}`, "i");
+    const ok = open || list.some(c => stemRe.test(c));
     reqs.push({ label: open ? "Open to all nationalities" : `Nationality eligibility`, status: ok ? "met" : "miss", detail: open ? "" : (ok ? `${profile.country} listed` : `${profile.country} not in eligible list`) });
   }
   if (s.citizenship_requirements && !isInclusive(s.citizenship_requirements)) {

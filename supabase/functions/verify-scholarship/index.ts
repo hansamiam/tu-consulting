@@ -35,6 +35,7 @@ import {
   cleanTargetFields,
   cleanHostCountry,
   cleanAwardText,
+  cleanEligibleCountries,
 } from "../_shared/scholarshipFields.ts";
 
 const corsHeaders = {
@@ -268,6 +269,10 @@ Deno.serve(async (req) => {
     if (Array.isArray(fresh.target_fields)) {
       const cleaned = cleanTargetFields(fresh.target_fields);
       fresh.target_fields = cleaned.length > 0 ? cleaned : null;
+    }
+    if (Array.isArray(fresh.eligible_countries)) {
+      const cleaned = cleanEligibleCountries(fresh.eligible_countries);
+      fresh.eligible_countries = cleaned.length > 0 ? cleaned : null;
     }
   } catch (e) {
     console.warn("[verify-scholarship] re-extract failed", (e as Error).message);

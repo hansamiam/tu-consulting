@@ -93,6 +93,33 @@ export function cleanHostCountry(raw: string | null | undefined): string | null 
   return noParen || t;
 }
 
+/** Split comma-list run-ons inside a single eligible_countries entry,
+ *  drop empties and known junk values, dedupe case-insensitively.
+ *  Without this, an LLM that emitted ["Russia, Belarus, Ukraine"] as a
+ *  single element would silently fail the server-side `= ANY()`
+ *  eligibility check for any of the three countries. */
+export function cleanEligibleCountries(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const JUNK = /^(any|all|open|various|n\/a|none|—|-)$/i;
+  for (const e of raw) {
+    if (typeof e !== "string") continue;
+    // Strip parentheticals like "Indonesia (primary)" → "Indonesia"
+    const noParen = e.replace(/\s*\([^)]*\)\s*/g, " ").trim();
+    const pieces = noParen.split(/\s*[,;/]\s+|\s+and\s+|\s+\&\s+/i).filter(Boolean);
+    for (const p of pieces) {
+      const trimmed = p.trim().replace(/^and\s+/i, "");
+      if (!trimmed || JUNK.test(trimmed) || trimmed.length > 60) continue;
+      const key = trimmed.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(trimmed);
+    }
+  }
+  return out;
+}
+
 /** Trim award text to a single concise phrase under 80 chars; drop
  *  trailing parentheticals that don't contain numerical detail. */
 export function cleanAwardText(raw: string | null | undefined): string | null {

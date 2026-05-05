@@ -28,6 +28,7 @@ import {
   cleanTargetFields,
   cleanHostCountry,
   cleanAwardText,
+  cleanEligibleCountries,
 } from "../_shared/scholarshipFields.ts";
 
 const corsHeaders = {
@@ -315,6 +316,11 @@ function validateExtracted(x: unknown): ExtractedScholarship | null {
   if (Array.isArray(o.target_fields)) {
     const cleaned = cleanTargetFields(o.target_fields);
     o.target_fields = cleaned.length > 0 ? cleaned : undefined;
+  }
+
+  if (Array.isArray(o.eligible_countries)) {
+    const cleaned = cleanEligibleCountries(o.eligible_countries);
+    o.eligible_countries = cleaned.length > 0 ? cleaned : undefined;
   }
 
   if (typeof o.award_amount_text === "string") {
