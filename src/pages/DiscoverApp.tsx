@@ -439,10 +439,10 @@ const DiscoverApp = ({ language = "en" }: Props) => {
                                 <h4 className="font-heading font-semibold text-base leading-snug tracking-tight">{cleanScholarshipName(s.scholarship_name)}</h4>
                                 <p className="text-xs text-muted-foreground mt-1">{cleanProvider(s.provider_name) ?? ""}</p>
                               </div>
-                              <div className="text-right shrink-0 border-l border-border pl-3">
-                                <div className="text-3xl font-heading font-bold text-foreground leading-none tabular-nums">{s.match}</div>
-                                <div className="label-mono text-muted-foreground mt-1">match</div>
-                              </div>
+                              {/* Big numeric score retired — same product
+                                  rule that hid the /100 elsewhere. Match
+                                  still drives ranking + bucketing under
+                                  the hood. */}
                             </div>
                             <div className="flex flex-wrap gap-1.5 mt-3">
                               <Badge variant="outline" className={PStyle.cls}>{PStyle.label}</Badge>
