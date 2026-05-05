@@ -29,6 +29,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { chatCompletions } from "../_shared/ai-gateway.ts";
 import { firecrawlScrape, FIRECRAWL_COST_PER_SCRAPE_USD } from "../_shared/firecrawl.ts";
 import { requireAdminOrService } from "../_shared/auth.ts";
+import {
+  cleanScholarshipName,
+  cleanProvider,
+  cleanTargetFields,
+  cleanHostCountry,
+  cleanAwardText,
+} from "../_shared/scholarshipFields.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -55,9 +62,25 @@ const DIFF_FIELDS = [
   "min_gpa",
   "min_ielts",
   "min_toefl",
+  "min_sat",
   "essay_required",
   "recommendation_letters_required",
   "interview_required",
+] as const;
+
+/* Fields where NULL→value (additive backfill) is silently applied
+ * instead of staged for review. These are "we didn't know, now we do"
+ * additions rather than contradictions, so writing them directly
+ * progressively heals the catalog without admin intervention. Existing-
+ * value → different-value transitions on these fields are NOT silently
+ * overwritten — they go through the staging diff flow if added to
+ * DIFF_FIELDS. We keep DIFF_FIELDS focused on the user-facing surface
+ * (deadlines / amounts / requirements); the backfill set covers
+ * structured matching inputs that the eligibility predicate uses. */
+const BACKFILL_NULL_FIELDS = [
+  "eligible_countries",
+  "target_fields",
+  "target_degree_level",
 ] as const;
 
 type DiffField = typeof DIFF_FIELDS[number];
@@ -74,11 +97,17 @@ interface ExtractedFields {
   min_gpa?: number | null;
   min_ielts?: number | null;
   min_toefl?: number | null;
+  min_sat?: number | null;
   essay_required?: boolean | null;
   recommendation_letters_required?: number | null;
   interview_required?: boolean | null;
   citizenship_requirements?: string | null;
   eligibility_requirements?: string | null;
+  // Structured matching inputs — used by the eligibility predicate.
+  // Often missing on legacy rows; verify pass progressively backfills.
+  target_fields?: string[] | null;
+  target_degree_level?: string[] | null;
+  eligible_countries?: string[] | null;
   confidence: number;
 }
 
@@ -104,11 +133,15 @@ Re-extract from the page content below. Fields to populate (or leave null):
   "min_gpa": 3.5,
   "min_ielts": 7.0,
   "min_toefl": 100,
+  "min_sat": 1450,
   "essay_required": true,
   "recommendation_letters_required": 2,
   "interview_required": true,
   "citizenship_requirements": "...",
   "eligibility_requirements": "...",
+  "target_fields": ["Computer Science"],
+  "target_degree_level": ["master","phd"],
+  "eligible_countries": ["India","Pakistan"],
   "confidence": 0.92
 }
 
@@ -164,9 +197,10 @@ Deno.serve(async (req) => {
     .select(
       "scholarship_id, scholarship_name, provider_name, host_country, " +
       "application_deadline, deadline_type, coverage_type, award_amount_text, " +
-      "estimated_total_value_usd, min_gpa, min_ielts, min_toefl, " +
+      "estimated_total_value_usd, min_gpa, min_ielts, min_toefl, min_sat, " +
       "essay_required, recommendation_letters_required, interview_required, " +
       "citizenship_requirements, eligibility_requirements, " +
+      "target_fields, target_degree_level, eligible_countries, " +
       "source_url, official_url, verification_status, last_verified_at"
     )
     .eq("scholarship_id", body.scholarship_id)
@@ -224,6 +258,17 @@ Deno.serve(async (req) => {
     if (!text) throw new Error("Empty completion");
     fresh = extractJson(text) as ExtractedFields;
     if (typeof fresh?.confidence !== "number") throw new Error("Missing confidence");
+    // Defensive cleanup — same hygiene applied at scrape ingest. The
+    // verify pass goes through the SAME LLM and is just as susceptible
+    // to "Various", "Trustees of...", "Apply now" suffixes etc.
+    if (fresh.scholarship_name) fresh.scholarship_name = cleanScholarshipName(fresh.scholarship_name);
+    if (fresh.provider_name) fresh.provider_name = cleanProvider(fresh.provider_name) ?? undefined;
+    if (fresh.host_country) fresh.host_country = cleanHostCountry(fresh.host_country) ?? undefined;
+    if (fresh.award_amount_text) fresh.award_amount_text = cleanAwardText(fresh.award_amount_text);
+    if (Array.isArray(fresh.target_fields)) {
+      const cleaned = cleanTargetFields(fresh.target_fields);
+      fresh.target_fields = cleaned.length > 0 ? cleaned : null;
+    }
   } catch (e) {
     console.warn("[verify-scholarship] re-extract failed", (e as Error).message);
     return json(200, { ok: false, status: "extract_failed", error: (e as Error).message });
@@ -244,18 +289,38 @@ Deno.serve(async (req) => {
     });
   }
 
+  // ─── Opportunistic backfill of structured matching inputs ────────
+  // For BACKFILL_NULL_FIELDS: NULL/empty stored value + non-empty fresh
+  // value = silent additive backfill. These are the inputs the
+  // eligibility predicate uses (eligible_countries / target_fields /
+  // target_degree_level), and most legacy rows have them NULL even
+  // though the scholarship's actual page lists them. Treating absence-
+  // → presence as "no contradiction, just new info" lets the verify
+  // cron progressively heal the catalog without admin work, while
+  // never silently overwriting an existing value.
+  const backfillUpdates: Record<string, unknown> = {};
+  for (const f of BACKFILL_NULL_FIELDS) {
+    const a = (stored as Record<string, unknown>)[f];
+    const b = (fresh as Record<string, unknown>)[f];
+    const storedEmpty = a === null || a === undefined || (Array.isArray(a) && a.length === 0);
+    const freshNonEmpty = Array.isArray(b) && b.length > 0;
+    if (storedEmpty && freshNonEmpty) backfillUpdates[f] = b;
+  }
+
   // ─── Compare stored vs. fresh ────────────────────────────────────
   const diffs = diffMaterial(stored, fresh);
   const now = new Date().toISOString();
 
   if (diffs.length === 0) {
-    // No material changes — clean re-verify. Promote to 'verified' and
-    // bump the timestamp.
+    // No material changes — clean re-verify. Promote to 'verified',
+    // bump the timestamp, AND apply any opportunistic backfill so the
+    // additive learnings don't sit unused.
     await supa.from("scholarships")
       .update({
         verification_status: "verified",
         last_verified_at: now,
         verified: true,
+        ...backfillUpdates,
       })
       .eq("scholarship_id", stored.scholarship_id);
     return json(200, {
@@ -263,6 +328,7 @@ Deno.serve(async (req) => {
       status: "verified_clean",
       scholarship_id: stored.scholarship_id,
       cost_estimate_usd: COST_ESTIMATE_USD,
+      backfilled: Object.keys(backfillUpdates),
     });
   }
 
@@ -285,6 +351,11 @@ Deno.serve(async (req) => {
     .update({
       verification_status: "stale",
       last_verified_at: now,
+      // Apply opportunistic backfill even when material diffs exist —
+      // a row that has BOTH a deadline drift AND a previously-missing
+      // eligible_countries should still get the additive backfill;
+      // those are independent changes.
+      ...backfillUpdates,
     })
     .eq("scholarship_id", stored.scholarship_id);
 
