@@ -269,7 +269,7 @@ const Account = ({ language = "en" }: AccountProps) => {
   const aiPath = language === "ru" ? "/topuni-ai/ru" : "/topuni-ai";
   const discoverPath = language === "ru" ? "/discover/ru" : "/discover";
   const pipelinePath = language === "ru" ? "/pipeline/ru" : "/pipeline";
-  const calendarPath = language === "ru" ? "/calendar/ru" : "/calendar";
+  const calendarPath = language === "ru" ? "/pipeline/ru?tab=calendar" : "/pipeline?tab=calendar";
   const essayPath = language === "ru" ? "/essay/ru" : "/essay";
   const referPath = language === "ru" ? "/refer/ru" : "/refer";
   const pricingPath = language === "ru" ? "/pricing/ru" : "/pricing";

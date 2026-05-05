@@ -51,7 +51,6 @@ const Pipeline             = lazy(() => import("./pages/Pipeline"));
 const ScholarshipsByFilter = lazy(() => import("./pages/ScholarshipsByFilter"));
 const ScholarshipDetail    = lazy(() => import("./pages/ScholarshipDetail"));
 const EssayCritique        = lazy(() => import("./pages/EssayCritique"));
-const Calendar             = lazy(() => import("./pages/Calendar"));
 const Refer                = lazy(() => import("./pages/Refer"));
 const Admin                = lazy(() => import("./pages/Admin"));
 const FunnelDashboard      = lazy(() => import("./pages/FunnelDashboard"));
@@ -148,8 +147,10 @@ const App = () => (
           <Route path="/pipeline"     element={<Pipeline language="en" />} />
           <Route path="/pipeline/ru"  element={<Pipeline language="ru" />} />
           {/* Deadline calendar — paired with pipeline for time-based view */}
-          <Route path="/calendar"     element={<Calendar language="en" />} />
-          <Route path="/calendar/ru"  element={<Calendar language="ru" />} />
+          {/* /calendar consolidated into Workspace round 17 — redirects
+              keep external bookmarks alive. */}
+          <Route path="/calendar"     element={<Navigate to="/pipeline?tab=calendar" replace />} />
+          <Route path="/calendar/ru"  element={<Navigate to="/pipeline/ru?tab=calendar" replace />} />
           {/* Referral hub — share your code, see your referrals */}
           <Route path="/refer"        element={<Refer language="en" />} />
           <Route path="/refer/ru"     element={<Refer language="ru" />} />

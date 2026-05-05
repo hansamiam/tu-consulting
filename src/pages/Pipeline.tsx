@@ -11,11 +11,11 @@
  * a product the student opens daily during application season.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, ExternalLink, Clock, Check, X, Calendar,
-  StickyNote, Loader2, Search, Inbox, ChevronDown, Bot,
+  StickyNote, Loader2, Search, Inbox, ChevronDown, Bot, KanbanSquare, FileText,
 } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
@@ -35,6 +35,8 @@ import { accentForCountry, shortCountry } from "@/lib/countryAccent";
 import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
 import { CalendarSubscribeDialog } from "@/components/pipeline/CalendarSubscribeDialog";
 import { EssayDraftPanel } from "@/components/pipeline/EssayDraftPanel";
+import { WorkspaceCalendar } from "@/components/pipeline/WorkspaceCalendar";
+import { EssaysTab } from "@/components/pipeline/EssaysTab";
 import { UpgradeChip } from "@/components/UpgradeChip";
 import { InstaFollowChip } from "@/components/InstaFollowChip";
 
@@ -213,6 +215,18 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
     };
   }, [rows, tracker.statusMap, tracker.hidden, tracker.awardedMap]);
 
+  /* Workspace tab state — kept in the URL so users can deep-link to
+     /pipeline?tab=calendar etc and refresh-restore their view. */
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const activeTab: "board" | "calendar" | "essays" =
+    tabParam === "calendar" ? "calendar" : tabParam === "essays" ? "essays" : "board";
+  const setActiveTab = (next: "board" | "calendar" | "essays") => {
+    const params = new URLSearchParams(searchParams);
+    if (next === "board") params.delete("tab"); else params.set("tab", next);
+    setSearchParams(params, { replace: true });
+  };
+
   /* Detail sheet state */
   const [openDetail, setOpenDetail] = useState<Scholarship | null>(null);
   const [draftNote, setDraftNote] = useState<string>("");
@@ -282,7 +296,7 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
             {t("Back to Discover", "К Discover")}
           </Link>
           <p className="text-[11px] uppercase tracking-[0.22em] text-gold font-semibold mb-3">
-            {t("Application pipeline", "Воронка заявок")}
+            {t("Workspace", "Рабочая зона")}
           </p>
           <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold text-primary-foreground tracking-tight leading-tight mb-3">
             {t("Your applications, in one place.", "Все ваши заявки в одном месте.")}
@@ -290,11 +304,11 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
           <p className="text-primary-foreground/75 text-sm sm:text-base max-w-xl leading-relaxed">
             {t(
               user
-                ? "Status, notes, and deadlines for every scholarship you save. Synced across devices."
-                : "Track status and notes for every scholarship you save. Sign up to sync across devices.",
+                ? "Pipeline, deadline calendar, and essay drafts — one workspace, synced across devices."
+                : "Pipeline, deadline calendar, and essay drafts in one workspace. Sign up to sync across devices.",
               user
-                ? "Статус, заметки и дедлайны для каждой сохранённой стипендии. Синхронизация на устройствах."
-                : "Отслеживайте статус и заметки. Зарегистрируйтесь для синхронизации на устройствах.",
+                ? "Воронка, календарь дедлайнов и черновики эссе — одна рабочая зона, синхронизация на устройствах."
+                : "Воронка, календарь дедлайнов и черновики эссе в одной рабочей зоне. Зарегистрируйтесь для синхронизации.",
             )}
           </p>
           {user && (
@@ -354,7 +368,47 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
         </div>
       </section>
 
-      {/* ─── Pipeline columns ─────────────────────────────────────── */}
+      {/* ─── Workspace tab strip ──────────────────────────────────────
+          Three tabs share the same hydrated tracker rows. The URL is
+          the source of truth (?tab=calendar | essays) so deep links +
+          back-button work. Sticky-ish below the stats banner. */}
+      <section className="border-b border-border/60 bg-background sticky top-0 z-20">
+        <div className="max-w-6xl mx-auto px-5 sm:px-8">
+          <div className="flex items-center gap-1 -mb-px">
+            {[
+              { key: "board" as const,    label: t("Board", "Доска"),       icon: KanbanSquare },
+              { key: "calendar" as const, label: t("Calendar", "Календарь"), icon: Calendar },
+              { key: "essays" as const,   label: t("Essays", "Эссе"),       icon: FileText, count: Object.keys(tracker.essayMap).length },
+            ].map((tab) => {
+              const isActive = activeTab === tab.key;
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`relative inline-flex items-center gap-1.5 px-3 sm:px-4 py-3 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  <span>{tab.label}</span>
+                  {"count" in tab && tab.count !== undefined && tab.count > 0 && (
+                    <span className={`text-[10px] tabular-nums px-1.5 py-0.5 rounded font-semibold ${
+                      isActive ? "bg-gold/15 text-gold-dark" : "bg-muted text-muted-foreground"
+                    }`}>{tab.count}</span>
+                  )}
+                  {isActive && <span className="absolute inset-x-2 bottom-0 h-0.5 bg-gold-dark rounded-t" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Pipeline columns (Board tab) ─────────────────────────── */}
+      {activeTab === "board" && (
       <section className="max-w-6xl mx-auto px-5 sm:px-8 py-8 sm:py-12">
         {loading && trackedIds.length > 0 ? (
           <div className="py-20 flex items-center justify-center text-muted-foreground gap-2">
@@ -441,6 +495,43 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
           </div>
         )}
       </section>
+      )}
+
+      {/* ─── Calendar tab ──────────────────────────────────────────── */}
+      {activeTab === "calendar" && (
+        <section className="max-w-6xl mx-auto px-5 sm:px-8 py-8 sm:py-12">
+          <WorkspaceCalendar
+            rows={rows.map(r => ({
+              scholarship_id: r.scholarship_id,
+              scholarship_name: r.scholarship_name,
+              host_country: r.host_country,
+              application_deadline: r.application_deadline,
+              coverage_type: r.coverage_type,
+            }))}
+            hidden={tracker.hidden}
+            statusMap={tracker.statusMap}
+            loading={loading}
+            language={language}
+            onSubscribe={user ? () => setCalendarOpen(true) : undefined}
+            onSelectScholarship={(id) => {
+              const found = rows.find(r => r.scholarship_id === id);
+              if (found) setOpenDetail(found);
+            }}
+          />
+        </section>
+      )}
+
+      {/* ─── Essays tab ────────────────────────────────────────────── */}
+      {activeTab === "essays" && (
+        <section className="max-w-6xl mx-auto px-5 sm:px-8 py-8 sm:py-12">
+          <EssaysTab
+            rows={rows}
+            essayMap={tracker.essayMap}
+            language={language}
+            onOpen={(s) => setOpenDetail(s)}
+          />
+        </section>
+      )}
 
       {/* Quiet upgrade chip — only renders for free-tier users with at
           least one tracked scholarship. Anchored as a thin footer strip
