@@ -116,7 +116,18 @@ type Phase = "landing" | "wizard" | "analyzing" | "results";
 type SortBy = "match" | "deadline" | "value" | "effort" | "selectivity";
 type ViewMode = "grid" | "list" | "timeline";
 type AppSection = "browse" | "pipeline" | "shortlist" | "collections";
-type AppStatus = "researching" | "drafting" | "submitted" | "decision" | "rejected";
+/* Three application stages — captures the meaningful work-in-progress
+ * states. "Decision" / "Awaiting" / "Rejected" / "Accepted" were
+ * removed from the picker: outcomes are out of the student's hands
+ * once submitted, so tracking them in the same pill as in-progress
+ * work added clutter and an asymmetric "rejected" branch that
+ * triggered shame for some users.
+ *
+ * The underlying hook still accepts the legacy values so existing
+ * rows don't break — the maps below cover all 6 values for display
+ * fidelity, but the dropdown only OFFERS the 3 active stages. */
+type AppStatus = "researching" | "drafting" | "submitted" | "decision" | "rejected" | "accepted";
+const ACTIVE_STATUSES: AppStatus[] = ["researching", "drafting", "submitted"];
 
 const STATUS_LABEL: Record<AppStatus, string> = {
   researching: "Researching",
@@ -124,6 +135,7 @@ const STATUS_LABEL: Record<AppStatus, string> = {
   submitted:   "Submitted",
   decision:    "Awaiting decision",
   rejected:    "Rejected",
+  accepted:    "Accepted",
 };
 
 const STATUS_COLOR: Record<AppStatus, string> = {
@@ -132,6 +144,7 @@ const STATUS_COLOR: Record<AppStatus, string> = {
   submitted:   "text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border-emerald-500/25",
   decision:    "text-primary bg-primary/8 border-primary/20",
   rejected:    "text-rose-700 dark:text-rose-300 bg-rose-500/10 border-rose-500/25",
+  accepted:    "text-success bg-success/8 border-success/25",
 };
 
 /* ─── Scoring ────────────────────────────────────────────────────────── */
@@ -909,7 +922,7 @@ const StatusBadge = ({ status, onChange, dense = false }: {
         {status ? STATUS_LABEL[status] : "Set status"}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
-        {(["researching","drafting","submitted","decision","rejected"] as AppStatus[]).map(s => (
+        {ACTIVE_STATUSES.map(s => (
           <DropdownMenuItem key={s} onClick={() => onChange(s)} className="text-xs gap-2">
             <Circle className="h-2.5 w-2.5 fill-current" />
             {STATUS_LABEL[s]}
@@ -969,53 +982,62 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
       <div className={`w-1 shrink-0 bg-gradient-to-b ${accent} ${isFullRide ? "ring-1 ring-inset ring-gold/30" : ""}`} aria-hidden />
 
       <div className="flex-1 grid grid-cols-[52px,minmax(0,1fr),auto] sm:grid-cols-[52px,minmax(0,2fr),minmax(0,1.4fr),minmax(0,1fr),auto] items-center gap-4 px-4 py-3.5 min-w-0">
-        {/* Score circle (when real) or country-tinted landmark square */}
-        {hasRealScore ? (
-          <HoverCard openDelay={120} closeDelay={80}>
-            <HoverCardTrigger asChild>
-              <button
-                type="button"
-                onClick={(e) => e.stopPropagation()}
-                className="relative flex items-center justify-center w-11 h-11 rounded-full border-2 border-border/60 bg-card cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
-                aria-label={`Match score: ${s.match} of 100. Hover for breakdown.`}
-                style={{ background: `conic-gradient(${s.priority === "strong_match" ? "hsl(42 80% 50%)" : s.priority === "competitive" ? "hsl(210 70% 32%)" : "hsl(220 10% 50%)"} ${s.match * 3.6}deg, transparent 0deg)` }}
-              >
-                <span className="absolute inset-0.5 rounded-full bg-card flex flex-col items-center justify-center">
-                  <span className="font-heading text-[15px] font-bold tabular-nums leading-none text-foreground">{s.match}</span>
+        {/* Score badge — visually consistent across rows. Always a
+            country-gradient circle with the country's landmark behind.
+            When the user has a real score, that score overlays in the
+            centre as a bold number on a cream pill so it pops; without
+            a score the landmark stands alone (no awkward "0/100" or
+            blank space). Full-ride rows get the gold corner pin
+            either way. Hover-card breakdown only mounts when the
+            score is real. */}
+        {(() => {
+          const badge = (
+            <div
+              className={`relative flex items-center justify-center w-11 h-11 rounded-full overflow-hidden bg-gradient-to-br ${accent} ${isFullRide ? "ring-2 ring-gold/40" : "ring-1 ring-border/30"}`}
+              aria-label={hasRealScore ? `Match score: ${s.match} of 100` : (s.host_country || "Scholarship")}
+            >
+              <CountryArt country={s.host_country} className="absolute inset-0 h-full w-full opacity-45 text-white p-1.5" />
+              <span className="absolute inset-0 bg-black/15" />
+              {hasRealScore && (
+                <span className="relative inline-flex items-center justify-center min-w-7 h-7 px-1.5 rounded-full bg-card shadow-sm">
+                  <span className="font-heading text-[13px] font-bold tabular-nums leading-none text-foreground">{s.match}</span>
                 </span>
-              </button>
-            </HoverCardTrigger>
-            <HoverCardContent side="right" align="start" className="p-0 border-0 shadow-none bg-transparent w-auto">
-              <MatchScoreBreakdown
-                scholarshipId={s.scholarship_id}
-                fallback={{
-                  match: s.match,
-                  application_deadline: s.application_deadline,
-                  estimated_total_value_usd: s.estimated_total_value_usd,
-                  last_verified_at: s.last_verified_at,
-                  verification_status: s.verification_status,
-                  passes_eligibility: s.eligibility === "eligible" || s.eligibility === "likely",
-                  why_this_fits: s.why_this_fits,
-                  reasons: s.reasons,
-                  warnings: s.warnings,
-                }}
-                compact
-              />
-            </HoverCardContent>
-          </HoverCard>
-        ) : (
-          <div
-            className={`relative flex items-center justify-center w-11 h-11 rounded-lg overflow-hidden bg-gradient-to-br ${accent} ${isFullRide ? "ring-2 ring-gold/40" : ""}`}
-            aria-label={s.host_country || "Scholarship"}
-          >
-            <CountryArt country={s.host_country} className="absolute inset-0 h-full w-full opacity-50 text-white p-1.5" />
-            {isFullRide && (
-              <span className="absolute -top-1 -right-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-gold border border-card" title="Full ride">
-                <Award className="h-2.5 w-2.5 text-primary" />
-              </span>
-            )}
-          </div>
-        )}
+              )}
+              {isFullRide && (
+                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-gold border border-card" title="Full ride">
+                  <Award className="h-2.5 w-2.5 text-primary" />
+                </span>
+              )}
+            </div>
+          );
+          if (!hasRealScore) return badge;
+          return (
+            <HoverCard openDelay={120} closeDelay={80}>
+              <HoverCardTrigger asChild>
+                <button type="button" onClick={(e) => e.stopPropagation()} className="cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-gold rounded-full">
+                  {badge}
+                </button>
+              </HoverCardTrigger>
+              <HoverCardContent side="right" align="start" className="p-0 border-0 shadow-none bg-transparent w-auto">
+                <MatchScoreBreakdown
+                  scholarshipId={s.scholarship_id}
+                  fallback={{
+                    match: s.match,
+                    application_deadline: s.application_deadline,
+                    estimated_total_value_usd: s.estimated_total_value_usd,
+                    last_verified_at: s.last_verified_at,
+                    verification_status: s.verification_status,
+                    passes_eligibility: s.eligibility === "eligible" || s.eligibility === "likely",
+                    why_this_fits: s.why_this_fits,
+                    reasons: s.reasons,
+                    warnings: s.warnings,
+                  }}
+                  compact
+                />
+              </HoverCardContent>
+            </HoverCard>
+          );
+        })()}
 
         {/* Name + provider + country chip */}
         <div className="min-w-0">
@@ -1034,22 +1056,31 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
           </div>
         </div>
 
-        {/* Award + deadline (desktop only) — award becomes a real chip */}
-        <div className="hidden sm:flex flex-col gap-1.5 min-w-0">
+        {/* Award + deadline (desktop only). Stacks award chip and the
+            deadline tightly so the column reads as a single
+            "what / when" cluster. Deadline gets its own line below
+            the chip — same line would push past the column on long
+            awards like "Tuition + stipend". Reduced gap between
+            them so the visual cluster reads tighter than before. */}
+        <div className="hidden sm:flex flex-col gap-1 min-w-0">
           {award && (
-            <span className={`inline-flex self-start items-center gap-1.5 text-[12px] font-semibold px-2 py-0.5 rounded-md max-w-full truncate ${isFullRide ? "text-gold-dark bg-gold/10 border border-gold/25" : "text-foreground bg-muted/40 border border-border/60"}`}>
+            <span className={`inline-flex self-start items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap ${isFullRide ? "text-gold-dark bg-gold/10 border border-gold/25" : "text-foreground bg-muted/40 border border-border/60"}`}>
               {isFullRide && <Award className="h-3 w-3 shrink-0" />}
-              <span className="truncate">{award}</span>
+              <span>{award}</span>
             </span>
           )}
-          <div className="flex items-center gap-2">
-            <p className={`text-xs tabular-nums font-medium ${dl.cls}`}>{dl.text}</p>
-          </div>
+          <p className={`text-[11px] tabular-nums font-medium leading-none ${dl.cls}`}>{dl.text}</p>
         </div>
 
-        {/* Status (desktop only) */}
+        {/* Status — only render once the row's been bookmarked. In
+            general browse, the "Set status" affordance was visual
+            noise on every row of the database. After bookmarking the
+            student commits to tracking this scholarship; that's when
+            status becomes meaningful. */}
         <div className="hidden sm:flex items-center justify-start">
-          <StatusBadge status={status} onChange={onStatusChange} dense />
+          {(isBookmarked || status) && (
+            <StatusBadge status={status} onChange={onStatusChange} dense />
+          )}
         </div>
 
         {/* Actions — bookmark stays always-visible (it's a stateful affordance);
@@ -3209,12 +3240,10 @@ const Discover = ({ language = "en" }: Props) => {
               {/* Results body */}
               <div className="max-w-7xl mx-auto px-6 sm:px-8 py-10 sm:py-12">
                 <div className="flex gap-8">
-                  {/* ─── WORKSPACE SIDEBAR — app navigation rail ─── */}
+                  {/* ─── SIDEBAR — Discover navigation rail ─── */}
                   <aside className="hidden lg:block w-[232px] shrink-0">
                     <div className="sticky top-24 space-y-3.5">
-                      {/* Workspace nav */}
                       <nav className="bg-card border border-border rounded-2xl p-3 shadow-sm">
-                        <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-2.5 px-2 mt-1">Workspace</p>
                         {([
                           // Pipeline removed from this rail — application
                           // tracking belongs on the dedicated /pipeline page
@@ -3269,14 +3298,6 @@ const Discover = ({ language = "en" }: Props) => {
                           </>
                         )}
 
-                        <div className="my-2 mx-2 h-px bg-border/50" />
-                        <button
-                          onClick={resetProfile}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-foreground/65 hover:bg-foreground/[0.025] hover:text-foreground transition-colors"
-                        >
-                          <UserCheck className="h-4 w-4 text-muted-foreground" />
-                          Profile
-                        </button>
                       </nav>
 
                       {/* Filters panel */}
@@ -3363,7 +3384,7 @@ const Discover = ({ language = "en" }: Props) => {
                           <div className="flex items-baseline justify-between pb-5 border-b border-border/60">
                             <div>
                               <p className="text-gold-dark text-[11px] font-semibold uppercase tracking-[0.22em] mb-1">
-                                {appSection === "shortlist" ? "Workspace · Shortlist" : "Workspace · Collections"}
+                                {appSection === "shortlist" ? "Shortlist" : "Collections"}
                               </p>
                               <h2 className="font-heading text-2xl font-bold tracking-tight text-foreground">
                                 {appSection === "shortlist" ? "Saved scholarships" : "Collections"}
