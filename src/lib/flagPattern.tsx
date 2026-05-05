@@ -111,7 +111,13 @@ export const FlagPattern = ({ country, className = "", opacity = 0.18 }: Props) 
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
-      preserveAspectRatio="xMidYMid slice"
+      // Card bands are wider than they are tall (~6:1) but the viewBox
+      // is 4:1. With 'slice', the top + bottom of horizontal-stripe
+      // patterns get clipped so users only see one band of the three.
+      // 'none' stretches the SVG to fill the container — patterns
+      // distort vertically but stay fully visible, which matters more
+      // at low opacity than geometric purity.
+      preserveAspectRatio="none"
       className={`pointer-events-none ${className}`}
       aria-hidden
       style={{ opacity }}
