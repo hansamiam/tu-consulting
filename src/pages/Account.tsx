@@ -19,6 +19,8 @@ import {
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { ru as ruLocale, enUS } from "date-fns/locale";
+import { cleanScholarshipName } from "@/lib/scholarshipFields";
+import { shortCountry } from "@/lib/countryAccent";
 
 interface AccountProps { language?: "en" | "ru"; }
 
@@ -589,9 +591,9 @@ const PipelinePreviewRow = ({ row, t, pipelinePath }: { row: TrackerLite; t: T; 
     <Link to={pipelinePath} className="flex items-center gap-3 hover:bg-muted/30 transition-colors -m-2 p-2 rounded-lg">
       <div className="flex-1 min-w-0">
         <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-semibold mb-0.5">
-          {row.scholarship?.host_country ?? "—"}
+          {row.scholarship?.host_country ? shortCountry(row.scholarship.host_country) : "—"}
         </p>
-        <p className="font-medium text-foreground truncate">{row.scholarship?.scholarship_name}</p>
+        <p className="font-medium text-foreground truncate">{row.scholarship?.scholarship_name ? cleanScholarshipName(row.scholarship.scholarship_name) : ""}</p>
         {row.status && (
           <p className="text-[11px] text-muted-foreground mt-0.5">{t.statusPrefix(row.status)}</p>
         )}
