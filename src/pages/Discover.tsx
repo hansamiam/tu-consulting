@@ -1497,12 +1497,16 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
   fieldsAvailable: string[];
 }) => {
   const sections: { label: string; key: keyof FilterState; opts: { v: string; l: string }[] }[] = [
+    // Three Coverage buckets — collapsed Partial + Stipend into one
+    // "Partial funding" since they overlap conceptually (both = not
+    // full ride) and the filter sidebar was getting too tall on
+    // smaller laptops. Filter logic below treats both DB values as
+    // matches when this option is selected.
     { label: "Coverage", key: "coverage", opts: [
       { v: "all", l: "All types" },
       { v: "full_ride", l: "Full ride (tuition + living)" },
       { v: "tuition_only", l: "Tuition only" },
       { v: "partial", l: "Partial funding" },
-      { v: "stipend", l: "Stipend / living costs" },
     ] },
     { label: "Degree",   key: "degree",   opts: [{ v: "all", l: "All levels" }, { v: "undergraduate", l: "Bachelor\'s" }, { v: "master\'s", l: "Master\'s" }, { v: "PhD", l: "PhD" }] },
     // 3 levels — "Competitive" matches both high and very_high in the filter logic below.
@@ -2557,7 +2561,14 @@ const Discover = ({ language = "en" }: Props) => {
         || matchesArr(s.best_for_tags)
       );
     }
-    if (filters.coverage !== "all") list = list.filter(s => s.coverage_type === filters.coverage);
+    if (filters.coverage !== "all") {
+      // "Partial funding" collapses partial + stipend (also catches
+      // "travel" / "research" / any non-fullride non-tuition_only value
+      // for legacy rows that wrote different enum names).
+      list = list.filter(s => filters.coverage === "partial"
+        ? (s.coverage_type !== "full_ride" && s.coverage_type !== "tuition_only")
+        : s.coverage_type === filters.coverage);
+    }
     if (filters.degree !== "all") {
       // Tolerant degree match: the LLM populates target_degree_level
       // with all kinds of variants ("Master's", "Masters", "MA", "MS",
@@ -3617,7 +3628,10 @@ const Discover = ({ language = "en" }: Props) => {
                 </div>
               </div>
 
-              <Footer language={language} />
+              {/* Footer intentionally omitted from the results phase —
+                  the user is in app-mode (filters + cards + sheet) and
+                  the global website footer competes with that focus.
+                  Site nav stays at the top so they can still escape. */}
             </motion.div>
           )}
         </AnimatePresence>
@@ -3662,37 +3676,55 @@ const Discover = ({ language = "en" }: Props) => {
                 </p>
               ) : (() => {
                 const items = ranked.filter(s => compareSet.has(s.scholarship_id));
-                const rows: { label: string; render: (s: Scored) => React.ReactNode }[] = [
+                /* Pretty-print a row's "min academic requirements" as one
+                 * compact line — was four separate rows that were almost
+                 * always all em-dashes. Now one line ("GPA ≥ 3.5/4.0 ·
+                 * IELTS ≥ 7.0") for whatever's actually populated. */
+                const minRequirements = (s: Scored): React.ReactNode => {
+                  const parts: string[] = [];
+                  if (s.min_gpa != null) parts.push(`GPA ≥ ${s.min_gpa}/${s.gpa_scale ?? 4.0}`);
+                  if (s.min_ielts != null) parts.push(`IELTS ≥ ${s.min_ielts}`);
+                  if (s.min_toefl != null) parts.push(`TOEFL ≥ ${s.min_toefl}`);
+                  if (s.min_sat != null) parts.push(`SAT ≥ ${s.min_sat}`);
+                  if (parts.length === 0) return <span className="text-muted-foreground/60">No published threshold</span>;
+                  return parts.join(" · ");
+                };
+                /* Rows are defined with an `isEmpty` predicate so we can
+                 * skip rendering rows where every compared scholarship
+                 * returns a "—" — that was 60% of the screen real estate
+                 * for the typical comparison. */
+                const dash = (v: unknown) => !v || (typeof v === "object" && v !== null && "props" in (v as { props?: unknown }) && ((v as { props?: { children?: unknown } }).props?.children === "—"));
+                const rows: { label: string; render: (s: Scored) => React.ReactNode; isEmpty?: (s: Scored) => boolean }[] = [
                   { label: "Match score", render: s => <span className="font-bold text-lg tabular-nums text-foreground">{s.match}<span className="text-muted-foreground/60 text-sm font-normal">/100</span></span> },
-                  { label: "Tier", render: s => {
-                      const t = TIER[s.priority];
-                      return <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] ${t.textLight}`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${t.dot}`} />{t.label}
-                      </span>;
-                    }
-                  },
-                  { label: "Selectivity", render: s => <SelectivityChip level={s.selectivity} /> },
-                  { label: "Award", render: s => s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || "—" },
-                  { label: "Total value", render: s => s.estimated_total_value_usd ? <span className="text-gold-dark font-bold">{fmtValue(s.estimated_total_value_usd)}</span> : "—" },
+                  // Tier dropped — overlapped Selectivity. Selectivity is
+                  // an objective rating from the scholarship's data; Tier
+                  // was a derived label off the same data.
+                  { label: "Selectivity", render: s => <SelectivityChip level={s.selectivity} />, isEmpty: s => s.selectivity === "unknown" },
+                  { label: "Award", render: s => s.award_amount_text ? s.award_amount_text : (compactAward(s) || COVERAGE_LABEL[s.coverage_type] || "—"), isEmpty: s => !s.award_amount_text && !COVERAGE_LABEL[s.coverage_type] },
+                  { label: "Total value", render: s => s.estimated_total_value_usd ? <span className="text-gold-dark font-bold">{fmtValue(s.estimated_total_value_usd)}</span> : "—", isEmpty: s => !s.estimated_total_value_usd },
                   { label: "Deadline", render: s => {
                       const dl = deadlineDisplay(s.application_deadline);
                       return <span className={dl.cls}>{dateOnly(s.application_deadline) || dl.text} {s.application_deadline && <span className="text-muted-foreground/70 text-xs ml-1">({dl.text})</span>}</span>;
                     }
                   },
-                  { label: "Min GPA", render: s => s.min_gpa != null ? `≥ ${s.min_gpa}/${s.gpa_scale ?? 4.0}` : <span className="text-muted-foreground/60">—</span> },
-                  { label: "Min IELTS", render: s => s.min_ielts != null ? `≥ ${s.min_ielts}` : <span className="text-muted-foreground/60">—</span> },
-                  { label: "Min TOEFL", render: s => s.min_toefl != null ? `≥ ${s.min_toefl}` : <span className="text-muted-foreground/60">—</span> },
-                  { label: "Min SAT", render: s => s.min_sat != null ? `≥ ${s.min_sat}` : <span className="text-muted-foreground/60">—</span> },
-                  { label: "Eligibility", render: s => isInclusive(s.citizenship_requirements) ? <span className="text-success">Open to all</span> : (s.citizenship_requirements || <span className="text-muted-foreground/60">—</span>) },
-                  { label: "Degree levels", render: s => s.target_degree_level?.join(", ") || <span className="text-muted-foreground/60">—</span> },
-                  { label: "Fields funded", render: s => s.target_fields?.length ? s.target_fields.slice(0, 3).map(humanize).join(", ") + (s.target_fields.length > 3 ? `, +${s.target_fields.length - 3}` : "") : <span className="text-muted-foreground/60">—</span> },
-                  { label: "Application fee", render: s => s.application_fee_text || <span className="text-muted-foreground/60">—</span> },
-                  { label: "Effort level", render: s => s.effort_level ? <span className="capitalize">{s.effort_level}</span> : <span className="text-muted-foreground/60">—</span> },
-                  { label: "Essay required", render: s => s.essay_required ? <span className="text-warning">Yes</span> : <span className="text-success">No</span> },
-                  { label: "Interview", render: s => s.interview_required ? <span className="text-warning">Yes</span> : <span className="text-success">No</span> },
-                  { label: "Rec letters", render: s => s.recommendation_letters_required ?? <span className="text-muted-foreground/60">—</span> },
-                  { label: "Partner unis", render: s => s.partner_universities?.length ?? <span className="text-muted-foreground/60">—</span> },
+                  // Single consolidated row for academic minimums — was
+                  // four separate rows with almost no signal across them.
+                  { label: "Min requirements", render: minRequirements, isEmpty: s => s.min_gpa == null && s.min_ielts == null && s.min_toefl == null && s.min_sat == null },
+                  { label: "Eligibility", render: s => isInclusive(s.citizenship_requirements) ? <span className="text-success">Open to all</span> : (s.citizenship_requirements || <span className="text-muted-foreground/60">—</span>), isEmpty: s => !s.citizenship_requirements },
+                  { label: "Degree levels", render: s => s.target_degree_level?.join(", ") || <span className="text-muted-foreground/60">—</span>, isEmpty: s => !s.target_degree_level || s.target_degree_level.length === 0 },
+                  { label: "Fields funded", render: s => s.target_fields?.length ? s.target_fields.slice(0, 3).map(humanize).join(", ") + (s.target_fields.length > 3 ? `, +${s.target_fields.length - 3}` : "") : <span className="text-muted-foreground/60">—</span>, isEmpty: s => !s.target_fields || s.target_fields.length === 0 },
+                  { label: "Application fee", render: s => s.application_fee_text || <span className="text-muted-foreground/60">—</span>, isEmpty: s => !s.application_fee_text },
+                  { label: "Effort level", render: s => s.effort_level ? <span className="capitalize">{s.effort_level}</span> : <span className="text-muted-foreground/60">—</span>, isEmpty: s => !s.effort_level },
+                  { label: "Essay required", render: s => s.essay_required ? <span className="text-warning">Yes</span> : <span className="text-success">No</span>, isEmpty: s => s.essay_required == null },
+                  { label: "Interview", render: s => s.interview_required ? <span className="text-warning">Yes</span> : <span className="text-success">No</span>, isEmpty: s => s.interview_required == null },
+                  { label: "Rec letters", render: s => s.recommendation_letters_required ?? <span className="text-muted-foreground/60">—</span>, isEmpty: s => s.recommendation_letters_required == null },
+                  { label: "Partner unis", render: s => s.partner_universities?.length ?? <span className="text-muted-foreground/60">—</span>, isEmpty: s => !s.partner_universities || s.partner_universities.length === 0 },
                 ];
+                /* Hide rows that are empty for ALL compared scholarships.
+                 * If even one has data, the row stays so the difference
+                 * is visible — the whole point of compare. */
+                const visibleRows = rows.filter(r => !r.isEmpty || items.some(s => !r.isEmpty!(s)));
+                void dash; // noop reserved for future "all dashes" detection
 
                 return (
                   <div className="overflow-x-auto">
@@ -3701,11 +3733,23 @@ const Discover = ({ language = "en" }: Props) => {
                         <tr>
                           <th className="text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground py-3 pr-4 align-top w-[120px] sticky left-0 bg-background z-10">Field</th>
                           {items.map(s => {
-                            const cmpTier = TIER[s.priority];
+                            const cmpAccent = accentForCountry(s.host_country);
+                            const cmpFullRide = s.coverage_type === "full_ride";
                             return (
                               <th key={s.scholarship_id} className="text-left p-4 align-top min-w-[260px] border-l border-border/60">
                                 <div className="flex items-start justify-between gap-2 mb-2">
-                                  <div className={`h-10 w-10 rounded-xl bg-gradient-to-br ${cmpTier.grad} flex items-center justify-center text-[12px] font-bold text-white shrink-0 tracking-tight`}>{initials(s.provider_name || s.scholarship_name)}</div>
+                                  {/* Country gradient + landmark — same
+                                      visual language as the rows/cards.
+                                      Replaces the meaningless 2-letter
+                                      initial avatar (MO / UO / etc.). */}
+                                  <div className={`relative h-10 w-10 rounded-xl overflow-hidden bg-gradient-to-br ${cmpAccent} shrink-0 ${cmpFullRide ? "ring-2 ring-gold/40" : ""}`}>
+                                    <CountryArt country={s.host_country} className="absolute inset-0 h-full w-full opacity-50 text-white p-1" />
+                                    {cmpFullRide && (
+                                      <span className="absolute -top-1 -right-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-gold border border-card">
+                                        <Award className="h-2.5 w-2.5 text-primary" />
+                                      </span>
+                                    )}
+                                  </div>
                                   <button
                                     onClick={() => toggleCompare(s.scholarship_id)}
                                     className="text-muted-foreground hover:text-destructive transition-colors p-1 -m-1"
@@ -3717,7 +3761,7 @@ const Discover = ({ language = "en" }: Props) => {
                                 <h3 className="font-heading font-bold text-base text-foreground tracking-tight leading-tight line-clamp-2 mb-1">
                                   {cleanScholarshipName(s.scholarship_name)}
                                 </h3>
-                                <p className="text-xs text-muted-foreground truncate">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
+                                <p className="text-xs text-muted-foreground truncate">{[cleanProvider(s.provider_name), s.host_country && shortCountry(s.host_country)].filter(Boolean).join(" · ")}</p>
                                 <div className="flex gap-2 mt-3">
                                   <Button variant="gold" size="sm" className="text-xs h-7 px-3" onClick={() => { setOpenDetail(s); setCompareOpen(false); }}>
                                     Strategy
@@ -3736,7 +3780,7 @@ const Discover = ({ language = "en" }: Props) => {
                         </tr>
                       </thead>
                       <tbody>
-                        {rows.map((r, i) => (
+                        {visibleRows.map((r, i) => (
                           <tr key={i} className="border-t border-border/60">
                             <td className="text-[11px] font-medium text-muted-foreground uppercase tracking-[0.12em] py-3 pr-4 align-top sticky left-0 bg-background z-10">{r.label}</td>
                             {items.map(s => (
