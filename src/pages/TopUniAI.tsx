@@ -133,7 +133,7 @@ const TopUniAI = () => {
      major) since that's the last step that depends on this context. */
   const [hubContext, setHubContext] = useState<{
     label: string;
-    kind: "country" | "field" | "theme" | "scholarship";
+    kind: "country" | "field" | "theme" | "scholarship" | "shared-brief";
   } | null>(null);
 
   /* Drain hub-context payload from sessionStorage on mount.
@@ -150,9 +150,11 @@ const TopUniAI = () => {
       if (!raw) return;
       sessionStorage.removeItem("topuni-hub-context");
       const payload = JSON.parse(raw) as {
-        kind?: "country" | "field" | "theme" | "scholarship";
+        kind?: "country" | "field" | "theme" | "scholarship" | "shared-brief";
         country?: string;
+        countries?: string[];
         field?: string;
+        gradeLevel?: string;
         theme?: string;
         label?: string;
         ts?: number;
@@ -164,6 +166,22 @@ const TopUniAI = () => {
       } else if (payload.kind === "field" && payload.field) {
         setMajor((prev) => prev || payload.field!);
         setHubContext({ kind: "field", label: payload.label || payload.field });
+      } else if (payload.kind === "shared-brief") {
+        // Recipient of a /brief/:slug share clicked "Build my brief".
+        // Carry over the original brief's profile so the recipient
+        // doesn't have to re-derive what looked appealing — just enter
+        // their own scores. Deduplicates target countries against any
+        // pre-existing draft state.
+        if (Array.isArray(payload.countries) && payload.countries.length > 0) {
+          setTargetCountries((prev) => {
+            const merged = [...prev];
+            for (const c of payload.countries!) if (!merged.includes(c)) merged.push(c);
+            return merged;
+          });
+        }
+        if (payload.field) setMajor((prev) => prev || payload.field!);
+        if (payload.gradeLevel) setGradeLevel((prev) => prev || payload.gradeLevel!);
+        setHubContext({ kind: "shared-brief", label: payload.label || "shared brief" });
       } else if (payload.kind === "theme" && payload.theme) {
         // Theme-specific defaults: full-funding ⇒ "Need full scholarship"
         // budget (which derives scholarshipNeeded=yes); closing-soon ⇒
@@ -469,6 +487,10 @@ const TopUniAI = () => {
                         Building strategy around{" "}
                         <span className="font-semibold text-foreground">{hubContext.label}</span>.
                       </>
+                    ) : hubContext.kind === "shared-brief" ? (
+                      <>
+                        Pre-filled from the brief you just read. Enter your scores to make it yours.
+                      </>
                     ) : (
                       <>
                         Pre-filled from the{" "}
@@ -482,7 +504,8 @@ const TopUniAI = () => {
                     onClick={() => {
                       setHubContext(null);
                       setTargetCountries([]);
-                      if (hubContext.kind === "field") setMajor("");
+                      if (hubContext.kind === "field" || hubContext.kind === "shared-brief") setMajor("");
+                      if (hubContext.kind === "shared-brief") setGradeLevel("");
                     }}
                     className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-4 hover:underline shrink-0"
                   >

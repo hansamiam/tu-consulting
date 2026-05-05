@@ -382,11 +382,34 @@ const SharedBriefPage = () => {
                 </p>
               </div>
 
-              <Button variant="gold" size="lg" asChild className="shrink-0">
-                <Link to={isRu ? "/topuni-ai/ru" : "/topuni-ai"} className="gap-2">
-                  {isRu ? "Создать мой брифинг" : "Build my brief"}
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
+              <Button
+                variant="gold"
+                size="lg"
+                className="shrink-0 gap-2"
+                onClick={() => {
+                  // Hand the wizard a shared-brief payload so the recipient
+                  // doesn't start from zero — they pick up the original
+                  // student's target countries / field / grade level and
+                  // just enter their own scores. Same 5-min stale guard
+                  // pattern used by the other hub-context handoffs.
+                  try {
+                    sessionStorage.setItem(
+                      "topuni-hub-context",
+                      JSON.stringify({
+                        kind: "shared-brief",
+                        countries: brief.profile_target_countries ?? [],
+                        field: brief.profile_major ?? null,
+                        gradeLevel: brief.profile_grade_level ?? null,
+                        label: firstName ? `${firstName}'s brief` : "shared brief",
+                        ts: Date.now(),
+                      }),
+                    );
+                  } catch { /* sessionStorage unavailable; CTA still works */ }
+                  navigate(isRu ? "/topuni-ai/ru" : "/topuni-ai");
+                }}
+              >
+                {isRu ? "Создать мой брифинг" : "Build my brief"}
+                <ArrowRight className="w-4 h-4" />
               </Button>
             </div>
           </div>
