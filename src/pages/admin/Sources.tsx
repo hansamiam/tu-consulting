@@ -33,6 +33,9 @@ type Source = {
   last_success_at: string | null;
   consecutive_failures: number;
   is_active: boolean;
+  health_status?: string | null;
+  health_reason?: string | null;
+  last_evaluated_at?: string | null;
 };
 
 type Run = {
@@ -484,8 +487,10 @@ function SourceRow({
                 <h3 className="font-heading font-semibold text-base truncate">{s.name}</h3>
                 {failed ? <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" />{s.consecutive_failures} fails</Badge> :
                  isPaused ? <Badge variant="secondary">paused</Badge> :
+                 s.health_status === "quarantined" ? <Badge variant="destructive" className="gap-1" title={s.health_reason || ""}><AlertTriangle className="h-3 w-3" />quarantined</Badge> :
+                 s.health_status === "degraded" ? <Badge variant="outline" className="text-amber-700 border-amber-300" title={s.health_reason || ""}>degraded</Badge> :
                  stale ? <Badge variant="outline" className="text-amber-700 border-amber-300">stale</Badge> :
-                 <Badge variant="outline" className="text-emerald-700 border-emerald-300">healthy</Badge>}
+                 <Badge variant="outline" className="text-emerald-700 border-emerald-300" title={s.health_reason || ""}>healthy</Badge>}
                 {s.region && <Badge variant="secondary" className="text-xs">{s.region}</Badge>}
                 {s.category && <Badge variant="outline" className="text-xs capitalize">{s.category}</Badge>}
               </div>
