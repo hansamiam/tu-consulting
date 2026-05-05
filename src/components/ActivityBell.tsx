@@ -11,7 +11,7 @@
  * product, the canonical "what's new for me" surface.
  */
 import { useNavigate } from "react-router-dom";
-import { Bell, Calendar, BookmarkCheck, RefreshCcw, Inbox, ArrowRight } from "lucide-react";
+import { Bell, Calendar, BookmarkCheck, RefreshCcw, Inbox, ArrowRight, Sparkles } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActivityFeed, type ActivityEvent } from "@/hooks/useActivityFeed";
@@ -23,6 +23,7 @@ const ICON_FOR: Record<ActivityEvent["kind"], React.ComponentType<{ className?: 
   deadline_today: Calendar,
   tracker_updated: RefreshCcw,
   lifecycle_change: RefreshCcw,
+  brief_stale: Sparkles,
 };
 
 const TONE_FOR: Record<ActivityEvent["kind"], string> = {
@@ -31,6 +32,7 @@ const TONE_FOR: Record<ActivityEvent["kind"], string> = {
   deadline_today: "text-destructive",
   tracker_updated: "text-muted-foreground",
   lifecycle_change: "text-muted-foreground",
+  brief_stale: "text-gold-dark",
 };
 
 interface Props {

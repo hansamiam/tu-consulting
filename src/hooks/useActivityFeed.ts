@@ -22,7 +22,8 @@ export type ActivityKind =
   | "deadline_imminent"    // tracked scholarship has a deadline in <= 7 days
   | "deadline_today"       // tracked scholarship deadline is today/tomorrow
   | "tracker_updated"      // tracked scholarship changed since last seen
-  | "lifecycle_change";    // tracked scholarship reopened / closed
+  | "lifecycle_change"     // tracked scholarship reopened / closed
+  | "brief_stale";         // user's profile changed after last brief generated
 
 export interface ActivityEvent {
   id: string;
@@ -73,12 +74,18 @@ interface SavedSearchLite {
   last_alert_at: string | null;
 }
 
+interface ProfileFreshness {
+  profile_updated_at: string | null;
+  last_brief_generated_at: string | null;
+}
+
 export function useActivityFeed() {
   const { user } = useAuth();
   const tracker = useApplicationTracker();
   const [lastSeen, setLastSeen] = useState<number>(loadLastSeen);
   const [savedSearchAlerts, setSavedSearchAlerts] = useState<SavedSearchLite[]>([]);
   const [trackedScholarships, setTrackedScholarships] = useState<SchLite[]>([]);
+  const [profileFreshness, setProfileFreshness] = useState<ProfileFreshness | null>(null);
 
   // Hydrate the data the feed synthesizes from. Single fetch on mount;
   // re-fetch if the tracked id set changes.
@@ -91,7 +98,7 @@ export function useActivityFeed() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [searchesRes, scholarshipsRes] = await Promise.all([
+      const [searchesRes, scholarshipsRes, profileRes] = await Promise.all([
         user?.id
           ? supabase
               .from("saved_searches")
@@ -107,14 +114,30 @@ export function useActivityFeed() {
               .select("scholarship_id, scholarship_name, application_deadline, lifecycle_status, next_open_at, updated_at, host_country")
               .in("scholarship_id", trackedIds)
           : Promise.resolve({ data: [] }),
+        // Profile freshness — compares user's profile-update time to
+        // the last brief generation. If profile changed after brief
+        // (with a 1-hour grace), the brief is stale and we surface
+        // a "refresh your strategy" event in the bell.
+        user?.id
+          ? supabase
+              .from("student_profiles")
+              .select("updated_at, last_brief_generated_at")
+              .eq("user_id", user.id)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
       ]);
       if (cancelled) return;
       // saved_searches table may not exist yet (migration pending) — we
       // silently handle that by treating the result as empty.
       const searches = (searchesRes as { data: SavedSearchLite[] | null; error?: unknown }).data ?? [];
       const scholarships = (scholarshipsRes as { data: SchLite[] | null }).data ?? [];
+      const profile = (profileRes as { data: { updated_at?: string; last_brief_generated_at?: string } | null }).data;
       setSavedSearchAlerts(searches);
       setTrackedScholarships(scholarships);
+      setProfileFreshness(profile ? {
+        profile_updated_at: profile.updated_at ?? null,
+        last_brief_generated_at: profile.last_brief_generated_at ?? null,
+      } : null);
     })();
     return () => { cancelled = true; };
   }, [user?.id, trackedKey]);
@@ -182,7 +205,28 @@ export function useActivityFeed() {
       }
     }
 
-    // 4. Recently-updated tracked scholarships (verifier or enrich cron
+    // 4. Brief staleness — only emit when (a) a brief was actually
+    // generated previously, AND (b) the profile updated_at is newer
+    // than the brief generated_at by more than a 1-hour grace window
+    // (so wizard finalisation that updates profile + generates brief
+    // in the same flow doesn't immediately fire a stale flag).
+    if (profileFreshness?.last_brief_generated_at && profileFreshness.profile_updated_at) {
+      const profileTs = new Date(profileFreshness.profile_updated_at).getTime();
+      const briefTs = new Date(profileFreshness.last_brief_generated_at).getTime();
+      const grace = 60 * 60 * 1000; // 1 hour
+      if (profileTs > briefTs + grace) {
+        out.push({
+          id: `bs-${profileFreshness.last_brief_generated_at}`,
+          kind: "brief_stale",
+          title: "Your strategy brief is out of date",
+          meta: "Profile changed since last generation",
+          href: "/topuni-ai",
+          occurredAt: profileFreshness.profile_updated_at,
+        });
+      }
+    }
+
+    // 5. Recently-updated tracked scholarships (verifier or enrich cron
     // touched the row in the last 14 days). Quiet signal — useful but
     // not urgent.
     const recentCutoff = Date.now() - 14 * 86_400_000;
@@ -205,7 +249,7 @@ export function useActivityFeed() {
     // Sort newest first
     out.sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
     return out;
-  }, [savedSearchAlerts, trackedScholarships, lastSeen]);
+  }, [savedSearchAlerts, trackedScholarships, profileFreshness, lastSeen]);
 
   // "Unread" = events whose occurredAt is newer than lastSeen.
   // Also includes deadline-driven events even if older, because urgency
