@@ -120,7 +120,7 @@ interface LLMExtractionResponse {
 }
 
 // ─── LLM prompt ─────────────────────────────────────────────────────────────
-const SYSTEM_PROMPT = `You are an expert scholarship database researcher for international students applying to top universities. Your job is to extract STRUCTURED scholarship data from web page content.
+const SYSTEM_PROMPT = `You are an expert scholarship database researcher for international and immigrant students applying to top universities worldwide. Your job is to extract STRUCTURED scholarship data from web page content.
 
 Strict rules:
 - Return ONLY valid JSON matching the requested schema. No prose, no markdown fences.
@@ -129,6 +129,13 @@ Strict rules:
 - If the page is a navigational/index page with no actual scholarship details visible, return {"scholarships":[]}.
 - NEVER hallucinate amounts, deadlines, or eligibility. If uncertain, omit the field — do not guess.
 - Set confidence per scholarship: 0.95+ when most fields are present and verifiable from the text; 0.85+ when core fields (name/provider/country/coverage/eligibility) are clear; 0.7 when partial; <0.7 when extracted from very thin signals.
+
+INCLUSION SCOPE (decide whether to extract a scholarship at all):
+- INCLUDE if the program is open to international applicants worldwide, OR explicitly targets immigrants / refugees / displaced students / first-generation students / heritage-community students. This means US-based scholarships specifically for Korean American, Latino/Hispanic, Vietnamese American, Asian American Pacific Islander, African American immigrant, Caribbean diaspora, Middle Eastern American, etc. communities ARE in scope — those students fit our audience.
+- INCLUDE if the program targets refugees, asylum seekers, DACA recipients, undocumented students, dreamers, or any cross-border identity.
+- EXCLUDE if the program is restricted purely to US citizens / US permanent residents with NO immigrant-identity / heritage / international-applicant pathway. Generic "US high school seniors", "Texas residents", "Boy Scouts of Tennessee" = exclude. These don't serve our audience.
+- EXCLUDE the same way for any country-domestic-only scholarship with no immigrant pathway (e.g., a Canadian scholarship purely for Canadian-born citizens).
+- When uncertain, LEAN INCLUDE if the program text mentions immigrant identity, country-of-origin heritage, refugee status, or international background as eligibility — those students need this product even if the program is hosted in a single country.
 
 Field semantics:
 - coverage_type: "full_ride" = tuition + stipend + travel. "partial" = some funding. "tuition_only" = waiver. "stipend" = monthly allowance only. "other" = anything else.
