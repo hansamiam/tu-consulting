@@ -107,11 +107,11 @@ const IndexRu = () => {
                 </Button>
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="text-sm px-4 text-foreground/65 hover:bg-foreground/5 hover:text-foreground"
-                  onClick={() => document.getElementById('how')?.scrollIntoView({ behavior: 'smooth' })}
+                  size="lg"
+                  className="text-sm sm:text-base px-5 text-foreground/75 hover:bg-foreground/5 hover:text-foreground gap-2"
+                  onClick={() => navigate('/discover/ru')}
                 >
-                  Ниже
+                  Просто посмотреть базу
                 </Button>
               </motion.div>
             </div>

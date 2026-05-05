@@ -14,10 +14,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles, Wand2, X } from "lucide-react";
+import { Loader2, Sparkles, Wand2, X, PenLine } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
+
+interface Opener { angle: string; text: string; }
 
 interface Props {
   scholarshipId: string;
@@ -57,6 +59,36 @@ export const EssayDraftPanel = ({ scholarshipId: _scholarshipId, scholarshipName
       setSavedTick(true);
       setTimeout(() => setSavedTick(false), 1500);
     }, 800);
+  };
+
+  // ─── Essay openers — AI-generated starting paragraphs ──────────────
+  const [openers, setOpeners] = useState<Opener[] | null>(null);
+  const [loadingOpeners, setLoadingOpeners] = useState(false);
+
+  const requestOpeners = async () => {
+    setLoadingOpeners(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("essay-openers", {
+        body: { scholarshipName, language },
+      });
+      if (error) throw new Error(error.message);
+      const list = (data as { openers?: Opener[] })?.openers ?? [];
+      if (list.length === 0) throw new Error(t("No openers came back. Try again?", "Не удалось получить варианты. Попробуйте снова."));
+      setOpeners(list);
+    } catch (e) {
+      toast.error((e as Error).message || t("Couldn't generate openers", "Не удалось сгенерировать варианты"));
+    } finally {
+      setLoadingOpeners(false);
+    }
+  };
+
+  const useOpener = (opener: Opener) => {
+    const next = draft.trim() ? `${opener.text}\n\n${draft}` : opener.text;
+    setDraft(next);
+    onChange(next);
+    setOpeners(null);
+    setSavedTick(true);
+    setTimeout(() => setSavedTick(false), 1500);
   };
 
   // ─── AI critique (streaming) ───────────────────────────────────────
@@ -163,13 +195,28 @@ export const EssayDraftPanel = ({ scholarshipId: _scholarshipId, scholarshipName
         value={draft}
         onChange={(e) => onTextChange(e.target.value)}
         placeholder={t(
-          "Drop your essay draft here. The AI critique below reads it like an admissions reader and tells you what to cut, sharpen, or move.",
-          "Вставьте черновик эссе. AI-критика ниже прочитает его как член приёмной комиссии и подскажет, что урезать, заострить или переставить.",
+          "Drop your essay draft here. Stuck on the opening? Tap \"Get 3 starting drafts\" and the AI gives you three angles to pick from.",
+          "Вставьте черновик эссе. Не знаете с чего начать? Нажмите «3 варианта вступления» — AI предложит три угла на выбор.",
         )}
         rows={10}
         className="resize-y font-sans text-[14px] leading-relaxed"
       />
-      <div className="mt-2.5 flex items-center justify-between gap-2">
+      <div className="mt-2.5 flex flex-wrap items-center gap-2">
+        {/* Get 3 starting drafts — only surfaced when the textarea is
+            empty or near-empty. Once the student is past the blank-page
+            wall, this button disappears so the surface stays clean. */}
+        {draft.trim().length < 80 && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={requestOpeners}
+            disabled={loadingOpeners}
+            className="gap-1.5"
+          >
+            {loadingOpeners ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PenLine className="w-3.5 h-3.5" />}
+            {loadingOpeners ? t("Drafting…", "Готовлю…") : t("Get 3 starting drafts", "3 варианта вступления")}
+          </Button>
+        )}
         <Button
           variant="outline"
           size="sm"
@@ -186,6 +233,38 @@ export const EssayDraftPanel = ({ scholarshipId: _scholarshipId, scholarshipName
           </Button>
         )}
       </div>
+
+      {/* Opener picker — three AI-generated drafts, click one to seed
+          the textarea. Auto-clears after pick. */}
+      {openers && openers.length > 0 && (
+        <div className="mt-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
+              {t("Pick a starting angle", "Выберите угол")}
+            </p>
+            <button
+              onClick={() => setOpeners(null)}
+              className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+            >
+              <X className="w-3 h-3" /> {t("Dismiss", "Скрыть")}
+            </button>
+          </div>
+          {openers.map((o, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => useOpener(o)}
+              className="w-full text-left rounded-xl border border-border bg-card hover:border-gold/40 hover:bg-card/80 transition-colors p-3.5"
+            >
+              <p className="text-[10px] uppercase tracking-[0.18em] font-semibold text-gold-dark mb-1.5">{o.angle}</p>
+              <p className="text-[13px] text-foreground/85 leading-relaxed">{o.text}</p>
+              <p className="text-[11px] text-muted-foreground mt-2 inline-flex items-center gap-1">
+                <Sparkles className="w-2.5 h-2.5" /> {t("Tap to start with this angle", "Нажмите чтобы начать с этого варианта")}
+              </p>
+            </button>
+          ))}
+        </div>
+      )}
 
       {(critique || critiquing) && (
         <div className="mt-3 rounded-xl border border-gold/25 bg-gold/[0.04] p-4">
