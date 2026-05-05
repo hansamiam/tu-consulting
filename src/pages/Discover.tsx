@@ -95,6 +95,10 @@ interface Profile {
   degrees: string[];
   gpa: string; gpaScale: string;
   ielts: string; toefl: string; sat: string; field: string;
+  /* Self-identified demographic tags (canonical kebab-case). Matched
+   * against scholarships.target_demographics for scoring boost. Empty
+   * array = no self-identification, no demographic-based boosts. */
+  demographics: string[];
 }
 
 interface Scored extends Scholarship {
@@ -126,6 +130,9 @@ interface WizardData {
 interface FilterState {
   search: string; coverage: string; degree: string;
   field: string; selectivity: string; hostCountry: string;
+  /** Demographic eligibility filter — single tag from the canonical
+   *  set (women / first-generation / refugee / etc). 'all' = no filter. */
+  demographic: string;
   onlyEligible: boolean; closingSoon: boolean;
 }
 
@@ -327,6 +334,26 @@ const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: numbe
   const fm = fieldMatches(p.field, s.target_fields);
   if (fm === true)  { match += 10; reasons.push(`Funds ${p.field || "your field"}`); }
   if (fm === false) { match -= 15; warnings.push(`Field mismatch — does not fund ${p.field || "your field"}`); if (eligibility !== "not_eligible") eligibility = "missing"; }
+
+  // Demographic targeting — when the scholarship targets a specific
+  // group AND the user has self-identified with that group, this is one
+  // of the strongest possible alignment signals (the program was
+  // DESIGNED for someone like them). +18 with reason. When the user
+  // has NOT self-identified for a demographic-targeted scholarship,
+  // we don't penalise — the user simply hasn't told us, and the row
+  // might still be a fit (or might be filtered out by the demographic
+  // filter dropdown if the user is browsing intentionally).
+  if (s.target_demographics && s.target_demographics.length > 0
+      && p.demographics && p.demographics.length > 0) {
+    const overlap = s.target_demographics.filter(d => p.demographics.includes(d));
+    if (overlap.length > 0) {
+      match += 18;
+      const label = overlap[0]
+        .replace(/-/g, " ")
+        .replace(/\b\w/g, c => c.toUpperCase());
+      reasons.push(`Designed for ${label} applicants`);
+    }
+  }
 
   // GPA
   if (s.min_gpa && p.gpa) {
@@ -599,7 +626,7 @@ const daysUntil = (d: string | null) => {
 
 const WIZARD_STEPS = 4;
 const DEFAULT_WIZARD: WizardData = { fullName: "", email: "", nationality: "", degrees: [], field: "", gpa: "", gpaScale: "4.0", ielts: "", toefl: "", sat: "" };
-const DEFAULT_FILTERS: FilterState = { search: "", coverage: "all", degree: "all", field: "all", selectivity: "all", hostCountry: "all", onlyEligible: false, closingSoon: false };
+const DEFAULT_FILTERS: FilterState = { search: "", coverage: "all", degree: "all", field: "all", selectivity: "all", hostCountry: "all", demographic: "all", onlyEligible: false, closingSoon: false };
 const COVERAGE_LABEL: Record<string, string> = {
   full_ride: "Full ride",
   tuition_only: "Tuition only",
@@ -1290,6 +1317,15 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           {s.host_country && (
             <span className="truncate drop-shadow-sm">{shortCountry(s.host_country)}</span>
           )}
+          {s.target_demographics && s.target_demographics.length > 0 && (
+            <>
+              <span className="text-white/40 shrink-0">·</span>
+              <span className="inline-flex items-center gap-1 text-gold-light/95 drop-shadow-sm shrink-0">
+                {humanizeDemographic(s.target_demographics[0])}
+                {s.target_demographics.length > 1 && ` +${s.target_demographics.length - 1}`}
+              </span>
+            </>
+          )}
           {isFullRide && (
             <>
               <span className="text-white/40 shrink-0">·</span>
@@ -1479,6 +1515,21 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
     { label: "Degree",   key: "degree",   opts: [{ v: "all", l: "All levels" }, { v: "undergraduate", l: "Bachelor\'s" }, { v: "master\'s", l: "Master\'s" }, { v: "PhD", l: "PhD" }] },
     // 3 levels — "Competitive" matches both high and very_high in the filter logic below.
     { label: "Competitiveness", key: "selectivity", opts: [{ v: "all", l: "Any level" }, { v: "low", l: "Accessible" }, { v: "medium", l: "Moderate" }, { v: "high", l: "Competitive" }] },
+    // Demographic eligibility — surfaces the new target_demographics column.
+    // 'all' = no filter; otherwise shows only scholarships that target the
+    // selected group. Tag values match the constrained set in the DB CHECK.
+    { label: "Eligibility group", key: "demographic", opts: [
+      { v: "all", l: "All applicants" },
+      { v: "women", l: "Women" },
+      { v: "underrepresented-stem", l: "Women in STEM" },
+      { v: "first-generation", l: "First-generation" },
+      { v: "low-income", l: "Need-based" },
+      { v: "refugee", l: "Refugees" },
+      { v: "indigenous", l: "Indigenous" },
+      { v: "lgbtq", l: "LGBTQ+" },
+      { v: "underrepresented-minority", l: "Underrepresented" },
+      { v: "disability", l: "Disability" },
+    ] },
   ];
   // The 3 primary segmented sections (Coverage / Degree / Competitiveness)
   // render as wrapping pill chips instead of stacked rows. Same options,
@@ -2284,7 +2335,7 @@ const Discover = ({ language = "en" }: Props) => {
 
   const [rows, setRows] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<Profile>({ country: "", degrees: [], gpa: "", gpaScale: "4.0", ielts: "", toefl: "", sat: "", field: "" });
+  const [profile, setProfile] = useState<Profile>({ country: "", degrees: [], gpa: "", gpaScale: "4.0", ielts: "", toefl: "", sat: "", field: "", demographics: [] });
   const [phase, setPhase] = useState<Phase>(() => getStoredProfile()?.nationality ? "results" : "landing");
   const [wizardStep, setWizardStep] = useState(0);
   const [wiz, setWiz] = useState<WizardData>(DEFAULT_WIZARD);
@@ -2420,6 +2471,7 @@ const Discover = ({ language = "en" }: Props) => {
         toefl: stored.toeflScore || "",
         sat: stored.satScore || "",
         field: stored.fieldOfInterest || "",
+        demographics: Array.isArray(stored.demographics) ? stored.demographics : [],
       });
     }
   }, []);
@@ -2445,7 +2497,7 @@ const Discover = ({ language = "en" }: Props) => {
 
   const completeWizard = () => {
     const country = wiz.nationality;
-    const p: Profile = { country, degrees: wiz.degrees, gpa: wiz.gpa, gpaScale: wiz.gpaScale, ielts: wiz.ielts, toefl: wiz.toefl, sat: wiz.sat, field: wiz.field };
+    const p: Profile = { country, degrees: wiz.degrees, gpa: wiz.gpa, gpaScale: wiz.gpaScale, ielts: wiz.ielts, toefl: wiz.toefl, sat: wiz.sat, field: wiz.field, demographics: [] };
     setProfile(p);
     saveProfile({
       fullName: wiz.fullName, email: wiz.email, nationality: country,
@@ -2479,7 +2531,7 @@ const Discover = ({ language = "en" }: Props) => {
 
   const ranked = useMemo(() => {
     const hasProfile = profile.country || (profile.degrees && profile.degrees.length > 0);
-    const p: Profile = hasProfile ? profile : { country: "", degrees: [], gpa: "", gpaScale: "4.0", ielts: "", toefl: "", sat: "", field: "" };
+    const p: Profile = hasProfile ? profile : { country: "", degrees: [], gpa: "", gpaScale: "4.0", ielts: "", toefl: "", sat: "", field: "", demographics: [] };
     return rows.map(r => {
       const sim = semantic.matches.get(r.scholarship_id)?.similarity;
       return scoreScholarship(r, p, sim);
@@ -2599,6 +2651,11 @@ const Discover = ({ language = "en" }: Props) => {
         ? (s.selectivity === "high" || s.selectivity === "very_high")
         : s.selectivity === filters.selectivity);
     }
+    if (filters.demographic !== "all") {
+      // Match against the constrained target_demographics tag set.
+      list = list.filter(s => Array.isArray(s.target_demographics)
+        && s.target_demographics.includes(filters.demographic));
+    }
     if (filters.field !== "all") {
       // Mirror the dedupe pipeline used to build the dropdown: comma-
       // split run-on LLM strings, normalise separators + trailing-s +
@@ -2690,7 +2747,7 @@ const Discover = ({ language = "en" }: Props) => {
   const [openCollection, setOpenCollection] = useState<string | null>(null);
   const activeCollection = liveCollections.find(c => c.def.id === openCollection) ?? null;
 
-  const activeFiltersCount = [filters.search !== "", filters.coverage !== "all", filters.degree !== "all", filters.selectivity !== "all", filters.field !== "all", filters.hostCountry !== "all", filters.onlyEligible, filters.closingSoon].filter(Boolean).length;
+  const activeFiltersCount = [filters.search !== "", filters.coverage !== "all", filters.degree !== "all", filters.selectivity !== "all", filters.field !== "all", filters.hostCountry !== "all", filters.demographic !== "all", filters.onlyEligible, filters.closingSoon].filter(Boolean).length;
 
   const analysisTexts = [
     `Scanning ${rows.length || 200}+ scholarships`,

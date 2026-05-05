@@ -22,6 +22,11 @@ export interface DiscoverProfile {
   satScore?: string;
   budgetRange?: string;
   fieldOfInterest?: string;
+  /* Self-identified demographic tags — used to boost match scores
+   * for programs designed for that group. Optional; users who don't
+   * fill it just don't get the demographic boost. Canonical kebab-
+   * case from the same set as scholarships.target_demographics. */
+  demographics?: string[];
 }
 
 const STORAGE_KEY = "topuni_discover_profile";

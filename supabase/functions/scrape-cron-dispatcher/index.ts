@@ -55,11 +55,16 @@ serve(async (req) => {
   const body = await req.json().catch(() => ({} as { force_all?: boolean; source_ids?: string[] }));
 
   // Pick due sources: never-crawled (last_crawled_at IS NULL) or due by cadence.
-  // Skip sources that have hit the circuit breaker.
+  // Skip sources that have hit the circuit breaker. Skip quarantined sources
+  // entirely (the daily evaluate_source_health() cron flags sources whose
+  // auto-publish rate cratered or whose rows keep coming up broken — no
+  // point burning Firecrawl/AI budget on them until admin re-enables).
+  // 'degraded' sources still scrape but get filtered to half cadence below.
   let query = supa
     .from("scholarship_sources")
-    .select("source_id, name, url, last_crawled_at, frequency_hours, consecutive_failures")
+    .select("source_id, name, url, last_crawled_at, frequency_hours, consecutive_failures, health_status")
     .eq("is_active", true)
+    .neq("health_status", "quarantined")
     .lt("consecutive_failures", FAILURE_CIRCUIT_BREAKER)
     .order("last_crawled_at", { ascending: true, nullsFirst: true })
     .limit(MAX_SOURCES_PER_TICK);
@@ -76,7 +81,10 @@ serve(async (req) => {
     if (body.force_all) return true;
     if (!s.last_crawled_at) return true;
     const elapsed = now - new Date(s.last_crawled_at).getTime();
-    return elapsed >= (s.frequency_hours ?? 24) * 3_600_000;
+    // Degraded sources scrape at half frequency (2× the cadence in hours).
+    const baseCadenceHrs = s.frequency_hours ?? 24;
+    const effectiveCadenceHrs = s.health_status === "degraded" ? baseCadenceHrs * 2 : baseCadenceHrs;
+    return elapsed >= effectiveCadenceHrs * 3_600_000;
   });
 
   if (due.length === 0) {
