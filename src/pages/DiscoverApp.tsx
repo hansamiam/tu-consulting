@@ -391,8 +391,8 @@ const DiscoverApp = ({ language = "en" }: Props) => {
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-xl mx-auto">
                   {isRu
-                    ? `${rows.length} верифицированных стипендий ждут.`
-                    : `${rows.length} verified scholarships waiting to be ranked against you.`}
+                    ? "Стипендии ждут — выстроим под ваш профиль."
+                    : "Scholarships waiting to be ranked against you."}
                 </p>
               </div>
             ) : loading ? (

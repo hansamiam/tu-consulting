@@ -33,7 +33,7 @@ const STEPS = [
   {
     n: "02",
     title: "Get your strategy",
-    body: "215+ scholarships ranked against your profile. Deadlines mapped to your timeline. The three highest-leverage next steps, written for you.",
+    body: "Every scholarship in our database ranked against your profile. Deadlines mapped to your timeline. The three highest-leverage next steps, written for you.",
     detail: "Discover",
     path: "/discover",
   },

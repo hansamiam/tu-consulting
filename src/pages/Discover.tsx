@@ -2077,20 +2077,30 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-3">If you like this, also look at</p>
             <div className="space-y-1.5">
               {similar.map(sim => {
-                const simTier = TIER[sim.priority];
+                const simAccent = accentForCountry(sim.host_country);
+                const simIsFullRide = sim.coverage_type === "full_ride";
                 return (
                   <button
                     key={sim.scholarship_id}
                     onClick={() => onSwitchTo(sim)}
                     className="w-full flex items-center gap-3 p-2.5 rounded-lg bg-card border border-border/60 hover:border-gold/30 hover:shadow-sm transition-all text-left group"
                   >
-                    <div className={`h-9 w-9 rounded-lg bg-gradient-to-br ${simTier.grad} flex items-center justify-center text-[11px] font-bold text-white shrink-0 tracking-tight`}>{initials(sim.provider_name || sim.scholarship_name)}</div>
+                    {/* Country gradient + landmark — same visual language
+                        as the main cards/rows so similar items don't read
+                        as a different product. Replaces the meaningless
+                        2-letter initials slug ("UO", "NS", "UG"). */}
+                    <div className={`relative h-10 w-10 rounded-lg overflow-hidden bg-gradient-to-br ${simAccent} shrink-0 ${simIsFullRide ? "ring-2 ring-gold/40" : ""}`}>
+                      <CountryArt country={sim.host_country} className="absolute inset-0 h-full w-full opacity-50 text-white p-1" />
+                      {simIsFullRide && (
+                        <span className="absolute -top-1 -right-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-gold border border-card">
+                          <Award className="h-2.5 w-2.5 text-primary" />
+                        </span>
+                      )}
+                    </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-foreground truncate group-hover:text-gold-dark transition-colors">{sim.scholarship_name}</p>
+                      <p className="text-sm font-semibold text-foreground truncate group-hover:text-gold-dark transition-colors">{cleanScholarshipName(sim.scholarship_name)}</p>
                       <p className="text-[11px] text-muted-foreground truncate">
-                        {[sim.provider_name, sim.host_country].filter(Boolean).join(" · ")}
-                        <span className="mx-1.5 text-muted-foreground/40">·</span>
-                        <span className="font-semibold text-foreground/70 tabular-nums">{sim.match} match</span>
+                        {[sim.provider_name, sim.host_country && shortCountry(sim.host_country)].filter(Boolean).join(" · ")}
                       </p>
                     </div>
                     <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 group-hover:translate-x-0.5 group-hover:text-gold-dark transition-all" />
@@ -2112,7 +2122,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           return (
             <div className="px-7 py-3 border-t border-border bg-muted/20 flex items-center justify-between gap-3 shrink-0">
               <span className="text-[11px] text-muted-foreground">
-                Always confirm deadlines and amounts on the official program page before applying.
+                Click the official site link before applying for the latest details — providers update their pages often.
               </span>
               <a
                 href={`mailto:hello@topuni.com?subject=${encodeURIComponent("Inaccurate scholarship data: " + s.scholarship_name)}&body=${encodeURIComponent("ID: " + s.scholarship_id + "\n\nWhat's wrong:\n")}`}
@@ -2130,15 +2140,17 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
 
 /* ─── Inline animated stat ───────────────────────────────────────────── */
 /* ─── Section header ─────────────────────────────────────────────────── */
-const SectionHeader = ({ kicker, title, subtitle, count, accentClass }: {
-  kicker: string; title: string; subtitle: string; count: number; accentClass: string;
+const SectionHeader = ({ kicker, title, subtitle, accentClass }: {
+  kicker: string; title: string; subtitle: string; count?: number; accentClass: string;
 }) => (
+  // Section counts removed — at the current database scale a "· 12"
+  // suffix reads as a thin number rather than an editorial cue. The
+  // section's actual cards below already convey the count visually.
   <Reveal className="flex items-end justify-between gap-4 mb-4 pb-3 border-b border-border/60">
     <div className="min-w-0">
       <div className={`inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${accentClass} mb-1.5`}>
         <span className={`h-1.5 w-1.5 rounded-full ${accentClass.replace("text-", "bg-")}`} />
         {kicker}
-        <span className="text-muted-foreground/60 font-normal tracking-normal normal-case ml-1">· {count}</span>
       </div>
       <h2 className="font-heading font-bold text-lg sm:text-xl text-foreground leading-tight tracking-tight">{title}</h2>
       <p className="text-xs text-muted-foreground mt-0.5 truncate">{subtitle}</p>
@@ -2577,7 +2589,7 @@ const Discover = ({ language = "en" }: Props) => {
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-gold" />
                   </span>
                   <span className="text-primary-foreground/85 text-xs font-semibold tracking-wide">
-                    <span className="text-gold">{totalVerified}</span> scholarships · live database
+                    Live scholarship database
                   </span>
                 </motion.div>
 
@@ -2986,20 +2998,14 @@ const Discover = ({ language = "en" }: Props) => {
                             </button>
                           </>
                         ) : (
-                          <>
-                            <span className="text-sm text-foreground/85">
-                              <span className="font-semibold tabular-nums text-foreground">{ranked.length}</span> scholarships
-                            </span>
-                            <span className="text-muted-foreground/40">·</span>
-                            <button
-                              onClick={() => setPhase("wizard")}
-                              className="inline-flex items-center gap-1.5 text-sm font-semibold text-gold-dark hover:text-foreground transition-colors group"
-                            >
-                              <Sparkles className="w-3.5 h-3.5" />
-                              Build profile to see fit scoring
-                              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                            </button>
-                          </>
+                          <button
+                            onClick={() => setPhase("wizard")}
+                            className="inline-flex items-center gap-1.5 text-sm font-semibold text-gold-dark hover:text-foreground transition-colors group"
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                            Build profile to see fit scoring
+                            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                          </button>
                         )}
                       </div>
                     </div>
@@ -3114,15 +3120,12 @@ const Discover = ({ language = "en" }: Props) => {
                     </Button>
                   )}
 
-                  {/* Show the count ONLY when filters narrowed the list —
-                      a bare "225 results" total reads as marketing rather
-                      than function. When filters are inactive the count
-                      is just visual noise. */}
-                  {filtered.length !== ranked.length && (
-                    <span className="text-xs text-muted-foreground hidden md:inline ml-auto tabular-nums">
-                      {filtered.length} of {ranked.length}
-                    </span>
-                  )}
+                  {/* Counts intentionally hidden in Browse — the
+                      database is large enough to be useful but not
+                      large enough to flex a number. Keep them in the
+                      Pipeline + Shortlist columns where the count
+                      means "I have N saves to act on" — that's
+                      personal-progress, not marketing. */}
                 </div>
               </div>
 
@@ -3136,10 +3139,14 @@ const Discover = ({ language = "en" }: Props) => {
                       <nav className="bg-card border border-border rounded-2xl p-3 shadow-sm">
                         <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold mb-2.5 px-2 mt-1">Workspace</p>
                         {([
-                          { id: "browse" as AppSection,      label: "Browse",       icon: Layers,        count: ranked.length },
+                          // Browse + Collections counts hidden — only
+                          // personal-progress counts (pipeline/shortlist)
+                          // belong here. The whole-database count is
+                          // marketing, not navigation.
+                          { id: "browse" as AppSection,      label: "Browse",       icon: Layers,        count: 0 },
                           { id: "pipeline" as AppSection,    label: "My pipeline",  icon: Zap,           count: pipeline.total, accent: pipeline.total > 0 },
                           { id: "shortlist" as AppSection,   label: "Shortlist",    icon: BookmarkCheck, count: shortlist.size,  accent: shortlist.size > 0 },
-                          { id: "collections" as AppSection, label: "Collections",  icon: Sparkles,      count: liveCollections.length },
+                          { id: "collections" as AppSection, label: "Collections",  icon: Sparkles,      count: 0 },
                         ]).map(item => {
                           const Icon = item.icon;
                           const active = appSection === item.id;
@@ -3463,9 +3470,8 @@ const Discover = ({ language = "en" }: Props) => {
                               <section>
                                 <SectionHeader
                                   kicker="Database"
-                                  title={`${sections.stretch.length} scholarships`}
+                                  title="All scholarships"
                                   subtitle="Build your profile (top right) to see which ones fit you best."
-                                  count={sections.stretch.length}
                                   accentClass="text-foreground/60"
                                 />
                                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">

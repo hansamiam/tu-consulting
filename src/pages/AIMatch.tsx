@@ -48,7 +48,7 @@ interface ScholarshipLite {
 const COPY = {
   en: {
     docTitle: "AI scholarship matcher — find scholarships in seconds | TopUni",
-    metaDesc: "Paste a sentence about your studies and TopUni's AI matches you to 215+ verified scholarships from our database. Free, no signup.",
+    metaDesc: "Paste a sentence about your studies and TopUni's AI matches you to verified scholarships from our database. Free, no signup.",
     ogTitle: "AI scholarship matcher — TopUni",
     ogDesc: "Paste a sentence about your studies and instantly see matched scholarships. No form, no signup.",
     kicker: "AI scholarship matcher",
@@ -86,7 +86,7 @@ const COPY = {
     varies: "Varies",
     closed: "Closed",
     explainer: [
-      { title: "Real database",       body: "215+ verified scholarships from governments, foundations, and universities globally." },
+      { title: "Real database",       body: "Verified scholarships from governments, foundations, and universities globally." },
       { title: "Semantic match",      body: "AI reads your situation and ranks every scholarship by relevance — not just keyword search." },
       { title: "Eligibility filtered", body: "Filters by your nationality, GPA, IELTS so you only see what you can actually win." },
     ],
@@ -95,7 +95,7 @@ const COPY = {
   },
   ru: {
     docTitle: "AI-подбор стипендий — найдите за секунды | TopUni",
-    metaDesc: "Опишите ваши планы одним предложением — AI TopUni подберёт из 215+ проверенных стипендий нашей базы. Бесплатно, без регистрации.",
+    metaDesc: "Опишите ваши планы одним предложением — AI TopUni подберёт проверенные стипендии из нашей базы. Бесплатно, без регистрации.",
     ogTitle: "AI-подбор стипендий — TopUni",
     ogDesc: "Опишите цели одним предложением — мгновенно получите подобранные стипендии. Без форм, без регистрации.",
     kicker: "AI-подбор стипендий",
@@ -145,7 +145,7 @@ const COPY = {
     varies: "Варьируется",
     closed: "Закрыто",
     explainer: [
-      { title: "Реальная база",        body: "215+ проверенных стипендий от правительств, фондов и университетов по всему миру." },
+      { title: "Реальная база",        body: "Проверенные стипендии от правительств, фондов и университетов по всему миру." },
       { title: "Семантический подбор",  body: "AI читает вашу ситуацию и ранжирует каждую стипендию по релевантности — не просто поиск по ключевым словам." },
       { title: "Фильтр по подходимости", body: "Фильтрует по гражданству, GPA, IELTS — чтобы вы видели только то, на что реально можете претендовать." },
     ],
