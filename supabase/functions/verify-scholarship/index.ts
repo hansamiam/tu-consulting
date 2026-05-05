@@ -307,6 +307,19 @@ Deno.serve(async (req) => {
     if (storedEmpty && freshNonEmpty) backfillUpdates[f] = b;
   }
 
+  // If we're backfilling target_fields or target_degree_level, the
+  // embedding's source_text changes — clear embedding so the
+  // embed-scholarships worker re-embeds on the next pass. Per the
+  // scholarships_needing_embedding view, embedding IS NULL is
+  // sufficient to enqueue. eligible_countries doesn't go into the
+  // embedding source_text so doesn't trigger re-embedding.
+  const embeddingFieldsBackfilled =
+    "target_fields" in backfillUpdates || "target_degree_level" in backfillUpdates;
+  if (embeddingFieldsBackfilled) {
+    backfillUpdates.embedding = null;
+    backfillUpdates.embedded_at = null;
+  }
+
   // ─── Compare stored vs. fresh ────────────────────────────────────
   const diffs = diffMaterial(stored, fresh);
   const now = new Date().toISOString();
