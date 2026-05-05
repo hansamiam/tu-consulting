@@ -15,6 +15,7 @@
 // stable; if a deadline changes, a redeploy bumps the version anyway.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { cleanScholarshipName, cleanProvider } from "../_shared/scholarshipFields.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -98,48 +99,7 @@ function initials(name: string): string {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-/* Field cleanup — duplicated from src/lib/scholarshipFields.ts so the
- * Deno edge runtime doesn't have to reach into the Vite tree.
- * Keep in lockstep with the source if either side changes. */
-const PROVIDER_JUNK = /^(various|multiple|several|n\/a|none|unknown|—|-|tbd|to be determined)/i;
-
-function cleanScholarshipName(name: string): string {
-  if (!name) return name;
-  let n = name.trim();
-  for (const sep of [" | ", "|", " — ", " – ", " - "]) {
-    const idx = n.indexOf(sep);
-    if (idx > 8 && idx < n.length - 4) {
-      const right = n.slice(idx + sep.length).trim().toLowerCase();
-      if (/(apply|home|bulletin|sign up|details|study in|admissions|undergraduate|graduate|university|website|official site|2025|2026|2027)/.test(right)) {
-        n = n.slice(0, idx).trim();
-        break;
-      }
-    }
-  }
-  n = n.replace(/\s*\((apply|bulletin|home|details|website|official|sign\s*up).*$/i, "").trim();
-  n = n.replace(/\s+[-–—]?\s+(apply\s*now|apply|sign\s*up|details|home|bulletin)\s*$/i, "").trim();
-  return n;
-}
-
-function cleanProvider(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  let p = raw.trim();
-  if (!p || PROVIDER_JUNK.test(p)) return null;
-  for (const sep of [" | ", "|", " — ", " – ", " - "]) {
-    const idx = p.indexOf(sep);
-    if (idx > 8 && idx < p.length - 4) {
-      const right = p.slice(idx + sep.length).trim().toLowerCase();
-      if (/(apply|home|bulletin|sign up|admissions|website|official|2025|2026|2027)/.test(right)) {
-        p = p.slice(0, idx).trim();
-        break;
-      }
-    }
-  }
-  p = p.replace(/\s*\([^)]*\)\s*$/, "").trim();
-  p = p.replace(/^(The\s+)?(Trustees|Board|Council|Office)\s+of\s+(the\s+)?/i, "");
-  if (p.length > 60) p = p.slice(0, 58).trimEnd() + "…";
-  return p;
-}
+// Field cleanup helpers imported from ../_shared/scholarshipFields.ts
 
 function buildSvg(row: ScholarshipRow): string {
   const W = 1200, H = 630;

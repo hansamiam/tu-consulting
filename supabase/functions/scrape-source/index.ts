@@ -22,6 +22,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { chatCompletions } from "../_shared/ai-gateway.ts";
 import { firecrawlScrape, FIRECRAWL_COST_PER_SCRAPE_USD } from "../_shared/firecrawl.ts";
 import { requireAdminOrService } from "../_shared/auth.ts";
+import {
+  cleanScholarshipName,
+  cleanProvider,
+  cleanTargetFields,
+  cleanHostCountry,
+  cleanAwardText,
+} from "../_shared/scholarshipFields.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -284,10 +291,37 @@ function validateExtracted(x: unknown): ExtractedScholarship | null {
   if (typeof o.confidence !== "number" || o.confidence < 0 || o.confidence > 1) return null;
   // coverage_type required for matching/ranking
   if (typeof o.coverage_type !== "string") return null;
-  // Trim string fields so dedup keys don't drift on trailing whitespace
-  o.scholarship_name = (o.scholarship_name as string).trim();
-  o.provider_name    = (o.provider_name as string).trim();
-  o.host_country     = (o.host_country as string).trim();
+
+  // Defensive cleanup — apply the same hygiene rules the SYSTEM_PROMPT
+  // enforces so LLM slip-ups never reach the DB. The display layer also
+  // cleans on render, but cleaning here means the canonical_key, dedup
+  // hash, and embeddings all use the canonical form too.
+  const cleanedName = cleanScholarshipName((o.scholarship_name as string));
+  if (!cleanedName.trim()) return null;
+  o.scholarship_name = cleanedName;
+
+  const cleanedProvider = cleanProvider(o.provider_name as string);
+  // Provider is required to fingerprint — if the LLM gave us a junk
+  // value ("Various"), reject the row entirely. Better to lose one
+  // unranked entry than to publish "Various Foundations" as a real
+  // scholarship provider.
+  if (!cleanedProvider) return null;
+  o.provider_name = cleanedProvider;
+
+  const cleanedCountry = cleanHostCountry(o.host_country as string);
+  if (!cleanedCountry) return null;
+  o.host_country = cleanedCountry;
+
+  if (Array.isArray(o.target_fields)) {
+    const cleaned = cleanTargetFields(o.target_fields);
+    o.target_fields = cleaned.length > 0 ? cleaned : undefined;
+  }
+
+  if (typeof o.award_amount_text === "string") {
+    const cleaned = cleanAwardText(o.award_amount_text);
+    o.award_amount_text = cleaned ?? undefined;
+  }
+
   // Drop / clamp numeric nonsense
   clampNumeric(o);
   return o as unknown as ExtractedScholarship;
