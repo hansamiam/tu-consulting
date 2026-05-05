@@ -90,7 +90,7 @@ interface Profile {
    * unspecified (not a constraint). */
   degrees: string[];
   gpa: string; gpaScale: string;
-  ielts: string; sat: string; field: string;
+  ielts: string; toefl: string; sat: string; field: string;
 }
 
 interface Scored extends Scholarship {
@@ -112,7 +112,11 @@ interface WizardData {
    * Stored as an array to drive matching against scholarships that
    * target any of the chosen levels. */
   degrees: string[];
-  field: string; gpa: string; gpaScale: string; ielts: string;
+  field: string; gpa: string; gpaScale: string;
+  /* Test scores — all optional. The scorer uses each independently:
+   * a scholarship requiring TOEFL is gated by the user's TOEFL, not
+   * IELTS, so we collect both rather than picking one. */
+  ielts: string; toefl: string; sat: string;
 }
 
 interface FilterState {
@@ -252,11 +256,31 @@ const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: numbe
     else { match -= 20; if (eligibility !== "not_eligible") eligibility = "missing"; warnings.push(`GPA below ${s.min_gpa}/${s.gpa_scale ?? 4.0}`); }
   }
 
-  // IELTS
+  // IELTS — meets-required → +8, below → soft eligibility miss.
   if (s.min_ielts && p.ielts) {
     const u = parseFloat(p.ielts);
     if (u >= s.min_ielts) { match += 8; reasons.push(`IELTS ${u} ≥ required ${s.min_ielts}`); }
     else { match -= 10; if (eligibility !== "not_eligible") eligibility = "missing"; warnings.push(`IELTS ${u} below required ${s.min_ielts}`); }
+  }
+
+  // TOEFL — same shape as IELTS. Many programs accept either, but a
+  // user with IELTS 7.5 and no TOEFL shouldn't be told a TOEFL-required
+  // scholarship is "eligible" — our predicate now flags the gap rather
+  // than silently passing them through.
+  if (s.min_toefl && p.toefl) {
+    const u = parseFloat(p.toefl);
+    if (u >= s.min_toefl) { match += 8; reasons.push(`TOEFL ${u} ≥ required ${s.min_toefl}`); }
+    else { match -= 10; if (eligibility !== "not_eligible") eligibility = "missing"; warnings.push(`TOEFL ${u} below required ${s.min_toefl}`); }
+  }
+
+  // SAT — undergraduate-track elite scholarships often use SAT as a
+  // hard cutoff. Same shape as IELTS / TOEFL but with a wider
+  // borderline band (SAT scoring spreads more linearly).
+  if (s.min_sat && p.sat) {
+    const u = parseFloat(p.sat);
+    if (u >= s.min_sat) { match += 8; reasons.push(`SAT ${u} ≥ required ${s.min_sat}`); }
+    else if (u >= s.min_sat - 80) { match += 2; warnings.push(`SAT borderline (need ${s.min_sat})`); if (eligibility !== "not_eligible") eligibility = "missing"; }
+    else { match -= 10; if (eligibility !== "not_eligible") eligibility = "missing"; warnings.push(`SAT ${u} below required ${s.min_sat}`); }
   }
 
   // Reward / coverage
@@ -493,7 +517,7 @@ const daysUntil = (d: string | null) => {
 };
 
 const WIZARD_STEPS = 4;
-const DEFAULT_WIZARD: WizardData = { fullName: "", email: "", nationality: "", degrees: [], field: "", gpa: "", gpaScale: "4.0", ielts: "" };
+const DEFAULT_WIZARD: WizardData = { fullName: "", email: "", nationality: "", degrees: [], field: "", gpa: "", gpaScale: "4.0", ielts: "", toefl: "", sat: "" };
 const DEFAULT_FILTERS: FilterState = { search: "", coverage: "all", degree: "all", field: "all", selectivity: "all", hostCountry: "all", onlyEligible: false, closingSoon: false };
 const COVERAGE_LABEL: Record<string, string> = {
   full_ride: "Full ride",
@@ -1556,8 +1580,19 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
       reqs.push({ label: `IELTS ≥ ${s.min_ielts}`, status: u >= s.min_ielts ? "met" : "miss", detail: `Yours: ${u}` });
     } else { reqs.push({ label: `IELTS ≥ ${s.min_ielts}`, status: "unknown", detail: "Add your IELTS to check" }); }
   }
-  if (s.min_toefl != null) reqs.push({ label: `TOEFL ≥ ${s.min_toefl}`, status: "unknown", detail: "We don't track TOEFL yet" });
-  if (s.min_sat != null) reqs.push({ label: `SAT ≥ ${s.min_sat}`, status: "unknown", detail: "Add your SAT to check" });
+  if (s.min_toefl != null) {
+    if (profile.toefl) {
+      const u = parseFloat(profile.toefl);
+      reqs.push({ label: `TOEFL ≥ ${s.min_toefl}`, status: u >= s.min_toefl ? "met" : "miss", detail: `Yours: ${u}` });
+    } else { reqs.push({ label: `TOEFL ≥ ${s.min_toefl}`, status: "unknown", detail: "Add your TOEFL to check" }); }
+  }
+  if (s.min_sat != null) {
+    if (profile.sat) {
+      const u = parseFloat(profile.sat);
+      const status = u >= s.min_sat ? "met" : u >= s.min_sat - 80 ? "near" : "miss";
+      reqs.push({ label: `SAT ≥ ${s.min_sat}`, status, detail: `Yours: ${u}` });
+    } else { reqs.push({ label: `SAT ≥ ${s.min_sat}`, status: "unknown", detail: "Add your SAT to check" }); }
+  }
   if (s.target_degree_level && profile.degrees && profile.degrees.length > 0) {
     // Bucket-tolerant match — see degreeBucket comment in the scoring
     // function. Without this the Requirements row showed "miss" for
@@ -1756,6 +1791,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                 gpa: profile.gpa,
                 gpaScale: profile.gpaScale,
                 ielts: profile.ielts,
+                toefl: profile.toefl,
                 sat: profile.sat,
               }}
             />
@@ -2192,7 +2228,7 @@ const Discover = ({ language = "en" }: Props) => {
 
   const [rows, setRows] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<Profile>({ country: "", degrees: [], gpa: "", gpaScale: "4.0", ielts: "", sat: "", field: "" });
+  const [profile, setProfile] = useState<Profile>({ country: "", degrees: [], gpa: "", gpaScale: "4.0", ielts: "", toefl: "", sat: "", field: "" });
   const [phase, setPhase] = useState<Phase>(() => getStoredProfile()?.nationality ? "results" : "landing");
   const [wizardStep, setWizardStep] = useState(0);
   const [wiz, setWiz] = useState<WizardData>(DEFAULT_WIZARD);
@@ -2310,8 +2346,11 @@ const Discover = ({ language = "en" }: Props) => {
       setProfile({
         country: stored.nationality || "",
         degrees: rawLevels.length > 0 ? rawLevels.map(canonicalize) : [],
-        gpa: stored.gpa || "", gpaScale: "4.0", ielts: stored.ieltsScore || "",
-        sat: "", field: stored.fieldOfInterest || "",
+        gpa: stored.gpa || "", gpaScale: "4.0",
+        ielts: stored.ieltsScore || "",
+        toefl: stored.toeflScore || "",
+        sat: stored.satScore || "",
+        field: stored.fieldOfInterest || "",
       });
     }
   }, []);
@@ -2337,9 +2376,14 @@ const Discover = ({ language = "en" }: Props) => {
 
   const completeWizard = () => {
     const country = wiz.nationality;
-    const p: Profile = { country, degrees: wiz.degrees, gpa: wiz.gpa, gpaScale: wiz.gpaScale, ielts: wiz.ielts, sat: "", field: wiz.field };
+    const p: Profile = { country, degrees: wiz.degrees, gpa: wiz.gpa, gpaScale: wiz.gpaScale, ielts: wiz.ielts, toefl: wiz.toefl, sat: wiz.sat, field: wiz.field };
     setProfile(p);
-    saveProfile({ fullName: wiz.fullName, email: wiz.email, nationality: country, targetDegree: wiz.degrees.join(", "), gpa: wiz.gpa, ieltsScore: wiz.ielts, fieldOfInterest: wiz.field });
+    saveProfile({
+      fullName: wiz.fullName, email: wiz.email, nationality: country,
+      targetDegree: wiz.degrees.join(", "),
+      gpa: wiz.gpa, ieltsScore: wiz.ielts, toeflScore: wiz.toefl, satScore: wiz.sat,
+      fieldOfInterest: wiz.field,
+    });
     setAnalysisStep(0); setPhase("analyzing");
   };
 
@@ -2358,13 +2402,15 @@ const Discover = ({ language = "en" }: Props) => {
       nationality: profile.country,
       gpa: profile.gpa,
       ielts: profile.ielts,
+      toefl: profile.toefl,
+      sat: profile.sat,
     },
     { limit: 80 },
   );
 
   const ranked = useMemo(() => {
     const hasProfile = profile.country || (profile.degrees && profile.degrees.length > 0);
-    const p: Profile = hasProfile ? profile : { country: "", degrees: [], gpa: "", gpaScale: "4.0", ielts: "", sat: "", field: "" };
+    const p: Profile = hasProfile ? profile : { country: "", degrees: [], gpa: "", gpaScale: "4.0", ielts: "", toefl: "", sat: "", field: "" };
     return rows.map(r => {
       const sim = semantic.matches.get(r.scholarship_id)?.similarity;
       return scoreScholarship(r, p, sim);
@@ -2841,9 +2887,21 @@ const Discover = ({ language = "en" }: Props) => {
                           </div>
                         </div>
                       </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-2">
+                          <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">IELTS</label>
+                          <Input value={wiz.ielts} onChange={e => setWiz(w => ({ ...w, ielts: e.target.value }))} placeholder="e.g. 7.0"
+                            className="bg-primary-foreground/[0.04] border-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/25 h-12 backdrop-blur-md focus-visible:border-gold/50" />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">TOEFL</label>
+                          <Input value={wiz.toefl} onChange={e => setWiz(w => ({ ...w, toefl: e.target.value }))} placeholder="e.g. 100"
+                            className="bg-primary-foreground/[0.04] border-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/25 h-12 backdrop-blur-md focus-visible:border-gold/50" />
+                        </div>
+                      </div>
                       <div className="space-y-2">
-                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">IELTS score (optional)</label>
-                        <Input value={wiz.ielts} onChange={e => setWiz(w => ({ ...w, ielts: e.target.value }))} placeholder="e.g. 7.0"
+                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">SAT (undergrad applicants)</label>
+                        <Input value={wiz.sat} onChange={e => setWiz(w => ({ ...w, sat: e.target.value }))} placeholder="e.g. 1450"
                           className="bg-primary-foreground/[0.04] border-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/25 h-12 backdrop-blur-md focus-visible:border-gold/50" />
                       </div>
                     </div>

@@ -53,6 +53,7 @@ interface StudentProfile {
   gradeLevel: string;
   gpa: string;
   ielts: string;
+  toefl: string;
   sat: string;
   targetCountries: string[];
   major: string;
@@ -2335,6 +2336,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                       targetCountries: profile.targetCountries,
                       gpa: profile.gpa,
                       ielts: profile.ielts,
+                      toefl: profile.toefl,
+                      sat: profile.sat,
                     },
                     retrievedScholarships,
                     language,
@@ -2514,6 +2517,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             {profile.major && <Badge variant="outline" className="text-xs">{profile.major}</Badge>}
             {profile.gpa && <Badge variant="outline" className="text-xs">GPA: {profile.gpa}</Badge>}
             {profile.ielts && <Badge variant="outline" className="text-xs">IELTS: {profile.ielts}</Badge>}
+            {profile.toefl && <Badge variant="outline" className="text-xs">TOEFL: {profile.toefl}</Badge>}
+            {profile.sat && <Badge variant="outline" className="text-xs">SAT: {profile.sat}</Badge>}
           </div>
         )}
       </motion.div>

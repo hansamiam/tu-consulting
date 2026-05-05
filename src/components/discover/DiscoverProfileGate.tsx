@@ -14,7 +14,12 @@ export interface DiscoverProfile {
   educationLevel?: string;
   targetDegree?: string;
   gpa?: string;
+  // Test scores collected independently — many programs require
+  // specifically TOEFL or specifically SAT, so a single "english test"
+  // field would either lose information or break eligibility checks.
   ieltsScore?: string;
+  toeflScore?: string;
+  satScore?: string;
   budgetRange?: string;
   fieldOfInterest?: string;
 }

@@ -24,6 +24,8 @@ export interface MatchProfile {
   nationality?: string;
   gpa?: number | string;
   ielts?: number | string;
+  toefl?: number | string;
+  sat?: number | string;
 }
 
 export interface SemanticMatch {
@@ -47,6 +49,9 @@ const isMeaningful = (p: MatchProfile): boolean => {
   return field.length > 1 || tc.length > 0 || degree.length > 1;
 };
 
+const numOrNull = (v: number | string | undefined): number | null =>
+  typeof v === "number" ? v : (parseFloat(String(v || "")) || null);
+
 /* Stable key for the profile so we don't re-fetch on cosmetic re-renders */
 const profileKey = (p: MatchProfile): string =>
   JSON.stringify({
@@ -55,8 +60,10 @@ const profileKey = (p: MatchProfile): string =>
     d: (p.degree || "").trim().toLowerCase(),
     i: (p.interests || "").trim().toLowerCase().slice(0, 200),
     n: (p.nationality || "").trim().toLowerCase(),
-    g: typeof p.gpa === "number" ? p.gpa : parseFloat(String(p.gpa || "")) || null,
-    e: typeof p.ielts === "number" ? p.ielts : parseFloat(String(p.ielts || "")) || null,
+    g: numOrNull(p.gpa),
+    e: numOrNull(p.ielts),
+    t: numOrNull(p.toefl),
+    s: numOrNull(p.sat),
   });
 
 export function useSemanticScholarshipMatch(profile: MatchProfile, opts?: { limit?: number }): State {
@@ -101,8 +108,10 @@ export function useSemanticScholarshipMatch(profile: MatchProfile, opts?: { limi
             },
             filters: {
               nationality: profile.nationality,
-              min_gpa: typeof profile.gpa === "string" ? parseFloat(profile.gpa) || undefined : profile.gpa,
-              min_ielts: typeof profile.ielts === "string" ? parseFloat(profile.ielts) || undefined : profile.ielts,
+              min_gpa: numOrNull(profile.gpa) ?? undefined,
+              min_ielts: numOrNull(profile.ielts) ?? undefined,
+              min_toefl: numOrNull(profile.toefl) ?? undefined,
+              min_sat: numOrNull(profile.sat) ?? undefined,
               degree_level: profile.degree,
             },
             limit: Math.min(Math.max(opts?.limit ?? 50, 5), 100),

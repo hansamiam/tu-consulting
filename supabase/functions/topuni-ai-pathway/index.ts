@@ -252,6 +252,8 @@ serve(async (req) => {
     const targetCountries = profile.targetCountries || [];
     const studentGpa = parseFloat(profile.gpa) || null;
     const studentIelts = parseFloat(profile.ielts) || null;
+    const studentToefl = parseFloat(profile.toefl) || null;
+    const studentSat = parseFloat(profile.sat) || null;
 
     /* ─── Scholarship retrieval via pgvector RAG ───────────────────
        Replaces the old "fetch all unis + nested scholarships, dump
@@ -270,14 +272,20 @@ serve(async (req) => {
     let retrievalMethod = "fallback_country_filter";
 
     if (queryEmbedding) {
-      const { data: matches, error: matchErr } = await supabase.rpc("match_scholarships", {
+      // See match-scholarships/index.ts for why we conditionally
+      // include p_min_toefl / p_min_sat (PostgREST overload selection
+      // pre/post the 20260505040000 migration).
+      const matchRpcArgs: Record<string, unknown> = {
         query_embedding: queryEmbedding as unknown as string,
         p_nationality: profile.nationality || null,
         p_min_gpa: studentGpa,
         p_min_ielts: studentIelts,
         p_degree_level: degreeLevel,
         p_max_results: 25,
-      });
+      };
+      if (studentToefl != null) matchRpcArgs.p_min_toefl = studentToefl;
+      if (studentSat != null) matchRpcArgs.p_min_sat = studentSat;
+      const { data: matches, error: matchErr } = await supabase.rpc("match_scholarships", matchRpcArgs as never);
       if (!matchErr && Array.isArray(matches) && matches.length > 0) {
         const ids = matches.map((m: any) => m.scholarship_id);
         const { data: hydrated } = await supabase
@@ -666,6 +674,7 @@ STUDENT PROFILE:
 - Nationality: ${profile.nationality || 'Not specified'}
 - GPA: ${profile.gpa || 'Not provided'}
 - IELTS: ${profile.ielts || 'Not taken'}
+- TOEFL: ${profile.toefl || 'Not taken'}
 - SAT: ${profile.sat || 'Not taken'}
 - Grade Level: ${profile.gradeLevel}
 - Target Countries: ${targetCountries.join(', ') || 'Open'}

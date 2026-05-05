@@ -39,6 +39,7 @@ interface WizardDraft {
   gradeLevel: string;
   gpa: string;
   ielts: string;
+  toefl: string;
   sat: string;
   targetCountries: string[];
   major: string;
@@ -95,6 +96,7 @@ const TopUniAI = () => {
   const [gradeLevel, setGradeLevel] = useState(draft?.gradeLevel ?? "");
   const [gpa, setGpa] = useState(draft?.gpa ?? "");
   const [ielts, setIelts] = useState(draft?.ielts ?? "");
+  const [toefl, setToefl] = useState(draft?.toefl ?? "");
   const [sat, setSat] = useState(draft?.sat ?? "");
   const [targetCountries, setTargetCountries] = useState<string[]>(Array.isArray(draft?.targetCountries) ? draft!.targetCountries! : []);
   const [countrySearch, setCountrySearch] = useState("");
@@ -223,7 +225,7 @@ const TopUniAI = () => {
     if (screen === "landing") return;
     try {
       const draftPayload: WizardDraft = {
-        fullName, email, whatsapp, nationality, gradeLevel, gpa, ielts, sat,
+        fullName, email, whatsapp, nationality, gradeLevel, gpa, ielts, toefl, sat,
         targetCountries, major, budget, scholarshipNeeded, timeline,
         prestige: prestige[0], scholarship: scholarship[0],
         careerRoi: careerRoi[0], visaAccess: visaAccess[0], locationPref: locationPref[0],
@@ -233,7 +235,7 @@ const TopUniAI = () => {
     } catch { /* ignore quota / private-mode errors */ }
   }, [
     screen,
-    fullName, email, whatsapp, nationality, gradeLevel, gpa, ielts, sat,
+    fullName, email, whatsapp, nationality, gradeLevel, gpa, ielts, toefl, sat,
     targetCountries, major, budget, scholarshipNeeded, timeline,
     prestige, scholarship, careerRoi, visaAccess, locationPref,
   ]);
@@ -249,7 +251,7 @@ const TopUniAI = () => {
   }, [screen]);
 
   const profile = {
-    fullName, email, whatsapp, nationality, gradeLevel, gpa, ielts, sat,
+    fullName, email, whatsapp, nationality, gradeLevel, gpa, ielts, toefl, sat,
     targetCountries, major, budget, scholarshipNeeded, timeline,
     prestige: prestige[0], scholarship: scholarship[0],
     careerRoi: careerRoi[0], visaAccess: visaAccess[0], locationPref: locationPref[0],
@@ -602,18 +604,22 @@ const TopUniAI = () => {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="grid sm:grid-cols-3 gap-4">
+                      <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                           <Label className="text-xs uppercase tracking-wider font-medium">GPA *</Label>
                           <Input value={gpa} onChange={e => setGpa(e.target.value)} placeholder="e.g. 3.7" className="h-11 bg-card" />
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-xs uppercase tracking-wider font-medium">IELTS</Label>
-                          <Input value={ielts} onChange={e => setIelts(e.target.value)} placeholder="Optional" className="h-11 bg-card" />
+                          <Input value={ielts} onChange={e => setIelts(e.target.value)} placeholder="Optional · e.g. 7.0" className="h-11 bg-card" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs uppercase tracking-wider font-medium">TOEFL</Label>
+                          <Input value={toefl} onChange={e => setToefl(e.target.value)} placeholder="Optional · e.g. 100" className="h-11 bg-card" />
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-xs uppercase tracking-wider font-medium">SAT</Label>
-                          <Input value={sat} onChange={e => setSat(e.target.value)} placeholder="Optional" className="h-11 bg-card" />
+                          <Input value={sat} onChange={e => setSat(e.target.value)} placeholder="Optional · e.g. 1450" className="h-11 bg-card" />
                         </div>
                       </div>
                     </div>

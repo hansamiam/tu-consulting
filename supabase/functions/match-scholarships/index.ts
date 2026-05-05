@@ -64,6 +64,8 @@ interface MatchRequest {
     nationality?: string;
     min_gpa?: number;
     min_ielts?: number;
+    min_toefl?: number;
+    min_sat?: number;
     degree_level?: string;
   };
   limit?: number;
@@ -121,14 +123,25 @@ serve(async (req) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const { data, error } = await supa.rpc("match_scholarships", {
+    // p_min_toefl / p_min_sat are added by the
+    // 20260505040000_match_eligibility_toefl_sat migration. Until that
+    // migration is applied, PostgREST won't find an overload that
+    // accepts those keys. Include them ONLY when the caller actually
+    // has a value — that way pre-migration callers (and post-migration
+    // callers without the test scores) take the original 6-arg
+    // overload, while post-migration callers WITH a score use the
+    // 8-arg overload that checks the score against min_toefl/min_sat.
+    const rpcArgs: Record<string, unknown> = {
       query_embedding: queryEmbedding as unknown as string,
       p_nationality: body.filters?.nationality ?? null,
       p_min_gpa: body.filters?.min_gpa ?? null,
       p_min_ielts: body.filters?.min_ielts ?? null,
       p_degree_level: body.filters?.degree_level ?? null,
       p_max_results: limit,
-    });
+    };
+    if (body.filters?.min_toefl != null) rpcArgs.p_min_toefl = body.filters.min_toefl;
+    if (body.filters?.min_sat != null) rpcArgs.p_min_sat = body.filters.min_sat;
+    const { data, error } = await supa.rpc("match_scholarships", rpcArgs);
     if (error) throw new Error(`match_scholarships RPC: ${error.message}`);
 
     return json(200, {
