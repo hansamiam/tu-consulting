@@ -1101,10 +1101,19 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
           );
         })()}
 
-        {/* Name + provider + country chip */}
+        {/* Name + provider + country chip — title clamps to 2 lines so
+            long names like "Wien International Scholarship Program
+            (WISP) at Brandeis University" stop chopping mid-word.
+            Provider line stays single-line truncate (it's the
+            secondary fact). */}
         <div className="min-w-0">
-          <h3 className="font-heading font-semibold text-[15px] text-foreground truncate tracking-tight group-hover:text-gold-dark transition-colors">{cleanScholarshipName(s.scholarship_name)}</h3>
-          <div className="flex items-center gap-1.5 mt-0.5">
+          <h3
+            className="font-heading font-semibold text-[15px] text-foreground tracking-tight group-hover:text-gold-dark transition-colors leading-tight"
+            style={{ display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2, overflow: "hidden" } as React.CSSProperties}
+          >
+            {cleanScholarshipName(s.scholarship_name)}
+          </h3>
+          <div className="flex items-center gap-1.5 mt-1 min-w-0">
             {s.host_country && (
               <span className={`inline-flex items-center text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded text-white bg-gradient-to-r ${accent} shrink-0`}>
                 {shortCountry(s.host_country)}
@@ -1113,7 +1122,7 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
             <ProviderAvatar url={s.official_url || s.source_url} providerName={cleanProvider(s.provider_name) || s.provider_name} size={16} />
             {(() => {
               const p = cleanProvider(s.provider_name);
-              return p ? <p className="text-xs text-muted-foreground truncate">{p}</p> : null;
+              return p ? <p className="text-xs text-muted-foreground truncate min-w-0">{p}</p> : null;
             })()}
           </div>
         </div>
@@ -1431,151 +1440,6 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
         </div>
       </div>
     </motion.article>
-  );
-};
-
-/* ─── Timeline view — group by deadline urgency, dense compact rows ──── */
-const TimelineView = ({ items, onSelect, openDetail, ...common }: {
-  items: Scored[];
-  onSelect: (s: Scored) => void;
-  openDetail: Scored | null;
-  shortlist: Set<string>;
-  toggleBookmark: (id: string) => void;
-  statusMap: Record<string, AppStatus>;
-  setStatus: (id: string, s: AppStatus | null) => void;
-  hidden: Set<string>;
-  toggleHide: (id: string) => void;
-  compareSet: Set<string>;
-  toggleCompare: (id: string) => void;
-}) => {
-  const groups = useMemo(() => {
-    // Each urgency bucket carries its own visual treatment — a left-edge
-    // gradient stripe + tinted section card — so the page reads as a
-    // timeline of waypoints (last call → on the horizon → anytime) rather
-    // than a flat list of dates.
-    const buckets: {
-      label: string; subtitle: string; kicker: string;
-      stripe: string; bg: string; ring: string; kickerCls: string;
-      items: Scored[];
-    }[] = [
-      // Color discipline: only the urgent buckets carry tinted
-      // backgrounds. Later tiers (>30 days, rolling) use a neutral
-      // canvas-soft surface — the urgency cue lives in the left
-      // stripe + the kicker color, which is plenty of signal without
-      // a full tinted block. Five colored sections in a row was
-      // making Deadlines view feel circus-y.
-      {
-        label: "Last call", kicker: "Closing in days",
-        subtitle: "Moving fast — these go silent within a week. Drop everything if there's a fit.",
-        stripe: "from-rose-600 via-red-600 to-rose-700", bg: "bg-rose-50/50 dark:bg-rose-950/15",
-        ring: "ring-rose-300/30", kickerCls: "text-rose-700 dark:text-rose-300",
-        items: [],
-      },
-      {
-        label: "Closing this month", kicker: "Real window",
-        subtitle: "31 days to assemble strong materials. Lock the core essay first.",
-        stripe: "from-amber-500 via-orange-500 to-amber-600", bg: "bg-amber-50/40 dark:bg-amber-950/15",
-        ring: "ring-amber-300/30", kickerCls: "text-amber-800 dark:text-amber-300",
-        items: [],
-      },
-      {
-        label: "Coming up", kicker: "On deck",
-        subtitle: "Three months of runway. Plenty of time to craft a sharp application.",
-        stripe: "from-primary/70 to-primary/40", bg: "bg-canvas-soft/50",
-        ring: "ring-border/60", kickerCls: "text-primary/80 dark:text-primary-bright/80",
-        items: [],
-      },
-      {
-        label: "On the horizon", kicker: "Plant the seed",
-        subtitle: "These reward early starts — research the program now, build relationships next.",
-        stripe: "from-foreground/30 to-foreground/15", bg: "bg-canvas-soft/40",
-        ring: "ring-border/50", kickerCls: "text-muted-foreground",
-        items: [],
-      },
-      {
-        label: "Apply anytime", kicker: "No clock",
-        subtitle: "Rolling or undated. Apply when your story is ready.",
-        stripe: "from-foreground/20 to-foreground/10", bg: "bg-card/40",
-        ring: "ring-border/40", kickerCls: "text-muted-foreground",
-        items: [],
-      },
-    ];
-    items.forEach(s => {
-      const d = daysUntil(s.application_deadline);
-      if (d === null) buckets[4].items.push(s);
-      else if (d <= 0) return; // closed — skip from timeline
-      else if (d <= 7) buckets[0].items.push(s);
-      else if (d <= 31) buckets[1].items.push(s);
-      else if (d <= 90) buckets[2].items.push(s);
-      else if (d <= 365) buckets[3].items.push(s);
-      else buckets[4].items.push(s);
-    });
-    // Sort each bucket by deadline ascending (rolling/undated stays in input order)
-    buckets.slice(0, 4).forEach(b => b.items.sort((a, b) => {
-      if (!a.application_deadline) return 1;
-      if (!b.application_deadline) return -1;
-      return new Date(a.application_deadline).getTime() - new Date(b.application_deadline).getTime();
-    }));
-    return buckets.filter(b => b.items.length > 0);
-  }, [items]);
-
-  if (groups.length === 0) {
-    return (
-      <div className="border border-dashed border-border rounded-3xl p-16 text-center bg-muted/10">
-        <Search className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />
-        <h3 className="font-heading font-semibold text-lg text-foreground mb-1.5">Nothing on the calendar</h3>
-        <p className="text-sm text-muted-foreground">No deadlines match your current filters.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-8">
-      {groups.map(g => (
-        <section key={g.label} className={`relative rounded-2xl overflow-hidden border border-border/70 ${g.bg} ring-1 ${g.ring}`}>
-          {/* Left urgency stripe — full-height gradient bar that reads as a
-              timeline marker. */}
-          <div className={`absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b ${g.stripe}`} aria-hidden />
-
-          <div className="pl-5 sm:pl-7 pr-4 sm:pr-6 pt-5 pb-3 flex items-baseline justify-between gap-4">
-            <div className="min-w-0">
-              <p className={`text-[10px] font-bold uppercase tracking-[0.2em] ${g.kickerCls} mb-1`}>{g.kicker}</p>
-              <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground">{g.label}</h2>
-              <p className="text-xs sm:text-sm text-muted-foreground/90 mt-1 max-w-xl">{g.subtitle}</p>
-            </div>
-            <div className="flex items-baseline gap-1 shrink-0">
-              <span className="text-3xl sm:text-4xl font-heading font-bold text-foreground/30 tabular-nums leading-none">{g.items.length}</span>
-              <span className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground/60">found</span>
-            </div>
-          </div>
-
-          <div className="bg-card/95 backdrop-blur-sm border-t border-border/40 ml-1.5">
-            {g.items.map((s, i) => {
-              const isBookmarked = common.shortlist.has(s.scholarship_id);
-              const isHidden = common.hidden.has(s.scholarship_id);
-              const isComparing = common.compareSet.has(s.scholarship_id);
-              const status = common.statusMap[s.scholarship_id];
-              return (
-                <ScholarRow
-                  key={s.scholarship_id}
-                  s={s}
-                  index={i}
-                  onSelect={() => onSelect(s)}
-                  isBookmarked={isBookmarked}
-                  onBookmark={(e) => { e.stopPropagation(); common.toggleBookmark(s.scholarship_id); }}
-                  status={status}
-                  onStatusChange={(st) => common.setStatus(s.scholarship_id, st)}
-                  isHidden={isHidden}
-                  onToggleHide={(e) => { e.stopPropagation(); common.toggleHide(s.scholarship_id); }}
-                  isComparing={isComparing}
-                  onToggleCompare={(e) => { e.stopPropagation(); common.toggleCompare(s.scholarship_id); }}
-                />
-              );
-            })}
-          </div>
-        </section>
-      ))}
-    </div>
   );
 };
 
