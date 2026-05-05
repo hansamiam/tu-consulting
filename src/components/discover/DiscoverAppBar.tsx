@@ -58,12 +58,28 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
           : "bg-background/70 border-b border-transparent"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-5 sm:px-8 h-12 flex items-center gap-3">
-        {/* Wordmark — links back to home */}
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 h-14 flex items-center gap-3">
+        {/* Explicit Home back button — primary affordance for getting
+            out of the app shell. The wordmark also links home but
+            users don't always realise that; an actual button labelled
+            "Home" with a back arrow leaves no doubt. */}
+        <Link
+          to={home}
+          className="inline-flex items-center gap-1.5 shrink-0 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1.5 rounded-md hover:bg-foreground/[0.04]"
+          title={isRussian ? "На главную" : "Back to main site"}
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">{isRussian ? "Главная" : "Home"}</span>
+        </Link>
+
+        {/* Vertical rule */}
+        <span className="hidden sm:block self-stretch w-px bg-border/60 my-3" aria-hidden />
+
+        {/* Discover wordmark — visual identity, not the primary nav. */}
         <Link
           to={home}
           className="group inline-flex items-center gap-2 shrink-0 hover:opacity-90 transition-opacity"
-          aria-label={isRussian ? "На главную" : "Back to home"}
+          aria-label="Discover"
         >
           <span className="inline-flex items-center justify-center h-7 w-7 rounded-lg bg-gradient-to-br from-gold-dark to-gold text-primary shadow-sm ring-1 ring-gold/40">
             <Compass className="h-3.5 w-3.5" />

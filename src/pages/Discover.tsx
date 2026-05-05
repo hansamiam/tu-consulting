@@ -982,7 +982,7 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
           glance. Same palette as the card hero band. */}
       <div className={`w-1 shrink-0 bg-gradient-to-b ${accent} ${isFullRide ? "ring-1 ring-inset ring-gold/30" : ""}`} aria-hidden />
 
-      <div className="flex-1 grid grid-cols-[52px,minmax(0,1fr),auto] sm:grid-cols-[52px,minmax(0,2fr),minmax(0,1.4fr),minmax(0,1fr),auto] items-center gap-4 px-4 py-3.5 min-w-0">
+      <div className="flex-1 grid grid-cols-[52px,minmax(0,1fr),auto] sm:grid-cols-[52px,minmax(0,3fr),minmax(0,1.4fr),minmax(0,0.8fr),auto] items-center gap-4 px-4 py-3.5 min-w-0">
         {/* Score badge — visually consistent across rows. Always a
             country-gradient circle with the country's landmark behind.
             When the user has a real score, that score overlays in the
@@ -3096,8 +3096,10 @@ const Discover = ({ language = "en" }: Props) => {
                         above — this page strip now focuses solely on
                         the student's identity (profile chips) so the
                         space reads less like "another website header"
-                        and more like "your context for this view". */}
-                    <div className="relative max-w-7xl mx-auto px-5 sm:px-8 py-3.5 sm:py-4 flex items-center gap-2 flex-wrap">
+                        and more like "your context for this view".
+                        Generous py-5 keeps comfortable breathing room
+                        between the app bar and the content below. */}
+                    <div className="relative max-w-7xl mx-auto px-5 sm:px-8 py-5 sm:py-6 flex items-center gap-2 flex-wrap">
                       {/* Profile chips OR call-to-build-profile.
                           Profile chips lean into personal identity:
                           gradient passport-style country chip with a
@@ -3464,7 +3466,7 @@ const Discover = ({ language = "en" }: Props) => {
                           });
                           return (
                             <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
-                              <div className="hidden sm:grid grid-cols-[44px,minmax(0,2fr),minmax(0,1.2fr),minmax(0,1fr),auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                              <div className="hidden sm:grid grid-cols-[52px,minmax(0,3fr),minmax(0,1.4fr),minmax(0,0.8fr),auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                                 <span className="text-center">
                                   <button onClick={() => setSortBy("match")} className={`transition-colors ${sortBy === "match" ? "text-foreground" : "hover:text-foreground"}`}>Score{sortBy === "match" && <span className="ml-1 text-gold-dark">↓</span>}</button>
                                 </span>
@@ -3555,7 +3557,7 @@ const Discover = ({ language = "en" }: Props) => {
                             return (
                               <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
                                 {/* Sortable column headers (desktop) */}
-                                <div className="hidden sm:grid grid-cols-[44px,minmax(0,2fr),minmax(0,1.2fr),minmax(0,1fr),auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                                <div className="hidden sm:grid grid-cols-[52px,minmax(0,3fr),minmax(0,1.4fr),minmax(0,0.8fr),auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                                   <span className="text-center">{sortBtn("Score", "match")}</span>
                                   <span>Scholarship</span>
                                   <span>{sortBtn("Award · Deadline", "deadline")}</span>
