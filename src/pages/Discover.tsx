@@ -621,6 +621,42 @@ const titleCaseField = (s: string) => s
   })
   .replace(/^./, (c) => c.toUpperCase());
 
+/** Clean a provider name for compact card display. The LLM
+ *  extracts these from page footers / about pages so the raw values
+ *  are noisy: overly formal long forms ("The Trustees of the
+ *  Massachusetts Institute of Technology"), site headers
+ *  ("Stanford University - Apply"), junk patterns ("Various
+ *  foundations" / "Multiple agencies"), or parenthetical bloat.
+ *  Returns null for junk so callers can hide the line entirely. */
+const PROVIDER_JUNK = /^(various|multiple|several|n\/a|none|unknown|—|-|tbd|to be determined)/i;
+const cleanProvider = (raw: string | null | undefined): string | null => {
+  if (!raw) return null;
+  let p = raw.trim();
+  if (!p || PROVIDER_JUNK.test(p)) return null;
+  // Strip site-branding suffix (same separators as cleanScholarshipName)
+  for (const sep of [" | ", "|", " — ", " – ", " - "]) {
+    const idx = p.indexOf(sep);
+    if (idx > 8 && idx < p.length - 4) {
+      const right = p.slice(idx + sep.length).trim().toLowerCase();
+      if (/(apply|home|bulletin|sign up|admissions|website|official|2025|2026|2027)/.test(right)) {
+        p = p.slice(0, idx).trim();
+        break;
+      }
+    }
+  }
+  // Drop trailing parentheticals
+  p = p.replace(/\s*\([^)]*\)\s*$/, "").trim();
+  // "The Trustees of [X]" / "Trustees of [X]" → "[X]" — long formal
+  // legal-entity prefixes don't fit on a card and don't add meaning
+  // for a student deciding "is this for me".
+  p = p.replace(/^(The\s+)?(Trustees|Board|Council|Office)\s+of\s+(the\s+)?/i, "");
+  // "Government of X" stays as-is — meaningful context.
+  // Cap length: anything over 60 chars usually means the LLM grabbed
+  // a paragraph instead of a name.
+  if (p.length > 60) p = p.slice(0, 58).trimEnd() + "…";
+  return p;
+};
+
 /** Clean a scholarship name extracted from a noisy page title.
  *  LLMs sometimes return values like:
  *    "Schwarzman Scholars | Tsinghua University - Apply Now"
@@ -968,9 +1004,10 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
               </span>
             )}
             <ProviderFavicon url={s.official_url || s.source_url} size={14} className="ring-1 ring-border/60" />
-            {s.provider_name && (
-              <p className="text-xs text-muted-foreground truncate">{s.provider_name}</p>
-            )}
+            {(() => {
+              const p = cleanProvider(s.provider_name);
+              return p ? <p className="text-xs text-muted-foreground truncate">{p}</p> : null;
+            })()}
           </div>
         </div>
 
@@ -1118,14 +1155,18 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           <h3 className="font-heading text-[15px] font-semibold leading-[1.2] tracking-[-0.01em] text-foreground line-clamp-3 group-hover:text-gold-dark transition-colors mb-1">
             {cleanScholarshipName(s.scholarship_name)}
           </h3>
-          {s.provider_name && (
-            <div className="flex items-center gap-1.5 min-w-0">
-              <ProviderFavicon url={s.official_url || s.source_url} size={14} className="ring-1 ring-border/50" />
-              <p className="text-[11px] text-muted-foreground/85 line-clamp-1">
-                {s.provider_name}
-              </p>
-            </div>
-          )}
+          {(() => {
+            const p = cleanProvider(s.provider_name);
+            if (!p) return null;
+            return (
+              <div className="flex items-center gap-1.5 min-w-0">
+                <ProviderFavicon url={s.official_url || s.source_url} size={14} className="ring-1 ring-border/50" />
+                <p className="text-[11px] text-muted-foreground/85 line-clamp-1">
+                  {p}
+                </p>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Award amount — compactAward returns a tight label that fits
@@ -1637,7 +1678,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
 
             <SheetTitle className="text-foreground font-heading text-[26px] leading-[1.12] tracking-[-0.02em] pt-1 text-left">{cleanScholarshipName(s.scholarship_name)}</SheetTitle>
             <p className="text-muted-foreground text-sm text-left">
-              {[s.provider_name, s.host_country].filter(Boolean).join(" · ")}
+              {[cleanProvider(s.provider_name), s.host_country && shortCountry(s.host_country)].filter(Boolean).join(" · ")}
             </p>
           </SheetHeader>
 
@@ -2100,7 +2141,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-foreground truncate group-hover:text-gold-dark transition-colors">{cleanScholarshipName(sim.scholarship_name)}</p>
                       <p className="text-[11px] text-muted-foreground truncate">
-                        {[sim.provider_name, sim.host_country && shortCountry(sim.host_country)].filter(Boolean).join(" · ")}
+                        {[cleanProvider(sim.provider_name), sim.host_country && shortCountry(sim.host_country)].filter(Boolean).join(" · ")}
                       </p>
                     </div>
                     <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 group-hover:translate-x-0.5 group-hover:text-gold-dark transition-all" />
