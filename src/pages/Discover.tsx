@@ -1244,11 +1244,16 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
 
         {/* Why-it-fits — italic single-paragraph editorial line. Same data,
             slightly more breathing room. line-clamp-3 instead of 2 so we
-            stop chopping mid-thought. */}
-        {why && (
+            stop chopping mid-thought. When the row has no real why_this_fits
+            and no meaty scoring reasons, render a flex-1 spacer instead so
+            cards in an auto-rows-fr grid don't collapse — the action row
+            stays pinned to the bottom of the card the same way. */}
+        {why ? (
           <p className="text-[12px] text-foreground/70 leading-relaxed line-clamp-3 flex-1 italic">
             {why.replace(/\.+$/, "")}.
           </p>
+        ) : (
+          <div className="flex-1" aria-hidden />
         )}
 
         {/* Footer meta — deadline + field. Compact, scannable. Verified
