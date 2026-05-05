@@ -47,6 +47,8 @@ interface Scholarship {
   data_source: string | null;
   verification_status: string | null;
   last_verified_at: string | null;
+  lifecycle_status: string | null;
+  next_open_at: string | null;
 }
 
 const COLUMNS: { key: AppStatus | "shortlisted"; label: { en: string; ru: string }; tone: string; bar: string }[] = [
@@ -117,7 +119,8 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
           "scholarship_id, scholarship_name, provider_name, host_country, " +
           "coverage_type, award_amount_text, estimated_total_value_usd, " +
           "application_deadline, deadline_type, official_url, data_source, " +
-          "verification_status, last_verified_at",
+          "verification_status, last_verified_at, " +
+          "lifecycle_status, next_open_at",
         )
         .in("scholarship_id", trackedIds);
       if (cancelled) return;
@@ -644,6 +647,20 @@ const PipelineCard = ({
       </div>
 
       <div className="p-3">
+      {/* Lifecycle status banner — when a saved scholarship has closed,
+          surface it explicitly. The user committed to tracking this row;
+          they need to know it's no longer accepting applications without
+          us silently letting them keep it on the active board. */}
+      {(s.lifecycle_status === "closed_recent" || s.lifecycle_status === "closed_archived") && (
+        <div className="-mt-1 mb-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-[0.12em] bg-muted text-muted-foreground border border-border">
+          {s.lifecycle_status === "closed_recent" ? "Recently closed" : "Closed"}
+        </div>
+      )}
+      {s.lifecycle_status === "reopens_annually" && s.next_open_at && (
+        <div className="-mt-1 mb-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-[0.12em] bg-gold/10 text-gold-dark border border-gold/25">
+          Reopens {new Date(s.next_open_at).toLocaleDateString(undefined, { month: "short", year: "numeric" })}
+        </div>
+      )}
       <h4 className="font-heading font-semibold text-[14px] text-foreground line-clamp-2 leading-snug mb-1.5 group-hover:text-gold-dark transition-colors">
         {cleanScholarshipName(s.scholarship_name)}
       </h4>
