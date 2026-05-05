@@ -31,6 +31,14 @@ import { MatchScoreBreakdown } from "@/components/discover/MatchScoreBreakdown";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { CountryArt, CampusPattern } from "@/lib/countryArt";
 import { accentForCountry, shortCountry, canonicalCountry } from "@/lib/countryAccent";
+import {
+  FIELD_JUNK,
+  titleCaseField,
+  displayField,
+  cleanScholarshipName,
+  cleanProvider,
+  compactAward,
+} from "@/lib/scholarshipFields";
 import { ALL_COUNTRIES } from "@/data/countries";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSemanticScholarshipMatch } from "@/hooks/useSemanticScholarshipMatch";
@@ -643,132 +651,9 @@ const NavyBackdrop = () => (
   </div>
 );
 
-/* Field-of-study cleanup helpers. The LLM produces noisy values
- * (run-on comma-lists, "any"/"open" junk, drifting case). Reused by
- * the cards' inline chip and the filter dropdown so the user sees
- * the same cleaned label everywhere. */
-const FIELD_JUNK = /^(any|all|open|various|n\/a|none|—|-|other|misc|miscellaneous)$/i;
-const FIELD_ACRONYMS = /^(IT|AI|ML|CS|MBA|PhD|STEM|UX|UI|HR|R&D|GIS|IoT|VR|AR)$/i;
-const FIELD_CONNECTORS = /^(of|and|the|in|for|to|with|on|at|a|an)$/i;
-const titleCaseField = (s: string) => s
-  .replace(/\w\S*/g, (w) => {
-    if (FIELD_ACRONYMS.test(w)) return w.toUpperCase();
-    if (FIELD_CONNECTORS.test(w)) return w.toLowerCase();
-    return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
-  })
-  .replace(/^./, (c) => c.toUpperCase());
-
-/** Clean a provider name for compact card display. The LLM
- *  extracts these from page footers / about pages so the raw values
- *  are noisy: overly formal long forms ("The Trustees of the
- *  Massachusetts Institute of Technology"), site headers
- *  ("Stanford University - Apply"), junk patterns ("Various
- *  foundations" / "Multiple agencies"), or parenthetical bloat.
- *  Returns null for junk so callers can hide the line entirely. */
-const PROVIDER_JUNK = /^(various|multiple|several|n\/a|none|unknown|—|-|tbd|to be determined)/i;
-const cleanProvider = (raw: string | null | undefined): string | null => {
-  if (!raw) return null;
-  let p = raw.trim();
-  if (!p || PROVIDER_JUNK.test(p)) return null;
-  // Strip site-branding suffix (same separators as cleanScholarshipName)
-  for (const sep of [" | ", "|", " — ", " – ", " - "]) {
-    const idx = p.indexOf(sep);
-    if (idx > 8 && idx < p.length - 4) {
-      const right = p.slice(idx + sep.length).trim().toLowerCase();
-      if (/(apply|home|bulletin|sign up|admissions|website|official|2025|2026|2027)/.test(right)) {
-        p = p.slice(0, idx).trim();
-        break;
-      }
-    }
-  }
-  // Drop trailing parentheticals
-  p = p.replace(/\s*\([^)]*\)\s*$/, "").trim();
-  // "The Trustees of [X]" / "Trustees of [X]" → "[X]" — long formal
-  // legal-entity prefixes don't fit on a card and don't add meaning
-  // for a student deciding "is this for me".
-  p = p.replace(/^(The\s+)?(Trustees|Board|Council|Office)\s+of\s+(the\s+)?/i, "");
-  // "Government of X" stays as-is — meaningful context.
-  // Cap length: anything over 60 chars usually means the LLM grabbed
-  // a paragraph instead of a name.
-  if (p.length > 60) p = p.slice(0, 58).trimEnd() + "…";
-  return p;
-};
-
-/** Clean a scholarship name extracted from a noisy page title.
- *  LLMs sometimes return values like:
- *    "Schwarzman Scholars | Tsinghua University - Apply Now"
- *    "DAAD Scholarship Program — Study in Germany | DAAD"
- *    "Knight-Hennessy Scholars - Stanford University Bulletin"
- *  Strategy: split on the strongest separator ('|', ' — ', ' - '),
- *  keep the leftmost segment, drop trailing "Apply" / "Apply Now" /
- *  "Bulletin" / parentheticals, and cap length sensibly. */
-const cleanScholarshipName = (name: string): string => {
-  if (!name) return name;
-  let n = name.trim();
-  // Split on strongest separator and keep the LEFT side (the actual name)
-  for (const sep of [" | ", "|", " — ", " – ", " - "]) {
-    const idx = n.indexOf(sep);
-    if (idx > 8 && idx < n.length - 4) {
-      const left = n.slice(0, idx).trim();
-      const right = n.slice(idx + sep.length).trim().toLowerCase();
-      // Only split if the right side looks like branding/junk, not a
-      // real continuation of the name (e.g. "Erasmus Mundus - Joint
-      // Master's" should stay intact).
-      if (/(apply|home|bulletin|sign up|details|study in|admissions|undergraduate|graduate|university|website|official site|2025|2026|2027)/.test(right)) {
-        n = left;
-        break;
-      }
-    }
-  }
-  // Drop trailing parenthetical if it's just "Apply", "Bulletin", "Home", etc.
-  n = n.replace(/\s*\((apply|bulletin|home|details|website|official|sign\s*up).*$/i, "").trim();
-  // Drop trailing "- Apply" / "- Sign Up" without a separator
-  n = n.replace(/\s+[-–—]?\s+(apply\s*now|apply|sign\s*up|details|home|bulletin)\s*$/i, "").trim();
-  return n;
-};
-
-/** Compact award label for the grid card. Long award_amount_text
- *  values like "Full scholarships (tuition and living expenses)"
- *  truncate mid-word with an ugly "…". Strategy:
- *
- *   1. Use the COVERAGE_TYPE enum first — it's clean and short.
- *   2. If a dollar amount exists in award_amount_text, surface that
- *      compactly ($80K, $1.2M, etc.).
- *   3. Otherwise show estimated_total_value_usd formatted.
- *   4. As a last resort, show the first phrase of award_amount_text
- *      with the parenthetical chopped off + a hard 28-char cap.
- *   5. Full text always available in the DetailSheet's AWARD facts box. */
-const compactAward = (s: Scholarship): string | null => {
-  if (s.coverage_type === "full_ride") return "Full ride";
-  // Try to extract a dollar amount from the award text first.
-  if (s.award_amount_text) {
-    const m = s.award_amount_text.match(/\$\s?([\d,.]+)\s?([KMkm])?/);
-    if (m) {
-      const n = parseFloat(m[1].replace(/,/g, ""));
-      if (!Number.isNaN(n)) {
-        const suffix = m[2]?.toUpperCase();
-        if (suffix === "M" || n >= 1_000_000) return `$${(suffix === "M" ? n : n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
-        if (suffix === "K" || n >= 1000) return `$${Math.round(suffix === "K" ? n : n / 1000)}K`;
-        return `$${Math.round(n).toLocaleString()}`;
-      }
-    }
-  }
-  if (s.coverage_type === "tuition_only") return "Tuition covered";
-  if (s.coverage_type === "stipend") return "Stipend";
-  if (s.coverage_type === "partial") return "Partial funding";
-  if (s.estimated_total_value_usd && s.estimated_total_value_usd >= 1000) {
-    const v = s.estimated_total_value_usd;
-    if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
-    return `$${Math.round(v / 1000)}K`;
-  }
-  // Last resort: trim parenthetical + hard char cap.
-  if (s.award_amount_text) {
-    const noParen = s.award_amount_text.replace(/\s*\([^)]*\)?/g, "").trim();
-    if (noParen.length > 0 && noParen.length <= 28) return noParen;
-    if (noParen.length > 28) return noParen.slice(0, 26).trimEnd() + "…";
-  }
-  return null;
-};
+/* Field/provider/name/award cleanup helpers live in
+ * @/lib/scholarshipFields and are imported above. Pure functions,
+ * shared with ScholarshipDetail and edge-function OG cards. */
 
 /** Score a row by how filled-in it is. Used to pick the "best" row
  *  among duplicates and to hide rows that are too sparse to render
@@ -848,23 +733,6 @@ const degreeBucket = (raw: string | null | undefined): string => {
   if (/(master|graduate|m\.?[as]\b|m\.?phil|m\.?ba|m\.?eng|llm|m\.?fa|m\.?sc|m\.?\.?s\.?\b|magistr)/.test(v)) return "master";
   if (/(bachelor|undergrad|b\.?[as]\b|b\.?sc|b\.?eng|b\.?ba|llb|first[- ]degree)/.test(v)) return "undergraduate";
   return "";
-};
-
-/** Pretty single-field label for compact card displays. Skips junk
- *  values, takes the first piece of comma-list run-ons, and drops
- *  unreasonably long entries. Returns null when nothing's worth
- *  showing so callers can hide the chip. */
-const displayField = (fields: string[] | null | undefined): string | null => {
-  if (!Array.isArray(fields) || fields.length === 0) return null;
-  for (const raw of fields) {
-    if (!raw) continue;
-    const first = raw.split(/\s*[,/;]\s*/).filter(Boolean)[0];
-    if (!first) continue;
-    const trimmed = first.trim();
-    if (!trimmed || FIELD_JUNK.test(trimmed) || trimmed.length > 42) continue;
-    return titleCaseField(trimmed.replace(/[-_]+/g, " ").replace(/\s+/g, " "));
-  }
-  return null;
 };
 
 /* ─── Selectivity icon ───────────────────────────────────────────────── */

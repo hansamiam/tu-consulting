@@ -33,6 +33,13 @@ import { ScholarshipCard, type ScholarshipCardData } from "@/components/Scholars
 import { useTrackView, useScholarshipTracking } from "@/hooks/useScholarshipTracking";
 import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
 import { getStoredProfile } from "@/components/discover/DiscoverProfileGate";
+import {
+  cleanScholarshipName,
+  cleanProvider,
+  compactAward,
+  displayField,
+} from "@/lib/scholarshipFields";
+import { shortCountry } from "@/lib/countryAccent";
 
 interface Scholarship {
   scholarship_id: string;
@@ -193,14 +200,17 @@ const ScholarshipDetail = () => {
   /* SEO meta — unique per scholarship */
   useEffect(() => {
     if (!s) return;
-    const title = `${s.scholarship_name} — eligibility, deadline, application | TopUni`;
-    const country = s.host_country ? ` Hosted in ${s.host_country}.` : "";
+    const cleanName = cleanScholarshipName(s.scholarship_name);
+    const cleanProv = cleanProvider(s.provider_name);
+    const cleanCountry = s.host_country ? shortCountry(s.host_country) : null;
+    const title = `${cleanName} — eligibility, deadline, application | TopUni`;
+    const country = cleanCountry ? ` Hosted in ${cleanCountry}.` : "";
     const coverage =
       s.coverage_type === "full_ride" ? "Full ride covering tuition + living."
       : s.coverage_type === "tuition_only" ? "Covers tuition."
       : "Stipend.";
     const deadline = s.application_deadline ? ` Deadline: ${s.application_deadline}.` : "";
-    const desc = `${s.scholarship_name}.${country} ${coverage}${deadline} Build a personalised strategy with TopUni AI free.`;
+    const desc = `${cleanName}.${country} ${coverage}${deadline} Build a personalised strategy with TopUni AI free.`;
     document.title = title;
     setMeta("description", desc);
     setMeta("og:title", title, true);
@@ -215,7 +225,7 @@ const ScholarshipDetail = () => {
     setMeta("og:image", ogImageUrl, true);
     setMeta("og:image:width", "1200", true);
     setMeta("og:image:height", "630", true);
-    setMeta("og:image:alt", `${s.scholarship_name} — TopUni`, true);
+    setMeta("og:image:alt", `${cleanName} — TopUni`, true);
     setMeta("twitter:image", ogImageUrl);
     setMeta("twitter:card", "summary_large_image");
     setMeta("twitter:title", title);
@@ -230,7 +240,7 @@ const ScholarshipDetail = () => {
     // leverage on already-written content.
     const credential = {
       "@type": "EducationalOccupationalCredential",
-      name: s.scholarship_name,
+      name: cleanName,
       description: s.eligibility_requirements?.slice(0, 400) ?? desc,
       url: `https://topuni.org/scholarships/${s.scholarship_id}`,
       credentialCategory: "scholarship",
@@ -238,11 +248,11 @@ const ScholarshipDetail = () => {
         ? { "@type": "Offer", description: s.award_amount_text }
         : undefined,
       validThrough: s.application_deadline ?? undefined,
-      provider: s.provider_name
-        ? { "@type": "Organization", name: s.provider_name }
+      provider: cleanProv
+        ? { "@type": "Organization", name: cleanProv }
         : undefined,
     };
-    const faqEntities = buildFaqEntities(s);
+    const faqEntities = buildFaqEntities(s, cleanName);
     const graph: object[] = [credential];
     if (faqEntities.length > 0) {
       graph.push({
@@ -345,14 +355,17 @@ const ScholarshipDetail = () => {
             Back to Discover
           </Link>
           <p className="text-[11px] uppercase tracking-[0.22em] text-gold font-semibold mb-3">
-            {s.host_country ? `Scholarship · ${s.host_country}` : "Scholarship"}
+            {s.host_country ? `Scholarship · ${shortCountry(s.host_country)}` : "Scholarship"}
           </p>
           <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold text-primary-foreground tracking-tight leading-tight mb-3">
-            {s.scholarship_name}
+            {cleanScholarshipName(s.scholarship_name)}
           </h1>
-          {s.provider_name && (
-            <p className="text-primary-foreground/80 text-sm sm:text-base mb-5">{s.provider_name}</p>
-          )}
+          {(() => {
+            const p = cleanProvider(s.provider_name);
+            return p ? (
+              <p className="text-primary-foreground/80 text-sm sm:text-base mb-5">{p}</p>
+            ) : null;
+          })()}
           <div className="flex flex-wrap gap-2 mb-6">
             {s.coverage_type && (
               <Chip>
@@ -362,7 +375,10 @@ const ScholarshipDetail = () => {
               </Chip>
             )}
             {(s.target_degree_level ?? []).slice(0, 3).map((d) => <Chip key={d}>{d}</Chip>)}
-            {(s.target_fields ?? []).slice(0, 3).map((f) => <Chip key={f}>{f}</Chip>)}
+            {(() => {
+              const fld = displayField(s.target_fields);
+              return fld ? <Chip key="field">{fld}</Chip> : null;
+            })()}
             {s.application_deadline && days !== null && (
               <Chip tone={days <= 7 ? "danger" : days <= 30 ? "warn" : "neutral"}>
                 {days <= 0 ? "Closed" : days === 1 ? "1 day" : days <= 30 ? `${days} days left` : `${Math.round(days / 30)} months`}
@@ -451,8 +467,8 @@ const ScholarshipDetail = () => {
       <ShareScholarshipModal
         open={shareOpen}
         onOpenChange={setShareOpen}
-        scholarshipName={s.scholarship_name}
-        providerName={s.provider_name}
+        scholarshipName={cleanScholarshipName(s.scholarship_name)}
+        providerName={cleanProvider(s.provider_name)}
         scholarshipId={s.scholarship_id}
       />
 
@@ -483,7 +499,7 @@ const ScholarshipDetail = () => {
       <section className="max-w-4xl mx-auto px-5 sm:px-8 py-10 sm:py-14 space-y-10">
         {/* Key facts row */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <Fact icon={<Wallet />} label="Award" value={s.award_amount_text || (s.estimated_total_value_usd ? `~$${Math.round(s.estimated_total_value_usd / 1000)}K total` : "—")} />
+          <Fact icon={<Wallet />} label="Award" value={s.award_amount_text || compactAward(s) || (s.estimated_total_value_usd ? `~$${Math.round(s.estimated_total_value_usd / 1000)}K total` : "—")} />
           <Fact icon={<Calendar />} label="Deadline" value={s.application_deadline ?? (s.deadline_type ?? "varies")} />
           <Fact icon={<GraduationCap />} label="Levels" value={(s.target_degree_level ?? []).join(", ") || "any"} />
           <Fact icon={<Globe />} label="Citizenship" value={s.citizenship_requirements ? truncate(s.citizenship_requirements, 60) : "any"} />
@@ -576,7 +592,7 @@ const ScholarshipDetail = () => {
             Don't just read — strategise
           </p>
           <h3 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground mb-3 leading-tight">
-            Build a personal strategy that includes the {s.scholarship_name}.
+            Build a personal strategy that includes the {cleanScholarshipName(s.scholarship_name)}.
           </h3>
           <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto mb-6">
             TopUni AI takes your profile, ranks every scholarship in the database against you,
@@ -639,7 +655,7 @@ const ScholarshipDetail = () => {
           </span>
           {s.last_verified_date && <span>· Verified {s.last_verified_date}</span>}
           <a
-            href={`mailto:hello@topuni.com?subject=${encodeURIComponent("Inaccurate scholarship data: " + s.scholarship_name)}`}
+            href={`mailto:hello@topuni.com?subject=${encodeURIComponent("Inaccurate scholarship data: " + cleanScholarshipName(s.scholarship_name))}`}
             className="ml-auto underline hover:text-foreground"
           >
             Report inaccuracy
@@ -811,8 +827,8 @@ function injectJsonLd(payload: object) {
    question when its answer field is non-empty — empty Qs would dilute
    the schema. Answers are plain text (Google ignores HTML in answerText
    anyway). */
-function buildFaqEntities(s: Scholarship): object[] {
-  const name = s.scholarship_name;
+function buildFaqEntities(s: Scholarship, cleanedName?: string): object[] {
+  const name = cleanedName ?? s.scholarship_name;
   const out: { "@type": "Question"; name: string; acceptedAnswer: { "@type": "Answer"; text: string } }[] = [];
   const push = (q: string, a: string | null | undefined) => {
     const text = (a ?? "").trim();

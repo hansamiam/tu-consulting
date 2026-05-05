@@ -98,6 +98,49 @@ function initials(name: string): string {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
+/* Field cleanup — duplicated from src/lib/scholarshipFields.ts so the
+ * Deno edge runtime doesn't have to reach into the Vite tree.
+ * Keep in lockstep with the source if either side changes. */
+const PROVIDER_JUNK = /^(various|multiple|several|n\/a|none|unknown|—|-|tbd|to be determined)/i;
+
+function cleanScholarshipName(name: string): string {
+  if (!name) return name;
+  let n = name.trim();
+  for (const sep of [" | ", "|", " — ", " – ", " - "]) {
+    const idx = n.indexOf(sep);
+    if (idx > 8 && idx < n.length - 4) {
+      const right = n.slice(idx + sep.length).trim().toLowerCase();
+      if (/(apply|home|bulletin|sign up|details|study in|admissions|undergraduate|graduate|university|website|official site|2025|2026|2027)/.test(right)) {
+        n = n.slice(0, idx).trim();
+        break;
+      }
+    }
+  }
+  n = n.replace(/\s*\((apply|bulletin|home|details|website|official|sign\s*up).*$/i, "").trim();
+  n = n.replace(/\s+[-–—]?\s+(apply\s*now|apply|sign\s*up|details|home|bulletin)\s*$/i, "").trim();
+  return n;
+}
+
+function cleanProvider(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  let p = raw.trim();
+  if (!p || PROVIDER_JUNK.test(p)) return null;
+  for (const sep of [" | ", "|", " — ", " – ", " - "]) {
+    const idx = p.indexOf(sep);
+    if (idx > 8 && idx < p.length - 4) {
+      const right = p.slice(idx + sep.length).trim().toLowerCase();
+      if (/(apply|home|bulletin|sign up|admissions|website|official|2025|2026|2027)/.test(right)) {
+        p = p.slice(0, idx).trim();
+        break;
+      }
+    }
+  }
+  p = p.replace(/\s*\([^)]*\)\s*$/, "").trim();
+  p = p.replace(/^(The\s+)?(Trustees|Board|Council|Office)\s+of\s+(the\s+)?/i, "");
+  if (p.length > 60) p = p.slice(0, 58).trimEnd() + "…";
+  return p;
+}
+
 function buildSvg(row: ScholarshipRow): string {
   const W = 1200, H = 630;
   const NAVY = "#0a2540";
@@ -106,10 +149,12 @@ function buildSvg(row: ScholarshipRow): string {
   const GOLD_LIGHT = "#e3c476";
   const CREAM = "#fbf7ed";
 
-  const provider = row.provider_name || row.scholarship_name;
+  const cleanName = cleanScholarshipName(row.scholarship_name);
+  const cleanProv = cleanProvider(row.provider_name);
+  const provider = cleanProv ?? cleanName;
   const hue = hueFromName(provider);
   const inits = initials(provider);
-  const headlineLines = wrapText(row.scholarship_name, 30, 2);
+  const headlineLines = wrapText(cleanName, 30, 2);
 
   const fundingHeadline =
     fmtValue(row.estimated_total_value_usd)
@@ -126,7 +171,7 @@ function buildSvg(row: ScholarshipRow): string {
   const metaY = fundingY + 64;
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${escapeXml(row.scholarship_name)} — TopUni share preview">
+<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${escapeXml(cleanName)} — TopUni share preview">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="${NAVY}" />
@@ -164,9 +209,9 @@ function buildSvg(row: ScholarshipRow): string {
     <text x="32" y="44" fill="#ffffff" font-family="-apple-system, system-ui, sans-serif"
           font-size="26" font-weight="800" letter-spacing="-0.02em" text-anchor="middle">${escapeXml(inits)}</text>
   </g>
-  ${row.provider_name ? `
+  ${cleanProv ? `
   <text x="${padX + 86}" y="155" fill="${CREAM}" font-family="-apple-system, system-ui, sans-serif"
-        font-size="22" font-weight="600" letter-spacing="-0.005em">${escapeXml(row.provider_name.slice(0, 60))}</text>` : ""}
+        font-size="22" font-weight="600" letter-spacing="-0.005em">${escapeXml(cleanProv.slice(0, 60))}</text>` : ""}
   ${row.host_country ? `
   <text x="${padX + 86}" y="186" fill="${GOLD_LIGHT}" font-family="-apple-system, system-ui, sans-serif"
         font-size="18" font-weight="500" letter-spacing="0.04em">${escapeXml(row.host_country)}</text>` : ""}
