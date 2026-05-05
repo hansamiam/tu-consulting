@@ -29,6 +29,12 @@ interface ScholarshipRow extends ScholarshipCardData {
   official_url: string | null;
   data_source: string | null;
   citizenship_requirements: string | null;
+  // Drives the demographic + meta themes (for-women, women-in-stem,
+  // first-generation, refugees, need-based, lgbtq, etc.) and the
+  // no-essay / rolling-deadline filters.
+  target_demographics: string[] | null;
+  essay_required: boolean | null;
+  deadline_type: string | null;
 }
 
 type StatsById = Record<string, ScholarshipCardStats>;
@@ -102,6 +108,13 @@ const FIELD_SLUGS: Record<string, string> = {
   "stem":                      "STEM",
 };
 
+// Demographic + meta themes for programmatic SEO. Each entry below
+// becomes one indexable URL at /scholarships/theme/:slug. Predicates
+// run against the same hydrated rows that fund the per-country and
+// per-field hubs, so the catalog scales these pages automatically as
+// new programs are added. Theme intros are purposely informational
+// (not marketing) so AI-overview crawlers ingest them as factual
+// summaries.
 const THEMES: Record<string, { titlePart: string; predicate: (r: ScholarshipRow) => boolean; introHint: string }> = {
   "full-funding": {
     titlePart: "Fully-funded",
@@ -121,6 +134,51 @@ const THEMES: Record<string, { titlePart: string; predicate: (r: ScholarshipRow)
     titlePart: "Highest-value",
     predicate: (r) => (r.estimated_total_value_usd ?? 0) >= 80_000,
     introHint: "Programs with $80K+ total value over the full study period.",
+  },
+  "for-women": {
+    titlePart: "For women",
+    predicate: (r) => !!r.target_demographics?.some((d) => d === "women" || d === "underrepresented-stem"),
+    introHint: "Scholarships specifically funding women's education abroad — including women-in-STEM programs.",
+  },
+  "women-in-stem": {
+    titlePart: "Women in STEM",
+    predicate: (r) => !!r.target_demographics?.includes("underrepresented-stem"),
+    introHint: "Programs for women pursuing science, technology, engineering, or mathematics degrees.",
+  },
+  "first-generation": {
+    titlePart: "First-generation",
+    predicate: (r) => !!r.target_demographics?.includes("first-generation"),
+    introHint: "Scholarships for the first in your family to attend college or university.",
+  },
+  "for-refugees": {
+    titlePart: "For refugees & displaced students",
+    predicate: (r) => !!r.target_demographics?.some((d) => d === "refugee" || d === "displaced"),
+    introHint: "Programs for refugees, asylum seekers, and displaced students rebuilding their education abroad.",
+  },
+  "need-based": {
+    titlePart: "Need-based",
+    predicate: (r) => !!r.target_demographics?.includes("low-income"),
+    introHint: "Scholarships that prioritise demonstrated financial need over merit alone.",
+  },
+  "underrepresented": {
+    titlePart: "For underrepresented students",
+    predicate: (r) => !!r.target_demographics?.some((d) => d === "underrepresented-minority" || d === "indigenous"),
+    introHint: "Programs targeting historically underrepresented groups in higher education.",
+  },
+  "lgbtq": {
+    titlePart: "For LGBTQ+ students",
+    predicate: (r) => !!r.target_demographics?.includes("lgbtq"),
+    introHint: "Scholarships explicitly inclusive of and dedicated to LGBTQ+ students.",
+  },
+  "no-essay": {
+    titlePart: "No essay required",
+    predicate: (r) => r.essay_required === false,
+    introHint: "Programs that don't ask for a personal statement or supplemental essay — lower friction to apply.",
+  },
+  "rolling-deadline": {
+    titlePart: "Rolling deadline",
+    predicate: (r) => (r.deadline_type ?? "").toLowerCase() === "rolling",
+    introHint: "Scholarships that accept applications year-round on a rolling basis.",
   },
 };
 
@@ -236,7 +294,9 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
           // Eligibility fields — drive the personal-match badge on every card
           "eligible_countries, min_gpa, gpa_scale, min_ielts, min_toefl, " +
           // Citizenship feeds the HubFactsBlock open-to-international heuristic
-          "citizenship_requirements",
+          "citizenship_requirements, " +
+          // Drives the demographic / no-essay / rolling-deadline themes
+          "target_demographics, essay_required, deadline_type",
         )
         // Featured first, then by funding value — keeps the spotlights at the top
         .order("is_featured", { ascending: false })

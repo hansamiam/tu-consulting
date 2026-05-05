@@ -85,5 +85,16 @@
   <url><loc>https://topuni.org/scholarships/theme/full-funding</loc>           <changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://topuni.org/scholarships/theme/closing-soon</loc>           <changefreq>daily</changefreq>  <priority>0.7</priority></url>
   <url><loc>https://topuni.org/scholarships/theme/high-value</loc>             <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/theme/no-essay</loc>               <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/theme/rolling-deadline</loc>       <changefreq>weekly</changefreq><priority>0.6</priority></url>
+
+  <!-- ─── Programmatic SEO: theme — demographic ───────────────── -->
+  <url><loc>https://topuni.org/scholarships/theme/for-women</loc>              <changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://topuni.org/scholarships/theme/women-in-stem</loc>          <changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://topuni.org/scholarships/theme/first-generation</loc>       <changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://topuni.org/scholarships/theme/for-refugees</loc>           <changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://topuni.org/scholarships/theme/need-based</loc>             <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/theme/underrepresented</loc>       <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/theme/lgbtq</loc>                  <changefreq>weekly</changefreq><priority>0.6</priority></url>
 
 </urlset>
