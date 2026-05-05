@@ -670,7 +670,7 @@ const deadlineDisplay = (d: string | null) => {
  * "lower fit", "real shot", "safety", "more routes", "worth a scan". */
 const TIER = {
   strong_match: {
-    label: "Top match",
+    label: "Strong fit",
     dot: "bg-gold",
     text: "text-gold",
     textLight: "text-gold-dark dark:text-gold",
@@ -678,7 +678,7 @@ const TIER = {
     border: "border-gold/30",
   },
   competitive: {
-    label: "Within reach",
+    label: "Worth a closer look",
     dot: "bg-primary-bright",
     text: "text-primary-foreground/85",
     textLight: "text-primary dark:text-primary-bright",
@@ -686,7 +686,7 @@ const TIER = {
     border: "border-primary/25",
   },
   low_priority: {
-    label: "Aim high",
+    label: "Flagship",
     dot: "bg-muted-foreground/50",
     text: "text-muted-foreground",
     textLight: "text-muted-foreground",
@@ -1592,7 +1592,6 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
   onExpand: () => void;
 }) => {
   if (!s) return null;
-  const tier = TIER[s.priority];
   const dl = deadlineDisplay(s.application_deadline);
   const [dc1, dc2] = dialColors(s.priority);
   /* Why-it-fits text. Falls back to scoring reasons ONLY when at
@@ -1700,19 +1699,28 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-2">
-                  <span className={`h-1.5 w-1.5 rounded-full ${tier.dot}`} />
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold-dark">{tier.label}</p>
-                  <span className="text-muted-foreground/40 text-[10px]">·</span>
                   <SelectivityChip level={s.selectivity} />
                 </div>
-                <p className="text-muted-foreground text-xs">
-                  {s.eligibility === "eligible" ? "✓ You qualify on paper" : s.eligibility === "missing" ? "Near miss — close to threshold" : s.eligibility === "not_eligible" ? "Doesn't fit your profile" : "Likely fit"}
-                </p>
+                {/* Eligibility framing reworked in round 6 — earlier copy
+                    ('You qualify on paper' / 'Near miss' / 'Doesn't fit')
+                    over-claimed certainty from a thin profile. Show only
+                    the FACTUAL gaps when there are clear ones; otherwise
+                    say nothing. */}
+                {s.eligibility === "missing" && s.warnings.length > 0 && (
+                  <p className="text-muted-foreground text-xs">
+                    Watch: {s.warnings.slice(0, 1)[0]}
+                  </p>
+                )}
+                {s.eligibility === "not_eligible" && s.warnings.length > 0 && (
+                  <p className="text-destructive/85 text-xs">
+                    {s.warnings.slice(0, 1)[0]}
+                  </p>
+                )}
               </div>
-              <div className="flex items-baseline gap-1.5 shrink-0">
-                <span className="text-3xl font-bold tabular-nums leading-none text-foreground">{s.match}</span>
-                <span className="text-xs text-muted-foreground/60">/100</span>
-              </div>
+              {/* Score column removed — the row-card badge already carries
+                  the score, and stamping a big '55/100' on the detail
+                  panel hero just compounded the "weak score" perception
+                  when the cluster of rows trended toward 55-65. */}
             </div>
 
             <SheetTitle className="text-foreground font-heading text-[26px] leading-[1.12] tracking-[-0.02em] pt-1 text-left">{cleanScholarshipName(s.scholarship_name)}</SheetTitle>
@@ -3527,9 +3535,16 @@ const Discover = ({ language = "en" }: Props) => {
                           }
                           return (
                             <>
+                              {/* Section headers reworked in round 6 — earlier
+                                  copy ('Within reach' / 'Aim high') made
+                                  predictive claims from a thin profile and
+                                  set a flat-affect tone for highly-selective
+                                  rows. New copy describes WHAT the bucket
+                                  is (alignment with profile signals), not
+                                  WHETHER the user is likely to win. */}
                               {sections.strong.length > 0 && (
                                 <section>
-                                  <SectionHeader kicker="Top matches" title="Made for you" subtitle="Your numbers, story, and timing all click. Apply with confidence."
+                                  <SectionHeader kicker="Strong fit" title="These align with your profile" subtitle="Your stated nationality, level, and field overlap with the program's audience."
                                     count={sections.strong.length} accentClass="text-gold-dark dark:text-gold" />
                                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
                                     {sections.strong.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
@@ -3539,7 +3554,7 @@ const Discover = ({ language = "en" }: Props) => {
 
                               {sections.competitive.length > 0 && (
                                 <section>
-                                  <SectionHeader kicker="Within reach" title="Push for these" subtitle="Real chance with a sharp application."
+                                  <SectionHeader kicker="Worth a closer look" title="Selective programs that match your direction" subtitle="Some thresholds are tight — read the requirements before drafting."
                                     count={sections.competitive.length} accentClass="text-primary dark:text-primary-bright" />
                                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
                                     {sections.competitive.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
@@ -3549,9 +3564,9 @@ const Discover = ({ language = "en" }: Props) => {
 
                               {sections.stretch.length > 0 && (
                                 <section>
-                                  <SectionHeader kicker="Aim high" title="World-changers worth chasing" subtitle="Highly selective — but landing one rewrites the trajectory."
+                                  <SectionHeader kicker="Flagship programs" title="The rest of the catalog" subtitle="Highly selective on paper. People do win these every year."
                                     count={sections.stretch.length} accentClass="text-muted-foreground" />
-                                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr opacity-90">
+                                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
                                     {sections.stretch.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
                                   </div>
                                 </section>

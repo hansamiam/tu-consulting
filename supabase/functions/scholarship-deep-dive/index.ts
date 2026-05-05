@@ -31,7 +31,11 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const SCHEMA_VERSION = 3;
+// Bumped 4 — round 6 dropped odds.bucket display + thirty_day generation.
+// Old cached rows render fine (the client tolerates missing fields) but
+// they still carry the heavier 30-day payload; bumping forces regeneration
+// so the cache rebuilds against the trimmer prompt.
+const SCHEMA_VERSION = 4;
 const COST_ESTIMATE_USD = 0.005;
 
 interface InboundProfile {
@@ -93,16 +97,24 @@ const SCHEMA_DOC = `{
     "avoid": ["string array, 0-2 — things NOT to do given this student's profile"]
   },
   "odds": {
-    "bucket": "primary | competitive | aspirational",
-    "rationale": "string — 1-2 sentences citing the specific student-vs-typical-admit gap or alignment",
-    "typical_admit_profile": "string — one line on what the typical successful applicant looks like"
-  },
-  "thirty_day": {
-    "items": [
-      { "week": "integer 1-4", "action": "string — concrete deliverable for that week" }
-    ]
+    "bucket": "primary",
+    "rationale": "ignored — kept in schema for back-compat; the client no longer renders this",
+    "typical_admit_profile": "string — one line on what the typical successful applicant looks like (background, level, what they've already done)"
   }
 }`;
+
+// Note: the schema's 'odds.bucket' and 'odds.rationale' fields are
+// retained in the type for back-compat with cached rows but the client
+// no longer renders them — see ScholarshipDeepDive.tsx for the round-6
+// tone rework. The 'thirty_day' field was also removed from generation.
+// Tell the LLM to skip both.
+const STRIP_FIELDS_NOTE = `
+SKIP these fields entirely — output them as empty / placeholder values:
+  · odds.bucket: always emit "primary" (the client ignores it)
+  · odds.rationale: emit empty string ""
+  · thirty_day: do NOT include this key in your output at all
+Generate only: match.overall_score, match.breakdown, strategy.headline,
+strategy.points, strategy.avoid, odds.typical_admit_profile.`;
 
 /* Stable hash over the profile fields that meaningfully affect analysis.
    Skip cosmetic fields (fullName) so two students with same numbers share
@@ -292,12 +304,12 @@ QUALITY BAR — these are the rules generic AI breaks. We don't:
 - strategy.headline must be a real positioning angle — a thesis shape, a recommender pattern, a story type. Example GOOD: "Lead with the measurable impact of your social-enterprise project — show 6 months of traction, not aspirations." Example BAD: "Showcase your leadership and academic excellence."
 - strategy.points each must be a CONCRETE TACTICAL MOVE specific to this student's file. Example GOOD: "Cite your 3.8 GPA + IELTS 7.5 in the eligibility paragraph; the typical admit lands 3.7+/7.0+ so you exceed both thresholds." Example BAD: "Write a compelling personal statement that highlights your strengths."
 - strategy.avoid must name SPECIFIC failure patterns observed for this program type. Example GOOD: "Don't lead with your Goldman internship — the typical admit pool has 5+ similar profiles, it won't differentiate." Example BAD: "Don't be generic in your essays."
-- odds.rationale must cite the SPECIFIC student-vs-typical-admit gap or alignment. Example GOOD: "Your 3.6 GPA is 0.2 below the typical admit's 3.8 — competitive but you'll need essays to bridge that." Example BAD: "Your profile is competitive for this program."
 - match.breakdown must be specific. Example GOOD label/detail: "GPA threshold" / "Yours 3.7/4.0 vs required 3.5 — meets". Example BAD: "Academic profile" / "Your academic record is strong."
-- thirty_day.items each must name a concrete deliverable. Example GOOD: "Week 2: Order Cambridge prospectus + identify 2 recommenders who can speak to your robotics work specifically." Example BAD: "Week 2: Research the program."
 
 SCHEMA:
 ${SCHEMA_DOC}
+
+${STRIP_FIELDS_NOTE}
 
 STUDENT PROFILE:
 ${profileLines}

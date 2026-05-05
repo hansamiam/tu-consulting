@@ -55,8 +55,14 @@ export interface DeepDiveThirtyDay {
 export interface ScholarshipDeepDiveData {
   match: DeepDiveMatch;
   strategy: DeepDiveStrategy;
+  /** Odds bucket display was removed in round 6 (presumptuous tone given
+   *  a thin profile) — bucket and rationale stay in the type for back-
+   *  compat with cached rows but the client only renders typical_admit_profile. */
   odds: DeepDiveOdds;
-  thirty_day: DeepDiveThirtyDay;
+  /** Thirty-day plan generation was removed in round 6 (felt like fluff
+   *  without precise applicant-stage integration). Optional so old cached
+   *  rows still parse; new generations omit it entirely. */
+  thirty_day?: DeepDiveThirtyDay;
   /** Server metadata — included on every response. Optional in the
    *  pre-fetch / loading state. */
   _cached?: boolean;

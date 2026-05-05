@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Sparkles, Target, Lightbulb, AlertCircle, CheckCircle2,
+  Sparkles, Lightbulb, AlertCircle, CheckCircle2,
   MinusCircle, HelpCircle, Crown, ArrowRight, Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import type {
-  ScholarshipDeepDiveData, DeepDiveBreakdownStatus, DeepDiveOddsBucket,
+  ScholarshipDeepDiveData, DeepDiveBreakdownStatus,
 } from "@/types/scholarshipDeepDive";
 
 /**
@@ -54,26 +54,11 @@ const STATUS_META: Record<DeepDiveBreakdownStatus, { Icon: typeof CheckCircle2; 
   unknown: { Icon: HelpCircle,   cls: "text-muted-foreground" },
 };
 
-const ODDS_META: Record<DeepDiveOddsBucket, { en: string; ru: string; cls: string; ringCls: string }> = {
-  primary: {
-    en: "Top match",
-    ru: "Чёткое соответствие",
-    cls: "text-success",
-    ringCls: "ring-success/30 bg-success/5",
-  },
-  competitive: {
-    en: "Within reach",
-    ru: "Вполне достижимо",
-    cls: "text-gold-dark",
-    ringCls: "ring-gold/30 bg-gold/5",
-  },
-  aspirational: {
-    en: "Aim high",
-    ru: "Целься высоко",
-    cls: "text-amber-700 dark:text-amber-400",
-    ringCls: "ring-amber-300/40 bg-amber-50 dark:bg-amber-950/20",
-  },
-};
+// ODDS_META removed in round 6 along with the predictive-bucket label
+// it rendered. We don't have enough about a specific applicant to put
+// "Within reach" / "Aim high" on a scholarship confidently — and even
+// when accurate, the label sets a tone that flattens motivation. The
+// component now leans on factual breakdown items instead.
 
 export const ScholarshipDeepDive = ({
   scholarshipId, profile, language = "en", onBuildProfile,
@@ -174,13 +159,15 @@ export const ScholarshipDeepDive = ({
   // Error: silently hide. The static scholarship info below still renders.
   if (error || !data) return null;
 
-  // Back-compat: any cached deep-dive rows from before SCHEMA_VERSION 2 used
-  // the bucket value "stretch" — a banned word. Map it to "aspirational"
-  // until the backend cache flushes naturally on next regeneration.
-  const bucket = (data.odds.bucket as string) === "stretch" ? "aspirational" : data.odds.bucket;
-  const oddsMeta = ODDS_META[bucket as DeepDiveOddsBucket] ?? ODDS_META.competitive;
-  const overall = Math.max(0, Math.min(100, Math.round(data.match.overall_score)));
-  const overallColor = overall >= 75 ? "text-success" : overall >= 55 ? "text-gold-dark" : overall >= 35 ? "text-amber-700 dark:text-amber-400" : "text-destructive";
+  // The score + odds bucket ("Within reach" / "Top match" / "Aim high")
+  // were presumptuous — we don't have enough about a specific applicant
+  // to confidently predict odds, and labelling competitive scholarships
+  // as "Aim high" plays a debbie-downer note that ignores the fact that
+  // people DO win them every year. Removed in round 6. The score also
+  // clustered around 55-65 for most rows, weakening signal vs. noise.
+  // Keep the breakdown (factual met/miss/near per requirement) and the
+  // strategy points (actionable specifics). Drop the score number, the
+  // odds bucket label, and the 30-day plan.
 
   return (
     <motion.section
@@ -189,29 +176,16 @@ export const ScholarshipDeepDive = ({
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       className="not-prose mb-8 rounded-2xl border border-gold/30 bg-gradient-to-br from-gold/[0.06] via-card to-card overflow-hidden"
     >
-      <div className="absolute" />
-
-      {/* Header — overall score + odds bucket */}
-      <div className="px-5 sm:px-7 pt-6 pb-5 border-b border-border/60 flex items-baseline justify-between gap-4 flex-wrap">
-        <div className="min-w-0">
-          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-[0.18em] uppercase bg-gradient-to-r from-gold-dark to-gold text-primary mb-2">
-            <Crown className="w-3 h-3" />
-            {t("Personalized for you", "Персонально для вас")}
-          </div>
-          <h3 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground leading-tight">
-            {t("Your fit analysis", "Ваш разбор соответствия")}
-          </h3>
+      {/* Header — focused on what's specific to this applicant, not a
+          predictive label. */}
+      <div className="px-5 sm:px-7 pt-6 pb-5 border-b border-border/60">
+        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-[0.18em] uppercase bg-gradient-to-r from-gold-dark to-gold text-primary mb-2">
+          <Crown className="w-3 h-3" />
+          {t("Personalized for you", "Персонально для вас")}
         </div>
-        <div className="flex items-baseline gap-3 shrink-0">
-          <div className="flex items-baseline gap-1">
-            <span className={`font-heading font-bold tabular-nums leading-none text-3xl sm:text-4xl ${overallColor}`}>{overall}</span>
-            <span className="text-xs text-muted-foreground tabular-nums">/100</span>
-          </div>
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-[0.16em] uppercase ring-1 ${oddsMeta.cls} ${oddsMeta.ringCls}`}>
-            <Target className="w-3 h-3" />
-            {oddsMeta[language === "ru" ? "ru" : "en"]}
-          </span>
-        </div>
+        <h3 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground leading-tight">
+          {t("How this maps to your profile", "Как это соответствует вашему профилю")}
+        </h3>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-x-7 gap-y-6 px-5 sm:px-7 py-6">
@@ -236,18 +210,12 @@ export const ScholarshipDeepDive = ({
           </ul>
         </div>
 
-        {/* ── Odds + typical admit ─────────────────────────────────────── */}
+        {/* ── Typical admit profile (no odds prediction — see header note) ── */}
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">
-            {t("Realistic odds", "Реальные шансы")}
-          </p>
-          <p className="text-sm text-foreground/85 leading-relaxed mb-3">
-            {data.odds.rationale}
+            {t("Who tends to win this", "Кто обычно выигрывает")}
           </p>
           <div className="rounded-lg bg-muted/40 border border-border/60 p-3.5">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground mb-1">
-              {t("Typical successful applicant", "Типичный успешный кандидат")}
-            </p>
             <p className="text-[13px] text-foreground/85 leading-snug">{data.odds.typical_admit_profile}</p>
           </div>
         </div>
@@ -288,22 +256,10 @@ export const ScholarshipDeepDive = ({
           )}
         </div>
 
-        {/* ── 30-day plan ──────────────────────────────────────────────── */}
-        <div className="lg:col-span-2">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">
-            {t("Your 30-day plan for this scholarship", "Ваш 30-дневный план под эту стипендию")}
-          </p>
-          <div className="grid sm:grid-cols-2 gap-3">
-            {data.thirty_day.items.slice(0, 4).map((item, i) => (
-              <div key={i} className="rounded-lg border border-border bg-card p-4 min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gold-dark mb-2">
-                  {t(`Week ${item.week}`, `Неделя ${item.week}`)}
-                </p>
-                <p className="text-[13px] text-foreground/85 leading-relaxed break-words">{item.action}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* 30-day plan section removed (round 6) — when slapped onto every
+            scholarship without context for the applicant's actual stage,
+            it read as fluff. Re-introduce only when we have the precise
+            integration to make it a real value-add. */}
       </div>
     </motion.section>
   );
