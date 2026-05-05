@@ -132,6 +132,9 @@ const Pricing = ({ language = "en" }: PricingProps) => {
   const [loading, setLoading] = useState(false);
   const [foundingLeft, setFoundingLeft] = useState<number | null>(null);
   const [foundingCap, setFoundingCap] = useState<number>(100);
+  // Billing interval — annual saves ~23% vs month-to-month. Default
+  // monthly (lower commitment threshold, easier conversion).
+  const [billingInterval, setBillingInterval] = useState<"month" | "year">("month");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -155,7 +158,7 @@ const Pricing = ({ language = "en" }: PricingProps) => {
     }
     setLoading(true);
     const { data, error } = await supabase.functions.invoke("create-subscription-checkout", {
-      body: { tier: "founding", interval: "month" },
+      body: { tier: "founding", interval: billingInterval },
     });
     setLoading(false);
     if (error || !data?.url) {
@@ -226,18 +229,61 @@ const Pricing = ({ language = "en" }: PricingProps) => {
                 <h2 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight leading-tight">{t.tierTagline}</h2>
               </div>
 
-              {/* Price strip — single number, no crossed-out total,
-                  no "you save N%". The launch price stands on its
-                  own merits. */}
+              {/* Billing interval toggle — monthly vs annual. Annual is
+                  ~23% off ($360/yr ≈ $30/mo equiv vs $39/mo). Default
+                  monthly so the lower-threshold option is the no-click
+                  path; annual is one-click upgrade. */}
+              <div role="tablist" aria-label="Billing interval" className="inline-flex items-center bg-muted/40 border border-border/60 rounded-full p-1 mb-5 text-xs font-semibold">
+                <button
+                  role="tab"
+                  aria-selected={billingInterval === "month"}
+                  onClick={() => setBillingInterval("month")}
+                  className={`px-3.5 py-1.5 rounded-full transition-all ${billingInterval === "month" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  {language === "ru" ? "Ежемесячно" : "Monthly"}
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={billingInterval === "year"}
+                  onClick={() => setBillingInterval("year")}
+                  className={`px-3.5 py-1.5 rounded-full transition-all inline-flex items-center gap-1.5 ${billingInterval === "year" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  {language === "ru" ? "Год" : "Annual"}
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold tracking-wide ${billingInterval === "year" ? "bg-gold/20 text-gold-dark" : "bg-foreground/[0.06] text-foreground/70"}`}>
+                    {language === "ru" ? "−23%" : "Save 23%"}
+                  </span>
+                </button>
+              </div>
+
+              {/* Price strip — swaps based on interval. Annual shows the
+                  per-month equivalent prominently so the price doesn't
+                  spike visually + adds a small "$360 billed yearly"
+                  hint underneath. */}
               <div className="border-t border-b border-border/60 py-5 mb-6">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-1.5">{t.foundingPriceLabel}</p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-5xl sm:text-6xl font-bold text-foreground tabular-nums leading-none">$39</span>
-                  <span className="text-muted-foreground">{t.perMonth}</span>
-                </div>
-                <p className="text-[12px] text-muted-foreground mt-3 leading-relaxed">
-                  {t.publicNote} {t.publicNoteRest}
-                </p>
+                {billingInterval === "month" ? (
+                  <>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-5xl sm:text-6xl font-bold text-foreground tabular-nums leading-none">$39</span>
+                      <span className="text-muted-foreground">{t.perMonth}</span>
+                    </div>
+                    <p className="text-[12px] text-muted-foreground mt-3 leading-relaxed">
+                      {t.publicNote} {t.publicNoteRest}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-5xl sm:text-6xl font-bold text-foreground tabular-nums leading-none">$30</span>
+                      <span className="text-muted-foreground">{t.perMonth}</span>
+                    </div>
+                    <p className="text-[12px] text-muted-foreground mt-3 leading-relaxed">
+                      {language === "ru"
+                        ? "$360 в год — экономия $108 vs ежемесячная оплата. Отмена в любой момент."
+                        : "$360 billed yearly — save $108 vs paying monthly. Cancel anytime."}
+                    </p>
+                  </>
+                )}
               </div>
 
               {/* Inclusions — clean checklist, no per-line dollar
@@ -299,9 +345,11 @@ const Pricing = ({ language = "en" }: PricingProps) => {
               </h3>
               <div className="grid sm:grid-cols-3 gap-3 sm:gap-4 text-center">
                 <RoiTile
-                  label={language === "ru" ? "Стоимость года членства" : "One year of membership"}
-                  value="$468"
-                  hint={language === "ru" ? "$39 × 12" : "$39 × 12"}
+                  label={language === "ru" ? "Год членства" : "One year of membership"}
+                  value={billingInterval === "year" ? "$360" : "$468"}
+                  hint={billingInterval === "year"
+                    ? (language === "ru" ? "Годовая оплата" : "Billed annually")
+                    : (language === "ru" ? "$39 × 12" : "$39 × 12")}
                 />
                 <RoiTile
                   label={language === "ru" ? "Средняя стипендия" : "Average award won"}
@@ -311,8 +359,10 @@ const Pricing = ({ language = "en" }: PricingProps) => {
                 />
                 <RoiTile
                   label={language === "ru" ? "Возврат при одном выигрыше" : "Return on one win"}
-                  value="53×"
-                  hint={language === "ru" ? "Каждый доллар возвращается 53-кратно" : "Each $1 comes back as $53"}
+                  value={billingInterval === "year" ? "69×" : "53×"}
+                  hint={language === "ru"
+                    ? `Каждый $1 возвращается ${billingInterval === "year" ? "69-кратно" : "53-кратно"}`
+                    : `Each $1 comes back as $${billingInterval === "year" ? "69" : "53"}`}
                   accent
                 />
               </div>
