@@ -696,8 +696,18 @@ serve(async (req) => {
         updatedCount++;
         await supa.from("scholarships").update(upsertPayload).eq("scholarship_id", existingId);
       } else {
+        // The 20260505060000 migration added a UNIQUE index on canonical_key.
+        // Use upsert with onConflict so concurrent scrapes that race past our
+        // SELECT-then-INSERT don't blow up on the constraint. The trigger
+        // computes canonical_key on insert, so we don't need to pass it.
+        const { error: insertErr } = await supa
+          .from("scholarships")
+          .upsert(upsertPayload, { onConflict: "canonical_key", ignoreDuplicates: false });
+        if (insertErr) {
+          console.warn("[scrape-source] insert/upsert failed", insertErr.message, "name=", s.scholarship_name);
+          continue;
+        }
         newCount++;
-        await supa.from("scholarships").insert(upsertPayload);
       }
     } else {
       needsReview++;
