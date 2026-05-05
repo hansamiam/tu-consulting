@@ -2328,7 +2328,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                     briefMarkdown: soFar,
                     profile: {
                       fullName: profile.fullName,
-                      nationality: profile.country,
+                      nationality: profile.nationality,
                       major: profile.major,
                       field: profile.major,
                       targetCountries: profile.targetCountries,

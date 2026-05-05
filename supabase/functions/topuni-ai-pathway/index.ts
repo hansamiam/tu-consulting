@@ -663,6 +663,7 @@ ${dbContext}
 
 STUDENT PROFILE:
 - Name: ${profile.fullName}
+- Nationality: ${profile.nationality || 'Not specified'}
 - GPA: ${profile.gpa || 'Not provided'}
 - IELTS: ${profile.ielts || 'Not taken'}
 - SAT: ${profile.sat || 'Not taken'}
