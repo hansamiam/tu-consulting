@@ -39,17 +39,27 @@ export function cleanProvider(raw: string | null | undefined): string | null {
   if (!raw) return null;
   let p = raw.trim();
   if (!p || PROVIDER_JUNK.test(p)) return null;
-  for (const sep of [" | ", "|", " — ", " – ", " - "]) {
+
+  // Strip trailing " <sep> <junk>" tails. Catches the LLM wedging a
+  // country list / "Various (...)" / apply-cta after the real provider
+  // ("Mastercard Foundation · Various (primarily Africa...)").
+  for (const sep of [" · ", " | ", "|", " — ", " – ", " - "]) {
     const idx = p.indexOf(sep);
-    if (idx > 8 && idx < p.length - 4) {
-      const right = p.slice(idx + sep.length).trim().toLowerCase();
-      if (/(apply|home|bulletin|sign up|admissions|website|official|2025|2026|2027)/.test(right)) {
+    if (idx > 8 && idx < p.length - 1) {
+      const rightRaw = p.slice(idx + sep.length).trim();
+      const right = rightRaw.toLowerCase();
+      const isJunk =
+        PROVIDER_JUNK.test(rightRaw) ||
+        /^(various|multiple|several)\b/i.test(rightRaw) ||
+        /(apply|home|bulletin|sign up|admissions|website|official|primarily|includes|institutions in|across|throughout|countries|countries\.|\b\d{4}\b)/.test(right);
+      if (isJunk) {
         p = p.slice(0, idx).trim();
         break;
       }
     }
   }
   p = p.replace(/\s*\([^)]*\)\s*$/, "").trim();
+  if (PROVIDER_JUNK.test(p)) return null;
   p = p.replace(/^(The\s+)?(Trustees|Board|Council|Office)\s+of\s+(the\s+)?/i, "");
   if (p.length > 60) p = p.slice(0, 58).trimEnd() + "…";
   return p;

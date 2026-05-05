@@ -135,17 +135,38 @@ export const cleanProvider = (raw: string | null | undefined): string | null => 
   if (!raw) return null;
   let p = raw.trim();
   if (!p || PROVIDER_JUNK.test(p)) return null;
-  for (const sep of [" | ", "|", " — ", " – ", " - "]) {
+
+  // Strip ANY trailing " <sep> <junk>" tail. Real cases that this
+  // catches: "Mastercard Foundation · Various (primarily Africa...)",
+  // "DAAD | Apply now", "Schwarzman Scholars — Bulletin 2026". We
+  // walk the seps in order of strength so " · " is handled even when
+  // the legitimate provider also contains a hyphen.
+  for (const sep of [" · ", " | ", "|", " — ", " – ", " - "]) {
     const idx = p.indexOf(sep);
-    if (idx > 8 && idx < p.length - 4) {
-      const right = p.slice(idx + sep.length).trim().toLowerCase();
-      if (/(apply|home|bulletin|sign up|admissions|website|official|2025|2026|2027)/.test(right)) {
+    if (idx > 8 && idx < p.length - 1) {
+      const rightRaw = p.slice(idx + sep.length).trim();
+      const right = rightRaw.toLowerCase();
+      const isJunk =
+        PROVIDER_JUNK.test(rightRaw) ||
+        /^(various|multiple|several)\b/i.test(rightRaw) ||
+        /(apply|home|bulletin|sign up|admissions|website|official|primarily|includes|institutions in|across|throughout|countries|countries\.|\b\d{4}\b)/.test(right);
+      if (isJunk) {
         p = p.slice(0, idx).trim();
         break;
       }
     }
   }
+
+  // Strip trailing parentheticals — they're almost always location
+  // lists, "(apply now)", or commentary that doesn't belong in the
+  // provider name proper.
   p = p.replace(/\s*\([^)]*\)\s*$/, "").trim();
+
+  // After tail-stripping, re-check the junk gate. "Mastercard Foundation"
+  // alone is fine, but if all that survived is "Various" or similar
+  // we should null the whole thing.
+  if (PROVIDER_JUNK.test(p)) return null;
+
   p = p.replace(/^(The\s+)?(Trustees|Board|Council|Office)\s+of\s+(the\s+)?/i, "");
   if (p.length > 60) p = p.slice(0, 58).trimEnd() + "…";
   return p;

@@ -862,6 +862,96 @@ const NavyBackdrop = () => (
  * @/lib/scholarshipFields and are imported above. Pure functions,
  * shared with ScholarshipDetail and edge-function OG cards. */
 
+/** Build a 1-2 sentence natural-sounding summary from structured row
+ *  data. Used as the fallback editorial line on every grid tile when
+ *  the soft `why_this_fits` field hasn't been enriched yet — guarantees
+ *  every tile reads as a program description, not as an empty box or
+ *  a chained tag list. The helper picks the most informative facts
+ *  (coverage, degree, field, demographic, country, provider) and
+ *  weaves them into a real sentence. */
+function buildScholarshipBlurb(input: {
+  name: string;
+  provider: string | null;
+  country: string | null;
+  coverage: string | null | undefined;
+  levels: string[] | null;
+  fields: string[] | null;
+  demographic: string | undefined;
+  isFullRide: boolean;
+}): string | null {
+  const { provider, country, coverage, levels, fields, demographic, isFullRide } = input;
+
+  // Funding-shape phrase. Reads natural ("a full-ride") and lets
+  // article-fronted constructions ("a stipend program") flow.
+  const fundingPhrase = (() => {
+    if (isFullRide) return "a full-ride";
+    if (coverage === "tuition_only") return "a tuition-covering";
+    if (coverage === "stipend") return "a stipend";
+    if (coverage === "partial") return "a partial-funding";
+    if (coverage === "travel") return "a travel-grant";
+    return null;
+  })();
+
+  // Degree phrase. Multi-level rows ("undergraduate + master's") get
+  // a softer "open to undergraduate and master's applicants" form.
+  const degreePhrase = (() => {
+    if (!levels || levels.length === 0) return null;
+    const labelOne = (raw: string) => {
+      const k = raw.toLowerCase();
+      if (k.includes("phd") || k.includes("doctor")) return "PhD";
+      if (k.includes("master")) return "master's";
+      if (k.includes("bachelor") || k.includes("undergrad")) return "bachelor's";
+      if (k.includes("postdoc")) return "postdoc";
+      return raw.toLowerCase();
+    };
+    const cleaned = Array.from(new Set(levels.map(labelOne).filter(Boolean)));
+    if (cleaned.length === 1) return cleaned[0];
+    if (cleaned.length === 2) return `${cleaned[0]} and ${cleaned[1]}`;
+    return `${cleaned.slice(0, -1).join(", ")}, and ${cleaned[cleaned.length - 1]}`;
+  })();
+
+  // Field phrase — first 1-2 entries.
+  const fieldPhrase = (() => {
+    if (!fields || fields.length === 0) return null;
+    const cleaned = fields.filter((f) => f && f.trim()).slice(0, 2);
+    if (cleaned.length === 0) return null;
+    if (cleaned.length === 1) return cleaned[0].toLowerCase();
+    return `${cleaned[0].toLowerCase()} and ${cleaned[1].toLowerCase()}`;
+  })();
+
+  // Demographic phrase — humanized + lowercased.
+  const demoPhrase = demographic ? humanizeDemographic(demographic).toLowerCase() : null;
+
+  // Sentence 1: lead with funding shape + degree, narrow to field if
+  // available. ("A full-ride master's program in computer science")
+  const lead = (() => {
+    const parts: string[] = [];
+    if (fundingPhrase && degreePhrase) parts.push(`${fundingPhrase} ${degreePhrase} program`);
+    else if (fundingPhrase) parts.push(`${fundingPhrase} program`);
+    else if (degreePhrase) parts.push(`A ${degreePhrase} program`);
+    else parts.push("A scholarship program");
+    if (fieldPhrase) parts.push(`in ${fieldPhrase}`);
+    if (country) parts.push(`hosted in ${country}`);
+    return parts.join(" ");
+  })();
+
+  // Sentence 2: provider + demographic if either are available, else
+  // omit. We keep this short — every extra clause raises the chance
+  // of feeling templated.
+  const second = (() => {
+    const bits: string[] = [];
+    if (provider) bits.push(`Funded by ${provider}`);
+    if (demoPhrase) {
+      bits.push(provider ? `it specifically supports ${demoPhrase} applicants` : `Specifically supports ${demoPhrase} applicants`);
+    }
+    return bits.length > 0 ? bits.join(", ") : null;
+  })();
+
+  if (lead && second) return `${lead.charAt(0).toUpperCase() + lead.slice(1)}. ${second}`;
+  if (lead) return lead.charAt(0).toUpperCase() + lead.slice(1);
+  return null;
+}
+
 /** Score a row by how filled-in it is. Used to pick the "best" row
  *  among duplicates and to hide rows that are too sparse to render
  *  as anything more than a blank card. */
@@ -1086,26 +1176,21 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
       <div className={`w-1 shrink-0 bg-gradient-to-b ${accent} ${isFullRide ? "ring-1 ring-inset ring-gold/30" : ""}`} aria-hidden />
 
       <div className="flex-1 grid grid-cols-[52px,minmax(0,1fr),auto] sm:grid-cols-[52px,minmax(0,3fr),minmax(0,1.4fr),minmax(0,0.8fr),auto] items-center gap-4 px-4 py-3.5 min-w-0">
-        {/* Country-art badge. Score number ONLY shown when score is
-            meaningfully strong (≥70 with eligibility eligible/likely).
-            Mid-range scores (40-69) cluster across most rows and made
-            the number-on-every-card pattern feel weak — better to let
-            those land as just the country circle. Full-ride rows
-            still get the gold corner pin either way. */}
+        {/* Country-art badge. Match score is computed internally and
+            drives ranking + the strong/aligned/stretch bucketing, but
+            the numeric value isn't surfaced to students — we don't
+            want the product reading as a probability quote on a thin
+            profile. Hover breakdown stays available for users who
+            want the per-criteria why. Full-ride rows still get the
+            gold corner pin. */}
         {(() => {
-          const showScore = hasRealScore && s.match >= 70 && (s.eligibility === "eligible" || s.eligibility === "likely");
           const badge = (
             <div
               className={`relative flex items-center justify-center w-11 h-11 rounded-full overflow-hidden bg-gradient-to-br ${accent} ${isFullRide ? "ring-2 ring-gold/40" : "ring-1 ring-border/30"}`}
-              aria-label={showScore ? `Match score: ${s.match} of 100` : (s.host_country || "Scholarship")}
+              aria-label={s.host_country || "Scholarship"}
             >
               <CountryArt country={s.host_country} className="absolute inset-0 h-full w-full opacity-45 text-white p-1.5" />
               <span className="absolute inset-0 bg-black/15" />
-              {showScore && (
-                <span className="relative inline-flex items-center justify-center min-w-7 h-7 px-1.5 rounded-full bg-card shadow-sm">
-                  <span className="font-heading text-[13px] font-bold tabular-nums leading-none text-foreground">{s.match}</span>
-                </span>
-              )}
               {isFullRide && (
                 <span className="absolute -top-1 -right-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-gold border border-card" title="Full ride">
                   <Award className="h-2.5 w-2.5 text-primary" />
@@ -1113,12 +1198,7 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
               )}
             </div>
           );
-          // Hover breakdown stays available even when score isn't shown
-          // — clicking the badge still surfaces the per-criteria gaps.
           if (!hasRealScore) return badge;
-          // For mid-range non-strong rows we keep the badge clickable
-          // for the breakdown, but the visible badge is silent (no
-          // number).
           return (
             <HoverCard openDelay={120} closeDelay={80}>
               <HoverCardTrigger asChild>
@@ -1171,6 +1251,15 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
                 {s.target_demographics.length > 2 && ` +${s.target_demographics.length - 2}`}
               </span>
             )}
+            {/* Prestigious tag — positive framing for very-selective
+                programs (replaces the "Competitive" filter we just
+                retired). Surfaces selectivity as something to aspire
+                toward rather than gatekeep against. */}
+            {(s.selectivity === "very_high" || s.selectivity === "high") && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-primary/[0.08] text-primary dark:text-primary-bright border border-primary/20 shrink-0" title={s.selectivity === "very_high" ? "Highly selective program — fewer than 2-5% are admitted" : "Selective program — competitive but achievable"}>
+                Prestigious
+              </span>
+            )}
             {outcomes && outcomes.applied >= 3 && (
               <span
                 className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 shrink-0 tabular-nums"
@@ -1217,47 +1306,58 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
           )}
         </div>
 
-        {/* Actions — bookmark stays always-visible (it's a stateful affordance);
-            compare + more reveal on hover. Premium-tool pattern. */}
-        <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-          <button
-            onClick={onToggleCompare}
-            aria-label="Add to compare"
-            title="Add to compare"
-            className={`p-2 rounded-md transition-all ${isComparing ? "text-gold-dark bg-gold/10 opacity-100" : "text-muted-foreground hover:text-foreground hover:bg-muted/60 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100"}`}
-          >
-            <GitCompare className="h-3.5 w-3.5" />
-          </button>
+        {/* Actions — three clear affordances. Compare retired (lower-
+            priority feature, lived in this slot at the cost of icon
+            legibility). Open-details retired from dropdown — clicking
+            the row body already opens the detail sheet, that menu item
+            was duplicate. */}
+        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+          {/* Save — heart-bookmark, always visible. Gold when saved. */}
           <button
             onClick={onBookmark}
-            aria-label={isBookmarked ? "Remove from shortlist" : "Save to shortlist"}
-            className={`p-2 rounded-md transition-all ${isBookmarked ? "text-gold-dark hover:bg-muted/60 opacity-100" : "text-muted-foreground hover:text-gold-dark hover:bg-muted/60 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100"}`}
+            aria-label={isBookmarked ? "Remove from saved" : "Save to your pipeline"}
+            title={isBookmarked ? "Saved · click to remove" : "Save"}
+            className={`inline-flex items-center justify-center h-8 w-8 rounded-md transition-colors ${
+              isBookmarked
+                ? "text-gold-dark bg-gold/10 hover:bg-gold/15"
+                : "text-muted-foreground hover:text-gold-dark hover:bg-muted/60"
+            }`}
           >
-            {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5 text-gold-dark" /> : <Bookmark className="h-3.5 w-3.5" />}
+            {isBookmarked ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
           </button>
+
+          {/* Open official site — promoted from the dropdown to a
+              first-class button so it's a clear single-click and the
+              icon (external-link) is unambiguous. Only renders if we
+              actually have a URL. */}
+          {s.official_url && (
+            <a
+              href={s.official_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open official application page"
+              title="Open official application page"
+              className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          )}
+
+          {/* More — keeps Hide as a power-user dismiss without
+              cluttering the visible row. */}
           <DropdownMenu>
             <DropdownMenuTrigger
               onClick={(e) => e.stopPropagation()}
-              className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
               aria-label="More actions"
+              title="More"
+              className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors data-[state=open]:bg-muted/60"
             >
-              <MoreHorizontal className="h-3.5 w-3.5" />
+              <MoreHorizontal className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelect(); }} className="text-xs">
-                <FileText className="h-3 w-3 mr-2" /> Open details
-              </DropdownMenuItem>
-              {s.official_url && (
-                <DropdownMenuItem asChild>
-                  <a href={s.official_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs cursor-pointer">
-                    <ExternalLink className="h-3 w-3 mr-2" /> Official page
-                  </a>
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onToggleHide} className="text-xs">
                 {isHidden ? <Eye className="h-3 w-3 mr-2" /> : <EyeOff className="h-3 w-3 mr-2" />}
-                {isHidden ? "Show again" : "Hide from list"}
+                {isHidden ? "Show again" : "Not relevant — hide"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -1348,6 +1448,14 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
               </span>
             </>
           )}
+          {(s.selectivity === "very_high" || s.selectivity === "high") && (
+            <>
+              <span className="text-white/40 shrink-0">·</span>
+              <span className="inline-flex items-center text-white/95 drop-shadow-sm shrink-0">
+                Prestigious
+              </span>
+            </>
+          )}
         </span>
       </div>
 
@@ -1384,49 +1492,29 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           </div>
         )}
 
-        {/* Why-it-fits — italic single-paragraph editorial line. Same data,
-            slightly more breathing room. line-clamp-3 instead of 2 so we
-            stop chopping mid-thought.
-            When the row has no real why_this_fits / meatyReasons, build
-            a factual one-liner from structured fields (audience + level
-            + funding shape) so the card never looks empty even before
-            the enrich cron has filled the soft fields. */}
+        {/* Summary — every tile gets 1-2 sentences, never empty. Real
+            editorial line first (`why_this_fits` from enrichment, or
+            meaty match-reason fallback). When neither's available
+            yet, buildScholarshipBlurb constructs a natural-sounding
+            sentence from the structured data so the tile reads like a
+            program description, not a chained tag list. */}
         {(() => {
-          if (why) {
-            return (
-              <p className="text-[12px] text-foreground/70 leading-relaxed line-clamp-3 flex-1 italic">
-                {why.replace(/\.+$/, "")}.
-              </p>
-            );
-          }
-          // Build a sensible factual fallback. Pieces:
-          //   · level (Master's / PhD / Bachelor's)
-          //   · field (humanized first target_fields entry)
-          //   · funding shape (Full ride / Tuition covered / Stipend)
-          //   · audience demographic if set
-          const level = (s.target_degree_level && s.target_degree_level.length > 0)
-            ? s.target_degree_level.slice(0, 2).map(humanizeDegree).join(" + ")
-            : null;
-          const fld = displayField(s.target_fields);
-          const cover = COVERAGE_LABEL[s.coverage_type] ?? null;
-          const demo = (s.target_demographics && s.target_demographics.length > 0)
-            ? humanizeDemographic(s.target_demographics[0])
-            : null;
-          const parts: string[] = [];
-          if (cover) parts.push(cover);
-          if (level) parts.push(`${level} applicants`);
-          if (fld) parts.push(`focused on ${fld}`);
-          if (demo) parts.push(`for ${demo.toLowerCase()}`);
-          if (s.host_country) parts.push(`in ${shortCountry(s.host_country)}`);
-          const fallback = parts.length > 0 ? parts.join(" · ") : null;
-          if (fallback) {
-            return (
-              <p className="text-[12px] text-foreground/55 leading-relaxed line-clamp-3 flex-1">
-                {fallback}.
-              </p>
-            );
-          }
-          return <div className="flex-1" aria-hidden />;
+          const blurb = why || buildScholarshipBlurb({
+            name: cleanScholarshipName(s.scholarship_name),
+            provider: cleanProvider(s.provider_name),
+            country: s.host_country,
+            coverage: s.coverage_type,
+            levels: s.target_degree_level,
+            fields: s.target_fields,
+            demographic: s.target_demographics?.[0],
+            isFullRide,
+          });
+          if (!blurb) return <div className="flex-1" aria-hidden />;
+          return (
+            <p className={`text-[12px] leading-relaxed line-clamp-3 flex-1 ${why ? "text-foreground/70 italic" : "text-foreground/65"}`}>
+              {blurb.replace(/\.+$/, "")}.
+            </p>
+          );
         })()}
 
         {/* Footer meta — deadline + field. Compact, scannable. Verified
@@ -1454,41 +1542,11 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
               {outcomes.applied}{outcomes.accepted > 0 ? `·${outcomes.accepted}w` : ""}
             </span>
           )}
-          {hasRealScore && s.match >= 70 && (s.eligibility === "eligible" || s.eligibility === "likely") && (
-            <>
-              <span className={`text-muted-foreground/30 ${outcomes && outcomes.applied >= 3 ? "" : "ml-auto"}`}>·</span>
-              <HoverCard openDelay={120} closeDelay={80}>
-                <HoverCardTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-baseline gap-0.5 cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-gold rounded shrink-0"
-                    aria-label={`Match score: ${s.match} of 100. Hover for breakdown.`}
-                  >
-                    <span className={`tabular-nums font-bold leading-none ${tier.textLight}`}>{s.match}</span>
-                    <span className="text-[9px] text-muted-foreground/60">/100</span>
-                  </button>
-                </HoverCardTrigger>
-                <HoverCardContent side="left" align="start" className="p-0 border-0 shadow-none bg-transparent w-auto">
-                  <MatchScoreBreakdown
-                    scholarshipId={s.scholarship_id}
-                    fallback={{
-                      match: s.match,
-                      application_deadline: s.application_deadline,
-                      estimated_total_value_usd: s.estimated_total_value_usd,
-                      last_verified_at: s.last_verified_at,
-                      verification_status: s.verification_status,
-                      passes_eligibility: s.eligibility === "eligible" || s.eligibility === "likely",
-                      why_this_fits: s.why_this_fits,
-                      reasons: s.reasons,
-                      warnings: s.warnings,
-                    }}
-                    compact
-                  />
-                </HoverCardContent>
-              </HoverCard>
-            </>
-          )}
+          {/* Score chip + visible /100 retired — match score still
+              drives ranking + the strong/aligned/stretch bucketing
+              but the numeric value isn't quoted to students. The
+              breakdown lives on the DetailSheet for users who want
+              the per-criteria why. */}
         </div>
 
         {/* Status (only when set — otherwise we skip the row entirely) */}
@@ -1560,6 +1618,11 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
   // it dominated the panel before. Strip rings off inactive chips so the
   // panel reads premium-quiet rather than crowded-busy. Increased the
   // section gap from 4 → 6 — more breathing room is the whole point.
+  // Competitiveness filter retired — gatekeeping students with
+  // "this is too competitive for you, don't bother" runs against the
+  // product's open-doors thesis. Selectivity still drives ranking +
+  // lights up a "Prestigious" tag on cards for the very-selective
+  // programs, but it's no longer something the user filters AGAINST.
   const segmented: { label: string; key: keyof FilterState; opts: { v: string; l: string }[] }[] = [
     { label: "Coverage", key: "coverage", opts: [
       { v: "all", l: "All" },
@@ -1572,12 +1635,6 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
       { v: "undergraduate", l: "Bachelor\'s" },
       { v: "master\'s", l: "Master\'s" },
       { v: "PhD", l: "PhD" },
-    ] },
-    { label: "Competitiveness", key: "selectivity", opts: [
-      { v: "all", l: "Any" },
-      { v: "low", l: "Accessible" },
-      { v: "medium", l: "Moderate" },
-      { v: "high", l: "Competitive" },
     ] },
   ];
   const demographicOpts = [
@@ -3886,7 +3943,9 @@ const Discover = ({ language = "en" }: Props) => {
                  * for the typical comparison. */
                 const dash = (v: unknown) => !v || (typeof v === "object" && v !== null && "props" in (v as { props?: unknown }) && ((v as { props?: { children?: unknown } }).props?.children === "—"));
                 const rows: { label: string; render: (s: Scored) => React.ReactNode; isEmpty?: (s: Scored) => boolean }[] = [
-                  { label: "Match score", render: s => <span className="font-bold text-lg tabular-nums text-foreground">{s.match}<span className="text-muted-foreground/60 text-sm font-normal">/100</span></span> },
+                  // Match score row retired — fit drives ranking under the
+                  // hood, but quoting a /100 number to students reads as a
+                  // probability claim on a thin profile.
                   // Tier dropped — overlapped Selectivity. Selectivity is
                   // an objective rating from the scholarship's data; Tier
                   // was a derived label off the same data.
@@ -4018,8 +4077,7 @@ const Discover = ({ language = "en" }: Props) => {
                       <p className="font-heading font-bold text-sm text-foreground line-clamp-1">{s.scholarship_name}</p>
                       <p className="text-xs text-muted-foreground truncate mt-0.5">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
                       <div className="flex items-center gap-2 mt-2">
-                        <span className="text-[11px] font-bold text-foreground bg-muted px-2 py-0.5 rounded-md tabular-nums">{s.match} match</span>
-                        <span className={`text-[11px] font-medium ${dl.cls}`}>· {dl.text}</span>
+                        <span className={`text-[11px] font-medium ${dl.cls}`}>{dl.text}</span>
                       </div>
                     </div>
                     <button onClick={e => { e.stopPropagation(); toggleBookmark(s.scholarship_id); }} className="text-muted-foreground hover:text-destructive p-1 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">

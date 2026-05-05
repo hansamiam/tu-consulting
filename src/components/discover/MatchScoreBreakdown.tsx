@@ -214,9 +214,11 @@ export const MatchScoreBreakdown = ({
       >
         <div className="flex items-baseline justify-between gap-3 mb-2">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Match score</p>
-            <p className="font-heading text-2xl font-bold tabular-nums leading-none text-foreground">
-              {fallback.match}<span className="text-sm text-muted-foreground/60 font-normal">/100</span>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Why this fits</p>
+            <p className="font-heading text-base font-semibold leading-tight text-foreground mt-0.5">
+              {fallback.passes_eligibility
+                ? "Your profile clears the hard requirements."
+                : "One or more hard requirements aren't a clean match yet."}
             </p>
           </div>
           {loading && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
