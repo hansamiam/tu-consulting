@@ -17,7 +17,7 @@ import {
   ArrowRight, Sparkles, CheckCircle2, AlertTriangle, ExternalLink,
   BookmarkCheck, Bookmark, ChevronLeft, ChevronDown, Zap, RefreshCw,
   Lightbulb, X, SlidersHorizontal, Filter, Search, Trophy,
-  Target, Flame, Users, FileText, Languages,
+  Target, Flame, Users, FileText, Languages, Loader2,
   CreditCard, AlertOctagon, AlertCircle, UserCheck, ShieldAlert, MinusCircle, HelpCircle,
   LayoutGrid, List, EyeOff, Eye, Columns3, Circle, MoreHorizontal, GitCompare,
   Gem, DollarSign, Crown, Award, Compass, Layers,
