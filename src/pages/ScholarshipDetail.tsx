@@ -38,6 +38,7 @@ import {
   cleanProvider,
   compactAward,
   displayField,
+  humanizeDegreeLabel,
 } from "@/lib/scholarshipFields";
 import { shortCountry } from "@/lib/countryAccent";
 
@@ -374,7 +375,7 @@ const ScholarshipDetail = () => {
                   : "Stipend"}
               </Chip>
             )}
-            {(s.target_degree_level ?? []).slice(0, 3).map((d) => <Chip key={d}>{d}</Chip>)}
+            {(s.target_degree_level ?? []).slice(0, 3).map((d) => <Chip key={d}>{humanizeDegreeLabel(d)}</Chip>)}
             {(() => {
               const fld = displayField(s.target_fields);
               return fld ? <Chip key="field">{fld}</Chip> : null;
@@ -501,7 +502,7 @@ const ScholarshipDetail = () => {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <Fact icon={<Wallet />} label="Award" value={s.award_amount_text || compactAward(s) || (s.estimated_total_value_usd ? `~$${Math.round(s.estimated_total_value_usd / 1000)}K total` : "—")} />
           <Fact icon={<Calendar />} label="Deadline" value={s.application_deadline ?? (s.deadline_type ?? "varies")} />
-          <Fact icon={<GraduationCap />} label="Levels" value={(s.target_degree_level ?? []).join(", ") || "any"} />
+          <Fact icon={<GraduationCap />} label="Levels" value={(s.target_degree_level ?? []).map(humanizeDegreeLabel).join(", ") || "any"} />
           <Fact icon={<Globe />} label="Citizenship" value={s.citizenship_requirements ? truncate(s.citizenship_requirements, 60) : "any"} />
         </div>
 

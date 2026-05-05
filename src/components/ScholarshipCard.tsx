@@ -92,7 +92,7 @@ const COPY = {
     featured: "FEATURED",
     viewDetails: "View details",
     share: "Share",
-    levels: { bachelor: "Bachelor", master: "Master", phd: "PhD", postdoc: "Postdoc" },
+    levels: { bachelor: "Bachelor's", bachelors: "Bachelor's", master: "Master's", masters: "Master's", phd: "PhD", doctorate: "Doctorate", postdoc: "Postdoc", undergraduate: "Undergraduate", graduate: "Graduate", diploma: "Diploma", certificate: "Certificate" },
     tracking: (n: number) => `${n} tracking`,
     hot: "HOT",
   },
@@ -124,7 +124,7 @@ const COPY = {
     featured: "ИЗБРАННОЕ",
     viewDetails: "Подробнее",
     share: "Поделиться",
-    levels: { bachelor: "Бакалавр", master: "Магистр", phd: "PhD", postdoc: "Постдок" },
+    levels: { bachelor: "Бакалавр", bachelors: "Бакалавр", master: "Магистр", masters: "Магистр", phd: "PhD", doctorate: "Докторантура", postdoc: "Постдок", undergraduate: "Бакалавриат", graduate: "Магистратура", diploma: "Диплом", certificate: "Сертификат" },
     tracking: (n: number) => {
       const last = n % 10, lastTwo = n % 100;
       if (lastTwo >= 11 && lastTwo <= 14) return `${n} студентов отслеживают`;

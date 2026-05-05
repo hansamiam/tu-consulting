@@ -615,6 +615,31 @@ const humanize = (s: string | null | undefined): string => {
     .join(" ");
 };
 
+/* Degree-level display map. The DB stores compact lowercase tokens
+ * ("phd", "master", "undergraduate"); rendering them raw looks
+ * unfinished. This is the canonical capitalization across the app. */
+const DEGREE_LABEL: Record<string, string> = {
+  phd: "PhD",
+  doctorate: "Doctorate",
+  postdoc: "Postdoc",
+  master: "Master's",
+  masters: "Master's",
+  "master's": "Master's",
+  graduate: "Graduate",
+  bachelor: "Bachelor's",
+  bachelors: "Bachelor's",
+  "bachelor's": "Bachelor's",
+  undergraduate: "Undergraduate",
+  diploma: "Diploma",
+  certificate: "Certificate",
+  "non_degree": "Non-degree",
+};
+const humanizeDegree = (raw: string | null | undefined): string => {
+  if (!raw) return "";
+  const k = raw.toLowerCase().trim();
+  return DEGREE_LABEL[k] ?? humanize(raw);
+};
+
 /* Provider/scholarship initials — used as avatar fallback now that flag emojis
    were stripped from card headers. Many providers in the DB are not in any
    flag dictionary, so the inconsistent flag/globe mix looked broken. */
@@ -793,13 +818,33 @@ const rowQualityScore = (s: Scholarship): number => {
  *     wallpaper of empty cards in the grid. The verify-cron will
  *     either fill them in on the next pass or mark them broken. */
 const dedupeAndQualityFilter = (rows: Scholarship[]): Scholarship[] => {
-  // Pass 1: dedupe by canonical_key (or synthetic fallback)
-  const synthetic = (s: Scholarship) =>
-    `${s.scholarship_name}|${s.provider_name ?? ""}|${s.host_country ?? ""}`
-      .toLowerCase().replace(/\s+/g, " ").trim();
+  // Pass 1: tighter dedup. The canonical_key from the SQL trigger
+  // includes host_country, which causes "Schwarzman Scholars" with
+  // host_country="China" to NOT collide with the same scholarship
+  // re-scraped with host_country="Multiple countries" or with a blank
+  // country. We rebuild a tighter client-side key from the cleaned
+  // name + provider only, dropping host_country from the dedup
+  // signature — same scholarship name + same provider = same award,
+  // regardless of how the country got captured. The server-side
+  // canonical_key index still helps narrow the set in queries; this
+  // pass collapses the residual cross-country drift.
+  const tightKey = (s: Scholarship) => {
+    const cleanedName = cleanScholarshipName(s.scholarship_name).toLowerCase();
+    const cleanedProv = (cleanProvider(s.provider_name) ?? "").toLowerCase();
+    return `${cleanedName}|${cleanedProv}`
+      // Match the canonical_key normalizer's key strips so client
+      // dedup catches the same name variants (Scholarships/Scholarship,
+      // Master's/Master, year suffixes) the server function does.
+      .replace(/'s\b/g, "")
+      .replace(/\b(scholarships?|fellowships?|programmes?|programs?|awards?|scholars?|grants?|the|of)\b/g, " ")
+      .replace(/\b(19|20)\d{2}\b/g, " ")
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  };
   const byKey = new Map<string, Scholarship>();
   rows.forEach(r => {
-    const key = (r.canonical_key && r.canonical_key.trim()) || synthetic(r);
+    const key = tightKey(r);
+    if (!key) return;
     const cur = byKey.get(key);
     if (!cur || rowQualityScore(r) > rowQualityScore(cur)) {
       byKey.set(key, r);
@@ -1677,7 +1722,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
     const targetBuckets = s.target_degree_level.map(d => degreeBucket(d)).filter(Boolean);
     const ok = profile.degrees.some(pd => targetBuckets.includes(degreeBucket(pd)));
     const status = targetBuckets.length === 0 ? "unknown" : ok ? "met" : "miss";
-    reqs.push({ label: `Degree level: ${s.target_degree_level.join(", ")}`, status, detail: `Your level: ${profile.degrees.join(" / ")}` });
+    reqs.push({ label: `Degree level: ${s.target_degree_level.map(humanizeDegree).join(", ")}`, status, detail: `Your level: ${profile.degrees.map(humanizeDegree).join(" / ")}` });
   }
   if (s.target_fields && s.target_fields.length > 0 && profile.field) {
     const fm = fieldMatches(profile.field, s.target_fields);
@@ -1953,7 +1998,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Best for</p>
                 <div className="flex flex-wrap gap-1.5">
                   {s.best_for_tags.map((t, i) => (
-                    <span key={i} className="text-xs bg-gold/10 text-gold-dark dark:text-gold border border-gold/20 px-2.5 py-1 rounded-full font-medium">{t}</span>
+                    <span key={i} className="text-xs bg-gold/10 text-gold-dark dark:text-gold border border-gold/20 px-2.5 py-1 rounded-full font-medium">{humanize(t)}</span>
                   ))}
                 </div>
               </div>
@@ -2026,7 +2071,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             {(() => {
               const rows = [
                 ["Deadline", deadlineDate ? `${deadlineDate} (${dl.text})` : "Rolling"],
-                ["Cycle", s.deadline_type ? s.deadline_type.charAt(0).toUpperCase() + s.deadline_type.slice(1) : null],
+                ["Cycle", s.deadline_type ? humanize(s.deadline_type) : null],
                 ["Platform", s.application_platform],
                 ["Application fee", s.application_fee_text],
               ].filter(([, v]) => v) as [string, string][];
@@ -3747,10 +3792,10 @@ const Discover = ({ language = "en" }: Props) => {
                   // four separate rows with almost no signal across them.
                   { label: "Min requirements", render: minRequirements, isEmpty: s => s.min_gpa == null && s.min_ielts == null && s.min_toefl == null && s.min_sat == null },
                   { label: "Eligibility", render: s => isInclusive(s.citizenship_requirements) ? <span className="text-success">Open to all</span> : (s.citizenship_requirements || <span className="text-muted-foreground/60">—</span>), isEmpty: s => !s.citizenship_requirements },
-                  { label: "Degree levels", render: s => s.target_degree_level?.join(", ") || <span className="text-muted-foreground/60">—</span>, isEmpty: s => !s.target_degree_level || s.target_degree_level.length === 0 },
+                  { label: "Degree levels", render: s => s.target_degree_level?.map(humanizeDegree).join(", ") || <span className="text-muted-foreground/60">—</span>, isEmpty: s => !s.target_degree_level || s.target_degree_level.length === 0 },
                   { label: "Fields funded", render: s => s.target_fields?.length ? s.target_fields.slice(0, 3).map(humanize).join(", ") + (s.target_fields.length > 3 ? `, +${s.target_fields.length - 3}` : "") : <span className="text-muted-foreground/60">—</span>, isEmpty: s => !s.target_fields || s.target_fields.length === 0 },
                   { label: "Application fee", render: s => s.application_fee_text || <span className="text-muted-foreground/60">—</span>, isEmpty: s => !s.application_fee_text },
-                  { label: "Effort level", render: s => s.effort_level ? <span className="capitalize">{s.effort_level}</span> : <span className="text-muted-foreground/60">—</span>, isEmpty: s => !s.effort_level },
+                  { label: "Effort level", render: s => s.effort_level ? <span>{humanize(s.effort_level)}</span> : <span className="text-muted-foreground/60">—</span>, isEmpty: s => !s.effort_level },
                   { label: "Essay required", render: s => s.essay_required ? <span className="text-warning">Yes</span> : <span className="text-success">No</span>, isEmpty: s => s.essay_required == null },
                   { label: "Interview", render: s => s.interview_required ? <span className="text-warning">Yes</span> : <span className="text-success">No</span>, isEmpty: s => s.interview_required == null },
                   { label: "Rec letters", render: s => s.recommendation_letters_required ?? <span className="text-muted-foreground/60">—</span>, isEmpty: s => s.recommendation_letters_required == null },

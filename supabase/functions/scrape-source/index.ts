@@ -221,7 +221,13 @@ function extractJson(s: string): unknown {
  *  and we don't want garbage rows propagating into Discover. We clamp
  *  silently rather than reject the row entirely; the rest of the data is
  *  often still useful. */
-const REASONABLE_VALUE_USD_MAX = 5_000_000;       // a 4-yr full-ride at MIT-tier is ~$400k. 5M = clearly hallucinated.
+// Reality bound for a single-recipient scholarship's lifetime value.
+// Even Schwarzman / Knight-Hennessy / MIT-tier full rides top out at
+// ~$400-600k over 2-4 years. Anything north of $2M is the LLM
+// confusing endowment / total budget / aggregate fund with the
+// per-recipient award. We REJECT (set to null) rather than clamp;
+// clamping silently hid the issue while keeping the wrong-shape number.
+const REASONABLE_VALUE_USD_MAX = 2_000_000;
 const REASONABLE_VALUE_USD_MIN = 0;
 const IELTS_BAND_MIN = 0;
 const IELTS_BAND_MAX = 9;
@@ -230,12 +236,17 @@ const TOEFL_MAX = 120;
 const RECS_MAX = 10;
 
 function clampNumeric(o: Record<string, unknown>): void {
-  // Total value: drop negatives, clamp absurd highs.
+  // Total value: reject negatives AND absurd highs (rather than
+  // clamping). A clamped $80M → $2M still misleads the user; null
+  // forces the display to fall back to the coverage label, which is
+  // always meaningful.
   if (typeof o.estimated_total_value_usd === "number") {
-    if (Number.isNaN(o.estimated_total_value_usd) || o.estimated_total_value_usd < REASONABLE_VALUE_USD_MIN) {
+    if (
+      Number.isNaN(o.estimated_total_value_usd)
+      || o.estimated_total_value_usd < REASONABLE_VALUE_USD_MIN
+      || o.estimated_total_value_usd > REASONABLE_VALUE_USD_MAX
+    ) {
       o.estimated_total_value_usd = null;
-    } else if (o.estimated_total_value_usd > REASONABLE_VALUE_USD_MAX) {
-      o.estimated_total_value_usd = REASONABLE_VALUE_USD_MAX;
     }
   }
   // GPA must be ≤ scale. If gpa_scale is missing default to 4.0; if min_gpa

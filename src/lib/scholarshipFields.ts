@@ -26,6 +26,44 @@ export const titleCaseField = (s: string) => s
   })
   .replace(/^./, (c) => c.toUpperCase());
 
+/* Degree-level display map. The DB stores compact lowercase tokens
+ * ("phd", "master", "undergraduate"); rendering them raw in chips
+ * looks unfinished. Used wherever target_degree_level renders. */
+const DEGREE_LABELS: Record<string, string> = {
+  phd: "PhD",
+  doctorate: "Doctorate",
+  postdoc: "Postdoc",
+  master: "Master's",
+  masters: "Master's",
+  "master's": "Master's",
+  graduate: "Graduate",
+  bachelor: "Bachelor's",
+  bachelors: "Bachelor's",
+  "bachelor's": "Bachelor's",
+  undergraduate: "Undergraduate",
+  diploma: "Diploma",
+  certificate: "Certificate",
+  non_degree: "Non-degree",
+  "non-degree": "Non-degree",
+};
+export const humanizeDegreeLabel = (raw: string | null | undefined): string => {
+  if (!raw) return "";
+  const k = raw.toLowerCase().trim();
+  if (DEGREE_LABELS[k]) return DEGREE_LABELS[k];
+  // Fall back to title-case for unrecognised tokens.
+  return raw.replace(/[_-]+/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+};
+
+/* General-purpose label humanizer for snake_case / kebab-case enum
+ * values. Pure: no domain mapping, just whitespace + casing. */
+const HUMANIZE_STOP = new Set(["and", "or", "of", "the", "in", "for", "to"]);
+export const humanizeLabel = (raw: string | null | undefined): string => {
+  if (!raw) return "";
+  return raw.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim().split(" ")
+    .map((w, i) => i > 0 && HUMANIZE_STOP.has(w.toLowerCase()) ? w.toLowerCase() : w[0].toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+};
+
 /** Pretty single-field label for compact card displays. Skips junk
  *  values, takes the first piece of comma-list run-ons, and drops
  *  unreasonably long entries. Returns null when nothing's worth
@@ -100,6 +138,15 @@ interface AwardSource {
   estimated_total_value_usd: number | null;
 }
 
+/** Reality bound for a single-recipient scholarship's lifetime value.
+ *  Even Schwarzman / Knight-Hennessy / MIT-tier full rides top out at
+ *  ~$400K-$600K over 2-4 years. Anything north of $2M is the LLM
+ *  picking up the program's endowment, total budget, or aggregate
+ *  funding — not the per-recipient award. We refuse to display those
+ *  numbers. The display falls back to the coverage label, which is
+ *  almost always meaningful and never misleading. */
+const REASONABLE_AWARD_USD = 2_000_000;
+
 /** Compact award label for the grid card. Returns a tight label that
  *  always fits without truncation: "Full ride" / "$80K" / "Tuition
  *  covered" / etc. Long award_amount_text bodies live in the detail
@@ -112,22 +159,33 @@ export const compactAward = (s: AwardSource): string | null => {
       const n = parseFloat(m[1].replace(/,/g, ""));
       if (!Number.isNaN(n)) {
         const suffix = m[2]?.toUpperCase();
-        if (suffix === "M" || n >= 1_000_000) return `$${(suffix === "M" ? n : n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
-        if (suffix === "K" || n >= 1000) return `$${Math.round(suffix === "K" ? n : n / 1000)}K`;
-        return `$${Math.round(n).toLocaleString()}`;
+        const usd = suffix === "M" ? n * 1_000_000
+                  : suffix === "K" ? n * 1000
+                  : n;
+        // Skip suspiciously large dollar references — the LLM has
+        // mistaken an endowment / total fund / aggregate budget for the
+        // per-recipient award. Fall through to the coverage label.
+        if (usd <= REASONABLE_AWARD_USD) {
+          if (suffix === "M" || n >= 1_000_000) return `$${(suffix === "M" ? n : n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+          if (suffix === "K" || n >= 1000) return `$${Math.round(suffix === "K" ? n : n / 1000)}K`;
+          return `$${Math.round(n).toLocaleString()}`;
+        }
       }
     }
   }
   if (s.coverage_type === "tuition_only") return "Tuition covered";
   if (s.coverage_type === "stipend") return "Stipend";
   if (s.coverage_type === "partial") return "Partial funding";
-  if (s.estimated_total_value_usd && s.estimated_total_value_usd >= 1000) {
+  if (s.estimated_total_value_usd && s.estimated_total_value_usd >= 1000 && s.estimated_total_value_usd <= REASONABLE_AWARD_USD) {
     const v = s.estimated_total_value_usd;
     if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
     return `$${Math.round(v / 1000)}K`;
   }
   if (s.award_amount_text) {
-    const noParen = s.award_amount_text.replace(/\s*\([^)]*\)?/g, "").trim();
+    // Strip absurd $XXM/$XXXM references from the trailing fallback
+    // text so we don't display "$80M scholarship fund" verbatim.
+    const sanitized = s.award_amount_text.replace(/\$\s?\d+\s?[Mm]\b/g, "").replace(/\s+/g, " ").trim();
+    const noParen = sanitized.replace(/\s*\([^)]*\)?/g, "").trim();
     if (noParen.length > 0 && noParen.length <= 28) return noParen;
     if (noParen.length > 28) return noParen.slice(0, 26).trimEnd() + "…";
   }
