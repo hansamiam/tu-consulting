@@ -2108,9 +2108,11 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                 and the daily enrichment cron hasn't filled the soft fields
                 yet (typically 24-48h post-discovery), the Strategy tab would
                 otherwise render blank and look broken. This state acknowledges
-                the gap honestly and points the user at the My plan tab,
-                which always works (it uses the deep-dive endpoint, which
-                generates content live and doesn't depend on the soft fields). */}
+                the gap honestly and points the user at the enlarged
+                detail dialog (the "View full strategy" CTA in the panel
+                header), which always works because it uses the
+                scholarship-deep-dive endpoint to generate content live
+                and doesn't depend on the soft fields. */}
             {!s.what_to_prepare_first && !s.ideal_candidate_profile && !s.how_to_win
               && !s.strategy_notes && !s.common_rejection_reasons
               && !s.weak_candidate_warning && !s.risk_note && (
@@ -2122,12 +2124,12 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                 <p className="text-xs text-muted-foreground leading-relaxed max-w-md mx-auto mb-4">
                   This scholarship was added to our database recently. Our AI is generating the
                   ideal-candidate profile, how-to-win strategy, and common rejection patterns —
-                  usually within 24-48 hours. Your <span className="font-semibold text-foreground">My plan</span> tab
-                  works right now with personalized fit analysis.
+                  usually within 24-48 hours. The personalized fit analysis above works
+                  right now though.
                 </p>
                 <p className="text-[11px] text-muted-foreground/70 inline-flex items-center gap-1.5">
                   <Sparkles className="h-3 w-3 text-gold-dark" />
-                  Tap <span className="font-semibold text-foreground">My plan</span> in the tabs above for personalized fit analysis
+                  Tap <span className="font-semibold text-foreground">View full strategy</span> at the top for live AI analysis
                 </p>
               </div>
             )}
