@@ -345,10 +345,14 @@ function validateExtracted(x: unknown): ExtractedScholarship | null {
 }
 
 /** Mirror of public.normalize_scholarship_key — the SQL function in the
- *  20260503050000 migration. We compute the same key in TS so we can dedup
- *  intra-run before hitting the DB. Keep the regex synced with the SQL. */
-function normalizeKey(name: string, provider: string, country: string): string {
-  const concat = `${name}|${provider}|${country}`.toLowerCase();
+ *  20260503050000 migration, updated by 20260505060000 to drop
+ *  host_country from the dedup signature. The third arg is kept in
+ *  the signature for caller backwards-compat but ignored — same as
+ *  the SQL function.
+ *  Keep the regex synced with the SQL. */
+function normalizeKey(name: string, provider: string, _country: string): string {
+  void _country;
+  const concat = `${name}|${provider}`.toLowerCase();
   return concat
     // Strip English possessives ("master's" → "master") BEFORE suffix-words
     // so the trailing `s` doesn't survive the non-alnum cleanup.

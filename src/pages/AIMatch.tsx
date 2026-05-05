@@ -22,7 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { ScholarshipCardSkeleton } from "@/components/ScholarshipCard";
 import { EmptyState } from "@/components/EmptyState";
-import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
+import { cleanScholarshipName, cleanProvider, humanizeDegreeLabel } from "@/lib/scholarshipFields";
 
 interface AIMatchProps { language?: "en" | "ru"; }
 
@@ -400,7 +400,7 @@ const ResultCard = ({ row: r, t }: { row: ScholarshipLite & { _similarity: numbe
         {r.target_degree_level && r.target_degree_level.length > 0 && (
           <span className="inline-flex items-center gap-1">
             <GraduationCap className="w-3 h-3" />
-            {r.target_degree_level.slice(0, 2).join(", ")}
+            {r.target_degree_level.slice(0, 2).map(humanizeDegreeLabel).join(", ")}
           </span>
         )}
       </div>
