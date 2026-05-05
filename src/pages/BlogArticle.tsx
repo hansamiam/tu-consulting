@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
@@ -9,12 +10,77 @@ interface Props {
   language: "en" | "ru";
 }
 
+const SITE = "https://topuni.org";
+
 const BlogArticle = ({ language }: Props) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const article = blogArticles.find((a) => a.id === id);
   const isRu = language === "ru";
   const blogPath = isRu ? "/blog/ru" : "/blog";
+
+  // ─── SEO meta + JSON-LD ───────────────────────────────────────────
+  // Every Journal article needs: <title>, meta description, canonical,
+  // OG / Twitter cards, and Article schema. Without these the page is
+  // invisible to rich-result surfaces and shares default to the site
+  // OG image. Re-runs whenever article / language flips.
+  useEffect(() => {
+    if (!article) return;
+    const title = isRu ? article.titleRu : article.title;
+    const excerpt = isRu ? article.excerptRu : article.excerpt;
+    const category = isRu ? article.categoryRu : article.category;
+    const url = `${SITE}/blog/${article.id}${isRu ? "/ru" : ""}`;
+
+    document.title = `${title} — TopUni`;
+    setMeta("description", excerpt);
+    setMeta("og:title", `${title} — TopUni`, true);
+    setMeta("og:description", excerpt, true);
+    setMeta("og:type", "article", true);
+    setMeta("og:url", url, true);
+    setMeta("og:image", article.image, true);
+    setMeta("og:image:alt", title, true);
+    setMeta("article:section", category, true);
+    setMeta("twitter:card", "summary_large_image");
+    setMeta("twitter:title", title);
+    setMeta("twitter:description", excerpt);
+    setMeta("twitter:image", article.image);
+    setLink("canonical", url);
+
+    injectJsonLd({
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: title,
+      description: excerpt,
+      image: article.image,
+      url,
+      // We don't track per-article publish dates today — these are
+      // editorial pieces that get periodic refreshes. Fall back to a
+      // stable past date so the schema is valid; real datePublished
+      // would be a small content-model addition for later.
+      datePublished: "2026-01-01",
+      dateModified: new Date().toISOString().slice(0, 10),
+      articleSection: category,
+      author: {
+        "@type": "Organization",
+        name: "TopUni",
+        url: SITE,
+      },
+      publisher: {
+        "@type": "Organization",
+        name: "TopUni",
+        url: SITE,
+        logo: {
+          "@type": "ImageObject",
+          url: `${SITE}/icon.png`,
+        },
+      },
+      mainEntityOfPage: {
+        "@type": "WebPage",
+        "@id": url,
+      },
+      inLanguage: isRu ? "ru" : "en",
+    });
+  }, [article, isRu]);
 
   if (!article) {
     return (
@@ -118,5 +184,38 @@ const BlogArticle = ({ language }: Props) => {
     </div>
   );
 };
+
+/* ─── DOM helpers for SEO meta — same shape as ScholarshipDetail ── */
+function setMeta(name: string, content: string, isProperty = false) {
+  const sel = isProperty ? `meta[property="${name}"]` : `meta[name="${name}"]`;
+  let el = document.head.querySelector<HTMLMetaElement>(sel);
+  if (!el) {
+    el = document.createElement("meta");
+    if (isProperty) el.setAttribute("property", name);
+    else el.setAttribute("name", name);
+    document.head.appendChild(el);
+  }
+  el.setAttribute("content", content);
+}
+function setLink(rel: string, href: string) {
+  let el = document.head.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
+  if (!el) {
+    el = document.createElement("link");
+    el.setAttribute("rel", rel);
+    document.head.appendChild(el);
+  }
+  el.setAttribute("href", href);
+}
+function injectJsonLd(payload: object) {
+  // Replace any prior LD payload tagged with the topuni-article id, so
+  // re-renders with new article data don't accumulate <script> tags.
+  const id = "topuni-article-jsonld";
+  document.head.querySelector(`script#${id}`)?.remove();
+  const el = document.createElement("script");
+  el.id = id;
+  el.type = "application/ld+json";
+  el.text = JSON.stringify(payload);
+  document.head.appendChild(el);
+}
 
 export default BlogArticle;
