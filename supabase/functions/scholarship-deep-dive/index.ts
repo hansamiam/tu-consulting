@@ -17,6 +17,12 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { chatCompletions } from "../_shared/ai-gateway.ts";
+import {
+  cleanScholarshipName,
+  cleanProvider,
+  cleanHostCountry,
+  cleanAwardText,
+} from "../_shared/scholarshipFields.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -212,10 +218,13 @@ Deno.serve(async (req) => {
   ].join("\n");
 
   const scholarshipLines = [
-    `Name: ${scholarship.scholarship_name}`,
-    `Provider: ${scholarship.provider_name}`,
-    `Host country: ${scholarship.host_country}`,
-    `Coverage: ${scholarship.coverage_type}${scholarship.award_amount_text ? ` — ${scholarship.award_amount_text}` : ""}`,
+    `Name: ${cleanScholarshipName(scholarship.scholarship_name) || scholarship.scholarship_name}`,
+    `Provider: ${cleanProvider(scholarship.provider_name) ?? scholarship.provider_name ?? "—"}`,
+    `Host country: ${cleanHostCountry(scholarship.host_country) ?? "—"}`,
+    `Coverage: ${scholarship.coverage_type}${(() => {
+      const a = cleanAwardText(scholarship.award_amount_text);
+      return a ? ` — ${a}` : "";
+    })()}`,
     `Estimated total value: ${scholarship.estimated_total_value_usd ? `$${scholarship.estimated_total_value_usd}` : "unspecified"}`,
     `Levels: ${(scholarship.target_degree_level || []).join(", ") || "any"}`,
     `Fields: ${(scholarship.target_fields || []).join(", ") || "any"}`,
