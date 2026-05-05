@@ -67,6 +67,11 @@ interface Scholarship {
   url_check_status: "ok" | "redirect" | "fail" | "no_url" | null;
   url_consecutive_fails: number | null;
   url_resolved_to: string | null;
+  /* Stable scholarship identity that survives URL changes. The same
+   * scholarship listed on two aggregator hubs (or a program page +
+   * scholarship page) collapses to one row when canonical_key matches.
+   * Populated by the scrape pipeline; null on legacy rows. */
+  canonical_key: string | null;
 }
 
 interface Profile {
@@ -615,6 +620,67 @@ const titleCaseField = (s: string) => s
     return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
   })
   .replace(/^./, (c) => c.toUpperCase());
+
+/** Score a row by how filled-in it is. Used to pick the "best" row
+ *  among duplicates and to hide rows that are too sparse to render
+ *  as anything more than a blank card. */
+const rowQualityScore = (s: Scholarship): number => {
+  let n = 0;
+  if (s.provider_name && s.provider_name.trim().length > 0) n += 3;
+  if (s.host_country && s.host_country.trim().length > 0) n += 3;
+  if (s.award_amount_text && s.award_amount_text.trim().length > 0) n += 2;
+  if (s.estimated_total_value_usd && s.estimated_total_value_usd > 0) n += 1;
+  if (s.citizenship_requirements) n += 1;
+  if (s.target_fields && s.target_fields.length > 0) n += 1;
+  if (s.target_degree_level && s.target_degree_level.length > 0) n += 1;
+  if (s.eligible_countries && s.eligible_countries.length > 0) n += 1;
+  if (s.application_deadline) n += 1;
+  if (s.why_this_fits) n += 1;
+  if (s.how_to_win) n += 1;
+  if (s.verification_status === "verified") n += 4;
+  else if (s.verification_status === "stale") n += 2;
+  return n;
+};
+
+/** Two-pass row cleanup before the dashboard ever sees them:
+ *
+ *  1. DEDUPE: collapse rows sharing canonical_key, keep the highest-
+ *     quality variant. This catches the case where the same scholarship
+ *     was scraped from two different aggregator hubs / a program page +
+ *     a scholarship-specific page. Rows missing canonical_key get a
+ *     synthetic key from name + provider + country so manual seeds and
+ *     legacy rows still de-dupe.
+ *
+ *  2. QUALITY GATE: drop rows that have no host_country AND no
+ *     provider AND no award_amount_text — those render as visually
+ *     broken "blank" cards (just title + Rolling) and erode trust.
+ *     Keeping their scholarship_name in our index isn't worth the
+ *     wallpaper of empty cards in the grid. The verify-cron will
+ *     either fill them in on the next pass or mark them broken. */
+const dedupeAndQualityFilter = (rows: Scholarship[]): Scholarship[] => {
+  // Pass 1: dedupe by canonical_key (or synthetic fallback)
+  const synthetic = (s: Scholarship) =>
+    `${s.scholarship_name}|${s.provider_name ?? ""}|${s.host_country ?? ""}`
+      .toLowerCase().replace(/\s+/g, " ").trim();
+  const byKey = new Map<string, Scholarship>();
+  rows.forEach(r => {
+    const key = (r.canonical_key && r.canonical_key.trim()) || synthetic(r);
+    const cur = byKey.get(key);
+    if (!cur || rowQualityScore(r) > rowQualityScore(cur)) {
+      byKey.set(key, r);
+    }
+  });
+
+  // Pass 2: drop rows that would render as visually empty cards.
+  // The signal is "no host_country AND no provider AND no award" —
+  // those are the broken-looking ones the user flagged.
+  return [...byKey.values()].filter(r => {
+    const hasCountry  = !!(r.host_country && r.host_country.trim());
+    const hasProvider = !!(r.provider_name && r.provider_name.trim());
+    const hasAward    = !!(r.award_amount_text && r.award_amount_text.trim()) || !!r.estimated_total_value_usd;
+    return hasCountry || hasProvider || hasAward;
+  });
+};
 
 /** Map any LLM-flavoured degree string into one of three canonical
  *  buckets so filter matching tolerates the noise.
@@ -2110,7 +2176,10 @@ const Discover = ({ language = "en" }: Props) => {
         .select("*")
         .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
         .order("estimated_total_value_usd", { ascending: false });
-      if (data) setRows(data as unknown as Scholarship[]);
+      if (data) {
+        const cleaned = dedupeAndQualityFilter(data as unknown as Scholarship[]);
+        setRows(cleaned);
+      }
       setLoading(false);
     })();
   }, []);
