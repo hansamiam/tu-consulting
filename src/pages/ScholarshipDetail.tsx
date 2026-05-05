@@ -260,6 +260,46 @@ const ScholarshipDetail = () => {
   const status = s ? tracker.statusMap[s.scholarship_id] : undefined;
   const days = s?.application_deadline ? Math.ceil((new Date(s.application_deadline).getTime() - Date.now()) / 86400_000) : null;
 
+  /* Open TopUni AI with this scholarship pre-elevated into the brief flow.
+     Two sessionStorage payloads, drained independently by the wizard /
+     dashboard side: `topuni-focus-scholarship` keeps the brief generator
+     pinned to THIS scholarship; `topuni-hub-context` pre-fills the wizard
+     with the host country so the user lands on step 2 with it already
+     selected. Skip the country prefill for global / multi-country
+     scholarships where pinning a single country would mislead.
+     Source label flows into telemetry so we can compare hero-CTA vs
+     bottom-CTA conversion. */
+  const goBuildStrategy = (source: "hero" | "footer") => {
+    if (!s) return;
+    try {
+      sessionStorage.setItem(
+        "topuni-focus-scholarship",
+        JSON.stringify({
+          scholarshipId: s.scholarship_id,
+          scholarshipName: s.scholarship_name,
+          ts: Date.now(),
+        }),
+      );
+      const hostCountry = (s.host_country || "").trim();
+      const isPinnableCountry =
+        hostCountry.length > 0 &&
+        !/global|multiple|european union|various/i.test(hostCountry);
+      if (isPinnableCountry) {
+        sessionStorage.setItem(
+          "topuni-hub-context",
+          JSON.stringify({
+            kind: "scholarship",
+            country: hostCountry,
+            label: s.scholarship_name,
+            ts: Date.now(),
+          }),
+        );
+      }
+    } catch { /* sessionStorage may be unavailable; CTA still works */ }
+    track(s.scholarship_id, "clicked", source === "hero" ? "detail-hero-build-strategy" : "detail-build-strategy");
+    navigate("/topuni-ai");
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -350,10 +390,35 @@ const ScholarshipDetail = () => {
             );
           })()}
 
+          {/* Hero CTAs — primary action is "Build my strategy" because most
+              traffic to this page is anonymous organic search, and the
+              competitor-site Apply link was leaking that audience straight
+              out of our funnel. The official link stays prominent (outline
+              variant, with tracking) for visitors who just want to verify
+              the scholarship is real. */}
           <div className="flex flex-wrap gap-2">
+            <Button
+              variant="gold"
+              size="lg"
+              className="gap-2"
+              onClick={() => goBuildStrategy("hero")}
+            >
+              <Sparkles className="w-4 h-4" />
+              Build my strategy around this
+            </Button>
             {s.official_url && (
-              <Button variant="gold" size="lg" asChild className="gap-2">
-                <a href={s.official_url} target="_blank" rel="noopener noreferrer">
+              <Button
+                variant="outline"
+                size="lg"
+                asChild
+                className="gap-2 bg-transparent text-primary-foreground border-primary-foreground/30 hover:bg-primary-foreground/10"
+              >
+                <a
+                  href={s.official_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => track(s.scholarship_id, "clicked", "detail-apply-official")}
+                >
                   Apply on official site <ExternalLink className="w-4 h-4" />
                 </a>
               </Button>
@@ -502,11 +567,10 @@ const ScholarshipDetail = () => {
           </Section>
         )}
 
-        {/* CTA — generate a personalised strategy. Stashes a focus payload
-            in sessionStorage so the brief flow knows to elevate THIS
-            scholarship into the funding pathway and call it out by name.
-            Mirrors the counselor-prefill pattern from Pipeline — same
-            5-minute stale guard. */}
+        {/* Reinforcement CTA — same destination as the hero, restated
+            after the eligibility / partners blocks for visitors who
+            scrolled past the hero before deciding. Source label distinct
+            from the hero's so we can compare conversion. */}
         <div className="bg-card border border-border rounded-2xl p-6 sm:p-8 text-center">
           <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">
             Don't just read — strategise
@@ -522,40 +586,7 @@ const ScholarshipDetail = () => {
             variant="gold"
             size="lg"
             className="gap-2"
-            onClick={() => {
-              try {
-                // Two payloads in flight, drained independently by the wizard /
-                // dashboard side: focus stays in the brief, hub-context pre-fills
-                // the wizard so the user lands on step 2 with the right country
-                // already selected. Skip the country prefill for global / multi-
-                // country scholarships where pinning a single country misleads.
-                sessionStorage.setItem(
-                  "topuni-focus-scholarship",
-                  JSON.stringify({
-                    scholarshipId: s.scholarship_id,
-                    scholarshipName: s.scholarship_name,
-                    ts: Date.now(),
-                  }),
-                );
-                const hostCountry = (s.host_country || "").trim();
-                const isPinnableCountry =
-                  hostCountry.length > 0 &&
-                  !/global|multiple|european union|various/i.test(hostCountry);
-                if (isPinnableCountry) {
-                  sessionStorage.setItem(
-                    "topuni-hub-context",
-                    JSON.stringify({
-                      kind: "scholarship",
-                      country: hostCountry,
-                      label: s.scholarship_name,
-                      ts: Date.now(),
-                    }),
-                  );
-                }
-              } catch { /* sessionStorage may be unavailable; CTA still works */ }
-              track(s.scholarship_id, "clicked", "detail-build-strategy");
-              navigate("/topuni-ai");
-            }}
+            onClick={() => goBuildStrategy("footer")}
           >
             Build my strategy around this <ArrowRight className="w-4 h-4" />
           </Button>
