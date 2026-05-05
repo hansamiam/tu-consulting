@@ -621,6 +621,49 @@ const titleCaseField = (s: string) => s
   })
   .replace(/^./, (c) => c.toUpperCase());
 
+/** Compact award label for the grid card. Long award_amount_text
+ *  values like "Full scholarships (tuition and living expenses)"
+ *  truncate mid-word with an ugly "…". Strategy:
+ *
+ *   1. Use the COVERAGE_TYPE enum first — it's clean and short.
+ *   2. If a dollar amount exists in award_amount_text, surface that
+ *      compactly ($80K, $1.2M, etc.).
+ *   3. Otherwise show estimated_total_value_usd formatted.
+ *   4. As a last resort, show the first phrase of award_amount_text
+ *      with the parenthetical chopped off + a hard 28-char cap.
+ *   5. Full text always available in the DetailSheet's AWARD facts box. */
+const compactAward = (s: Scholarship): string | null => {
+  if (s.coverage_type === "full_ride") return "Full ride";
+  // Try to extract a dollar amount from the award text first.
+  if (s.award_amount_text) {
+    const m = s.award_amount_text.match(/\$\s?([\d,.]+)\s?([KMkm])?/);
+    if (m) {
+      const n = parseFloat(m[1].replace(/,/g, ""));
+      if (!Number.isNaN(n)) {
+        const suffix = m[2]?.toUpperCase();
+        if (suffix === "M" || n >= 1_000_000) return `$${(suffix === "M" ? n : n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+        if (suffix === "K" || n >= 1000) return `$${Math.round(suffix === "K" ? n : n / 1000)}K`;
+        return `$${Math.round(n).toLocaleString()}`;
+      }
+    }
+  }
+  if (s.coverage_type === "tuition_only") return "Tuition covered";
+  if (s.coverage_type === "stipend") return "Stipend";
+  if (s.coverage_type === "partial") return "Partial funding";
+  if (s.estimated_total_value_usd && s.estimated_total_value_usd >= 1000) {
+    const v = s.estimated_total_value_usd;
+    if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+    return `$${Math.round(v / 1000)}K`;
+  }
+  // Last resort: trim parenthetical + hard char cap.
+  if (s.award_amount_text) {
+    const noParen = s.award_amount_text.replace(/\s*\([^)]*\)?/g, "").trim();
+    if (noParen.length > 0 && noParen.length <= 28) return noParen;
+    if (noParen.length > 28) return noParen.slice(0, 26).trimEnd() + "…";
+  }
+  return null;
+};
+
 /** Score a row by how filled-in it is. Used to pick the "best" row
  *  among duplicates and to hide rows that are too sparse to render
  *  as anything more than a blank card. */
@@ -818,7 +861,7 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
   const hasRealScore = s.match > 0 && (s.reasons.length > 0 || s.warnings.length > 0);
   const isFullRide = s.coverage_type === "full_ride";
   const accent = accentForCountry(s.host_country);
-  const award = s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || null;
+  const award = compactAward(s);
 
   return (
     <motion.div
@@ -978,7 +1021,7 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
   const tier = TIER[s.priority];
   const dl = deadlineDisplay(s.application_deadline);
   const why = s.why_this_fits || s.reasons.slice(0, 2).join(". ");
-  const award = s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || null;
+  const award = compactAward(s);
   const isFullRide = s.coverage_type === "full_ride";
   // Match score is meaningful only when the user has a real profile that
   // can score AGAINST. Without that, the score is 0 for every row and
@@ -1052,19 +1095,13 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           )}
         </div>
 
-        {/* Award amount — when present, surfaced as a real chip (not just
-            inline text). The number / label is the most decision-relevant
-            fact a student wants on the card. */}
+        {/* Award amount — compactAward returns a tight label that fits
+            the chip without truncation: "Full ride" / "$80K" / "Tuition
+            covered" / "$1.2M" / etc. Long award_amount_text bodies live
+            in the DetailSheet's AWARD facts box (not the card). */}
         {award && !isFullRide && (
-          <div className="inline-flex self-start items-center gap-1.5 text-[12px] font-semibold text-foreground bg-muted/40 border border-border/60 px-2.5 py-1 rounded-md max-w-full">
-            <span className="truncate">{award}</span>
-          </div>
-        )}
-        {/* For full-ride we showed "Full ride" in the top strip already —
-            only render the explicit award_amount_text if it adds detail. */}
-        {award && isFullRide && s.award_amount_text && s.award_amount_text.toLowerCase() !== "full ride" && (
-          <div className="inline-flex self-start items-center gap-1.5 text-[12px] font-semibold text-gold-dark bg-gold/10 border border-gold/25 px-2.5 py-1 rounded-md max-w-full">
-            <span className="truncate">{s.award_amount_text}</span>
+          <div className="inline-flex self-start items-center gap-1.5 text-[12px] font-semibold text-foreground bg-muted/40 border border-border/60 px-2.5 py-1 rounded-md whitespace-nowrap">
+            {award}
           </div>
         )}
 
@@ -1534,7 +1571,6 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                 {s.host_country && (
                   <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/85 drop-shadow-sm">{shortCountry(s.host_country)}</p>
                 )}
-                <p className="text-white/70 text-[11px] mt-0.5 italic">Imagine yourself walking these courtyards.</p>
               </div>
             </div>
           );
@@ -1574,9 +1610,17 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
 
           {/* Key facts row — cream tiles */}
           <div className="relative grid grid-cols-3 gap-2 mt-5">
+            {/* Award facts tile: lead with the compact label so the
+                box never truncates; the full award_amount_text follows
+                below in muted text when it adds detail. The detail
+                line clamps to two lines — long parentheticals are OK
+                here because the user opened the sheet for more depth. */}
             <div className="bg-card border border-border rounded-xl px-3 py-2.5">
               <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">Award</div>
-              <div className="text-foreground text-xs font-semibold leading-tight line-clamp-2">{s.award_amount_text || COVERAGE_LABEL[s.coverage_type] || "—"}</div>
+              <div className="text-foreground text-sm font-bold leading-tight">{compactAward(s) ?? COVERAGE_LABEL[s.coverage_type] ?? "—"}</div>
+              {s.award_amount_text && s.award_amount_text.length > 16 && (
+                <div className="text-[10px] text-muted-foreground/85 mt-1 leading-snug line-clamp-2">{s.award_amount_text}</div>
+              )}
             </div>
             <div className="bg-card border border-border rounded-xl px-3 py-2.5">
               <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">Deadline</div>
@@ -1640,7 +1684,6 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                 { v: "overview",     label: "Overview" },
                 { v: "requirements", label: "Requirements" },
                 { v: "strategy",     label: "Strategy" },
-                { v: "apply",        label: "Apply" },
               ] as const).map(t => (
                 <TabsTrigger
                   key={t.v}
@@ -1801,6 +1844,67 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             )}
 
             {/* Score-gap Prep CTA removed — Prep spun off as separate product */}
+
+            {/* Application logistics — folded in from the now-removed
+                Apply tab. These are pre-application-decision facts
+                ("when, where, how, fee, separate?, partners?") so they
+                live alongside the eligibility requirements rather than
+                getting their own tab that overlapped the gold "Apply
+                on official site" button in the header. */}
+            {(days !== null && days > 0 && days <= 90) && (
+              <div className={`rounded-2xl p-4 border ${days <= 30 ? "bg-destructive/5 border-destructive/20" : "bg-warning/5 border-warning/20"}`}>
+                <div className="flex items-center gap-2.5">
+                  <Flame className={`h-5 w-5 ${days <= 30 ? "text-destructive" : "text-warning"}`} />
+                  <div>
+                    <p className={`font-semibold text-sm ${days <= 30 ? "text-destructive" : "text-warning"}`}>{days} days until deadline</p>
+                    <p className="text-xs text-muted-foreground">{deadlineDate}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {(() => {
+              const rows = [
+                ["Deadline", deadlineDate ? `${deadlineDate} (${dl.text})` : "Rolling"],
+                ["Cycle", s.deadline_type ? s.deadline_type.charAt(0).toUpperCase() + s.deadline_type.slice(1) : null],
+                ["Platform", s.application_platform],
+                ["Application fee", s.application_fee_text],
+              ].filter(([, v]) => v) as [string, string][];
+              if (rows.length === 0) return null;
+              return (
+                <div className="bg-muted/40 rounded-2xl px-4 py-1">
+                  {rows.map(([label, val], i) => (
+                    <div key={i} className="flex items-start justify-between gap-3 py-2.5 border-b border-border/50 last:border-0">
+                      <span className="text-xs text-muted-foreground">{label}</span>
+                      <span className="text-sm font-medium text-foreground text-right">{val}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+            {s.separate_application_required && (
+              <div className="bg-warning/5 border border-warning/20 rounded-2xl p-4 flex items-start gap-2.5">
+                <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-warning">Separate application required</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">You're not auto-considered when admitted — you must apply separately.</p>
+                </div>
+              </div>
+            )}
+            {s.partner_universities && s.partner_universities.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2 flex items-center gap-2">
+                  <Users className="h-3 w-3" /> Partner universities · {s.partner_universities.length}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {s.partner_universities.slice(0, 18).map((u, i) => (
+                    <span key={i} className="text-xs bg-muted/60 border border-border px-2.5 py-1 rounded-md text-foreground/80">{u}</span>
+                  ))}
+                  {s.partner_universities.length > 18 && (
+                    <span className="text-xs text-muted-foreground self-center">+{s.partner_universities.length - 18} more</span>
+                  )}
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           {/* STRATEGY */}
@@ -1932,60 +2036,6 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           </TabsContent>
 
           {/* APPLY */}
-          <TabsContent value="apply" className="px-7 py-6 space-y-5 m-0 focus-visible:outline-none">
-            {/* Deadline urgency banner */}
-            {days !== null && days > 0 && days <= 90 && (
-              <div className={`rounded-2xl p-4 border ${days <= 30 ? "bg-destructive/5 border-destructive/20" : "bg-warning/5 border-warning/20"}`}>
-                <div className="flex items-center gap-2.5">
-                  <Flame className={`h-5 w-5 ${days <= 30 ? "text-destructive" : "text-warning"}`} />
-                  <div>
-                    <p className={`font-semibold text-sm ${days <= 30 ? "text-destructive" : "text-warning"}`}>{days} days until deadline</p>
-                    <p className="text-xs text-muted-foreground">{deadlineDate}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="bg-muted/40 rounded-2xl px-4 py-1">
-              {[
-                ["Deadline", deadlineDate ? `${deadlineDate} (${dl.text})` : "Rolling"],
-                ["Cycle", s.deadline_type ? s.deadline_type.charAt(0).toUpperCase() + s.deadline_type.slice(1) : null],
-                ["Platform", s.application_platform],
-                ["Application fee", s.application_fee_text],
-              ].filter(([, v]) => v).map(([label, val], i) => (
-                <div key={i} className="flex items-start justify-between gap-3 py-2.5 border-b border-border/50 last:border-0">
-                  <span className="text-xs text-muted-foreground">{label}</span>
-                  <span className="text-sm font-medium text-foreground text-right">{val}</span>
-                </div>
-              ))}
-            </div>
-
-            {s.separate_application_required && (
-              <div className="bg-warning/5 border border-warning/20 rounded-2xl p-4 flex items-start gap-2.5">
-                <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-warning">Separate application required</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">You're not auto-considered when admitted — you must apply separately.</p>
-                </div>
-              </div>
-            )}
-
-            {s.partner_universities && s.partner_universities.length > 0 && (
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2 flex items-center gap-2">
-                  <Users className="h-3 w-3" /> Partner universities · {s.partner_universities.length}
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {s.partner_universities.slice(0, 18).map((u, i) => (
-                    <span key={i} className="text-xs bg-muted/60 border border-border px-2.5 py-1 rounded-md text-foreground/80">{u}</span>
-                  ))}
-                  {s.partner_universities.length > 18 && (
-                    <span className="text-xs text-muted-foreground self-center">+{s.partner_universities.length - 18} more</span>
-                  )}
-                </div>
-              </div>
-            )}
-          </TabsContent>
         </Tabs>
 
         {/* ── SIMILAR SCHOLARSHIPS — Crunchbase/IMDB pattern: keep users moving ── */}

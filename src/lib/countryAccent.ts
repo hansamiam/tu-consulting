@@ -97,13 +97,64 @@ export const shortCountry = (country: string): string => {
   return c;
 };
 
-/* Canonical country bucket for filter dropdowns. Collapses every variant
- * of "Multiple (Japan, ...)", "Multiple (Worldwide)", "Global", "International"
- * to one "Multiple countries" entry. Filtering against the canonical form
- * lets one dropdown selection match every variant. */
+/* Canonical country bucket for filter dropdowns. The host_country field
+ * is LLM-extracted, so the raw values are noisy:
+ *   · "Multiple (Japan, Korea, …)"           → Multiple countries
+ *   · "Multiple (Worldwide)"                 → Multiple countries
+ *   · "Global" / "International" / "Worldwide" → Multiple countries
+ *   · "Various (primarily Africa, but also …)"→ Multiple countries
+ *   · "South Korea / Multiple"               → South Korea
+ *     (the ' / Multiple' is just a hint that scholars can study at
+ *     multiple campuses within Korea — drop the suffix)
+ *   · "Turkiye"                              → Turkey  (alias)
+ *   · "USA" / "U.S.A."                       → United States
+ *   · "UK" / "U.K."                          → United Kingdom
+ *   · 80-char run-on parentheticals          → first proper-noun chunk
+ *
+ * Filtering against the canonical form lets one dropdown selection
+ * match every variant. */
+const COUNTRY_ALIASES: Record<string, string> = {
+  "turkiye": "Turkey",
+  "türkiye": "Turkey",
+  "usa": "United States",
+  "u.s.a.": "United States",
+  "u.s.": "United States",
+  "us": "United States",
+  "uk": "United Kingdom",
+  "u.k.": "United Kingdom",
+  "uae": "United Arab Emirates",
+  "u.a.e.": "United Arab Emirates",
+  "south korea": "South Korea",
+  "korea": "South Korea",
+  "republic of korea": "South Korea",
+  "russian federation": "Russia",
+  "kingdom of saudi arabia": "Saudi Arabia",
+  "people's republic of china": "China",
+  "prc": "China",
+  "hk": "Hong Kong",
+  "ksa": "Saudi Arabia",
+};
+
 export const canonicalCountry = (country: string): string => {
   const c = country.trim();
+  if (!c) return "Multiple countries";
+  // Catch-all multi-country patterns first
   if (/^multiple/i.test(c)) return "Multiple countries";
+  if (/^various/i.test(c)) return "Multiple countries";
   if (/^global$/i.test(c) || /^international$/i.test(c) || /^worldwide$/i.test(c)) return "Multiple countries";
-  return c;
+  // "Country / Multiple" or "Country (Multiple campuses)" — strip the suffix
+  const stripped = c.replace(/\s*[/(]\s*multiple.*$/i, "").trim();
+  // Apply alias map (case-insensitive)
+  const lower = stripped.toLowerCase();
+  if (COUNTRY_ALIASES[lower]) return COUNTRY_ALIASES[lower];
+  // Drop trailing parentheticals on overly long values
+  if (stripped.length > 28) {
+    const noParen = stripped.replace(/\s*\(.*$/, "").trim();
+    if (noParen.length > 0 && noParen.length <= 28) {
+      const lower2 = noParen.toLowerCase();
+      return COUNTRY_ALIASES[lower2] || noParen;
+    }
+    return "Multiple countries";
+  }
+  return stripped;
 };
