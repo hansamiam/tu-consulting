@@ -3618,6 +3618,23 @@ const Discover = ({ language = "en" }: Props) => {
                         </div>
                       )}
 
+                      {/* Refer-a-friend chip — engagement-gated. Only
+                          renders once the user has saved or tracked at
+                          least one scholarship, so anon visitors aren't
+                          asked to refer something they haven't engaged
+                          with. Subtle, single quiet line; clicks land
+                          on /refer. */}
+                      {(shortlist.size > 0 || Object.keys(statusMap).length > 0) && (
+                        <Link
+                          to="/refer"
+                          className="block rounded-xl border border-border bg-card/40 hover:bg-card hover:border-gold/30 px-3 py-2.5 transition-colors group"
+                        >
+                          <p className="text-[11px] text-foreground/75 leading-snug">
+                            Liking TopUni so far? <span className="text-gold-dark font-medium group-hover:underline underline-offset-4">Refer a friend → free month</span>
+                          </p>
+                        </Link>
+                      )}
+
                       {/* Local-state indicator — app feel */}
                       <div className="text-[10px] text-muted-foreground/70 px-2">
                         <span className="inline-flex items-center gap-1.5">

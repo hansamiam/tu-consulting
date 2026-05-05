@@ -97,11 +97,11 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
             irrelevant to someone already in the database, and "Home"
             is already covered by the back button at the far left. */}
         <button
-          onClick={() => navigate("/pipeline")}
+          onClick={() => navigate(isRussian ? "/pipeline/ru" : "/pipeline")}
           className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-foreground/70 hover:text-foreground px-2.5 py-1.5 rounded-md hover:bg-foreground/[0.04] transition-colors"
         >
           <KanbanSquare className="h-3.5 w-3.5" />
-          {isRussian ? "Воронка" : "Pipeline"}
+          {isRussian ? "Рабочая зона" : "Workspace"}
         </button>
 
         <ActivityBell language={language} />

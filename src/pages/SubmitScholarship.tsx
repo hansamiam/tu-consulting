@@ -268,10 +268,43 @@ const SubmitScholarship = ({ language = "en" }: SubmitProps) => {
 
       <section className="bg-gradient-to-br from-primary via-primary to-primary/95 py-12 sm:py-16">
         <div className="max-w-2xl mx-auto px-5 sm:px-8">
-          <p className="text-[11px] uppercase tracking-[0.22em] text-gold font-semibold mb-3">{t.kicker}</p>
+          <p className="text-[11px] uppercase tracking-[0.22em] text-gold font-semibold mb-3">
+            {language === "ru" ? "Сотрудничество" : "Partner with us"}
+          </p>
           <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold text-primary-foreground tracking-tight leading-tight mb-3">{t.h1}</h1>
           <p className="text-primary-foreground/80 text-base sm:text-lg leading-relaxed max-w-xl">{t.sub}</p>
         </div>
+      </section>
+
+      {/* Partner-tier ask — surfaces the future-revenue path alongside
+          the free submission flow. Foundations / universities / program
+          providers who want to ACTIVELY promote their scholarship to
+          matched students contact us directly via the email link. The
+          /submit form below stays the canonical free-submission path
+          for community contributors. */}
+      <section className="max-w-2xl mx-auto px-5 sm:px-8 pt-8">
+        <div className="rounded-2xl border border-gold/30 bg-gold/[0.05] p-5 sm:p-6">
+          <p className="text-[10px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-2">
+            {language === "ru" ? "Для организаций" : "For program providers"}
+          </p>
+          <p className="text-[15px] text-foreground/85 leading-relaxed mb-4">
+            {language === "ru"
+              ? "Представляете фонд, университет или образовательную программу и хотите активно продвигать стипендию подходящим студентам? Мы строим программу платного партнёрства — приоритетное размещение, персональные алерты для подходящих профилей, аналитика по охвату."
+              : "Represent a foundation, university, or program and want to actively promote your scholarship to matched students? We're building a paid partnership programme — priority placement, alerts to eligible profiles, reach analytics."}
+          </p>
+          <a
+            href="mailto:team@topuniconsulting.com?subject=TopUni%20partnership%20interest"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-gold-dark hover:underline underline-offset-4"
+          >
+            {language === "ru" ? "Написать нам" : "Email us"}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </a>
+        </div>
+        <p className="text-[12px] text-muted-foreground leading-relaxed mt-4 text-center">
+          {language === "ru"
+            ? "Не представляете организацию? Просто хотите подсказать программу — заполните форму ниже. Бесплатно, всё проходит редакторскую проверку."
+            : "Not from a program? Just spotted a scholarship we're missing — fill the form below. Free, every submission gets editorial review."}
+        </p>
       </section>
 
       <main className="max-w-2xl mx-auto px-5 sm:px-8 py-10 sm:py-14">

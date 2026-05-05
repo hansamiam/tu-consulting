@@ -5,38 +5,36 @@ interface FooterProps {
   variant?: "light" | "dark";
 }
 
-// Round-17 consolidation: Product menu now lists three surfaces, not
-// six. Calendar + Essay critique are folded into the Workspace
-// (/pipeline) tab bar; the standalone /match route was retired since
-// Discover's match scoring + the brief generator already cover its job.
-// The Why-TopUni page was also retired — its argument now lives as a
-// Journal article ("What to look for in an admissions consultant").
-const PRODUCT_LINKS_EN = [
-  { to: "/topuni-ai",  label: "AI strategy brief" },
-  { to: "/discover",   label: "Discover scholarships" },
-  { to: "/pipeline",   label: "Workspace" },
+// Round-19 footer cleanup: consolidated to one short column. Names
+// match the top-nav exactly so visitors don't read two different
+// labels for the same surface (no more "AI strategy brief" vs
+// "TopUni AI", no more "Discover scholarships" vs "Discover"). We
+// don't repeat surfaces that are already in the top nav (TopUni AI,
+// Discover, Academy) — top nav is the navigation primary; the
+// footer is for surfaces NOT in top nav, plus Pricing because
+// it's the conversion driver and worth two entry points.
+//
+// Refer-a-friend retired from footer — virality lives where it
+// belongs (Workspace header, Discover sidebar engagement-gated chip,
+// post-brief moment). Footer link was anti-pattern: people who
+// scroll to footers aren't in the share-with-friends headspace.
+//
+// Submit-a-scholarship → "Partner with us": dual ask of free
+// submissions + future paid-promotion / featured-listing
+// partnerships. Same /submit route for now; page copy expands.
+const FOOTER_LINKS_EN = [
+  { to: "/pipeline",  label: "Workspace" },
+  { to: "/team",      label: "Team" },
+  { to: "/pricing",   label: "Pricing" },
+  { to: "/blog",      label: "Journal" },
+  { to: "/submit",    label: "Partner with us" },
 ];
-const PRODUCT_LINKS_RU = [
-  { to: "/topuni-ai/ru", label: "AI стратегия" },
-  { to: "/discover/ru",  label: "Стипендии" },
+const FOOTER_LINKS_RU = [
   { to: "/pipeline/ru",  label: "Рабочая зона" },
-];
-
-const COMPANY_LINKS_EN = [
-  { to: "/team",     label: "Team" },
-  { to: "/pricing",  label: "Pricing" },
-  { to: "/academy",  label: "Academy" },
-  { to: "/blog",     label: "Journal" },
-  { to: "/refer",    label: "Refer a friend" },
-  { to: "/submit",   label: "Submit a scholarship" },
-];
-const COMPANY_LINKS_RU = [
-  { to: "/team/ru",     label: "Команда" },
-  { to: "/pricing/ru",  label: "Цены" },
-  { to: "/academy",     label: "Академия" },
-  { to: "/blog/ru",     label: "Журнал" },
-  { to: "/refer/ru",    label: "Пригласить друга" },
-  { to: "/submit/ru",   label: "Предложить стипендию" },
+  { to: "/team/ru",      label: "Команда" },
+  { to: "/pricing/ru",   label: "Цены" },
+  { to: "/blog/ru",      label: "Журнал" },
+  { to: "/submit/ru",    label: "Сотрудничество" },
 ];
 
 /* Default to "light" because most pages render the footer directly on
@@ -47,8 +45,7 @@ export const Footer = ({ language, variant = "light" }: FooterProps) => {
   const text = {
     en: {
       legal: "Legal",
-      product: "Product",
-      company: "Company",
+      explore: "Explore",
       privacyPolicy: "Privacy Policy",
       publicOffer: "Public Offer",
       refundPolicy: "Refund Policy",
@@ -58,8 +55,7 @@ export const Footer = ({ language, variant = "light" }: FooterProps) => {
     },
     ru: {
       legal: "Правовая информация",
-      product: "Продукт",
-      company: "Компания",
+      explore: "Разделы",
       privacyPolicy: "Политика конфиденциальности",
       publicOffer: "Публичная оферта",
       refundPolicy: "Правила возврата",
@@ -71,8 +67,7 @@ export const Footer = ({ language, variant = "light" }: FooterProps) => {
 
   const t = text[language];
   const langSuffix = language === "ru" ? "/ru" : "";
-  const productLinks = language === "ru" ? PRODUCT_LINKS_RU : PRODUCT_LINKS_EN;
-  const companyLinks = language === "ru" ? COMPANY_LINKS_RU : COMPANY_LINKS_EN;
+  const links = language === "ru" ? FOOTER_LINKS_RU : FOOTER_LINKS_EN;
 
   const isDark = variant === "dark";
   const textColor = isDark ? "text-primary-foreground/55" : "text-muted-foreground";
@@ -84,14 +79,16 @@ export const Footer = ({ language, variant = "light" }: FooterProps) => {
 
   return (
     <footer className={`${textColor} text-xs sm:text-sm px-4`}>
-      {/* Three-column section: tagline + product + company */}
+      {/* Two-column section: tagline + single explore list. Down from
+          three columns when we had Product + Company duplicating top-nav
+          surfaces. */}
       <div className="max-w-5xl mx-auto py-8 sm:py-10">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-[2fr,1fr] gap-8">
           <div className="space-y-3">
             <p className={`${isDark ? "text-primary-foreground" : "text-foreground"} font-heading text-base font-bold tracking-tight`}>
               TopUni
             </p>
-            <p className={`${textColor} leading-relaxed text-xs sm:text-sm`}>
+            <p className={`${textColor} leading-relaxed text-xs sm:text-sm max-w-md`}>
               {t.tagline}
             </p>
             <p>
@@ -106,25 +103,10 @@ export const Footer = ({ language, variant = "light" }: FooterProps) => {
 
           <div>
             <h4 className={`${headingColor} font-semibold text-[11px] uppercase tracking-[0.18em] mb-3`}>
-              {t.product}
+              {t.explore}
             </h4>
             <ul className="space-y-1.5 text-xs">
-              {productLinks.map((l) => (
-                <li key={l.to}>
-                  <Link to={l.to} className={`${linkColor} transition-colors`}>
-                    {l.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h4 className={`${headingColor} font-semibold text-[11px] uppercase tracking-[0.18em] mb-3`}>
-              {t.company}
-            </h4>
-            <ul className="space-y-1.5 text-xs">
-              {companyLinks.map((l) => (
+              {links.map((l) => (
                 <li key={l.to}>
                   <Link to={l.to} className={`${linkColor} transition-colors`}>
                     {l.label}
