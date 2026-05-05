@@ -31,6 +31,18 @@ export type AppStatus =
   | "rejected"
   | "accepted";
 
+export type RecommenderStatus = "asked" | "agreed" | "submitted";
+
+export interface Recommender {
+  /** Stable ID so React reconciliation works cleanly through edits. */
+  id: string;
+  name: string;
+  email?: string;
+  status: RecommenderStatus;
+  asked_at?: string | null;
+  submitted_at?: string | null;
+}
+
 export interface TrackerEntry {
   status?: AppStatus | null;
   notes?: string | null;
@@ -43,6 +55,11 @@ export interface TrackerEntry {
    * for instant render + debounced to the DB. v1 = one composed draft
    * per (user, scholarship). */
   essayDraft?: string | null;
+  /** Recommender list for this application. The most common reason
+   * strong candidates miss deadlines isn't ineligibility — it's a
+   * recommender who promised but never submitted. Tracking who's at
+   * which stage closes that gap. */
+  recommenders?: Recommender[] | null;
 }
 
 interface State {
@@ -150,6 +167,7 @@ interface DbRow {
   hidden: boolean;
   awarded_amount_usd?: number | null;
   essay_draft?: string | null;
+  recommenders?: Recommender[] | null;
 }
 
 function entryFromDb(r: DbRow): TrackerEntry {
@@ -160,11 +178,13 @@ function entryFromDb(r: DbRow): TrackerEntry {
     hidden: r.hidden,
     awardedAmountUsd: r.awarded_amount_usd ?? null,
     essayDraft: r.essay_draft ?? null,
+    recommenders: r.recommenders ?? null,
   };
 }
 
 function entryIsEmpty(e: TrackerEntry): boolean {
-  return !e.status && !e.notes && !e.shortlisted && !e.hidden && !e.awardedAmountUsd && !e.essayDraft;
+  const hasRecommenders = !!(e.recommenders && e.recommenders.length > 0);
+  return !e.status && !e.notes && !e.shortlisted && !e.hidden && !e.awardedAmountUsd && !e.essayDraft && !hasRecommenders;
 }
 
 /** Schema-feature flags: each starts undefined, flipped once we've
@@ -173,6 +193,7 @@ function entryIsEmpty(e: TrackerEntry): boolean {
  * lands and the next reload succeeds with the column. */
 let hasAwardCol: boolean | undefined;
 let hasEssayCol: boolean | undefined;
+let hasRecommendersCol: boolean | undefined;
 
 export interface ApplicationTrackerApi {
   state: State;
@@ -187,11 +208,13 @@ export interface ApplicationTrackerApi {
   notesMap: Record<string, string>;
   awardedMap: Record<string, number>;
   essayMap: Record<string, string>;
+  recommendersMap: Record<string, Recommender[]>;
   // Mutators
   setStatus: (id: string, status: AppStatus | null) => void;
   setNote: (id: string, note: string) => void;
   setAwardedAmount: (id: string, amountUsd: number | null) => void;
   setEssayDraft: (id: string, draft: string | null) => void;
+  setRecommenders: (id: string, list: Recommender[] | null) => void;
   toggleShortlist: (id: string) => void;
   toggleHidden: (id: string) => void;
   // Sync state
@@ -228,6 +251,7 @@ export function useApplicationTracker(): ApplicationTrackerApi {
         const cols = ["scholarship_id", "status", "notes", "shortlisted", "hidden"];
         if (hasAwardCol !== false) cols.push("awarded_amount_usd");
         if (hasEssayCol !== false) cols.push("essay_draft");
+        if (hasRecommendersCol !== false) cols.push("recommenders");
         return cols.join(", ");
       };
       let data: DbRow[] | null = null;
@@ -242,9 +266,11 @@ export function useApplicationTracker(): ApplicationTrackerApi {
         if (r.error) {
           if (/awarded_amount_usd/i.test(r.error.message)) hasAwardCol = false;
           if (/essay_draft/i.test(r.error.message)) hasEssayCol = false;
+          if (/recommenders/i.test(r.error.message)) hasRecommendersCol = false;
         } else {
           if (hasAwardCol === undefined) hasAwardCol = true;
           if (hasEssayCol === undefined) hasEssayCol = true;
+          if (hasRecommendersCol === undefined) hasRecommendersCol = true;
           data = r.data;
         }
       }
@@ -302,7 +328,7 @@ export function useApplicationTracker(): ApplicationTrackerApi {
       // Build the upsert payload, conditionally including the optional
       // columns based on the schema flags. On a column-missing error we
       // flip the offending flag and retry with the narrower payload.
-      const buildRows = (includeAward: boolean, includeEssay: boolean) =>
+      const buildRows = (includeAward: boolean, includeEssay: boolean, includeRecommenders: boolean) =>
         Array.from(pending.entries()).map(([scholarship_id, e]) => {
           const base: Record<string, unknown> = {
             user_id: user.id,
@@ -314,21 +340,23 @@ export function useApplicationTracker(): ApplicationTrackerApi {
           };
           if (includeAward) base.awarded_amount_usd = e.awardedAmountUsd ?? null;
           if (includeEssay) base.essay_draft = e.essayDraft ?? null;
+          if (includeRecommenders) base.recommenders = e.recommenders ?? null;
           return base;
         });
       pendingRef.current = new Map();
       setIsSyncing(true);
       let { error } = await supabase
         .from("application_tracker")
-        .upsert(buildRows(hasAwardCol !== false, hasEssayCol !== false), { onConflict: "user_id,scholarship_id" });
+        .upsert(buildRows(hasAwardCol !== false, hasEssayCol !== false, hasRecommendersCol !== false), { onConflict: "user_id,scholarship_id" });
       if (error) {
         if (/awarded_amount_usd/i.test(error.message)) hasAwardCol = false;
         if (/essay_draft/i.test(error.message)) hasEssayCol = false;
+        if (/recommenders/i.test(error.message)) hasRecommendersCol = false;
         // Retry once with whichever flags are now known-false.
-        if (hasAwardCol === false || hasEssayCol === false) {
+        if (hasAwardCol === false || hasEssayCol === false || hasRecommendersCol === false) {
           const retry = await supabase
             .from("application_tracker")
-            .upsert(buildRows(hasAwardCol !== false, hasEssayCol !== false), { onConflict: "user_id,scholarship_id" });
+            .upsert(buildRows(hasAwardCol !== false, hasEssayCol !== false, hasRecommendersCol !== false), { onConflict: "user_id,scholarship_id" });
           error = retry.error;
         }
       }
@@ -346,6 +374,7 @@ export function useApplicationTracker(): ApplicationTrackerApi {
             hidden: !!e.hidden,
             awardedAmountUsd: e.awardedAmountUsd ?? null,
             essayDraft: e.essayDraft ?? null,
+            recommenders: e.recommenders ?? null,
           });
         }
       } else {
@@ -373,12 +402,13 @@ export function useApplicationTracker(): ApplicationTrackerApi {
             ? patch.awardedAmountUsd ?? null
             : cur.awardedAmountUsd ?? null,
         essayDraft: "essayDraft" in patch ? patch.essayDraft ?? null : cur.essayDraft ?? null,
+        recommenders: "recommenders" in patch ? patch.recommenders ?? null : cur.recommenders ?? null,
       };
       const nextMap = new Map(prev.byScholarship);
       if (entryIsEmpty(nextEntry)) {
         nextMap.delete(id);
         // Mark as null-out for DB
-        pendingRef.current.set(id, { status: null, notes: null, shortlisted: false, hidden: false, awardedAmountUsd: null, essayDraft: null });
+        pendingRef.current.set(id, { status: null, notes: null, shortlisted: false, hidden: false, awardedAmountUsd: null, essayDraft: null, recommenders: null });
       } else {
         nextMap.set(id, nextEntry);
         pendingRef.current.set(id, nextEntry);
@@ -394,6 +424,7 @@ export function useApplicationTracker(): ApplicationTrackerApi {
   const setNote = useCallback((id: string, note: string) => updateEntry(id, { notes: note }), [updateEntry]);
   const setAwardedAmount = useCallback((id: string, amountUsd: number | null) => updateEntry(id, { awardedAmountUsd: amountUsd }), [updateEntry]);
   const setEssayDraft = useCallback((id: string, draft: string | null) => updateEntry(id, { essayDraft: draft }), [updateEntry]);
+  const setRecommenders = useCallback((id: string, list: Recommender[] | null) => updateEntry(id, { recommenders: list }), [updateEntry]);
   const toggleShortlist = useCallback((id: string) => {
     setState((prev) => {
       const cur = prev.byScholarship.get(id);
@@ -448,6 +479,11 @@ export function useApplicationTracker(): ApplicationTrackerApi {
     for (const [id, e] of state.byScholarship) if (e.essayDraft) r[id] = e.essayDraft;
     return r;
   }, [state.byScholarship]);
+  const recommendersMap = useMemo(() => {
+    const r: Record<string, Recommender[]> = {};
+    for (const [id, e] of state.byScholarship) if (e.recommenders && e.recommenders.length > 0) r[id] = e.recommenders;
+    return r;
+  }, [state.byScholarship]);
 
   return {
     state,
@@ -459,10 +495,12 @@ export function useApplicationTracker(): ApplicationTrackerApi {
     notesMap,
     awardedMap,
     essayMap,
+    recommendersMap,
     setStatus,
     setNote,
     setAwardedAmount,
     setEssayDraft,
+    setRecommenders,
     toggleShortlist,
     toggleHidden,
     isSyncing,

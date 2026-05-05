@@ -35,6 +35,7 @@ import { accentForCountry, shortCountry } from "@/lib/countryAccent";
 import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
 import { CalendarSubscribeDialog } from "@/components/pipeline/CalendarSubscribeDialog";
 import { EssayDraftPanel } from "@/components/pipeline/EssayDraftPanel";
+import { RecommendersPanel } from "@/components/pipeline/RecommendersPanel";
 import { WorkspaceCalendar } from "@/components/pipeline/WorkspaceCalendar";
 import { EssaysTab } from "@/components/pipeline/EssaysTab";
 import { UpgradeChip } from "@/components/UpgradeChip";
@@ -688,6 +689,17 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                     className="resize-none"
                   />
                 </div>
+
+                {/* Recommender tracking — most common reason a strong
+                    application misses its deadline isn't ineligibility,
+                    it's a recommender who agreed but never submitted.
+                    Three-state per recommender (asked / agreed /
+                    submitted), unlimited per scholarship. */}
+                <RecommendersPanel
+                  value={tracker.recommendersMap[openDetail.scholarship_id] ?? []}
+                  onChange={(next) => tracker.setRecommenders(openDetail.scholarship_id, next.length > 0 ? next : null)}
+                  language={language}
+                />
 
                 {/* Essay draft + AI critique. Auto-saves through the
                     same tracker hook that backs status/notes; the
