@@ -1356,7 +1356,7 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
               </>
             );
           })()}
-          {hasRealScore && (
+          {hasRealScore && s.match >= 70 && (s.eligibility === "eligible" || s.eligibility === "likely") && (
             <>
               <span className="text-muted-foreground/30 ml-auto">·</span>
               <HoverCard openDelay={120} closeDelay={80}>
