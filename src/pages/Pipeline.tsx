@@ -241,6 +241,12 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
      "Won" stat). */
   const [awardPromptId, setAwardPromptId] = useState<string | null>(null);
   const [awardDraft, setAwardDraft] = useState<string>("");
+  // Two-step prompt: Step 1 captures the amount, Step 2 celebrates +
+  // surfaces the highest-trust referral moment in the entire product.
+  // Most members will never accept a scholarship inside our membership
+  // window — the ones who do are 10× more likely to refer at this
+  // exact moment than at any nudge-driven email later.
+  const [awardStep, setAwardStep] = useState<"capture" | "celebrate">("capture");
   const awardPromptScholarship = useMemo(
     () => rows.find((r) => r.scholarship_id === awardPromptId) ?? null,
     [rows, awardPromptId],
@@ -254,6 +260,7 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
       const existing = tracker.awardedMap[scholarshipId];
       const fallback = rows.find((r) => r.scholarship_id === scholarshipId)?.estimated_total_value_usd ?? null;
       setAwardDraft(existing != null ? String(existing) : fallback != null ? String(fallback) : "");
+      setAwardStep("capture");
       setAwardPromptId(scholarshipId);
     }
   };
@@ -263,14 +270,24 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
     const cleaned = awardDraft.replace(/[$,\s]/g, "");
     const num = cleaned ? Number.parseInt(cleaned, 10) : NaN;
     tracker.setAwardedAmount(awardPromptId, Number.isFinite(num) && num >= 0 ? num : null);
-    setAwardPromptId(null);
-    setAwardDraft("");
+    // Don't close the dialog — transition to the celebrate step.
+    setAwardStep("celebrate");
   };
   const skipAward = () => {
     if (!awardPromptId) return;
-    tracker.setAwardedAmount(awardPromptId, null);
+    // Skip on the capture step nulls the amount; skip on the celebrate
+    // step just dismisses (amount was already saved).
+    if (awardStep === "capture") {
+      tracker.setAwardedAmount(awardPromptId, null);
+    }
     setAwardPromptId(null);
     setAwardDraft("");
+    setAwardStep("capture");
+  };
+  const closeAwardPrompt = () => {
+    setAwardPromptId(null);
+    setAwardDraft("");
+    setAwardStep("capture");
   };
 
   useEffect(() => {
@@ -775,59 +792,135 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
         language={language}
       />
 
-      {/* Award-capture prompt — fires when status flips to 'accepted'.
-          Skipping leaves awarded_amount_usd null, so the row still
-          counts as accepted but is invisible to the "Won" stat. */}
+      {/* Award + celebrate prompt — fires when status flips to
+          'accepted'. Two-step: (1) capture amount, (2) celebrate +
+          surface the highest-trust referral moment in the entire
+          product. Step 2 is the moat-shaped move — most members
+          never reach this state, so the few who do are 10× more
+          likely to refer at this moment than at any nudge later. */}
       <Dialog open={!!awardPromptId} onOpenChange={(o) => !o && skipAward()}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-heading text-lg leading-tight">
-              {t("Congrats — what was the award?", "Поздравляем — на какую сумму?")}
-            </DialogTitle>
-            <DialogDescription className="text-sm leading-relaxed">
-              {awardPromptScholarship
-                ? cleanScholarshipName(awardPromptScholarship.scholarship_name)
-                : ""}
-              <span className="block mt-2 text-muted-foreground">
-                {t(
-                  "Logging the amount unlocks your personal 'won' total and helps future TopUni members see what's actually possible. Your name is never attached.",
-                  "Сумма даёт вам личный итог «выиграно» и помогает будущим членам TopUni увидеть, что реально. Ваше имя никогда не привязывается.",
-                )}
-              </span>
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-2">
-            <label className="text-[11px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
-              {t("Award amount (USD)", "Сумма (USD)")}
-            </label>
-            <div className="mt-2 relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-              <Input
-                type="text"
-                inputMode="numeric"
-                autoFocus
-                placeholder={t("e.g. 25000", "напр. 25000")}
-                value={awardDraft}
-                onChange={(e) => setAwardDraft(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") submitAward(); }}
-                className="pl-7"
-              />
-            </div>
-            <p className="text-[11px] text-muted-foreground mt-2">
-              {t(
-                "Just the headline number is fine — tuition + stipend + travel rolled together.",
-                "Достаточно общей суммы — обучение + стипендия + проезд вместе.",
-              )}
-            </p>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-2">
-            <Button variant="ghost" onClick={skipAward} className="text-muted-foreground">
-              {t("Skip", "Пропустить")}
-            </Button>
-            <Button variant="gold" onClick={submitAward} disabled={!awardDraft.trim()}>
-              {t("Save", "Сохранить")}
-            </Button>
-          </DialogFooter>
+          {awardStep === "capture" ? (
+            <>
+              <DialogHeader>
+                <DialogTitle className="font-heading text-lg leading-tight">
+                  {t("Congrats — what was the award?", "Поздравляем — на какую сумму?")}
+                </DialogTitle>
+                <DialogDescription className="text-sm leading-relaxed">
+                  {awardPromptScholarship ? cleanScholarshipName(awardPromptScholarship.scholarship_name) : ""}
+                  <span className="block mt-2 text-muted-foreground">
+                    {t(
+                      "Logging the amount unlocks your personal 'won' total and helps future TopUni members see what's actually possible. Your name is never attached.",
+                      "Сумма даёт вам личный итог «выиграно» и помогает будущим членам TopUni увидеть, что реально. Ваше имя никогда не привязывается.",
+                    )}
+                  </span>
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-2">
+                <label className="text-[11px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
+                  {t("Award amount (USD)", "Сумма (USD)")}
+                </label>
+                <div className="mt-2 relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    autoFocus
+                    placeholder={t("e.g. 25000", "напр. 25000")}
+                    value={awardDraft}
+                    onChange={(e) => setAwardDraft(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") submitAward(); }}
+                    className="pl-7"
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-2">
+                  {t(
+                    "Just the headline number is fine — tuition + stipend + travel rolled together.",
+                    "Достаточно общей суммы — обучение + стипендия + проезд вместе.",
+                  )}
+                </p>
+              </div>
+              <DialogFooter className="gap-2 sm:gap-2">
+                <Button variant="ghost" onClick={skipAward} className="text-muted-foreground">
+                  {t("Skip", "Пропустить")}
+                </Button>
+                <Button variant="gold" onClick={submitAward} disabled={!awardDraft.trim()}>
+                  {t("Save", "Сохранить")}
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              {/* Celebrate step — single quiet moment. No confetti
+                  cannon, no marketing pitch. Just real congratulations
+                  + two genuine post-acceptance actions. */}
+              <DialogHeader className="text-center">
+                <div className="text-4xl mb-2" aria-hidden>🎉</div>
+                <DialogTitle className="font-heading text-2xl leading-tight">
+                  {t("That's huge.", "Это огромно.")}
+                </DialogTitle>
+                <DialogDescription className="text-sm leading-relaxed text-center">
+                  {awardPromptScholarship
+                    ? t(
+                        `You won ${cleanScholarshipName(awardPromptScholarship.scholarship_name)}. That's the moment this whole platform exists for.`,
+                        `Вы выиграли ${cleanScholarshipName(awardPromptScholarship.scholarship_name)}. Ради этого момента и существует платформа.`,
+                      )
+                    : t("That's the moment this whole platform exists for.", "Ради этого момента и существует платформа.")}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="py-2 space-y-3">
+                {/* Refer friend — highest-trust moment in the
+                    product. A user who just won is 10× more likely
+                    to vouch than a user we nudged via email. */}
+                <Link
+                  to="/refer"
+                  onClick={closeAwardPrompt}
+                  className="flex items-center gap-3 rounded-xl border border-gold/30 bg-gold/[0.05] hover:bg-gold/[0.08] px-4 py-3.5 transition-colors group"
+                >
+                  <div className="flex-1">
+                    <p className="font-semibold text-foreground text-[14px] leading-tight">
+                      {t("Tell a friend who's applying", "Расскажите другу, кто тоже подаёт")}
+                    </p>
+                    <p className="text-[12px] text-muted-foreground mt-0.5 leading-relaxed">
+                      {t(
+                        "You both get a free month — your win could be theirs too.",
+                        "Оба получаете бесплатный месяц — ваш выигрыш может стать и их выигрышем.",
+                      )}
+                    </p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-gold-dark group-hover:translate-x-0.5 transition-transform shrink-0" />
+                </Link>
+
+                {/* See your won total — pulls them into Workspace
+                    Won stat which we just lit up. */}
+                <Link
+                  to={isRu ? "/pipeline/ru" : "/pipeline"}
+                  onClick={closeAwardPrompt}
+                  className="flex items-center gap-3 rounded-xl border border-border bg-card hover:bg-card/80 px-4 py-3.5 transition-colors"
+                >
+                  <div className="flex-1">
+                    <p className="font-semibold text-foreground text-[14px] leading-tight">
+                      {t("See your full Won total", "Посмотреть весь «Выиграно»")}
+                    </p>
+                    <p className="text-[12px] text-muted-foreground mt-0.5 leading-relaxed">
+                      {t(
+                        "Stack of accepted scholarships, total awarded.",
+                        "Стопка принятых стипендий, общая сумма.",
+                      )}
+                    </p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                </Link>
+              </div>
+
+              <DialogFooter className="gap-2 sm:gap-2">
+                <Button variant="ghost" onClick={closeAwardPrompt} className="text-muted-foreground">
+                  {t("Close", "Закрыть")}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
