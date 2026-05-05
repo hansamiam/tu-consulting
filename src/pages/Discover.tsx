@@ -2905,11 +2905,23 @@ const Discover = ({ language = "en" }: Props) => {
                         {[1,2,3,4,5,6].map(i => <div key={i} className="h-80 bg-card border border-border rounded-3xl animate-pulse" />)}
                       </div>
                     ) : filtered.length === 0 ? (
-                      <div className="border border-dashed border-border rounded-3xl p-16 text-center bg-muted/10">
+                      <div className="border border-dashed border-border rounded-3xl p-12 sm:p-16 text-center bg-muted/10">
                         <Search className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />
-                        <h3 className="font-heading font-semibold text-lg text-foreground mb-1.5">No opportunities match these filters</h3>
-                        <p className="text-sm text-muted-foreground mb-5">Try adjusting your filters</p>
-                        <Button variant="outline" size="sm" onClick={() => setFilters(DEFAULT_FILTERS)}>Clear filters</Button>
+                        <h3 className="font-heading font-semibold text-lg text-foreground mb-1.5">Nothing matches these filters</h3>
+                        <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto leading-relaxed">
+                          Loosen a filter, or — if you know a scholarship that fits but we're missing it — submit it. Approved submissions land in the database within 72 hours.
+                        </p>
+                        <div className="flex flex-wrap items-center justify-center gap-3">
+                          <Button variant="outline" size="sm" onClick={() => setFilters(DEFAULT_FILTERS)}>
+                            Clear filters
+                          </Button>
+                          <Button asChild variant="gold" size="sm" className="gap-1.5">
+                            <Link to={language === "ru" ? "/submit/ru" : "/submit"}>
+                              <Sparkles className="h-3.5 w-3.5" />
+                              Submit a scholarship
+                            </Link>
+                          </Button>
+                        </div>
                       </div>
                     ) : (
                       <div className="space-y-12">
