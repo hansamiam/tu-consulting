@@ -20,6 +20,9 @@ import { template as referralConverted } from './referral-converted.tsx'
 import { template as briefGenerated } from './brief-generated.tsx'
 import { template as proUpgradeNudge } from './pro-upgrade-nudge.tsx'
 import { template as newMatchesDigest } from './new-matches-digest.tsx'
+import { template as activationDay1 } from './activation-day-1.tsx'
+import { template as activationDay7 } from './activation-day-7.tsx'
+import { template as inactiveWinback } from './inactive-winback.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'booking-confirmation': bookingConfirmation,
@@ -33,4 +36,7 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'brief-generated': briefGenerated,
   'pro-upgrade-nudge': proUpgradeNudge,
   'new-matches-digest': newMatchesDigest,
+  'activation-day-1': activationDay1,
+  'activation-day-7': activationDay7,
+  'inactive-winback': inactiveWinback,
 }
