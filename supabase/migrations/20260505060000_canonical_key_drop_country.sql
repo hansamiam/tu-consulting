@@ -116,44 +116,32 @@ WHERE loser.rk > 1 AND survivor.rk = 1;
 CREATE INDEX ON _dedup_map(loser_id);
 CREATE INDEX ON _dedup_map(survivor_id);
 
--- ─── 3a. Repoint shortlist (skip if survivor already has the user's row) ─────
-UPDATE public.user_scholarship_shortlist usl
-SET scholarship_id = m.survivor_id
+-- ─── 3a. Repoint application_tracker rows (shortlist + status + notes) ──────
+-- application_tracker is a single table keyed by (user_id, scholarship_id)
+-- carrying shortlist flag, status, notes, hidden flag, etc. For each loser
+-- row that a user has tracked, repoint to the survivor. If the user already
+-- has a survivor row, keep that one (preserve their explicit choices) and
+-- drop the loser entry — the FK CASCADE on scholarship_id delete would
+-- handle this anyway, but we do it explicitly to make the merge intent
+-- legible.
+UPDATE public.application_tracker at
+SET scholarship_id = m.survivor_id,
+    -- If the survivor row carries weaker user state than the loser, the
+    -- repoint preserves the loser's data. Refresh updated_at so it's
+    -- visible in admin tools that something changed.
+    updated_at     = now()
 FROM _dedup_map m
-WHERE usl.scholarship_id = m.loser_id
+WHERE at.scholarship_id = m.loser_id
   AND NOT EXISTS (
-    SELECT 1 FROM public.user_scholarship_shortlist x
-    WHERE x.user_id = usl.user_id AND x.scholarship_id = m.survivor_id
+    SELECT 1 FROM public.application_tracker x
+    WHERE x.user_id = at.user_id AND x.scholarship_id = m.survivor_id
   );
 
-DELETE FROM public.user_scholarship_shortlist usl
+-- Surviving loser rows (where the user already had the survivor) get cleaned
+-- up before the FK cascade fires.
+DELETE FROM public.application_tracker at
 USING _dedup_map m
-WHERE usl.scholarship_id = m.loser_id;
-
--- ─── 3b. Repoint user status / notes if those tables exist ───────────────────
-DO $$
-BEGIN
-  IF EXISTS (
-    SELECT 1 FROM information_schema.tables
-    WHERE table_schema = 'public' AND table_name = 'user_scholarship_status'
-  ) THEN
-    EXECUTE $sql$
-      UPDATE public.user_scholarship_status uss
-      SET scholarship_id = m.survivor_id
-      FROM _dedup_map m
-      WHERE uss.scholarship_id = m.loser_id
-        AND NOT EXISTS (
-          SELECT 1 FROM public.user_scholarship_status x
-          WHERE x.user_id = uss.user_id AND x.scholarship_id = m.survivor_id
-        );
-
-      DELETE FROM public.user_scholarship_status uss
-      USING _dedup_map m
-      WHERE uss.scholarship_id = m.loser_id;
-    $sql$;
-  END IF;
-END
-$$;
+WHERE at.scholarship_id = m.loser_id;
 
 -- ─── 3c. Delete the loser rows ───────────────────────────────────────────────
 DELETE FROM public.scholarships s
