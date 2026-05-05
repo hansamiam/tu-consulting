@@ -125,6 +125,9 @@ interface WizardData {
    * a scholarship requiring TOEFL is gated by the user's TOEFL, not
    * IELTS, so we collect both rather than picking one. */
   ielts: string; toefl: string; sat: string;
+  /* Optional self-identification — drives demographic-targeted boost
+   * (+18 with reason) when a scholarship's target_demographics overlaps. */
+  demographics: string[];
 }
 
 interface FilterState {
@@ -625,7 +628,7 @@ const daysUntil = (d: string | null) => {
 };
 
 const WIZARD_STEPS = 4;
-const DEFAULT_WIZARD: WizardData = { fullName: "", email: "", nationality: "", degrees: [], field: "", gpa: "", gpaScale: "4.0", ielts: "", toefl: "", sat: "" };
+const DEFAULT_WIZARD: WizardData = { fullName: "", email: "", nationality: "", degrees: [], field: "", gpa: "", gpaScale: "4.0", ielts: "", toefl: "", sat: "", demographics: [] };
 const DEFAULT_FILTERS: FilterState = { search: "", coverage: "all", degree: "all", field: "all", selectivity: "all", hostCountry: "all", demographic: "all", onlyEligible: false, closingSoon: false };
 const COVERAGE_LABEL: Record<string, string> = {
   full_ride: "Full ride",
@@ -2497,13 +2500,14 @@ const Discover = ({ language = "en" }: Props) => {
 
   const completeWizard = () => {
     const country = wiz.nationality;
-    const p: Profile = { country, degrees: wiz.degrees, gpa: wiz.gpa, gpaScale: wiz.gpaScale, ielts: wiz.ielts, toefl: wiz.toefl, sat: wiz.sat, field: wiz.field, demographics: [] };
+    const p: Profile = { country, degrees: wiz.degrees, gpa: wiz.gpa, gpaScale: wiz.gpaScale, ielts: wiz.ielts, toefl: wiz.toefl, sat: wiz.sat, field: wiz.field, demographics: wiz.demographics };
     setProfile(p);
     saveProfile({
       fullName: wiz.fullName, email: wiz.email, nationality: country,
       targetDegree: wiz.degrees.join(", "),
       gpa: wiz.gpa, ieltsScore: wiz.ielts, toeflScore: wiz.toefl, satScore: wiz.sat,
       fieldOfInterest: wiz.field,
+      demographics: wiz.demographics,
     });
     setAnalysisStep(0); setPhase("analyzing");
   };
@@ -3029,6 +3033,44 @@ const Discover = ({ language = "en" }: Props) => {
                         <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">SAT (undergrad applicants)</label>
                         <Input value={wiz.sat} onChange={e => setWiz(w => ({ ...w, sat: e.target.value }))} placeholder="e.g. 1450"
                           className="bg-primary-foreground/[0.04] border-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/25 h-12 backdrop-blur-md focus-visible:border-gold/50" />
+                      </div>
+                      {/* Optional self-identification — surfaces extra match
+                          boost on programs designed for these groups.
+                          Multi-select chips; nothing required. */}
+                      <div className="space-y-2 pt-2">
+                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">Eligibility groups (optional)</label>
+                        <p className="text-[11px] text-primary-foreground/40 -mt-1">Tap any that apply — surfaces programs designed for you.</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            { v: "women", l: "Women" },
+                            { v: "first-generation", l: "First-generation" },
+                            { v: "low-income", l: "Need-based" },
+                            { v: "refugee", l: "Refugee" },
+                            { v: "indigenous", l: "Indigenous" },
+                            { v: "lgbtq", l: "LGBTQ+" },
+                            { v: "underrepresented-minority", l: "Underrepresented" },
+                            { v: "disability", l: "Disability" },
+                          ].map(d => {
+                            const on = wiz.demographics.includes(d.v);
+                            return (
+                              <button
+                                key={d.v}
+                                type="button"
+                                onClick={() => setWiz(w => ({
+                                  ...w,
+                                  demographics: on ? w.demographics.filter(x => x !== d.v) : [...w.demographics, d.v],
+                                }))}
+                                className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors backdrop-blur-md ${
+                                  on
+                                    ? "bg-gold text-primary border border-gold"
+                                    : "bg-primary-foreground/[0.04] text-primary-foreground/75 border border-primary-foreground/15 hover:bg-primary-foreground/[0.08]"
+                                }`}
+                              >
+                                {d.l}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                     <Button variant="gold" size="lg" className="mt-10 px-12 gap-2 text-base" onClick={completeWizard}>
