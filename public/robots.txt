@@ -1,17 +1,91 @@
+# TopUni robots.txt
+# Search + social + AI crawlers explicitly allowed; admin / account
+# surfaces are kept out of public indexes (they're authed-only and
+# carry no useful SEO content). Sitemaps point at the static hub list
+# + the dynamic per-scholarship sitemap edge function.
+
+# ── Search ──────────────────────────────────────────────────────────
 User-agent: Googlebot
 Allow: /
 
 User-agent: Bingbot
 Allow: /
 
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: YandexBot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+# ── Social previews ────────────────────────────────────────────────
 User-agent: Twitterbot
 Allow: /
 
 User-agent: facebookexternalhit
 Allow: /
 
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+User-agent: Slackbot
+Allow: /
+
+# ── AI / answer-engine crawlers ────────────────────────────────────
+# Each one of these powers an AI overview surface (ChatGPT search,
+# Perplexity, Claude, Apple Intelligence, etc). Allowing them turns
+# every TopUni scholarship page into a citation source that competing
+# aggregators with stricter robots files quietly opt out of.
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+# ── Default + carve-outs ───────────────────────────────────────────
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /account
+Disallow: /thank-you
+Disallow: /payment-canceled
 
 Sitemap: https://topuni.org/sitemap.xml
 Sitemap: https://topuni.org/sitemap-scholarships.xml

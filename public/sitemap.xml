@@ -8,22 +8,35 @@
   <url><loc>https://topuni.org/</loc>                       <changefreq>weekly</changefreq><priority>1.0</priority></url>
   <url><loc>https://topuni.org/topuni-ai</loc>              <changefreq>weekly</changefreq><priority>1.0</priority></url>
   <url><loc>https://topuni.org/discover</loc>               <changefreq>daily</changefreq>  <priority>0.9</priority></url>
-  <url><loc>https://topuni.org/pipeline</loc>               <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/pipeline</loc>               <changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://topuni.org/essay</loc>                  <changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://topuni.org/match</loc>                  <changefreq>weekly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://topuni.org/calendar</loc>               <changefreq>weekly</changefreq><priority>0.5</priority></url>
   <url><loc>https://topuni.org/refer</loc>                  <changefreq>monthly</changefreq><priority>0.4</priority></url>
   <url><loc>https://topuni.org/pricing</loc>                <changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://topuni.org/team</loc>                   <changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://topuni.org/why-tu</loc>                 <changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://topuni.org/academy</loc>                <changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://topuni.org/blog</loc>                   <changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://topuni.org/faq</loc>                    <changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://topuni.org/offerings</loc>              <changefreq>monthly</changefreq><priority>0.6</priority></url>
+
+  <!-- ─── Journal articles ──────────────────────────────────────── -->
+  <url><loc>https://topuni.org/blog/admissions-consultant-checklist</loc>      <changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/blog/5-mistakes-study-abroad</loc>              <changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/blog/ielts-first-attempt</loc>                  <changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/blog/sat-vs-ielts</loc>                         <changefreq>monthly</changefreq><priority>0.7</priority></url>
 
   <!-- Russian-language mirrors -->
   <url><loc>https://topuni.org/ru</loc>                     <changefreq>weekly</changefreq><priority>0.9</priority></url>
   <url><loc>https://topuni.org/topuni-ai/ru</loc>           <changefreq>weekly</changefreq><priority>0.9</priority></url>
   <url><loc>https://topuni.org/discover/ru</loc>            <changefreq>daily</changefreq>  <priority>0.8</priority></url>
+  <url><loc>https://topuni.org/pipeline/ru</loc>            <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/pricing/ru</loc>             <changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/team/ru</loc>                <changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/blog/ru</loc>                <changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/faq/ru</loc>                 <changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://topuni.org/blog/admissions-consultant-checklist/ru</loc>   <changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/blog/5-mistakes-study-abroad/ru</loc>           <changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/blog/ielts-first-attempt/ru</loc>               <changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/blog/sat-vs-ielts/ru</loc>                      <changefreq>monthly</changefreq><priority>0.6</priority></url>
 
   <!-- ─── Programmatic SEO: by-country ────────────────────────── -->
   <url><loc>https://topuni.org/scholarships/by-country/united-states</loc>     <changefreq>weekly</changefreq><priority>0.8</priority></url>
