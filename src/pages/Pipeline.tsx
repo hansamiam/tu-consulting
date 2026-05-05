@@ -236,12 +236,13 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                 <Calendar className="h-3.5 w-3.5" />
                 {t("Sync deadlines to my calendar", "Дедлайны в календарь")}
               </Button>
-              <span className="text-[11px] text-primary-foreground/55 max-w-xs leading-snug">
-                {t(
-                  "Apple, Google, or Outlook — every saved deadline auto-syncs.",
-                  "Apple, Google или Outlook — каждый дедлайн синхронизируется автоматически.",
-                )}
-              </span>
+              <Link
+                to={isRu ? "/refer/ru" : "/refer"}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-foreground/85 hover:text-gold-light transition-colors underline-offset-4 hover:underline"
+              >
+                {t("Refer a friend → free month", "Пригласить друга → бесплатный месяц")}
+                <ArrowRight className="h-3 w-3" />
+              </Link>
             </div>
           )}
         </div>
