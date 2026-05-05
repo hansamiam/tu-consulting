@@ -20,7 +20,7 @@ import {
   Target, Flame, Users, FileText, Languages, Loader2,
   CreditCard, AlertOctagon, AlertCircle, UserCheck, ShieldAlert, MinusCircle, HelpCircle,
   LayoutGrid, List, EyeOff, Eye, Columns3, Circle, MoreHorizontal, GitCompare,
-  Gem, DollarSign, Crown, Award, Compass, Layers,
+  Gem, DollarSign, Crown, Award, Compass, Layers, GraduationCap,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
@@ -30,7 +30,7 @@ import { MatchScoreBreakdown } from "@/components/discover/MatchScoreBreakdown";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { CountryArt, CampusPattern } from "@/lib/countryArt";
 import { accentForCountry, shortCountry, canonicalCountry } from "@/lib/countryAccent";
-import { POPULAR_COUNTRIES, ALL_COUNTRIES } from "@/data/countries";
+import { ALL_COUNTRIES } from "@/data/countries";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSemanticScholarshipMatch } from "@/hooks/useSemanticScholarshipMatch";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
@@ -2594,14 +2594,19 @@ const Discover = ({ language = "en" }: Props) => {
                       />
                       {(() => {
                         const q = wiz.nationality.trim().toLowerCase();
+                        // No "popular" label — there's no such thing as
+                        // "popular nationalities" for the question
+                        // "where are you from". When the input is empty,
+                        // show 0 chips (cleaner) and let the user type.
                         const matches = q
-                          ? ALL_COUNTRIES.filter(c => c.v.toLowerCase().includes(q)).slice(0, 8)
-                          : POPULAR_COUNTRIES;
-                        const heading = q ? "Matches" : "Popular";
+                          ? ALL_COUNTRIES.filter(c => c.v.toLowerCase().includes(q)).slice(0, 12)
+                          : [];
                         const exact = ALL_COUNTRIES.find(c => c.v.toLowerCase() === q);
                         return (
                           <div className="mt-4">
-                            <p className="text-[10px] uppercase tracking-[0.2em] text-primary-foreground/35 text-left mb-2">{heading}</p>
+                            {q && matches.length > 0 && (
+                              <p className="text-[10px] uppercase tracking-[0.2em] text-primary-foreground/35 text-left mb-2">Matches</p>
+                            )}
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                               {matches.map(c => (
                                 <button key={c.v} onClick={() => { setWiz(w => ({ ...w, nationality: c.v })); setWizardStep(2); }}
@@ -2819,14 +2824,23 @@ const Discover = ({ language = "en" }: Props) => {
                   one-click path to fit-driven bucketing instead of just
                   browsing the entire DB blind. */}
               {(() => {
-                const profileChips = [
-                  profile.country,
-                  profile.degrees && profile.degrees.length > 0 ? profile.degrees.join(" / ") : null,
-                  profile.field,
-                  profile.gpa ? `GPA ${profile.gpa}/${profile.gpaScale}` : null,
-                  profile.ielts ? `IELTS ${profile.ielts}` : null,
-                ].filter(Boolean) as string[];
-                const isProfileFilled = profileChips.length > 0;
+                const isProfileFilled = !!(
+                  profile.country ||
+                  (profile.degrees && profile.degrees.length > 0) ||
+                  profile.field ||
+                  profile.gpa ||
+                  profile.ielts
+                );
+                // Country flag emoji — null when the user typed something
+                // we don't have in ALL_COUNTRIES (e.g. "Other"), in which
+                // case the chip falls back to text-only.
+                const countryFlag = profile.country
+                  ? ALL_COUNTRIES.find(c => c.v.toLowerCase() === profile.country.toLowerCase())?.f ?? null
+                  : null;
+                const fieldEmoji = profile.field
+                  ? FIELDS.find(f => f.v === profile.field)?.i ?? null
+                  : null;
+                const countryAccent = accentForCountry(profile.country);
                 return (
                   <div className="relative bg-gradient-to-b from-primary/[0.04] via-canvas-soft to-background border-b border-border/60 overflow-hidden">
                     {/* Subtle gold ambient — keeps the brand mark elevated
@@ -2847,14 +2861,44 @@ const Discover = ({ language = "en" }: Props) => {
                       </div>
                       {/* Vertical rule */}
                       <span className="hidden sm:block self-stretch w-px bg-border/60 my-1" aria-hidden />
-                      {/* Profile chips OR call-to-build-profile */}
-                      <div className="flex items-baseline gap-2 flex-wrap min-w-0 flex-1">
+                      {/* Profile chips OR call-to-build-profile.
+                          Profile chips lean into personal identity:
+                          gradient passport-style country chip with a
+                          flag, field chip with a domain emoji, and
+                          quieter stats. Reads as "the platform sees me"
+                          rather than "filter values applied". */}
+                      <div className="flex items-center gap-2 flex-wrap min-w-0 flex-1">
                         {isProfileFilled ? (
                           <>
-                            {profileChips.map(chip => (
-                              <span key={chip} className="text-xs text-foreground/85 bg-card border border-border px-2 py-0.5 rounded-md font-medium">{chip}</span>
-                            ))}
-                            <button onClick={resetProfile} className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 underline-offset-4 hover:underline">
+                            {profile.country && (
+                              <span className={`inline-flex items-center gap-1.5 text-xs font-semibold text-white px-2.5 py-1 rounded-full bg-gradient-to-r ${countryAccent} shadow-sm`}>
+                                {countryFlag && <span className="text-sm leading-none">{countryFlag}</span>}
+                                {profile.country}
+                              </span>
+                            )}
+                            {profile.degrees && profile.degrees.length > 0 && (
+                              <span className="inline-flex items-center gap-1.5 text-xs text-foreground/85 bg-card border border-border px-2 py-1 rounded-full font-medium">
+                                <GraduationCap className="h-3 w-3 text-gold-dark" />
+                                {profile.degrees.join(" / ")}
+                              </span>
+                            )}
+                            {profile.field && (
+                              <span className="inline-flex items-center gap-1.5 text-xs text-foreground/85 bg-card border border-border px-2 py-1 rounded-full font-medium">
+                                {fieldEmoji && <span className="leading-none">{fieldEmoji}</span>}
+                                {profile.field}
+                              </span>
+                            )}
+                            {profile.gpa && (
+                              <span className="inline-flex items-center text-[11px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md font-medium tabular-nums">
+                                GPA {profile.gpa}/{profile.gpaScale}
+                              </span>
+                            )}
+                            {profile.ielts && (
+                              <span className="inline-flex items-center text-[11px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md font-medium tabular-nums">
+                                IELTS {profile.ielts}
+                              </span>
+                            )}
+                            <button onClick={resetProfile} className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 underline-offset-4 hover:underline ml-1">
                               Edit
                             </button>
                           </>
@@ -2924,33 +2968,40 @@ const Discover = ({ language = "en" }: Props) => {
                     </SelectContent>
                   </Select>
 
-                  {/* View-mode segmented control */}
-                  <div className="inline-flex h-10 items-center rounded-lg border border-border bg-card overflow-hidden" role="tablist" aria-label="View mode">
-                    <button
-                      onClick={() => setViewMode("grid")}
-                      className={`h-full px-3 text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === "grid" ? "bg-foreground/[0.06] text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                      aria-pressed={viewMode === "grid"}
-                      title="Grid view"
-                    >
-                      <LayoutGrid className="h-3.5 w-3.5" /><span className="hidden sm:inline">Grid</span>
-                    </button>
-                    <button
-                      onClick={() => setViewMode("list")}
-                      className={`h-full px-3 text-xs font-medium flex items-center gap-1.5 transition-colors border-l border-border ${viewMode === "list" ? "bg-foreground/[0.06] text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                      aria-pressed={viewMode === "list"}
-                      title="List view"
-                    >
-                      <List className="h-3.5 w-3.5" /><span className="hidden sm:inline">List</span>
-                    </button>
-                    <button
-                      onClick={() => setViewMode("timeline")}
-                      className={`h-full px-3 text-xs font-medium flex items-center gap-1.5 transition-colors border-l border-border ${viewMode === "timeline" ? "bg-foreground/[0.06] text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                      aria-pressed={viewMode === "timeline"}
-                      title="Timeline view"
-                    >
-                      <Flame className="h-3.5 w-3.5" /><span className="hidden sm:inline">Deadlines</span>
-                    </button>
-                  </div>
+                  {/* View-mode segmented control — only meaningful in
+                      Browse. Shortlist + Pipeline always render as a
+                      list regardless of viewMode (the underlying
+                      branches at L3193+ ignore it), and Collections
+                      render their own tile grid. Showing a clickable-
+                      but-no-op toggle in those sections was misleading. */}
+                  {appSection === "browse" && (
+                    <div className="inline-flex h-10 items-center rounded-lg border border-border bg-card overflow-hidden" role="tablist" aria-label="View mode">
+                      <button
+                        onClick={() => setViewMode("grid")}
+                        className={`h-full px-3 text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === "grid" ? "bg-foreground/[0.06] text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                        aria-pressed={viewMode === "grid"}
+                        title="Grid view"
+                      >
+                        <LayoutGrid className="h-3.5 w-3.5" /><span className="hidden sm:inline">Grid</span>
+                      </button>
+                      <button
+                        onClick={() => setViewMode("list")}
+                        className={`h-full px-3 text-xs font-medium flex items-center gap-1.5 transition-colors border-l border-border ${viewMode === "list" ? "bg-foreground/[0.06] text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                        aria-pressed={viewMode === "list"}
+                        title="List view"
+                      >
+                        <List className="h-3.5 w-3.5" /><span className="hidden sm:inline">List</span>
+                      </button>
+                      <button
+                        onClick={() => setViewMode("timeline")}
+                        className={`h-full px-3 text-xs font-medium flex items-center gap-1.5 transition-colors border-l border-border ${viewMode === "timeline" ? "bg-foreground/[0.06] text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                        aria-pressed={viewMode === "timeline"}
+                        title="Timeline view"
+                      >
+                        <Flame className="h-3.5 w-3.5" /><span className="hidden sm:inline">Deadlines</span>
+                      </button>
+                    </div>
+                  )}
 
                   {/* Compare button — opens drawer */}
                   {compareSet.size > 0 && (
@@ -2980,11 +3031,15 @@ const Discover = ({ language = "en" }: Props) => {
                     </Button>
                   )}
 
-                  <span className="text-xs text-muted-foreground hidden md:inline ml-auto tabular-nums">
-                    {filtered.length === ranked.length
-                      ? `${ranked.length} ${ranked.length === 1 ? "result" : "results"}`
-                      : `${filtered.length} of ${ranked.length}`}
-                  </span>
+                  {/* Show the count ONLY when filters narrowed the list —
+                      a bare "225 results" total reads as marketing rather
+                      than function. When filters are inactive the count
+                      is just visual noise. */}
+                  {filtered.length !== ranked.length && (
+                    <span className="text-xs text-muted-foreground hidden md:inline ml-auto tabular-nums">
+                      {filtered.length} of {ranked.length}
+                    </span>
+                  )}
                 </div>
               </div>
 
