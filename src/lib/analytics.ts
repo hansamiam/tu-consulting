@@ -32,7 +32,10 @@ export type EventName =
   | "share_brief_minted"
   | "deep_dive_opened"
   | "brief_focus_scholarship_set"
-  | "brief_30_day_call_clicked";
+  | "brief_30_day_call_clicked"
+  | "calendar_subscribe_opened"
+  | "calendar_subscribe_clicked"
+  | "calendar_token_rotated";
 
 const ANON_ID_KEY = "topuni-anon-id";
 

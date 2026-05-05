@@ -98,7 +98,12 @@ const TopUniAI = () => {
   const [countrySearch, setCountrySearch] = useState("");
   const [major, setMajor] = useState(draft?.major ?? "");
   const [budget, setBudget] = useState(draft?.budget ?? "");
-  const [scholarshipNeeded, setScholarshipNeeded] = useState(draft?.scholarshipNeeded ?? "");
+  // scholarshipNeeded is now derived from budget rather than asked
+  // separately — the standalone yes/no question was redundant since
+  // budget="Need full scholarship" already encodes the same intent.
+  // Kept in state (not just derived inline) so the existing draft
+  // persistence + downstream brief generator continue working unchanged.
+  const scholarshipNeeded = budget === "Need full scholarship" ? "yes" : budget ? "no" : (draft?.scholarshipNeeded ?? "");
   const [timeline, setTimeline] = useState(draft?.timeline ?? "");
   const [prestige, setPrestige] = useState<number[]>([typeof draft?.prestige === "number" ? draft.prestige : 3]);
   const [scholarship, setScholarship] = useState<number[]>([typeof draft?.scholarship === "number" ? draft.scholarship : 3]);
@@ -152,10 +157,11 @@ const TopUniAI = () => {
         setMajor((prev) => prev || payload.field!);
         setHubContext({ kind: "field", label: payload.label || payload.field });
       } else if (payload.kind === "theme" && payload.theme) {
-        // Theme-specific defaults: full-funding ⇒ needs scholarship; closing-soon
-        // ⇒ Fall 2026 timeline; high-value ⇒ scholarship-priority sloped up.
+        // Theme-specific defaults: full-funding ⇒ "Need full scholarship"
+        // budget (which derives scholarshipNeeded=yes); closing-soon ⇒
+        // Fall 2026 timeline; high-value ⇒ scholarship-priority sloped up.
         if (payload.theme === "full-funding") {
-          setScholarshipNeeded("yes");
+          setBudget("Need full scholarship");
           setScholarship([5]);
         } else if (payload.theme === "closing-soon") {
           setTimeline("Fall 2026");
@@ -511,11 +517,18 @@ const TopUniAI = () => {
                           <Input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="With country code" className="h-11 bg-card" />
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">Grade level *</Label>
+                          <Label className="text-xs uppercase tracking-wider font-medium">Where you are *</Label>
                           <Select value={gradeLevel} onValueChange={setGradeLevel}>
                             <SelectTrigger className="h-11 bg-card"><SelectValue placeholder="Select" /></SelectTrigger>
                             <SelectContent>
-                              {["9th Grade", "10th Grade", "11th Grade", "12th Grade", "Gap Year", "University Transfer"].map(g => (
+                              {[
+                                "9th Grade", "10th Grade", "11th Grade", "12th Grade",
+                                "Gap Year", "University Transfer",
+                                "Bachelor's — current",  "Bachelor's — graduating",
+                                "Master's — current",    "Master's — graduating",
+                                "PhD applicant",
+                                "Working professional",
+                              ].map(g => (
                                 <SelectItem key={g} value={g}>{g}</SelectItem>
                               ))}
                             </SelectContent>
@@ -630,37 +643,35 @@ const TopUniAI = () => {
                       </div>
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">Budget</Label>
+                          <Label className="text-xs uppercase tracking-wider font-medium">What you can self-fund</Label>
                           <Select value={budget} onValueChange={setBudget}>
                             <SelectTrigger className="h-11 bg-card"><SelectValue placeholder="Select" /></SelectTrigger>
                             <SelectContent>
-                              {["Under $5,000/year", "$5,000–$15,000/year", "$15,000–$30,000/year", "$30,000+/year", "Full scholarship needed"].map(b => (
+                              {[
+                                "Need full scholarship",
+                                "Under $5,000/year",
+                                "$5,000–$15,000/year",
+                                "$15,000–$30,000/year",
+                                "$30,000+/year",
+                              ].map(b => (
                                 <SelectItem key={b} value={b}>{b}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">Need scholarship?</Label>
-                          <Select value={scholarshipNeeded} onValueChange={setScholarshipNeeded}>
+                          <Label className="text-xs uppercase tracking-wider font-medium">When you'd start</Label>
+                          <Select value={timeline} onValueChange={setTimeline}>
                             <SelectTrigger className="h-11 bg-card"><SelectValue placeholder="Select" /></SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="yes">Yes</SelectItem>
-                              <SelectItem value="no">No</SelectItem>
+                              <SelectItem value="Fall 2026">Fall 2026</SelectItem>
+                              <SelectItem value="Spring 2027">Spring 2027</SelectItem>
+                              <SelectItem value="Fall 2027">Fall 2027</SelectItem>
+                              <SelectItem value="Spring 2028">Spring 2028</SelectItem>
+                              <SelectItem value="Flexible">Flexible</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs uppercase tracking-wider font-medium">Timeline</Label>
-                        <Select value={timeline} onValueChange={setTimeline}>
-                          <SelectTrigger className="h-11 bg-card"><SelectValue placeholder="Select" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Fall 2026">Fall 2026</SelectItem>
-                            <SelectItem value="Fall 2027">Fall 2027</SelectItem>
-                            <SelectItem value="Flexible">Flexible</SelectItem>
-                          </SelectContent>
-                        </Select>
                       </div>
                     </div>
                     <div className="flex justify-between pt-4">
