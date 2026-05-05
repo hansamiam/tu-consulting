@@ -1056,14 +1056,13 @@ const StatusBadge = ({ status, onChange, dense = false }: {
  *   · Award amount as a real visual chip when present
  *   · Match score circle (when real) replaces the silhouette square
  */
-const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0, showProTeaser = false, outcomes }: {
+const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0, outcomes }: {
   s: Scored; onSelect: () => void;
   isBookmarked: boolean; onBookmark: (e: React.MouseEvent) => void;
   status: AppStatus | undefined; onStatusChange: (s: AppStatus | null) => void;
   isHidden: boolean; onToggleHide: (e: React.MouseEvent) => void;
   isComparing: boolean; onToggleCompare: (e: React.MouseEvent) => void;
   index?: number;
-  showProTeaser?: boolean;
   /** Per-scholarship member outcome counts. Renders a tiny "X applied
    *  · Y won" pill in the row header when applied >= 3. */
   outcomes?: { applied: number; accepted: number; inPipeline: number };
@@ -1173,11 +1172,6 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
                 {s.target_demographics.length > 2 && ` +${s.target_demographics.length - 2}`}
               </span>
             )}
-            {showProTeaser && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-gold/10 text-gold-dark shrink-0" title="Pro: ideal candidate · how to win · rejection reasons">
-                <Lock className="h-2.5 w-2.5" /> Pro
-              </span>
-            )}
             {outcomes && outcomes.applied >= 3 && (
               <span
                 className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 shrink-0 tabular-nums"
@@ -1194,32 +1188,23 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
           </div>
         </div>
 
-        {/* Award + deadline (desktop only). Two HORIZONTALLY-separated
-            cells — award is a clear chip on the left half, deadline is
-            its own date+caption on the right half. They never share a
-            box, never stack vertically, and have a vertical rule
-            between them so the eye reads them as two facts not one
-            stretched line. */}
-        <div className="hidden sm:flex items-center gap-3 min-w-0">
-          {/* Award chip cell */}
-          <div className="flex flex-col items-start gap-1 min-w-0">
-            <span className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground/60 font-semibold">Award</span>
-            {award ? (
-              <span className={`inline-flex items-center gap-1 text-[12px] font-semibold whitespace-nowrap ${isFullRide ? "text-gold-dark" : "text-foreground"}`}>
-                {isFullRide && <Award className="h-3 w-3 shrink-0" />}
-                {award}
-              </span>
-            ) : (
-              <span className="text-[12px] text-muted-foreground/50">—</span>
-            )}
-          </div>
-          {/* Vertical rule separating the two cells */}
-          <span className="block h-7 w-px bg-border/60 shrink-0" aria-hidden />
-          {/* Deadline cell */}
-          <div className="flex flex-col items-start gap-1 min-w-0">
-            <span className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground/60 font-semibold">Deadline</span>
-            <span className={`text-[12px] tabular-nums font-medium leading-tight whitespace-nowrap ${dl.cls}`}>{dl.text}</span>
-          </div>
+        {/* Award + deadline (desktop only) — single line, no redundant
+            labels. Award value carries its own meaning ("$50K total" /
+            "Full ride"); deadline value is a date + countdown that
+            doesn't need a "Deadline:" prefix to be readable. The
+            column header above the rows already says "Award · Deadline"
+            once for the whole list. */}
+        <div className="hidden sm:flex items-center gap-2 min-w-0 text-[13px]">
+          {award ? (
+            <span className={`inline-flex items-center gap-1 font-semibold whitespace-nowrap ${isFullRide ? "text-gold-dark" : "text-foreground"}`}>
+              {isFullRide && <Award className="h-3 w-3 shrink-0" />}
+              {award}
+            </span>
+          ) : (
+            <span className="text-muted-foreground/50">—</span>
+          )}
+          <span className="text-muted-foreground/30" aria-hidden>·</span>
+          <span className={`tabular-nums font-medium leading-tight whitespace-nowrap ${dl.cls}`}>{dl.text}</span>
         </div>
 
         {/* Status — only render once the row's been bookmarked. In
@@ -1284,16 +1269,13 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
 };
 
 /* ─── Scholarship card — dense, product-grade, scannable in a 3-col grid ── */
-const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0, showProTeaser = false, outcomes }: {
+const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0, outcomes }: {
   s: Scored; onSelect: () => void;
   isBookmarked: boolean; onBookmark: (e: React.MouseEvent) => void;
   status: AppStatus | undefined; onStatusChange: (s: AppStatus | null) => void;
   isHidden: boolean; onToggleHide: (e: React.MouseEvent) => void;
   isComparing: boolean; onToggleCompare: (e: React.MouseEvent) => void;
   index?: number;
-  /** Show the quiet "+ Pro insights" pill in the footer when the row has
-   *  Pro fields populated and the viewer is on free tier. */
-  showProTeaser?: boolean;
   /** Per-scholarship member outcome counts (compounding trust signal). */
   outcomes?: { applied: number; accepted: number; inPipeline: number };
 }) => {
@@ -1465,14 +1447,9 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
               </>
             );
           })()}
-          {showProTeaser && (
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gold/10 text-gold-dark text-[10px] font-semibold tracking-wide ml-auto" title="Pro: ideal candidate · how to win · rejection reasons">
-              <Lock className="h-2.5 w-2.5" /> Pro
-            </span>
-          )}
           {outcomes && outcomes.applied >= 3 && (
             <span
-              className={`inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 text-[10px] font-semibold tracking-wide tabular-nums ${showProTeaser ? "" : "ml-auto"}`}
+              className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 text-[10px] font-semibold tracking-wide tabular-nums ml-auto"
               title={outcomes.accepted > 0 ? `${outcomes.applied} TopUni members applied · ${outcomes.accepted} received offers` : `${outcomes.applied} TopUni members have applied`}
             >
               {outcomes.applied}{outcomes.accepted > 0 ? `·${outcomes.accepted}w` : ""}
@@ -1480,7 +1457,7 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           )}
           {hasRealScore && s.match >= 70 && (s.eligibility === "eligible" || s.eligibility === "likely") && (
             <>
-              <span className={`text-muted-foreground/30 ${(showProTeaser || (outcomes && outcomes.applied >= 3)) ? "" : "ml-auto"}`}>·</span>
+              <span className={`text-muted-foreground/30 ${outcomes && outcomes.applied >= 3 ? "" : "ml-auto"}`}>·</span>
               <HoverCard openDelay={120} closeDelay={80}>
                 <HoverCardTrigger asChild>
                   <button
@@ -3672,22 +3649,18 @@ const Discover = ({ language = "en" }: Props) => {
                             onToggleHide: (e: React.MouseEvent) => { e.stopPropagation(); toggleHide(s.scholarship_id); },
                             isComparing: compareSet.has(s.scholarship_id),
                             onToggleCompare: (e: React.MouseEvent) => { e.stopPropagation(); toggleCompare(s.scholarship_id); },
-                            // Show the small "Pro insights" teaser only when
-                            // the row has Pro fields populated AND the user
-                            // can't see them yet. Pro members never see it.
-                            showProTeaser: !isMember && !!(s.ideal_candidate_profile || s.how_to_win || s.common_rejection_reasons),
                             outcomes: outcomesMap.get(s.scholarship_id),
                           });
+                          // List-mode column header is intentionally label-only.
+                          // Sort is driven by the dropdown above the grid —
+                          // one source of truth, no broken-feeling chevrons
+                          // suggesting click-to-sort that wasn't reliable.
                           return (
                             <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
                               <div className="hidden sm:grid grid-cols-[52px,minmax(0,3fr),minmax(0,1.4fr),minmax(0,0.8fr),auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                                <span className="text-center">
-                                  <button onClick={() => setSortBy("match")} className={`transition-colors ${sortBy === "match" ? "text-foreground" : "hover:text-foreground"}`}>Score{sortBy === "match" && <span className="ml-1 text-gold-dark">↓</span>}</button>
-                                </span>
+                                <span className="text-center">Score</span>
                                 <span>Scholarship</span>
-                                <span>
-                                  <button onClick={() => setSortBy("deadline")} className={`transition-colors ${sortBy === "deadline" ? "text-foreground" : "hover:text-foreground"}`}>Award · Deadline{sortBy === "deadline" && <span className="ml-1 text-gold-dark">↓</span>}</button>
-                                </span>
+                                <span>Award · Deadline</span>
                                 <span>Status</span>
                                 <span className="text-right pr-2">Actions</span>
                               </div>
@@ -3754,28 +3727,18 @@ const Discover = ({ language = "en" }: Props) => {
                             onToggleHide: (e: React.MouseEvent) => { e.stopPropagation(); toggleHide(s.scholarship_id); },
                             isComparing: compareSet.has(s.scholarship_id),
                             onToggleCompare: (e: React.MouseEvent) => { e.stopPropagation(); toggleCompare(s.scholarship_id); },
-                            showProTeaser: !isMember && !!(s.ideal_candidate_profile || s.how_to_win || s.common_rejection_reasons),
+                            outcomes: outcomesMap.get(s.scholarship_id),
                           });
 
                           if (viewMode === "list") {
-                            const sortBtn = (label: string, key: SortBy) => {
-                              const active = sortBy === key;
-                              return (
-                                <button
-                                  onClick={() => setSortBy(key)}
-                                  className={`text-left transition-colors ${active ? "text-foreground" : "hover:text-foreground"}`}
-                                >
-                                  {label}{active && <span className="ml-1 text-gold-dark">↓</span>}
-                                </button>
-                              );
-                            };
+                            // Header is label-only — sort is driven by the
+                            // dropdown above the grid (one source of truth).
                             return (
                               <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
-                                {/* Sortable column headers (desktop) */}
                                 <div className="hidden sm:grid grid-cols-[52px,minmax(0,3fr),minmax(0,1.4fr),minmax(0,0.8fr),auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                                  <span className="text-center">{sortBtn("Score", "match")}</span>
+                                  <span className="text-center">Score</span>
                                   <span>Scholarship</span>
-                                  <span>{sortBtn("Award · Deadline", "deadline")}</span>
+                                  <span>Award · Deadline</span>
                                   <span>Status</span>
                                   <span className="text-right pr-2">Actions</span>
                                 </div>
