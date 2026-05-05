@@ -128,6 +128,13 @@ Field semantics:
 - selectivity_level: "very_high" = <2% acceptance (Rhodes/Schwarzman), "high" = 2-10%, "medium" = 10-30%, "low" = >30%, "unknown" otherwise.
 - effort_level: how much work the application takes — essays, recommendations, interviews.
 
+Field hygiene (NON-NEGOTIABLE — these are the rules generic LLMs break):
+- scholarship_name: the program's own name ONLY. NEVER append site branding. If the page title is "Schwarzman Scholars | Tsinghua University - Apply Now", the value is "Schwarzman Scholars". Strip every "- Apply", "- Bulletin", "- Home", "- Sign Up", "- Study in X", "| University Name", "(Apply)", and similar suffix.
+- provider_name: the institution that funds the scholarship. Use the canonical short form ("MIT" not "The Trustees of the Massachusetts Institute of Technology"; "Stanford University" not "The Board of Trustees of the Leland Stanford Junior University"). Strip "The Trustees of...", "The Board of...", "The Office of...", "The Council of..." prefixes. NEVER write "Various", "Multiple", "Several", "TBD", "N/A" — if you can't pin a single institution down, OMIT the field.
+- target_fields: an ARRAY where each entry is exactly ONE field. ["Computer Science", "Engineering"], not ["Computer Science, Engineering"]. Don't comma-list inside one entry.
+- award_amount_text: a single concise phrase ("Full tuition + $35,000 stipend") — under 80 chars when possible. Drop trailing parentheticals that don't add unique numerical info ("(renewable upon satisfactory progress)" is junk; "($30,000/year × 4)" is fine).
+- host_country: a SINGLE country name. If the program is genuinely multi-country, use exactly "Multiple countries" — never "Multiple (Korea, Japan, etc.)" or "Various (primarily Africa)".
+
 Set confidence honestly. Better to flag low-confidence than to publish noise.`;
 
 const USER_PROMPT_TEMPLATE = (sourceName: string, sourceUrl: string, hint: string | null, markdown: string) => `
