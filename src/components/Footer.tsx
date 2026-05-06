@@ -5,35 +5,22 @@ interface FooterProps {
   variant?: "light" | "dark";
 }
 
-// Round-19 footer cleanup: consolidated to one short column. Names
-// match the top-nav exactly so visitors don't read two different
-// labels for the same surface (no more "AI strategy brief" vs
-// "TopUni AI", no more "Discover scholarships" vs "Discover"). We
-// don't repeat surfaces that are already in the top nav (TopUni AI,
-// Discover, Academy) — top nav is the navigation primary; the
-// footer is for surfaces NOT in top nav, plus Pricing because
-// it's the conversion driver and worth two entry points.
-//
-// Refer-a-friend retired from footer — virality lives where it
-// belongs (Workspace header, Discover sidebar engagement-gated chip,
-// post-brief moment). Footer link was anti-pattern: people who
-// scroll to footers aren't in the share-with-friends headspace.
-//
-// Submit-a-scholarship → "Partner with us": dual ask of free
-// submissions + future paid-promotion / featured-listing
-// partnerships. Same /submit route for now; page copy expands.
+// Footer surfaces only what's NOT in primary nav (or what doubles as a
+// conversion driver). Workspace was removed because it lives in primary
+// nav; Pricing now also lives in footer-only since we trimmed it from
+// primary nav. Journal in the Russian footer reads "Blog (in English)"
+// because the editorial content is EN-only and we don't want to lead
+// Russian visitors to a 404-feeling experience.
 const FOOTER_LINKS_EN = [
-  { to: "/pipeline",  label: "Workspace" },
   { to: "/team",      label: "Team" },
   { to: "/pricing",   label: "Pricing" },
   { to: "/blog",      label: "Journal" },
   { to: "/submit",    label: "Partner with us" },
 ];
 const FOOTER_LINKS_RU = [
-  { to: "/pipeline/ru",  label: "Рабочая зона" },
   { to: "/team/ru",      label: "Команда" },
   { to: "/pricing/ru",   label: "Цены" },
-  { to: "/blog/ru",      label: "Журнал" },
+  { to: "/blog",         label: "Блог (на английском)" },
   { to: "/submit/ru",    label: "Сотрудничество" },
 ];
 
@@ -50,7 +37,7 @@ export const Footer = ({ language, variant = "light" }: FooterProps) => {
       publicOffer: "Public Offer",
       refundPolicy: "Refund Policy",
       paymentInfo: "Payment by Card",
-      tagline: "AI-driven admissions strategy, alumni-led, built to be accessible. Plan your education, your funding, and your career — without the traditional consulting price tag.",
+      tagline: "Top universities, fully funded. AI-driven, alumni-led.",
       copyright: `© ${new Date().getFullYear()} TopUni · All rights reserved`,
     },
     ru: {
@@ -60,7 +47,7 @@ export const Footer = ({ language, variant = "light" }: FooterProps) => {
       publicOffer: "Публичная оферта",
       refundPolicy: "Правила возврата",
       paymentInfo: "Оплата банковской картой",
-      tagline: "AI-стратегия поступления — выпускники Yale, Cambridge, Harvard и data-driven подход. Доступно. Образование, финансирование, карьера — без цен традиционного консалтинга.",
+      tagline: "Топ-университеты, полное финансирование. AI-стратегия от выпускников Yale, Cambridge, Harvard.",
       copyright: `© ${new Date().getFullYear()} TopUni · Все права защищены`,
     },
   };

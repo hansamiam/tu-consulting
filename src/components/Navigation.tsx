@@ -36,19 +36,19 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
   const isRussian = language === "ru";
   const basePath = isRussian ? "/ru" : "/";
 
-  // Tighter IA: 5 product surfaces in linear order. TopUni AI →
+  // Tighter IA: 4 product surfaces in linear order. TopUni AI →
   // Discover → Workspace covers the funnel from intake → browse → do.
-  // Academy + Pricing live alongside as platform surfaces. Team /
-  // Journal / Partner-with-us live in the footer where company-tier
-  // surfaces belong. Names match the page-level labels exactly so
-  // there's no "Pipeline" vs "Workspace" or "AI brief" vs "TopUni
-  // AI" inconsistency between nav and content.
+  // Academy lives alongside as a platform surface. Pricing / Team /
+  // Journal / Partner-with-us live in the footer where they belong;
+  // Pricing also surfaces inside in-app upgrade flows where the user
+  // is already in conversion intent. Names match the page-level
+  // labels exactly so there's no "Pipeline" vs "Workspace" or "AI
+  // brief" vs "TopUni AI" inconsistency between nav and content.
   const navItems = [
     { label: "TopUni AI",                                     path: isRussian ? "/topuni-ai/ru" : "/topuni-ai" },
     { label: isRussian ? "Стипендии"   : "Discover",          path: isRussian ? "/discover/ru" : "/discover" },
     { label: isRussian ? "Рабочая зона" : "Workspace",        path: isRussian ? "/pipeline/ru" : "/pipeline" },
     { label: isRussian ? "Академия"    : "Academy",           path: "/academy" },
-    { label: isRussian ? "Цены"        : "Pricing",           path: isRussian ? "/pricing/ru" : "/pricing" },
   ];
 
   const isActive = (path: string, exact?: boolean) =>
