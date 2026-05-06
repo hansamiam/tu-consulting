@@ -48,15 +48,24 @@ export const WatchlistButton = ({ universityId, onToggle }: WatchlistButtonProps
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // Derive saved state from the post-toggle list so React + localStorage
+    // can never drift (cross-tab edits, double-fire on rapid click, etc.).
+    // The previous \`setSaved(s => !s)\` was a parallel toggle that didn't
+    // verify against the source of truth.
     const list = toggleWatchlist(universityId);
-    setSaved(s => !s);
+    const isNowSaved = list.includes(universityId);
+    setSaved(isNowSaved);
     onToggle?.();
 
-    if (list.length >= 3) {
+    // The "saved-3" milestone should fire on the SAVE that crosses the
+    // 3rd item — not on an UNSAVE that drops back to 3 from 4. Gate on
+    // both isNowSaved (we just added) AND list.length === 3 so the
+    // upgrade prompt doesn't pop while the user is removing items.
+    if (isNowSaved && list.length === 3) {
       track("saved_3_universities", { count: list.length });
       if (!subscription.is_active && !localStorage.getItem(SAVED_3_PROMPT_KEY)) {
         localStorage.setItem(SAVED_3_PROMPT_KEY, "1");
-        toast("🎯 You've saved 3 universities!", {
+        toast("You've saved 3 universities", {
           description: "Unlock the full admissions strategy with TopUni Membership.",
           action: { label: "See plans", onClick: () => navigate("/pricing") },
           duration: 9000,
