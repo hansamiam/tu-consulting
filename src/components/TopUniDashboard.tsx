@@ -1463,6 +1463,10 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
      the cached brief: identity fields, language, AND the reportGrade
      (so a user who upgrades from basic to premium auto-regenerates the
      deeper version on next visit, not the stale basic one). */
+  // Stable string key for profile.targetCountries so the deps array
+  // can be statically checked. The array reference flips on every
+  // render even when the underlying values are identical.
+  const targetCountriesKey = (profile.targetCountries ?? []).join(",");
   const profileHash = useMemo(() => {
     const fingerprint = JSON.stringify({
       n: profile.fullName, g: profile.gpa, i: profile.ielts, s: profile.sat,
@@ -1477,7 +1481,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     let h = 0;
     for (let i = 0; i < fingerprint.length; i++) h = ((h << 5) - h + fingerprint.charCodeAt(i)) | 0;
     return `p${h.toString(36)}`;
-  }, [profile.fullName, profile.gpa, profile.ielts, profile.sat, profile.major, profile.targetCountries?.join(","), profile.budget, language, reportGrade, proDepth.topActivity, proDepth.personalStory, proDepth.namedSchools]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile.fullName, profile.gpa, profile.ielts, profile.sat, profile.major, targetCountriesKey, profile.budget, language, reportGrade, proDepth.topActivity, proDepth.personalStory, proDepth.namedSchools]);
 
   const PATHWAY_STORAGE_KEY = "topuni-pathway-cache";
 
@@ -1577,7 +1582,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         .limit(6);
       if (data) setLiveMatches(data as LiveMatch[]);
     })();
-  }, [profile.fullName, profile.targetCountries?.join(",")]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile.fullName, targetCountriesKey]);
 
   /* Saved-but-not-top-matched scholarships — the user may have saved
      scholarships from /discover that don't appear in their auto-fetched

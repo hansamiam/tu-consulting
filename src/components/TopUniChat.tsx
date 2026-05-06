@@ -159,9 +159,9 @@ const TopUniChat = ({ language = "en" }: TopUniChatProps) => {
           } catch { /* ignore */ }
         }
       }
-    } catch (e: any) {
+    } catch (e) {
       clearTimeout(timeout);
-      const isTimeout = e.name === "AbortError";
+      const isTimeout = e instanceof Error && e.name === "AbortError";
       const errorMsg = isTimeout
         ? (isRu ? "⏱ Время ожидания истекло. Нажмите «↻» чтобы повторить." : "⏱ Request timed out. Tap ↻ to retry.")
         : (isRu ? "⚠️ Не удалось подключиться. Нажмите «↻» чтобы повторить." : "⚠️ Couldn't connect. Tap ↻ to retry.");
