@@ -17,7 +17,8 @@ import {
   CheckCircle2, Search, BookOpen, ListChecks, Map, Zap,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { saveProfile, type DiscoverProfile } from "@/components/discover/DiscoverProfileGate";
+import { saveProfile } from "@/components/discover/DiscoverProfileGate";
+import { projectToDiscoverProfile } from "@/lib/topuniIntakeProjection";
 
 // 'landing' retired round 10 — TopUni AI opens directly in intake.
 type Screen = "intake" | "dashboard";
@@ -30,7 +31,13 @@ type Screen = "intake" | "dashboard";
  * student_profiles plumbing the wizard used. Result: completing
  * the AI brief instantly seeds the Discover database, the wizard
  * is skipped, and there's one source of truth for "who is this
- * student". */
+ * student".
+ *
+ * Round 53: extracted projectToDiscoverProfile + mapGradeLevelToTarget
+ * Degree to src/lib/topuniIntakeProjection.ts so the Russian
+ * /topuni-ai/ru page can call the SAME projection. Pre-extraction RU
+ * just set screen="dashboard" without seeding Discover, leaving
+ * Russian users to re-answer the wizard inside Discover. */
 
 /* TopUniAI's gradeLevel uses descriptive labels ("Bachelor's —
  * graduating", "11th Grade", "Working professional") so the brief
@@ -42,63 +49,7 @@ type Screen = "intake" | "dashboard";
  * surfacing all the wrong programs. Map intentionally to what the
  * student is APPLYING TO, not where they currently are.
  *
- * Heuristic:
- *   · 9-12th Grade / Gap Year / University Transfer → undergraduate
- *     (they're applying TO an undergraduate program).
- *   · Bachelor's — current → undergraduate (mid-undergrad fellowships).
- *   · Bachelor's — graduating → master's (next step).
- *   · Master's — current → master's (in-program fellowships).
- *   · Master's — graduating / PhD applicant → PhD.
- *   · Working professional → master's (most common: MBA / MA returners). */
-const mapGradeLevelToTargetDegree = (gradeLevel: string): string => {
-  const g = gradeLevel.toLowerCase();
-  if (!g) return "";
-  if (/grade|gap year/.test(g))                                  return "undergraduate";
-  if (/transfer/.test(g))                                        return "undergraduate";
-  if (/bachelor.*current/.test(g))                               return "undergraduate";
-  if (/bachelor.*graduating/.test(g))                            return "master's";
-  if (/master.*current/.test(g))                                 return "master's";
-  if (/master.*graduating/.test(g) || /phd applicant/.test(g))   return "PhD";
-  if (/working professional/.test(g))                            return "master's";
-  return gradeLevel; // unknown — keep original so canonicalize can try
-};
-
-const projectToDiscoverProfile = (intake: {
-  fullName: string;
-  email: string;
-  nationality: string;
-  gradeLevel: string;
-  gpa: string;
-  ielts: string;
-  toefl: string;
-  sat: string;
-  major: string;
-  budget: string;
-  targetCountries: string[];
-}): DiscoverProfile => ({
-  fullName: intake.fullName.trim(),
-  email: intake.email.trim(),
-  nationality: intake.nationality.trim(),
-  // educationLevel = where the student currently is (preserved
-  // verbatim for downstream surfaces that show "you're a Master's
-  // — graduating student"). targetDegree = canonical degree the
-  // student is APPLYING TO (drives Discover's degree-match scoring).
-  educationLevel: intake.gradeLevel || undefined,
-  targetDegree: mapGradeLevelToTargetDegree(intake.gradeLevel) || undefined,
-  gpa: intake.gpa || undefined,
-  ieltsScore: intake.ielts || undefined,
-  toeflScore: intake.toefl || undefined,
-  satScore: intake.sat || undefined,
-  fieldOfInterest: intake.major || undefined,
-  budgetRange: intake.budget || undefined,
-  // targetCountries = where the student wants to STUDY. Drives the
-  // semantic match endpoint's bias toward programs in those host
-  // countries. Without this, Discover was filling its targetCountries
-  // slot with nationality (where the student is FROM), which biased
-  // matches toward home-country programs — usually the opposite of
-  // what an applicant looking abroad actually wants.
-  targetCountries: intake.targetCountries.filter(Boolean),
-});
+ * Heuristic + RU patterns now live in src/lib/topuniIntakeProjection.ts. */
 
 import { POPULAR_DESTINATIONS, ALL_COUNTRIES } from "@/data/countries";
 

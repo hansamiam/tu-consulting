@@ -13,6 +13,8 @@ import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight, ArrowLeft, Sparkles, GraduationCap, Target, Shield, CheckCircle2, Bot, Search, PenTool, BookOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { saveProfile } from "@/components/discover/DiscoverProfileGate";
+import { projectToDiscoverProfile } from "@/lib/topuniIntakeProjection";
 
 // 'landing' retired round 10 — page opens directly into intake.
 type Screen = "intake" | "dashboard" | "chat-only";
@@ -48,6 +50,7 @@ const TopUniAIRu = () => {
   const [gradeLevel, setGradeLevel] = useState("");
   const [gpa, setGpa] = useState("");
   const [ielts, setIelts] = useState("");
+  const [toefl, setToefl] = useState("");
   const [sat, setSat] = useState("");
   const [targetCountries, setTargetCountries] = useState<string[]>([]);
   const [major, setMajor] = useState("");
@@ -67,7 +70,7 @@ const TopUniAIRu = () => {
   const mappedCountries = targetCountries.map(c => COUNTRY_MAP[c] || c);
 
   const profile = {
-    fullName, email, whatsapp, nationality, gradeLevel, gpa, ielts, sat,
+    fullName, email, whatsapp, nationality, gradeLevel, gpa, ielts, toefl, sat,
     targetCountries: mappedCountries, major, budget, scholarshipNeeded, timeline,
     prestige: prestige[0], scholarship: scholarship[0],
     careerRoi: careerRoi[0], visaAccess: visaAccess[0], locationPref: locationPref[0],
@@ -130,9 +133,12 @@ const TopUniAIRu = () => {
                           ].map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
                         </Select>
                       </div>
-                      <div className="grid sm:grid-cols-3 gap-4">
+                      <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-2"><Label>GPA *</Label><Input value={gpa} onChange={e => setGpa(e.target.value)} placeholder="напр. 3.7" /></div>
                         <div className="space-y-2"><Label>IELTS</Label><Input value={ielts} onChange={e => setIelts(e.target.value)} placeholder="Необязательно" /></div>
+                      </div>
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div className="space-y-2"><Label>TOEFL</Label><Input value={toefl} onChange={e => setToefl(e.target.value)} placeholder="Необязательно" /></div>
                         <div className="space-y-2"><Label>SAT</Label><Input value={sat} onChange={e => setSat(e.target.value)} placeholder="Необязательно" /></div>
                       </div>
                     </div>
@@ -204,7 +210,31 @@ const TopUniAIRu = () => {
                     </div>
                     <div className="flex justify-between pt-4">
                       <Button variant="outline" onClick={() => setStep(2)}><ArrowLeft className="mr-2 w-4 h-4" /> Назад</Button>
-                      <Button variant="gold" size="lg" onClick={() => setScreen("dashboard")}><Sparkles className="mr-2 w-5 h-5" /> Создать мой путь</Button>
+                      <Button
+                        variant="gold"
+                        size="lg"
+                        onClick={() => {
+                          // Seed Discover with the same profile so the
+                          // Russian user never has to re-answer the
+                          // wizard inside /discover/ru. saveProfile also
+                          // fires the cross-device sync to
+                          // student_profiles. This was the EN-only path
+                          // until round 53 — RU users were silently
+                          // skipping it before.
+                          try {
+                            saveProfile(projectToDiscoverProfile({
+                              fullName, email, nationality, gradeLevel,
+                              gpa, ielts, toefl, sat,
+                              major: major.trim(),
+                              budget,
+                              targetCountries: mappedCountries,
+                            }));
+                          } catch { /* localStorage may be unavailable; brief still renders */ }
+                          setScreen("dashboard");
+                        }}
+                      >
+                        <Sparkles className="mr-2 w-5 h-5" /> Создать мой путь
+                      </Button>
                     </div>
                   </motion.div>
                 )}
