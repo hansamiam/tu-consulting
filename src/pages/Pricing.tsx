@@ -332,11 +332,11 @@ const Pricing = ({ language = "en" }: PricingProps) => {
                 {ctaLabel}
                 {!isFounding && foundingLeft !== 0 && !loading && <ArrowRight className="h-4 w-4 ml-1" />}
               </Button>
-              <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
-                <Shield className="w-3.5 h-3.5 text-success" />
-                <span><strong className="text-foreground">{t.riskReversalBold}</strong> {t.riskReversal}</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground/80 text-center mt-1.5">{t.stripeBilling}</p>
+              {/* Trust strip retired (round 33). The "30-day money-back
+                  · Stripe secure · cancel anytime" line was filler that
+                  competed with the actual pricing decision; users
+                  reading the pricing page already trust enough to be
+                  here, the line just made the section feel salesier. */}
             </div>
           </motion.div>
         </section>
@@ -409,9 +409,6 @@ const Pricing = ({ language = "en" }: PricingProps) => {
                 {ctaLabel}
                 {!isFounding && foundingLeft !== 0 && !loading && <ArrowRight className="h-4 w-4 ml-1" />}
               </Button>
-              <p className="text-xs text-muted-foreground mt-4">
-                <Shield className="w-3 h-3 inline mr-1 text-success" /> {t.finalGuarantee}
-              </p>
               <p className="text-xs text-muted-foreground mt-6">
                 {t.notReady} <strong className="text-foreground">{t.free}</strong> {t.notReadyMid}
                 {" · "}

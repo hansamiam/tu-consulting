@@ -26,8 +26,8 @@ export const AcademyHero = ({ onExplore }: AcademyHeroProps) => {
             transition={{ duration: 0.7 }}
             className="space-y-6"
           >
-            <Badge className="bg-gold/15 text-gold border-gold/30 text-[11px] font-semibold uppercase tracking-[0.18em] px-2.5 py-1">
-              TopUni Academy — Coming Soon
+            <Badge className="bg-gold/15 text-gold border-gold/30 text-xs font-medium">
+              <Sparkles className="w-3 h-3 mr-1" /> TopUni Academy — Coming Soon
             </Badge>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-primary-foreground leading-tight">
