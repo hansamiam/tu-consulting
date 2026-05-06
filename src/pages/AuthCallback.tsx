@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { clearPendingAccount, getPendingAccount, type PendingAccountPayload } from "@/lib/pendingAccount";
 import { clearPendingReferral, getPendingReferral } from "@/lib/referralCapture";
+import { consumePostAuthRedirect } from "@/lib/postAuthRedirect";
 
 const AuthCallback = () => {
   const navigate = useNavigate();
@@ -57,8 +58,10 @@ const AuthCallback = () => {
         clearPendingReferral();
       }
 
-      const dest = sessionStorage.getItem("post_auth_redirect") || "/account";
-      sessionStorage.removeItem("post_auth_redirect");
+      // Cross-tab safe — localStorage survives the email-client opening
+      // the magic link in a new tab. sessionStorage was per-tab and
+      // silently lost the target on those flows.
+      const dest = consumePostAuthRedirect() || "/account";
       navigate(dest, { replace: true });
     })();
     return () => {

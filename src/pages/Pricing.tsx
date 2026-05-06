@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { OutcomesBar } from "@/components/OutcomesBar";
+import { setPostAuthRedirect } from "@/lib/postAuthRedirect";
 
 interface PricingProps { language?: "en" | "ru"; }
 
@@ -154,7 +155,7 @@ const Pricing = ({ language = "en" }: PricingProps) => {
 
   const startCheckout = async () => {
     if (!user) {
-      sessionStorage.setItem("post_auth_redirect", language === "ru" ? "/pricing/ru" : "/pricing");
+      setPostAuthRedirect(language === "ru" ? "/pricing/ru" : "/pricing");
       setAuthOpen(true);
       return;
     }

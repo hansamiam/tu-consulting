@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { track } from "@/lib/analytics";
+import { setPostAuthRedirect } from "@/lib/postAuthRedirect";
 
 /* ProComparisonModal — opened from PremiumGate. Side-by-side feature
  * comparison so users see *exactly* what they unlock instead of a vague
@@ -112,7 +113,7 @@ export const ProComparisonModal = ({ open, onOpenChange, gateId }: Props) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
-        sessionStorage.setItem("post_auth_redirect", "/pricing");
+        setPostAuthRedirect("/pricing");
         navigate("/pricing");
         onOpenChange(false);
         return;

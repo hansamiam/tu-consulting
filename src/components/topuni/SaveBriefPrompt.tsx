@@ -21,6 +21,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Loader2, Check, Sparkles, Mail, Bookmark, Clock, Bot } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { setPendingAccount, type PendingAccountPayload } from "@/lib/pendingAccount";
+import { setPostAuthRedirect } from "@/lib/postAuthRedirect";
 
 interface Props {
   open: boolean;
@@ -71,10 +72,10 @@ export function SaveBriefPrompt({
       createdAt: Date.now(),
     });
 
-    // Tell AuthCallback to send the user back to the AI dashboard
-    try {
-      sessionStorage.setItem("post_auth_redirect", isRu ? "/topuni-ai/ru" : "/topuni-ai");
-    } catch { /* ignore */ }
+    // Tell AuthCallback to send the user back to the AI dashboard.
+    // Uses localStorage (cross-tab) so the magic-link target survives
+    // an email client opening the link in a new tab.
+    setPostAuthRedirect(isRu ? "/topuni-ai/ru" : "/topuni-ai");
 
     const { error: authErr } = await signInWithMagicLink(email.trim());
     setSubmitting(false);
