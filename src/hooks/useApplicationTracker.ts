@@ -43,6 +43,30 @@ export interface Recommender {
   submitted_at?: string | null;
 }
 
+/** Additional essays beyond the primary essay_draft. The most
+ *  prestigious scholarships (Schwarzman, Rhodes, Marshall, Fulbright)
+ *  require 2-3 distinct essays each with its own prompt + word
+ *  ceiling; the single essay_draft column couldn't carry them.
+ *  Stored as a JSONB array on application_tracker.additional_essays. */
+export interface AdditionalEssay {
+  /** Stable ID so React reconciliation + per-essay updates work. */
+  id: string;
+  /** User-set short title — "Leadership essay" / "Diversity essay" /
+   *  "Why Schwarzman" / etc. Drives display + AI critique context. */
+  title: string;
+  /** Optional verbatim prompt the scholarship is asking. When the
+   *  user pastes it in we surface it above the textarea so they
+   *  can keep glancing at it while they draft. */
+  prompt?: string | null;
+  /** Word target for this specific essay. Different essays in the
+   *  same application have different ceilings. Default 500. */
+  target?: number | null;
+  /** The actual draft text. */
+  draft: string;
+  /** ISO timestamp of last update — used for "saved 30s ago" UI. */
+  updated_at?: string | null;
+}
+
 export interface TrackerEntry {
   status?: AppStatus | null;
   notes?: string | null;
@@ -60,6 +84,11 @@ export interface TrackerEntry {
    * recommender who promised but never submitted. Tracking who's at
    * which stage closes that gap. */
   recommenders?: Recommender[] | null;
+  /** Additional essays beyond essayDraft. Empty / null when the
+   * scholarship needs only one essay (most rows). Populated for
+   * Schwarzman / Rhodes / Marshall / Fulbright-style multi-essay
+   * applications. See AdditionalEssay shape for fields. */
+  additionalEssays?: AdditionalEssay[] | null;
 }
 
 interface State {
@@ -168,6 +197,7 @@ interface DbRow {
   awarded_amount_usd?: number | null;
   essay_draft?: string | null;
   recommenders?: Recommender[] | null;
+  additional_essays?: AdditionalEssay[] | null;
 }
 
 function entryFromDb(r: DbRow): TrackerEntry {
@@ -179,12 +209,14 @@ function entryFromDb(r: DbRow): TrackerEntry {
     awardedAmountUsd: r.awarded_amount_usd ?? null,
     essayDraft: r.essay_draft ?? null,
     recommenders: r.recommenders ?? null,
+    additionalEssays: r.additional_essays ?? null,
   };
 }
 
 function entryIsEmpty(e: TrackerEntry): boolean {
   const hasRecommenders = !!(e.recommenders && e.recommenders.length > 0);
-  return !e.status && !e.notes && !e.shortlisted && !e.hidden && !e.awardedAmountUsd && !e.essayDraft && !hasRecommenders;
+  const hasAdditionalEssays = !!(e.additionalEssays && e.additionalEssays.length > 0);
+  return !e.status && !e.notes && !e.shortlisted && !e.hidden && !e.awardedAmountUsd && !e.essayDraft && !hasRecommenders && !hasAdditionalEssays;
 }
 
 /** Schema-feature flags: each starts undefined, flipped once we've
@@ -194,6 +226,7 @@ function entryIsEmpty(e: TrackerEntry): boolean {
 let hasAwardCol: boolean | undefined;
 let hasEssayCol: boolean | undefined;
 let hasRecommendersCol: boolean | undefined;
+let hasAdditionalEssaysCol: boolean | undefined;
 
 export interface ApplicationTrackerApi {
   state: State;
@@ -209,12 +242,14 @@ export interface ApplicationTrackerApi {
   awardedMap: Record<string, number>;
   essayMap: Record<string, string>;
   recommendersMap: Record<string, Recommender[]>;
+  additionalEssaysMap: Record<string, AdditionalEssay[]>;
   // Mutators
   setStatus: (id: string, status: AppStatus | null) => void;
   setNote: (id: string, note: string) => void;
   setAwardedAmount: (id: string, amountUsd: number | null) => void;
   setEssayDraft: (id: string, draft: string | null) => void;
   setRecommenders: (id: string, list: Recommender[] | null) => void;
+  setAdditionalEssays: (id: string, list: AdditionalEssay[] | null) => void;
   toggleShortlist: (id: string) => void;
   toggleHidden: (id: string) => void;
   // Sync state
@@ -252,6 +287,7 @@ export function useApplicationTracker(): ApplicationTrackerApi {
         if (hasAwardCol !== false) cols.push("awarded_amount_usd");
         if (hasEssayCol !== false) cols.push("essay_draft");
         if (hasRecommendersCol !== false) cols.push("recommenders");
+        if (hasAdditionalEssaysCol !== false) cols.push("additional_essays");
         return cols.join(", ");
       };
       let data: DbRow[] | null = null;
@@ -267,10 +303,12 @@ export function useApplicationTracker(): ApplicationTrackerApi {
           if (/awarded_amount_usd/i.test(r.error.message)) hasAwardCol = false;
           if (/essay_draft/i.test(r.error.message)) hasEssayCol = false;
           if (/recommenders/i.test(r.error.message)) hasRecommendersCol = false;
+          if (/additional_essays/i.test(r.error.message)) hasAdditionalEssaysCol = false;
         } else {
           if (hasAwardCol === undefined) hasAwardCol = true;
           if (hasEssayCol === undefined) hasEssayCol = true;
           if (hasRecommendersCol === undefined) hasRecommendersCol = true;
+          if (hasAdditionalEssaysCol === undefined) hasAdditionalEssaysCol = true;
           data = r.data;
         }
       }
@@ -328,7 +366,7 @@ export function useApplicationTracker(): ApplicationTrackerApi {
       // Build the upsert payload, conditionally including the optional
       // columns based on the schema flags. On a column-missing error we
       // flip the offending flag and retry with the narrower payload.
-      const buildRows = (includeAward: boolean, includeEssay: boolean, includeRecommenders: boolean) =>
+      const buildRows = (includeAward: boolean, includeEssay: boolean, includeRecommenders: boolean, includeAdditionalEssays: boolean) =>
         Array.from(pending.entries()).map(([scholarship_id, e]) => {
           const base: Record<string, unknown> = {
             user_id: user.id,
@@ -341,22 +379,24 @@ export function useApplicationTracker(): ApplicationTrackerApi {
           if (includeAward) base.awarded_amount_usd = e.awardedAmountUsd ?? null;
           if (includeEssay) base.essay_draft = e.essayDraft ?? null;
           if (includeRecommenders) base.recommenders = e.recommenders ?? null;
+          if (includeAdditionalEssays) base.additional_essays = e.additionalEssays ?? null;
           return base;
         });
       pendingRef.current = new Map();
       setIsSyncing(true);
       let { error } = await supabase
         .from("application_tracker")
-        .upsert(buildRows(hasAwardCol !== false, hasEssayCol !== false, hasRecommendersCol !== false), { onConflict: "user_id,scholarship_id" });
+        .upsert(buildRows(hasAwardCol !== false, hasEssayCol !== false, hasRecommendersCol !== false, hasAdditionalEssaysCol !== false), { onConflict: "user_id,scholarship_id" });
       if (error) {
         if (/awarded_amount_usd/i.test(error.message)) hasAwardCol = false;
         if (/essay_draft/i.test(error.message)) hasEssayCol = false;
         if (/recommenders/i.test(error.message)) hasRecommendersCol = false;
+        if (/additional_essays/i.test(error.message)) hasAdditionalEssaysCol = false;
         // Retry once with whichever flags are now known-false.
-        if (hasAwardCol === false || hasEssayCol === false || hasRecommendersCol === false) {
+        if (hasAwardCol === false || hasEssayCol === false || hasRecommendersCol === false || hasAdditionalEssaysCol === false) {
           const retry = await supabase
             .from("application_tracker")
-            .upsert(buildRows(hasAwardCol !== false, hasEssayCol !== false, hasRecommendersCol !== false), { onConflict: "user_id,scholarship_id" });
+            .upsert(buildRows(hasAwardCol !== false, hasEssayCol !== false, hasRecommendersCol !== false, hasAdditionalEssaysCol !== false), { onConflict: "user_id,scholarship_id" });
           error = retry.error;
         }
       }
@@ -375,6 +415,7 @@ export function useApplicationTracker(): ApplicationTrackerApi {
             awardedAmountUsd: e.awardedAmountUsd ?? null,
             essayDraft: e.essayDraft ?? null,
             recommenders: e.recommenders ?? null,
+            additionalEssays: e.additionalEssays ?? null,
           });
         }
       } else {
@@ -403,12 +444,13 @@ export function useApplicationTracker(): ApplicationTrackerApi {
             : cur.awardedAmountUsd ?? null,
         essayDraft: "essayDraft" in patch ? patch.essayDraft ?? null : cur.essayDraft ?? null,
         recommenders: "recommenders" in patch ? patch.recommenders ?? null : cur.recommenders ?? null,
+        additionalEssays: "additionalEssays" in patch ? patch.additionalEssays ?? null : cur.additionalEssays ?? null,
       };
       const nextMap = new Map(prev.byScholarship);
       if (entryIsEmpty(nextEntry)) {
         nextMap.delete(id);
         // Mark as null-out for DB
-        pendingRef.current.set(id, { status: null, notes: null, shortlisted: false, hidden: false, awardedAmountUsd: null, essayDraft: null, recommenders: null });
+        pendingRef.current.set(id, { status: null, notes: null, shortlisted: false, hidden: false, awardedAmountUsd: null, essayDraft: null, recommenders: null, additionalEssays: null });
       } else {
         nextMap.set(id, nextEntry);
         pendingRef.current.set(id, nextEntry);
@@ -425,6 +467,7 @@ export function useApplicationTracker(): ApplicationTrackerApi {
   const setAwardedAmount = useCallback((id: string, amountUsd: number | null) => updateEntry(id, { awardedAmountUsd: amountUsd }), [updateEntry]);
   const setEssayDraft = useCallback((id: string, draft: string | null) => updateEntry(id, { essayDraft: draft }), [updateEntry]);
   const setRecommenders = useCallback((id: string, list: Recommender[] | null) => updateEntry(id, { recommenders: list }), [updateEntry]);
+  const setAdditionalEssays = useCallback((id: string, list: AdditionalEssay[] | null) => updateEntry(id, { additionalEssays: list }), [updateEntry]);
   const toggleShortlist = useCallback((id: string) => {
     setState((prev) => {
       const cur = prev.byScholarship.get(id);
@@ -484,6 +527,11 @@ export function useApplicationTracker(): ApplicationTrackerApi {
     for (const [id, e] of state.byScholarship) if (e.recommenders && e.recommenders.length > 0) r[id] = e.recommenders;
     return r;
   }, [state.byScholarship]);
+  const additionalEssaysMap = useMemo(() => {
+    const r: Record<string, AdditionalEssay[]> = {};
+    for (const [id, e] of state.byScholarship) if (e.additionalEssays && e.additionalEssays.length > 0) r[id] = e.additionalEssays;
+    return r;
+  }, [state.byScholarship]);
 
   return {
     state,
@@ -496,11 +544,13 @@ export function useApplicationTracker(): ApplicationTrackerApi {
     awardedMap,
     essayMap,
     recommendersMap,
+    additionalEssaysMap,
     setStatus,
     setNote,
     setAwardedAmount,
     setEssayDraft,
     setRecommenders,
+    setAdditionalEssays,
     toggleShortlist,
     toggleHidden,
     isSyncing,
