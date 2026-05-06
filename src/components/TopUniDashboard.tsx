@@ -3561,6 +3561,12 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             profile: {
               fullName: profile.fullName,
               email: profile.email,
+              // nationality was being silently dropped here — without
+              // it AuthCallback's student_profiles upsert wrote a NULL
+              // nationality, then Discover's semantic match had no
+              // citizenship filter to apply. Wizard captures it on
+              // step 1; carry it through.
+              nationality: profile.nationality,
               gradeLevel: profile.gradeLevel,
               gpa: profile.gpa,
               ielts: profile.ielts,
