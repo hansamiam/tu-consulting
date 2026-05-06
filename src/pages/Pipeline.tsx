@@ -39,6 +39,7 @@ import { RecommendersPanel } from "@/components/pipeline/RecommendersPanel";
 import { getStoredProfile } from "@/components/discover/DiscoverProfileGate";
 import { WorkspaceCalendar } from "@/components/pipeline/WorkspaceCalendar";
 import { EssaysTab } from "@/components/pipeline/EssaysTab";
+import { MembershipSettings } from "@/components/pipeline/MembershipSettings";
 import { UpgradeChip } from "@/components/UpgradeChip";
 import { InstaFollowChip } from "@/components/InstaFollowChip";
 
@@ -604,6 +605,14 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
           />
         </section>
       )}
+
+      {/* Round-31 consolidation: Membership + Settings + Sign out
+          live at the bottom of Workspace, replacing the separate
+          /account page as the primary surface for these. /account
+          route still works (deep links from billing) but redirects
+          to /pipeline so the user never sees two parallel "user
+          home" pages again. */}
+      {user && <MembershipSettings language={language} />}
 
       {/* Quiet upgrade chip — only renders for free-tier users with at
           least one tracked scholarship. Anchored as a thin footer strip
