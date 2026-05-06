@@ -725,17 +725,20 @@ const initials = (name: string | null | undefined): string => {
 
 const fmtValue = (v: number) => v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `$${Math.round(v / 1000)}K` : `$${v}`;
 
-const deadlineDisplay = (d: string | null) => {
+type Lang = "en" | "ru";
+
+const deadlineDisplay = (d: string | null, lang: Lang = "en") => {
   // Restrained color scale — red only when truly urgent (≤7d). Past that,
   // we rely on muted tones. The previous palette painted half the
   // database red, which made every card look like an alarm.
-  if (!d) return { text: "Rolling", cls: "text-foreground/40", urgent: false };
+  const ru = lang === "ru";
+  if (!d) return { text: ru ? "Без дедлайна" : "Rolling", cls: "text-foreground/40", urgent: false };
   const days = Math.ceil((new Date(d).getTime() - Date.now()) / 86400000);
-  if (days <= 0)  return { text: "Closed", cls: "text-foreground/30 line-through", urgent: false };
-  if (days <= 7)  return { text: `${days}d left`, cls: "text-destructive font-semibold", urgent: true };
-  if (days <= 30) return { text: `${days}d left`, cls: "text-amber-700 dark:text-amber-400 font-medium", urgent: true };
-  if (days <= 90) return { text: `${days}d left`, cls: "text-foreground/60", urgent: false };
-  return { text: `${Math.ceil(days / 30)}mo`, cls: "text-foreground/40", urgent: false };
+  if (days <= 0)  return { text: ru ? "Закрыто" : "Closed", cls: "text-foreground/30 line-through", urgent: false };
+  if (days <= 7)  return { text: ru ? `${days}д осталось` : `${days}d left`, cls: "text-destructive font-semibold", urgent: true };
+  if (days <= 30) return { text: ru ? `${days}д осталось` : `${days}d left`, cls: "text-amber-700 dark:text-amber-400 font-medium", urgent: true };
+  if (days <= 90) return { text: ru ? `${days}д осталось` : `${days}d left`, cls: "text-foreground/60", urgent: false };
+  return { text: ru ? `${Math.ceil(days / 30)}мес` : `${Math.ceil(days / 30)}mo`, cls: "text-foreground/40", urgent: false };
 };
 
 /* Tier labels — positive, concrete, exciting. No "stretch", "long shot",
@@ -1228,7 +1231,7 @@ const StatusBadge = ({ status, onChange, dense = false }: {
  *   · Award amount as a real visual chip when present
  *   · Match score circle (when real) replaces the silhouette square
  */
-const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0, outcomes }: {
+const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0, outcomes, lang = "en" }: {
   s: Scored; onSelect: () => void;
   isBookmarked: boolean; onBookmark: (e: React.MouseEvent) => void;
   status: AppStatus | undefined; onStatusChange: (s: AppStatus | null) => void;
@@ -1238,8 +1241,10 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
   /** Per-scholarship member outcome counts. Renders a tiny "X applied
    *  · Y won" pill in the row header when applied >= 3. */
   outcomes?: { applied: number; accepted: number; inPipeline: number };
+  lang?: Lang;
 }) => {
-  const dl = deadlineDisplay(s.application_deadline);
+  const ru = lang === "ru";
+  const dl = deadlineDisplay(s.application_deadline, lang);
   const hasRealScore = s.match > 0 && (s.reasons.length > 0 || s.warnings.length > 0);
   const isFullRide = s.coverage_type === "full_ride";
   const accent = accentForCountry(s.host_country);
@@ -1258,7 +1263,7 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
           glance. Same palette as the card hero band. */}
       <div className={`w-1 shrink-0 bg-gradient-to-b ${accent} ${isFullRide ? "ring-1 ring-inset ring-gold/30" : ""}`} aria-hidden />
 
-      <div className="flex-1 grid grid-cols-[minmax(0,1fr),auto] sm:grid-cols-[minmax(0,3fr),minmax(0,1.4fr),minmax(0,0.8fr),auto] items-center gap-4 px-4 py-3.5 min-w-0">
+      <div className="flex-1 grid grid-cols-[minmax(0,1fr),auto] sm:grid-cols-[minmax(0,1fr),170px,auto] items-center gap-4 px-4 py-3.5 min-w-0">
         {/* Country-art circle badge retired (round 21). It carried country
             identity (already conveyed by the left accent stripe + the
             country chip below) and doubled as the MatchScoreBreakdown
@@ -1318,9 +1323,9 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
               </span>
             )}
             {isFullRide && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-gold/15 text-gold-dark border border-gold/30 shrink-0" title="Full ride">
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-gold/15 text-gold-dark border border-gold/30 shrink-0" title={ru ? "Полное финансирование" : "Full ride"}>
                 <Award className="h-2.5 w-2.5" />
-                Full ride
+                {ru ? "Полное" : "Full ride"}
               </span>
             )}
             {s.target_demographics && s.target_demographics.length > 0 && (
@@ -1334,16 +1339,16 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
                 retired). Surfaces selectivity as something to aspire
                 toward rather than gatekeep against. */}
             {(s.selectivity === "very_high" || s.selectivity === "high") && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-primary/[0.08] text-primary dark:text-primary-bright border border-primary/20 shrink-0" title={s.selectivity === "very_high" ? "Highly selective program — fewer than 2-5% are admitted" : "Selective program — competitive but achievable"}>
-                Prestigious
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-primary/[0.08] text-primary dark:text-primary-bright border border-primary/20 shrink-0" title={s.selectivity === "very_high" ? (ru ? "Очень селективная программа — менее 2-5% принимают" : "Highly selective program — fewer than 2-5% are admitted") : (ru ? "Селективная программа — конкурентная, но достижимая" : "Selective program — competitive but achievable")}>
+                {ru ? "Престижная" : "Prestigious"}
               </span>
             )}
             {outcomes && outcomes.applied >= 3 && (
               <span
                 className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 shrink-0 tabular-nums"
-                title={outcomes.accepted > 0 ? `${outcomes.applied} TopUni members applied · ${outcomes.accepted} received offers` : `${outcomes.applied} TopUni members have applied`}
+                title={outcomes.accepted > 0 ? (ru ? `${outcomes.applied} участников TopUni подали заявку · ${outcomes.accepted} получили оффер` : `${outcomes.applied} TopUni members applied · ${outcomes.accepted} received offers`) : (ru ? `${outcomes.applied} участников TopUni подали заявку` : `${outcomes.applied} TopUni members have applied`)}
               >
-                {outcomes.applied} applied{outcomes.accepted > 0 ? ` · ${outcomes.accepted} won` : ""}
+                {outcomes.applied} {ru ? "подали" : "applied"}{outcomes.accepted > 0 ? ` · ${outcomes.accepted} ${ru ? "выиграли" : "won"}` : ""}
               </span>
             )}
             <ProviderAvatar url={s.official_url || s.source_url} providerName={cleanProvider(s.provider_name) || s.provider_name} size={16} />
@@ -1354,53 +1359,45 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
           </div>
 
           {/* Mobile-only award + deadline subtitle line. Desktop has its
-              own grid column for these (hidden on mobile). Without this
-              the mobile list row was just title + chips — students
-              couldn't see "what's the award" or "when is it due"
-              without tapping into detail, which is the friction the
-              list view exists to remove. */}
-          <div className="sm:hidden flex items-center gap-2 mt-1 text-[12px] min-w-0">
-            {award && (
-              <span className={`inline-flex items-center gap-1 font-semibold whitespace-nowrap ${isFullRide ? "text-gold-dark" : "text-foreground"}`}>
+              own fixed-width column for these. Truncate award if it's
+              too long so the deadline countdown stays visible at the
+              right edge — earlier "Rolling" was getting pushed into
+              the next row's margin on narrow viewports. */}
+          <div className="sm:hidden flex items-center justify-between gap-2 mt-1 text-[12px] min-w-0">
+            {award ? (
+              <span className={`inline-flex items-center gap-1 font-semibold min-w-0 truncate ${isFullRide ? "text-gold-dark" : "text-foreground"}`}>
                 {isFullRide && <Award className="h-3 w-3 shrink-0" />}
-                {award}
+                <span className="truncate">{award}</span>
               </span>
+            ) : (
+              <span className="text-muted-foreground/40">—</span>
             )}
-            {award && <span className="text-muted-foreground/30" aria-hidden>·</span>}
-            <span className={`tabular-nums font-medium leading-tight whitespace-nowrap ${dl.cls}`}>{dl.text}</span>
+            <span className={`tabular-nums font-medium leading-tight whitespace-nowrap shrink-0 ${dl.cls}`}>
+              {dl.text}
+            </span>
           </div>
         </div>
 
-        {/* Award + deadline (desktop only) — single line, no redundant
-            labels. Award value carries its own meaning ("$50K total" /
-            "Full ride"); deadline value is a date + countdown that
-            doesn't need a "Deadline:" prefix to be readable. The
-            column header above the rows already says "Award · Deadline"
-            once for the whole list.
-            Mobile rendering happens inline below the provider line —
-            see the sm:hidden block in the title cell above. */}
-        <div className="hidden sm:flex items-center gap-2 min-w-0 text-[13px]">
-          {award ? (
-            <span className={`inline-flex items-center gap-1 font-semibold whitespace-nowrap ${isFullRide ? "text-gold-dark" : "text-foreground"}`}>
-              {isFullRide && <Award className="h-3 w-3 shrink-0" />}
-              {award}
-            </span>
-          ) : (
-            <span className="text-muted-foreground/50">—</span>
-          )}
-          <span className="text-muted-foreground/30" aria-hidden>·</span>
-          <span className={`tabular-nums font-medium leading-tight whitespace-nowrap ${dl.cls}`}>{dl.text}</span>
-        </div>
-
-        {/* Status — only render once the row's been bookmarked. In
-            general browse, the "Set status" affordance was visual
-            noise on every row of the database. After bookmarking the
-            student commits to tracking this scholarship; that's when
-            status becomes meaningful. */}
-        <div className="hidden sm:flex items-center justify-start">
-          {(isBookmarked || status) && (
-            <StatusBadge status={status} onChange={onStatusChange} dense />
-          )}
+        {/* Award + Deadline (desktop only) — vertical stack in a fixed
+            170px column so geometry stays stable no matter the row
+            content. Award reads as the headline number; the deadline
+            sits beneath as smaller, color-toned countdown / "Rolling".
+            Was a single horizontal line with " · " separator that
+            overflowed for long awards or wide deadline text and
+            pushed "Rolling" into the margins. Status column removed
+            entirely from browse: status is a Workspace concept and
+            had no meaningful render here for unbookmarked rows. */}
+        <div className="hidden sm:flex flex-col items-end justify-center gap-0.5 min-w-0 text-right">
+          <span
+            className={`text-[13px] font-semibold leading-tight truncate max-w-full ${isFullRide ? "text-gold-dark" : "text-foreground"}`}
+            title={award ?? undefined}
+          >
+            {isFullRide && <Award className="inline h-3 w-3 mr-1 -mt-0.5" />}
+            {award ?? "—"}
+          </span>
+          <span className={`text-[11px] tabular-nums font-medium leading-tight whitespace-nowrap ${dl.cls}`}>
+            {dl.text}
+          </span>
         </div>
 
         {/* Actions — three clear affordances. Compare retired (lower-
@@ -1464,7 +1461,7 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
 };
 
 /* ─── Scholarship card — dense, product-grade, scannable in a 3-col grid ── */
-const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0, outcomes }: {
+const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0, outcomes, lang = "en" }: {
   s: Scored; onSelect: () => void;
   isBookmarked: boolean; onBookmark: (e: React.MouseEvent) => void;
   status: AppStatus | undefined; onStatusChange: (s: AppStatus | null) => void;
@@ -1473,9 +1470,11 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
   index?: number;
   /** Per-scholarship member outcome counts (compounding trust signal). */
   outcomes?: { applied: number; accepted: number; inPipeline: number };
+  lang?: Lang;
 }) => {
+  const ru = lang === "ru";
   const tier = TIER[s.priority];
-  const dl = deadlineDisplay(s.application_deadline);
+  const dl = deadlineDisplay(s.application_deadline, lang);
   /* Why-it-fits text. Falls back to scoring reasons ONLY when at
    * least one of them is a meaty insight (not a generic "Matches X
    * level" auto-reason). Without this filter the card surfaces
@@ -1538,7 +1537,7 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
               <span className="text-white/40 shrink-0">·</span>
               <span className="inline-flex items-center gap-1 text-gold-light drop-shadow-sm shrink-0">
                 <Award className="h-2.5 w-2.5" />
-                Full ride
+                {ru ? "Полное" : "Full ride"}
               </span>
             </>
           )}
@@ -1546,7 +1545,7 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
             <>
               <span className="text-white/40 shrink-0">·</span>
               <span className="inline-flex items-center text-white/95 drop-shadow-sm shrink-0">
-                Prestigious
+                {ru ? "Престижная" : "Prestigious"}
               </span>
             </>
           )}
@@ -1860,7 +1859,7 @@ const ReqRow = ({ label, status, detail }: {
 };
 
 /* ─── Detail Sheet (tabbed, visual) ──────────────────────────────────── */
-const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, status, onStatusChange, note, onNoteChange, similar, onSwitchTo, isMember, onUnlock, onExpand }: {
+const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, status, onStatusChange, note, onNoteChange, similar, onSwitchTo, isMember, onUnlock, onExpand, lang = "en" }: {
   s: Scored | null; open: boolean; onClose: () => void;
   isBookmarked: boolean; onBookmark: () => void;
   profile: Profile;
@@ -1873,7 +1872,10 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
   isMember: boolean;
   onUnlock: () => void;
   onExpand: () => void;
+  lang?: Lang;
 }) => {
+  const ru = lang === "ru";
+  const t = (en: string, ruText: string) => (ru ? ruText : en);
   // Hook is unconditional — must run on every render even when s is null
   // (Rules of Hooks). The track call is only fired with a real id later.
   const trackEvent = useScholarshipTracking();
@@ -1881,7 +1883,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
   // dedup so re-renders don't inflate counts.
   useTrackView(s?.scholarship_id, "detail-sheet");
   if (!s) return null;
-  const dl = deadlineDisplay(s.application_deadline);
+  const dl = deadlineDisplay(s.application_deadline, lang);
   const [dc1, dc2] = dialColors(s.priority);
   /* Why-it-fits text. Falls back to scoring reasons ONLY when at
    * least one of them is a meaty insight (not a generic "Matches X
@@ -2047,7 +2049,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               vertical space on small screens. */}
           <div className="relative grid grid-cols-2 gap-2 mt-3 sm:mt-5">
             <div className="bg-card border border-border rounded-xl px-2.5 sm:px-3.5 py-2 sm:py-3">
-              <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">Award</div>
+              <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">{t("Award", "Финансирование")}</div>
               <div className="text-foreground text-sm font-bold leading-tight">{compactAward(s) ?? COVERAGE_LABEL[s.coverage_type] ?? "—"}</div>
               {s.award_amount_text && s.award_amount_text.length > 16 && (
                 <div className="text-[10px] text-muted-foreground/85 mt-1 leading-snug line-clamp-2">{s.award_amount_text}</div>
@@ -2055,19 +2057,16 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               {s.estimated_total_value_usd && (() => {
                 const compact = compactAward(s);
                 const total = fmtValue(s.estimated_total_value_usd);
-                // Only show the total subline when it adds info beyond
-                // what compactAward already says — avoids "Award $80K /
-                // Total $80K" stutter on single-year programs.
                 if (compact && compact.replace(/\s/g, "") === total.replace(/\s/g, "")) return null;
                 return (
                   <div className="text-[10px] text-gold-dark/80 dark:text-gold/80 font-semibold mt-1.5">
-                    Est. {total} total
+                    {t(`Est. ${total} total`, `≈ ${total} итого`)}
                   </div>
                 );
               })()}
             </div>
             <div className="bg-card border border-border rounded-xl px-2.5 sm:px-3.5 py-2 sm:py-3">
-              <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">Deadline</div>
+              <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">{t("Deadline", "Дедлайн")}</div>
               <div className={`text-sm font-semibold leading-tight ${dl.cls}`}>{dl.text}</div>
               {deadlineDate && <div className="text-muted-foreground/70 text-[10px] mt-0.5">{deadlineDate}</div>}
             </div>
@@ -2088,9 +2087,9 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                   rel="noopener noreferrer"
                   onClick={() => trackEvent(s.scholarship_id, "clicked", "discover-detail-apply")}
                 >
-                  Apply on official site <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
+                  {t("Apply on official site", "Подать на официальном сайте")} <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
                 </a>
-              ) : <span>No official link</span>}
+              ) : <span>{t("No official link", "Нет ссылки")}</span>}
             </Button>
             <Button variant="outline" size="sm" className="h-9" onClick={onBookmark}>
               {isBookmarked ? <BookmarkCheck className="h-4 w-4 text-gold-dark" /> : <Bookmark className="h-4 w-4" />}
@@ -2113,7 +2112,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           >
             <span className="inline-flex items-center gap-2 text-[12px] font-semibold text-gold-dark dark:text-gold">
               <Sparkles className="h-3.5 w-3.5" />
-              Personalized strategy
+              {t("Personalized strategy", "Персональная стратегия")}
             </span>
             <ArrowRight className="h-3.5 w-3.5 text-gold-dark/70 dark:text-gold/70 group-hover:translate-x-0.5 transition-transform" />
           </button>
@@ -2150,16 +2149,16 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           <div className="px-7 pt-5 border-b border-border bg-background sticky top-0 z-10 overflow-x-auto scrollbar-hide">
             <TabsList className="bg-transparent p-0 h-auto gap-5 sm:gap-7 w-max sm:w-full justify-start rounded-none -mb-px">
               {([
-                { v: "overview",     label: "Overview" },
-                { v: "requirements", label: "Requirements" },
-                { v: "strategy",     label: "Strategy" },
-              ] as const).map(t => (
+                { v: "overview",     label: t("Overview",     "Обзор") },
+                { v: "requirements", label: t("Requirements", "Требования") },
+                { v: "strategy",     label: t("Strategy",     "Стратегия") },
+              ] as const).map((tab) => (
                 <TabsTrigger
-                  key={t.v}
-                  value={t.v}
+                  key={tab.v}
+                  value={tab.v}
                   className="data-[state=active]:text-foreground data-[state=active]:border-foreground data-[state=active]:shadow-none border-b-2 border-transparent text-muted-foreground hover:text-foreground rounded-none px-0 pb-3 pt-0 text-sm font-medium bg-transparent"
                 >
-                  {t.label}
+                  {tab.label}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -2195,7 +2194,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
 
             {s.reasons.length > 0 && (
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Profile signals</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">{t("Profile signals", "Сигналы профиля")}</p>
                 <div className="space-y-1.5">
                   {s.reasons.map((r, i) => (
                     <div key={i} className="flex items-start gap-2 text-sm leading-relaxed text-success">
@@ -2208,7 +2207,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
 
             {s.warnings.length > 0 && (
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Watch outs</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">{t("Watch outs", "На что обратить внимание")}</p>
                 <div className="space-y-1.5">
                   {s.warnings.map((w, i) => (
                     <div key={i} className="flex items-start gap-2 text-sm leading-relaxed text-warning">
@@ -2270,7 +2269,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           <TabsContent value="requirements" className="px-5 sm:px-7 py-4 sm:py-6 space-y-4 sm:space-y-5 m-0 focus-visible:outline-none">
             {reqs.length > 0 ? (
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">You vs. requirements</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">{t("You vs. requirements", "Ваш профиль vs требования")}</p>
                 <div className="bg-muted/30 rounded-2xl px-4 py-1">
                   {reqs.map((r, i) => <ReqRow key={i} {...r} />)}
                 </div>
@@ -2279,18 +2278,18 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                     one so it doesn't read twice on a single panel. */}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No specific requirements recorded for this scholarship.</p>
+              <p className="text-sm text-muted-foreground">{t("No specific requirements recorded for this scholarship.", "Конкретные требования по этой стипендии не записаны.")}</p>
             )}
 
             {(s.essay_required || s.interview_required || (s.recommendation_letters_required ?? 0) > 0) && (
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Application demands</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">{t("Application demands", "Что нужно для подачи")}</p>
                 <div className="flex flex-wrap gap-2">
-                  {s.essay_required && <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full"><FileText className="h-3 w-3" />Essay required</span>}
-                  {s.interview_required && <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full"><Users className="h-3 w-3" />Interview</span>}
+                  {s.essay_required && <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full"><FileText className="h-3 w-3" />{t("Essay required", "Требуется эссе")}</span>}
+                  {s.interview_required && <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full"><Users className="h-3 w-3" />{t("Interview", "Интервью")}</span>}
                   {(s.recommendation_letters_required ?? 0) > 0 && (
                     <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full">
-                      <FileText className="h-3 w-3" />{s.recommendation_letters_required} rec letter{(s.recommendation_letters_required ?? 0) > 1 ? "s" : ""}
+                      <FileText className="h-3 w-3" />{s.recommendation_letters_required} {t(`rec letter${(s.recommendation_letters_required ?? 0) > 1 ? "s" : ""}`, "реком. писем")}
                     </span>
                   )}
                 </div>
@@ -2299,7 +2298,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
 
             {s.required_documents && s.required_documents.length > 0 && (
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Documents needed</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">{t("Documents needed", "Необходимые документы")}</p>
                 <div className="grid grid-cols-2 gap-1.5">
                   {s.required_documents.map((d, i) => (
                     <div key={i} className="flex items-center gap-1.5 text-xs text-foreground/80">
@@ -2392,11 +2391,13 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                   <Sparkles className="h-5 w-5 text-primary" />
                 </div>
                 <h4 className="font-heading font-semibold text-base text-foreground mb-1.5">
-                  Personalized strategy
+                  {t("Personalized strategy", "Персональная стратегия")}
                 </h4>
                 <p className="text-xs text-muted-foreground leading-relaxed max-w-md mx-auto mb-4">
-                  Our AI will analyze this scholarship against your saved profile and return
-                  a tailored strategy — match breakdown, how to win, what to prepare first.
+                  {t(
+                    "Our AI will analyze this scholarship against your saved profile and return a tailored strategy — match breakdown, how to win, what to prepare first.",
+                    "Наш ИИ проанализирует эту стипендию по вашему профилю и вернёт персональную стратегию — разбор совпадения, как победить, что подготовить в первую очередь."
+                  )}
                 </p>
                 <button
                   type="button"
@@ -2404,7 +2405,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-primary bg-gradient-to-r from-gold-dark to-gold hover:opacity-90 transition-opacity shadow-sm"
                 >
                   <Sparkles className="h-3.5 w-3.5" />
-                  Open
+                  {t("Open", "Открыть")}
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -2413,7 +2414,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             {/* First strategy block — preview, free for everyone (creates desire) */}
             {s.what_to_prepare_first && (
               <div className="border-l-2 border-l-gold bg-muted/30 rounded-r-2xl px-5 py-4">
-                <p className="text-[10px] font-semibold text-foreground mb-1 uppercase tracking-[0.16em]">Start here</p>
+                <p className="text-[10px] font-semibold text-foreground mb-1 uppercase tracking-[0.16em]">{t("Start here", "Начните с этого")}</p>
                 <p className="text-sm text-foreground/80 leading-relaxed">{s.what_to_prepare_first}</p>
               </div>
             )}
@@ -2562,13 +2563,13 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           return (
             <div className="px-7 py-2.5 border-t border-border/60 bg-canvas-soft/50 flex items-center justify-between gap-3 shrink-0">
               <span className="text-[10px] text-muted-foreground/70">
-                Verify on the official site before applying.
+                {t("Verify on the official site before applying.", "Проверьте на официальном сайте перед подачей.")}
               </span>
               <a
                 href={`mailto:hello@topuni.com?subject=${encodeURIComponent("Inaccurate scholarship data: " + s.scholarship_name)}&body=${encodeURIComponent("ID: " + s.scholarship_id + "\n\nWhat's wrong:\n")}`}
                 className="text-[10px] text-muted-foreground/70 hover:text-foreground underline underline-offset-4 shrink-0"
               >
-                Report inaccuracy
+                {t("Report inaccuracy", "Сообщить о неточности")}
               </a>
             </div>
           );
@@ -2605,52 +2606,77 @@ const SectionHeader = ({ kicker, title, subtitle, accentClass }: {
  * many more programs Membership unlocks. They render only when the
  * gate is active — the parent has already done the visibility check.
  */
-const PaywallRow = ({ lockedCount }: { lockedCount: number }) => (
-  <Link
-    to="/pricing"
-    className="block border-t border-gold/30 bg-gradient-to-r from-gold/8 via-gold/4 to-gold/8 hover:from-gold/12 hover:to-gold/12 transition-colors px-4 py-5 sm:py-6"
-  >
-    <div className="flex items-center gap-3 sm:gap-4">
-      <span className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br from-gold-dark to-gold shadow-sm shrink-0">
-        <Crown className="h-5 w-5 text-primary" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="font-heading font-semibold text-[15px] text-foreground leading-tight">
-          {lockedCount} more {lockedCount === 1 ? "scholarship" : "scholarships"} with Membership
-        </p>
-        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-          Free covers your first 5 picks. Membership unlocks the full database, AI strategy, deadline tracking, and more.
-        </p>
-      </div>
-      <ArrowRight className="h-4 w-4 text-gold-dark shrink-0" />
-    </div>
-  </Link>
-);
+/* Russian noun forms for "scholarship": 1 → стипендия, 2-4 → стипендии,
+ * 5+ → стипендий. Plus the genitive "more scholarships" reads as "ещё
+ * стипендий". This helper picks the right form. */
+const ruScholarshipPlural = (n: number): string => {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return "стипендия";
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "стипендии";
+  return "стипендий";
+};
 
-const PaywallCard = ({ lockedCount, className = "" }: { lockedCount: number; className?: string }) => (
-  <Link
-    to="/pricing"
-    className={`block rounded-2xl border border-gold/35 bg-gradient-to-br from-gold/10 via-gold/5 to-transparent hover:border-gold/55 hover:from-gold/15 transition-all p-5 sm:p-6 ${className}`}
-  >
-    <div className="flex items-start gap-4">
-      <span className="inline-flex items-center justify-center h-11 w-11 rounded-xl bg-gradient-to-br from-gold-dark to-gold shadow-sm shrink-0">
-        <Crown className="h-5 w-5 text-primary" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="font-heading font-semibold text-base sm:text-lg text-foreground leading-tight">
-          {lockedCount} more {lockedCount === 1 ? "scholarship" : "scholarships"} with Membership
-        </p>
-        <p className="text-xs sm:text-sm text-muted-foreground mt-1 leading-relaxed max-w-2xl">
-          Free covers your first 5 picks so you can sample the database. Membership unlocks every program, the AI strategy deep dive, deadline tracking, and recommender follow-ups.
-        </p>
-        <span className="inline-flex items-center gap-1.5 mt-3 text-xs sm:text-sm font-semibold text-gold-dark dark:text-gold">
-          See pricing
-          <ArrowRight className="h-3.5 w-3.5" />
+const PaywallRow = ({ lockedCount, lang = "en" }: { lockedCount: number; lang?: Lang }) => {
+  const ru = lang === "ru";
+  return (
+    <Link
+      to={ru ? "/pricing/ru" : "/pricing"}
+      className="block border-t border-gold/30 bg-gradient-to-r from-gold/8 via-gold/4 to-gold/8 hover:from-gold/12 hover:to-gold/12 transition-colors px-4 py-5 sm:py-6"
+    >
+      <div className="flex items-center gap-3 sm:gap-4">
+        <span className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br from-gold-dark to-gold shadow-sm shrink-0">
+          <Crown className="h-5 w-5 text-primary" />
         </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-heading font-semibold text-[15px] text-foreground leading-tight">
+            {ru
+              ? `Ещё ${lockedCount} ${ruScholarshipPlural(lockedCount)} с подпиской`
+              : `${lockedCount} more ${lockedCount === 1 ? "scholarship" : "scholarships"} with Membership`}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+            {ru
+              ? "Бесплатный доступ — первые 5 стипендий. Подписка открывает всю базу, AI-стратегию, отслеживание дедлайнов и больше."
+              : "Free covers your first 5 picks. Membership unlocks the full database, AI strategy, deadline tracking, and more."}
+          </p>
+        </div>
+        <ArrowRight className="h-4 w-4 text-gold-dark shrink-0" />
       </div>
-    </div>
-  </Link>
-);
+    </Link>
+  );
+};
+
+const PaywallCard = ({ lockedCount, className = "", lang = "en" }: { lockedCount: number; className?: string; lang?: Lang }) => {
+  const ru = lang === "ru";
+  return (
+    <Link
+      to={ru ? "/pricing/ru" : "/pricing"}
+      className={`block rounded-2xl border border-gold/35 bg-gradient-to-br from-gold/10 via-gold/5 to-transparent hover:border-gold/55 hover:from-gold/15 transition-all p-5 sm:p-6 ${className}`}
+    >
+      <div className="flex items-start gap-4">
+        <span className="inline-flex items-center justify-center h-11 w-11 rounded-xl bg-gradient-to-br from-gold-dark to-gold shadow-sm shrink-0">
+          <Crown className="h-5 w-5 text-primary" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-heading font-semibold text-base sm:text-lg text-foreground leading-tight">
+            {ru
+              ? `Ещё ${lockedCount} ${ruScholarshipPlural(lockedCount)} с подпиской`
+              : `${lockedCount} more ${lockedCount === 1 ? "scholarship" : "scholarships"} with Membership`}
+          </p>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1 leading-relaxed max-w-2xl">
+            {ru
+              ? "Бесплатно вы видите первые 5 — этого достаточно, чтобы оценить базу. Подписка открывает каждую программу, AI-разбор стратегии, отслеживание дедлайнов и работу с рекомендателями."
+              : "Free covers your first 5 picks so you can sample the database. Membership unlocks every program, the AI strategy deep dive, deadline tracking, and recommender follow-ups."}
+          </p>
+          <span className="inline-flex items-center gap-1.5 mt-3 text-xs sm:text-sm font-semibold text-gold-dark dark:text-gold">
+            {ru ? "Тарифы" : "See pricing"}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+};
 
 /* ─── Main ───────────────────────────────────────────────────────────── */
 interface Props { language?: "en" | "ru" }
@@ -2659,6 +2685,16 @@ const Discover = ({ language = "en" }: Props) => {
   const navigate = useNavigate();
   const { user, subscription } = useAuth();
   const isMember = subscription.tier === "founding" || subscription.tier === "pro";
+
+  /* Translation helper. The Discover surface used to render almost
+   * entirely in English regardless of route — only the top nav strip
+   * was Russian-aware. This `t(en, ru)` helper returns the right
+   * string per language and is threaded through every visible label,
+   * CTA, section header, and empty-state copy. Internal helpers
+   * (deadlineDisplay, ScholarRow, ScholarCard) accept a `lang` arg /
+   * prop so the same translation flows into row-level text too. */
+  const ru = language === "ru";
+  const t = (en: string, ruText: string) => (ru ? ruText : en);
 
   /* Free-tier scholarship gate. Free users see a generous-but-finite
    * preview window (FREE_VISIBLE_LIMIT rows). Past that, a paywall
@@ -3161,7 +3197,13 @@ const Discover = ({ language = "en" }: Props) => {
 
   const activeFiltersCount = [filters.search !== "", filters.coverage !== "all", filters.degree !== "all", filters.selectivity !== "all", filters.field !== "all", filters.hostCountry !== "all", filters.demographic !== "all", filters.onlyEligible, filters.closingSoon].filter(Boolean).length;
 
-  const analysisTexts = [
+  const analysisTexts = ru ? [
+    `Сканируем ${rows.length || 200}+ стипендий`,
+    `Фильтруем по гражданству${wiz.nationality ? `: ${wiz.nationality}` : ""}`,
+    `Подбираем программы ${wiz.degrees.length > 0 ? wiz.degrees.join(" / ") : "вашего уровня"}${wiz.field ? ` в направлении ${wiz.field}` : ""}`,
+    "Оцениваем академические пороги и селективность",
+    "Ранжируем лучшие возможности",
+  ] : [
     `Scanning ${rows.length || 200}+ scholarships`,
     `Filtering by nationality${wiz.nationality ? `: ${wiz.nationality}` : ""}`,
     `Matching ${wiz.degrees.length > 0 ? wiz.degrees.join(" / ") : "your degree"} programs${wiz.field ? ` in ${wiz.field}` : ""}`,
@@ -3208,33 +3250,39 @@ const Discover = ({ language = "en" }: Props) => {
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-gold" />
                   </span>
                   <span className="text-primary-foreground/85 text-xs font-semibold tracking-wide">
-                    Live scholarship database
+                    {t("Live scholarship database", "Живая база стипендий")}
                   </span>
                 </motion.div>
 
                 <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
                   className="font-heading text-[clamp(2.75rem,7vw,5.5rem)] font-bold text-primary-foreground leading-[1.02] tracking-[-0.03em]">
-                  The scholarships<br />
-                  <span className="text-gold">made for you.</span>
+                  {ru ? (
+                    <>Стипендии,<br /><span className="text-gold">созданные для вас.</span></>
+                  ) : (
+                    <>The scholarships<br /><span className="text-gold">made for you.</span></>
+                  )}
                 </motion.h1>
 
                 <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32, duration: 0.7 }}
                   className="text-primary-foreground/55 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed font-light">
-                  Answer four questions. We rank every scholarship in our database against your profile and show how each one aligns with you.
+                  {t(
+                    "Answer four questions. We rank every scholarship in our database against your profile and show how each one aligns with you.",
+                    "Ответьте на четыре вопроса. Мы оценим каждую стипендию в нашей базе по вашему профилю и покажем, как каждая из них вам подходит."
+                  )}
                 </motion.p>
 
                 <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 0.7 }}
                   className="flex flex-col items-center gap-4 pt-2">
                   <Button variant="gold" size="lg" className="text-base px-12 py-7 hover:scale-[1.02] transition-transform gap-2.5" onClick={() => setPhase("wizard")}>
-                    Find my scholarships
+                    {t("Find my scholarships", "Найти мои стипендии")}
                     <ArrowRight className="h-5 w-5" />
                   </Button>
                   <div className="flex items-center justify-center gap-5 text-xs text-primary-foreground/35 font-medium tracking-wide">
-                    <span className="flex items-center gap-1.5"><Zap className="h-3 w-3 text-gold" /> 2 minutes</span>
+                    <span className="flex items-center gap-1.5"><Zap className="h-3 w-3 text-gold" /> {t("2 minutes", "2 минуты")}</span>
                     <span className="opacity-50">·</span>
-                    <span>No account needed</span>
+                    <span>{t("No account needed", "Без регистрации")}</span>
                     <span className="opacity-50">·</span>
-                    <span>Free during beta</span>
+                    <span>{t("Free during beta", "Бесплатно во время беты")}</span>
                   </div>
                 </motion.div>
               </motion.div>
@@ -3267,23 +3315,23 @@ const Discover = ({ language = "en" }: Props) => {
                 {wizardStep === 0 && (
                   <motion.div key="ws0" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.5 }}
                     className="flex-1 flex flex-col items-center justify-center px-6 py-10 max-w-xl mx-auto w-full text-center relative z-10">
-                    <p className="text-gold text-xs font-semibold uppercase tracking-[0.25em] mb-5">Step 1 · Hello</p>
-                    <h2 className="font-heading text-[clamp(2rem,5vw,3.25rem)] font-bold text-primary-foreground mb-4 tracking-[-0.02em] leading-[1.05]">Let's start with you.</h2>
-                    <p className="text-primary-foreground/50 mb-12 text-base">Just so we can save your matches.</p>
+                    <p className="text-gold text-xs font-semibold uppercase tracking-[0.25em] mb-5">{t("Step 1 · Hello", "Шаг 1 · Знакомство")}</p>
+                    <h2 className="font-heading text-[clamp(2rem,5vw,3.25rem)] font-bold text-primary-foreground mb-4 tracking-[-0.02em] leading-[1.05]">{t("Let's start with you.", "Начнём с вас.")}</h2>
+                    <p className="text-primary-foreground/50 mb-12 text-base">{t("Just so we can save your matches.", "Чтобы мы могли сохранить ваши совпадения.")}</p>
                     <div className="w-full space-y-5 text-left">
                       <div className="space-y-2">
-                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">Your name</label>
-                        <Input value={wiz.fullName} onChange={e => setWiz(w => ({ ...w, fullName: e.target.value }))} placeholder="First name (optional)"
+                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">{t("Your name", "Ваше имя")}</label>
+                        <Input value={wiz.fullName} onChange={e => setWiz(w => ({ ...w, fullName: e.target.value }))} placeholder={t("First name (optional)", "Имя (необязательно)")}
                           className="bg-primary-foreground/[0.04] border-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/25 h-12 text-base backdrop-blur-md focus-visible:border-gold/50 focus-visible:bg-primary-foreground/[0.06] transition-colors" />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">Email</label>
+                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">{t("Email", "Email")}</label>
                         <Input type="email" value={wiz.email} onChange={e => setWiz(w => ({ ...w, email: e.target.value }))} placeholder="you@email.com"
                           className="bg-primary-foreground/[0.04] border-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/25 h-12 text-base backdrop-blur-md focus-visible:border-gold/50 focus-visible:bg-primary-foreground/[0.06] transition-colors" />
                       </div>
                     </div>
                     <Button variant="gold" size="lg" className="mt-10 px-12 gap-2 text-base" disabled={!wiz.email} onClick={() => setWizardStep(1)}>
-                      Continue <ArrowRight className="h-5 w-5" />
+                      {t("Continue", "Дальше")} <ArrowRight className="h-5 w-5" />
                     </Button>
                   </motion.div>
                 )}
@@ -3291,9 +3339,9 @@ const Discover = ({ language = "en" }: Props) => {
                 {wizardStep === 1 && (
                   <motion.div key="ws1" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.5 }}
                     className="flex-1 flex flex-col items-center justify-center px-6 py-10 max-w-xl mx-auto w-full text-center relative z-10">
-                    <p className="text-gold text-xs font-semibold uppercase tracking-[0.25em] mb-5">Step 2 · Origin</p>
-                    <h2 className="font-heading text-[clamp(2rem,5vw,3.25rem)] font-bold text-primary-foreground mb-4 tracking-[-0.02em] leading-[1.05]">Where are you from?</h2>
-                    <p className="text-primary-foreground/50 mb-8 text-base max-w-md mx-auto">Your nationality unlocks the right eligibility. Type or pick — every country works.</p>
+                    <p className="text-gold text-xs font-semibold uppercase tracking-[0.25em] mb-5">{t("Step 2 · Origin", "Шаг 2 · Откуда")}</p>
+                    <h2 className="font-heading text-[clamp(2rem,5vw,3.25rem)] font-bold text-primary-foreground mb-4 tracking-[-0.02em] leading-[1.05]">{t("Where are you from?", "Откуда вы?")}</h2>
+                    <p className="text-primary-foreground/50 mb-8 text-base max-w-md mx-auto">{t("Your nationality unlocks the right eligibility. Type or pick — every country works.", "Ваше гражданство открывает нужные критерии. Введите или выберите — подойдёт любая страна.")}</p>
 
                     {/* Typeahead — single input that filters the full country
                         list. Click a result or press Enter to accept the typed
@@ -3303,7 +3351,7 @@ const Discover = ({ language = "en" }: Props) => {
                         value={wiz.nationality}
                         onChange={e => setWiz(w => ({ ...w, nationality: e.target.value }))}
                         onKeyDown={e => { if (e.key === "Enter" && wiz.nationality.trim()) setWizardStep(2); }}
-                        placeholder="Type your country (any)…"
+                        placeholder={t("Type your country (any)…", "Введите вашу страну (любую)…")}
                         className="bg-primary-foreground/[0.04] border-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/30 h-14 text-base backdrop-blur-md focus-visible:border-gold/50"
                       />
                       {(() => {
@@ -3319,7 +3367,7 @@ const Discover = ({ language = "en" }: Props) => {
                         return (
                           <div className="mt-4">
                             {q && matches.length > 0 && (
-                              <p className="text-[10px] uppercase tracking-[0.2em] text-primary-foreground/35 text-left mb-2">Matches</p>
+                              <p className="text-[10px] uppercase tracking-[0.2em] text-primary-foreground/35 text-left mb-2">{t("Matches", "Совпадения")}</p>
                             )}
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                               {matches.map(c => (
@@ -3332,7 +3380,7 @@ const Discover = ({ language = "en" }: Props) => {
                             </div>
                             {q && matches.length === 0 && (
                               <p className="text-primary-foreground/45 text-sm mt-3">
-                                No exact match — that's fine, your typed entry will be used.
+                                {t("No exact match — that's fine, your typed entry will be used.", "Точного совпадения нет — ничего страшного, мы используем введённое значение.")}
                               </p>
                             )}
                             {wiz.nationality.trim() && (
@@ -3342,7 +3390,7 @@ const Discover = ({ language = "en" }: Props) => {
                                 className="mt-6 px-12 gap-2"
                                 onClick={() => setWizardStep(2)}
                               >
-                                {exact ? `Continue as ${exact.v}` : `Continue with "${wiz.nationality.trim()}"`} <ArrowRight className="h-4 w-4" />
+                                {exact ? t(`Continue as ${exact.v}`, `Дальше как ${exact.v}`) : t(`Continue with "${wiz.nationality.trim()}"`, `Дальше с «${wiz.nationality.trim()}»`)} <ArrowRight className="h-4 w-4" />
                               </Button>
                             )}
                           </div>
@@ -3355,9 +3403,9 @@ const Discover = ({ language = "en" }: Props) => {
                 {wizardStep === 2 && (
                   <motion.div key="ws2" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.5 }}
                     className="flex-1 flex flex-col items-center justify-center px-6 py-10 max-w-2xl mx-auto w-full text-center relative z-10">
-                    <p className="text-gold text-xs font-semibold uppercase tracking-[0.25em] mb-5">Step 3 · Path</p>
-                    <h2 className="font-heading text-[clamp(2rem,5vw,3.25rem)] font-bold text-primary-foreground mb-4 tracking-[-0.02em] leading-[1.05]">What will you study?</h2>
-                    <p className="text-primary-foreground/50 mb-10 text-base">Pick every level you're considering — multiple is fine.</p>
+                    <p className="text-gold text-xs font-semibold uppercase tracking-[0.25em] mb-5">{t("Step 3 · Path", "Шаг 3 · Направление")}</p>
+                    <h2 className="font-heading text-[clamp(2rem,5vw,3.25rem)] font-bold text-primary-foreground mb-4 tracking-[-0.02em] leading-[1.05]">{t("What will you study?", "Что будете изучать?")}</h2>
+                    <p className="text-primary-foreground/50 mb-10 text-base">{t("Pick every level you're considering — multiple is fine.", "Отметьте все уровни, которые рассматриваете — можно несколько.")}</p>
                     <div className="w-full grid grid-cols-3 gap-4 mb-10">
                       {DEGREES.map((d, i) => {
                         const selected = wiz.degrees.includes(d.v);
@@ -3385,7 +3433,7 @@ const Discover = ({ language = "en" }: Props) => {
                     <AnimatePresence>
                       {wiz.degrees.length > 0 && (
                         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} className="w-full">
-                          <p className="text-primary-foreground/50 text-sm mb-4">And your field?</p>
+                          <p className="text-primary-foreground/50 text-sm mb-4">{t("And your field?", "И ваше направление?")}</p>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                             {FIELDS.map((f, i) => (
                               <motion.button key={f.v} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
@@ -3402,7 +3450,7 @@ const Discover = ({ language = "en" }: Props) => {
                       {wiz.degrees.length > 0 && wiz.field && (
                         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-7">
                           <Button variant="gold" size="lg" onClick={() => setWizardStep(3)} className="px-12 gap-2">
-                            Continue <ArrowRight className="h-5 w-5" />
+                            {t("Continue", "Дальше")} <ArrowRight className="h-5 w-5" />
                           </Button>
                         </motion.div>
                       )}
@@ -3413,9 +3461,9 @@ const Discover = ({ language = "en" }: Props) => {
                 {wizardStep === 3 && (
                   <motion.div key="ws3" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.5 }}
                     className="flex-1 flex flex-col items-center justify-center px-6 py-10 max-w-lg mx-auto w-full text-center relative z-10">
-                    <p className="text-gold text-xs font-semibold uppercase tracking-[0.25em] mb-5">Step 4 · Stats</p>
-                    <h2 className="font-heading text-[clamp(2rem,5vw,3.25rem)] font-bold text-primary-foreground mb-4 tracking-[-0.02em] leading-[1.05]">Your scores.</h2>
-                    <p className="text-primary-foreground/50 mb-10 text-base">Leave blank if you don't have them yet.</p>
+                    <p className="text-gold text-xs font-semibold uppercase tracking-[0.25em] mb-5">{t("Step 4 · Stats", "Шаг 4 · Баллы")}</p>
+                    <h2 className="font-heading text-[clamp(2rem,5vw,3.25rem)] font-bold text-primary-foreground mb-4 tracking-[-0.02em] leading-[1.05]">{t("Your scores.", "Ваши результаты.")}</h2>
+                    <p className="text-primary-foreground/50 mb-10 text-base">{t("Leave blank if you don't have them yet.", "Оставьте пустым, если ещё не сдавали.")}</p>
                     <div className="w-full space-y-6 text-left">
                       <div className="space-y-2">
                         <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">GPA</label>
@@ -3445,7 +3493,7 @@ const Discover = ({ language = "en" }: Props) => {
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">SAT (undergrad applicants)</label>
+                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">{t("SAT (undergrad applicants)", "SAT (для бакалавриата)")}</label>
                         <Input value={wiz.sat} onChange={e => setWiz(w => ({ ...w, sat: e.target.value }))} placeholder="e.g. 1450"
                           className="bg-primary-foreground/[0.04] border-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/25 h-12 backdrop-blur-md focus-visible:border-gold/50" />
                       </div>
@@ -3453,18 +3501,18 @@ const Discover = ({ language = "en" }: Props) => {
                           boost on programs designed for these groups.
                           Multi-select chips; nothing required. */}
                       <div className="space-y-2 pt-2">
-                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">Eligibility groups (optional)</label>
-                        <p className="text-[11px] text-primary-foreground/40 -mt-1">Tap any that apply — surfaces programs designed for you.</p>
+                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">{t("Eligibility groups (optional)", "Категории (необязательно)")}</label>
+                        <p className="text-[11px] text-primary-foreground/40 -mt-1">{t("Tap any that apply — surfaces programs designed for you.", "Отметьте подходящее — откроем программы, созданные специально для вас.")}</p>
                         <div className="flex flex-wrap gap-1.5">
                           {[
-                            { v: "women", l: "Women" },
-                            { v: "first-generation", l: "First-generation" },
-                            { v: "low-income", l: "Need-based" },
-                            { v: "refugee", l: "Refugee" },
-                            { v: "indigenous", l: "Indigenous" },
+                            { v: "women", l: t("Women", "Женщины") },
+                            { v: "first-generation", l: t("First-generation", "Первое поколение") },
+                            { v: "low-income", l: t("Need-based", "По доходу") },
+                            { v: "refugee", l: t("Refugee", "Беженцы") },
+                            { v: "indigenous", l: t("Indigenous", "Коренные народы") },
                             { v: "lgbtq", l: "LGBTQ+" },
-                            { v: "underrepresented-minority", l: "Underrepresented" },
-                            { v: "disability", l: "Disability" },
+                            { v: "underrepresented-minority", l: t("Underrepresented", "Недопредставленные") },
+                            { v: "disability", l: t("Disability", "Инвалидность") },
                           ].map(d => {
                             const on = wiz.demographics.includes(d.v);
                             return (
@@ -3489,7 +3537,7 @@ const Discover = ({ language = "en" }: Props) => {
                       </div>
                     </div>
                     <Button variant="gold" size="lg" className="mt-10 px-12 gap-2 text-base" onClick={completeWizard}>
-                      <Sparkles className="h-5 w-5" /> Reveal my matches
+                      <Sparkles className="h-5 w-5" /> {t("Reveal my matches", "Показать совпадения")}
                     </Button>
                   </motion.div>
                 )}
@@ -3653,21 +3701,21 @@ const Discover = ({ language = "en" }: Props) => {
                 <div className="max-w-7xl mx-auto px-6 sm:px-8 py-3 flex items-center gap-2.5 flex-wrap">
                   <div className="relative flex-1 min-w-[200px] max-w-md">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                    <Input ref={searchInputRef} value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} placeholder="Search names, providers, fields, tags…   (/ to focus)"
+                    <Input ref={searchInputRef} value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} placeholder={t("Search names, providers, fields, tags…   (/ to focus)", "Поиск по названию, организации, направлению, тегам…   (/ — фокус)")}
                       className="pl-10 h-10 text-sm rounded-lg" />
                     {filters.search && <button onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>}
                   </div>
 
                   <Button variant="outline" size="default" className="lg:hidden gap-1.5 h-10 rounded-lg" onClick={() => setFiltersOpen(true)}>
-                    <Filter className="h-4 w-4" />Filters{activeFiltersCount > 0 && <Badge className="h-5 px-1.5 text-[10px] bg-gold/20 text-gold-dark dark:text-gold border-0 ml-0.5">{activeFiltersCount}</Badge>}
+                    <Filter className="h-4 w-4" />{t("Filters", "Фильтры")}{activeFiltersCount > 0 && <Badge className="h-5 px-1.5 text-[10px] bg-gold/20 text-gold-dark dark:text-gold border-0 ml-0.5">{activeFiltersCount}</Badge>}
                   </Button>
 
                   <Select value={sortBy} onValueChange={v => setSortBy(v as SortBy)}>
                     <SelectTrigger className="w-[156px] h-10 text-sm rounded-lg"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="match">Best match</SelectItem>
-                      <SelectItem value="deadline">Deadline first</SelectItem>
-                      <SelectItem value="value">Highest value</SelectItem>
+                      <SelectItem value="match">{t("Best match", "Лучшее совпадение")}</SelectItem>
+                      <SelectItem value="deadline">{t("Deadline first", "Сначала по дедлайну")}</SelectItem>
+                      <SelectItem value="value">{t("Highest value", "Наибольшая сумма")}</SelectItem>
                       {/* "Most accessible" sort retired — selectivity
                           metadata is incomplete on most rows so the
                           sort produced near-random ordering. */}
@@ -3686,17 +3734,17 @@ const Discover = ({ language = "en" }: Props) => {
                         onClick={() => setViewMode("grid")}
                         className={`h-full px-3 text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === "grid" ? "bg-foreground/[0.06] text-foreground" : "text-muted-foreground hover:text-foreground"}`}
                         aria-pressed={viewMode === "grid"}
-                        title="Grid view"
+                        title={t("Grid view", "Сетка")}
                       >
-                        <LayoutGrid className="h-3.5 w-3.5" /><span className="hidden sm:inline">Grid</span>
+                        <LayoutGrid className="h-3.5 w-3.5" /><span className="hidden sm:inline">{t("Grid", "Сетка")}</span>
                       </button>
                       <button
                         onClick={() => setViewMode("list")}
                         className={`h-full px-3 text-xs font-medium flex items-center gap-1.5 transition-colors border-l border-border ${viewMode === "list" ? "bg-foreground/[0.06] text-foreground" : "text-muted-foreground hover:text-foreground"}`}
                         aria-pressed={viewMode === "list"}
-                        title="List view"
+                        title={t("List view", "Список")}
                       >
-                        <List className="h-3.5 w-3.5" /><span className="hidden sm:inline">List</span>
+                        <List className="h-3.5 w-3.5" /><span className="hidden sm:inline">{t("List", "Список")}</span>
                       </button>
                     </div>
                   )}
@@ -3710,7 +3758,7 @@ const Discover = ({ language = "en" }: Props) => {
                       onClick={() => setCompareOpen(true)}
                     >
                       <Columns3 className="h-4 w-4" />
-                      <span className="hidden sm:inline">Compare</span>
+                      <span className="hidden sm:inline">{t("Compare", "Сравнить")}</span>
                       <Badge className="h-5 px-1.5 text-[10px] bg-gold text-primary border-0">{compareSet.size}</Badge>
                     </Button>
                   )}
@@ -3722,10 +3770,10 @@ const Discover = ({ language = "en" }: Props) => {
                       size="default"
                       className="h-10 rounded-lg gap-1.5 text-xs text-muted-foreground hover:text-foreground"
                       onClick={() => setShowHidden(v => !v)}
-                      title={showHidden ? "Hide hidden" : "Show hidden"}
+                      title={showHidden ? t("Hide hidden", "Скрыть") : t("Show hidden", "Показать скрытые")}
                     >
                       {showHidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                      <span className="hidden sm:inline">{hidden.size} hidden</span>
+                      <span className="hidden sm:inline">{hidden.size} {t("hidden", "скрыто")}</span>
                     </Button>
                   )}
 
@@ -3947,6 +3995,7 @@ const Discover = ({ language = "en" }: Props) => {
                             isComparing: compareSet.has(s.scholarship_id),
                             onToggleCompare: (e: React.MouseEvent) => { e.stopPropagation(); toggleCompare(s.scholarship_id); },
                             outcomes: outcomesMap.get(s.scholarship_id),
+                            lang: language,
                           });
                           // List-mode column header is intentionally label-only.
                           // Sort is driven by the dropdown above the grid —
@@ -3954,10 +4003,9 @@ const Discover = ({ language = "en" }: Props) => {
                           // suggesting click-to-sort that wasn't reliable.
                           return (
                             <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
-                              <div className="hidden sm:grid grid-cols-[minmax(0,3fr),minmax(0,1.4fr),minmax(0,0.8fr),auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                              <div className="hidden sm:grid grid-cols-[minmax(0,1fr),170px,auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                                 <span>Scholarship</span>
-                                <span>Award · Deadline</span>
-                                <span>Status</span>
+                                <span className="text-right">Award · Deadline</span>
                                 <span className="text-right pr-2">Actions</span>
                               </div>
                               {items.map((s, i) => <ScholarRow {...cp(s, i)} />)}
@@ -4024,6 +4072,7 @@ const Discover = ({ language = "en" }: Props) => {
                             isComparing: compareSet.has(s.scholarship_id),
                             onToggleCompare: (e: React.MouseEvent) => { e.stopPropagation(); toggleCompare(s.scholarship_id); },
                             outcomes: outcomesMap.get(s.scholarship_id),
+                            lang: language,
                           });
 
                           if (viewMode === "list") {
@@ -4031,14 +4080,13 @@ const Discover = ({ language = "en" }: Props) => {
                             // dropdown above the grid (one source of truth).
                             return (
                               <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
-                                <div className="hidden sm:grid grid-cols-[minmax(0,3fr),minmax(0,1.4fr),minmax(0,0.8fr),auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                                <div className="hidden sm:grid grid-cols-[minmax(0,1fr),170px,auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                                   <span>Scholarship</span>
-                                  <span>Award · Deadline</span>
-                                  <span>Status</span>
+                                  <span className="text-right">Award · Deadline</span>
                                   <span className="text-right pr-2">Actions</span>
                                 </div>
                                 {filtered.map((s, i) => <ScholarRow {...cardProps(s, i)} />)}
-                                {lockedCount > 0 && <PaywallRow lockedCount={lockedCount} />}
+                                {lockedCount > 0 && <PaywallRow lockedCount={lockedCount} lang={language} />}
                               </div>
                             );
                           }
@@ -4058,15 +4106,15 @@ const Discover = ({ language = "en" }: Props) => {
                             return (
                               <section>
                                 <SectionHeader
-                                  kicker="Database"
-                                  title="All scholarships"
-                                  subtitle="Build your profile (top right) to see which ones fit you best."
+                                  kicker={t("Database", "База")}
+                                  title={t("All scholarships", "Все стипендии")}
+                                  subtitle={t("Build your profile (top right) to see which ones fit you best.", "Заполните профиль (вверху справа), чтобы увидеть, какие подходят лучше.")}
                                   accentClass="text-foreground/60"
                                 />
                                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
                                   {sections.stretch.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
                                 </div>
-                                {lockedCount > 0 && <PaywallCard lockedCount={lockedCount} className="mt-4" />}
+                                {lockedCount > 0 && <PaywallCard lockedCount={lockedCount} className="mt-4" lang={language} />}
                               </section>
                             );
                           }
@@ -4081,7 +4129,10 @@ const Discover = ({ language = "en" }: Props) => {
                                   WHETHER the user is likely to win. */}
                               {sections.strong.length > 0 && (
                                 <section>
-                                  <SectionHeader kicker="Strong fit" title="These align with your profile" subtitle="Your stated nationality, level, and field overlap with the program's audience."
+                                  <SectionHeader
+                                    kicker={t("Strong fit", "Хорошее совпадение")}
+                                    title={t("These align with your profile", "Эти подходят вашему профилю")}
+                                    subtitle={t("Your stated nationality, level, and field overlap with the program's audience.", "Ваши гражданство, уровень и направление совпадают с целевой аудиторией программы.")}
                                     count={sections.strong.length} accentClass="text-gold-dark dark:text-gold" />
                                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
                                     {sections.strong.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
@@ -4091,7 +4142,10 @@ const Discover = ({ language = "en" }: Props) => {
 
                               {sections.competitive.length > 0 && (
                                 <section>
-                                  <SectionHeader kicker="Worth a closer look" title="Selective programs that match your direction" subtitle="Some thresholds are tight — read the requirements before drafting."
+                                  <SectionHeader
+                                    kicker={t("Worth a closer look", "Стоит присмотреться")}
+                                    title={t("Selective programs that match your direction", "Селективные программы по вашему направлению")}
+                                    subtitle={t("Some thresholds are tight — read the requirements before drafting.", "Некоторые пороги жёсткие — прочитайте требования до подачи.")}
                                     count={sections.competitive.length} accentClass="text-primary dark:text-primary-bright" />
                                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
                                     {sections.competitive.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
@@ -4101,7 +4155,10 @@ const Discover = ({ language = "en" }: Props) => {
 
                               {sections.stretch.length > 0 && (
                                 <section>
-                                  <SectionHeader kicker="Flagship programs" title="The rest of the catalog" subtitle="Highly selective on paper. People do win these every year."
+                                  <SectionHeader
+                                    kicker={t("Flagship programs", "Флагманские программы")}
+                                    title={t("The rest of the catalog", "Остальной каталог")}
+                                    subtitle={t("Highly selective on paper. People do win these every year.", "Очень селективные на бумаге. Каждый год кто-то их выигрывает.")}
                                     count={sections.stretch.length} accentClass="text-muted-foreground" />
                                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
                                     {sections.stretch.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
@@ -4109,7 +4166,7 @@ const Discover = ({ language = "en" }: Props) => {
                                 </section>
                               )}
 
-                              {lockedCount > 0 && <PaywallCard lockedCount={lockedCount} className="mt-2" />}
+                              {lockedCount > 0 && <PaywallCard lockedCount={lockedCount} className="mt-2" lang={language} />}
                             </>
                           );
                         })()}
@@ -4378,6 +4435,7 @@ const Discover = ({ language = "en" }: Props) => {
                         onToggleHide={(e) => { e.stopPropagation(); toggleHide(s.scholarship_id); }}
                         isComparing={compareSet.has(s.scholarship_id)}
                         onToggleCompare={(e) => { e.stopPropagation(); toggleCompare(s.scholarship_id); }}
+                        lang={language}
                       />
                     ))}
                   </div>
@@ -4445,7 +4503,7 @@ const Discover = ({ language = "en" }: Props) => {
         {/* Mobile filters */}
         <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
           <SheetContent side="left" className="w-[300px] overflow-y-auto">
-            <SheetHeader><SheetTitle className="flex items-center gap-2"><SlidersHorizontal className="h-4 w-4" />Filters</SheetTitle></SheetHeader>
+            <SheetHeader><SheetTitle className="flex items-center gap-2"><SlidersHorizontal className="h-4 w-4" />{t("Filters", "Фильтры")}</SheetTitle></SheetHeader>
             <div className="mt-5"><FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} fieldsAvailable={fieldsAvailable} /></div>
           </SheetContent>
         </Sheet>
@@ -4466,6 +4524,7 @@ const Discover = ({ language = "en" }: Props) => {
           isMember={isMember}
           onUnlock={() => setPaywallOpen("strategy")}
           onExpand={() => openDetail && setExpandedDetail(openDetail)}
+          lang={language}
         />
 
         <ExpandedScholarshipDialog
