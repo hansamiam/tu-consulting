@@ -14,7 +14,20 @@ import { consumePostAuthRedirect } from "@/lib/postAuthRedirect";
 
 const AuthCallback = () => {
   const navigate = useNavigate();
-  const [status, setStatus] = useState<string>("Signing you in…");
+  // Detect language from the post-auth redirect target so Russian
+  // users see a Russian status during the brief flash before navigate.
+  // Peek without consuming — the consume happens later inside the effect.
+  const isRu = (() => {
+    if (typeof window === "undefined") return false;
+    try {
+      const raw = localStorage.getItem("topuni-post-auth-redirect-v1");
+      if (!raw) return false;
+      const parsed = JSON.parse(raw) as { dest?: string };
+      return typeof parsed.dest === "string" && /\/ru($|\/)/.test(parsed.dest);
+    } catch { return false; }
+  })();
+  const t = (en: string, ru: string) => (isRu ? ru : en);
+  const [status, setStatus] = useState<string>(t("Signing you in…", "Входим в аккаунт…"));
 
   useEffect(() => {
     let cancelled = false;
@@ -34,7 +47,7 @@ const AuthCallback = () => {
       // shouldn't block sign-in.
       const pending = getPendingAccount();
       if (pending) {
-        setStatus("Saving your brief and profile…");
+        setStatus(t("Saving your brief and profile…", "Сохраняем брифинг и профиль…"));
         try {
           await persistPendingAccount(data.session.user.id, pending);
         } catch (e) {
@@ -47,7 +60,7 @@ const AuthCallback = () => {
       // landing page that had ?ref=CODE in the URL).
       const referralCode = getPendingReferral();
       if (referralCode) {
-        setStatus("Linking your referral…");
+        setStatus(t("Linking your referral…", "Привязываем реферальный код…"));
         try {
           await supabase.functions.invoke("register-referral", {
             body: { code: referralCode },
@@ -67,6 +80,7 @@ const AuthCallback = () => {
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
   return (
