@@ -19,6 +19,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { chatCompletions } from "../_shared/ai-gateway.ts";
 import { checkRateLimit, clientIp } from "../_shared/rate-limit.ts";
+import { EDITORIAL_RULES_TIGHT } from "../_shared/editorial-rules.ts";
 import {
   cleanScholarshipName,
   cleanProvider,
@@ -299,7 +300,8 @@ CRITICAL RULES:
 5. Output language: ${lang}.
 
 QUALITY BAR — these are the rules generic AI breaks. We don't:
-- BANNED admissions clichés: "stretch", "long shot", "real shot", "safety school", "reach school", "target school", "playbook", "journey", "potential" (as in "your potential"). The user-facing aspirational label is "Aim high" — never write that you think a scholarship is out of reach; honest gap-analysis is the value.
+${EDITORIAL_RULES_TIGHT}
+- The user-facing aspirational label is "Aim high" — never write that you think a scholarship is out of reach; honest gap-analysis is the value.
 - BANNED platitudes: "write a strong essay", "showcase your strengths", "be authentic", "highlight your achievements", "tell your story", "stand out from the crowd". A counsellor would never say these.
 - BANNED filler verbs in strategy.points / strategy.avoid: "explore", "refine", "leverage", "maximize" — when used generically. "Leverage your robotics team experience" is fine. "Leverage your strengths" is not.
 - strategy.headline must be a real positioning angle — a thesis shape, a recommender pattern, a story type. Example GOOD: "Lead with the measurable impact of your social-enterprise project — show 6 months of traction, not aspirations." Example BAD: "Showcase your leadership and academic excellence."
