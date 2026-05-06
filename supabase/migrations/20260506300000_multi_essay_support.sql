@@ -1,0 +1,31 @@
+-- Multi-essay support per tracked scholarship
+--
+-- Today, application_tracker has a single `essay_draft text` column —
+-- one essay per scholarship. That's wrong for the most prestigious
+-- programs in the database: Schwarzman wants 3 essays (leadership,
+-- challenging context, why-Schwarzman), Rhodes wants 2 (personal
+-- statement + Rhodes-specific), Marshall wants 3, Fulbright Foreign
+-- Student wants 2-3, plenty of others want 2+. Forcing one slot
+-- means users either concatenate everything (mess) or draft in
+-- external tools (broken flow + AI critique can't reach them).
+--
+-- This migration adds a SECONDARY column for additional essays:
+--   additional_essays jsonb — array of
+--     { id: uuid-string, title: text, prompt?: text,
+--       target?: int, draft: text, updated_at: timestamptz }
+--
+-- Why secondary, not a replacement: existing UI + clients + the
+-- hasEssayCol feature flag already use essay_draft as the primary
+-- essay. Splitting that flow risks breaking offline-first state and
+-- the existing critique pipeline. The primary essay (essay_draft)
+-- stays as the "main essay" anchor; this column carries additional
+-- essays beyond #1. Users with simple scholarships (1 essay) see
+-- the same experience as before; users with multi-essay programs
+-- get to add additional essay slots inline.
+--
+-- The hook (useApplicationTracker) feature-detects this column and
+-- falls back to "single essay only" when missing, so client code
+-- stays safe pre- and post-migration.
+
+ALTER TABLE public.application_tracker
+  ADD COLUMN IF NOT EXISTS additional_essays jsonb;

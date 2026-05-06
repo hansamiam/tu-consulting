@@ -35,6 +35,7 @@ import { accentForCountry, shortCountry } from "@/lib/countryAccent";
 import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
 import { CalendarSubscribeDialog } from "@/components/pipeline/CalendarSubscribeDialog";
 import { EssayDraftPanel } from "@/components/pipeline/EssayDraftPanel";
+import { AdditionalEssaysPanel } from "@/components/pipeline/AdditionalEssaysPanel";
 import { RecommendersPanel } from "@/components/pipeline/RecommendersPanel";
 import { getStoredProfile } from "@/components/discover/DiscoverProfileGate";
 import { UpcomingDeadlines } from "@/components/pipeline/UpcomingDeadlines";
@@ -800,15 +801,28 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                   studentName={studentName}
                 />
 
-                {/* Essay draft + AI critique. Auto-saves through the
-                    same tracker hook that backs status/notes; the
-                    "Critique with AI" button streams a reader-perspective
-                    critique inline below the textarea. */}
+                {/* Primary essay draft. Auto-saves through the
+                    tracker hook; AI critique streams in a side
+                    column on desktop. */}
                 <EssayDraftPanel
                   scholarshipId={openDetail.scholarship_id}
                   scholarshipName={cleanScholarshipName(openDetail.scholarship_name)}
                   value={tracker.essayMap[openDetail.scholarship_id] || ""}
                   onChange={(next) => tracker.setEssayDraft(openDetail.scholarship_id, next || null)}
+                  language={language}
+                />
+
+                {/* Additional essays — multi-essay support for
+                    Schwarzman / Rhodes / Marshall / Fulbright-style
+                    programs that require 2-3 distinct essays. Default
+                    state is a single "Add another essay" button;
+                    expanding it reveals per-essay slots with their
+                    own title, prompt, target, draft, and AI critique. */}
+                <AdditionalEssaysPanel
+                  scholarshipId={openDetail.scholarship_id}
+                  scholarshipName={cleanScholarshipName(openDetail.scholarship_name)}
+                  value={tracker.additionalEssaysMap[openDetail.scholarship_id] ?? null}
+                  onChange={(next) => tracker.setAdditionalEssays(openDetail.scholarship_id, next)}
                   language={language}
                 />
 
