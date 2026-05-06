@@ -209,7 +209,15 @@ const DiscoverApp = ({ language = "en" }: Props) => {
       const { data } = await supabase
         .from("scholarships")
         .select("*")
-        .eq("verified", true)
+        // Match the canonical trust filter Discover + ScholarshipsByFilter
+        // use. The previous \`verified=true\` boolean is the legacy column;
+        // verification_status is the authoritative source and includes
+        // "stale" + "pending" rows that a strict boolean would exclude
+        // (legitimate rows whose URL just got re-checked sit in "stale"
+        // for a few hours before settling, and we don't want to drop
+        // them from this surface).
+        .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
+        .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null")
         .order("estimated_total_value_usd", { ascending: false });
       if (data) setRows(data as unknown as Scholarship[]);
       setLoading(false);

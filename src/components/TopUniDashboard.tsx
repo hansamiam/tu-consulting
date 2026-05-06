@@ -1594,7 +1594,13 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       // Only surface verified + stale rows in the brief sidebar matches —
       // matches the LLM's retrieval filter so what the brief mentions and
       // what the cards show are aligned.
-      .or("verification_status.is.null,verification_status.in.(verified,stale,pending)");
+      .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
+      // Lifecycle filter — closed_archived rows shouldn't appear as
+      // live matches in the brief sidebar even when the user's target
+      // countries match. The pathway fn already filters by lifecycle
+      // server-side; aligning this client query keeps the brief's
+      // text and the sidebar cards consistent.
+      .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null");
       if (profile.targetCountries && profile.targetCountries.length > 0) {
         q = q.in("host_country", profile.targetCountries);
       }

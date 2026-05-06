@@ -100,6 +100,11 @@ const SharedBriefPage = () => {
         // brief markdown render as plain bold text (handled by
         // EnrichedMarkdown's looksLikeScholarshipName fallback).
         .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
+        // Lifecycle filter — closed_archived rows shouldn't surface
+        // as live cards on a shared brief read by a third party. The
+        // recipient might be reading the brief weeks after creation;
+        // the originating row may have been archived since.
+        .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null")
         .or(orClause)
         .limit(40);
       if (cancelled || !data) return;
