@@ -185,6 +185,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setSubscription(FREE_DEFAULT);
+    // Wipe per-user localStorage so a different account signing in
+    // on the same browser doesn't inherit the prior user's tracker /
+    // brief / watchlist / chat / pending blobs. Privacy + UX both.
+    // Dynamic import keeps clearUserData out of the auth-init bundle.
+    void import("@/lib/clearUserData")
+      .then((m) => m.clearUserDataLocalStorage())
+      .catch(() => { /* non-fatal */ });
   }, []);
 
   return (
