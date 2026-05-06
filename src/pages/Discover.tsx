@@ -2797,24 +2797,28 @@ const Discover = ({ language = "en" }: Props) => {
   const [profile, setProfile] = useState<Profile>({ country: "", degrees: [], gpa: "", gpaScale: "4.0", ielts: "", toefl: "", sat: "", field: "", demographics: [] });
   const [phase, setPhase] = useState<Phase>(() => getStoredProfile()?.nationality ? "results" : "landing");
 
-  /* Auth-driven phase auto-transition. AuthContext pulls the user's
-   * student_profile from the DB into localStorage on sign-in (cross-
-   * device sync). When that completes after the page mounted on the
-   * landing phase, this effect catches the newly-available profile
-   * and lifts the user straight to results — no refresh required.
-   * Only triggers landing → results; never reverses, so users who
-   * intentionally went to wizard / analyzing don't get yanked. */
+  /* Auth-driven phase + sort auto-transition. AuthContext pulls the
+   * user's student_profile from the DB into localStorage on sign-in
+   * (cross-device sync). When that completes after the page mounted
+   * with no profile, two state values were captured at mount via
+   * lazy initializers and never reacted:
+   *   · phase → stayed "landing" (showed onboarding to a profiled user)
+   *   · sortBy → stayed "deadline" (default for no-profile case, but
+   *              "match" is the right default once a profile exists)
+   * This effect catches both. 250ms debounce so we don't beat the
+   * AuthContext's pullProfileFromDb round-trip. Only flips toward
+   * the profiled values; doesn't reverse so users who intentionally
+   * went to wizard / analyzing or chose a different sort aren't yanked. */
   useEffect(() => {
     if (!user) return;
-    if (phase !== "landing") return;
-    // Tiny debounce so we don't beat the AuthContext's pullProfileFromDb
-    // round-trip on the very first render after sign-in.
     const timer = setTimeout(() => {
       const stored = getStoredProfile();
-      if (stored?.nationality) setPhase("results");
+      if (!stored?.nationality) return;
+      setPhase((cur) => (cur === "landing" ? "results" : cur));
+      setSortBy((cur) => (cur === "deadline" ? "match" : cur));
     }, 250);
     return () => clearTimeout(timer);
-  }, [user, phase]);
+  }, [user]);
   const [wizardStep, setWizardStep] = useState(0);
   const [wiz, setWiz] = useState<WizardData>(DEFAULT_WIZARD);
   const [openDetail, setOpenDetail] = useState<Scored | null>(null);
