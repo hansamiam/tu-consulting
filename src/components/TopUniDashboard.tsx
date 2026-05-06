@@ -2134,7 +2134,13 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     trackedSnapshot.ids.length, trackedSnapshot.statusFingerprint,
   ]);
 
-  const streamSSE = async (url: string, body: any, onDelta: (chunk: string) => void, onDone: () => void) => {
+  const streamSSE = async (
+    url: string,
+    body: any,
+    onDelta: (chunk: string) => void,
+    onDone: () => void,
+    onError?: (status: number, message: string) => void,
+  ) => {
     // Pass the user's session JWT when authed so edge functions can
     // resolve user_id via getUser() — needed for the counselor's
     // live-case context (tracker / tasks / cached brief). Falls back
@@ -2153,8 +2159,17 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
 
     if (!resp.ok || !resp.body) {
       const errData = await resp.json().catch(() => ({}));
-      onDelta(errData.error || "Something went wrong. Please try again.");
-      onDone();
+      const message = errData.error || "Something went wrong. Please try again.";
+      // Prefer the dedicated error path so callers can keep
+      // pathwayGenerated=false and surface a retry. Fall back to
+      // writing the error into the content stream for callers that
+      // haven't been migrated to onError yet.
+      if (onError) {
+        onError(resp.status, message);
+      } else {
+        onDelta(message);
+        onDone();
+      }
       return;
     }
 
@@ -2480,7 +2495,25 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             })();
           }
         }
-      }
+      },
+      // Error path — keep pathwayGenerated=false so the user can
+      // retry. Surface the error via toast (and clear any partial
+      // streamed content). Don't mark "brief_generation_completed"
+      // since nothing actually completed, and don't cache the error
+      // text as if it were the brief.
+      (status, message) => {
+        setPathwayLoading(false);
+        setPathwayContent("");
+        const isRateLimit = status === 429;
+        const isAuth = status === 401 || status === 403;
+        const userMessage = isRateLimit
+          ? (language === "ru" ? "Превышен лимит запросов — попробуйте через минуту." : "Rate limit hit — try again in a minute.")
+          : isAuth
+          ? (language === "ru" ? "Сессия истекла — войдите заново." : "Session expired — please sign in again.")
+          : (language === "ru" ? `Не удалось сгенерировать брифинг: ${message}` : `Couldn't generate brief: ${message}`);
+        toast.error(userMessage);
+        void track("brief_generation_failed", { status, tier: reportGrade });
+      },
     );
   };
 
