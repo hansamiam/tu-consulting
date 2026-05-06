@@ -2698,7 +2698,12 @@ interface Props { language?: "en" | "ru" }
 const Discover = ({ language = "en" }: Props) => {
   const navigate = useNavigate();
   const { user, subscription } = useAuth();
-  const isMember = subscription.tier === "founding" || subscription.tier === "pro";
+  // is_active = (active|trialing paid sub with period valid) OR
+  // earned_trial_active. is_founding_member is the lifetime perk.
+  // Bare tier check (the previous form) treated canceled-pro users
+  // as members until the DB tier column was backfilled, leaking
+  // premium access.
+  const isMember = subscription.is_active || subscription.is_founding_member;
 
   /* Translation helper. The Discover surface used to render almost
    * entirely in English regardless of route — only the top nav strip

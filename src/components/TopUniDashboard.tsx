@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { isAdminUser } from "@/lib/adminMode";
 import { SaveBriefPrompt } from "@/components/topuni/SaveBriefPrompt";
 import { DocumentManager } from "@/components/topuni/DocumentManager";
 import { CounselorSessions } from "@/components/topuni/CounselorSessions";
@@ -1415,14 +1416,22 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
 
   /* Auth + premium tier resolution — declared early because profileHash
      depends on reportGrade. Members get the premium prompt (15-20
-     universities, deeper sections, Gemini 2.5 Pro). */
+     universities, deeper sections, Gemini 2.5 Pro).
+     Tightened in round 55: previous OR chain included `tier === "pro"`
+     and `tier === "founding"` independently of subscription status,
+     so a user whose subscription was canceled (Stripe webhook flipped
+     status to "canceled" but DB tier stayed "pro") still passed as a
+     member — silent revenue leak. is_active already captures
+     active+trialing+earned_trial. is_founding_member is the lifetime
+     status badge for founders who paid the launch price; keep it.
+     isAdminUser bypasses for the admin allowlist so the founder can
+     test premium surfaces without maintaining a paid sub on every
+     test account. */
   const { user, subscription } = useAuth();
   const isMember = !!subscription && (
     subscription.is_active ||
     subscription.is_founding_member ||
-    subscription.earned_trial_active ||
-    subscription.tier === "pro" ||
-    subscription.tier === "founding"
+    isAdminUser(user)
   );
   // Application tracker — used to wire the action-plan items' "Save"
   // pill into the user's pipeline. The same hook powers /pipeline,

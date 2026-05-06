@@ -147,9 +147,12 @@ const COPY = {
 const EssayCritique = ({ language = "en" }: EssayCritiqueProps) => {
   const t = COPY[language];
   const { user, subscription } = useAuth();
+  // is_active already covers paid+period-valid AND earned_trial_active
+  // (see AuthContext.loadSubscription). is_founding_member is the
+  // lifetime perk. The trailing tier-name checks were granting
+  // premium to canceled-pro users — closed in round 55.
   const isPremium = !!subscription && (
-    subscription.is_active || subscription.is_founding_member || subscription.earned_trial_active ||
-    subscription.tier === "pro" || subscription.tier === "founding"
+    subscription.is_active || subscription.is_founding_member
   );
   void user; // (kept for future per-user analytics)
 

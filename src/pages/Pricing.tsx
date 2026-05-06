@@ -170,7 +170,11 @@ const Pricing = ({ language = "en" }: PricingProps) => {
     window.location.href = data.url;
   };
 
-  const isFounding = subscription.tier === "founding";
+  // "Currently a founding-tier subscriber" = tier=founding AND active.
+  // Was previously checking just the tier; a canceled founding user
+  // would have kept the founding CTA + crown rendered as if they were
+  // still in the cohort.
+  const isFounding = subscription.tier === "founding" && subscription.is_active;
   // Regular paid Pro members were previously seeing the "Become a
   // member" CTA on the pricing page, which is misleading — they
   // already are members. Treat any active paid tier (founding OR pro)
