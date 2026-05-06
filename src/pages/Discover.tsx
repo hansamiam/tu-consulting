@@ -28,9 +28,13 @@ import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverPro
 import { CuratedCollections } from "@/components/discover/CuratedCollections";
 import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
 import { ExpandedScholarshipDialog } from "@/components/discover/ExpandedScholarshipDialog";
-import { MatchScoreBreakdown } from "@/components/discover/MatchScoreBreakdown";
+// MatchScoreBreakdown import retired round 33 — the per-row hover
+// popover that wrapped the MatchGauge was removed; rows convey fit
+// via section bucketing + sort order now. Re-import if a future
+// surface wants to expose the breakdown.
 import { SavedSearchControls } from "@/components/discover/SavedSearchControls";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+// HoverCard imports retired round 33 alongside MatchGauge — re-add
+// if any future surface wants a hover popover on a row chip.
 import { CountryArt } from "@/lib/countryArt";
 import { FlagPattern } from "@/lib/flagPattern";
 import { accentForCountry, shortCountry, canonicalCountry } from "@/lib/countryAccent";
@@ -828,55 +832,10 @@ const Tag = ({
   );
 };
 
-/* MatchGauge — three vertical bars, wifi-style, that grow + colour by
- * match priority. The numeric /100 score isn't surfaced to students
- * (we don't want the product reading as a probability quote on a thin
- * profile), but bucketed strength still needs a visual handle: at-a-
- * glance "is this worth my attention" without me reading the title.
- * Strong fit fills 3 bars in gold; competitive fills 2 in primary;
- * low_priority fills 1 in muted. The hover MatchScoreBreakdown popover
- * stays as the per-criteria why for users who want it. */
-const MatchGauge = ({
-  priority,
-  hasRealScore,
-  size = "sm",
-  className = "",
-}: {
-  priority: Scored["priority"];
-  hasRealScore: boolean;
-  size?: "sm" | "md";
-  className?: string;
-}) => {
-  if (!hasRealScore) return null;
-  const filled = priority === "strong_match" ? 3 : priority === "competitive" ? 2 : 1;
-  const tone =
-    priority === "strong_match" ? "bg-gold"
-    : priority === "competitive" ? "bg-primary-bright"
-    : "bg-muted-foreground/55";
-  const empty = "bg-foreground/12";
-  const heights = size === "md" ? ["h-2", "h-3", "h-4"] : ["h-1.5", "h-2.5", "h-3.5"];
-  const wrapH = size === "md" ? "h-4" : "h-3.5";
-  const barW = size === "md" ? "w-1" : "w-[3px]";
-  return (
-    <span
-      className={`inline-flex items-end gap-[2px] ${wrapH} ${className}`}
-      aria-label={
-        priority === "strong_match" ? "Strong match"
-        : priority === "competitive" ? "Competitive match"
-        : "Lighter match"
-      }
-      title={
-        priority === "strong_match" ? "Strong match for your profile"
-        : priority === "competitive" ? "Competitive — worth a closer look"
-        : "Lighter match — flagship program"
-      }
-    >
-      {heights.map((h, i) => (
-        <span key={i} className={`${barW} ${h} rounded-sm ${i < filled ? tone : empty}`} />
-      ))}
-    </span>
-  );
-};
+/* MatchGauge retired round 33 — the wifi-bar visual was unclear and
+ * crowded the chip row. Match info now lives in section bucketing
+ * (grid view) + sort order (list view) + the detail-sheet match
+ * breakdown. No per-row chip needed. */
 
 /* Extract a domain from a scholarship's URL for favicon fetching.
  * Returns null when the URL is missing or malformed. */
@@ -1374,37 +1333,16 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
             {cleanScholarshipName(s.scholarship_name)}
           </h3>
           <div className="flex items-center gap-1.5 mt-1 min-w-0 flex-wrap">
-            {/* Match strength gauge — wifi-style 3-bar indicator gives the
-                row a one-glance read on fit without surfacing a number.
-                Wraps the same MatchScoreBreakdown popover the round
-                badge used to host. Hidden when there's no real profile
-                to score against. */}
-            {hasRealScore && (
-              <HoverCard openDelay={120} closeDelay={80}>
-                <HoverCardTrigger asChild>
-                  <button type="button" onClick={(e) => e.stopPropagation()} className="cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-gold rounded-sm shrink-0 px-0.5">
-                    <MatchGauge priority={s.priority} hasRealScore={hasRealScore} />
-                  </button>
-                </HoverCardTrigger>
-                <HoverCardContent side="right" align="start" className="p-0 border-0 shadow-none bg-transparent w-auto">
-                  <MatchScoreBreakdown
-                    scholarshipId={s.scholarship_id}
-                    fallback={{
-                      match: s.match,
-                      application_deadline: s.application_deadline,
-                      estimated_total_value_usd: s.estimated_total_value_usd,
-                      last_verified_at: s.last_verified_at,
-                      verification_status: s.verification_status,
-                      passes_eligibility: s.eligibility === "eligible" || s.eligibility === "likely",
-                      why_this_fits: s.why_this_fits,
-                      reasons: s.reasons,
-                      warnings: s.warnings,
-                    }}
-                    compact
-                  />
-                </HoverCardContent>
-              </HoverCard>
-            )}
+            {/* Match-strength indicator retired (round 33). The wifi-bar
+                gauge introduced in round 21 looked unclear and competed
+                with the chip row visually. Match info still drives:
+                  · Section bucketing in grid view ("Strong fit" / "Worth
+                    a closer look" / "Flagship" headers).
+                  · Default sort order in list view ("Best match" sorts
+                    by score so the row position itself conveys fit).
+                  · Per-criteria breakdown inside the detail sheet.
+                Without the chip, every row reads cleaner; the per-row
+                fit signal lives in placement, not in noise. */}
             {s.host_country && (
               <Tag variant="country" countryGradient={accent}>
                 {shortCountry(s.host_country)}
@@ -3525,7 +3463,7 @@ const Discover = ({ language = "en" }: Props) => {
                     onClick={() => setPhase("wizard")}
                     className="text-xs text-primary-foreground/45 hover:text-primary-foreground/80 underline-offset-4 hover:underline transition-colors"
                   >
-                    {t("or skip strategy and just browse the database", "или пропустить стратегию и сразу к базе")}
+                    {t("or skip ahead to the scholarship database", "или сразу к базе стипендий")}
                   </button>
                   <div className="flex items-center justify-center gap-5 text-xs text-primary-foreground/35 font-medium tracking-wide pt-1">
                     <span className="flex items-center gap-1.5"><Zap className="h-3 w-3 text-gold" /> {t("2 minutes", "2 минуты")}</span>
@@ -3889,53 +3827,47 @@ const Discover = ({ language = "en" }: Props) => {
                 const countryAccent = accentForCountry(profile.country);
                 return (
                   <div className="relative bg-canvas-soft/60 border-b border-border/60 overflow-hidden">
-                    {/* Brand mark moved to the sticky DiscoverAppBar
-                        above — this page strip now focuses solely on
-                        the student's identity (profile chips) so the
-                        space reads less like "another website header"
-                        and more like "your context for this view".
-                        Generous py-5 keeps comfortable breathing room
-                        between the app bar and the content below. */}
-                    <div className="relative max-w-7xl mx-auto px-5 sm:px-8 py-5 sm:py-6 flex items-center gap-2 flex-wrap">
-                      {/* Profile chips OR call-to-build-profile.
-                          Profile chips lean into personal identity:
-                          gradient passport-style country chip with a
-                          flag, field chip with a domain emoji, and
-                          quieter stats. Reads as "the platform sees me"
-                          rather than "filter values applied". */}
-                      <div className="flex items-center gap-2 flex-wrap min-w-0 flex-1">
+                    {/* Round-33 tightening: profile context strip used to
+                        be py-5 sm:py-6 with full-size chips. That ate
+                        ~80px of vertical space for what's essentially
+                        "here's what we know about you" context. Now
+                        py-2 sm:py-2.5 with smaller chips so it reads as
+                        a slim subtitle bar rather than a competing
+                        section. Total profile context line is now ~36px
+                        instead of ~80px. */}
+                    <div className="relative max-w-7xl mx-auto px-5 sm:px-8 py-2 sm:py-2.5 flex items-center gap-1.5 flex-wrap">
+                      <div className="flex items-center gap-1.5 flex-wrap min-w-0 flex-1">
                         {isProfileFilled ? (
                           <>
+                            <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/80 font-semibold mr-1">
+                              {t("Matches for", "Под профиль")}
+                            </span>
                             {profile.country && (
-                              <span className={`inline-flex items-center gap-1.5 text-xs font-semibold text-white px-2.5 py-1 rounded-full bg-gradient-to-r ${countryAccent} shadow-sm`}>
-                                {countryFlag && <span className="text-sm leading-none">{countryFlag}</span>}
+                              <span className={`inline-flex items-center gap-1 text-[11px] font-semibold text-white px-2 py-0.5 rounded-full bg-gradient-to-r ${countryAccent}`}>
+                                {countryFlag && <span className="text-xs leading-none">{countryFlag}</span>}
                                 {profile.country}
                               </span>
                             )}
                             {profile.degrees && profile.degrees.length > 0 && (
-                              <span className="inline-flex items-center gap-1.5 text-xs text-foreground/85 bg-card border border-border px-2 py-1 rounded-full font-medium">
+                              <span className="inline-flex items-center gap-1 text-[11px] text-foreground/80 bg-card border border-border/70 px-2 py-0.5 rounded-full font-medium">
                                 <GraduationCap className="h-3 w-3 text-gold-dark" />
                                 {profile.degrees.join(" / ")}
                               </span>
                             )}
                             {profile.field && (
-                              <span className="inline-flex items-center gap-1.5 text-xs text-foreground/85 bg-card border border-border px-2 py-1 rounded-full font-medium">
+                              <span className="inline-flex items-center gap-1 text-[11px] text-foreground/80 bg-card border border-border/70 px-2 py-0.5 rounded-full font-medium">
                                 {fieldEmoji && <span className="leading-none">{fieldEmoji}</span>}
                                 {profile.field}
                               </span>
                             )}
                             {profile.gpa && (
-                              <span className="inline-flex items-center text-[11px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md font-medium tabular-nums">
-                                GPA {profile.gpa}/{profile.gpaScale}
-                              </span>
+                              <span className="text-[10px] text-muted-foreground tabular-nums">GPA {profile.gpa}/{profile.gpaScale}</span>
                             )}
                             {profile.ielts && (
-                              <span className="inline-flex items-center text-[11px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md font-medium tabular-nums">
-                                IELTS {profile.ielts}
-                              </span>
+                              <span className="text-[10px] text-muted-foreground tabular-nums">IELTS {profile.ielts}</span>
                             )}
-                            <button onClick={resetProfile} className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 underline-offset-4 hover:underline ml-1">
-                              Edit
+                            <button onClick={resetProfile} className="text-[11px] text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline ml-auto">
+                              {t("Edit", "Изменить")}
                             </button>
                           </>
                         ) : (

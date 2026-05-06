@@ -113,13 +113,19 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
 
         <LanguageSwitcher />
 
-        {/* Sign-in / member indicator (round 31). The tier-badge button
-            here used to navigate to /account, duplicating the Workspace
-            button right next to it. /account now redirects to /pipeline
-            so both clicks went to the same destination. The tier badge
-            now stays as a passive visual indicator (no click) when
-            signed in, with sign-in still active for anonymous users. */}
-        {user ? (
+        {/* Right-edge slot (round 33). Was three states with visual
+            duplication of the Workspace button next to it:
+              · authed-paid     → gold tier chip
+              · authed-free     → gold "Account" chip (visually identical)
+              · anonymous       → "Sign in" button
+            The free tier chip was the worst offender — it said "Account"
+            in a gold-bordered button-shaped span next to the Workspace
+            button, and the user read it as two duplicate entry points.
+            Now: paid members keep their tier badge as a status marker;
+            free / anon get nothing in this slot (Workspace button is
+            their entry point, sign-in still surfaces below for anon
+            via mobile menu / homepage). */}
+        {user && (subscription.tier === "founding" || subscription.tier === "pro") && (
           <span
             className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-semibold text-gold-dark bg-gold/10 border border-gold/30"
             title={tierLabel}
@@ -127,7 +133,8 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
             <TierIcon className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">{tierLabel}</span>
           </span>
-        ) : (
+        )}
+        {!user && (
           <>
             <button
               onClick={() => setAuthOpen(true)}

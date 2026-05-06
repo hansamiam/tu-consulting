@@ -196,9 +196,10 @@ export const CuratedCollections = ({
             same intents land in roughly half the height, so actual results
             are reachable above the fold on common viewports. */}
         <div className="-mx-5 sm:mx-0 px-5 sm:px-0 flex items-center gap-2 overflow-x-auto sm:overflow-visible sm:flex-wrap scrollbar-hide">
-          <span className="hidden sm:inline shrink-0 text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/80 mr-1">
-            Quick filter
-          </span>
+          {/* "QUICK FILTER" uppercase label retired (round 33). The
+              chips are self-explanatory and the label was a tracking-
+              heavy editorial mark that competed with the actual chips
+              for attention. Letting the chips speak for themselves. */}
           {tilesWithCount.map(({ preset }, i) => (
             <motion.button
               key={preset.id}

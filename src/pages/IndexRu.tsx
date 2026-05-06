@@ -111,7 +111,7 @@ const IndexRu = () => {
                   className="text-sm sm:text-base px-5 text-foreground/75 hover:bg-foreground/5 hover:text-foreground gap-2"
                   onClick={() => navigate('/discover/ru')}
                 >
-                  Просто посмотреть базу
+                  Сразу к стипендиям
                 </Button>
               </motion.div>
             </div>
