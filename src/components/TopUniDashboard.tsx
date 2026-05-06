@@ -1596,6 +1596,10 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
      Fetch only IDs that aren't already in liveMatches (skip the round-
      trip when there's overlap) and only verified/stale rows. */
   const [savedExtras, setSavedExtras] = useState<LiveMatch[]>([]);
+  // Stable key for tracker.shortlist — Set reference flips each render
+  // even when membership is unchanged. Hoisting also lets ESLint
+  // statically check the deps array.
+  const shortlistKey = Array.from(tracker.shortlist).sort().join(",");
   useEffect(() => {
     const liveIds = new Set(liveMatches.map((m) => m.scholarship_id));
     const idsToFetch = Array.from(tracker.shortlist).filter((id) => !liveIds.has(id));
@@ -1620,8 +1624,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       setSavedExtras(data as LiveMatch[]);
     })();
     return () => { cancelled = true; };
-  // tracker.shortlist is a Set so we hash by sorted-key string for stable deps
-  }, [Array.from(tracker.shortlist).sort().join(","), liveMatches]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shortlistKey, liveMatches]);
 
   /* Combined match set — feeds every surface that resolves scholarship
      names to rich cards (counselor responses, brief funding-shortlist
