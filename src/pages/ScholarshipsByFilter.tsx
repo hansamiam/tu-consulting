@@ -825,7 +825,7 @@ function buildHubFaqEntities(
 
   push(
     `How do I find the right ${subject} for my profile?`,
-    `Build a free TopUni AI strategy at topuni.org/topuni-ai — it ranks every scholarship in our database against your GPA, test scores, target countries, and field, then writes a 90-day action plan tailored to your strongest matches.`,
+    `Build a free TopUni AI strategy at topuni.org/topuni-ai — it ranks every scholarship in our database against your GPA, test scores, target countries, and field, and writes a personalized strategy tailored to your strongest matches.`,
   );
 
   return out;
