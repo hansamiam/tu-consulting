@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import { BetaBanner } from "@/components/BetaBanner";
@@ -37,6 +37,13 @@ const COUNTRY_MAP: Record<string, string> = {
   "Чехия": "Czech Republic", "Венгрия": "Hungary", "Польша": "Poland", "Эстония": "Estonia",
   "Турция": "Turkey", "Малайзия": "Malaysia",
 };
+// Reverse map: EN canonical → RU display label. Used when hub-context
+// arrives carrying EN country names (from SharedBrief / ScholarshipsByFilter)
+// so we can prefill the RU button selection — otherwise the user sees a
+// blank country list with the data sitting silently in EN form.
+const COUNTRY_MAP_REVERSE: Record<string, string> = Object.fromEntries(
+  Object.entries(COUNTRY_MAP).map(([ru, en]) => [en, ru]),
+);
 
 const TopUniAIRu = () => {
   const navigate = useNavigate();
@@ -66,6 +73,66 @@ const TopUniAIRu = () => {
   const toggleCountry = (country: string) => {
     setTargetCountries(prev => prev.includes(country) ? prev.filter(c => c !== country) : [...prev, country]);
   };
+
+  /* Drain a topuni-hub-context payload set by an upstream hub (a
+   * Russian SharedBrief recipient, a country/field/theme hub page,
+   * or a scholarship detail handoff). The EN /topuni-ai page already
+   * does this via a parallel block; the RU page was silently
+   * dropping every prefill before round 60.
+   *
+   * Country prefills arrive in EN canonical form ("Germany") — we
+   * reverse-map them to the RU display label ("Германия") so the
+   * button-row selection actually highlights what the user expects. */
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("topuni-hub-context");
+      if (!raw) return;
+      sessionStorage.removeItem("topuni-hub-context");
+      const payload = JSON.parse(raw) as {
+        kind?: "country" | "field" | "theme" | "scholarship" | "shared-brief";
+        country?: string;
+        countries?: string[];
+        field?: string;
+        gradeLevel?: string;
+        theme?: string;
+        label?: string;
+        ts?: number;
+      };
+      if (typeof payload?.ts === "number" && Date.now() - payload.ts > 5 * 60_000) return;
+      const toRu = (en: string): string => COUNTRY_MAP_REVERSE[en] || en;
+      if (payload.kind === "country" && payload.country) {
+        const ruName = toRu(payload.country);
+        setTargetCountries(prev => (prev.includes(ruName) ? prev : [...prev, ruName]));
+      } else if (payload.kind === "field" && payload.field) {
+        setMajor(prev => prev || payload.field!);
+      } else if (payload.kind === "shared-brief") {
+        if (Array.isArray(payload.countries) && payload.countries.length > 0) {
+          setTargetCountries(prev => {
+            const merged = [...prev];
+            for (const c of payload.countries!) {
+              const ruName = toRu(c);
+              if (!merged.includes(ruName)) merged.push(ruName);
+            }
+            return merged;
+          });
+        }
+        if (payload.field) setMajor(prev => prev || payload.field!);
+        if (payload.gradeLevel) setGradeLevel(prev => prev || payload.gradeLevel!);
+      } else if (payload.kind === "theme" && payload.theme) {
+        if (payload.theme === "full-funding") {
+          setBudget("Нужна полная стипендия");
+          setScholarship([5]);
+        } else if (payload.theme === "closing-soon") {
+          setTimeline("Осень 2026");
+        } else if (payload.theme === "high-value") {
+          setScholarship(prev => (prev[0] >= 4 ? prev : [4]));
+        }
+      } else if (payload.kind === "scholarship" && payload.country) {
+        const ruName = toRu(payload.country);
+        setTargetCountries(prev => (prev.includes(ruName) ? prev : [...prev, ruName]));
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   const mappedCountries = targetCountries.map(c => COUNTRY_MAP[c] || c);
 
