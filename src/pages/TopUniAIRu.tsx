@@ -4,7 +4,6 @@ import Navigation from "@/components/Navigation";
 import { BetaBanner } from "@/components/BetaBanner";
 import { Footer } from "@/components/Footer";
 import topuniBg from "@/assets/topuni-bg.jpg";
-import TopUniChat from "@/components/TopUniChat";
 import TopUniDashboard from "@/components/TopUniDashboard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
