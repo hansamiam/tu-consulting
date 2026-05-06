@@ -14,7 +14,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  ArrowLeft, ArrowRight, ExternalLink, Clock, Check, X, Calendar,
+  ArrowLeft, ArrowRight, ExternalLink, Calendar,
   StickyNote, Loader2, Search, Inbox, ChevronDown, Bot, KanbanSquare, FileText,
 } from "lucide-react";
 import Navigation from "@/components/Navigation";
