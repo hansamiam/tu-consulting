@@ -4630,6 +4630,7 @@ const Discover = ({ language = "en" }: Props) => {
           onApply={() => expandedDetail?.official_url && window.open(expandedDetail.official_url, "_blank", "noopener,noreferrer")}
           onSave={() => expandedDetail && toggleBookmark(expandedDetail.scholarship_id)}
           isBookmarked={expandedDetail ? shortlist.has(expandedDetail.scholarship_id) : false}
+          lang={language}
         />
       </div>
     </div>
