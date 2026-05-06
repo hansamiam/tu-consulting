@@ -168,14 +168,33 @@ const EssayCard = ({ essay, index, scholarshipName, language, onChange, onRemove
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [essay.id]);
 
+  // Latest typed draft + onChange ref so unmount-cleanup can flush
+  // the in-flight debounced save. Closing the panel within 800ms of
+  // the last keystroke would otherwise drop the most recent edits —
+  // unacceptable for an essay editor.
+  const latestDraftRef = useRef<string>(essay.draft);
+  const onChangeRef = useRef(onChange);
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+
   const onDraftChange = (next: string) => {
     setDraft(next);
+    latestDraftRef.current = next;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       onChange({ draft: next });
       debounceRef.current = null;
     }, 800);
   };
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+        onChangeRef.current({ draft: latestDraftRef.current });
+      }
+    };
+  }, []);
 
   const onTitleBlur = () => {
     if (title.trim() && title !== essay.title) onChange({ title: title.trim() });
