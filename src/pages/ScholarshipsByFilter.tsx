@@ -318,6 +318,12 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
           // Drives the demographic / no-essay / rolling-deadline themes
           "target_demographics, essay_required, deadline_type",
         )
+        // Public SEO surface — match the same trust filters Discover +
+        // ScholarshipDetail apply. Without these gates the by-country /
+        // by-field hub pages would surface broken-URL or closed-archived
+        // rows to crawlers, hurting both SEO trust and applicant UX.
+        .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
+        .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null")
         // Featured first, then by funding value — keeps the spotlights at the top
         .order("is_featured", { ascending: false })
         .order("estimated_total_value_usd", { ascending: false, nullsFirst: false })
@@ -348,6 +354,10 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
             "why_this_fits, official_url, data_source, is_featured, " +
             "eligible_countries, min_gpa, gpa_scale, min_ielts, min_toefl",
           )
+          // Same trust gates as the primary query — fallback path
+          // shouldn't surface broken / archived rows either.
+          .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
+          .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null")
           .ilike("eligibility_requirements", `%${resolved.label}%`)
           .limit(40);
         result = (fb as ScholarshipRow[]) ?? [];
