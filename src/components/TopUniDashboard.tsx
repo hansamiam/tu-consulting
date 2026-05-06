@@ -2308,6 +2308,16 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             }));
           } catch { /* ignore */ }
         },
+        // Section regen used to silently swallow errors — the user
+        // clicked "Regenerate" and saw NOTHING happen on failure.
+        // Toast a contextual message so they know the click landed.
+        (status, message) => {
+          const isRateLimit = status === 429;
+          const userMessage = isRateLimit
+            ? (language === "ru" ? "Превышен лимит запросов — попробуйте через минуту." : "Rate limit hit — try again in a minute.")
+            : (language === "ru" ? `Не удалось перегенерировать раздел: ${message}` : `Couldn't regenerate section: ${message}`);
+          toast.error(userMessage);
+        },
       );
     } finally {
       setRegeneratingSectionId(null);
