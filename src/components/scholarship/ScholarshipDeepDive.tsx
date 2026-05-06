@@ -126,8 +126,8 @@ export const ScholarshipDeepDive = ({
                  "Подойдёт ли вам эта стипендия?")}
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed mb-4 max-w-xl">
-              {t("Build your profile (60 seconds) and we'll show you a match-score breakdown vs your stats, a strategy specific to your background, realistic odds, and a 30-day plan for THIS scholarship.",
-                 "Заполните профиль (60 секунд) — и мы покажем разбор соответствия по вашим показателям, стратегию под ваш бэкграунд, реальные шансы и план на 30 дней под эту конкретную стипендию.")}
+              {t("Build your profile (60 seconds) and we'll show you a match breakdown vs your stats, a strategy specific to your background, what to prepare first, and the realistic odds.",
+                 "Заполните профиль (60 секунд) — и мы покажем разбор соответствия по вашим показателям, стратегию под ваш бэкграунд, что готовить в первую очередь и реальные шансы.")}
             </p>
             <Button variant="gold" onClick={onBuildProfile} className="gap-1.5">
               {t("Build my profile", "Заполнить профиль")} <ArrowRight className="w-3.5 h-3.5" />

@@ -105,6 +105,7 @@ async function persistPendingAccount(userId: string, p: PendingAccountPayload) {
       gpa: num(profile.gpa),
       gpa_scale: num(profile.gpaScale),
       ielts: num(profile.ielts),
+      toefl: num(profile.toefl),
       sat: intNum(profile.sat),
       target_countries: profile.targetCountries ?? null,
       major: profile.major ?? null,
