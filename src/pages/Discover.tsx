@@ -626,7 +626,11 @@ const FIELDS = [
   { v: "Engineering", i: "⚙️" }, { v: "Medicine & Health", i: "🏥" },
   { v: "Natural Sciences", i: "🔬" }, { v: "Social Sciences", i: "🌐" },
   { v: "Arts & Humanities", i: "📖" }, { v: "Law", i: "⚖️" },
-  { v: "Undecided", i: "✨" },
+  // "Undecided" was carrying a sparkle emoji which read as "AI magic"
+  // — it's actually the opposite of magic (the user genuinely doesn't
+  // know yet). Question mark in a thinking-face frame reads more
+  // honestly: "still figuring it out".
+  { v: "Undecided", i: "🤔" },
 ];
 
 const SELECTIVITY_LABEL: Record<Scored["selectivity"], string> = {
@@ -2501,7 +2505,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                       Ideal candidate profile, how-to-win strategy, common rejection reasons, and warnings are part of Founding Pro.
                     </p>
                     <Button variant="gold" size="sm" className="w-full gap-2" onClick={onUnlock}>
-                      <Sparkles className="h-3.5 w-3.5" /> Unlock for $19/mo
+                      <Crown className="h-3.5 w-3.5" /> {t("Unlock for $19/mo", "Открыть за $19/мес")}
                     </Button>
                   </div>
                 </div>
@@ -2710,6 +2714,23 @@ const Discover = ({ language = "en" }: Props) => {
   const adminBypass = isAdminUser(user) || isAdminBypass();
   const gateActive = !isMember && !adminBypass;
   const [foundingLeft, setFoundingLeft] = useState<{ left: number; cap: number } | null>(null);
+
+  /* Temporary "beta" banner — surfaces honesty about the data quality
+   * while the verification + enrichment pipelines are still catching
+   * up. Dismissal persists per-device via localStorage so we don't
+   * nag returning users. Pull it once we hit ~95% verification on the
+   * core regions; the localStorage key won't be re-keyed so anyone
+   * who dismissed it stays dismissed. */
+  const [betaDismissed, setBetaDismissed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try { return window.localStorage.getItem("topuni_discover_beta_dismissed") === "1"; }
+    catch { return false; }
+  });
+  const dismissBeta = () => {
+    setBetaDismissed(true);
+    try { window.localStorage.setItem("topuni_discover_beta_dismissed", "1"); }
+    catch { /* private mode — fine, just won't persist */ }
+  };
 
   useEffect(() => {
     supabase.from("founding_member_counter")
@@ -3581,6 +3602,33 @@ const Discover = ({ language = "en" }: Props) => {
           {/* ══ RESULTS — distinctive app-shell experience ══ */}
           {phase === "results" && (
             <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7 }}>
+              {/* Beta banner — slim, gold-bordered, dismissible. Tells
+                  users honestly that we're still verifying + adding
+                  programs, so they don't bounce when a search returns
+                  fewer rows than they expected. */}
+              {!betaDismissed && (
+                <div className="bg-gold/10 border-b border-gold/30">
+                  <div className="max-w-7xl mx-auto px-5 sm:px-8 py-2 flex items-center gap-3">
+                    <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-[0.18em] bg-gold-dark text-primary shrink-0">
+                      {t("Beta", "Бета")}
+                    </span>
+                    <p className="text-[12px] sm:text-[13px] text-foreground/80 leading-snug flex-1 min-w-0">
+                      {t(
+                        "We're still verifying programs and expanding the database daily. Always confirm details on the official site before applying.",
+                        "Мы пока проверяем программы и расширяем базу. Всегда подтверждайте детали на официальном сайте перед подачей."
+                      )}
+                    </p>
+                    <button
+                      onClick={dismissBeta}
+                      aria-label={t("Dismiss beta notice", "Закрыть уведомление о бете")}
+                      className="shrink-0 inline-flex items-center justify-center h-6 w-6 rounded text-foreground/50 hover:text-foreground hover:bg-foreground/[0.06] transition-colors"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Trending strip removed — felt tacky against the rest of
                   the navy/gold product chrome. Closest-deadline scholarships
                   still surface via the SavedDeadlineBanner and via the
@@ -3666,8 +3714,7 @@ const Discover = ({ language = "en" }: Props) => {
                             onClick={() => setPhase("wizard")}
                             className="inline-flex items-center gap-1.5 text-sm font-semibold text-gold-dark hover:text-foreground transition-colors group"
                           >
-                            <Sparkles className="w-3.5 h-3.5" />
-                            Build profile to see fit scoring
+                            {t("Build profile to see fit scoring", "Заполните профиль для оценки совпадения")}
                             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                           </button>
                         )}
@@ -3868,7 +3915,7 @@ const Discover = ({ language = "en" }: Props) => {
                           <div className="absolute -top-1/3 right-0 w-1/2 h-full rounded-full blur-[60px] opacity-20" style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 60%)" }} />
                           <div className="relative">
                             <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold-light mb-2">
-                              <Sparkles className="h-3 w-3" /> Founding Pro
+                              <Crown className="h-3 w-3" /> Founding Pro
                             </div>
                             <p className="font-heading font-bold text-sm leading-tight mb-1">Unlock the full database + workshops with our founders.</p>
                             <p className="text-[11px] text-primary-foreground/65 mb-3">Lifetime price lock. Capped at {foundingLeft.cap} members.</p>
@@ -3885,7 +3932,7 @@ const Discover = ({ language = "en" }: Props) => {
 
                       {isMember && (
                         <div className="rounded-xl border border-gold/30 bg-gold/8 px-3 py-2.5 flex items-center gap-2">
-                          <Sparkles className="h-3.5 w-3.5 text-gold-dark" />
+                          <Crown className="h-3.5 w-3.5 text-gold-dark" />
                           <span className="text-[11px] font-semibold text-gold-dark">{subscription.tier === "founding" ? "Founding member" : "Pro member"}</span>
                         </div>
                       )}
@@ -3938,8 +3985,7 @@ const Discover = ({ language = "en" }: Props) => {
                           </Button>
                           <Button asChild variant="gold" size="sm" className="gap-1.5">
                             <Link to={language === "ru" ? "/submit/ru" : "/submit"}>
-                              <Sparkles className="h-3.5 w-3.5" />
-                              Submit a scholarship
+                              {t("Submit a scholarship", "Предложить стипендию")}
                             </Link>
                           </Button>
                         </div>
@@ -4452,7 +4498,7 @@ const Discover = ({ language = "en" }: Props) => {
               <div className="absolute -top-1/3 left-1/4 w-2/3 h-full rounded-full blur-[120px] opacity-20" style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 60%)" }} />
               <div className="relative">
                 <div className="inline-flex items-center gap-2 bg-gold/15 border border-gold/30 px-3 py-1 rounded-full mb-5">
-                  <Sparkles className="h-3 w-3 text-gold-light" />
+                  <Crown className="h-3 w-3 text-gold-light" />
                   <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold-light">Founding Pro</span>
                 </div>
                 <SheetHeader>
