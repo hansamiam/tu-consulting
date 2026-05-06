@@ -1813,6 +1813,14 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       }
     } catch (e) {
       console.error("share-brief failed", e);
+      // Surface failure to the user — they clicked "Share" expecting a
+      // link, and a silent failure leaves them staring at a stopped
+      // spinner with no idea what to do next.
+      toast.error(
+        language === "ru"
+          ? "Не удалось создать ссылку — попробуйте ещё раз."
+          : "Couldn't create share link — please try again.",
+      );
     } finally {
       setShareLoading(false);
     }
