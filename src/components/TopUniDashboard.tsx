@@ -2880,7 +2880,14 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                                   {cleanScholarshipName(m.scholarship_name)}
                                 </h4>
                                 <p className="text-xs text-muted-foreground truncate mb-2">
-                                  {m.award_amount_text || (m.coverage_type === "full_ride" ? t("Full ride", "Полное покрытие") : m.coverage_type === "tuition_only" ? t("Tuition", "Обучение") : t("Stipend", "Стипендия"))}
+                                  {m.award_amount_text || (() => {
+                                    const ct = m.coverage_type;
+                                    if (ct === "full_ride") return t("Full ride", "Полное покрытие");
+                                    if (ct === "tuition_only") return t("Tuition", "Обучение");
+                                    if (ct === "stipend") return t("Stipend", "Стипендия");
+                                    if (ct === "partial") return t("Partial funding", "Частичное");
+                                    return t("Funding", "Финансирование");
+                                  })()}
                                   {(() => { const cp = cleanProvider(m.provider_name); return cp ? <span className="text-muted-foreground/60"> · {cp}</span> : null; })()}
                                 </p>
                               </Link>

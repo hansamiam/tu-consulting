@@ -309,7 +309,14 @@ export const WorkspaceCalendar = ({ rows, hidden, statusMap, loading, language =
                         {cleanScholarshipName(s.scholarship_name)}
                       </p>
                       <p className="text-[11px] text-muted-foreground">
-                        {s.host_country ? shortCountry(s.host_country) : "—"} · {s.coverage_type === "full_ride" ? t("Full ride", "Полное") : s.coverage_type === "tuition_only" ? t("Tuition", "Обучение") : t("Stipend", "Стипендия")}
+                        {s.host_country ? shortCountry(s.host_country) : "—"} · {(() => {
+                          const ct = s.coverage_type;
+                          if (ct === "full_ride") return t("Full ride", "Полное");
+                          if (ct === "tuition_only") return t("Tuition", "Обучение");
+                          if (ct === "stipend") return t("Stipend", "Стипендия");
+                          if (ct === "partial") return t("Partial funding", "Частичное");
+                          return t("Funding", "Финансирование");
+                        })()}
                       </p>
                     </div>
                     <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-gold-dark transition-colors shrink-0" />
