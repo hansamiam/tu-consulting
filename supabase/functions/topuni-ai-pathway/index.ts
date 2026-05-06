@@ -764,8 +764,8 @@ One short paragraph (3-4 sentences) of specific encouragement based on this stud
 Throughout:
 - Be exceptionally specific. This is the premium tier — every paragraph should feel hand-written for this student.
 - Use real data from the database — name universities, programs, scholarships, deadlines.
-- Avoid the words "stretch," "long shot," "real shot," "safety school."
-- Confident, direct voice. The student should feel respected.`;
+
+${EDITORIAL_RULES}`;
 
     const studentNationality = (profile.nationality || "").trim();
     const audienceLine = studentNationality
