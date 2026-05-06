@@ -625,8 +625,8 @@ const COLLECTIONS: CollectionDef[] = [
  * surfaces share one source of truth. */
 
 const DEGREES = [
-  { v: "undergraduate", l: "Bachelor\'s", icon: "🎓", d: "3–5 year degree" },
-  { v: "master\'s", l: "Master\'s", icon: "📚", d: "1–2 year graduate" },
+  { v: "undergraduate", l: "Bachelor's", icon: "🎓", d: "3–5 year degree" },
+  { v: "master's", l: "Master's", icon: "📚", d: "1–2 year graduate" },
   { v: "PhD", l: "PhD", icon: "🔬", d: "Research doctorate" },
 ];
 
@@ -1720,8 +1720,8 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
     ] },
     { label: t("Degree", "Уровень"), key: "degree", opts: [
       { v: "all", l: t("All", "Все") },
-      { v: "undergraduate", l: t("Bachelor\'s", "Бакалавриат") },
-      { v: "master\'s", l: t("Master\'s", "Магистратура") },
+      { v: "undergraduate", l: t("Bachelor's", "Бакалавриат") },
+      { v: "master's", l: t("Master's", "Магистратура") },
       { v: "PhD", l: "PhD" },
     ] },
   ];
@@ -2939,7 +2939,7 @@ const Discover = ({ language = "en" }: Props) => {
       const canonicalize = (lvl: string) => {
         const l = lvl.toLowerCase();
         if (l === "phd") return "PhD";
-        if (l.startsWith("master")) return "master\'s";
+        if (l.startsWith("master")) return "master's";
         if (l === "undergraduate" || l === "bachelor" || l.startsWith("bachelor")) return "undergraduate";
         return lvl;
       };

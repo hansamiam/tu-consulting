@@ -197,6 +197,12 @@ const ScholarshipDetail = () => {
       }
     })();
     return () => { cancelled = true; };
+    // We intentionally key off the scholarship_id string rather than
+    // the whole `s` object — re-running the similar-scholarship fetch
+    // on every render where `s` is a new object reference (but the
+    // id is unchanged) would burn rate limit. ESLint can't reason
+    // through the optional chain, hence the suppress.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s?.scholarship_id]);
 
   /* SEO meta — unique per scholarship */

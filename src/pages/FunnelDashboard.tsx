@@ -55,6 +55,11 @@ const FunnelDashboard = () => {
 
   useEffect(() => {
     if (isAdmin) loadData();
+    // loadData is defined inside the component but uses no deps that
+    // change between renders we care about (days is in the array
+    // already). Inlining or wrapping in useCallback would be more
+    // ceremony than the admin-only page warrants.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, days]);
 
   const loadData = async () => {

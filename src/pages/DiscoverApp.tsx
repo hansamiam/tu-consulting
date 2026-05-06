@@ -198,11 +198,12 @@ const DiscoverApp = ({ language = "en" }: Props) => {
   const [submitted, setSubmitted] = useState(true);
   const [openDetail, setOpenDetail] = useState<Scored | null>(null);
 
-  // Hard wall: if no profile captured, send back to landing
-  if (!stored) {
-    return <Navigate to={isRu ? "/discover/ru" : "/discover"} replace />;
-  }
-
+  // Rules-of-Hooks: useEffect + useMemo must run on EVERY render.
+  // The early `if (!stored) return <Navigate />` below this section
+  // used to live above these hooks, which made them run conditionally
+  // and tripped React's hooks-order check (would crash on the second
+  // render after navigation). Hooks now always run; the conditional
+  // returns happen after the hook tree is locked in.
   useEffect(() => {
     (async () => {
       const { data } = await supabase
@@ -225,6 +226,13 @@ const DiscoverApp = ({ language = "en" }: Props) => {
         return b.match - a.match;
       });
   }, [rows, profile, submitted]);
+
+  // Hard wall: if no profile captured, send back to landing.
+  // Must come AFTER all hook calls (see comment above the
+  // useEffect for full reasoning).
+  if (!stored) {
+    return <Navigate to={isRu ? "/discover/ru" : "/discover"} replace />;
+  }
 
   const visible = isPro ? ranked : ranked.slice(0, 3);
   const locked = isPro ? 0 : Math.max(0, ranked.length - 3);

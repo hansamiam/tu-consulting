@@ -13,7 +13,6 @@ import { Progress } from "@/components/ui/progress";
 import Navigation from "@/components/Navigation";
 import { useToast } from "@/hooks/use-toast";
 import { PaymentDialog } from "@/components/PaymentDialog";
-import { PackageDetailDialog } from "@/components/PackageDetailDialog";
 import { Footer } from "@/components/Footer";
 import heroImage from "@/assets/hero-campus.jpg";
 import heroLibrary from "@/assets/hero-library.jpg";
@@ -208,10 +207,9 @@ const Offerings = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedConsultation, setSelectedConsultation] = useState<{name: string; price: string}>({name: "", price: ""});
-  const [selectedPackage, setSelectedPackage] = useState<any>(null);
-  const [isPackageDialogOpen, setIsPackageDialogOpen] = useState(false);
-  const [isPackagePaymentOpen, setIsPackagePaymentOpen] = useState(false);
-  const [isPackageDetailOpen, setIsPackageDetailOpen] = useState(false);
+  // Multi-session package state retired — the UI lived behind a
+  // {false && ...} block that's been removed. Once Academy ships
+  // and packages return, restore this from git history.
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -233,96 +231,10 @@ const Offerings = () => {
     setIsPaymentDialogOpen(true);
   };
 
-  const handlePackageFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name || !formData.email) {
-      toast({
-        title: "Required fields missing",
-        description: "Please fill in your name and email",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Close form dialog and open payment dialog
-    setIsPackageDialogOpen(false);
-    setIsPackagePaymentOpen(true);
-  };
+  // handlePackageFormSubmit retired — package booking flow restored
+  // from git when packages return.
 
 
-  const packages = [
-    {
-      name: "Starter Package",
-      price: "$390",
-      priceUsd: "USD · billed once",
-      originalPrice: "$520",
-      originalPriceUsd: "",
-      discount: "25% Launch Discount",
-      sessions: "5 Sessions",
-      features: [
-        "5 sessions of comprehensive consulting",
-        "Application timeline planning",
-        "University selection guidance",
-        "Essay structure review (1 essay)",
-        "Mock admissions review & feedback",
-      ],
-      fullDescription: "The Starter Package is designed for students who need foundational guidance in their university application journey. This package provides essential support to help you understand the application process, select the right universities, and begin crafting compelling application materials. Ideal for students starting their preparation early or those who need focused help on specific aspects of their application.",
-      format: "Online / Remote consultation via video call (Zoom or Google Meet). All sessions are conducted one-on-one with your dedicated consultant.",
-      timeline: "Sessions can be scheduled flexibly over 2-4 months. Each session lasts approximately 50-60 minutes. Total package duration depends on your application timeline.",
-      popular: false,
-    },
-    {
-      name: "Standard Package",
-      price: "$690",
-      priceUsd: "USD · billed once",
-      originalPrice: "$920",
-      originalPriceUsd: "",
-      discount: "25% Launch Discount",
-      sessions: "10 Sessions",
-      features: [
-        "10 sessions of comprehensive consulting",
-        "Complete application review",
-        "Essay editing & feedback (up to 3 essays)",
-        "Mock admissions review & feedback",
-        "Recommendation letter strategy & review",
-        "Interview preparation (1 session)",
-        "Email support between sessions",
-        "Application proofreading",
-        "Scholarship guidance",
-      ],
-      fullDescription: "Our most popular choice, the Standard Package offers comprehensive support throughout your entire application process. This package covers everything from initial planning to final submission, including multiple essay reviews, interview preparation, and ongoing support. Perfect for students applying to competitive universities who want thorough guidance at every step.",
-      format: "Online / Remote consultation via video call (Zoom or Google Meet). All sessions are conducted one-on-one with your dedicated consultant. Includes email support for questions between sessions.",
-      timeline: "Sessions typically span 4-8 months to cover the full application cycle. Each session lasts 50-60 minutes. Flexible scheduling to accommodate your school schedule and deadlines.",
-      popular: true,
-    },
-    {
-      name: "Premium Package",
-      price: "$1,300",
-      priceUsd: "USD · billed once",
-      originalPrice: "$1,730",
-      originalPriceUsd: "",
-      badge: "Most Comprehensive",
-      discount: "25% Launch Discount",
-      sessions: "20 Sessions",
-      features: [
-        "20 sessions of comprehensive consulting",
-        "Complete application management",
-        "Unlimited essay revisions (all essays)",
-        "Mock admissions review & feedback",
-        "Recommendation letter strategy & detailed review",
-        "Mock interviews (3 sessions)",
-        "Priority support throughout application cycle",
-        "Personalized success strategy",
-        "Post-application guidance",
-        "Scholarship search assistance",
-        "Networking introduction support",
-      ],
-      fullDescription: "The Premium Package is our most comprehensive offering, providing end-to-end support for students aiming for the world's top universities. With priority support, unlimited essay revisions, and extensive interview preparation, this package ensures you have every advantage in your application. Includes personalized strategy sessions, post-application guidance, and networking opportunities to maximize your success.",
-      format: "Online / Remote consultation via video call (Zoom or Google Meet). All sessions are conducted one-on-one with your dedicated consultant. Priority email and messaging support with faster response times.",
-      timeline: "Sessions span 6-12 months for complete application cycle coverage. Each session lasts 50-60 minutes. Includes post-application support and guidance through decision phase. Flexible scheduling with priority booking.",
-      popular: false,
-    },
-  ];
 
   const packageBackgrounds = [heroImage, heroLibrary, yaleCampus];
 
@@ -402,101 +314,6 @@ const Offerings = () => {
         {/* Readiness Score Quiz */}
         <ReadinessQuiz onComplete={(_score) => {}} />
 
-        {/* Package Pricing — TEMPORARILY HIDDEN.
-            We're focused on free consultations + Founding membership for V1.
-            Multi-session packages return once Academy is live. Code preserved below. */}
-        {false && (
-        <section id="packages" className="mb-12 md:mb-20 animate-enter">
-          <h2 className="font-heading text-xl sm:text-2xl md:text-3xl font-bold text-center mb-3 md:mb-4 text-foreground px-4">
-            Consulting Packages
-          </h2>
-          <p className="text-center text-sm md:text-base text-muted-foreground max-w-2xl mx-auto mb-6 md:mb-12 px-4">
-            While not mandatory, we highly advise you to book either a Diagnostic or Strategy Consultation to better understand what we offer before purchasing a package.
-          </p>
-          <div className="grid md:grid-cols-3 gap-4 md:gap-8">
-            {packages.map((pkg, index) => (
-                <Card
-                key={index}
-                className={`relative border-gold/30 bg-card/60 backdrop-blur-sm hover:shadow-xl transition-all ${
-                  pkg.popular
-                    ? "shadow-lg md:scale-105 border-accent/60 ring-1 ring-accent/10"
-                    : ""
-                }`}
-                style={{
-                  backgroundImage: `linear-gradient(hsla(var(--background)/0.88), hsla(var(--background)/0.88)), url(${packageBackgrounds[index]})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center'
-                }}
-              >
-                {pkg.badge && (
-                  <div className="absolute -top-3 -right-2 md:-top-4 md:left-1/2 md:-translate-x-1/2 md:right-auto rotate-12 md:rotate-0">
-                    <span className="bg-accent text-accent-foreground px-3 py-1 md:px-4 rounded-full text-xs md:text-sm font-semibold flex items-center gap-1 shadow-lg">
-                      <Star size={12} className="md:w-[14px] md:h-[14px]" fill="currentColor" />
-                      {pkg.badge}
-                    </span>
-                  </div>
-                )}
-                <CardHeader className="text-center pt-6 md:pt-8 pb-4 md:pb-6">
-                  <CardTitle className="text-lg md:text-2xl mb-2">{pkg.name}</CardTitle>
-                  <div className="space-y-1">
-                    <div className="flex items-baseline justify-center gap-2">
-                      <span className="text-2xl md:text-3xl font-bold text-accent">{pkg.price}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{pkg.priceUsd}</p>
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-sm text-muted-foreground line-through">{pkg.originalPrice}</span>
-                      <span className="inline-block bg-accent text-accent-foreground text-xs px-2.5 py-1 rounded-full font-semibold">
-                        {pkg.discount}
-                      </span>
-                    </div>
-                  </div>
-                  <CardDescription className="text-sm md:text-base pt-1 md:pt-2">
-                    {pkg.sessions}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3 md:space-y-4 pb-4 md:pb-6">
-                  <ul className="space-y-2 md:space-y-3">
-                    {pkg.features.slice(0, 5).map((feature, idx) => (
-                      <li key={idx} className="flex items-start gap-2">
-                        <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
-                        <span className="text-xs md:text-sm text-foreground">{feature}</span>
-                      </li>
-                    ))}
-                    {pkg.features.length > 5 && (
-                      <li className="text-xs md:text-sm text-muted-foreground italic">
-                        +{pkg.features.length - 5} more features...
-                      </li>
-                    )}
-                  </ul>
-                  <div className="space-y-2">
-                    <Button
-                      variant="outline"
-                      className="w-full border-accent/30"
-                      onClick={() => {
-                        setSelectedPackage(pkg);
-                        setIsPackageDetailOpen(true);
-                      }}
-                    >
-                      <Info size={16} className="mr-2" />
-                      View Details
-                    </Button>
-                    <Button
-                      variant={pkg.popular ? "gold" : "default"}
-                      className="w-full"
-                      onClick={() => {
-                        setSelectedPackage(pkg);
-                        setIsPackageDialogOpen(true);
-                      }}
-                    >
-                      Select Package
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
-        )}
 
         {/* Individual Consultations */}
         <section id="consultations" className="mb-12 md:mb-20 animate-fade-in">
@@ -672,147 +489,6 @@ const Offerings = () => {
           price={selectedConsultation.price}
           language="en"
           isConsultation={true}
-        />
-
-        {/* Package Form Dialog */}
-        <Dialog open={isPackageDialogOpen} onOpenChange={setIsPackageDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl">Book Your {selectedPackage?.name}</DialogTitle>
-              <DialogDescription className="text-base">
-                Help us prepare for your program. The more details you provide, the better we can tailor our services to your needs.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handlePackageFormSubmit} className="space-y-6 mt-4">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name *</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="John Doe"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="john@example.com"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    placeholder="+1234567890"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="currentGrade">Current Grade/Year</Label>
-                  <Input
-                    id="currentGrade"
-                    name="currentGrade"
-                    value={formData.currentGrade}
-                    onChange={handleInputChange}
-                    placeholder="e.g., 11th grade"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="targetUniversities">Target Universities</Label>
-                <Textarea
-                  id="targetUniversities"
-                  name="targetUniversities"
-                  value={formData.targetUniversities}
-                  onChange={handleInputChange}
-                  placeholder="List the universities you're interested in..."
-                  rows={3}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="intendedMajor">Intended Major/Field</Label>
-                <Input
-                  id="intendedMajor"
-                  name="intendedMajor"
-                  value={formData.intendedMajor}
-                  onChange={handleInputChange}
-                  placeholder="e.g., Computer Science, Business"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="currentChallenges">Current Challenges</Label>
-                <Textarea
-                  id="currentChallenges"
-                  name="currentChallenges"
-                  value={formData.currentChallenges}
-                  onChange={handleInputChange}
-                  placeholder="What are your main concerns or challenges with the application process?"
-                  rows={4}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="goals">What do you hope to achieve from this program?</Label>
-                <Textarea
-                  id="goals"
-                  name="goals"
-                  value={formData.goals}
-                  onChange={handleInputChange}
-                  placeholder="Be specific about what you want to get out of our program..."
-                  rows={4}
-                />
-              </div>
-
-              <div className="flex gap-4 pt-4">
-                <Button
-                  type="submit"
-                  variant="gold"
-                  className="flex-1"
-                >
-                  Continue to Payment
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-
-        {/* Package Payment Dialog */}
-        <PaymentDialog
-          open={isPackagePaymentOpen}
-          onOpenChange={setIsPackagePaymentOpen}
-          consultationType={selectedPackage?.name || ""}
-          price={selectedPackage?.price || ""}
-          language="en"
-          isConsultation={false}
-        />
-
-        {/* Package Detail Dialog */}
-        <PackageDetailDialog
-          isOpen={isPackageDetailOpen}
-          onClose={() => setIsPackageDetailOpen(false)}
-          package={selectedPackage}
-          onProceedToPayment={() => {
-            setIsPackageDetailOpen(false);
-            setIsPackageDialogOpen(true);
-          }}
-          language="en"
         />
 
         {/* Trust Section */}
