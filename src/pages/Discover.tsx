@@ -889,6 +889,40 @@ const domainFor = (url: string | null | undefined): string | null => {
   }
 };
 
+/* Aggregator domains — third-party scholarship round-up sites. Their
+ * pages list lots of opportunities but aren't the OFFICIAL source for
+ * any single program; sending applicants there usually wastes them
+ * one click and a doubt before they find the real provider page.
+ *
+ * When a row's official_url points to one of these, the Apply CTA is
+ * suppressed (or downgraded to a clear "Aggregator only — provider
+ * link missing" affordance) so we don't pretend they're official.
+ *
+ * Round 32: discovered via real complaints — apply button on a
+ * Discover row went to scholars4dev. Build-time list rather than
+ * a DB column because the set is small + slow-changing; if it grows
+ * we'll move it to source_quality_alerting. */
+const AGGREGATOR_DOMAINS = new Set<string>([
+  "scholars4dev.com",
+  "opportunitiesforyouth.org",
+  "opportunitiestracker.ug",
+  "opportunitydesk.org",
+  "scholarshipsdb.net",
+  "scholarship-positions.com",
+  "after12.in",
+  "buddy4study.com",
+]);
+
+const isAggregatorUrl = (url: string | null | undefined): boolean => {
+  const d = domainFor(url);
+  if (!d) return false;
+  // Match exact + subdomain (so `news.scholars4dev.com` is caught).
+  for (const agg of AGGREGATOR_DOMAINS) {
+    if (d === agg || d.endsWith(`.${agg}`)) return true;
+  }
+  return false;
+};
+
 /* ProviderAvatar — ALWAYS renders a fixed-size square. Inside, tries
  * Google's favicon service first (real institutional crest for known
  * universities); on failure / no URL falls back to a colored initials
@@ -1407,10 +1441,21 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
                 {outcomes.applied} {ru ? "подали" : "applied"}{outcomes.accepted > 0 ? ` · ${outcomes.accepted} ${ru ? "выиграли" : "won"}` : ""}
               </Tag>
             )}
-            <ProviderAvatar url={s.official_url || s.source_url} providerName={cleanProvider(s.provider_name) || s.provider_name} size={16} />
+            {/* Provider avatar + name — only renders when there's an
+                actual provider to show. Without this guard a row with
+                no cleaned provider name (Turkish/government rows often
+                strip empty after cleanProvider) was rendering a tiny
+                colored monogram-fallback circle floating in the chip
+                row with no label next to it, looking like a glitch. */}
             {(() => {
               const p = cleanProvider(s.provider_name);
-              return p ? <p className="text-xs text-muted-foreground truncate min-w-0">{p}</p> : null;
+              if (!p) return null;
+              return (
+                <>
+                  <ProviderAvatar url={s.official_url || s.source_url} providerName={p} size={16} />
+                  <p className="text-xs text-muted-foreground truncate min-w-0">{p}</p>
+                </>
+              );
             })()}
           </div>
 
@@ -1481,7 +1526,7 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
               squish. Tapping the row body opens the detail sheet,
               which has its own "Apply on official site" CTA, so
               there's no functional loss on mobile. */}
-          {s.official_url && (
+          {s.official_url && !isAggregatorUrl(s.official_url) && (
             <a
               href={s.official_url}
               target="_blank"
@@ -2025,11 +2070,20 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               specific cover_image_url has been enriched in, we render
               that as the hero instead and overlay a dark gradient so
               the country chip stays legible. */}
+        {/* Hero band — was h-20 sm:h-44 (a 176px desktop banner that
+            felt heavy without a cover image filled in). Now h-14 sm:h-24
+            so the country accent reads as a slim accent strip rather
+            than a tall, mostly-empty box. The country chip moves
+            into the header subtitle below; no need to render it inside
+            the band. When cover_image_url is enriched in (round-26
+            cron output), the band switches back to a taller treatment
+            so the photo has room to breathe. */}
         {(() => {
           const dsAccent = accentForCountry(s.host_country);
           const cover = s.cover_image_url || null;
+          const heroH = cover ? "h-32 sm:h-44" : "h-14 sm:h-24";
           return (
-            <div className={`relative h-20 sm:h-44 overflow-hidden bg-gradient-to-r ${dsAccent} shrink-0`}>
+            <div className={`relative ${heroH} overflow-hidden bg-gradient-to-r ${dsAccent} shrink-0`}>
               {cover ? (
                 <img
                   src={cover}
@@ -2039,18 +2093,9 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                   onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
                 />
               ) : (
-                /* FlagPattern silhouette retired — most countries don't
-                 * have a clean illustrative flag and the fallback rendered
-                 * as visual noise. CountryArt (the landmark icon) carries
-                 * the regional identity on its own. */
                 <CountryArt country={s.host_country} className="absolute right-4 inset-y-0 h-full opacity-40 pointer-events-none" />
               )}
-              <span className="absolute inset-0 bg-gradient-to-r from-black/45 via-black/15 to-transparent pointer-events-none" />
-              <div className="relative h-full flex flex-col justify-end px-5 sm:px-7 pb-2.5 sm:pb-4">
-                {s.host_country && (
-                  <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.28em] text-white drop-shadow-md">{shortCountry(s.host_country)}</p>
-                )}
-              </div>
+              <span className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/10 to-transparent pointer-events-none" />
             </div>
           );
         })()}
@@ -2098,37 +2143,44 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             </p>
           </SheetHeader>
 
-          {/* Key facts row — two tiles. Was three (Award + Deadline +
-              Total value), but Total value was almost always the same
-              number as Award (or trivially derivable: "$25K/yr × 4")
-              and the third tile crowded the row on every viewport.
-              Total value moves into the Award tile as a small subline
-              when it differs meaningfully from the compact label.
-              Mobile uses tighter padding so the tiles don't dominate
-              vertical space on small screens. */}
-          <div className="relative grid grid-cols-2 gap-2 mt-3 sm:mt-5">
-            <div className="bg-card border border-border rounded-xl px-2.5 sm:px-3.5 py-2 sm:py-3">
-              <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">{t("Award", "Финансирование")}</div>
-              <div className="text-foreground text-sm font-bold leading-tight">{compactAward(s) ?? COVERAGE_LABEL[s.coverage_type] ?? "—"}</div>
-              {s.award_amount_text && s.award_amount_text.length > 16 && (
-                <div className="text-[10px] text-muted-foreground/85 mt-1 leading-snug line-clamp-2">{s.award_amount_text}</div>
-              )}
+          {/* Key facts — inline list, no tile squares. The tiles felt
+              UI-noisy with their own borders + labels in tracking and
+              their own bg, when the page is already a card with a
+              header. Now: simple Award · Deadline · (optional total)
+              line that reads like editorial metadata. Long award
+              descriptions get a clamp-to-2-lines subline below.
+              Total-value subline only appears when it differs from
+              the compact label (round-22 dedup logic preserved). */}
+          <div className="relative mt-3 sm:mt-4 space-y-1.5">
+            <div className="flex items-baseline gap-3 flex-wrap text-[13px]">
+              <span className="inline-flex items-baseline gap-1.5">
+                <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{t("Award", "Финансирование")}</span>
+                <span className="text-foreground font-bold">{compactAward(s) ?? COVERAGE_LABEL[s.coverage_type] ?? "—"}</span>
+              </span>
+              <span className="text-muted-foreground/30" aria-hidden>·</span>
+              <span className="inline-flex items-baseline gap-1.5">
+                <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{t("Deadline", "Дедлайн")}</span>
+                <span className={`font-semibold ${dl.cls}`}>{dl.text}</span>
+                {deadlineDate && <span className="text-muted-foreground/70 text-[11px]">· {deadlineDate}</span>}
+              </span>
               {s.estimated_total_value_usd && (() => {
                 const compact = compactAward(s);
                 const total = fmtValue(s.estimated_total_value_usd);
                 if (compact && compact.replace(/\s/g, "") === total.replace(/\s/g, "")) return null;
                 return (
-                  <div className="text-[10px] text-gold-dark/80 dark:text-gold/80 font-semibold mt-1.5">
-                    {t(`Est. ${total} total`, `≈ ${total} итого`)}
-                  </div>
+                  <>
+                    <span className="text-muted-foreground/30" aria-hidden>·</span>
+                    <span className="inline-flex items-baseline gap-1.5">
+                      <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{t("Total", "Итого")}</span>
+                      <span className="text-gold-dark dark:text-gold font-semibold">≈ {total}</span>
+                    </span>
+                  </>
                 );
               })()}
             </div>
-            <div className="bg-card border border-border rounded-xl px-2.5 sm:px-3.5 py-2 sm:py-3">
-              <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">{t("Deadline", "Дедлайн")}</div>
-              <div className={`text-sm font-semibold leading-tight ${dl.cls}`}>{dl.text}</div>
-              {deadlineDate && <div className="text-muted-foreground/70 text-[10px] mt-0.5">{deadlineDate}</div>}
-            </div>
+            {s.award_amount_text && s.award_amount_text.length > 16 && (
+              <p className="text-[12px] text-muted-foreground leading-snug line-clamp-2">{s.award_amount_text}</p>
+            )}
           </div>
 
           {/* Header CTAs — Apply (gold), Bookmark, and an escape hatch
@@ -2137,23 +2189,64 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               side-sheet experience. The Apply click is tracked via
               the scholarship-tracking hook so we can chart click-
               through-to-apply per scholarship. */}
+          {/* Apply CTA. Three states:
+               1. Official URL present + not from a known aggregator →
+                  gold CTA, takes the user to the real provider page.
+               2. URL present but from an aggregator domain (round 32) →
+                  show "Verify with provider" so we don't pretend the
+                  aggregator is the official source. Same destination,
+                  honest framing.
+               3. URL missing → "No official link" disabled. */}
           <div className="relative flex items-center gap-2 mt-4">
-            <Button variant="gold" size="sm" asChild className="flex-1 h-9" disabled={!s.official_url}>
-              {s.official_url ? (
-                <a
-                  href={s.official_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => trackEvent(s.scholarship_id, "clicked", "discover-detail-apply")}
-                >
-                  {t("Apply on official site", "Подать на официальном сайте")} <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
-                </a>
-              ) : <span>{t("No official link", "Нет ссылки")}</span>}
-            </Button>
+            {(() => {
+              const aggregator = isAggregatorUrl(s.official_url);
+              if (!s.official_url) {
+                return (
+                  <Button variant="gold" size="sm" disabled className="flex-1 h-9">
+                    <span>{t("No official link", "Нет ссылки")}</span>
+                  </Button>
+                );
+              }
+              if (aggregator) {
+                return (
+                  <Button variant="outline" size="sm" asChild className="flex-1 h-9 border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/5">
+                    <a
+                      href={s.official_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => trackEvent(s.scholarship_id, "clicked", "discover-detail-apply-aggregator")}
+                    >
+                      {t("Open aggregator listing", "Открыть агрегатор")} <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
+                    </a>
+                  </Button>
+                );
+              }
+              return (
+                <Button variant="gold" size="sm" asChild className="flex-1 h-9">
+                  <a
+                    href={s.official_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => trackEvent(s.scholarship_id, "clicked", "discover-detail-apply")}
+                  >
+                    {t("Apply on official site", "Подать на официальном сайте")} <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
+                  </a>
+                </Button>
+              );
+            })()}
             <Button variant="outline" size="sm" className="h-9" onClick={onBookmark}>
               {isBookmarked ? <BookmarkCheck className="h-4 w-4 text-gold-dark" /> : <Bookmark className="h-4 w-4" />}
             </Button>
           </div>
+          {isAggregatorUrl(s.official_url) && (
+            <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-2 leading-snug flex items-start gap-1.5">
+              <ShieldAlert className="h-3 w-3 mt-0.5 shrink-0" />
+              {t(
+                "This link points to a third-party aggregator, not the official provider. Verify the program directly on the provider's site before applying.",
+                "Эта ссылка ведёт на сторонний агрегатор, а не на официальный сайт программы. Подтвердите детали на сайте провайдера перед подачей.",
+              )}
+            </p>
+          )}
           {/* Promoted CTA into the centered enlarged modal. The right
               panel intentionally keeps the personalized deep dive OUT
               so it stays scannable; this button is how users get to
@@ -4498,7 +4591,7 @@ const Discover = ({ language = "en" }: Props) => {
                                   <Button variant="gold" size="sm" className="text-xs h-7 px-3" onClick={() => { setOpenDetail(s); setCompareOpen(false); }}>
                                     Strategy
                                   </Button>
-                                  {s.official_url && (
+                                  {s.official_url && !isAggregatorUrl(s.official_url) && (
                                     <Button variant="outline" size="sm" className="text-xs h-7 px-2.5" asChild>
                                       <a href={s.official_url} target="_blank" rel="noopener noreferrer">
                                         <ExternalLink className="h-3 w-3" />
