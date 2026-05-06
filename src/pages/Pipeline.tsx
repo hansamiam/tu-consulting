@@ -31,6 +31,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { CountryArt } from "@/lib/countryArt";
 import { accentForCountry, shortCountry } from "@/lib/countryAccent";
 import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
+import { daysUntil } from "@/lib/dates";
 import { CalendarSubscribeDialog } from "@/components/pipeline/CalendarSubscribeDialog";
 import { EssayDraftPanel } from "@/components/pipeline/EssayDraftPanel";
 import { AdditionalEssaysPanel } from "@/components/pipeline/AdditionalEssaysPanel";
@@ -90,12 +91,6 @@ const fmtMoney = (v: number | null | undefined): string | null => {
   return `$${v}`;
 };
 
-const daysUntil = (iso: string | null): number | null => {
-  if (!iso) return null;
-  const t = new Date(iso).getTime();
-  if (Number.isNaN(t)) return null;
-  return Math.ceil((t - Date.now()) / 86400_000);
-};
 
 interface PipelineProps {
   language?: "en" | "ru";

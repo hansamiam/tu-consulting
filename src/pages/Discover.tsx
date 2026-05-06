@@ -51,6 +51,7 @@ import {
   compactAward,
   humanizeDemographic,
 } from "@/lib/scholarshipFields";
+import { daysUntil } from "@/lib/dates";
 import { ALL_COUNTRIES } from "@/data/countries";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAdminUser, isAdminBypass, consumeAdminUrlFlag } from "@/lib/adminMode";
@@ -675,12 +676,6 @@ const dateOnly = (d: string | null) => {
   const t = new Date(d).getTime();
   if (Number.isNaN(t)) return null;
   return new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-};
-const daysUntil = (d: string | null) => {
-  if (!d) return null;
-  const t = new Date(d).getTime();
-  if (Number.isNaN(t)) return null;
-  return Math.ceil((t - Date.now()) / 86400000);
 };
 
 const WIZARD_STEPS = 4;

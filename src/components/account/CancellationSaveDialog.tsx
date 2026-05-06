@@ -20,6 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Bookmark, Calendar, Coins, Trophy, FileText, Heart, PauseCircle } from "lucide-react";
 import { toast } from "sonner";
+import { daysUntil } from "@/lib/dates";
 
 interface ScholarshipLite {
   scholarship_id: string;
@@ -43,12 +44,6 @@ const fmtMoney = (v: number): string => {
   return `$${v}`;
 };
 
-const daysUntil = (iso: string | null): number | null => {
-  if (!iso) return null;
-  const t = new Date(iso).getTime();
-  if (Number.isNaN(t)) return null;
-  return Math.ceil((t - Date.now()) / 86_400_000);
-};
 
 export const CancellationSaveDialog = ({ open, onOpenChange, onContinue, language = "en" }: Props) => {
   const ru = language === "ru";
