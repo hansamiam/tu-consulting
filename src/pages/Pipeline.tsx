@@ -122,6 +122,12 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
   const [rows, setRows] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Stable string key for the trackedIds set so the effect doesn't
+  // re-fire on every render. Computed in render (cheap) rather than
+  // dropped into the dep array directly — that previous pattern
+  // tripped exhaustive-deps because the array literal expression
+  // wasn't statically checkable.
+  const trackedKey = trackedIds.join(",");
   useEffect(() => {
     if (trackedIds.length === 0) {
       setRows([]);
@@ -146,7 +152,8 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [trackedIds.join(",")]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trackedKey]);
 
   /* Bucketing — each row goes into exactly one column based on status.
      Rows with no status but shortlisted show up in "Shortlisted".

@@ -10,7 +10,6 @@ import { Check, Star, ArrowLeft, Info } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { useToast } from "@/hooks/use-toast";
 import { PaymentDialog } from "@/components/PaymentDialog";
-import { PackageDetailDialog } from "@/components/PackageDetailDialog";
 import { Footer } from "@/components/Footer";
 import heroCampus from "@/assets/hero-campus.jpg";
 import heroLibrary from "@/assets/hero-library.jpg";
@@ -32,10 +31,7 @@ const OfferingsRu = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedConsultation, setSelectedConsultation] = useState<{name: string; price: string}>({name: "", price: ""});
-  const [selectedPackage, setSelectedPackage] = useState<any>(null);
-  const [isPackageDialogOpen, setIsPackageDialogOpen] = useState(false);
-  const [isPackagePaymentOpen, setIsPackagePaymentOpen] = useState(false);
-  const [isPackageDetailOpen, setIsPackageDetailOpen] = useState(false);
+  // Multi-session package state retired — see Offerings.tsx comment.
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -57,99 +53,9 @@ const OfferingsRu = () => {
     setIsPaymentDialogOpen(true);
   };
 
-  const handlePackageFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name || !formData.email) {
-      toast({
-        title: "Необходимые поля не заполнены",
-        description: "Пожалуйста, укажите ваше имя и email",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Close form dialog and open payment dialog
-    setIsPackageDialogOpen(false);
-    setIsPackagePaymentOpen(true);
-  };
+  // handlePackageFormSubmit retired alongside the dead packages flow.
 
 
-  const packages = [
-    {
-      name: "Стартовый пакет",
-      
-      price: "$390",
-      priceUsd: "USD · разовая оплата",
-      originalPrice: "$520",
-      originalPriceUsd: "",
-      discount: "Скидка 25% при запуске",
-      sessions: "5 сессий",
-      features: [
-        "5 сессий комплексных консультаций",
-        "Планирование сроков подачи",
-        "Помощь в выборе университета",
-        "Обзор структуры эссе (1 эссе)",
-        "Пробное рассмотрение заявки и обратная связь",
-      ],
-      fullDescription: "Стартовый пакет предназначен для студентов, которым нужна базовая поддержка в процессе поступления в университет. Этот пакет предоставляет необходимую помощь для понимания процесса подачи заявки, выбора подходящих университетов и начала создания убедительных материалов заявки. Идеально подходит для студентов, начинающих подготовку заранее или нуждающихся в целенаправленной помощи по конкретным аспектам заявки.",
-      format: "Онлайн / Дистанционная консультация через видеозвонок (Zoom или Google Meet). Все сессии проводятся индивидуально с вашим персональным консультантом.",
-      timeline: "Сессии можно планировать гибко в течение 2-4 месяцев. Каждая сессия длится примерно 50-60 минут. Общая продолжительность пакета зависит от сроков вашей заявки.",
-      popular: false,
-    },
-    {
-      name: "Стандартный пакет",
-      
-      price: "$690",
-      priceUsd: "USD · разовая оплата",
-      originalPrice: "$920",
-      originalPriceUsd: "",
-      discount: "Скидка 25% при запуске",
-      sessions: "10 сессий",
-      features: [
-        "10 сессий комплексных консультаций",
-        "Полная проверка заявки",
-        "Редактирование эссе (до 3 эссе)",
-        "Пробное рассмотрение заявки и обратная связь",
-        "Стратегия и проверка рекомендательных писем",
-        "Подготовка к интервью (1 сессия)",
-        "Поддержка по email между сессиями",
-        "Корректура заявки",
-        "Консультации по стипендиям",
-      ],
-      fullDescription: "Наш самый популярный выбор — Стандартный пакет предлагает всестороннюю поддержку на протяжении всего процесса подачи заявки. Этот пакет охватывает всё: от первоначального планирования до финальной подачи, включая многократные проверки эссе, подготовку к интервью и постоянную поддержку. Идеально подходит для студентов, поступающих в конкурентные университеты, которые хотят получить тщательное руководство на каждом этапе.",
-      format: "Онлайн / Дистанционная консультация через видеозвонок (Zoom или Google Meet). Все сессии проводятся индивидуально с вашим персональным консультантом. Включает поддержку по email для вопросов между сессиями.",
-      timeline: "Сессии обычно охватывают 4-8 месяцев для полного цикла подачи заявки. Каждая сессия длится 50-60 минут. Гибкое расписание с учётом вашего школьного графика и дедлайнов.",
-      popular: true,
-    },
-    {
-      name: "Премиум пакет",
-      
-      price: "$1,300",
-      priceUsd: "USD · разовая оплата",
-      originalPrice: "$1,730",
-      originalPriceUsd: "",
-      badge: "Максимальная поддержка",
-      discount: "Скидка 25% при запуске",
-      sessions: "20 сессий",
-      features: [
-        "20 сессий комплексных консультаций",
-        "Полное управление заявкой",
-        "Неограниченные правки эссе (все эссе)",
-        "Пробное рассмотрение заявки и обратная связь",
-        "Стратегия и детальная проверка рекомендательных писем",
-        "Пробные интервью (3 сессии)",
-        "Приоритетная поддержка на протяжении всего цикла",
-        "Персональная стратегия успеха",
-        "Поддержка после подачи заявки",
-        "Помощь в поиске стипендий",
-        "Поддержка в установлении контактов",
-      ],
-      fullDescription: "Премиум пакет — наше самое полное предложение, обеспечивающее сквозную поддержку для студентов, стремящихся в лучшие университеты мира. С приоритетной поддержкой, неограниченными правками эссе и обширной подготовкой к интервью, этот пакет гарантирует вам все преимущества в вашей заявке. Включает персонализированные стратегические сессии, поддержку после подачи заявки и возможности для нетворкинга.",
-      format: "Онлайн / Дистанционная консультация через видеозвонок (Zoom или Google Meet). Все сессии проводятся индивидуально с вашим персональным консультантом. Приоритетная поддержка по email и мессенджерам с ускоренным временем ответа.",
-      timeline: "Сессии охватывают 6-12 месяцев для полного цикла подачи заявки. Каждая сессия длится 50-60 минут. Включает поддержку после подачи и помощь на этапе принятия решений. Гибкое расписание с приоритетным бронированием.",
-      popular: false,
-    },
-  ];
 
   const packageBackgrounds = [heroCampus, heroLibrary, yaleCampus];
 
@@ -205,99 +111,6 @@ const OfferingsRu = () => {
           </p>
         </div>
 
-        {/* Пакеты временно скрыты — фокус на бесплатной консультации + Founding-членстве. */}
-        {false && (
-        <section className="mb-12 md:mb-20 animate-enter">
-          <h2 className="font-heading text-xl sm:text-2xl md:text-3xl font-bold text-center mb-3 md:mb-4 text-foreground px-4">
-            Консультационные пакеты
-          </h2>
-          <p className="text-center text-sm md:text-base text-muted-foreground max-w-2xl mx-auto mb-6 md:mb-12 px-4">
-            Хотя это не обязательно, мы настоятельно рекомендуем забронировать диагностическую или стратегическую консультацию, чтобы лучше понять, что мы предлагаем, прежде чем покупать пакет.
-          </p>
-          <div className="grid md:grid-cols-3 gap-4 md:gap-8">
-            {packages.map((pkg, index) => (
-              <Card
-                key={index}
-                className={`relative ${
-                  pkg.popular
-                    ? "border-accent/60 shadow-lg md:scale-105 bg-gradient-to-br from-accent/5 to-transparent ring-1 ring-accent/10"
-                    : "border-border"
-                }`}
-                style={{
-                  backgroundImage: `linear-gradient(hsla(var(--background)/0.9), hsla(var(--background)/0.9)), url(${packageBackgrounds[index]})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center'
-                }}
-              >
-                {pkg.badge && (
-                  <div className="absolute -top-3 -right-2 md:-top-4 md:left-1/2 md:-translate-x-1/2 md:right-auto rotate-12 md:rotate-0">
-                    <span className="bg-accent text-accent-foreground px-3 py-1 md:px-4 rounded-full text-xs md:text-sm font-semibold flex items-center gap-1 shadow-lg">
-                      <Star size={12} className="md:w-[14px] md:h-[14px]" fill="currentColor" />
-                      {pkg.badge}
-                    </span>
-                  </div>
-                )}
-                <CardHeader className="text-center pt-6 md:pt-8 pb-4 md:pb-6">
-                  <CardTitle className="text-lg md:text-2xl mb-2">{pkg.name}</CardTitle>
-                  <div className="space-y-1">
-                    <div className="flex items-baseline justify-center gap-2">
-                      <span className="text-2xl md:text-3xl font-bold text-accent">{pkg.price}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{pkg.priceUsd}</p>
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-sm text-muted-foreground line-through">{pkg.originalPrice}</span>
-                      <span className="inline-block bg-accent text-accent-foreground text-xs px-2.5 py-1 rounded-full font-semibold">
-                        {pkg.discount}
-                      </span>
-                    </div>
-                  </div>
-                  <CardDescription className="text-sm md:text-base pt-1 md:pt-2">
-                    {pkg.sessions}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3 md:space-y-4 pb-4 md:pb-6">
-                  <ul className="space-y-2 md:space-y-3">
-                    {pkg.features.slice(0, 5).map((feature, idx) => (
-                      <li key={idx} className="flex items-start gap-2">
-                        <Check className="text-accent flex-shrink-0 mt-0.5" size={16} />
-                        <span className="text-xs md:text-sm text-foreground">{feature}</span>
-                      </li>
-                    ))}
-                    {pkg.features.length > 5 && (
-                      <li className="text-xs md:text-sm text-muted-foreground italic">
-                        +{pkg.features.length - 5} ещё функций...
-                      </li>
-                    )}
-                  </ul>
-                  <div className="space-y-2">
-                    <Button
-                      variant="outline"
-                      className="w-full border-accent/30"
-                      onClick={() => {
-                        setSelectedPackage(pkg);
-                        setIsPackageDetailOpen(true);
-                      }}
-                    >
-                      <Info size={16} className="mr-2" />
-                      Подробнее
-                    </Button>
-                    <Button
-                      variant={pkg.popular ? "gold" : "default"}
-                      className="w-full"
-                      onClick={() => {
-                        setSelectedPackage(pkg);
-                        setIsPackageDialogOpen(true);
-                      }}
-                    >
-                      Выбрать пакет
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
-        )}
 
         <section className="mb-12 md:mb-20 animate-fade-in">
           <div className="text-center mb-6 md:mb-12">
@@ -474,146 +287,6 @@ const OfferingsRu = () => {
           isConsultation={true}
         />
 
-        {/* Package Form Dialog */}
-        <Dialog open={isPackageDialogOpen} onOpenChange={setIsPackageDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl">Забронируйте ваш {selectedPackage?.name}</DialogTitle>
-              <DialogDescription className="text-base">
-                Помогите нам подготовиться к вашей программе. Чем больше деталей вы предоставите, тем лучше мы сможем адаптировать наши услуги к вашим потребностям.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handlePackageFormSubmit} className="space-y-6 mt-4">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Полное имя *</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="Иван Иванов"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="ivan@example.com"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Телефон</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    placeholder="+7123456789"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="currentGrade">Текущий класс/курс</Label>
-                  <Input
-                    id="currentGrade"
-                    name="currentGrade"
-                    value={formData.currentGrade}
-                    onChange={handleInputChange}
-                    placeholder="например, 11 класс"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="targetUniversities">Целевые университеты</Label>
-                <Textarea
-                  id="targetUniversities"
-                  name="targetUniversities"
-                  value={formData.targetUniversities}
-                  onChange={handleInputChange}
-                  placeholder="Перечислите университеты, которые вас интересуют..."
-                  rows={3}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="intendedMajor">Планируемая специальность</Label>
-                <Input
-                  id="intendedMajor"
-                  name="intendedMajor"
-                  value={formData.intendedMajor}
-                  onChange={handleInputChange}
-                  placeholder="например, Компьютерные науки, Бизнес"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="currentChallenges">Текущие трудности</Label>
-                <Textarea
-                  id="currentChallenges"
-                  name="currentChallenges"
-                  value={formData.currentChallenges}
-                  onChange={handleInputChange}
-                  placeholder="Какие основные проблемы или трудности у вас с процессом подачи документов?"
-                  rows={4}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="goals">Чего вы хотите достичь от этой программы?</Label>
-                <Textarea
-                  id="goals"
-                  name="goals"
-                  value={formData.goals}
-                  onChange={handleInputChange}
-                  placeholder="Будьте конкретны в том, что вы хотите получить от нашей программы..."
-                  rows={4}
-                />
-              </div>
-
-              <div className="flex gap-4 pt-4">
-                <Button
-                  type="submit"
-                  variant="gold"
-                  className="flex-1"
-                >
-                  Продолжить к оплате
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-
-        {/* Package Payment Dialog */}
-        <PaymentDialog
-          open={isPackagePaymentOpen}
-          onOpenChange={setIsPackagePaymentOpen}
-          consultationType={selectedPackage?.name || ""}
-          price={selectedPackage?.price || ""}
-          language="ru"
-          isConsultation={false}
-        />
-
-        {/* Package Detail Dialog */}
-        <PackageDetailDialog
-          isOpen={isPackageDetailOpen}
-          onClose={() => setIsPackageDetailOpen(false)}
-          package={selectedPackage}
-          onProceedToPayment={() => {
-            setIsPackageDetailOpen(false);
-            setIsPackageDialogOpen(true);
-          }}
-          language="ru"
-        />
 
         {/* Trust Section */}
         <section className="mt-20 text-center">
