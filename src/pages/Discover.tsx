@@ -3344,11 +3344,29 @@ const Discover = ({ language = "en" }: Props) => {
 
                 <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 0.7 }}
                   className="flex flex-col items-center gap-4 pt-2">
-                  <Button variant="gold" size="lg" className="text-base px-12 py-7 hover:scale-[1.02] transition-transform gap-2.5" onClick={() => setPhase("wizard")}>
-                    {t("Find my scholarships", "Найти мои стипендии")}
+                  {/* Round-27 IA: TopUni AI is the front door. The intake
+                      form there generates the personalized strategy AND
+                      seeds the Discover profile, so the user goes through
+                      a single onboarding rather than the same nationality/
+                      level/GPA questions twice. The wizard below is kept
+                      as a "skip strategy" path for users who want to
+                      browse the database immediately. */}
+                  <Button
+                    variant="gold"
+                    size="lg"
+                    className="text-base px-12 py-7 hover:scale-[1.02] transition-transform gap-2.5"
+                    onClick={() => navigate(language === "ru" ? "/topuni-ai/ru" : "/topuni-ai")}
+                  >
+                    {t("Get my personalized strategy", "Моя персональная стратегия")}
                     <ArrowRight className="h-5 w-5" />
                   </Button>
-                  <div className="flex items-center justify-center gap-5 text-xs text-primary-foreground/35 font-medium tracking-wide">
+                  <button
+                    onClick={() => setPhase("wizard")}
+                    className="text-xs text-primary-foreground/45 hover:text-primary-foreground/80 underline-offset-4 hover:underline transition-colors"
+                  >
+                    {t("or skip strategy and just browse the database", "или пропустить стратегию и сразу к базе")}
+                  </button>
+                  <div className="flex items-center justify-center gap-5 text-xs text-primary-foreground/35 font-medium tracking-wide pt-1">
                     <span className="flex items-center gap-1.5"><Zap className="h-3 w-3 text-gold" /> {t("2 minutes", "2 минуты")}</span>
                     <span className="opacity-50">·</span>
                     <span>{t("No account needed", "Без регистрации")}</span>

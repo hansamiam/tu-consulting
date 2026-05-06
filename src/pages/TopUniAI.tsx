@@ -17,9 +17,48 @@ import {
   CheckCircle2, Search, BookOpen, ListChecks, Map, Zap,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { saveProfile, type DiscoverProfile } from "@/components/discover/DiscoverProfileGate";
 
 // 'landing' retired round 10 — TopUni AI opens directly in intake.
 type Screen = "intake" | "dashboard";
+
+/* Round-27 integration: TopUni AI is the single front door. The
+ * Discover wizard used to be a separate 4-step intake that asked
+ * the same nationality / level / GPA / IELTS questions a second
+ * time. Now we project the TopUniAI intake directly onto the
+ * DiscoverProfile shape and persist it via the same localStorage +
+ * student_profiles plumbing the wizard used. Result: completing
+ * the AI brief instantly seeds the Discover database, the wizard
+ * is skipped, and there's one source of truth for "who is this
+ * student". */
+const projectToDiscoverProfile = (intake: {
+  fullName: string;
+  email: string;
+  nationality: string;
+  gradeLevel: string;
+  gpa: string;
+  ielts: string;
+  toefl: string;
+  sat: string;
+  major: string;
+  budget: string;
+}): DiscoverProfile => ({
+  fullName: intake.fullName.trim(),
+  email: intake.email.trim(),
+  nationality: intake.nationality.trim(),
+  // Map "current grade" to educationLevel; targetDegree is what the
+  // student is going TO study, which the wizard tracks separately
+  // from gradeLevel. We populate educationLevel only — targetDegree
+  // remains user-fillable inside Discover's later edit affordance.
+  educationLevel: intake.gradeLevel || undefined,
+  targetDegree: intake.gradeLevel || undefined,
+  gpa: intake.gpa || undefined,
+  ieltsScore: intake.ielts || undefined,
+  toeflScore: intake.toefl || undefined,
+  satScore: intake.sat || undefined,
+  fieldOfInterest: intake.major || undefined,
+  budgetRange: intake.budget || undefined,
+});
 
 import { POPULAR_DESTINATIONS, ALL_COUNTRIES } from "@/data/countries";
 
@@ -632,7 +671,27 @@ const TopUniAI = () => {
                     </div>
                     <div className="flex justify-between pt-4">
                       <Button variant="outline" onClick={() => setStep(2)}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
-                      <Button variant="gold" size="lg" onClick={() => setScreen("dashboard")}>
+                      <Button
+                        variant="gold"
+                        size="lg"
+                        onClick={() => {
+                          // Seed Discover with the same profile so the user
+                          // never has to re-answer the nationality / level /
+                          // GPA / IELTS questions inside Discover. Once this
+                          // fires, /discover skips its wizard and lands
+                          // straight on personalized results. saveProfile
+                          // also fires the cross-device sync to
+                          // student_profiles, so signing in on another
+                          // device pulls the same profile back down.
+                          try {
+                            saveProfile(projectToDiscoverProfile({
+                              fullName, email, nationality, gradeLevel,
+                              gpa, ielts, toefl, sat, major, budget,
+                            }));
+                          } catch { /* localStorage may be unavailable; brief still renders */ }
+                          setScreen("dashboard");
+                        }}
+                      >
                         <Sparkles className="mr-2 w-5 h-5" /> Generate my plan
                       </Button>
                     </div>
