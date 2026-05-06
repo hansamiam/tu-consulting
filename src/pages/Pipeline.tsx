@@ -220,15 +220,22 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
     };
   }, [rows, tracker.statusMap, tracker.hidden, tracker.awardedMap]);
 
-  /* Workspace tab state — kept in the URL so users can deep-link to
-     /pipeline?tab=calendar etc and refresh-restore their view. */
+  /* Workspace consolidation (round 22): the three tabs (Board /
+   * Calendar / Essays) flattened into one page that scrolls. The
+   * scholarships block keeps its by-category kanban as the default
+   * but gains a list view toggle for users who want a flat
+   * deadline-sorted view. Calendar + essays render as inline
+   * sections below.
+   *
+   * `?view=list` is supported as a deep-link hint — the URL is no
+   * longer the source of truth for tabs (those are gone), but the
+   * boardView preference does deserve to survive a refresh. */
   const [searchParams, setSearchParams] = useSearchParams();
-  const tabParam = searchParams.get("tab");
-  const activeTab: "board" | "calendar" | "essays" =
-    tabParam === "calendar" ? "calendar" : tabParam === "essays" ? "essays" : "board";
-  const setActiveTab = (next: "board" | "calendar" | "essays") => {
+  const viewParam = searchParams.get("view");
+  const boardView: "category" | "list" = viewParam === "list" ? "list" : "category";
+  const setBoardView = (next: "category" | "list") => {
     const params = new URLSearchParams(searchParams);
-    if (next === "board") params.delete("tab"); else params.set("tab", next);
+    if (next === "category") params.delete("view"); else params.set("view", next);
     setSearchParams(params, { replace: true });
   };
 
@@ -390,47 +397,10 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
         </div>
       </section>
 
-      {/* ─── Workspace tab strip ──────────────────────────────────────
-          Three tabs share the same hydrated tracker rows. The URL is
-          the source of truth (?tab=calendar | essays) so deep links +
-          back-button work. Sticky-ish below the stats banner. */}
-      <section className="border-b border-border/60 bg-background sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto px-5 sm:px-8">
-          <div className="flex items-center gap-1 -mb-px">
-            {[
-              { key: "board" as const,    label: t("Board", "Доска"),       icon: KanbanSquare },
-              { key: "calendar" as const, label: t("Calendar", "Календарь"), icon: Calendar },
-              { key: "essays" as const,   label: t("Essays", "Эссе"),       icon: FileText, count: Object.keys(tracker.essayMap).length },
-            ].map((tab) => {
-              const isActive = activeTab === tab.key;
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`relative inline-flex items-center gap-1.5 px-3 sm:px-4 py-3 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  <span>{tab.label}</span>
-                  {"count" in tab && tab.count !== undefined && tab.count > 0 && (
-                    <span className={`text-[10px] tabular-nums px-1.5 py-0.5 rounded font-semibold ${
-                      isActive ? "bg-gold/15 text-gold-dark" : "bg-muted text-muted-foreground"
-                    }`}>{tab.count}</span>
-                  )}
-                  {isActive && <span className="absolute inset-x-2 bottom-0 h-0.5 bg-gold-dark rounded-t" />}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Pipeline columns (Board tab) ─────────────────────────── */}
-      {activeTab === "board" && (
+      {/* ─── Scholarships section ───────────────────────────────────
+          Tabs retired (round 22). Workspace is now a single scrolling
+          page: scholarships → calendar → essays. The category-vs-list
+          toggle is local to this section and persists via ?view=list. */}
       <section className="max-w-6xl mx-auto px-5 sm:px-8 py-8 sm:py-12">
         {loading && trackedIds.length > 0 ? (
           <div className="py-20 flex items-center justify-center text-muted-foreground gap-2">
@@ -461,7 +431,44 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
             />
           </>
         )}
+        {/* View toggle — by-category (kanban) vs flat list. Only shown
+            when there's actual tracked content; on the empty state the
+            toggle would just sit above an empty page. */}
         {trackedIds.length > 0 && !loading && (
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <p className="text-[11px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
+              {t("Tracked scholarships", "Отслеживаемые стипендии")}
+            </p>
+            <div className="inline-flex items-center rounded-lg border border-border bg-card p-0.5">
+              <button
+                type="button"
+                onClick={() => setBoardView("category")}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  boardView === "category"
+                    ? "bg-foreground/[0.06] text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <KanbanSquare className="h-3.5 w-3.5" />
+                <span>{t("By stage", "По этапу")}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setBoardView("list")}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  boardView === "list"
+                    ? "bg-foreground/[0.06] text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <FileText className="h-3.5 w-3.5" />
+                <span>{t("List", "Список")}</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {trackedIds.length > 0 && !loading && boardView === "category" && (
           // Mobile: horizontal scroll-snap of 3 columns (one stage per swipe).
           // Desktop (lg+): standard 3-col grid. Each column gets more room.
           <div className="-mx-5 sm:-mx-8 lg:mx-0 px-5 sm:px-8 lg:px-0 overflow-x-auto lg:overflow-visible snap-x snap-mandatory lg:snap-none">
@@ -510,6 +517,35 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
           </div>
         )}
 
+        {/* Flat list view — every tracked scholarship sorted by deadline
+            (soonest first), regardless of stage. Use case: "what's
+            actually due next?" without flipping between three columns. */}
+        {trackedIds.length > 0 && !loading && boardView === "list" && (
+          <div className="space-y-2">
+            {[...rows]
+              .filter((r) => trackedIds.includes(r.scholarship_id))
+              .sort((a, b) => {
+                const ad = a.application_deadline ? new Date(a.application_deadline).getTime() : Number.POSITIVE_INFINITY;
+                const bd = b.application_deadline ? new Date(b.application_deadline).getTime() : Number.POSITIVE_INFINITY;
+                return ad - bd;
+              })
+              .map((s) => (
+                <PipelineCard
+                  key={s.scholarship_id}
+                  scholarship={s}
+                  status={tracker.statusMap[s.scholarship_id]}
+                  isShortlisted={tracker.shortlist.has(s.scholarship_id)}
+                  note={tracker.notesMap[s.scholarship_id]}
+                  recommenders={tracker.recommendersMap[s.scholarship_id]}
+                  hasEssay={!!tracker.essayMap[s.scholarship_id]}
+                  isRu={isRu}
+                  onOpen={() => setOpenDetail(s)}
+                  onStatusChange={(status) => handleStatusChange(s.scholarship_id, status)}
+                />
+              ))}
+          </div>
+        )}
+
         {/* Subtle "come hang out" chip — placed below the kanban so it
             only registers after the user has engaged with their data.
             Auto-dismisses + 60-day cooldown via localStorage. */}
@@ -519,11 +555,17 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
           </div>
         )}
       </section>
-      )}
 
-      {/* ─── Calendar tab ──────────────────────────────────────────── */}
-      {activeTab === "calendar" && (
-        <section className="max-w-6xl mx-auto px-5 sm:px-8 py-8 sm:py-12">
+      {/* ─── Inline calendar — was a separate tab; now lives below the
+            scholarships list on the same page so the user gets the
+            deadline picture without a tab swap. Only renders when
+            there are tracked items to plot — empty calendar above an
+            empty essays section reads as broken. */}
+      {trackedIds.length > 0 && (
+        <section className="max-w-6xl mx-auto px-5 sm:px-8 pb-8 sm:pb-12">
+          <h2 className="font-heading text-lg sm:text-xl font-bold text-foreground mb-4 tracking-tight">
+            {t("Deadline calendar", "Календарь дедлайнов")}
+          </h2>
           <WorkspaceCalendar
             rows={rows.map(r => ({
               scholarship_id: r.scholarship_id,
@@ -545,9 +587,15 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
         </section>
       )}
 
-      {/* ─── Essays tab ────────────────────────────────────────────── */}
-      {activeTab === "essays" && (
-        <section className="max-w-6xl mx-auto px-5 sm:px-8 py-8 sm:py-12">
+      {/* ─── Inline essays — was a separate tab; now lives below the
+            calendar. EssaysTab self-renders an empty state when no row
+            has an essay started, so we let it show even at zero items
+            — that empty state is the discoverability surface. */}
+      {trackedIds.length > 0 && (
+        <section className="max-w-6xl mx-auto px-5 sm:px-8 pb-8 sm:pb-12">
+          <h2 className="font-heading text-lg sm:text-xl font-bold text-foreground mb-4 tracking-tight">
+            {t("Essay drafts", "Черновики эссе")}
+          </h2>
           <EssaysTab
             rows={rows}
             essayMap={tracker.essayMap}

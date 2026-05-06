@@ -21,7 +21,7 @@ import {
   Target, Flame, Users, FileText, Languages, Loader2,
   CreditCard, AlertOctagon, AlertCircle, UserCheck, ShieldAlert, MinusCircle, HelpCircle,
   LayoutGrid, List, EyeOff, Eye, Columns3, Circle, MoreHorizontal, GitCompare,
-  Gem, DollarSign, Crown, Award, Compass, Layers, GraduationCap,
+  Gem, DollarSign, Crown, Award, Compass, Layers, GraduationCap, Share2,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
@@ -50,8 +50,36 @@ import { useSemanticScholarshipMatch } from "@/hooks/useSemanticScholarshipMatch
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
 import { useScholarshipTracking, useTrackView } from "@/hooks/useScholarshipTracking";
 import { Lock } from "lucide-react";
+import { toast } from "sonner";
 
 const SHORTLIST_FREE_LIMIT = 5;
+
+/* Share a scholarship — uses Web Share API on supporting browsers
+ * (mobile, modern Chromium), falls back to clipboard copy with a
+ * toast confirmation. The shared URL is the public /scholarships/:id
+ * page which renders for SEO + handles direct loads even for
+ * non-signed-in users. */
+const shareScholarship = async (s: { scholarship_id: string; scholarship_name: string; provider_name: string | null }) => {
+  const url = `${window.location.origin}/scholarships/${s.scholarship_id}`;
+  const cleanedName = cleanScholarshipName(s.scholarship_name);
+  const cleanedProv = cleanProvider(s.provider_name);
+  const title = cleanedProv ? `${cleanedName} — ${cleanedProv}` : cleanedName;
+  const navAny = navigator as Navigator & { share?: (data: { title?: string; url?: string }) => Promise<void> };
+  if (navAny.share) {
+    try {
+      await navAny.share({ title, url });
+      return;
+    } catch {
+      // User aborted the share sheet; fall through to clipboard.
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    toast.success("Link copied", { description: cleanedName });
+  } catch {
+    toast.error("Couldn't copy — long-press the URL to share");
+  }
+};
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
 interface Scholarship {
@@ -1395,11 +1423,11 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
             {isBookmarked ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
           </button>
 
-          {/* Open official site + More — desktop only. On mobile they
+          {/* Open official site + Share — desktop only. On mobile they
               squeezed the name into ~150px of width and the row went
               squish. Tapping the row body opens the detail sheet,
-              which has its own "Apply on official site" CTA + hide
-              option, so there's no functional loss on mobile. */}
+              which has its own "Apply on official site" CTA, so
+              there's no functional loss on mobile. */}
           {s.official_url && (
             <a
               href={s.official_url}
@@ -1413,22 +1441,22 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
             </a>
           )}
 
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              onClick={(e) => e.stopPropagation()}
-              aria-label="More actions"
-              title="More"
-              className="hidden sm:inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors data-[state=open]:bg-muted/60"
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem onClick={onToggleHide} className="text-xs">
-                {isHidden ? <Eye className="h-3 w-3 mr-2" /> : <EyeOff className="h-3 w-3 mr-2" />}
-                {isHidden ? "Show again" : "Not relevant — hide"}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Share — replaces the old "Not relevant — hide" dropdown
+              which was rarely used and added cognitive load to every
+              row. Native Web Share API on supporting browsers, falls
+              back to clipboard copy with a toast confirmation. */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              shareScholarship(s);
+            }}
+            aria-label="Share this scholarship"
+            title="Share"
+            className="hidden sm:inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+          >
+            <Share2 className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </motion.div>
@@ -1485,12 +1513,10 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           travel poster strip rather than a database row. Text stays on
           the left where the silhouette opacity is lowest. */}
       <div className={`relative bg-gradient-to-r ${accent} px-4 h-14 flex items-center gap-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/95 overflow-hidden whitespace-nowrap`}>
-        {/* Architectural texture — gothic arches + classical columns tiled
-            across the band at low opacity. Whispers "campus courtyard"
-            so the band feels less like a colored stripe and more like a
-            postcard the student is dreaming about walking through. */}
-        <FlagPattern country={s.host_country} className="absolute inset-0 w-full h-full text-white" opacity={0.16} />
-        {/* Country landmark sits ABOVE the campus pattern, anchored right */}
+        {/* Country landmark icon, anchored right. The flag-pattern texture
+            that used to sit underneath was retired (round 22) — it
+            failed to find a good shape for most countries and read as
+            noise rather than the "campus postcard" texture intended. */}
         <CountryArt country={s.host_country} className="absolute right-2 inset-y-0 h-full opacity-35 pointer-events-none" />
         {/* fade-from-left so silhouette + pattern don't compete with text */}
         <span className={`absolute inset-0 bg-gradient-to-r from-black/30 via-black/5 to-transparent pointer-events-none`} />
@@ -1644,27 +1670,18 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
             >
               <GitCompare className="h-3.5 w-3.5" />
             </button>
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
-                aria-label="More actions"
-              >
-                <MoreHorizontal className="h-3.5 w-3.5" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                {s.official_url && (
-                  <DropdownMenuItem asChild>
-                    <a href={s.official_url} target="_blank" rel="noopener noreferrer" className="text-xs cursor-pointer">
-                      <ExternalLink className="h-3 w-3 mr-2" /> Official page
-                    </a>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onClick={onToggleHide} className="text-xs">
-                  {isHidden ? <Eye className="h-3 w-3 mr-2" /> : <EyeOff className="h-3 w-3 mr-2" />}
-                  {isHidden ? "Show again" : "Hide from list"}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* Share replaces the old More dropdown ("Hide from list" /
+                "Official page"). Hide was rarely used; the official
+                page is one click away inside the detail sheet. */}
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); shareScholarship(s); }}
+              aria-label="Share this scholarship"
+              title="Share"
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
       </div>
@@ -1939,7 +1956,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
 
   return (
     <Sheet open={open} onOpenChange={o => !o && onClose()}>
-      <SheetContent side="right" className="w-full sm:w-[min(99vw,1400px)] overflow-y-auto p-0 flex flex-col">
+      <SheetContent side="right" className="w-full sm:w-[min(99vw,1400px)] overflow-y-auto p-0 flex flex-col text-[14px] sm:text-base">
         {/* ── POSTCARD HERO — country gradient + gothic-arch campus pattern
               + country landmark layered as a poster the student "flips
               over" when they open the sheet. Sells the dream of being
@@ -1951,7 +1968,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           const dsAccent = accentForCountry(s.host_country);
           const cover = s.cover_image_url || null;
           return (
-            <div className={`relative h-32 sm:h-44 overflow-hidden bg-gradient-to-r ${dsAccent} shrink-0`}>
+            <div className={`relative h-20 sm:h-44 overflow-hidden bg-gradient-to-r ${dsAccent} shrink-0`}>
               {cover ? (
                 <img
                   src={cover}
@@ -1961,22 +1978,25 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                   onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
                 />
               ) : (
-                <>
-                  <FlagPattern country={s.host_country} className="absolute inset-0 w-full h-full text-white" opacity={0.14} />
-                  <CountryArt country={s.host_country} className="absolute right-4 inset-y-0 h-full opacity-40 pointer-events-none" />
-                </>
+                /* FlagPattern silhouette retired — most countries don't
+                 * have a clean illustrative flag and the fallback rendered
+                 * as visual noise. CountryArt (the landmark icon) carries
+                 * the regional identity on its own. */
+                <CountryArt country={s.host_country} className="absolute right-4 inset-y-0 h-full opacity-40 pointer-events-none" />
               )}
               <span className="absolute inset-0 bg-gradient-to-r from-black/45 via-black/15 to-transparent pointer-events-none" />
-              <div className="relative h-full flex flex-col justify-end px-7 pb-4">
+              <div className="relative h-full flex flex-col justify-end px-5 sm:px-7 pb-2.5 sm:pb-4">
                 {s.host_country && (
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white drop-shadow-md">{shortCountry(s.host_country)}</p>
+                  <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.28em] text-white drop-shadow-md">{shortCountry(s.host_country)}</p>
                 )}
               </div>
             </div>
           );
         })()}
-        {/* ── HEADER (cream, editorial — no thick navy block) ── */}
-        <div className="relative bg-canvas-soft px-7 pt-6 pb-6 overflow-hidden shrink-0 border-b border-border">
+        {/* ── HEADER (cream, editorial — no thick navy block). Mobile
+              padding tightened so the panel doesn't push the apply CTA
+              below the fold. */}
+        <div className="relative bg-canvas-soft px-5 sm:px-7 pt-4 sm:pt-6 pb-4 sm:pb-6 overflow-hidden shrink-0 border-b border-border">
           {/* Soft top wash so the header has navy presence without a slab */}
           <div className="absolute inset-x-0 top-0 h-24 pointer-events-none"
             style={{ backgroundImage: "linear-gradient(180deg, hsl(var(--primary) / 0.06) 0%, transparent 100%)" }} />
@@ -2017,28 +2037,39 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             </p>
           </SheetHeader>
 
-          {/* Key facts row — cream tiles */}
-          <div className="relative grid grid-cols-3 gap-2 mt-5">
-            {/* Award facts tile: lead with the compact label so the
-                box never truncates; the full award_amount_text follows
-                below in muted text when it adds detail. The detail
-                line clamps to two lines — long parentheticals are OK
-                here because the user opened the sheet for more depth. */}
-            <div className="bg-card border border-border rounded-xl px-3 py-2.5">
+          {/* Key facts row — two tiles. Was three (Award + Deadline +
+              Total value), but Total value was almost always the same
+              number as Award (or trivially derivable: "$25K/yr × 4")
+              and the third tile crowded the row on every viewport.
+              Total value moves into the Award tile as a small subline
+              when it differs meaningfully from the compact label.
+              Mobile uses tighter padding so the tiles don't dominate
+              vertical space on small screens. */}
+          <div className="relative grid grid-cols-2 gap-2 mt-3 sm:mt-5">
+            <div className="bg-card border border-border rounded-xl px-2.5 sm:px-3.5 py-2 sm:py-3">
               <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">Award</div>
               <div className="text-foreground text-sm font-bold leading-tight">{compactAward(s) ?? COVERAGE_LABEL[s.coverage_type] ?? "—"}</div>
               {s.award_amount_text && s.award_amount_text.length > 16 && (
                 <div className="text-[10px] text-muted-foreground/85 mt-1 leading-snug line-clamp-2">{s.award_amount_text}</div>
               )}
+              {s.estimated_total_value_usd && (() => {
+                const compact = compactAward(s);
+                const total = fmtValue(s.estimated_total_value_usd);
+                // Only show the total subline when it adds info beyond
+                // what compactAward already says — avoids "Award $80K /
+                // Total $80K" stutter on single-year programs.
+                if (compact && compact.replace(/\s/g, "") === total.replace(/\s/g, "")) return null;
+                return (
+                  <div className="text-[10px] text-gold-dark/80 dark:text-gold/80 font-semibold mt-1.5">
+                    Est. {total} total
+                  </div>
+                );
+              })()}
             </div>
-            <div className="bg-card border border-border rounded-xl px-3 py-2.5">
+            <div className="bg-card border border-border rounded-xl px-2.5 sm:px-3.5 py-2 sm:py-3">
               <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">Deadline</div>
-              <div className={`text-xs font-semibold leading-tight ${dl.cls}`}>{dl.text}</div>
+              <div className={`text-sm font-semibold leading-tight ${dl.cls}`}>{dl.text}</div>
               {deadlineDate && <div className="text-muted-foreground/70 text-[10px] mt-0.5">{deadlineDate}</div>}
-            </div>
-            <div className="bg-card border border-border rounded-xl px-3 py-2.5">
-              <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">Total value</div>
-              <div className="text-gold-dark text-xs font-bold leading-tight">{s.estimated_total_value_usd ? fmtValue(s.estimated_total_value_usd) : "—"}</div>
             </div>
           </div>
 
@@ -2135,7 +2166,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           </div>
 
           {/* OVERVIEW */}
-          <TabsContent value="overview" className="px-7 py-6 space-y-5 m-0 focus-visible:outline-none">
+          <TabsContent value="overview" className="px-5 sm:px-7 py-4 sm:py-6 space-y-4 sm:space-y-5 m-0 focus-visible:outline-none">
             {/* Standardized scholarship blurb. Replaces the gold-bordered
                 "Why this fits you" callout — the framing was overclaim
                 (a thin profile can't generate confident "fits you"
@@ -2236,16 +2267,16 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           </TabsContent>
 
           {/* REQUIREMENTS */}
-          <TabsContent value="requirements" className="px-7 py-6 space-y-5 m-0 focus-visible:outline-none">
+          <TabsContent value="requirements" className="px-5 sm:px-7 py-4 sm:py-6 space-y-4 sm:space-y-5 m-0 focus-visible:outline-none">
             {reqs.length > 0 ? (
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">You vs. requirements</p>
                 <div className="bg-muted/30 rounded-2xl px-4 py-1">
                   {reqs.map((r, i) => <ReqRow key={i} {...r} />)}
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">
-                  Always verify on the official site — requirements change yearly and we don't track TOEFL or every nationality nuance.
-                </p>
+                {/* Disclaimer here was a duplicate of the sheet-footer
+                    "verify before applying" line. Kept only the footer
+                    one so it doesn't read twice on a single panel. */}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">No specific requirements recorded for this scholarship.</p>
@@ -2344,7 +2375,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           </TabsContent>
 
           {/* STRATEGY */}
-          <TabsContent value="strategy" className="px-7 py-6 space-y-5 m-0 focus-visible:outline-none relative">
+          <TabsContent value="strategy" className="px-5 sm:px-7 py-4 sm:py-6 space-y-4 sm:space-y-5 m-0 focus-visible:outline-none relative">
             {/* "Still being drafted" state — when the row is freshly scraped
                 and the daily enrichment cron hasn't filled the soft fields
                 yet (typically 24-48h post-discovery), the Strategy tab would
@@ -2529,13 +2560,13 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                third-party report (Manus AI), not yet hand-verified. */}
         {(() => {
           return (
-            <div className="px-7 py-3 border-t border-border bg-muted/20 flex items-center justify-between gap-3 shrink-0">
-              <span className="text-[11px] text-muted-foreground">
-                Click the official site link before applying for the latest details — providers update their pages often.
+            <div className="px-7 py-2.5 border-t border-border/60 bg-canvas-soft/50 flex items-center justify-between gap-3 shrink-0">
+              <span className="text-[10px] text-muted-foreground/70">
+                Verify on the official site before applying.
               </span>
               <a
                 href={`mailto:hello@topuni.com?subject=${encodeURIComponent("Inaccurate scholarship data: " + s.scholarship_name)}&body=${encodeURIComponent("ID: " + s.scholarship_id + "\n\nWhat's wrong:\n")}`}
-                className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-4 shrink-0"
+                className="text-[10px] text-muted-foreground/70 hover:text-foreground underline underline-offset-4 shrink-0"
               >
                 Report inaccuracy
               </a>
@@ -3153,7 +3184,14 @@ const Discover = ({ language = "en" }: Props) => {
             (home, account, language, escape-to-other-products) in
             half the height. Same pattern Linear / Notion / Stripe
             Dashboard use. */}
-        {phase !== "results" && <Navigation language={language} />}
+        {phase !== "results" && (
+          /* Use overlay nav variant on the dark phases (landing /
+             wizard / analyzing) so the navy hero gradient extends
+             through the nav strip. Without this, in dark mode the
+             nav's own surface tint clashed with the navy hero
+             behind it — same color family, no clear separation. */
+          <Navigation language={language} variant={dark ? "overlay" : "default"} />
+        )}
         {phase === "results" && <DiscoverAppBar language={language} />}
 
         <AnimatePresence mode="wait">
@@ -3630,7 +3668,9 @@ const Discover = ({ language = "en" }: Props) => {
                       <SelectItem value="match">Best match</SelectItem>
                       <SelectItem value="deadline">Deadline first</SelectItem>
                       <SelectItem value="value">Highest value</SelectItem>
-                      <SelectItem value="selectivity">Most accessible</SelectItem>
+                      {/* "Most accessible" sort retired — selectivity
+                          metadata is incomplete on most rows so the
+                          sort produced near-random ordering. */}
                     </SelectContent>
                   </Select>
 

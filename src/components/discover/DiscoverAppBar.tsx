@@ -73,7 +73,12 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
         {/* Vertical rule */}
         <span className="hidden sm:block self-stretch w-px bg-border/60 my-3" aria-hidden />
 
-        {/* Discover wordmark — visual identity, not the primary nav. */}
+        {/* Discover wordmark — visual identity, not the primary nav.
+            Dark-mode tweaks: the small-caps "TopUni" line was rendering
+            in gold-dark which got muddy against the dark background;
+            it now flips to gold-light in dark mode. The compass icon
+            keeps the navy `text-primary` ink on the gold gradient
+            because that combination is part of the brand. */}
         <Link
           to={home}
           className="group inline-flex items-center gap-2 shrink-0 hover:opacity-90 transition-opacity"
@@ -83,7 +88,7 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
             <Compass className="h-3.5 w-3.5" />
           </span>
           <div className="leading-tight hidden sm:block">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-gold-dark">TopUni</p>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-gold-dark dark:text-gold-light">TopUni</p>
             <p className="font-heading text-[15px] font-bold tracking-tight text-foreground -mt-0.5">Discover</p>
           </div>
         </Link>

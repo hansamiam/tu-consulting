@@ -82,6 +82,43 @@ const Academy = () => {
         </div>
       </section>
 
+      {/* WAITLIST — promoted up to right under the hero. Was at the
+          bottom of the page; visitors who skimmed the hero and scrolled
+          off lost the conversion surface. Putting it here turns the
+          page into a clear single-task: read why → join the list. */}
+      <section className="max-w-2xl mx-auto px-4 pt-10 sm:pt-12 pb-4">
+        <Card className="border-gold/30">
+          <CardContent className="p-7">
+            <h3 className="font-heading text-lg font-bold text-foreground mb-2 tracking-tight">
+              Get notified when Academy opens
+            </h3>
+            <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
+              Waitlist members get the first cohort spots before public signup. We'll email you the moment doors open — no other emails until then.
+            </p>
+
+            {done ? (
+              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm font-medium">
+                <Check className="h-4 w-4" /> You're on the list — we'll be in touch.
+              </div>
+            ) : (
+              <form onSubmit={submit} className="flex flex-col sm:flex-row gap-2">
+                <Input
+                  type="email"
+                  required
+                  placeholder="you@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="flex-1"
+                />
+                <Button type="submit" variant="gold" disabled={submitting}>
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Notify me"}
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      </section>
+
       {/* TAUGHT BY FOUNDERS ────────────────────────────────────────── */}
       <section className="max-w-5xl mx-auto px-4 pt-16 sm:pt-20 pb-10">
         <div className="text-center max-w-2xl mx-auto mb-10">
@@ -129,45 +166,14 @@ const Academy = () => {
           waitlist below is the only thing the page needs to do at this
           stage. */}
 
-      {/* WAITLIST ────────────────────────────────────────────────── */}
-      <section className="max-w-2xl mx-auto px-4 pb-20">
-        <Card className="border-gold/30">
-          <CardContent className="p-7">
-            <h3 className="font-heading text-lg font-bold text-foreground mb-2 tracking-tight">
-              Get notified when Academy opens
-            </h3>
-            <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-              Waitlist members get the first cohort spots before public signup. We'll email you the moment doors open — no other emails until then.
-            </p>
-
-            {done ? (
-              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm font-medium">
-                <Check className="h-4 w-4" /> You're on the list — we'll be in touch.
-              </div>
-            ) : (
-              <form onSubmit={submit} className="flex flex-col sm:flex-row gap-2">
-                <Input
-                  type="email"
-                  required
-                  placeholder="you@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="flex-1"
-                />
-                <Button type="submit" variant="gold" disabled={submitting}>
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Notify me"}
-                </Button>
-              </form>
-            )}
-
-            <div className="mt-6 pt-6 border-t border-border/60 text-center">
-              <p className="text-xs text-muted-foreground">
-                Looking for ranked scholarships now?{" "}
-                <Link to="/discover" className="underline text-foreground hover:text-gold-dark transition-colors">Open Discover →</Link>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Bottom escape hatch — small line pointing visitors to Discover
+          since the waitlist (above) is the only conversion on this
+          page. The full waitlist Card moved up to right under the hero. */}
+      <section className="max-w-2xl mx-auto px-4 pb-16 text-center">
+        <p className="text-xs text-muted-foreground">
+          Looking for ranked scholarships now?{" "}
+          <Link to="/discover" className="underline text-foreground hover:text-gold-dark transition-colors">Open Discover →</Link>
+        </p>
       </section>
 
       {/* Bottom bookend — gradient ramp into the navy footer */}
