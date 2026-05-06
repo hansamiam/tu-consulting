@@ -420,7 +420,7 @@ const Pricing = ({ language = "en" }: PricingProps) => {
       </main>
 
       <Footer language={language} />
-      <AuthDialog open={authOpen} onOpenChange={setAuthOpen} title={t.authTitle} description={t.authDesc} />
+      <AuthDialog open={authOpen} onOpenChange={setAuthOpen} title={t.authTitle} description={t.authDesc} language={language} />
     </div>
   );
 };

@@ -142,7 +142,7 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
             >
               {isRussian ? "Войти" : "Sign in"}
             </button>
-            <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
+            <AuthDialog open={authOpen} onOpenChange={setAuthOpen} language={language} />
           </>
         )}
       </div>

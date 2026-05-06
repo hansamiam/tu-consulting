@@ -227,7 +227,7 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
           </Sheet>
         </div>
       </div>
-      <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
+      <AuthDialog open={authOpen} onOpenChange={setAuthOpen} language={language} />
     </nav>
   );
 };

@@ -98,7 +98,7 @@ const Account = ({ language = "en" }: AccountProps) => {
             {t("Sign in", "Войти")}
           </button>
         </div>
-        <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
+        <AuthDialog open={authOpen} onOpenChange={setAuthOpen} language={language} />
       </div>
     );
   }
