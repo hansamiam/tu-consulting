@@ -668,15 +668,22 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                       return "neutral";
                     })()}
                   />
+                  {/* Coverage tile — was defaulting "partial" rows to
+                      "Stipend" which mislabeled them. The DB has four
+                      coverage_types: full_ride / tuition_only /
+                      stipend / partial. Each gets its own readable
+                      label now, with a generic "Funding" fallback for
+                      future values rather than a wrong stipend tag. */}
                   <Fact
                     label={t("Coverage", "Покрытие")}
-                    value={
-                      openDetail.coverage_type === "full_ride"
-                        ? t("Full ride", "Полное")
-                        : openDetail.coverage_type === "tuition_only"
-                          ? t("Tuition only", "Только обучение")
-                          : t("Stipend", "Стипендия")
-                    }
+                    value={(() => {
+                      const ct = openDetail.coverage_type;
+                      if (ct === "full_ride") return t("Full ride", "Полное");
+                      if (ct === "tuition_only") return t("Tuition only", "Только обучение");
+                      if (ct === "stipend") return t("Stipend", "Стипендия");
+                      if (ct === "partial") return t("Partial funding", "Частичное");
+                      return t("Funding", "Финансирование");
+                    })()}
                   />
                 </div>
 
