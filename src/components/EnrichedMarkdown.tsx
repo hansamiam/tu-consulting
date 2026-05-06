@@ -102,7 +102,14 @@ export function EnrichedMarkdown({ children, scholarships }: Props) {
 
   // Track which scholarships we've already swapped this render. Keys are
   // scholarship_id. After the first swap, we render plain bold for repeats.
-  const swappedRef = useMemo(() => new Set<string>(), [children]);
+  // The set is reset on every render so re-renders (e.g. when the
+  // `scholarships` prop arrives after the markdown has already been
+  // shown once) get a clean slate. The previous useMemo([children])
+  // form cached the set across renders with the same children — so
+  // a render-then-rerender flow was silently dropping every inline
+  // card past the first render, because every match was treated as
+  // "already swapped" from the prior pass.
+  const swappedRef = new Set<string>();
 
   return (
     <ReactMarkdown
