@@ -2796,6 +2796,25 @@ const Discover = ({ language = "en" }: Props) => {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile>({ country: "", degrees: [], gpa: "", gpaScale: "4.0", ielts: "", toefl: "", sat: "", field: "", demographics: [] });
   const [phase, setPhase] = useState<Phase>(() => getStoredProfile()?.nationality ? "results" : "landing");
+
+  /* Auth-driven phase auto-transition. AuthContext pulls the user's
+   * student_profile from the DB into localStorage on sign-in (cross-
+   * device sync). When that completes after the page mounted on the
+   * landing phase, this effect catches the newly-available profile
+   * and lifts the user straight to results — no refresh required.
+   * Only triggers landing → results; never reverses, so users who
+   * intentionally went to wizard / analyzing don't get yanked. */
+  useEffect(() => {
+    if (!user) return;
+    if (phase !== "landing") return;
+    // Tiny debounce so we don't beat the AuthContext's pullProfileFromDb
+    // round-trip on the very first render after sign-in.
+    const timer = setTimeout(() => {
+      const stored = getStoredProfile();
+      if (stored?.nationality) setPhase("results");
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [user, phase]);
   const [wizardStep, setWizardStep] = useState(0);
   const [wiz, setWiz] = useState<WizardData>(DEFAULT_WIZARD);
   const [openDetail, setOpenDetail] = useState<Scored | null>(null);
@@ -2968,7 +2987,33 @@ const Discover = ({ language = "en" }: Props) => {
     setAnalysisStep(0); setPhase("analyzing");
   };
 
-  const resetProfile = () => { setWiz(DEFAULT_WIZARD); setWizardStep(0); setPhase("wizard"); };
+  /* "Edit profile" handler. Was previously clearing the wizard to
+   * defaults, which threw away the user's existing answers — pretty
+   * hostile UX. Now we project the stored DiscoverProfile onto the
+   * wizard's local shape so the user lands in the wizard with their
+   * answers intact and can edit any field. */
+  const resetProfile = () => {
+    const stored = getStoredProfile();
+    if (!stored) {
+      setWiz(DEFAULT_WIZARD);
+    } else {
+      setWiz({
+        fullName: stored.fullName || "",
+        email: stored.email || "",
+        nationality: stored.nationality || "",
+        degrees: stored.targetDegree ? stored.targetDegree.split(",").map(s => s.trim()).filter(Boolean) : [],
+        field: stored.fieldOfInterest || "",
+        gpa: stored.gpa || "",
+        gpaScale: "4.0",
+        ielts: stored.ieltsScore || "",
+        toefl: stored.toeflScore || "",
+        sat: stored.satScore || "",
+        demographics: stored.demographics ?? [],
+      });
+    }
+    setWizardStep(0);
+    setPhase("wizard");
+  };
 
   /* Semantic-match hook — fires once per profile change against the
      match-scholarships edge function. Returns Map<scholarship_id,
@@ -3779,7 +3824,7 @@ const Discover = ({ language = "en" }: Props) => {
                           </>
                         ) : (
                           <button
-                            onClick={() => setPhase("wizard")}
+                            onClick={() => navigate(language === "ru" ? "/topuni-ai/ru" : "/topuni-ai")}
                             className="inline-flex items-center gap-1.5 text-sm font-semibold text-gold-dark hover:text-foreground transition-colors group"
                           >
                             {t("Build profile to see fit scoring", "Заполните профиль для оценки совпадения")}

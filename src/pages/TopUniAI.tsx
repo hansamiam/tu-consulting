@@ -31,6 +31,38 @@ type Screen = "intake" | "dashboard";
  * the AI brief instantly seeds the Discover database, the wizard
  * is skipped, and there's one source of truth for "who is this
  * student". */
+
+/* TopUniAI's gradeLevel uses descriptive labels ("Bachelor's —
+ * graduating", "11th Grade", "Working professional") so the brief
+ * can speak to the student's actual moment. But Discover scores
+ * against canonical degree levels: "undergraduate" / "master's" /
+ * "PhD". Without this mapping a TopUniAI graduate applying to
+ * master's would have targetDegree="Bachelor's — graduating" which
+ * Discover's canonicalize fallback misreads as "undergraduate" —
+ * surfacing all the wrong programs. Map intentionally to what the
+ * student is APPLYING TO, not where they currently are.
+ *
+ * Heuristic:
+ *   · 9-12th Grade / Gap Year / University Transfer → undergraduate
+ *     (they're applying TO an undergraduate program).
+ *   · Bachelor's — current → undergraduate (mid-undergrad fellowships).
+ *   · Bachelor's — graduating → master's (next step).
+ *   · Master's — current → master's (in-program fellowships).
+ *   · Master's — graduating / PhD applicant → PhD.
+ *   · Working professional → master's (most common: MBA / MA returners). */
+const mapGradeLevelToTargetDegree = (gradeLevel: string): string => {
+  const g = gradeLevel.toLowerCase();
+  if (!g) return "";
+  if (/grade|gap year/.test(g))                                  return "undergraduate";
+  if (/transfer/.test(g))                                        return "undergraduate";
+  if (/bachelor.*current/.test(g))                               return "undergraduate";
+  if (/bachelor.*graduating/.test(g))                            return "master's";
+  if (/master.*current/.test(g))                                 return "master's";
+  if (/master.*graduating/.test(g) || /phd applicant/.test(g))   return "PhD";
+  if (/working professional/.test(g))                            return "master's";
+  return gradeLevel; // unknown — keep original so canonicalize can try
+};
+
 const projectToDiscoverProfile = (intake: {
   fullName: string;
   email: string;
@@ -46,12 +78,12 @@ const projectToDiscoverProfile = (intake: {
   fullName: intake.fullName.trim(),
   email: intake.email.trim(),
   nationality: intake.nationality.trim(),
-  // Map "current grade" to educationLevel; targetDegree is what the
-  // student is going TO study, which the wizard tracks separately
-  // from gradeLevel. We populate educationLevel only — targetDegree
-  // remains user-fillable inside Discover's later edit affordance.
+  // educationLevel = where the student currently is (preserved
+  // verbatim for downstream surfaces that show "you're a Master's
+  // — graduating student"). targetDegree = canonical degree the
+  // student is APPLYING TO (drives Discover's degree-match scoring).
   educationLevel: intake.gradeLevel || undefined,
-  targetDegree: intake.gradeLevel || undefined,
+  targetDegree: mapGradeLevelToTargetDegree(intake.gradeLevel) || undefined,
   gpa: intake.gpa || undefined,
   ieltsScore: intake.ielts || undefined,
   toeflScore: intake.toefl || undefined,
