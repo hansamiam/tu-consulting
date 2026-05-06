@@ -3547,6 +3547,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
               gradeLevel: profile.gradeLevel,
               gpa: profile.gpa,
               ielts: profile.ielts,
+              toefl: profile.toefl,
               sat: profile.sat,
               targetCountries: profile.targetCountries,
               major: profile.major,

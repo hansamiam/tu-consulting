@@ -19,6 +19,7 @@ export interface PendingAccountPayload {
     gpa?: string;
     gpaScale?: string;
     ielts?: string;
+    toefl?: string;
     sat?: string;
     targetCountries?: string[];
     major?: string;
