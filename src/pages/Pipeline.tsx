@@ -36,6 +36,7 @@ import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
 import { CalendarSubscribeDialog } from "@/components/pipeline/CalendarSubscribeDialog";
 import { EssayDraftPanel } from "@/components/pipeline/EssayDraftPanel";
 import { RecommendersPanel } from "@/components/pipeline/RecommendersPanel";
+import { getStoredProfile } from "@/components/discover/DiscoverProfileGate";
 import { WorkspaceCalendar } from "@/components/pipeline/WorkspaceCalendar";
 import { EssaysTab } from "@/components/pipeline/EssaysTab";
 import { UpgradeChip } from "@/components/UpgradeChip";
@@ -106,6 +107,9 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
   const t = (en: string, ru: string) => (isRu ? ru : en);
   const tracker = useApplicationTracker();
   const { user } = useAuth();
+  // Pulled once per render; cheap localStorage hit. The student's name
+  // here is used to sign drafted reminder emails to recommenders.
+  const studentName = useMemo(() => getStoredProfile()?.fullName?.trim() || null, []);
   const trackedIds = useMemo(
     () => Array.from(new Set([...tracker.shortlist, ...Object.keys(tracker.statusMap)])),
     [tracker.shortlist, tracker.statusMap],
@@ -490,6 +494,8 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                           status={tracker.statusMap[s.scholarship_id]}
                           isShortlisted={tracker.shortlist.has(s.scholarship_id)}
                           note={tracker.notesMap[s.scholarship_id]}
+                          recommenders={tracker.recommendersMap[s.scholarship_id]}
+                          hasEssay={!!tracker.essayMap[s.scholarship_id]}
                           isRu={isRu}
                           onOpen={() => setOpenDetail(s)}
                           onStatusChange={(status) => handleStatusChange(s.scholarship_id, status)}
@@ -716,6 +722,9 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                   value={tracker.recommendersMap[openDetail.scholarship_id] ?? []}
                   onChange={(next) => tracker.setRecommenders(openDetail.scholarship_id, next.length > 0 ? next : null)}
                   language={language}
+                  scholarshipName={cleanScholarshipName(openDetail.scholarship_name)}
+                  applicationDeadline={openDetail.application_deadline}
+                  studentName={studentName}
                 />
 
                 {/* Essay draft + AI critique. Auto-saves through the
@@ -957,18 +966,34 @@ const Fact = ({ label, value, tone = "neutral" }: { label: string; value: string
 };
 
 const PipelineCard = ({
-  scholarship: s, status, isShortlisted, note, isRu, onOpen, onStatusChange,
+  scholarship: s, status, isShortlisted, note, recommenders, hasEssay, isRu, onOpen, onStatusChange,
 }: {
   scholarship: Scholarship;
   status: AppStatus | undefined;
   isShortlisted: boolean;
   note: string | undefined;
+  recommenders: import("@/hooks/useApplicationTracker").Recommender[] | undefined;
+  hasEssay: boolean;
   isRu: boolean;
   onOpen: () => void;
   onStatusChange: (s: AppStatus | null) => void;
 }) => {
   const t = (en: string, ru: string) => (isRu ? ru : en);
   const days = daysUntil(s.application_deadline);
+  // Recommender progress + staleness signal. "Asked" >7d ago without
+  // moving to "agreed" or "submitted" gets the amber dot — that's the
+  // letter most likely to torpedo the application.
+  const recCount = recommenders?.length ?? 0;
+  const recSubmitted = recommenders?.filter((r) => r.status === "submitted").length ?? 0;
+  const recStale = (() => {
+    if (!recommenders || recommenders.length === 0) return false;
+    const cutoff = Date.now() - 7 * 86400_000;
+    return recommenders.some((r) => {
+      if (r.status === "submitted") return false;
+      if (!r.asked_at) return false;
+      return new Date(r.asked_at).getTime() < cutoff;
+    });
+  })();
   const daysClass =
     days === null ? "text-muted-foreground" : days <= 0 ? "text-destructive" : days <= 7 ? "text-destructive" : days <= 30 ? "text-amber-700 dark:text-amber-500" : "text-muted-foreground";
   const daysText =
@@ -1028,6 +1053,38 @@ const PipelineCard = ({
         <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground mb-1.5">
           <StickyNote className="w-3 h-3 mt-0.5 shrink-0 text-gold-dark/70" />
           <p className="line-clamp-2 leading-snug">{note}</p>
+        </div>
+      )}
+      {/* Application-readiness pills — surface the per-card blockers
+          without making the student open every detail sheet. Recommender
+          progress is the highest-stakes one (an unsigned letter blocks
+          submission); essay-draft existence is a secondary signal. */}
+      {(recCount > 0 || hasEssay) && (
+        <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+          {recCount > 0 && (
+            <span
+              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold tabular-nums ${
+                recSubmitted === recCount
+                  ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500/20"
+                  : recStale
+                    ? "bg-amber-500/15 text-amber-800 dark:text-amber-400 ring-1 ring-amber-500/30"
+                    : "bg-muted text-muted-foreground"
+              }`}
+              aria-label={t(
+                `${recSubmitted} of ${recCount} recommenders submitted`,
+                `${recSubmitted} из ${recCount} рекомендателей подали`,
+              )}
+            >
+              {recStale && recSubmitted < recCount && <span className="h-1 w-1 rounded-full bg-amber-500" />}
+              {recSubmitted}/{recCount} {t("letters", "писем")}
+            </span>
+          )}
+          {hasEssay && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-foreground/[0.05] text-muted-foreground">
+              <FileText className="w-2.5 h-2.5" />
+              {t("Essay", "Эссе")}
+            </span>
+          )}
         </div>
       )}
       {/* Inline status quick-cycle (skip for shortlisted-only column) */}
