@@ -1,22 +1,21 @@
-// Account — round-31 consolidation: Workspace is now the single user
-// dashboard, hosting tracker + calendar + essays + membership
-// settings + sign-out under one roof. /account is kept as a thin
-// route that handles the post-Stripe / email-link query params
-// (?subscribed=1, ?action=pause-nudges) for backwards compatibility
-// with existing emails and Stripe redirect URLs, then forwards to
-// /pipeline where the actual dashboard lives.
+// Account — round-34 reset. Keeps account separate from Workspace
+// (after the round-31 merge attempt felt cramped). Tight focused
+// page: subscription, weekly nudges, sign out. Nothing else.
 //
-// Why redirect rather than 404: a few external surfaces (Stripe
-// success URL, weekly-nudge unsubscribe email) still link to
-// /account; we can't update every email already in someone's inbox.
-// This shim absorbs them, fires the side effect, then drops the
-// user on the unified Workspace.
+// Tracker stats / pipeline preview / documents / quick links — all
+// retired here. Workspace owns those surfaces; this page is for
+// settings only. Stripe success URLs (/account?subscribed=1) and
+// weekly-nudge unsubscribe email links (/account?action=pause-nudges)
+// still land here and run their side effects before the page renders.
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Navigation from "@/components/Navigation";
+import { Footer } from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { AuthDialog } from "@/components/auth/AuthDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { MembershipSettings } from "@/components/pipeline/MembershipSettings";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,28 +23,19 @@ interface AccountProps { language?: "en" | "ru"; }
 
 const Account = ({ language = "en" }: AccountProps) => {
   const ru = language === "ru";
+  const t = (en: string, ruText: string) => (ru ? ruText : en);
   const navigate = useNavigate();
   const { user, loading, refreshSubscription } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
-  const pipelinePath = ru ? "/pipeline/ru" : "/pipeline";
-  const homePath = ru ? "/ru" : "/";
 
-  // Auth gate: if the user isn't signed in, prompt sign-in. /account
-  // links from billing or email both assume an authed user; without
-  // it we can't perform the side effect.
+  // Auth gate
   useEffect(() => {
     if (!loading && !user) setAuthOpen(true);
   }, [loading, user]);
 
-  // Side-effect + redirect. Runs once auth is settled and a user
-  // exists. Three URL-param paths are handled before the redirect:
-  //   1. ?subscribed=1 — Stripe success URL. Confirm subscription
-  //      with check-subscription, refresh local context, toast.
-  //   2. ?action=pause-nudges — weekly-nudge unsubscribe link from
-  //      email. Toggle nudge_opt_out=true, toast.
-  //   3. neither — just refresh the subscription and forward.
-  // After all paths, navigate to /pipeline replacing history so
-  // back-button doesn't loop.
+  // Side effects from URL params (Stripe success, email-link
+  // unsubscribe). Same as round-31 redirect-shim, but the page now
+  // stays here rather than forwarding to Workspace.
   useEffect(() => {
     if (loading || !user) return;
     let cancelled = false;
@@ -61,16 +51,14 @@ const Account = ({ language = "en" }: AccountProps) => {
           .eq("user_id", user.id);
         if (cancelled) return;
         if (error) {
-          toast.error(ru ? "Не удалось обновить настройки. Попробуйте снова." : "Couldn't update nudge preference. Try again.");
+          toast.error(t("Couldn't update nudge preference. Try again.", "Не удалось обновить настройки. Попробуйте снова."));
         } else {
-          toast.success(ru
-            ? "Еженедельные напоминания на паузе. Включите снова в Workspace."
-            : "Weekly nudges paused. Re-enable any time in Workspace.");
+          toast.success(t("Weekly nudges paused. Re-enable any time below.", "Еженедельные напоминания на паузе. Включите ниже когда захотите."));
         }
+        window.history.replaceState({}, "", ru ? "/account/ru" : "/account");
       } else if (justSubscribed) {
-        // Webhook can race the redirect — retry up to 3× with a
-        // short backoff so the user lands on Workspace already
-        // showing their new tier rather than a stale "Free".
+        // Webhook can race the redirect — retry up to 3× so the
+        // user sees their new tier immediately after Stripe.
         for (let i = 0; i < 3; i++) {
           if (cancelled) return;
           try {
@@ -82,36 +70,76 @@ const Account = ({ language = "en" }: AccountProps) => {
           }
         }
         if (cancelled) return;
-        toast.success(ru
-          ? "Добро пожаловать! Ваше членство активно."
-          : "Welcome aboard! Your membership is active.");
+        toast.success(t("Welcome aboard! Your membership is active.", "Добро пожаловать! Ваше членство активно."));
+        window.history.replaceState({}, "", ru ? "/account/ru" : "/account");
       } else {
         await refreshSubscription();
       }
-
-      if (cancelled) return;
-      navigate(pipelinePath, { replace: true });
     })();
     return () => { cancelled = true; };
-  }, [loading, user, refreshSubscription, navigate, pipelinePath, ru]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, user]);
 
-  // Auth-required state: user dismissed the AuthDialog without signing in.
-  if (!loading && !user && !authOpen) {
-    // Send them home rather than parking on a stuck loader.
-    navigate(homePath, { replace: true });
-    return null;
+  if (!loading && !user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation language={language} />
+        <div className="max-w-md mx-auto px-5 py-20 text-center">
+          <h1 className="font-heading text-2xl font-bold mb-3">
+            {t("Sign in to view your account", "Войдите, чтобы открыть аккаунт")}
+          </h1>
+          <p className="text-sm text-muted-foreground mb-6">
+            {t("Membership and settings are only visible when signed in.", "Подписка и настройки доступны только после входа.")}
+          </p>
+          <button
+            onClick={() => setAuthOpen(true)}
+            className="inline-flex items-center justify-center px-5 py-2 rounded-md bg-gold text-primary font-semibold hover:bg-gold-light transition"
+          >
+            {t("Sign in", "Войти")}
+          </button>
+        </div>
+        <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
+      </div>
+    );
   }
 
-  // Loading shim — minimal so the redirect feels instant. The
-  // side-effect await above is what gates the navigate; this is just
-  // the visual placeholder while it runs.
-  return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="flex items-center gap-3 text-muted-foreground text-sm">
-        <Loader2 className="w-4 h-4 animate-spin" />
-        {ru ? "Открываем вашу рабочую зону…" : "Opening your workspace…"}
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
       </div>
-      <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navigation language={language} />
+      <main className="max-w-3xl mx-auto px-5 sm:px-8 py-10 sm:py-14 space-y-6">
+        <header>
+          <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-2">
+            {t("Account", "Аккаунт")}
+          </p>
+          <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            {t("Membership & settings", "Подписка и настройки")}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {t(
+              "Your application work lives in Workspace. This page is just for billing and settings.",
+              "Работа над заявками — в Workspace. Здесь только подписка и настройки.",
+            )}
+          </p>
+        </header>
+
+        <MembershipSettings language={language} variant="standalone" />
+
+        <button
+          onClick={() => navigate(ru ? "/pipeline/ru" : "/pipeline")}
+          className="text-xs text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+        >
+          ← {t("Back to Workspace", "К Workspace")}
+        </button>
+      </main>
+      <Footer language={language} />
     </div>
   );
 };

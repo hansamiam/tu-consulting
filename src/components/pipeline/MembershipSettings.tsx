@@ -26,9 +26,19 @@ import { ru as ruLocale, enUS } from "date-fns/locale";
 
 interface Props {
   language?: "en" | "ru";
+  /**
+   * "embedded" — bottom-of-Workspace section with its own
+   *   "Membership & settings" heading and outer max-w container
+   *   (legacy round-31 use; no longer rendered inside Workspace
+   *   after round 34, but kept for any future inline use).
+   * "standalone" — used by /account; renders just the cards, no
+   *   heading or outer section wrapper, since the page above
+   *   provides those.
+   */
+  variant?: "embedded" | "standalone";
 }
 
-export const MembershipSettings = ({ language = "en" }: Props) => {
+export const MembershipSettings = ({ language = "en", variant = "embedded" }: Props) => {
   const ru = language === "ru";
   const t = (en: string, ruText: string) => (ru ? ruText : en);
   const dateLocale = ru ? ruLocale : enUS;
@@ -100,10 +110,12 @@ export const MembershipSettings = ({ language = "en" }: Props) => {
   const pricingPath = ru ? "/pricing/ru" : "/pricing";
 
   return (
-    <section className="max-w-6xl mx-auto px-5 sm:px-8 pb-12 sm:pb-16">
-      <h2 className="font-heading text-lg sm:text-xl font-bold text-foreground mb-4 tracking-tight">
-        {t("Membership & settings", "Подписка и настройки")}
-      </h2>
+    <section className={variant === "embedded" ? "max-w-6xl mx-auto px-5 sm:px-8 pb-12 sm:pb-16" : ""}>
+      {variant === "embedded" && (
+        <h2 className="font-heading text-lg sm:text-xl font-bold text-foreground mb-4 tracking-tight">
+          {t("Membership & settings", "Подписка и настройки")}
+        </h2>
+      )}
 
       <div className="grid md:grid-cols-2 gap-3 sm:gap-4">
         {/* Membership card */}
