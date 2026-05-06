@@ -157,7 +157,19 @@ export const accentForCountry = (country: string | null | undefined): string => 
 };
 
 /* Database `host_country` values like "Multiple (Japan, Indonesia, ...)"
- * waste card real estate. Compact label keeps the visual rhythm tight. */
+ * waste card real estate. Compact label keeps the visual rhythm tight.
+ *
+ * Some scrapes write essay-length descriptions into host_country (e.g.
+ * the Mastercard Foundation row had "Various (primarily Africa, but
+ * also includes institutions in North and Central America, Europe,
+ * and the Middle East)"). When that hits a chip, the whole row's
+ * layout breaks. This helper:
+ *   1. Recognises "multiple (...)" patterns and gives them a tight
+ *      first-host + plus label.
+ *   2. Maps known descriptive prefixes ("Various", "Global", ...)
+ *      to compact equivalents.
+ *   3. Hard-caps any remaining string at ~18 chars so a runaway
+ *      descriptive value can never break a row again. */
 export const shortCountry = (country: string): string => {
   const c = country.trim();
   if (/^multiple\s*\(worldwide\)?$/i.test(c)) return "Worldwide";
@@ -166,6 +178,13 @@ export const shortCountry = (country: string): string => {
     return m ? `${m[1].trim()} +` : "Multiple";
   }
   if (/^global$/i.test(c)) return "Worldwide";
+  if (/^various/i.test(c) || /^worldwide/i.test(c) || /^international/i.test(c)) {
+    return "Various";
+  }
+  // Hard cap: anything over 18 chars is descriptive prose, not a
+  // country name. Fall back to a generic label rather than rendering
+  // a paragraph in a chip.
+  if (c.length > 18) return "Various";
   return c;
 };
 
