@@ -1896,9 +1896,14 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   const [activeTab, setActiveTab] = useState<string>(isProfileFilled ? "pathway" : "counselor");
 
   useEffect(() => {
+    // Mount-only — intentional. Profile changes are handled by the
+    // profileHash → restored cache invalidation path, not by re-firing
+    // this effect. Including the deps would cause double-generation
+    // when the brief itself updates state during streaming.
     if (!pathwayGenerated && isProfileFilled) {
       generatePathway();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* In-page counselor handoff — used by brief surfaces (e.g. the
@@ -2109,10 +2114,16 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         setGreetingLoading(false);
       }
     })();
+    // Deps must mirror the hashInput inputs above so editing any
+    // greeting-relevant field re-runs the effect (which then recomputes
+    // hashInput and cache-busts if needed). nationality + language were
+    // missing pre round 60 — same omission as the round-57 fingerprint
+    // fix on the brief side.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isProfileFilled, chatMessages.length, pathwayLoading, pathwayContent,
-    profile.fullName, profile.gradeLevel, profile.gpa, profile.ielts,
-    profile.targetCountries, profile.major, language,
+    profile.fullName, profile.nationality, profile.gradeLevel,
+    profile.gpa, profile.ielts, targetCountriesKey, profile.major, language,
     greetingFiredHash, greetingLoading,
     trackedSnapshot.ids.length, trackedSnapshot.statusFingerprint,
   ]);
