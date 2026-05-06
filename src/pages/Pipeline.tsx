@@ -28,8 +28,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { supabase } from "@/integrations/supabase/client";
 import { useApplicationTracker, type AppStatus } from "@/hooks/useApplicationTracker";
 import { useAuth } from "@/contexts/AuthContext";
-import { ScholarshipChecklist } from "@/components/pipeline/ScholarshipChecklist";
-import { DueThisWeek } from "@/components/pipeline/DueThisWeek";
+// ScholarshipChecklist + DueThisWeek imports retired round 39.
+// Both components were removed from render in round 34 (overpromised
+// feature polish) but their imports stayed dangling. Files remain at
+// src/components/pipeline/DueThisWeek.tsx and ScholarshipChecklist.tsx
+// for if/when we reintroduce.
 import { CountryArt } from "@/lib/countryArt";
 import { accentForCountry, shortCountry } from "@/lib/countryAccent";
 import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";

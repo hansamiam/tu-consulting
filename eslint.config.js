@@ -5,7 +5,11 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist"] },
+  // _archive holds retired code preserved for reference (round-19
+  // packages flow, prep-v1/v2 surfaces, discover-v1, membership-v1).
+  // tsconfig.app.json already excludes it from typechecking; mirror
+  // that here so lint stays focused on shipping code, not historical.
+  { ignores: ["dist", "src/_archive/**"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],
