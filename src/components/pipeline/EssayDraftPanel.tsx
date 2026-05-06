@@ -141,7 +141,10 @@ export const EssayDraftPanel = ({ scholarshipId, scholarshipName, value, onChang
     }
   };
 
-  const useOpener = (opener: Opener) => {
+  // Renamed from useOpener (round 39) — the `use` prefix made
+  // ESLint's rules-of-hooks check think this was a hook, which it
+  // isn't (just a regular handler that calls setState).
+  const applyOpener = (opener: Opener) => {
     const next = draft.trim() ? `${opener.text}\n\n${draft}` : opener.text;
     setDraft(next);
     onChange(next);
@@ -391,7 +394,7 @@ export const EssayDraftPanel = ({ scholarshipId, scholarshipName, value, onChang
                 <button
                   key={i}
                   type="button"
-                  onClick={() => useOpener(o)}
+                  onClick={() => applyOpener(o)}
                   className="w-full text-left rounded-xl border border-border bg-card hover:border-gold/40 hover:bg-card/80 transition-colors p-3.5"
                 >
                   <p className="text-[10px] uppercase tracking-[0.18em] font-semibold text-gold-dark mb-1.5">{o.angle}</p>
