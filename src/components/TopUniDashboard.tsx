@@ -1224,13 +1224,13 @@ export const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, is
           }
         }
         if (PATHWAY_ESSAYS_SECTION_REGEX.test(section)) {
-          const hasContent = /^\s*([-*]|\d+\.|\#)\s+/m.test(section.split("\n").slice(1).join("\n"));
+          const hasContent = /^\s*([-*]|\d+\.|#)\s+/m.test(section.split("\n").slice(1).join("\n"));
           if (hasContent) {
             return <div key={i} {...anchorProps}><EssayAngles markdown={section} isRu={isRu} onAskCounselor={onAskCounselor} /></div>;
           }
         }
         if (PATHWAY_GAPS_SECTION_REGEX.test(section)) {
-          const hasContent = /^\s*([-*]|\d+\.|\#)\s+/m.test(section.split("\n").slice(1).join("\n"));
+          const hasContent = /^\s*([-*]|\d+\.|#)\s+/m.test(section.split("\n").slice(1).join("\n"));
           if (hasContent) {
             return <div key={i} {...anchorProps}><HonestGaps markdown={section} isRu={isRu} onAskCounselor={onAskCounselor} /></div>;
           }

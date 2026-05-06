@@ -82,6 +82,9 @@ export const CancellationSaveDialog = ({ open, onOpenChange, onContinue, languag
     [tracker.shortlist, tracker.statusMap],
   );
 
+  // Stable string key for the tracked-IDs set so the effect re-runs only
+  // on actual set membership changes (not on every array-reference flip).
+  const trackedKey = trackedIds.join(",");
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
@@ -104,7 +107,8 @@ export const CancellationSaveDialog = ({ open, onOpenChange, onContinue, languag
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [open, trackedIds.join(","), user?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, trackedKey, user?.id]);
 
   // Stat aggregates — saved count, urgent deadlines, funding stack,
   // won amount. Computed off the merged tracker + hydrated rows.
