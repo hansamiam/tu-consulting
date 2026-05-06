@@ -50,6 +50,7 @@ import {
 import { ALL_COUNTRIES } from "@/data/countries";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAdminUser, isAdminBypass, consumeAdminUrlFlag } from "@/lib/adminMode";
+import { isAggregatorUrl, domainFor } from "@/lib/aggregatorUrls";
 import { useSemanticScholarshipMatch } from "@/hooks/useSemanticScholarshipMatch";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
 import { useScholarshipTracking, useTrackView } from "@/hooks/useScholarshipTracking";
@@ -837,50 +838,9 @@ const Tag = ({
  * (grid view) + sort order (list view) + the detail-sheet match
  * breakdown. No per-row chip needed. */
 
-/* Extract a domain from a scholarship's URL for favicon fetching.
- * Returns null when the URL is missing or malformed. */
-const domainFor = (url: string | null | undefined): string | null => {
-  if (!url) return null;
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return null;
-  }
-};
-
-/* Aggregator domains — third-party scholarship round-up sites. Their
- * pages list lots of opportunities but aren't the OFFICIAL source for
- * any single program; sending applicants there usually wastes them
- * one click and a doubt before they find the real provider page.
- *
- * When a row's official_url points to one of these, the Apply CTA is
- * suppressed (or downgraded to a clear "Aggregator only — provider
- * link missing" affordance) so we don't pretend they're official.
- *
- * Round 32: discovered via real complaints — apply button on a
- * Discover row went to scholars4dev. Build-time list rather than
- * a DB column because the set is small + slow-changing; if it grows
- * we'll move it to source_quality_alerting. */
-const AGGREGATOR_DOMAINS = new Set<string>([
-  "scholars4dev.com",
-  "opportunitiesforyouth.org",
-  "opportunitiestracker.ug",
-  "opportunitydesk.org",
-  "scholarshipsdb.net",
-  "scholarship-positions.com",
-  "after12.in",
-  "buddy4study.com",
-]);
-
-const isAggregatorUrl = (url: string | null | undefined): boolean => {
-  const d = domainFor(url);
-  if (!d) return false;
-  // Match exact + subdomain (so `news.scholars4dev.com` is caught).
-  for (const agg of AGGREGATOR_DOMAINS) {
-    if (d === agg || d.endsWith(`.${agg}`)) return true;
-  }
-  return false;
-};
+// domainFor + isAggregatorUrl moved to src/lib/aggregatorUrls.ts in
+// round 41 so ScholarshipDetail (the public SEO page) and any future
+// surface can reuse the same hostname list. Imported above.
 
 /* ProviderAvatar — ALWAYS renders a fixed-size square. Inside, tries
  * Google's favicon service first (real institutional crest for known

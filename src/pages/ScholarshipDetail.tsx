@@ -34,6 +34,7 @@ import { useTrackView, useScholarshipTracking } from "@/hooks/useScholarshipTrac
 import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
 import { ScholarshipOutcomesBlock } from "@/components/scholarship/ScholarshipOutcomesBlock";
 import { getStoredProfile } from "@/components/discover/DiscoverProfileGate";
+import { isAggregatorUrl } from "@/lib/aggregatorUrls";
 import {
   cleanScholarshipName,
   cleanProvider,
@@ -419,7 +420,12 @@ const ScholarshipDetail = () => {
               competitor-site Apply link was leaking that audience straight
               out of our funnel. The official link stays prominent (outline
               variant, with tracking) for visitors who just want to verify
-              the scholarship is real. */}
+              the scholarship is real.
+              Round-41: applies the same isAggregatorUrl gate Discover uses
+              — if official_url points at scholars4dev / opportunitiesforyouth
+              / etc, we don't pretend it's the official site. The link
+              still renders as "Open listing" so visitors can find their
+              way to the actual provider, but with honest framing. */}
           <div className="flex flex-wrap gap-2">
             <Button
               variant="gold"
@@ -430,23 +436,27 @@ const ScholarshipDetail = () => {
               <Sparkles className="w-4 h-4" />
               Build my strategy around this
             </Button>
-            {s.official_url && (
-              <Button
-                variant="outline"
-                size="lg"
-                asChild
-                className="gap-2 bg-transparent text-primary-foreground border-primary-foreground/30 hover:bg-primary-foreground/10"
-              >
-                <a
-                  href={s.official_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => track(s.scholarship_id, "clicked", "detail-apply-official")}
+            {s.official_url && (() => {
+              const aggregator = isAggregatorUrl(s.official_url);
+              return (
+                <Button
+                  variant="outline"
+                  size="lg"
+                  asChild
+                  className={`gap-2 bg-transparent border-primary-foreground/30 hover:bg-primary-foreground/10 ${aggregator ? "text-amber-200 border-amber-300/40" : "text-primary-foreground"}`}
                 >
-                  Apply on official site <ExternalLink className="w-4 h-4" />
-                </a>
-              </Button>
-            )}
+                  <a
+                    href={s.official_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => track(s.scholarship_id, "clicked", aggregator ? "detail-apply-aggregator" : "detail-apply-official")}
+                  >
+                    {aggregator ? "Open listing (third-party)" : "Apply on official site"}
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                </Button>
+              );
+            })()}
             <Button
               variant="outline"
               size="lg"
