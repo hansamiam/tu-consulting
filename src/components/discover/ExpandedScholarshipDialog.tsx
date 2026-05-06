@@ -43,6 +43,9 @@ interface ScholarshipLite {
   citizenship_requirements: string | null;
   official_url: string | null;
   duration_text: string | null;
+  /* Optional program-specific cover image (renders as hero band when
+   * present; country gradient + landmark silhouette is the fallback). */
+  cover_image_url?: string | null;
 }
 
 interface ProfileLite {
@@ -95,10 +98,24 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
     <Dialog open={!!s} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-4xl max-h-[92vh] p-0 overflow-hidden gap-0 [&>button]:hidden">
         <div className="flex flex-col max-h-[92vh]">
-          {/* Hero strip — country gradient, name, provider, headline facts */}
+          {/* Hero strip — country gradient, name, provider, headline facts.
+              When cover_image_url is enriched in we use it as the hero
+              backdrop (program-specific poster / campus photo) and keep
+              the country gradient as a fallback when the image fails
+              to load. */}
           <div className={`relative bg-gradient-to-br ${accent} text-white overflow-hidden`}>
-            <CountryArt country={s.host_country} className="absolute inset-0 h-full w-full opacity-15 text-white" />
-            <span className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/40" aria-hidden />
+            {s.cover_image_url ? (
+              <img
+                src={s.cover_image_url}
+                alt=""
+                loading="lazy"
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+              />
+            ) : (
+              <CountryArt country={s.host_country} className="absolute inset-0 h-full w-full opacity-15 text-white" />
+            )}
+            <span className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/15 to-black/55" aria-hidden />
             <button
               type="button"
               onClick={onClose}

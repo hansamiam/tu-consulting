@@ -45,6 +45,7 @@ import {
 } from "@/lib/scholarshipFields";
 import { ALL_COUNTRIES } from "@/data/countries";
 import { useAuth } from "@/contexts/AuthContext";
+import { isAdminUser, isAdminBypass, consumeAdminUrlFlag } from "@/lib/adminMode";
 import { useSemanticScholarshipMatch } from "@/hooks/useSemanticScholarshipMatch";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
 import { useScholarshipTracking, useTrackView } from "@/hooks/useScholarshipTracking";
@@ -87,6 +88,10 @@ interface Scholarship {
    * scholarship page) collapses to one row when canonical_key matches.
    * Populated by the scrape pipeline; null on legacy rows. */
   canonical_key: string | null;
+  /* Optional program-specific hero image for the DetailSheet +
+   * ExpandedScholarshipDialog. When null we fall back to the
+   * country-tinted gradient + landmark silhouette treatment. */
+  cover_image_url?: string | null;
 }
 
 interface Profile {
@@ -738,6 +743,56 @@ const TIER = {
  * surface (Pipeline, Brief, marketing) can share the same regional
  * identity. Imported above. */
 
+/* MatchGauge — three vertical bars, wifi-style, that grow + colour by
+ * match priority. The numeric /100 score isn't surfaced to students
+ * (we don't want the product reading as a probability quote on a thin
+ * profile), but bucketed strength still needs a visual handle: at-a-
+ * glance "is this worth my attention" without me reading the title.
+ * Strong fit fills 3 bars in gold; competitive fills 2 in primary;
+ * low_priority fills 1 in muted. The hover MatchScoreBreakdown popover
+ * stays as the per-criteria why for users who want it. */
+const MatchGauge = ({
+  priority,
+  hasRealScore,
+  size = "sm",
+  className = "",
+}: {
+  priority: Scored["priority"];
+  hasRealScore: boolean;
+  size?: "sm" | "md";
+  className?: string;
+}) => {
+  if (!hasRealScore) return null;
+  const filled = priority === "strong_match" ? 3 : priority === "competitive" ? 2 : 1;
+  const tone =
+    priority === "strong_match" ? "bg-gold"
+    : priority === "competitive" ? "bg-primary-bright"
+    : "bg-muted-foreground/55";
+  const empty = "bg-foreground/12";
+  const heights = size === "md" ? ["h-2", "h-3", "h-4"] : ["h-1.5", "h-2.5", "h-3.5"];
+  const wrapH = size === "md" ? "h-4" : "h-3.5";
+  const barW = size === "md" ? "w-1" : "w-[3px]";
+  return (
+    <span
+      className={`inline-flex items-end gap-[2px] ${wrapH} ${className}`}
+      aria-label={
+        priority === "strong_match" ? "Strong match"
+        : priority === "competitive" ? "Competitive match"
+        : "Lighter match"
+      }
+      title={
+        priority === "strong_match" ? "Strong match for your profile"
+        : priority === "competitive" ? "Competitive — worth a closer look"
+        : "Lighter match — flagship program"
+      }
+    >
+      {heights.map((h, i) => (
+        <span key={i} className={`${barW} ${h} rounded-sm ${i < filled ? tone : empty}`} />
+      ))}
+    </span>
+  );
+};
+
 /* Extract a domain from a scholarship's URL for favicon fetching.
  * Returns null when the URL is missing or malformed. */
 const domainFor = (url: string | null | undefined): string | null => {
@@ -1175,57 +1230,15 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
           glance. Same palette as the card hero band. */}
       <div className={`w-1 shrink-0 bg-gradient-to-b ${accent} ${isFullRide ? "ring-1 ring-inset ring-gold/30" : ""}`} aria-hidden />
 
-      <div className="flex-1 grid grid-cols-[52px,minmax(0,1fr),auto] sm:grid-cols-[52px,minmax(0,3fr),minmax(0,1.4fr),minmax(0,0.8fr),auto] items-center gap-4 px-4 py-3.5 min-w-0">
-        {/* Country-art badge. Match score is computed internally and
-            drives ranking + the strong/aligned/stretch bucketing, but
-            the numeric value isn't surfaced to students — we don't
-            want the product reading as a probability quote on a thin
-            profile. Hover breakdown stays available for users who
-            want the per-criteria why. Full-ride rows still get the
-            gold corner pin. */}
-        {(() => {
-          const badge = (
-            <div
-              className={`relative flex items-center justify-center w-11 h-11 rounded-full overflow-hidden bg-gradient-to-br ${accent} ${isFullRide ? "ring-2 ring-gold/40" : "ring-1 ring-border/30"}`}
-              aria-label={s.host_country || "Scholarship"}
-            >
-              <CountryArt country={s.host_country} className="absolute inset-0 h-full w-full opacity-45 text-white p-1.5" />
-              <span className="absolute inset-0 bg-black/15" />
-              {isFullRide && (
-                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-gold border border-card" title="Full ride">
-                  <Award className="h-2.5 w-2.5 text-primary" />
-                </span>
-              )}
-            </div>
-          );
-          if (!hasRealScore) return badge;
-          return (
-            <HoverCard openDelay={120} closeDelay={80}>
-              <HoverCardTrigger asChild>
-                <button type="button" onClick={(e) => e.stopPropagation()} className="cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-gold rounded-full">
-                  {badge}
-                </button>
-              </HoverCardTrigger>
-              <HoverCardContent side="right" align="start" className="p-0 border-0 shadow-none bg-transparent w-auto">
-                <MatchScoreBreakdown
-                  scholarshipId={s.scholarship_id}
-                  fallback={{
-                    match: s.match,
-                    application_deadline: s.application_deadline,
-                    estimated_total_value_usd: s.estimated_total_value_usd,
-                    last_verified_at: s.last_verified_at,
-                    verification_status: s.verification_status,
-                    passes_eligibility: s.eligibility === "eligible" || s.eligibility === "likely",
-                    why_this_fits: s.why_this_fits,
-                    reasons: s.reasons,
-                    warnings: s.warnings,
-                  }}
-                  compact
-                />
-              </HoverCardContent>
-            </HoverCard>
-          );
-        })()}
+      <div className="flex-1 grid grid-cols-[minmax(0,1fr),auto] sm:grid-cols-[minmax(0,3fr),minmax(0,1.4fr),minmax(0,0.8fr),auto] items-center gap-4 px-4 py-3.5 min-w-0">
+        {/* Country-art circle badge retired (round 21). It carried country
+            identity (already conveyed by the left accent stripe + the
+            country chip below) and doubled as the MatchScoreBreakdown
+            hover trigger — but the score-as-circle visual implied a
+            numeric verdict we explicitly don't surface. Replaced by an
+            inline 3-bar MatchGauge near the title. The gauge stays the
+            hover trigger so the per-criteria breakdown is still one
+            hover away for users who want it. */}
 
         {/* Name + provider + country chip — title clamps to 2 lines so
             long names like "Wien International Scholarship Program
@@ -1240,9 +1253,46 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
             {cleanScholarshipName(s.scholarship_name)}
           </h3>
           <div className="flex items-center gap-1.5 mt-1 min-w-0 flex-wrap">
+            {/* Match strength gauge — wifi-style 3-bar indicator gives the
+                row a one-glance read on fit without surfacing a number.
+                Wraps the same MatchScoreBreakdown popover the round
+                badge used to host. Hidden when there's no real profile
+                to score against. */}
+            {hasRealScore && (
+              <HoverCard openDelay={120} closeDelay={80}>
+                <HoverCardTrigger asChild>
+                  <button type="button" onClick={(e) => e.stopPropagation()} className="cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-gold rounded-sm shrink-0 px-0.5">
+                    <MatchGauge priority={s.priority} hasRealScore={hasRealScore} />
+                  </button>
+                </HoverCardTrigger>
+                <HoverCardContent side="right" align="start" className="p-0 border-0 shadow-none bg-transparent w-auto">
+                  <MatchScoreBreakdown
+                    scholarshipId={s.scholarship_id}
+                    fallback={{
+                      match: s.match,
+                      application_deadline: s.application_deadline,
+                      estimated_total_value_usd: s.estimated_total_value_usd,
+                      last_verified_at: s.last_verified_at,
+                      verification_status: s.verification_status,
+                      passes_eligibility: s.eligibility === "eligible" || s.eligibility === "likely",
+                      why_this_fits: s.why_this_fits,
+                      reasons: s.reasons,
+                      warnings: s.warnings,
+                    }}
+                    compact
+                  />
+                </HoverCardContent>
+              </HoverCard>
+            )}
             {s.host_country && (
               <span className={`inline-flex items-center text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded text-white bg-gradient-to-r ${accent} shrink-0`}>
                 {shortCountry(s.host_country)}
+              </span>
+            )}
+            {isFullRide && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-gold/15 text-gold-dark border border-gold/30 shrink-0" title="Full ride">
+                <Award className="h-2.5 w-2.5" />
+                Full ride
               </span>
             )}
             {s.target_demographics && s.target_demographics.length > 0 && (
@@ -1274,6 +1324,23 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
               return p ? <p className="text-xs text-muted-foreground truncate min-w-0">{p}</p> : null;
             })()}
           </div>
+
+          {/* Mobile-only award + deadline subtitle line. Desktop has its
+              own grid column for these (hidden on mobile). Without this
+              the mobile list row was just title + chips — students
+              couldn't see "what's the award" or "when is it due"
+              without tapping into detail, which is the friction the
+              list view exists to remove. */}
+          <div className="sm:hidden flex items-center gap-2 mt-1 text-[12px] min-w-0">
+            {award && (
+              <span className={`inline-flex items-center gap-1 font-semibold whitespace-nowrap ${isFullRide ? "text-gold-dark" : "text-foreground"}`}>
+                {isFullRide && <Award className="h-3 w-3 shrink-0" />}
+                {award}
+              </span>
+            )}
+            {award && <span className="text-muted-foreground/30" aria-hidden>·</span>}
+            <span className={`tabular-nums font-medium leading-tight whitespace-nowrap ${dl.cls}`}>{dl.text}</span>
+          </div>
         </div>
 
         {/* Award + deadline (desktop only) — single line, no redundant
@@ -1281,7 +1348,9 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
             "Full ride"); deadline value is a date + countdown that
             doesn't need a "Deadline:" prefix to be readable. The
             column header above the rows already says "Award · Deadline"
-            once for the whole list. */}
+            once for the whole list.
+            Mobile rendering happens inline below the provider line —
+            see the sm:hidden block in the title cell above. */}
         <div className="hidden sm:flex items-center gap-2 min-w-0 text-[13px]">
           {award ? (
             <span className={`inline-flex items-center gap-1 font-semibold whitespace-nowrap ${isFullRide ? "text-gold-dark" : "text-foreground"}`}>
@@ -1326,10 +1395,11 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
             {isBookmarked ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
           </button>
 
-          {/* Open official site — promoted from the dropdown to a
-              first-class button so it's a clear single-click and the
-              icon (external-link) is unambiguous. Only renders if we
-              actually have a URL. */}
+          {/* Open official site + More — desktop only. On mobile they
+              squeezed the name into ~150px of width and the row went
+              squish. Tapping the row body opens the detail sheet,
+              which has its own "Apply on official site" CTA + hide
+              option, so there's no functional loss on mobile. */}
           {s.official_url && (
             <a
               href={s.official_url}
@@ -1337,20 +1407,18 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
               rel="noopener noreferrer"
               aria-label="Open official application page"
               title="Open official application page"
-              className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+              className="hidden sm:inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
             >
               <ExternalLink className="h-4 w-4" />
             </a>
           )}
 
-          {/* More — keeps Hide as a power-user dismiss without
-              cluttering the visible row. */}
           <DropdownMenu>
             <DropdownMenuTrigger
               onClick={(e) => e.stopPropagation()}
               aria-label="More actions"
               title="More"
-              className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors data-[state=open]:bg-muted/60"
+              className="hidden sm:inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors data-[state=open]:bg-muted/60"
             >
               <MoreHorizontal className="h-4 w-4" />
             </DropdownMenuTrigger>
@@ -1875,17 +1943,33 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
         {/* ── POSTCARD HERO — country gradient + gothic-arch campus pattern
               + country landmark layered as a poster the student "flips
               over" when they open the sheet. Sells the dream of being
-              there before any data hits the page. */}
+              there before any data hits the page. When a program-
+              specific cover_image_url has been enriched in, we render
+              that as the hero instead and overlay a dark gradient so
+              the country chip stays legible. */}
         {(() => {
           const dsAccent = accentForCountry(s.host_country);
+          const cover = s.cover_image_url || null;
           return (
-            <div className={`relative h-28 sm:h-32 overflow-hidden bg-gradient-to-r ${dsAccent} shrink-0`}>
-              <FlagPattern country={s.host_country} className="absolute inset-0 w-full h-full text-white" opacity={0.14} />
-              <CountryArt country={s.host_country} className="absolute right-4 inset-y-0 h-full opacity-40 pointer-events-none" />
-              <span className="absolute inset-0 bg-gradient-to-r from-black/30 via-black/10 to-transparent pointer-events-none" />
+            <div className={`relative h-32 sm:h-44 overflow-hidden bg-gradient-to-r ${dsAccent} shrink-0`}>
+              {cover ? (
+                <img
+                  src={cover}
+                  alt=""
+                  loading="lazy"
+                  className="absolute inset-0 w-full h-full object-cover"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                />
+              ) : (
+                <>
+                  <FlagPattern country={s.host_country} className="absolute inset-0 w-full h-full text-white" opacity={0.14} />
+                  <CountryArt country={s.host_country} className="absolute right-4 inset-y-0 h-full opacity-40 pointer-events-none" />
+                </>
+              )}
+              <span className="absolute inset-0 bg-gradient-to-r from-black/45 via-black/15 to-transparent pointer-events-none" />
               <div className="relative h-full flex flex-col justify-end px-7 pb-4">
                 {s.host_country && (
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/85 drop-shadow-sm">{shortCountry(s.host_country)}</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white drop-shadow-md">{shortCountry(s.host_country)}</p>
                 )}
               </div>
             </div>
@@ -1985,7 +2069,12 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               panel intentionally keeps the personalized deep dive OUT
               so it stays scannable; this button is how users get to
               the heavy content (match breakdown, how-to-win,
-              ideal-candidate profile). */}
+              ideal-candidate profile). Label says "Personalized
+              strategy" because the deep dive is AI-generated against
+              the saved profile — and unifying with the (formerly
+              "Get your live strategy") empty-state CTA on the Strategy
+              tab so the two paths to the same destination read the
+              same. */}
           <button
             type="button"
             onClick={onExpand}
@@ -1993,7 +2082,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           >
             <span className="inline-flex items-center gap-2 text-[12px] font-semibold text-gold-dark dark:text-gold">
               <Sparkles className="h-3.5 w-3.5" />
-              View full strategy
+              Personalized strategy
             </span>
             <ArrowRight className="h-3.5 w-3.5 text-gold-dark/70 dark:text-gold/70 group-hover:translate-x-0.5 transition-transform" />
           </button>
@@ -2047,14 +2136,31 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
 
           {/* OVERVIEW */}
           <TabsContent value="overview" className="px-7 py-6 space-y-5 m-0 focus-visible:outline-none">
-            {why && (
-              <div className="bg-gold/5 border border-gold/20 rounded-2xl p-5">
-                <h4 className="text-[10px] font-semibold text-gold-dark dark:text-gold mb-2 flex items-center gap-2 uppercase tracking-[0.16em]">
-                  <Sparkles className="h-3 w-3" /> Why this fits you
-                </h4>
-                <p className="text-sm text-foreground/85 leading-relaxed">{why}</p>
-              </div>
-            )}
+            {/* Standardized scholarship blurb. Replaces the gold-bordered
+                "Why this fits you" callout — the framing was overclaim
+                (a thin profile can't generate confident "fits you"
+                language) and the gold treatment competed visually with
+                the apply CTA. Now: one neutral 1-2 sentence summary
+                that reads like a program description. Falls back to
+                buildScholarshipBlurb when no editorial line exists. */}
+            {(() => {
+              const blurb = s.why_this_fits || buildScholarshipBlurb({
+                name: cleanScholarshipName(s.scholarship_name),
+                provider: cleanProvider(s.provider_name),
+                country: s.host_country,
+                coverage: s.coverage_type,
+                levels: s.target_degree_level,
+                fields: s.target_fields,
+                demographic: s.target_demographics?.[0],
+                isFullRide: s.coverage_type === "full_ride",
+              });
+              if (!blurb) return null;
+              return (
+                <p className="text-[15px] leading-relaxed text-foreground/85">
+                  {blurb.replace(/\.+$/, "")}.
+                </p>
+              );
+            })()}
 
             {s.reasons.length > 0 && (
               <div>
@@ -2243,11 +2349,10 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                 and the daily enrichment cron hasn't filled the soft fields
                 yet (typically 24-48h post-discovery), the Strategy tab would
                 otherwise render blank and look broken. This state acknowledges
-                the gap honestly and points the user at the enlarged
-                detail dialog (the "View full strategy" CTA in the panel
-                header), which always works because it uses the
-                scholarship-deep-dive endpoint to generate content live
-                and doesn't depend on the soft fields. */}
+                the gap honestly and points the user at the same enlarged
+                detail dialog the "Personalized strategy" CTA in the
+                panel header opens; both paths go to the same place so
+                the wording is unified. */}
             {!s.what_to_prepare_first && !s.ideal_candidate_profile && !s.how_to_win
               && !s.strategy_notes && !s.common_rejection_reasons
               && !s.weak_candidate_warning && !s.risk_note && (
@@ -2256,12 +2361,11 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                   <Sparkles className="h-5 w-5 text-primary" />
                 </div>
                 <h4 className="font-heading font-semibold text-base text-foreground mb-1.5">
-                  Get your live strategy
+                  Personalized strategy
                 </h4>
                 <p className="text-xs text-muted-foreground leading-relaxed max-w-md mx-auto mb-4">
-                  This scholarship's pre-written strategy notes are still being drafted by
-                  our cron, but you don't have to wait — open the full strategy panel and our
-                  AI will analyse this scholarship against your profile right now.
+                  Our AI will analyze this scholarship against your saved profile and return
+                  a tailored strategy — match breakdown, how to win, what to prepare first.
                 </p>
                 <button
                   type="button"
@@ -2269,7 +2373,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-primary bg-gradient-to-r from-gold-dark to-gold hover:opacity-90 transition-opacity shadow-sm"
                 >
                   <Sparkles className="h-3.5 w-3.5" />
-                  Generate now
+                  Open
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -2463,6 +2567,60 @@ const SectionHeader = ({ kicker, title, subtitle, accentClass }: {
   </Reveal>
 );
 
+/* ─── Free-tier paywall surfaces ────────────────────────────────────────
+ * Two flavours: PaywallRow (matches the list-view row geometry so the
+ * locked-rows pitch flows visually with the table); PaywallCard (full-
+ * width tile for grid view). Both link to /pricing and explain how
+ * many more programs Membership unlocks. They render only when the
+ * gate is active — the parent has already done the visibility check.
+ */
+const PaywallRow = ({ lockedCount }: { lockedCount: number }) => (
+  <Link
+    to="/pricing"
+    className="block border-t border-gold/30 bg-gradient-to-r from-gold/8 via-gold/4 to-gold/8 hover:from-gold/12 hover:to-gold/12 transition-colors px-4 py-5 sm:py-6"
+  >
+    <div className="flex items-center gap-3 sm:gap-4">
+      <span className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br from-gold-dark to-gold shadow-sm shrink-0">
+        <Crown className="h-5 w-5 text-primary" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="font-heading font-semibold text-[15px] text-foreground leading-tight">
+          {lockedCount} more {lockedCount === 1 ? "scholarship" : "scholarships"} with Membership
+        </p>
+        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+          Free covers your first 5 picks. Membership unlocks the full database, AI strategy, deadline tracking, and more.
+        </p>
+      </div>
+      <ArrowRight className="h-4 w-4 text-gold-dark shrink-0" />
+    </div>
+  </Link>
+);
+
+const PaywallCard = ({ lockedCount, className = "" }: { lockedCount: number; className?: string }) => (
+  <Link
+    to="/pricing"
+    className={`block rounded-2xl border border-gold/35 bg-gradient-to-br from-gold/10 via-gold/5 to-transparent hover:border-gold/55 hover:from-gold/15 transition-all p-5 sm:p-6 ${className}`}
+  >
+    <div className="flex items-start gap-4">
+      <span className="inline-flex items-center justify-center h-11 w-11 rounded-xl bg-gradient-to-br from-gold-dark to-gold shadow-sm shrink-0">
+        <Crown className="h-5 w-5 text-primary" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="font-heading font-semibold text-base sm:text-lg text-foreground leading-tight">
+          {lockedCount} more {lockedCount === 1 ? "scholarship" : "scholarships"} with Membership
+        </p>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1 leading-relaxed max-w-2xl">
+          Free covers your first 5 picks so you can sample the database. Membership unlocks every program, the AI strategy deep dive, deadline tracking, and recommender follow-ups.
+        </p>
+        <span className="inline-flex items-center gap-1.5 mt-3 text-xs sm:text-sm font-semibold text-gold-dark dark:text-gold">
+          See pricing
+          <ArrowRight className="h-3.5 w-3.5" />
+        </span>
+      </div>
+    </div>
+  </Link>
+);
+
 /* ─── Main ───────────────────────────────────────────────────────────── */
 interface Props { language?: "en" | "ru" }
 
@@ -2470,6 +2628,20 @@ const Discover = ({ language = "en" }: Props) => {
   const navigate = useNavigate();
   const { user, subscription } = useAuth();
   const isMember = subscription.tier === "founding" || subscription.tier === "pro";
+
+  /* Free-tier scholarship gate. Free users see a generous-but-finite
+   * preview window (FREE_VISIBLE_LIMIT rows). Past that, a paywall
+   * card explains how many more are unlocked with Membership. Members
+   * + admins see all rows. The admin path lets the founder keep
+   * iterating on the free experience without paying himself; toggle
+   * via ?admin=1 in the URL or by being signed in with an ADMIN_EMAIL. */
+  const FREE_VISIBLE_LIMIT = 5;
+  // Run once per mount: ?admin=1 / ?admin=0 in the URL flips the
+  // localStorage flag so the user can opt the device into admin mode
+  // without code changes.
+  useEffect(() => { consumeAdminUrlFlag(); }, []);
+  const adminBypass = isAdminUser(user) || isAdminBypass();
+  const gateActive = !isMember && !adminBypass;
   const [foundingLeft, setFoundingLeft] = useState<{ left: number; cap: number } | null>(null);
 
   useEffect(() => {
@@ -2758,7 +2930,7 @@ const Discover = ({ language = "en" }: Props) => {
       .map(v => v.display);
   }, [rows]);
 
-  const filtered = useMemo(() => {
+  const filteredAll = useMemo(() => {
     let list = ranked;
     if (filters.search) {
       // Search now hits the fields a user actually types when looking
@@ -2846,6 +3018,18 @@ const Discover = ({ language = "en" }: Props) => {
     if (sortBy === "selectivity") { const o: Record<string, number> = { low: 0, medium: 1, high: 2, very_high: 3, unknown: 4 }; return [...list].sort((a, b) => (o[a.selectivity] ?? 4) - (o[b.selectivity] ?? 4)); }
     return list;
   }, [ranked, filters, sortBy, hidden, showHidden]);
+
+  /* Free-tier gating — slice the filtered list to FREE_VISIBLE_LIMIT
+   * for users who aren't paid + aren't admin. Everything downstream
+   * (sections bucketing, card/list render, outcome RPC fetches) reads
+   * `filtered`, so a single slice here propagates. The paywall card
+   * is rendered separately at the end of the list/grid below, using
+   * `filteredAll.length - filtered.length` as the locked count. */
+  const filtered = useMemo(
+    () => (gateActive ? filteredAll.slice(0, FREE_VISIBLE_LIMIT) : filteredAll),
+    [filteredAll, gateActive]
+  );
+  const lockedCount = filteredAll.length - filtered.length;
 
   const sections = useMemo(() => {
     const top = filtered.filter(s => s.priority === "strong_match");
@@ -3730,8 +3914,7 @@ const Discover = ({ language = "en" }: Props) => {
                           // suggesting click-to-sort that wasn't reliable.
                           return (
                             <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
-                              <div className="hidden sm:grid grid-cols-[52px,minmax(0,3fr),minmax(0,1.4fr),minmax(0,0.8fr),auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                                <span className="text-center">Score</span>
+                              <div className="hidden sm:grid grid-cols-[minmax(0,3fr),minmax(0,1.4fr),minmax(0,0.8fr),auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                                 <span>Scholarship</span>
                                 <span>Award · Deadline</span>
                                 <span>Status</span>
@@ -3808,14 +3991,14 @@ const Discover = ({ language = "en" }: Props) => {
                             // dropdown above the grid (one source of truth).
                             return (
                               <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
-                                <div className="hidden sm:grid grid-cols-[52px,minmax(0,3fr),minmax(0,1.4fr),minmax(0,0.8fr),auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                                  <span className="text-center">Score</span>
+                                <div className="hidden sm:grid grid-cols-[minmax(0,3fr),minmax(0,1.4fr),minmax(0,0.8fr),auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                                   <span>Scholarship</span>
                                   <span>Award · Deadline</span>
                                   <span>Status</span>
                                   <span className="text-right pr-2">Actions</span>
                                 </div>
                                 {filtered.map((s, i) => <ScholarRow {...cardProps(s, i)} />)}
+                                {lockedCount > 0 && <PaywallRow lockedCount={lockedCount} />}
                               </div>
                             );
                           }
@@ -3843,6 +4026,7 @@ const Discover = ({ language = "en" }: Props) => {
                                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
                                   {sections.stretch.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
                                 </div>
+                                {lockedCount > 0 && <PaywallCard lockedCount={lockedCount} className="mt-4" />}
                               </section>
                             );
                           }
@@ -3884,6 +4068,8 @@ const Discover = ({ language = "en" }: Props) => {
                                   </div>
                                 </section>
                               )}
+
+                              {lockedCount > 0 && <PaywallCard lockedCount={lockedCount} className="mt-2" />}
                             </>
                           );
                         })()}
