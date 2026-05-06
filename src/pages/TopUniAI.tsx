@@ -74,6 +74,7 @@ const projectToDiscoverProfile = (intake: {
   sat: string;
   major: string;
   budget: string;
+  targetCountries: string[];
 }): DiscoverProfile => ({
   fullName: intake.fullName.trim(),
   email: intake.email.trim(),
@@ -90,6 +91,13 @@ const projectToDiscoverProfile = (intake: {
   satScore: intake.sat || undefined,
   fieldOfInterest: intake.major || undefined,
   budgetRange: intake.budget || undefined,
+  // targetCountries = where the student wants to STUDY. Drives the
+  // semantic match endpoint's bias toward programs in those host
+  // countries. Without this, Discover was filling its targetCountries
+  // slot with nationality (where the student is FROM), which biased
+  // matches toward home-country programs — usually the opposite of
+  // what an applicant looking abroad actually wants.
+  targetCountries: intake.targetCountries.filter(Boolean),
 });
 
 import { POPULAR_DESTINATIONS, ALL_COUNTRIES } from "@/data/countries";
@@ -719,6 +727,7 @@ const TopUniAI = () => {
                             saveProfile(projectToDiscoverProfile({
                               fullName, email, nationality, gradeLevel,
                               gpa, ielts, toefl, sat, major, budget,
+                              targetCountries,
                             }));
                           } catch { /* localStorage may be unavailable; brief still renders */ }
                           setScreen("dashboard");

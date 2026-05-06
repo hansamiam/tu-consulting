@@ -134,6 +134,11 @@ interface Profile {
    * against scholarships.target_demographics for scoring boost. Empty
    * array = no self-identification, no demographic-based boosts. */
   demographics: string[];
+  /* Where the student wants to STUDY (vs `country` which is their
+   * nationality). Drives the semantic-match endpoint's host-country
+   * bias. Empty = no preference; semantic falls back to broad
+   * field+degree matching. */
+  targetCountries: string[];
 }
 
 interface Scored extends Scholarship {
@@ -2794,7 +2799,7 @@ const Discover = ({ language = "en" }: Props) => {
 
   const [rows, setRows] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<Profile>({ country: "", degrees: [], gpa: "", gpaScale: "4.0", ielts: "", toefl: "", sat: "", field: "", demographics: [] });
+  const [profile, setProfile] = useState<Profile>({ country: "", degrees: [], gpa: "", gpaScale: "4.0", ielts: "", toefl: "", sat: "", field: "", demographics: [], targetCountries: [] });
   const [phase, setPhase] = useState<Phase>(() => getStoredProfile()?.nationality ? "results" : "landing");
 
   /* Auth-driven phase + sort auto-transition. AuthContext pulls the
@@ -2954,6 +2959,7 @@ const Discover = ({ language = "en" }: Props) => {
         sat: stored.satScore || "",
         field: stored.fieldOfInterest || "",
         demographics: Array.isArray(stored.demographics) ? stored.demographics : [],
+        targetCountries: Array.isArray(stored.targetCountries) ? stored.targetCountries : [],
       });
     }
   }, []);
@@ -2979,7 +2985,13 @@ const Discover = ({ language = "en" }: Props) => {
 
   const completeWizard = () => {
     const country = wiz.nationality;
-    const p: Profile = { country, degrees: wiz.degrees, gpa: wiz.gpa, gpaScale: wiz.gpaScale, ielts: wiz.ielts, toefl: wiz.toefl, sat: wiz.sat, field: wiz.field, demographics: wiz.demographics };
+    // Preserve any targetCountries from a prior TopUni AI brief — the
+    // wizard itself doesn't ask "where do you want to study", so when
+    // a user came in via TopUni AI then opened the Edit affordance,
+    // their target-country preferences shouldn't be wiped just because
+    // they're tweaking a different field.
+    const existingTargetCountries = getStoredProfile()?.targetCountries ?? [];
+    const p: Profile = { country, degrees: wiz.degrees, gpa: wiz.gpa, gpaScale: wiz.gpaScale, ielts: wiz.ielts, toefl: wiz.toefl, sat: wiz.sat, field: wiz.field, demographics: wiz.demographics, targetCountries: existingTargetCountries };
     setProfile(p);
     saveProfile({
       fullName: wiz.fullName, email: wiz.email, nationality: country,
@@ -2987,6 +2999,7 @@ const Discover = ({ language = "en" }: Props) => {
       gpa: wiz.gpa, ieltsScore: wiz.ielts, toeflScore: wiz.toefl, satScore: wiz.sat,
       fieldOfInterest: wiz.field,
       demographics: wiz.demographics,
+      targetCountries: existingTargetCountries,
     });
     setAnalysisStep(0); setPhase("analyzing");
   };
@@ -3023,11 +3036,17 @@ const Discover = ({ language = "en" }: Props) => {
      match-scholarships edge function. Returns Map<scholarship_id,
      similarity>; soft-fails to an empty map if the endpoint isn't
      reachable or no embeddings exist yet. The score blends in via
-     scoreScholarship — heuristic + semantic, not either-or. */
+     scoreScholarship — heuristic + semantic, not either-or.
+     Round 30 fix: targetCountries was being filled with nationality
+     ("Kazakh student → bias matches toward Kazakhstan programs"),
+     which inverts what an applicant looking abroad actually wants.
+     Now uses profile.targetCountries (where they want to STUDY) and
+     falls back to undefined when unset, letting semantic do broad
+     field+degree matching without a wrong country prior. */
   const semantic = useSemanticScholarshipMatch(
     {
       field: profile.field,
-      targetCountries: profile.country ? [profile.country] : undefined,
+      targetCountries: profile.targetCountries.length > 0 ? profile.targetCountries : undefined,
       degree: profile.degrees?.[0] || "",
       nationality: profile.country,
       gpa: profile.gpa,
