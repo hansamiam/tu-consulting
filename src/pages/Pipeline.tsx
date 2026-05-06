@@ -198,7 +198,10 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
     );
     const urgent = active.filter((r) => {
       const d = daysUntil(r.application_deadline);
-      return d !== null && d > 0 && d <= 30;
+      // Include today (d === 0) — a same-day deadline is the *most*
+      // urgent kind. Excluding it (the previous `d > 0` bound) hid
+      // exactly the row the banner was supposed to surface.
+      return d !== null && d >= 0 && d <= 30;
     });
     const stackUsd = active.reduce((s, r) => s + (r.estimated_total_value_usd ?? 0), 0);
     const submitted = rows.filter((r) => tracker.statusMap[r.scholarship_id] === "submitted").length;

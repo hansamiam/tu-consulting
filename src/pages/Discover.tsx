@@ -466,10 +466,12 @@ const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: numbe
   // Effort
   const effort: Scored["effort"] = (s.effort_level as Scored["effort"]) ?? "medium";
 
-  // Deadline urgency bonus (close enough to apply, not closed)
+  // Deadline urgency bonus (close enough to apply, not closed).
+  // d === 0 (today) gets the boost — same-day deadline is still
+  // applicable and is the *most* urgent kind, not the least.
   if (s.application_deadline) {
     const days = Math.ceil((new Date(s.application_deadline).getTime() - Date.now()) / 86400000);
-    if (days > 0 && days < 60) match += 4;
+    if (days >= 0 && days < 60) match += 4;
   }
 
   /* Semantic similarity from pgvector (when present): up to +20 boost
@@ -573,7 +575,8 @@ const COLLECTIONS: CollectionDef[] = [
     accentClass: "text-destructive",
     filter: (s) => {
       const d = daysUntil(s.application_deadline);
-      return d !== null && d > 0 && d <= 31;
+      // Include today (d === 0) — closes-today is the act-now case.
+      return d !== null && d >= 0 && d <= 31;
     },
     sort: (a, b) => {
       if (!a.application_deadline) return 1;
