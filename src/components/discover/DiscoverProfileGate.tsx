@@ -28,6 +28,11 @@ export interface DiscoverProfile {
    * fill it just don't get the demographic boost. Canonical kebab-
    * case from the same set as scholarships.target_demographics. */
   demographics?: string[];
+  /* Where the student wants to STUDY (vs nationality, which is where
+   * they're from). Captured by TopUni AI's intake; powers semantic
+   * scholarship matching. Empty array = no preference, score against
+   * all hosts. Mirrors student_profiles.target_countries text[]. */
+  targetCountries?: string[];
 }
 
 const STORAGE_KEY = "topuni_discover_profile";
@@ -93,6 +98,7 @@ interface StudentProfileRow {
   major?: string | null;
   field_of_study?: string | null;
   budget?: string | null;
+  target_countries?: string[] | null;
   updated_at?: string | null;
 }
 
@@ -114,6 +120,7 @@ const profileToDbColumns = (p: DiscoverProfile): StudentProfileRow => {
     major: p.fieldOfInterest || null,
     field_of_study: p.fieldOfInterest || null,
     budget: p.budgetRange || null,
+    target_countries: p.targetCountries && p.targetCountries.length > 0 ? p.targetCountries : null,
   };
 };
 
@@ -132,6 +139,7 @@ const dbColumnsToProfile = (row: StudentProfileRow): Partial<DiscoverProfile> =>
   if (row.sat != null) out.satScore = String(row.sat);
   if (row.major || row.field_of_study) out.fieldOfInterest = row.major || row.field_of_study || undefined;
   if (row.budget) out.budgetRange = row.budget;
+  if (Array.isArray(row.target_countries) && row.target_countries.length > 0) out.targetCountries = row.target_countries;
   return out;
 };
 
@@ -165,7 +173,7 @@ export async function pullProfileFromDb(userId: string): Promise<DiscoverProfile
   try {
     const { data, error } = await supabase
       .from("student_profiles")
-      .select("full_name, email, nationality, grade_level, gpa, ielts, toefl, sat, major, field_of_study, budget, updated_at")
+      .select("full_name, email, nationality, grade_level, gpa, ielts, toefl, sat, major, field_of_study, budget, target_countries, updated_at")
       .eq("user_id", userId)
       .maybeSingle<StudentProfileRow>();
     if (error || !data) return null;
