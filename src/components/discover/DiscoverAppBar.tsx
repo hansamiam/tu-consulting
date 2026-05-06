@@ -113,15 +113,20 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
 
         <LanguageSwitcher />
 
-        {/* Account / Sign-in */}
+        {/* Sign-in / member indicator (round 31). The tier-badge button
+            here used to navigate to /account, duplicating the Workspace
+            button right next to it. /account now redirects to /pipeline
+            so both clicks went to the same destination. The tier badge
+            now stays as a passive visual indicator (no click) when
+            signed in, with sign-in still active for anonymous users. */}
         {user ? (
-          <button
-            onClick={() => navigate("/account")}
-            className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-semibold text-gold-dark bg-gold/10 border border-gold/30 hover:bg-gold/15 transition-colors"
+          <span
+            className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-semibold text-gold-dark bg-gold/10 border border-gold/30"
+            title={tierLabel}
           >
             <TierIcon className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">{tierLabel}</span>
-          </button>
+          </span>
         ) : (
           <>
             <button
