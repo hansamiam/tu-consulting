@@ -1310,7 +1310,7 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
           glance. Same palette as the card hero band. */}
       <div className={`w-1 shrink-0 bg-gradient-to-b ${accent} ${isFullRide ? "ring-1 ring-inset ring-gold/30" : ""}`} aria-hidden />
 
-      <div className="flex-1 grid grid-cols-[minmax(0,1fr),auto] sm:grid-cols-[minmax(0,1fr),170px,auto] items-center gap-4 px-4 py-3.5 min-w-0">
+      <div className="flex-1 grid grid-cols-[minmax(0,1fr),auto] sm:grid-cols-[minmax(0,1fr),170px,auto] items-center gap-4 px-4 py-3 min-h-[68px] min-w-0">
         {/* Country-art circle badge retired (round 21). It carried country
             identity (already conveyed by the left accent stripe + the
             country chip below) and doubled as the MatchScoreBreakdown
@@ -1325,6 +1325,15 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
             (WISP) at Brandeis University" stop chopping mid-word.
             Provider line stays single-line truncate (it's the
             secondary fact). */}
+        {/* Round-35 row redesign. Previous layout had a chip row
+            (country, full-ride, demographic, prestigious, outcomes,
+            +1 etc.) that rendered with wildly different chip counts
+            per row, making row heights and visual rhythm inconsistent.
+            New layout: title (1-2 lines) + a single subtitle line
+            ("Country · Provider"). No chips. The Award/Deadline column
+            already carries the "Full ride" signal in gold; demographic
+            and prestige info still drive scoring and surface inside
+            the detail sheet. Uniform geometry across every row. */}
         <div className="min-w-0">
           <h3
             className="font-heading font-semibold text-[15px] text-foreground tracking-tight group-hover:text-gold-dark transition-colors leading-tight"
@@ -1332,76 +1341,29 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
           >
             {cleanScholarshipName(s.scholarship_name)}
           </h3>
-          <div className="flex items-center gap-1.5 mt-1 min-w-0 flex-wrap">
-            {/* Match-strength indicator retired (round 33). The wifi-bar
-                gauge introduced in round 21 looked unclear and competed
-                with the chip row visually. Match info still drives:
-                  · Section bucketing in grid view ("Strong fit" / "Worth
-                    a closer look" / "Flagship" headers).
-                  · Default sort order in list view ("Best match" sorts
-                    by score so the row position itself conveys fit).
-                  · Per-criteria breakdown inside the detail sheet.
-                Without the chip, every row reads cleaner; the per-row
-                fit signal lives in placement, not in noise. */}
-            {s.host_country && (
-              <Tag variant="country" countryGradient={accent}>
-                {shortCountry(s.host_country)}
-              </Tag>
-            )}
-            {isFullRide && (
-              <Tag variant="full-ride" icon={<Award className="h-2.5 w-2.5" />} title={ru ? "Полное финансирование" : "Full ride"}>
-                {ru ? "Полное" : "Full ride"}
-              </Tag>
-            )}
-            {s.target_demographics && s.target_demographics.length > 0 && (
-              <Tag variant="demographic">
-                {s.target_demographics.slice(0, 2).map(humanizeDemographic).join(" · ")}
-                {s.target_demographics.length > 2 && ` +${s.target_demographics.length - 2}`}
-              </Tag>
-            )}
-            {/* Prestigious tag — positive framing for very-selective
-                programs (replaces the "Competitive" filter we just
-                retired). Surfaces selectivity as something to aspire
-                toward rather than gatekeep against. */}
-            {(s.selectivity === "very_high" || s.selectivity === "high") && (
-              <Tag
-                variant="prestige"
-                title={s.selectivity === "very_high" ? (ru ? "Очень селективная программа — менее 2-5% принимают" : "Highly selective program — fewer than 2-5% are admitted") : (ru ? "Селективная программа — конкурентная, но достижимая" : "Selective program — competitive but achievable")}
-              >
-                {ru ? "Престижная" : "Prestigious"}
-              </Tag>
-            )}
-            {outcomes && outcomes.applied >= 3 && (
-              <Tag
-                variant="outcome"
-                title={outcomes.accepted > 0 ? (ru ? `${outcomes.applied} участников TopUni подали заявку · ${outcomes.accepted} получили оффер` : `${outcomes.applied} TopUni members applied · ${outcomes.accepted} received offers`) : (ru ? `${outcomes.applied} участников TopUni подали заявку` : `${outcomes.applied} TopUni members have applied`)}
-              >
-                {outcomes.applied} {ru ? "подали" : "applied"}{outcomes.accepted > 0 ? ` · ${outcomes.accepted} ${ru ? "выиграли" : "won"}` : ""}
-              </Tag>
-            )}
-            {/* Provider avatar + name — only renders when there's an
-                actual provider to show. Without this guard a row with
-                no cleaned provider name (Turkish/government rows often
-                strip empty after cleanProvider) was rendering a tiny
-                colored monogram-fallback circle floating in the chip
-                row with no label next to it, looking like a glitch. */}
-            {(() => {
-              const p = cleanProvider(s.provider_name);
-              if (!p) return null;
-              return (
-                <>
-                  <ProviderAvatar url={s.official_url || s.source_url} providerName={p} size={16} />
-                  <p className="text-xs text-muted-foreground truncate min-w-0">{p}</p>
-                </>
-              );
-            })()}
-          </div>
+          {/* Subtitle: Country · Provider, plain text, single-line
+              truncate. ProviderAvatar still renders as a small icon
+              before the text when there's an actual provider; nothing
+              when not. Country always renders if present, even when
+              provider is missing — so rows with one but not the other
+              still look uniform. */}
+          {(() => {
+            const p = cleanProvider(s.provider_name);
+            const countryLabel = s.host_country ? shortCountry(s.host_country) : null;
+            if (!p && !countryLabel) return null;
+            return (
+              <div className="flex items-center gap-1.5 mt-1 min-w-0 text-xs text-muted-foreground">
+                {p && <ProviderAvatar url={s.official_url || s.source_url} providerName={p} size={14} />}
+                <p className="truncate min-w-0 leading-snug">
+                  {countryLabel && <span className="font-medium text-foreground/80">{countryLabel}</span>}
+                  {countryLabel && p && <span className="text-muted-foreground/40 mx-1.5">·</span>}
+                  {p}
+                </p>
+              </div>
+            );
+          })()}
 
-          {/* Mobile-only award + deadline subtitle line. Desktop has its
-              own fixed-width column for these. Truncate award if it's
-              too long so the deadline countdown stays visible at the
-              right edge — earlier "Rolling" was getting pushed into
-              the next row's margin on narrow viewports. */}
+          {/* Mobile award + deadline (desktop has its own column). */}
           <div className="sm:hidden flex items-center justify-between gap-2 mt-1 text-[12px] min-w-0">
             {award ? (
               <span className={`inline-flex items-center gap-1 font-semibold min-w-0 truncate ${isFullRide ? "text-gold-dark" : "text-foreground"}`}>
