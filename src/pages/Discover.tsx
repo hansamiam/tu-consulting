@@ -16,11 +16,11 @@ import { motion, AnimatePresence, useTransform, useScroll } from "framer-motion"
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight, Sparkles, CheckCircle2, AlertTriangle, ExternalLink,
-  BookmarkCheck, Bookmark, ChevronLeft, ChevronDown, Zap, RefreshCw,
+  BookmarkCheck, Bookmark, ChevronLeft, Zap,
   Lightbulb, X, SlidersHorizontal, Filter, Search, Trophy,
-  Target, Flame, Users, FileText, Languages, Loader2,
-  CreditCard, AlertOctagon, AlertCircle, UserCheck, ShieldAlert, MinusCircle, HelpCircle,
-  LayoutGrid, List, EyeOff, Eye, Columns3, Circle, MoreHorizontal, GitCompare,
+  Target, Flame, Users, FileText,
+  AlertOctagon, UserCheck, ShieldAlert, MinusCircle, HelpCircle,
+  LayoutGrid, List, EyeOff, Eye, Columns3, Circle, GitCompare,
   Gem, DollarSign, Crown, Award, Compass, Layers, GraduationCap, Share2,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -36,7 +36,11 @@ import { SavedSearchControls } from "@/components/discover/SavedSearchControls";
 // HoverCard imports retired round 33 alongside MatchGauge — re-add
 // if any future surface wants a hover popover on a row chip.
 import { CountryArt } from "@/lib/countryArt";
-import { FlagPattern } from "@/lib/flagPattern";
+// FlagPattern import retired round 41. The component was removed
+// from render in round 22 (most countries didn't have a clean
+// illustrative flag — fallback was visual noise). Import was
+// dangling. Component file stays at src/lib/flagPattern.tsx for
+// any future surface that wants it.
 import { accentForCountry, shortCountry, canonicalCountry } from "@/lib/countryAccent";
 import {
   FIELD_JUNK,
