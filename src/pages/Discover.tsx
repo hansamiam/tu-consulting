@@ -778,6 +778,51 @@ const TIER = {
  * surface (Pipeline, Brief, marketing) can share the same regional
  * identity. Imported above. */
 
+/* Tag — typed chip primitive used by ScholarRow + ScholarCard so the
+ * visual language is consistent across both surfaces. Variants encode
+ * intent (country, full-ride, demographic, prestige, outcome) so chip
+ * colors don't drift over time as we add new ones inline. The country
+ * variant accepts the country gradient string at render time since
+ * the gradient is per-row. */
+type TagVariant = "country" | "full-ride" | "demographic" | "prestige" | "outcome";
+const Tag = ({
+  variant,
+  children,
+  icon,
+  countryGradient,
+  title,
+  className = "",
+}: {
+  variant: TagVariant;
+  children: React.ReactNode;
+  icon?: React.ReactNode;
+  countryGradient?: string;
+  title?: string;
+  className?: string;
+}) => {
+  const base = "inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded shrink-0";
+  const variantCls = (() => {
+    switch (variant) {
+      case "country":
+        return `text-white bg-gradient-to-r ${countryGradient ?? "from-foreground/40 to-foreground/60"}`;
+      case "full-ride":
+        return "bg-gold/15 text-gold-dark border border-gold/30";
+      case "demographic":
+        return "bg-gold/12 text-gold-dark border border-gold/25";
+      case "prestige":
+        return "bg-primary/[0.08] text-primary dark:text-primary-bright border border-primary/20";
+      case "outcome":
+        return "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 tabular-nums";
+    }
+  })();
+  return (
+    <span className={`${base} ${variantCls} ${className}`} title={title}>
+      {icon}
+      {children}
+    </span>
+  );
+};
+
 /* MatchGauge — three vertical bars, wifi-style, that grow + colour by
  * match priority. The numeric /100 score isn't surfaced to students
  * (we don't want the product reading as a probability quote on a thin
@@ -1322,38 +1367,40 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
               </HoverCard>
             )}
             {s.host_country && (
-              <span className={`inline-flex items-center text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded text-white bg-gradient-to-r ${accent} shrink-0`}>
+              <Tag variant="country" countryGradient={accent}>
                 {shortCountry(s.host_country)}
-              </span>
+              </Tag>
             )}
             {isFullRide && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-gold/15 text-gold-dark border border-gold/30 shrink-0" title={ru ? "Полное финансирование" : "Full ride"}>
-                <Award className="h-2.5 w-2.5" />
+              <Tag variant="full-ride" icon={<Award className="h-2.5 w-2.5" />} title={ru ? "Полное финансирование" : "Full ride"}>
                 {ru ? "Полное" : "Full ride"}
-              </span>
+              </Tag>
             )}
             {s.target_demographics && s.target_demographics.length > 0 && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-gold/12 text-gold-dark border border-gold/25 shrink-0">
+              <Tag variant="demographic">
                 {s.target_demographics.slice(0, 2).map(humanizeDemographic).join(" · ")}
                 {s.target_demographics.length > 2 && ` +${s.target_demographics.length - 2}`}
-              </span>
+              </Tag>
             )}
             {/* Prestigious tag — positive framing for very-selective
                 programs (replaces the "Competitive" filter we just
                 retired). Surfaces selectivity as something to aspire
                 toward rather than gatekeep against. */}
             {(s.selectivity === "very_high" || s.selectivity === "high") && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-primary/[0.08] text-primary dark:text-primary-bright border border-primary/20 shrink-0" title={s.selectivity === "very_high" ? (ru ? "Очень селективная программа — менее 2-5% принимают" : "Highly selective program — fewer than 2-5% are admitted") : (ru ? "Селективная программа — конкурентная, но достижимая" : "Selective program — competitive but achievable")}>
+              <Tag
+                variant="prestige"
+                title={s.selectivity === "very_high" ? (ru ? "Очень селективная программа — менее 2-5% принимают" : "Highly selective program — fewer than 2-5% are admitted") : (ru ? "Селективная программа — конкурентная, но достижимая" : "Selective program — competitive but achievable")}
+              >
                 {ru ? "Престижная" : "Prestigious"}
-              </span>
+              </Tag>
             )}
             {outcomes && outcomes.applied >= 3 && (
-              <span
-                className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 shrink-0 tabular-nums"
+              <Tag
+                variant="outcome"
                 title={outcomes.accepted > 0 ? (ru ? `${outcomes.applied} участников TopUni подали заявку · ${outcomes.accepted} получили оффер` : `${outcomes.applied} TopUni members applied · ${outcomes.accepted} received offers`) : (ru ? `${outcomes.applied} участников TopUni подали заявку` : `${outcomes.applied} TopUni members have applied`)}
               >
                 {outcomes.applied} {ru ? "подали" : "applied"}{outcomes.accepted > 0 ? ` · ${outcomes.accepted} ${ru ? "выиграли" : "won"}` : ""}
-              </span>
+              </Tag>
             )}
             <ProviderAvatar url={s.official_url || s.source_url} providerName={cleanProvider(s.provider_name) || s.provider_name} size={16} />
             {(() => {
@@ -1693,13 +1740,16 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
 };
 
 /* ─── Filters Panel ──────────────────────────────────────────────────── */
-const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsAvailable }: {
+const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsAvailable, lang = "en" }: {
   filters: FilterState;
   setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
   activeCount: number;
   hostCountries: string[];
   fieldsAvailable: string[];
+  lang?: Lang;
 }) => {
+  const ru = lang === "ru";
+  const t = (en: string, ruText: string) => (ru ? ruText : en);
   // Round-11 redesign: pill chips for the 3 short-list segmented filters
   // (Coverage / Degree / Competitiveness) — they're 4 options each so the
   // chips stay scannable. Eligibility-group (10 options) is now a Select;
@@ -1712,30 +1762,30 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
   // lights up a "Prestigious" tag on cards for the very-selective
   // programs, but it's no longer something the user filters AGAINST.
   const segmented: { label: string; key: keyof FilterState; opts: { v: string; l: string }[] }[] = [
-    { label: "Coverage", key: "coverage", opts: [
-      { v: "all", l: "All" },
-      { v: "full_ride", l: "Full ride" },
-      { v: "tuition_only", l: "Tuition only" },
-      { v: "partial", l: "Partial" },
+    { label: t("Coverage", "Финансирование"), key: "coverage", opts: [
+      { v: "all", l: t("All", "Все") },
+      { v: "full_ride", l: t("Full ride", "Полное") },
+      { v: "tuition_only", l: t("Tuition only", "Только обучение") },
+      { v: "partial", l: t("Partial", "Частичное") },
     ] },
-    { label: "Degree", key: "degree", opts: [
-      { v: "all", l: "All" },
-      { v: "undergraduate", l: "Bachelor\'s" },
-      { v: "master\'s", l: "Master\'s" },
+    { label: t("Degree", "Уровень"), key: "degree", opts: [
+      { v: "all", l: t("All", "Все") },
+      { v: "undergraduate", l: t("Bachelor\'s", "Бакалавриат") },
+      { v: "master\'s", l: t("Master\'s", "Магистратура") },
       { v: "PhD", l: "PhD" },
     ] },
   ];
   const demographicOpts = [
-    { v: "all", l: "All applicants" },
-    { v: "women", l: "Women" },
-    { v: "underrepresented-stem", l: "Women in STEM" },
-    { v: "first-generation", l: "First-generation" },
-    { v: "low-income", l: "Need-based" },
-    { v: "refugee", l: "Refugees" },
-    { v: "indigenous", l: "Indigenous" },
+    { v: "all", l: t("All applicants", "Все") },
+    { v: "women", l: t("Women", "Женщины") },
+    { v: "underrepresented-stem", l: t("Women in STEM", "Женщины в STEM") },
+    { v: "first-generation", l: t("First-generation", "Первое поколение") },
+    { v: "low-income", l: t("Need-based", "По доходу") },
+    { v: "refugee", l: t("Refugees", "Беженцы") },
+    { v: "indigenous", l: t("Indigenous", "Коренные народы") },
     { v: "lgbtq", l: "LGBTQ+" },
-    { v: "underrepresented-minority", l: "Underrepresented" },
-    { v: "disability", l: "Disability" },
+    { v: "underrepresented-minority", l: t("Underrepresented", "Недопредставленные") },
+    { v: "disability", l: t("Disability", "Инвалидность") },
   ];
   return (
     <div className="space-y-6">
@@ -1766,7 +1816,7 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
       {/* Eligibility group — was a pill grid of 10 chips that dominated
           the panel. Now a Select; same DB tags, ~80% less space. */}
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">Eligibility</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">{t("Eligibility", "Категория")}</p>
         <Select value={filters.demographic} onValueChange={v => setFilters(f => ({ ...f, demographic: v }))}>
           <SelectTrigger className="h-8 text-[13px]"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -1781,11 +1831,11 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
       <div className="space-y-3">
         {fieldsAvailable.length > 0 && (
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">Field</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">{t("Field", "Направление")}</p>
             <Select value={filters.field} onValueChange={v => setFilters(f => ({ ...f, field: v }))}>
               <SelectTrigger className="h-8 text-[13px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All fields</SelectItem>
+                <SelectItem value="all">{t("All fields", "Все направления")}</SelectItem>
                 {fieldsAvailable.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -1793,11 +1843,11 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
         )}
         {hostCountries.length > 0 && (
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">Host country</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">{t("Host country", "Страна обучения")}</p>
             <Select value={filters.hostCountry} onValueChange={v => setFilters(f => ({ ...f, hostCountry: v }))}>
               <SelectTrigger className="h-8 text-[13px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All countries</SelectItem>
+                <SelectItem value="all">{t("All countries", "Все страны")}</SelectItem>
                 {hostCountries.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -1808,12 +1858,12 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
       <Separator className="!my-5" />
       <div className="space-y-3">
         {([
-          { id: "oe", label: "Eligible only",      key: "onlyEligible"    as keyof FilterState },
-          { id: "cs", label: "Closing in 90 days", key: "closingSoon"     as keyof FilterState },
-        ] as const).map(t => (
-          <div key={t.id} className="flex items-center justify-between">
-            <Label htmlFor={t.id} className="text-[13px] cursor-pointer text-foreground/75 font-normal">{t.label}</Label>
-            <Switch id={t.id} checked={filters[t.key] as boolean} onCheckedChange={v => setFilters(f => ({ ...f, [t.key]: v }))} />
+          { id: "oe", label: t("Eligible only",      "Только подходящие"),       key: "onlyEligible"    as keyof FilterState },
+          { id: "cs", label: t("Closing in 90 days", "Закрываются за 90 дней"),   key: "closingSoon"     as keyof FilterState },
+        ] as const).map((row) => (
+          <div key={row.id} className="flex items-center justify-between">
+            <Label htmlFor={row.id} className="text-[13px] cursor-pointer text-foreground/75 font-normal">{row.label}</Label>
+            <Switch id={row.id} checked={filters[row.key] as boolean} onCheckedChange={v => setFilters(f => ({ ...f, [row.key]: v }))} />
           </div>
         ))}
       </div>
@@ -1828,7 +1878,7 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
 
       {activeCount > 0 && (
         <Button variant="ghost" size="sm" className="w-full text-xs h-8 text-muted-foreground hover:text-foreground" onClick={() => setFilters(DEFAULT_FILTERS)}>
-          <X className="h-3 w-3 mr-1.5" /> Clear all filters
+          <X className="h-3 w-3 mr-1.5" /> {t("Clear all filters", "Сбросить все фильтры")}
         </Button>
       )}
     </div>
@@ -3903,7 +3953,7 @@ const Discover = ({ language = "en" }: Props) => {
                           <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground flex items-center gap-2"><SlidersHorizontal className="h-3.5 w-3.5" />Refine</h3>
                           {activeFiltersCount > 0 && <Badge className="h-5 px-1.5 text-[10px] bg-gold/20 text-gold-dark dark:text-gold border-0">{activeFiltersCount}</Badge>}
                         </div>
-                        <FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} fieldsAvailable={fieldsAvailable} />
+                        <FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} fieldsAvailable={fieldsAvailable} lang={language} />
                       </div>
 
                       {/* Founding membership card — visible always (until user is a member) */}
@@ -4550,7 +4600,7 @@ const Discover = ({ language = "en" }: Props) => {
         <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
           <SheetContent side="left" className="w-[300px] overflow-y-auto">
             <SheetHeader><SheetTitle className="flex items-center gap-2"><SlidersHorizontal className="h-4 w-4" />{t("Filters", "Фильтры")}</SheetTitle></SheetHeader>
-            <div className="mt-5"><FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} fieldsAvailable={fieldsAvailable} /></div>
+            <div className="mt-5"><FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} fieldsAvailable={fieldsAvailable} lang={language} /></div>
           </SheetContent>
         </Sheet>
 
