@@ -26,6 +26,10 @@ export const toggleWatchlist = (id: string): string[] => {
   if (idx >= 0) list.splice(idx, 1);
   else list.push(id);
   localStorage.setItem(WATCHLIST_KEY, JSON.stringify(list));
+  // Notify same-tab listeners. The native \`storage\` event only fires
+  // in OTHER tabs, so without this dispatch the WatchlistDrawer
+  // wouldn't update its count until next render.
+  try { window.dispatchEvent(new Event("tu:watchlist")); } catch { /* SSR / locked-down env */ }
   return list;
 };
 
@@ -92,8 +96,25 @@ export const WatchlistDrawer = ({ universities, language }: WatchlistDrawerProps
   const refreshList = () => setWatchlistIds(getWatchlist());
 
   useEffect(() => {
-    const interval = setInterval(refreshList, 1000);
-    return () => clearInterval(interval);
+    // Listen for cross-tab + cross-component watchlist mutations.
+    // Was a 1s polling interval that hammered the synchronous
+    // localStorage read 60×/min while the user just stared at the
+    // page — wasteful and wouldn't survive a CPU-throttled tab.
+    // \`storage\` event fires for cross-tab writes; the custom
+    // \`tu:watchlist\` event we dispatch from same-tab toggles
+    // covers same-tab updates (storage events don't fire for the
+    // tab that did the write).
+    const onStorage = (e: StorageEvent) => {
+      if (e.key && e.key !== WATCHLIST_KEY) return;
+      refreshList();
+    };
+    const onSelf = () => refreshList();
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("tu:watchlist", onSelf);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("tu:watchlist", onSelf);
+    };
   }, []);
 
   const watchlistUnis = universities.filter(u => watchlistIds.includes(u.university_id));
