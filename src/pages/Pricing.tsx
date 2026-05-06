@@ -58,6 +58,7 @@ const COPY = {
     cta: {
       loading: "",
       isFounding: "You're a founding member",
+      isMember: "You're a member · Manage in Account",
       soldOut: "Sold out — join waitlist",
       claim: "Become a member",
     },
@@ -103,6 +104,7 @@ const COPY = {
     cta: {
       loading: "",
       isFounding: "Вы — основательный член",
+      isMember: "Вы участник · Управление в Аккаунте",
       soldOut: "Распродано — в лист ожидания",
       claim: "Стать членом",
     },
@@ -169,16 +171,23 @@ const Pricing = ({ language = "en" }: PricingProps) => {
   };
 
   const isFounding = subscription.tier === "founding";
+  // Regular paid Pro members were previously seeing the "Become a
+  // member" CTA on the pricing page, which is misleading — they
+  // already are members. Treat any active paid tier (founding OR pro)
+  // as a member so the CTA points to Account management instead.
+  const isPaidMember = isFounding || (subscription.tier === "pro" && subscription.is_active);
   const claimed = foundingLeft != null ? foundingCap - foundingLeft : 0;
   const claimedPct = foundingLeft != null ? Math.round((claimed / foundingCap) * 100) : 0;
 
-  // CTA: founding members keep the Crown (genuine status moment); the
-  // default "Become a member" CTA used to also wear a Sparkles icon
-  // which read as "AI magic" and competed with every actual AI surface
-  // on the site. Plain typography is fine — the gold button is doing
-  // the heavy visual work already.
+  // CTA: founding members keep the Crown (genuine status moment).
+  // Regular Pro members get a "You're a member" label that links to
+  // Account where they can manage billing. Anonymous + free users see
+  // the conversion CTA. Plain typography — the gold button does the
+  // visual work; previous Sparkles icon read as "AI magic" and
+  // competed with the actual AI surfaces on the site.
   const ctaLabel = loading ? <Loader2 className="w-4 h-4 animate-spin" />
     : isFounding ? <><Crown className="w-4 h-4" /> {t.cta.isFounding}</>
+    : isPaidMember ? <><Check className="w-4 h-4" /> {t.cta.isMember}</>
     : foundingLeft === 0 ? t.cta.soldOut
     : t.cta.claim;
 
@@ -319,7 +328,7 @@ const Pricing = ({ language = "en" }: PricingProps) => {
                 </div>
               )}
 
-              <Button variant="gold" size="lg" className="w-full gap-2 text-base h-12 shadow-md" disabled={loading || foundingLeft === 0 || isFounding} onClick={startCheckout}>
+              <Button variant="gold" size="lg" className="w-full gap-2 text-base h-12 shadow-md" disabled={loading || foundingLeft === 0 || isFounding} onClick={isPaidMember ? () => navigate(language === "ru" ? "/account/ru" : "/account") : startCheckout}>
                 {ctaLabel}
                 {!isFounding && foundingLeft !== 0 && !loading && <ArrowRight className="h-4 w-4 ml-1" />}
               </Button>
@@ -396,7 +405,7 @@ const Pricing = ({ language = "en" }: PricingProps) => {
                   t.finalNoLeft
                 )}
               </p>
-              <Button variant="gold" size="lg" className="gap-2 text-base h-12 px-10 shadow-md" disabled={loading || foundingLeft === 0 || isFounding} onClick={startCheckout}>
+              <Button variant="gold" size="lg" className="gap-2 text-base h-12 px-10 shadow-md" disabled={loading || foundingLeft === 0 || isFounding} onClick={isPaidMember ? () => navigate(language === "ru" ? "/account/ru" : "/account") : startCheckout}>
                 {ctaLabel}
                 {!isFounding && foundingLeft !== 0 && !loading && <ArrowRight className="h-4 w-4 ml-1" />}
               </Button>
