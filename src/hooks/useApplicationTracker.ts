@@ -424,27 +424,31 @@ export function useApplicationTracker(): ApplicationTrackerApi {
     }, 600);
   }, [isAuthed, user?.id]);
 
-  /* Apply a partial update to one scholarship's entry — local + queue DB */
-  const updateEntry = useCallback((id: string, patch: TrackerEntry) => {
+  /* Apply a partial update to one scholarship's entry — local + queue DB.
+   * `patch` may be a function that receives the current entry — use this
+   * form for any toggle (shortlist, hidden) so rapid double-clicks read
+   * the *committed* state instead of the stale render-time state. */
+  const updateEntry = useCallback((id: string, patch: TrackerEntry | ((cur: TrackerEntry) => TrackerEntry)) => {
     setState((prev) => {
       const cur = prev.byScholarship.get(id) ?? {};
+      const p = typeof patch === "function" ? patch(cur) : patch;
       // Status flipping away from 'accepted' should clear any previously
       // captured award amount — otherwise stale outcomes pollute stats.
-      const nextStatus = "status" in patch ? patch.status : cur.status ?? null;
+      const nextStatus = "status" in p ? p.status : cur.status ?? null;
       const clearAward = nextStatus !== "accepted";
       const nextEntry: TrackerEntry = {
         status: nextStatus ?? null,
-        notes: "notes" in patch ? patch.notes : cur.notes ?? null,
-        shortlisted: "shortlisted" in patch ? !!patch.shortlisted : !!cur.shortlisted,
-        hidden: "hidden" in patch ? !!patch.hidden : !!cur.hidden,
+        notes: "notes" in p ? p.notes : cur.notes ?? null,
+        shortlisted: "shortlisted" in p ? !!p.shortlisted : !!cur.shortlisted,
+        hidden: "hidden" in p ? !!p.hidden : !!cur.hidden,
         awardedAmountUsd: clearAward
           ? null
-          : "awardedAmountUsd" in patch
-            ? patch.awardedAmountUsd ?? null
+          : "awardedAmountUsd" in p
+            ? p.awardedAmountUsd ?? null
             : cur.awardedAmountUsd ?? null,
-        essayDraft: "essayDraft" in patch ? patch.essayDraft ?? null : cur.essayDraft ?? null,
-        recommenders: "recommenders" in patch ? patch.recommenders ?? null : cur.recommenders ?? null,
-        additionalEssays: "additionalEssays" in patch ? patch.additionalEssays ?? null : cur.additionalEssays ?? null,
+        essayDraft: "essayDraft" in p ? p.essayDraft ?? null : cur.essayDraft ?? null,
+        recommenders: "recommenders" in p ? p.recommenders ?? null : cur.recommenders ?? null,
+        additionalEssays: "additionalEssays" in p ? p.additionalEssays ?? null : cur.additionalEssays ?? null,
       };
       const nextMap = new Map(prev.byScholarship);
       if (entryIsEmpty(nextEntry)) {
@@ -468,23 +472,18 @@ export function useApplicationTracker(): ApplicationTrackerApi {
   const setEssayDraft = useCallback((id: string, draft: string | null) => updateEntry(id, { essayDraft: draft }), [updateEntry]);
   const setRecommenders = useCallback((id: string, list: Recommender[] | null) => updateEntry(id, { recommenders: list }), [updateEntry]);
   const setAdditionalEssays = useCallback((id: string, list: AdditionalEssay[] | null) => updateEntry(id, { additionalEssays: list }), [updateEntry]);
-  const toggleShortlist = useCallback((id: string) => {
-    setState((prev) => {
-      const cur = prev.byScholarship.get(id);
-      const next = !(cur?.shortlisted);
-      // Defer to updateEntry path on next render via a microtask so we keep state coherent
-      queueMicrotask(() => updateEntry(id, { shortlisted: next }));
-      return prev;
-    });
-  }, [updateEntry]);
-  const toggleHidden = useCallback((id: string) => {
-    setState((prev) => {
-      const cur = prev.byScholarship.get(id);
-      const next = !(cur?.hidden);
-      queueMicrotask(() => updateEntry(id, { hidden: next }));
-      return prev;
-    });
-  }, [updateEntry]);
+  // Toggles use the function form so two rapid clicks each see the
+  // committed state — previously they captured `next` from the
+  // render-time snapshot and queued microtasks with the *same* target
+  // value, so a double-click silently dropped the second flip.
+  const toggleShortlist = useCallback(
+    (id: string) => updateEntry(id, (cur) => ({ shortlisted: !cur.shortlisted })),
+    [updateEntry],
+  );
+  const toggleHidden = useCallback(
+    (id: string) => updateEntry(id, (cur) => ({ hidden: !cur.hidden })),
+    [updateEntry],
+  );
 
   /* Cleanup the debounce timer on unmount */
   useEffect(() => () => { if (flushTimer.current) clearTimeout(flushTimer.current); }, []);
