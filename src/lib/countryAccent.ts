@@ -30,7 +30,7 @@
  * its own visual identity via landmark + pattern + hue.
  */
 
-export const REGIONAL_ACCENT: Record<string, string> = {
+const REGIONAL_ACCENT: Record<string, string> = {
   // ─── North America ─────────────────────────────────────────────
   "United States":       "from-blue-900 via-blue-800 to-rose-900",
   "Canada":              "from-rose-900 via-red-800 to-rose-900",
@@ -146,7 +146,7 @@ export const REGIONAL_ACCENT: Record<string, string> = {
 
 /* Default fallback: distinct deep charcoal — visually signals "we don't
  * know the country yet" rather than passing for any specific country. */
-export const DEFAULT_ACCENT = "from-zinc-800 via-zinc-700 to-zinc-800";
+const DEFAULT_ACCENT = "from-zinc-800 via-zinc-700 to-zinc-800";
 
 export const accentForCountry = (country: string | null | undefined): string => {
   if (!country) return DEFAULT_ACCENT;

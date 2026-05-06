@@ -57,7 +57,7 @@ export const humanizeDegreeLabel = (raw: string | null | undefined): string => {
 /* General-purpose label humanizer for snake_case / kebab-case enum
  * values. Pure: no domain mapping, just whitespace + casing. */
 const HUMANIZE_STOP = new Set(["and", "or", "of", "the", "in", "for", "to"]);
-export const humanizeLabel = (raw: string | null | undefined): string => {
+const humanizeLabel = (raw: string | null | undefined): string => {
   if (!raw) return "";
   return raw.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim().split(" ")
     .map((w, i) => i > 0 && HUMANIZE_STOP.has(w.toLowerCase()) ? w.toLowerCase() : w[0].toUpperCase() + w.slice(1).toLowerCase())
@@ -66,7 +66,7 @@ export const humanizeLabel = (raw: string | null | undefined): string => {
 
 /* Demographic tag display. Each canonical tag has a curated label (to
  * keep the UI consistent) and a short helper for accessibility. */
-export const DEMOGRAPHIC_LABEL: Record<string, string> = {
+const DEMOGRAPHIC_LABEL: Record<string, string> = {
   "women": "Women",
   "men": "Men",
   "lgbtq": "LGBTQ+",
@@ -172,50 +172,11 @@ export const cleanProvider = (raw: string | null | undefined): string | null => 
   return p;
 };
 
-/* ─── User-relative content cleanup ─────────────────────────────── */
-
-/** Strip user-relative phrasing from LLM-generated static text.
- *  The Discover/Detail pages are read by visitors from anywhere, but
- *  enrichment LLMs sometimes write copy that assumes the reader is a
- *  specific nationality ("without leaving the country", "back home").
- *  Clip the offending clause; return null if too short after cleanup. */
-const USER_RELATIVE_PATTERNS: RegExp[] = [
-  /\s*[—,;.]?\s*without leaving\s+(the|your)\s+country\b/gi,
-  /\s*[—,;.]?\s*without (?:having to )?leaving home\b/gi,
-  /\s*[—,;.]?\s*for students like you(rself)?\b/gi,
-  /\s*[—,;.]?\s*for applicants like you(rself)?\b/gi,
-  /\s*[—,;.]?\s*international students like yourself\b/gi,
-  /\s*[—,;.]?\s*in your (?:situation|case|position)\b/gi,
-  /\s*[—,;.]?\s*given your (?:background|profile|situation)\b/gi,
-  /\s*[—,;.]?\s*applicants from your (?:region|country|background)\b/gi,
-  /\s*[—,;.]?\s*from your home country\b/gi,
-  /\s*[—,;.]?\s*back home\b/gi,
-  /\s*[—,;.]?\s*coming from\s+\w+,\s+/gi,
-];
-export const stripUserRelative = (raw: string | null | undefined): string | null => {
-  if (!raw) return raw ?? null;
-  let t = raw;
-  for (const re of USER_RELATIVE_PATTERNS) t = t.replace(re, "");
-  t = t.replace(/\s*([,;.])\s*\1+/g, "$1");
-  t = t.replace(/\s{2,}/g, " ").trim();
-  t = t.replace(/\s+([.,;!?])/g, "$1");
-  if (!t || t.length < 8) return null;
-  return t;
-};
-
-/** citizenship_requirements should describe COUNTRY/NATIONALITY eligibility.
- *  When the LLM puts a gender-only or other-attribute-only value there
- *  ("Women", "LGBTQ+", "First-generation"), mis-rendering it as a country
- *  constraint is misleading. Drop those values until we have proper
- *  category fields. */
-const NON_CITIZENSHIP_ONLY = /^\s*(women|female applicants?|female\b|men|male applicants?|male\b|lgbtq[+]?|queer|trans|first-generation|first generation|low[- ]income|underrepresented|disabled|disability|indigenous|refugees?|displaced|veterans?)\s*\.?\s*$/i;
-export const cleanCitizenshipRequirements = (raw: string | null | undefined): string | null => {
-  if (!raw) return null;
-  const t = raw.trim();
-  if (!t) return null;
-  if (NON_CITIZENSHIP_ONLY.test(t)) return null;
-  return t;
-};
+/* User-relative content cleanup + citizenship_requirements gating live
+ * on the server side now (supabase/functions/_shared/scholarshipFields.ts) —
+ * applied at scrape/verify time so the DB is clean. The client-side
+ * copies of stripUserRelative + cleanCitizenshipRequirements were
+ * removed in round 43 since nothing in src/ called them anymore. */
 
 /* ─── Award helpers ──────────────────────────────────────────────── */
 

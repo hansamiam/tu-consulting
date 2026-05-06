@@ -28,11 +28,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { supabase } from "@/integrations/supabase/client";
 import { useApplicationTracker, type AppStatus } from "@/hooks/useApplicationTracker";
 import { useAuth } from "@/contexts/AuthContext";
-// ScholarshipChecklist + DueThisWeek imports retired round 39.
-// Both components were removed from render in round 34 (overpromised
-// feature polish) but their imports stayed dangling. Files remain at
-// src/components/pipeline/DueThisWeek.tsx and ScholarshipChecklist.tsx
-// for if/when we reintroduce.
 import { CountryArt } from "@/lib/countryArt";
 import { accentForCountry, shortCountry } from "@/lib/countryAccent";
 import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
@@ -429,17 +424,7 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
           </div>
         ) : trackedIds.length === 0 ? (
           <EmptyState language={language} />
-        ) : (
-          <>
-            {/* Round-34: DueThisWeek banner retired. The aggregated
-                checklist-blocker callout was overpromising the scope
-                of features we currently ship reliably; the simpler
-                signal is "see your kanban → click into a scholarship
-                → its detail sheet shows the next action." Removing
-                the banner keeps the page focused on the actual
-                tracker rather than a stack of editorial summaries. */}
-          </>
-        )}
+        ) : null}
         {/* View toggle — by-category (kanban) vs flat list. Only shown
             when there's actual tracked content; on the empty state the
             toggle would just sit above an empty page. */}
@@ -575,12 +560,6 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
           <h2 className="font-heading text-lg sm:text-xl font-bold text-foreground mb-4 tracking-tight">
             {t("Upcoming deadlines", "Ближайшие дедлайны")}
           </h2>
-          {/* Round-34: replaced the full month-grid WorkspaceCalendar
-              with a compact UpcomingDeadlines list — same data
-              (next-N tracked-scholarship deadlines), tighter
-              footprint. The "month view" use case is covered by the
-              .ics calendar feed (Apple / Google / Outlook get the
-              full grid natively). */}
           <UpcomingDeadlines
             rows={rows.map(r => ({
               scholarship_id: r.scholarship_id,
@@ -765,19 +744,6 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-
-                {/* Round-34: ScholarshipChecklist component removed
-                    from this surface. The AI-generated 8-item
-                    checklist (Documents / Essays / Recommendations /
-                    Portal Actions / Logistics) was overpromising
-                    polish we don't yet ship reliably; cached
-                    completion state, mid-rendering flicker, and
-                    sometimes-stale items made it feel half-baked.
-                    The user's own Notes + RecommendersPanel + Essay
-                    drafter cover the same ground at a quality bar
-                    we can actually hold. The checklist returns when
-                    the underlying generation is solid enough to be
-                    a feature, not a placeholder. */}
 
                 {/* Notes */}
                 <div>

@@ -228,7 +228,7 @@ let hasEssayCol: boolean | undefined;
 let hasRecommendersCol: boolean | undefined;
 let hasAdditionalEssaysCol: boolean | undefined;
 
-export interface ApplicationTrackerApi {
+interface ApplicationTrackerApi {
   state: State;
   // Map-style getters
   status: Map<string, AppStatus>;
