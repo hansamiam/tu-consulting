@@ -1478,8 +1478,20 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   const targetCountriesKey = (profile.targetCountries ?? []).join(",");
   const profileHash = useMemo(() => {
     const fingerprint = JSON.stringify({
-      n: profile.fullName, g: profile.gpa, i: profile.ielts, s: profile.sat,
+      n: profile.fullName, g: profile.gpa,
+      // Test-score fingerprints. ielts + sat were already in but
+      // toefl was missing — a user adding a TOEFL score later got a
+      // stale brief that hadn't seen it (the pathway fn uses toefl
+      // for eligibility filtering, so the cache miss should fire).
+      i: profile.ielts, tf: profile.toefl, s: profile.sat,
       m: profile.major, c: profile.targetCountries, b: profile.budget,
+      // Nationality + grade-level were missing from the fingerprint
+      // even though the pathway fn (a) feeds nationality into
+      // eligibility + visa-difficulty framing, and (b) uses
+      // gradeLevel/degree to filter scholarships by target degree.
+      // Editing either one should regenerate the brief; previously
+      // it cache-hit and showed the old framing.
+      nat: profile.nationality, lvl: profile.gradeLevel,
       lang: language, grade: reportGrade,
       // Pro depth fingerprints — when the user fills the upgrade dialog
       // we want the cache to invalidate so the regenerated brief sticks.
@@ -1491,7 +1503,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     for (let i = 0; i < fingerprint.length; i++) h = ((h << 5) - h + fingerprint.charCodeAt(i)) | 0;
     return `p${h.toString(36)}`;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile.fullName, profile.gpa, profile.ielts, profile.sat, profile.major, targetCountriesKey, profile.budget, language, reportGrade, proDepth.topActivity, proDepth.personalStory, proDepth.namedSchools]);
+  }, [profile.fullName, profile.gpa, profile.ielts, profile.toefl, profile.sat, profile.major, targetCountriesKey, profile.budget, profile.nationality, profile.gradeLevel, language, reportGrade, proDepth.topActivity, proDepth.personalStory, proDepth.namedSchools]);
 
   const PATHWAY_STORAGE_KEY = "topuni-pathway-cache";
 
@@ -2000,15 +2012,20 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     if (pathwayLoading) return; // wait until streaming is done so the brief is stable
 
     // Hash the inputs that change the greeting. Profile + brief head +
-    // pipeline fingerprint. Cheap djb2-like hash.
+    // pipeline fingerprint. Cheap djb2-like hash. nationality + language
+    // were missing — a user toggling language would see a stale-language
+    // greeting from cache, and editing nationality wouldn't refresh the
+    // visa-difficulty / eligibility framing.
     const briefHead = (pathwayContent || "").slice(0, 800);
     const hashInput = JSON.stringify({
       n: profile.fullName,
+      nat: profile.nationality,
       gl: profile.gradeLevel,
       g: profile.gpa,
       i: profile.ielts,
       tc: profile.targetCountries,
       m: profile.major,
+      lang: language,
       bh: briefHead.length,
       bs: briefHead.slice(0, 300),
       tr: trackedSnapshot.ids.length,
