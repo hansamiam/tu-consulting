@@ -156,7 +156,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signInWithMagicLink = useCallback(async (email: string) => {
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: window.location.origin },
+      // Route through /auth/callback so the post-auth drain runs:
+      // - persistPendingAccount (writes the wizard's profile + brief
+      //   to student_profiles + pathway_reports)
+      // - register-referral (links pending referral codes)
+      // - consumePostAuthRedirect (sends the user to wherever they
+      //   started: /pricing, /topuni-ai/ru, etc.)
+      // Previously this redirected to window.location.origin (the
+      // homepage) which skipped AuthCallback entirely — pendingAccount
+      // payloads silently rotted, referrals never registered, and
+      // post_auth_redirect targets were never honored.
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     });
     return { error: error?.message ?? null };
   }, []);
