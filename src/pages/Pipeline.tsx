@@ -37,9 +37,8 @@ import { CalendarSubscribeDialog } from "@/components/pipeline/CalendarSubscribe
 import { EssayDraftPanel } from "@/components/pipeline/EssayDraftPanel";
 import { RecommendersPanel } from "@/components/pipeline/RecommendersPanel";
 import { getStoredProfile } from "@/components/discover/DiscoverProfileGate";
-import { WorkspaceCalendar } from "@/components/pipeline/WorkspaceCalendar";
+import { UpcomingDeadlines } from "@/components/pipeline/UpcomingDeadlines";
 import { EssaysTab } from "@/components/pipeline/EssaysTab";
-import { MembershipSettings } from "@/components/pipeline/MembershipSettings";
 import { UpgradeChip } from "@/components/UpgradeChip";
 import { InstaFollowChip } from "@/components/InstaFollowChip";
 
@@ -359,6 +358,15 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                 {t("Refer a friend → free month", "Пригласить друга → бесплатный месяц")}
                 <ArrowRight className="h-3 w-3" />
               </Link>
+              {/* Round-34: small Account link gives a clear path
+                  to the separate billing/settings page without
+                  bloating the Workspace body with that content. */}
+              <Link
+                to={isRu ? "/account/ru" : "/account"}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-foreground/65 hover:text-primary-foreground transition-colors ml-auto"
+              >
+                {t("Account · settings", "Аккаунт · настройки")}
+              </Link>
             </div>
           )}
         </div>
@@ -412,24 +420,13 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
           <EmptyState language={language} />
         ) : (
           <>
-            {/* Top-of-page weekly action surface — aggregates blocking
-                checklist items across every tracked scholarship that has
-                a deadline in the next 60 days. Soft-fails (returns null)
-                when there's nothing critical to do, so the kanban below
-                is the lead surface for users who are caught up. */}
-            <DueThisWeek
-              trackedScholarships={rows.map(r => ({
-                scholarship_id: r.scholarship_id,
-                scholarship_name: r.scholarship_name,
-                application_deadline: r.application_deadline,
-                host_country: r.host_country,
-              }))}
-              language={language}
-              onSelectScholarship={(id) => {
-                const found = rows.find(r => r.scholarship_id === id);
-                if (found) setOpenDetail(found);
-              }}
-            />
+            {/* Round-34: DueThisWeek banner retired. The aggregated
+                checklist-blocker callout was overpromising the scope
+                of features we currently ship reliably; the simpler
+                signal is "see your kanban → click into a scholarship
+                → its detail sheet shows the next action." Removing
+                the banner keeps the page focused on the actual
+                tracker rather than a stack of editorial summaries. */}
           </>
         )}
         {/* View toggle — by-category (kanban) vs flat list. Only shown
@@ -565,18 +562,22 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
       {trackedIds.length > 0 && (
         <section className="max-w-6xl mx-auto px-5 sm:px-8 pb-8 sm:pb-12">
           <h2 className="font-heading text-lg sm:text-xl font-bold text-foreground mb-4 tracking-tight">
-            {t("Deadline calendar", "Календарь дедлайнов")}
+            {t("Upcoming deadlines", "Ближайшие дедлайны")}
           </h2>
-          <WorkspaceCalendar
+          {/* Round-34: replaced the full month-grid WorkspaceCalendar
+              with a compact UpcomingDeadlines list — same data
+              (next-N tracked-scholarship deadlines), tighter
+              footprint. The "month view" use case is covered by the
+              .ics calendar feed (Apple / Google / Outlook get the
+              full grid natively). */}
+          <UpcomingDeadlines
             rows={rows.map(r => ({
               scholarship_id: r.scholarship_id,
               scholarship_name: r.scholarship_name,
               host_country: r.host_country,
               application_deadline: r.application_deadline,
-              coverage_type: r.coverage_type,
             }))}
             hidden={tracker.hidden}
-            statusMap={tracker.statusMap}
             loading={loading}
             language={language}
             onSubscribe={user ? () => setCalendarOpen(true) : undefined}
@@ -606,13 +607,10 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
         </section>
       )}
 
-      {/* Round-31 consolidation: Membership + Settings + Sign out
-          live at the bottom of Workspace, replacing the separate
-          /account page as the primary surface for these. /account
-          route still works (deep links from billing) but redirects
-          to /pipeline so the user never sees two parallel "user
-          home" pages again. */}
-      {user && <MembershipSettings language={language} />}
+      {/* Round-34: Membership + Settings card removed from Workspace.
+          They live on /account now — Workspace stays focused on
+          application work (tracker, calendar, essays). The header
+          has a small "Account" link that takes the user there. */}
 
       {/* Quiet upgrade chip — only renders for free-tier users with at
           least one tracked scholarship. Anchored as a thin footer strip
@@ -750,14 +748,18 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                   </DropdownMenu>
                 </div>
 
-                {/* AI-generated application checklist — universal per
-                    scholarship (cached server-side), with per-user
-                    completion state mirrored to localStorage and the
-                    application_tracker row for authed users. */}
-                <ScholarshipChecklist
-                  scholarshipId={openDetail.scholarship_id}
-                  language={language}
-                />
+                {/* Round-34: ScholarshipChecklist component removed
+                    from this surface. The AI-generated 8-item
+                    checklist (Documents / Essays / Recommendations /
+                    Portal Actions / Logistics) was overpromising
+                    polish we don't yet ship reliably; cached
+                    completion state, mid-rendering flicker, and
+                    sometimes-stale items made it feel half-baked.
+                    The user's own Notes + RecommendersPanel + Essay
+                    drafter cover the same ground at a quality bar
+                    we can actually hold. The checklist returns when
+                    the underlying generation is solid enough to be
+                    a feature, not a placeholder. */}
 
                 {/* Notes */}
                 <div>

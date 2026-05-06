@@ -36,21 +36,17 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
   const isRussian = language === "ru";
   const basePath = isRussian ? "/ru" : "/";
 
-  // Tighter IA: TopUni AI → Discover → Workspace covers the funnel
-  // from intake → browse → do. Academy lives alongside as a platform
-  // surface. Pricing / Team / Journal / Partner-with-us live in the
-  // footer where they belong; Pricing also surfaces inside in-app
-  // upgrade flows where the user is already in conversion intent.
-  //
-  // Workspace is HIDDEN from nav for unauthenticated visitors — it
-  // requires auth to do anything (it reads/writes the user's tracker)
-  // and showing it next to a Sign-in button creates an unnecessary
-  // dead-end click. Authed users see Workspace + their Account chip;
-  // anonymous users see TopUni AI / Discover / Academy + Sign-in.
+  // Round-34 IA: Workspace and Sign-in occupy the SAME nav slot
+  // (mutually exclusive — anon sees Sign-in, authed sees Workspace).
+  // The product surfaces (TopUni AI / Discover / Academy) stay
+  // together in the middle; the personal entry lives at the right
+  // edge so the eye learns "right side = me". Earlier IA put
+  // Workspace inside the navItems array, which made it shift
+  // position based on auth state and visually compete with the
+  // Sign-in button when both could appear.
   const navItems = [
     { label: "TopUni AI",                                     path: isRussian ? "/topuni-ai/ru" : "/topuni-ai" },
     { label: isRussian ? "Стипендии"   : "Discover",          path: isRussian ? "/discover/ru" : "/discover" },
-    ...(user ? [{ label: isRussian ? "Рабочая зона" : "Workspace", path: isRussian ? "/pipeline/ru" : "/pipeline" }] : []),
     { label: isRussian ? "Академия"    : "Academy",           path: "/academy" },
   ];
 
@@ -110,16 +106,23 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
                 anon users (nothing to surface). */}
             <ActivityBell language={language} variant={isOverlay ? "overlay" : "default"} />
 
-            {/* Round-31 IA: Workspace is the consolidated user home — it
-                surfaces the tracker, calendar, essays, AND membership +
-                settings + sign-out below those. The Account chip used to
-                duplicate that entry point as a separate gold button next
-                to Sign-in, and round 28 made Workspace appear in the nav
-                only when authed (so anonymous users never saw the
-                duplication). Now: signed-in users see Workspace as their
-                personal entry; anonymous see Sign-in. No more "Workspace
-                AND Account" double-tap on nav. */}
-            {!user && (
+            {/* Right-edge personal slot — Workspace when signed in,
+                Sign-in when not. Same position, same visual weight,
+                so the user always knows where to find their entry
+                point regardless of auth state. */}
+            {user ? (
+              <button
+                onClick={() => navigate(isRussian ? "/pipeline/ru" : "/pipeline")}
+                className={cn(
+                  "ml-1 px-3 py-1.5 text-sm font-semibold rounded-md transition-colors",
+                  isOverlay
+                    ? "text-gold-light hover:text-gold border border-gold/30 hover:border-gold/50 bg-primary-foreground/[0.04]"
+                    : "text-gold-dark hover:text-foreground border border-gold/35 hover:border-gold/55 bg-gold/5 hover:bg-gold/10"
+                )}
+              >
+                {isRussian ? "Рабочая зона" : "Workspace"}
+              </button>
+            ) : (
               <button
                 onClick={() => setAuthOpen(true)}
                 className={cn(
@@ -190,17 +193,25 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
                 </div>
 
                 <div className="pt-4 border-t border-border flex flex-col gap-2">
-                  {/* Round-31: when signed in, Workspace is the dashboard
-                      (it appears in the main nav list above with a tier
-                      indicator subtle in the strip below). The mobile
-                      "My Account" button used to live here as a separate
-                      entry to /account — gone, since Workspace now hosts
-                      membership + settings + sign-out. */}
+                  {/* Personal slot — Workspace when signed in (with a
+                      small tier label beneath it), Sign-in when not.
+                      Same slot, mutually exclusive. Mirrors the
+                      desktop right-edge button. Account / billing
+                      lives inside Workspace via a small "Account"
+                      link in its header (round 34). */}
                   {user ? (
-                    <p className="px-4 py-2 text-[11px] uppercase tracking-[0.18em] font-semibold text-gold-dark inline-flex items-center gap-2">
-                      {subscription.tier === "founding" ? <Crown className="w-3.5 h-3.5" /> : <UserIcon className="w-3.5 h-3.5" />}
-                      {tierLabelMobile}
-                    </p>
+                    <>
+                      <button
+                        onClick={() => { navigate(isRussian ? "/pipeline/ru" : "/pipeline"); setIsOpen(false); }}
+                        className="px-4 py-3 text-base font-bold rounded-md border border-gold/40 bg-gold/10 text-gold-dark text-left flex items-center gap-2"
+                      >
+                        {subscription.tier === "founding" ? <Crown className="w-4 h-4" /> : <UserIcon className="w-4 h-4" />}
+                        {isRussian ? "Рабочая зона" : "Workspace"}
+                      </button>
+                      <p className="px-4 text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
+                        {tierLabelMobile}
+                      </p>
+                    </>
                   ) : (
                     <button
                       onClick={() => { setIsOpen(false); setAuthOpen(true); }}
