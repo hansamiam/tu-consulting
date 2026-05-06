@@ -867,15 +867,16 @@ function buildFaqEntities(s: Scholarship, cleanedName?: string): object[] {
   // Eligibility — most-searched question for any scholarship.
   push(`Who is eligible for the ${name}?`, s.eligibility_requirements);
   // Funding — combine coverage + amount into one rich answer.
-  // The DB enum is full_ride / tuition_only / stipend / partial; this
-  // map previously had "stipend_only" which never matched, so every
-  // stipend scholarship's FAQ said the generic "scholarship funding"
-  // line instead of "a living stipend".
+  // The migration's CHECK constraint allows full_ride + full_tuition
+  // (aliases) and stipend + stipend_only (aliases). Both forms exist
+  // on legacy rows. Map every recognised value; only "unknown" or
+  // null falls through to the generic line.
+  const cov = s.coverage_type;
   const coverageWord =
-    s.coverage_type === "full_ride" ? "a full ride covering tuition and living costs"
-    : s.coverage_type === "tuition_only" ? "tuition costs"
-    : s.coverage_type === "stipend" ? "a living stipend"
-    : s.coverage_type === "partial" ? "partial funding"
+    cov === "full_ride" || cov === "full_tuition" ? "a full ride covering tuition and living costs"
+    : cov === "tuition_only" ? "tuition costs"
+    : cov === "stipend" || cov === "stipend_only" ? "a living stipend"
+    : cov === "partial" ? "partial funding"
     : "scholarship funding";
   const fundingParts: string[] = [`The ${name} provides ${coverageWord}.`];
   if (s.award_amount_text) fundingParts.push(s.award_amount_text);

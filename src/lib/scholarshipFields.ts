@@ -200,7 +200,13 @@ const REASONABLE_AWARD_USD = 2_000_000;
  *  covered" / etc. Long award_amount_text bodies live in the detail
  *  surface, not the card chip. */
 export const compactAward = (s: AwardSource): string | null => {
-  if (s.coverage_type === "full_ride") return "Full ride";
+  // The migration's CHECK constraint allows several legacy aliases
+  // alongside the canonical 4 values: full_tuition (alias of full_ride
+  // for tuition+living), stipend_only (alias of stipend), unknown.
+  // Older rows may carry the aliases so handle them explicitly
+  // instead of letting them fall through to a null label.
+  const cov = s.coverage_type;
+  if (cov === "full_ride" || cov === "full_tuition") return "Full ride";
   if (s.award_amount_text) {
     const m = s.award_amount_text.match(/\$\s?([\d,.]+)\s?([KMkm])?/);
     if (m) {
@@ -221,9 +227,9 @@ export const compactAward = (s: AwardSource): string | null => {
       }
     }
   }
-  if (s.coverage_type === "tuition_only") return "Tuition covered";
-  if (s.coverage_type === "stipend") return "Stipend";
-  if (s.coverage_type === "partial") return "Partial funding";
+  if (cov === "tuition_only") return "Tuition covered";
+  if (cov === "stipend" || cov === "stipend_only") return "Stipend";
+  if (cov === "partial") return "Partial funding";
   if (s.estimated_total_value_usd && s.estimated_total_value_usd >= 1000 && s.estimated_total_value_usd <= REASONABLE_AWARD_USD) {
     const v = s.estimated_total_value_usd;
     if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
