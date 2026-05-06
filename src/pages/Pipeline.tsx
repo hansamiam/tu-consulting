@@ -630,7 +630,14 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
 
       {/* Detail sheet */}
       <Sheet open={!!openDetail} onOpenChange={(o) => !o && setOpenDetail(null)}>
-        <SheetContent className="sm:max-w-lg flex flex-col p-0 overflow-hidden">
+        {/* Round-36: detail sheet widened from sm:max-w-lg (32rem) to
+            sm:max-w-2xl (42rem) on mid screens and lg:max-w-4xl (56rem)
+            on desktop so the EssayDraftPanel's side-by-side editor +
+            critique layout actually has room to render. The previous
+            512px container was too narrow to host both columns
+            comfortably; now the AI critique sits to the right of the
+            textarea on desktop instead of pushing it down. */}
+        <SheetContent className="sm:max-w-2xl lg:max-w-4xl flex flex-col p-0 overflow-hidden">
           {openDetail && (
             <>
               <SheetHeader className="px-6 py-5 border-b border-border bg-card/30 shrink-0">
