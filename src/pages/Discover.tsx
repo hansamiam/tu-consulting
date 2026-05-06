@@ -21,7 +21,7 @@ import {
   Target, Flame, Users, FileText, Languages, Loader2,
   CreditCard, AlertOctagon, AlertCircle, UserCheck, ShieldAlert, MinusCircle, HelpCircle,
   LayoutGrid, List, EyeOff, Eye, Columns3, Circle, MoreHorizontal, GitCompare,
-  Gem, DollarSign, Crown, Award, Compass, Layers, GraduationCap,
+  Gem, DollarSign, Crown, Award, Compass, Layers, GraduationCap, Share2,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
@@ -45,12 +45,41 @@ import {
 } from "@/lib/scholarshipFields";
 import { ALL_COUNTRIES } from "@/data/countries";
 import { useAuth } from "@/contexts/AuthContext";
+import { isAdminUser, isAdminBypass, consumeAdminUrlFlag } from "@/lib/adminMode";
 import { useSemanticScholarshipMatch } from "@/hooks/useSemanticScholarshipMatch";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
 import { useScholarshipTracking, useTrackView } from "@/hooks/useScholarshipTracking";
 import { Lock } from "lucide-react";
+import { toast } from "sonner";
 
 const SHORTLIST_FREE_LIMIT = 5;
+
+/* Share a scholarship — uses Web Share API on supporting browsers
+ * (mobile, modern Chromium), falls back to clipboard copy with a
+ * toast confirmation. The shared URL is the public /scholarships/:id
+ * page which renders for SEO + handles direct loads even for
+ * non-signed-in users. */
+const shareScholarship = async (s: { scholarship_id: string; scholarship_name: string; provider_name: string | null }) => {
+  const url = `${window.location.origin}/scholarships/${s.scholarship_id}`;
+  const cleanedName = cleanScholarshipName(s.scholarship_name);
+  const cleanedProv = cleanProvider(s.provider_name);
+  const title = cleanedProv ? `${cleanedName} — ${cleanedProv}` : cleanedName;
+  const navAny = navigator as Navigator & { share?: (data: { title?: string; url?: string }) => Promise<void> };
+  if (navAny.share) {
+    try {
+      await navAny.share({ title, url });
+      return;
+    } catch {
+      // User aborted the share sheet; fall through to clipboard.
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    toast.success("Link copied", { description: cleanedName });
+  } catch {
+    toast.error("Couldn't copy — long-press the URL to share");
+  }
+};
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
 interface Scholarship {
@@ -87,6 +116,10 @@ interface Scholarship {
    * scholarship page) collapses to one row when canonical_key matches.
    * Populated by the scrape pipeline; null on legacy rows. */
   canonical_key: string | null;
+  /* Optional program-specific hero image for the DetailSheet +
+   * ExpandedScholarshipDialog. When null we fall back to the
+   * country-tinted gradient + landmark silhouette treatment. */
+  cover_image_url?: string | null;
 }
 
 interface Profile {
@@ -593,7 +626,11 @@ const FIELDS = [
   { v: "Engineering", i: "⚙️" }, { v: "Medicine & Health", i: "🏥" },
   { v: "Natural Sciences", i: "🔬" }, { v: "Social Sciences", i: "🌐" },
   { v: "Arts & Humanities", i: "📖" }, { v: "Law", i: "⚖️" },
-  { v: "Undecided", i: "✨" },
+  // "Undecided" was carrying a sparkle emoji which read as "AI magic"
+  // — it's actually the opposite of magic (the user genuinely doesn't
+  // know yet). Question mark in a thinking-face frame reads more
+  // honestly: "still figuring it out".
+  { v: "Undecided", i: "🤔" },
 ];
 
 const SELECTIVITY_LABEL: Record<Scored["selectivity"], string> = {
@@ -692,17 +729,20 @@ const initials = (name: string | null | undefined): string => {
 
 const fmtValue = (v: number) => v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `$${Math.round(v / 1000)}K` : `$${v}`;
 
-const deadlineDisplay = (d: string | null) => {
+type Lang = "en" | "ru";
+
+const deadlineDisplay = (d: string | null, lang: Lang = "en") => {
   // Restrained color scale — red only when truly urgent (≤7d). Past that,
   // we rely on muted tones. The previous palette painted half the
   // database red, which made every card look like an alarm.
-  if (!d) return { text: "Rolling", cls: "text-foreground/40", urgent: false };
+  const ru = lang === "ru";
+  if (!d) return { text: ru ? "Без дедлайна" : "Rolling", cls: "text-foreground/40", urgent: false };
   const days = Math.ceil((new Date(d).getTime() - Date.now()) / 86400000);
-  if (days <= 0)  return { text: "Closed", cls: "text-foreground/30 line-through", urgent: false };
-  if (days <= 7)  return { text: `${days}d left`, cls: "text-destructive font-semibold", urgent: true };
-  if (days <= 30) return { text: `${days}d left`, cls: "text-amber-700 dark:text-amber-400 font-medium", urgent: true };
-  if (days <= 90) return { text: `${days}d left`, cls: "text-foreground/60", urgent: false };
-  return { text: `${Math.ceil(days / 30)}mo`, cls: "text-foreground/40", urgent: false };
+  if (days <= 0)  return { text: ru ? "Закрыто" : "Closed", cls: "text-foreground/30 line-through", urgent: false };
+  if (days <= 7)  return { text: ru ? `${days}д осталось` : `${days}d left`, cls: "text-destructive font-semibold", urgent: true };
+  if (days <= 30) return { text: ru ? `${days}д осталось` : `${days}d left`, cls: "text-amber-700 dark:text-amber-400 font-medium", urgent: true };
+  if (days <= 90) return { text: ru ? `${days}д осталось` : `${days}d left`, cls: "text-foreground/60", urgent: false };
+  return { text: ru ? `${Math.ceil(days / 30)}мес` : `${Math.ceil(days / 30)}mo`, cls: "text-foreground/40", urgent: false };
 };
 
 /* Tier labels — positive, concrete, exciting. No "stretch", "long shot",
@@ -737,6 +777,101 @@ const TIER = {
 /* Country palette + label helpers live in @/lib/countryAccent so any
  * surface (Pipeline, Brief, marketing) can share the same regional
  * identity. Imported above. */
+
+/* Tag — typed chip primitive used by ScholarRow + ScholarCard so the
+ * visual language is consistent across both surfaces. Variants encode
+ * intent (country, full-ride, demographic, prestige, outcome) so chip
+ * colors don't drift over time as we add new ones inline. The country
+ * variant accepts the country gradient string at render time since
+ * the gradient is per-row. */
+type TagVariant = "country" | "full-ride" | "demographic" | "prestige" | "outcome";
+const Tag = ({
+  variant,
+  children,
+  icon,
+  countryGradient,
+  title,
+  className = "",
+}: {
+  variant: TagVariant;
+  children: React.ReactNode;
+  icon?: React.ReactNode;
+  countryGradient?: string;
+  title?: string;
+  className?: string;
+}) => {
+  const base = "inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded shrink-0";
+  const variantCls = (() => {
+    switch (variant) {
+      case "country":
+        return `text-white bg-gradient-to-r ${countryGradient ?? "from-foreground/40 to-foreground/60"}`;
+      case "full-ride":
+        return "bg-gold/15 text-gold-dark border border-gold/30";
+      case "demographic":
+        return "bg-gold/12 text-gold-dark border border-gold/25";
+      case "prestige":
+        return "bg-primary/[0.08] text-primary dark:text-primary-bright border border-primary/20";
+      case "outcome":
+        return "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 tabular-nums";
+    }
+  })();
+  return (
+    <span className={`${base} ${variantCls} ${className}`} title={title}>
+      {icon}
+      {children}
+    </span>
+  );
+};
+
+/* MatchGauge — three vertical bars, wifi-style, that grow + colour by
+ * match priority. The numeric /100 score isn't surfaced to students
+ * (we don't want the product reading as a probability quote on a thin
+ * profile), but bucketed strength still needs a visual handle: at-a-
+ * glance "is this worth my attention" without me reading the title.
+ * Strong fit fills 3 bars in gold; competitive fills 2 in primary;
+ * low_priority fills 1 in muted. The hover MatchScoreBreakdown popover
+ * stays as the per-criteria why for users who want it. */
+const MatchGauge = ({
+  priority,
+  hasRealScore,
+  size = "sm",
+  className = "",
+}: {
+  priority: Scored["priority"];
+  hasRealScore: boolean;
+  size?: "sm" | "md";
+  className?: string;
+}) => {
+  if (!hasRealScore) return null;
+  const filled = priority === "strong_match" ? 3 : priority === "competitive" ? 2 : 1;
+  const tone =
+    priority === "strong_match" ? "bg-gold"
+    : priority === "competitive" ? "bg-primary-bright"
+    : "bg-muted-foreground/55";
+  const empty = "bg-foreground/12";
+  const heights = size === "md" ? ["h-2", "h-3", "h-4"] : ["h-1.5", "h-2.5", "h-3.5"];
+  const wrapH = size === "md" ? "h-4" : "h-3.5";
+  const barW = size === "md" ? "w-1" : "w-[3px]";
+  return (
+    <span
+      className={`inline-flex items-end gap-[2px] ${wrapH} ${className}`}
+      aria-label={
+        priority === "strong_match" ? "Strong match"
+        : priority === "competitive" ? "Competitive match"
+        : "Lighter match"
+      }
+      title={
+        priority === "strong_match" ? "Strong match for your profile"
+        : priority === "competitive" ? "Competitive — worth a closer look"
+        : "Lighter match — flagship program"
+      }
+    >
+      {heights.map((h, i) => (
+        <span key={i} className={`${barW} ${h} rounded-sm ${i < filled ? tone : empty}`} />
+      ))}
+    </span>
+  );
+};
 
 /* Extract a domain from a scholarship's URL for favicon fetching.
  * Returns null when the URL is missing or malformed. */
@@ -1145,7 +1280,7 @@ const StatusBadge = ({ status, onChange, dense = false }: {
  *   · Award amount as a real visual chip when present
  *   · Match score circle (when real) replaces the silhouette square
  */
-const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0, outcomes }: {
+const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0, outcomes, lang = "en" }: {
   s: Scored; onSelect: () => void;
   isBookmarked: boolean; onBookmark: (e: React.MouseEvent) => void;
   status: AppStatus | undefined; onStatusChange: (s: AppStatus | null) => void;
@@ -1155,8 +1290,10 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
   /** Per-scholarship member outcome counts. Renders a tiny "X applied
    *  · Y won" pill in the row header when applied >= 3. */
   outcomes?: { applied: number; accepted: number; inPipeline: number };
+  lang?: Lang;
 }) => {
-  const dl = deadlineDisplay(s.application_deadline);
+  const ru = lang === "ru";
+  const dl = deadlineDisplay(s.application_deadline, lang);
   const hasRealScore = s.match > 0 && (s.reasons.length > 0 || s.warnings.length > 0);
   const isFullRide = s.coverage_type === "full_ride";
   const accent = accentForCountry(s.host_country);
@@ -1175,57 +1312,15 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
           glance. Same palette as the card hero band. */}
       <div className={`w-1 shrink-0 bg-gradient-to-b ${accent} ${isFullRide ? "ring-1 ring-inset ring-gold/30" : ""}`} aria-hidden />
 
-      <div className="flex-1 grid grid-cols-[52px,minmax(0,1fr),auto] sm:grid-cols-[52px,minmax(0,3fr),minmax(0,1.4fr),minmax(0,0.8fr),auto] items-center gap-4 px-4 py-3.5 min-w-0">
-        {/* Country-art badge. Match score is computed internally and
-            drives ranking + the strong/aligned/stretch bucketing, but
-            the numeric value isn't surfaced to students — we don't
-            want the product reading as a probability quote on a thin
-            profile. Hover breakdown stays available for users who
-            want the per-criteria why. Full-ride rows still get the
-            gold corner pin. */}
-        {(() => {
-          const badge = (
-            <div
-              className={`relative flex items-center justify-center w-11 h-11 rounded-full overflow-hidden bg-gradient-to-br ${accent} ${isFullRide ? "ring-2 ring-gold/40" : "ring-1 ring-border/30"}`}
-              aria-label={s.host_country || "Scholarship"}
-            >
-              <CountryArt country={s.host_country} className="absolute inset-0 h-full w-full opacity-45 text-white p-1.5" />
-              <span className="absolute inset-0 bg-black/15" />
-              {isFullRide && (
-                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-gold border border-card" title="Full ride">
-                  <Award className="h-2.5 w-2.5 text-primary" />
-                </span>
-              )}
-            </div>
-          );
-          if (!hasRealScore) return badge;
-          return (
-            <HoverCard openDelay={120} closeDelay={80}>
-              <HoverCardTrigger asChild>
-                <button type="button" onClick={(e) => e.stopPropagation()} className="cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-gold rounded-full">
-                  {badge}
-                </button>
-              </HoverCardTrigger>
-              <HoverCardContent side="right" align="start" className="p-0 border-0 shadow-none bg-transparent w-auto">
-                <MatchScoreBreakdown
-                  scholarshipId={s.scholarship_id}
-                  fallback={{
-                    match: s.match,
-                    application_deadline: s.application_deadline,
-                    estimated_total_value_usd: s.estimated_total_value_usd,
-                    last_verified_at: s.last_verified_at,
-                    verification_status: s.verification_status,
-                    passes_eligibility: s.eligibility === "eligible" || s.eligibility === "likely",
-                    why_this_fits: s.why_this_fits,
-                    reasons: s.reasons,
-                    warnings: s.warnings,
-                  }}
-                  compact
-                />
-              </HoverCardContent>
-            </HoverCard>
-          );
-        })()}
+      <div className="flex-1 grid grid-cols-[minmax(0,1fr),auto] sm:grid-cols-[minmax(0,1fr),170px,auto] items-center gap-4 px-4 py-3.5 min-w-0">
+        {/* Country-art circle badge retired (round 21). It carried country
+            identity (already conveyed by the left accent stripe + the
+            country chip below) and doubled as the MatchScoreBreakdown
+            hover trigger — but the score-as-circle visual implied a
+            numeric verdict we explicitly don't surface. Replaced by an
+            inline 3-bar MatchGauge near the title. The gauge stays the
+            hover trigger so the per-criteria breakdown is still one
+            hover away for users who want it. */}
 
         {/* Name + provider + country chip — title clamps to 2 lines so
             long names like "Wien International Scholarship Program
@@ -1240,33 +1335,72 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
             {cleanScholarshipName(s.scholarship_name)}
           </h3>
           <div className="flex items-center gap-1.5 mt-1 min-w-0 flex-wrap">
+            {/* Match strength gauge — wifi-style 3-bar indicator gives the
+                row a one-glance read on fit without surfacing a number.
+                Wraps the same MatchScoreBreakdown popover the round
+                badge used to host. Hidden when there's no real profile
+                to score against. */}
+            {hasRealScore && (
+              <HoverCard openDelay={120} closeDelay={80}>
+                <HoverCardTrigger asChild>
+                  <button type="button" onClick={(e) => e.stopPropagation()} className="cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-gold rounded-sm shrink-0 px-0.5">
+                    <MatchGauge priority={s.priority} hasRealScore={hasRealScore} />
+                  </button>
+                </HoverCardTrigger>
+                <HoverCardContent side="right" align="start" className="p-0 border-0 shadow-none bg-transparent w-auto">
+                  <MatchScoreBreakdown
+                    scholarshipId={s.scholarship_id}
+                    fallback={{
+                      match: s.match,
+                      application_deadline: s.application_deadline,
+                      estimated_total_value_usd: s.estimated_total_value_usd,
+                      last_verified_at: s.last_verified_at,
+                      verification_status: s.verification_status,
+                      passes_eligibility: s.eligibility === "eligible" || s.eligibility === "likely",
+                      why_this_fits: s.why_this_fits,
+                      reasons: s.reasons,
+                      warnings: s.warnings,
+                    }}
+                    compact
+                  />
+                </HoverCardContent>
+              </HoverCard>
+            )}
             {s.host_country && (
-              <span className={`inline-flex items-center text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded text-white bg-gradient-to-r ${accent} shrink-0`}>
+              <Tag variant="country" countryGradient={accent}>
                 {shortCountry(s.host_country)}
-              </span>
+              </Tag>
+            )}
+            {isFullRide && (
+              <Tag variant="full-ride" icon={<Award className="h-2.5 w-2.5" />} title={ru ? "Полное финансирование" : "Full ride"}>
+                {ru ? "Полное" : "Full ride"}
+              </Tag>
             )}
             {s.target_demographics && s.target_demographics.length > 0 && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-gold/12 text-gold-dark border border-gold/25 shrink-0">
+              <Tag variant="demographic">
                 {s.target_demographics.slice(0, 2).map(humanizeDemographic).join(" · ")}
                 {s.target_demographics.length > 2 && ` +${s.target_demographics.length - 2}`}
-              </span>
+              </Tag>
             )}
             {/* Prestigious tag — positive framing for very-selective
                 programs (replaces the "Competitive" filter we just
                 retired). Surfaces selectivity as something to aspire
                 toward rather than gatekeep against. */}
             {(s.selectivity === "very_high" || s.selectivity === "high") && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-primary/[0.08] text-primary dark:text-primary-bright border border-primary/20 shrink-0" title={s.selectivity === "very_high" ? "Highly selective program — fewer than 2-5% are admitted" : "Selective program — competitive but achievable"}>
-                Prestigious
-              </span>
+              <Tag
+                variant="prestige"
+                title={s.selectivity === "very_high" ? (ru ? "Очень селективная программа — менее 2-5% принимают" : "Highly selective program — fewer than 2-5% are admitted") : (ru ? "Селективная программа — конкурентная, но достижимая" : "Selective program — competitive but achievable")}
+              >
+                {ru ? "Престижная" : "Prestigious"}
+              </Tag>
             )}
             {outcomes && outcomes.applied >= 3 && (
-              <span
-                className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 shrink-0 tabular-nums"
-                title={outcomes.accepted > 0 ? `${outcomes.applied} TopUni members applied · ${outcomes.accepted} received offers` : `${outcomes.applied} TopUni members have applied`}
+              <Tag
+                variant="outcome"
+                title={outcomes.accepted > 0 ? (ru ? `${outcomes.applied} участников TopUni подали заявку · ${outcomes.accepted} получили оффер` : `${outcomes.applied} TopUni members applied · ${outcomes.accepted} received offers`) : (ru ? `${outcomes.applied} участников TopUni подали заявку` : `${outcomes.applied} TopUni members have applied`)}
               >
-                {outcomes.applied} applied{outcomes.accepted > 0 ? ` · ${outcomes.accepted} won` : ""}
-              </span>
+                {outcomes.applied} {ru ? "подали" : "applied"}{outcomes.accepted > 0 ? ` · ${outcomes.accepted} ${ru ? "выиграли" : "won"}` : ""}
+              </Tag>
             )}
             <ProviderAvatar url={s.official_url || s.source_url} providerName={cleanProvider(s.provider_name) || s.provider_name} size={16} />
             {(() => {
@@ -1274,36 +1408,47 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
               return p ? <p className="text-xs text-muted-foreground truncate min-w-0">{p}</p> : null;
             })()}
           </div>
-        </div>
 
-        {/* Award + deadline (desktop only) — single line, no redundant
-            labels. Award value carries its own meaning ("$50K total" /
-            "Full ride"); deadline value is a date + countdown that
-            doesn't need a "Deadline:" prefix to be readable. The
-            column header above the rows already says "Award · Deadline"
-            once for the whole list. */}
-        <div className="hidden sm:flex items-center gap-2 min-w-0 text-[13px]">
-          {award ? (
-            <span className={`inline-flex items-center gap-1 font-semibold whitespace-nowrap ${isFullRide ? "text-gold-dark" : "text-foreground"}`}>
-              {isFullRide && <Award className="h-3 w-3 shrink-0" />}
-              {award}
+          {/* Mobile-only award + deadline subtitle line. Desktop has its
+              own fixed-width column for these. Truncate award if it's
+              too long so the deadline countdown stays visible at the
+              right edge — earlier "Rolling" was getting pushed into
+              the next row's margin on narrow viewports. */}
+          <div className="sm:hidden flex items-center justify-between gap-2 mt-1 text-[12px] min-w-0">
+            {award ? (
+              <span className={`inline-flex items-center gap-1 font-semibold min-w-0 truncate ${isFullRide ? "text-gold-dark" : "text-foreground"}`}>
+                {isFullRide && <Award className="h-3 w-3 shrink-0" />}
+                <span className="truncate">{award}</span>
+              </span>
+            ) : (
+              <span className="text-muted-foreground/40">—</span>
+            )}
+            <span className={`tabular-nums font-medium leading-tight whitespace-nowrap shrink-0 ${dl.cls}`}>
+              {dl.text}
             </span>
-          ) : (
-            <span className="text-muted-foreground/50">—</span>
-          )}
-          <span className="text-muted-foreground/30" aria-hidden>·</span>
-          <span className={`tabular-nums font-medium leading-tight whitespace-nowrap ${dl.cls}`}>{dl.text}</span>
+          </div>
         </div>
 
-        {/* Status — only render once the row's been bookmarked. In
-            general browse, the "Set status" affordance was visual
-            noise on every row of the database. After bookmarking the
-            student commits to tracking this scholarship; that's when
-            status becomes meaningful. */}
-        <div className="hidden sm:flex items-center justify-start">
-          {(isBookmarked || status) && (
-            <StatusBadge status={status} onChange={onStatusChange} dense />
-          )}
+        {/* Award + Deadline (desktop only) — vertical stack in a fixed
+            170px column so geometry stays stable no matter the row
+            content. Award reads as the headline number; the deadline
+            sits beneath as smaller, color-toned countdown / "Rolling".
+            Was a single horizontal line with " · " separator that
+            overflowed for long awards or wide deadline text and
+            pushed "Rolling" into the margins. Status column removed
+            entirely from browse: status is a Workspace concept and
+            had no meaningful render here for unbookmarked rows. */}
+        <div className="hidden sm:flex flex-col items-end justify-center gap-0.5 min-w-0 text-right">
+          <span
+            className={`text-[13px] font-semibold leading-tight truncate max-w-full ${isFullRide ? "text-gold-dark" : "text-foreground"}`}
+            title={award ?? undefined}
+          >
+            {isFullRide && <Award className="inline h-3 w-3 mr-1 -mt-0.5" />}
+            {award ?? "—"}
+          </span>
+          <span className={`text-[11px] tabular-nums font-medium leading-tight whitespace-nowrap ${dl.cls}`}>
+            {dl.text}
+          </span>
         </div>
 
         {/* Actions — three clear affordances. Compare retired (lower-
@@ -1326,10 +1471,11 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
             {isBookmarked ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
           </button>
 
-          {/* Open official site — promoted from the dropdown to a
-              first-class button so it's a clear single-click and the
-              icon (external-link) is unambiguous. Only renders if we
-              actually have a URL. */}
+          {/* Open official site + Share — desktop only. On mobile they
+              squeezed the name into ~150px of width and the row went
+              squish. Tapping the row body opens the detail sheet,
+              which has its own "Apply on official site" CTA, so
+              there's no functional loss on mobile. */}
           {s.official_url && (
             <a
               href={s.official_url}
@@ -1337,30 +1483,28 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
               rel="noopener noreferrer"
               aria-label="Open official application page"
               title="Open official application page"
-              className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+              className="hidden sm:inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
             >
               <ExternalLink className="h-4 w-4" />
             </a>
           )}
 
-          {/* More — keeps Hide as a power-user dismiss without
-              cluttering the visible row. */}
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              onClick={(e) => e.stopPropagation()}
-              aria-label="More actions"
-              title="More"
-              className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors data-[state=open]:bg-muted/60"
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem onClick={onToggleHide} className="text-xs">
-                {isHidden ? <Eye className="h-3 w-3 mr-2" /> : <EyeOff className="h-3 w-3 mr-2" />}
-                {isHidden ? "Show again" : "Not relevant — hide"}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Share — replaces the old "Not relevant — hide" dropdown
+              which was rarely used and added cognitive load to every
+              row. Native Web Share API on supporting browsers, falls
+              back to clipboard copy with a toast confirmation. */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              shareScholarship(s);
+            }}
+            aria-label="Share this scholarship"
+            title="Share"
+            className="hidden sm:inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+          >
+            <Share2 className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </motion.div>
@@ -1368,7 +1512,7 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
 };
 
 /* ─── Scholarship card — dense, product-grade, scannable in a 3-col grid ── */
-const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0, outcomes }: {
+const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0, outcomes, lang = "en" }: {
   s: Scored; onSelect: () => void;
   isBookmarked: boolean; onBookmark: (e: React.MouseEvent) => void;
   status: AppStatus | undefined; onStatusChange: (s: AppStatus | null) => void;
@@ -1377,9 +1521,11 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
   index?: number;
   /** Per-scholarship member outcome counts (compounding trust signal). */
   outcomes?: { applied: number; accepted: number; inPipeline: number };
+  lang?: Lang;
 }) => {
+  const ru = lang === "ru";
   const tier = TIER[s.priority];
-  const dl = deadlineDisplay(s.application_deadline);
+  const dl = deadlineDisplay(s.application_deadline, lang);
   /* Why-it-fits text. Falls back to scoring reasons ONLY when at
    * least one of them is a meaty insight (not a generic "Matches X
    * level" auto-reason). Without this filter the card surfaces
@@ -1417,12 +1563,10 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           travel poster strip rather than a database row. Text stays on
           the left where the silhouette opacity is lowest. */}
       <div className={`relative bg-gradient-to-r ${accent} px-4 h-14 flex items-center gap-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/95 overflow-hidden whitespace-nowrap`}>
-        {/* Architectural texture — gothic arches + classical columns tiled
-            across the band at low opacity. Whispers "campus courtyard"
-            so the band feels less like a colored stripe and more like a
-            postcard the student is dreaming about walking through. */}
-        <FlagPattern country={s.host_country} className="absolute inset-0 w-full h-full text-white" opacity={0.16} />
-        {/* Country landmark sits ABOVE the campus pattern, anchored right */}
+        {/* Country landmark icon, anchored right. The flag-pattern texture
+            that used to sit underneath was retired (round 22) — it
+            failed to find a good shape for most countries and read as
+            noise rather than the "campus postcard" texture intended. */}
         <CountryArt country={s.host_country} className="absolute right-2 inset-y-0 h-full opacity-35 pointer-events-none" />
         {/* fade-from-left so silhouette + pattern don't compete with text */}
         <span className={`absolute inset-0 bg-gradient-to-r from-black/30 via-black/5 to-transparent pointer-events-none`} />
@@ -1444,7 +1588,7 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
               <span className="text-white/40 shrink-0">·</span>
               <span className="inline-flex items-center gap-1 text-gold-light drop-shadow-sm shrink-0">
                 <Award className="h-2.5 w-2.5" />
-                Full ride
+                {ru ? "Полное" : "Full ride"}
               </span>
             </>
           )}
@@ -1452,7 +1596,7 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
             <>
               <span className="text-white/40 shrink-0">·</span>
               <span className="inline-flex items-center text-white/95 drop-shadow-sm shrink-0">
-                Prestigious
+                {ru ? "Престижная" : "Prestigious"}
               </span>
             </>
           )}
@@ -1576,27 +1720,18 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
             >
               <GitCompare className="h-3.5 w-3.5" />
             </button>
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
-                aria-label="More actions"
-              >
-                <MoreHorizontal className="h-3.5 w-3.5" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                {s.official_url && (
-                  <DropdownMenuItem asChild>
-                    <a href={s.official_url} target="_blank" rel="noopener noreferrer" className="text-xs cursor-pointer">
-                      <ExternalLink className="h-3 w-3 mr-2" /> Official page
-                    </a>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onClick={onToggleHide} className="text-xs">
-                  {isHidden ? <Eye className="h-3 w-3 mr-2" /> : <EyeOff className="h-3 w-3 mr-2" />}
-                  {isHidden ? "Show again" : "Hide from list"}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* Share replaces the old More dropdown ("Hide from list" /
+                "Official page"). Hide was rarely used; the official
+                page is one click away inside the detail sheet. */}
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); shareScholarship(s); }}
+              aria-label="Share this scholarship"
+              title="Share"
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
       </div>
@@ -1605,13 +1740,16 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
 };
 
 /* ─── Filters Panel ──────────────────────────────────────────────────── */
-const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsAvailable }: {
+const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsAvailable, lang = "en" }: {
   filters: FilterState;
   setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
   activeCount: number;
   hostCountries: string[];
   fieldsAvailable: string[];
+  lang?: Lang;
 }) => {
+  const ru = lang === "ru";
+  const t = (en: string, ruText: string) => (ru ? ruText : en);
   // Round-11 redesign: pill chips for the 3 short-list segmented filters
   // (Coverage / Degree / Competitiveness) — they're 4 options each so the
   // chips stay scannable. Eligibility-group (10 options) is now a Select;
@@ -1624,30 +1762,30 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
   // lights up a "Prestigious" tag on cards for the very-selective
   // programs, but it's no longer something the user filters AGAINST.
   const segmented: { label: string; key: keyof FilterState; opts: { v: string; l: string }[] }[] = [
-    { label: "Coverage", key: "coverage", opts: [
-      { v: "all", l: "All" },
-      { v: "full_ride", l: "Full ride" },
-      { v: "tuition_only", l: "Tuition only" },
-      { v: "partial", l: "Partial" },
+    { label: t("Coverage", "Финансирование"), key: "coverage", opts: [
+      { v: "all", l: t("All", "Все") },
+      { v: "full_ride", l: t("Full ride", "Полное") },
+      { v: "tuition_only", l: t("Tuition only", "Только обучение") },
+      { v: "partial", l: t("Partial", "Частичное") },
     ] },
-    { label: "Degree", key: "degree", opts: [
-      { v: "all", l: "All" },
-      { v: "undergraduate", l: "Bachelor\'s" },
-      { v: "master\'s", l: "Master\'s" },
+    { label: t("Degree", "Уровень"), key: "degree", opts: [
+      { v: "all", l: t("All", "Все") },
+      { v: "undergraduate", l: t("Bachelor\'s", "Бакалавриат") },
+      { v: "master\'s", l: t("Master\'s", "Магистратура") },
       { v: "PhD", l: "PhD" },
     ] },
   ];
   const demographicOpts = [
-    { v: "all", l: "All applicants" },
-    { v: "women", l: "Women" },
-    { v: "underrepresented-stem", l: "Women in STEM" },
-    { v: "first-generation", l: "First-generation" },
-    { v: "low-income", l: "Need-based" },
-    { v: "refugee", l: "Refugees" },
-    { v: "indigenous", l: "Indigenous" },
+    { v: "all", l: t("All applicants", "Все") },
+    { v: "women", l: t("Women", "Женщины") },
+    { v: "underrepresented-stem", l: t("Women in STEM", "Женщины в STEM") },
+    { v: "first-generation", l: t("First-generation", "Первое поколение") },
+    { v: "low-income", l: t("Need-based", "По доходу") },
+    { v: "refugee", l: t("Refugees", "Беженцы") },
+    { v: "indigenous", l: t("Indigenous", "Коренные народы") },
     { v: "lgbtq", l: "LGBTQ+" },
-    { v: "underrepresented-minority", l: "Underrepresented" },
-    { v: "disability", l: "Disability" },
+    { v: "underrepresented-minority", l: t("Underrepresented", "Недопредставленные") },
+    { v: "disability", l: t("Disability", "Инвалидность") },
   ];
   return (
     <div className="space-y-6">
@@ -1678,7 +1816,7 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
       {/* Eligibility group — was a pill grid of 10 chips that dominated
           the panel. Now a Select; same DB tags, ~80% less space. */}
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">Eligibility</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">{t("Eligibility", "Категория")}</p>
         <Select value={filters.demographic} onValueChange={v => setFilters(f => ({ ...f, demographic: v }))}>
           <SelectTrigger className="h-8 text-[13px]"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -1693,11 +1831,11 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
       <div className="space-y-3">
         {fieldsAvailable.length > 0 && (
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">Field</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">{t("Field", "Направление")}</p>
             <Select value={filters.field} onValueChange={v => setFilters(f => ({ ...f, field: v }))}>
               <SelectTrigger className="h-8 text-[13px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All fields</SelectItem>
+                <SelectItem value="all">{t("All fields", "Все направления")}</SelectItem>
                 {fieldsAvailable.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -1705,11 +1843,11 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
         )}
         {hostCountries.length > 0 && (
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">Host country</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">{t("Host country", "Страна обучения")}</p>
             <Select value={filters.hostCountry} onValueChange={v => setFilters(f => ({ ...f, hostCountry: v }))}>
               <SelectTrigger className="h-8 text-[13px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All countries</SelectItem>
+                <SelectItem value="all">{t("All countries", "Все страны")}</SelectItem>
                 {hostCountries.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -1720,12 +1858,12 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
       <Separator className="!my-5" />
       <div className="space-y-3">
         {([
-          { id: "oe", label: "Eligible only",      key: "onlyEligible"    as keyof FilterState },
-          { id: "cs", label: "Closing in 90 days", key: "closingSoon"     as keyof FilterState },
-        ] as const).map(t => (
-          <div key={t.id} className="flex items-center justify-between">
-            <Label htmlFor={t.id} className="text-[13px] cursor-pointer text-foreground/75 font-normal">{t.label}</Label>
-            <Switch id={t.id} checked={filters[t.key] as boolean} onCheckedChange={v => setFilters(f => ({ ...f, [t.key]: v }))} />
+          { id: "oe", label: t("Eligible only",      "Только подходящие"),       key: "onlyEligible"    as keyof FilterState },
+          { id: "cs", label: t("Closing in 90 days", "Закрываются за 90 дней"),   key: "closingSoon"     as keyof FilterState },
+        ] as const).map((row) => (
+          <div key={row.id} className="flex items-center justify-between">
+            <Label htmlFor={row.id} className="text-[13px] cursor-pointer text-foreground/75 font-normal">{row.label}</Label>
+            <Switch id={row.id} checked={filters[row.key] as boolean} onCheckedChange={v => setFilters(f => ({ ...f, [row.key]: v }))} />
           </div>
         ))}
       </div>
@@ -1740,7 +1878,7 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
 
       {activeCount > 0 && (
         <Button variant="ghost" size="sm" className="w-full text-xs h-8 text-muted-foreground hover:text-foreground" onClick={() => setFilters(DEFAULT_FILTERS)}>
-          <X className="h-3 w-3 mr-1.5" /> Clear all filters
+          <X className="h-3 w-3 mr-1.5" /> {t("Clear all filters", "Сбросить все фильтры")}
         </Button>
       )}
     </div>
@@ -1775,7 +1913,7 @@ const ReqRow = ({ label, status, detail }: {
 };
 
 /* ─── Detail Sheet (tabbed, visual) ──────────────────────────────────── */
-const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, status, onStatusChange, note, onNoteChange, similar, onSwitchTo, isMember, onUnlock, onExpand }: {
+const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, status, onStatusChange, note, onNoteChange, similar, onSwitchTo, isMember, onUnlock, onExpand, lang = "en" }: {
   s: Scored | null; open: boolean; onClose: () => void;
   isBookmarked: boolean; onBookmark: () => void;
   profile: Profile;
@@ -1788,7 +1926,10 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
   isMember: boolean;
   onUnlock: () => void;
   onExpand: () => void;
+  lang?: Lang;
 }) => {
+  const ru = lang === "ru";
+  const t = (en: string, ruText: string) => (ru ? ruText : en);
   // Hook is unconditional — must run on every render even when s is null
   // (Rules of Hooks). The track call is only fired with a real id later.
   const trackEvent = useScholarshipTracking();
@@ -1796,7 +1937,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
   // dedup so re-renders don't inflate counts.
   useTrackView(s?.scholarship_id, "detail-sheet");
   if (!s) return null;
-  const dl = deadlineDisplay(s.application_deadline);
+  const dl = deadlineDisplay(s.application_deadline, lang);
   const [dc1, dc2] = dialColors(s.priority);
   /* Why-it-fits text. Falls back to scoring reasons ONLY when at
    * least one of them is a meaty insight (not a generic "Matches X
@@ -1871,28 +2012,47 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
 
   return (
     <Sheet open={open} onOpenChange={o => !o && onClose()}>
-      <SheetContent side="right" className="w-full sm:w-[min(99vw,1400px)] overflow-y-auto p-0 flex flex-col">
+      <SheetContent side="right" className="w-full sm:w-[min(99vw,1400px)] overflow-y-auto p-0 flex flex-col text-[14px] sm:text-base">
         {/* ── POSTCARD HERO — country gradient + gothic-arch campus pattern
               + country landmark layered as a poster the student "flips
               over" when they open the sheet. Sells the dream of being
-              there before any data hits the page. */}
+              there before any data hits the page. When a program-
+              specific cover_image_url has been enriched in, we render
+              that as the hero instead and overlay a dark gradient so
+              the country chip stays legible. */}
         {(() => {
           const dsAccent = accentForCountry(s.host_country);
+          const cover = s.cover_image_url || null;
           return (
-            <div className={`relative h-28 sm:h-32 overflow-hidden bg-gradient-to-r ${dsAccent} shrink-0`}>
-              <FlagPattern country={s.host_country} className="absolute inset-0 w-full h-full text-white" opacity={0.14} />
-              <CountryArt country={s.host_country} className="absolute right-4 inset-y-0 h-full opacity-40 pointer-events-none" />
-              <span className="absolute inset-0 bg-gradient-to-r from-black/30 via-black/10 to-transparent pointer-events-none" />
-              <div className="relative h-full flex flex-col justify-end px-7 pb-4">
+            <div className={`relative h-20 sm:h-44 overflow-hidden bg-gradient-to-r ${dsAccent} shrink-0`}>
+              {cover ? (
+                <img
+                  src={cover}
+                  alt=""
+                  loading="lazy"
+                  className="absolute inset-0 w-full h-full object-cover"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                />
+              ) : (
+                /* FlagPattern silhouette retired — most countries don't
+                 * have a clean illustrative flag and the fallback rendered
+                 * as visual noise. CountryArt (the landmark icon) carries
+                 * the regional identity on its own. */
+                <CountryArt country={s.host_country} className="absolute right-4 inset-y-0 h-full opacity-40 pointer-events-none" />
+              )}
+              <span className="absolute inset-0 bg-gradient-to-r from-black/45 via-black/15 to-transparent pointer-events-none" />
+              <div className="relative h-full flex flex-col justify-end px-5 sm:px-7 pb-2.5 sm:pb-4">
                 {s.host_country && (
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/85 drop-shadow-sm">{shortCountry(s.host_country)}</p>
+                  <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.28em] text-white drop-shadow-md">{shortCountry(s.host_country)}</p>
                 )}
               </div>
             </div>
           );
         })()}
-        {/* ── HEADER (cream, editorial — no thick navy block) ── */}
-        <div className="relative bg-canvas-soft px-7 pt-6 pb-6 overflow-hidden shrink-0 border-b border-border">
+        {/* ── HEADER (cream, editorial — no thick navy block). Mobile
+              padding tightened so the panel doesn't push the apply CTA
+              below the fold. */}
+        <div className="relative bg-canvas-soft px-5 sm:px-7 pt-4 sm:pt-6 pb-4 sm:pb-6 overflow-hidden shrink-0 border-b border-border">
           {/* Soft top wash so the header has navy presence without a slab */}
           <div className="absolute inset-x-0 top-0 h-24 pointer-events-none"
             style={{ backgroundImage: "linear-gradient(180deg, hsl(var(--primary) / 0.06) 0%, transparent 100%)" }} />
@@ -1933,28 +2093,36 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             </p>
           </SheetHeader>
 
-          {/* Key facts row — cream tiles */}
-          <div className="relative grid grid-cols-3 gap-2 mt-5">
-            {/* Award facts tile: lead with the compact label so the
-                box never truncates; the full award_amount_text follows
-                below in muted text when it adds detail. The detail
-                line clamps to two lines — long parentheticals are OK
-                here because the user opened the sheet for more depth. */}
-            <div className="bg-card border border-border rounded-xl px-3 py-2.5">
-              <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">Award</div>
+          {/* Key facts row — two tiles. Was three (Award + Deadline +
+              Total value), but Total value was almost always the same
+              number as Award (or trivially derivable: "$25K/yr × 4")
+              and the third tile crowded the row on every viewport.
+              Total value moves into the Award tile as a small subline
+              when it differs meaningfully from the compact label.
+              Mobile uses tighter padding so the tiles don't dominate
+              vertical space on small screens. */}
+          <div className="relative grid grid-cols-2 gap-2 mt-3 sm:mt-5">
+            <div className="bg-card border border-border rounded-xl px-2.5 sm:px-3.5 py-2 sm:py-3">
+              <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">{t("Award", "Финансирование")}</div>
               <div className="text-foreground text-sm font-bold leading-tight">{compactAward(s) ?? COVERAGE_LABEL[s.coverage_type] ?? "—"}</div>
               {s.award_amount_text && s.award_amount_text.length > 16 && (
                 <div className="text-[10px] text-muted-foreground/85 mt-1 leading-snug line-clamp-2">{s.award_amount_text}</div>
               )}
+              {s.estimated_total_value_usd && (() => {
+                const compact = compactAward(s);
+                const total = fmtValue(s.estimated_total_value_usd);
+                if (compact && compact.replace(/\s/g, "") === total.replace(/\s/g, "")) return null;
+                return (
+                  <div className="text-[10px] text-gold-dark/80 dark:text-gold/80 font-semibold mt-1.5">
+                    {t(`Est. ${total} total`, `≈ ${total} итого`)}
+                  </div>
+                );
+              })()}
             </div>
-            <div className="bg-card border border-border rounded-xl px-3 py-2.5">
-              <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">Deadline</div>
-              <div className={`text-xs font-semibold leading-tight ${dl.cls}`}>{dl.text}</div>
+            <div className="bg-card border border-border rounded-xl px-2.5 sm:px-3.5 py-2 sm:py-3">
+              <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">{t("Deadline", "Дедлайн")}</div>
+              <div className={`text-sm font-semibold leading-tight ${dl.cls}`}>{dl.text}</div>
               {deadlineDate && <div className="text-muted-foreground/70 text-[10px] mt-0.5">{deadlineDate}</div>}
-            </div>
-            <div className="bg-card border border-border rounded-xl px-3 py-2.5">
-              <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">Total value</div>
-              <div className="text-gold-dark text-xs font-bold leading-tight">{s.estimated_total_value_usd ? fmtValue(s.estimated_total_value_usd) : "—"}</div>
             </div>
           </div>
 
@@ -1973,9 +2141,9 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                   rel="noopener noreferrer"
                   onClick={() => trackEvent(s.scholarship_id, "clicked", "discover-detail-apply")}
                 >
-                  Apply on official site <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
+                  {t("Apply on official site", "Подать на официальном сайте")} <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
                 </a>
-              ) : <span>No official link</span>}
+              ) : <span>{t("No official link", "Нет ссылки")}</span>}
             </Button>
             <Button variant="outline" size="sm" className="h-9" onClick={onBookmark}>
               {isBookmarked ? <BookmarkCheck className="h-4 w-4 text-gold-dark" /> : <Bookmark className="h-4 w-4" />}
@@ -1985,7 +2153,12 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               panel intentionally keeps the personalized deep dive OUT
               so it stays scannable; this button is how users get to
               the heavy content (match breakdown, how-to-win,
-              ideal-candidate profile). */}
+              ideal-candidate profile). Label says "Personalized
+              strategy" because the deep dive is AI-generated against
+              the saved profile — and unifying with the (formerly
+              "Get your live strategy") empty-state CTA on the Strategy
+              tab so the two paths to the same destination read the
+              same. */}
           <button
             type="button"
             onClick={onExpand}
@@ -1993,7 +2166,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           >
             <span className="inline-flex items-center gap-2 text-[12px] font-semibold text-gold-dark dark:text-gold">
               <Sparkles className="h-3.5 w-3.5" />
-              View full strategy
+              {t("Personalized strategy", "Персональная стратегия")}
             </span>
             <ArrowRight className="h-3.5 w-3.5 text-gold-dark/70 dark:text-gold/70 group-hover:translate-x-0.5 transition-transform" />
           </button>
@@ -2030,35 +2203,52 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           <div className="px-7 pt-5 border-b border-border bg-background sticky top-0 z-10 overflow-x-auto scrollbar-hide">
             <TabsList className="bg-transparent p-0 h-auto gap-5 sm:gap-7 w-max sm:w-full justify-start rounded-none -mb-px">
               {([
-                { v: "overview",     label: "Overview" },
-                { v: "requirements", label: "Requirements" },
-                { v: "strategy",     label: "Strategy" },
-              ] as const).map(t => (
+                { v: "overview",     label: t("Overview",     "Обзор") },
+                { v: "requirements", label: t("Requirements", "Требования") },
+                { v: "strategy",     label: t("Strategy",     "Стратегия") },
+              ] as const).map((tab) => (
                 <TabsTrigger
-                  key={t.v}
-                  value={t.v}
+                  key={tab.v}
+                  value={tab.v}
                   className="data-[state=active]:text-foreground data-[state=active]:border-foreground data-[state=active]:shadow-none border-b-2 border-transparent text-muted-foreground hover:text-foreground rounded-none px-0 pb-3 pt-0 text-sm font-medium bg-transparent"
                 >
-                  {t.label}
+                  {tab.label}
                 </TabsTrigger>
               ))}
             </TabsList>
           </div>
 
           {/* OVERVIEW */}
-          <TabsContent value="overview" className="px-7 py-6 space-y-5 m-0 focus-visible:outline-none">
-            {why && (
-              <div className="bg-gold/5 border border-gold/20 rounded-2xl p-5">
-                <h4 className="text-[10px] font-semibold text-gold-dark dark:text-gold mb-2 flex items-center gap-2 uppercase tracking-[0.16em]">
-                  <Sparkles className="h-3 w-3" /> Why this fits you
-                </h4>
-                <p className="text-sm text-foreground/85 leading-relaxed">{why}</p>
-              </div>
-            )}
+          <TabsContent value="overview" className="px-5 sm:px-7 py-4 sm:py-6 space-y-4 sm:space-y-5 m-0 focus-visible:outline-none">
+            {/* Standardized scholarship blurb. Replaces the gold-bordered
+                "Why this fits you" callout — the framing was overclaim
+                (a thin profile can't generate confident "fits you"
+                language) and the gold treatment competed visually with
+                the apply CTA. Now: one neutral 1-2 sentence summary
+                that reads like a program description. Falls back to
+                buildScholarshipBlurb when no editorial line exists. */}
+            {(() => {
+              const blurb = s.why_this_fits || buildScholarshipBlurb({
+                name: cleanScholarshipName(s.scholarship_name),
+                provider: cleanProvider(s.provider_name),
+                country: s.host_country,
+                coverage: s.coverage_type,
+                levels: s.target_degree_level,
+                fields: s.target_fields,
+                demographic: s.target_demographics?.[0],
+                isFullRide: s.coverage_type === "full_ride",
+              });
+              if (!blurb) return null;
+              return (
+                <p className="text-[15px] leading-relaxed text-foreground/85">
+                  {blurb.replace(/\.+$/, "")}.
+                </p>
+              );
+            })()}
 
             {s.reasons.length > 0 && (
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Profile signals</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">{t("Profile signals", "Сигналы профиля")}</p>
                 <div className="space-y-1.5">
                   {s.reasons.map((r, i) => (
                     <div key={i} className="flex items-start gap-2 text-sm leading-relaxed text-success">
@@ -2071,7 +2261,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
 
             {s.warnings.length > 0 && (
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Watch outs</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">{t("Watch outs", "На что обратить внимание")}</p>
                 <div className="space-y-1.5">
                   {s.warnings.map((w, i) => (
                     <div key={i} className="flex items-start gap-2 text-sm leading-relaxed text-warning">
@@ -2130,30 +2320,30 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           </TabsContent>
 
           {/* REQUIREMENTS */}
-          <TabsContent value="requirements" className="px-7 py-6 space-y-5 m-0 focus-visible:outline-none">
+          <TabsContent value="requirements" className="px-5 sm:px-7 py-4 sm:py-6 space-y-4 sm:space-y-5 m-0 focus-visible:outline-none">
             {reqs.length > 0 ? (
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">You vs. requirements</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">{t("You vs. requirements", "Ваш профиль vs требования")}</p>
                 <div className="bg-muted/30 rounded-2xl px-4 py-1">
                   {reqs.map((r, i) => <ReqRow key={i} {...r} />)}
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">
-                  Always verify on the official site — requirements change yearly and we don't track TOEFL or every nationality nuance.
-                </p>
+                {/* Disclaimer here was a duplicate of the sheet-footer
+                    "verify before applying" line. Kept only the footer
+                    one so it doesn't read twice on a single panel. */}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No specific requirements recorded for this scholarship.</p>
+              <p className="text-sm text-muted-foreground">{t("No specific requirements recorded for this scholarship.", "Конкретные требования по этой стипендии не записаны.")}</p>
             )}
 
             {(s.essay_required || s.interview_required || (s.recommendation_letters_required ?? 0) > 0) && (
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Application demands</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">{t("Application demands", "Что нужно для подачи")}</p>
                 <div className="flex flex-wrap gap-2">
-                  {s.essay_required && <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full"><FileText className="h-3 w-3" />Essay required</span>}
-                  {s.interview_required && <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full"><Users className="h-3 w-3" />Interview</span>}
+                  {s.essay_required && <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full"><FileText className="h-3 w-3" />{t("Essay required", "Требуется эссе")}</span>}
+                  {s.interview_required && <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full"><Users className="h-3 w-3" />{t("Interview", "Интервью")}</span>}
                   {(s.recommendation_letters_required ?? 0) > 0 && (
                     <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full">
-                      <FileText className="h-3 w-3" />{s.recommendation_letters_required} rec letter{(s.recommendation_letters_required ?? 0) > 1 ? "s" : ""}
+                      <FileText className="h-3 w-3" />{s.recommendation_letters_required} {t(`rec letter${(s.recommendation_letters_required ?? 0) > 1 ? "s" : ""}`, "реком. писем")}
                     </span>
                   )}
                 </div>
@@ -2162,7 +2352,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
 
             {s.required_documents && s.required_documents.length > 0 && (
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Documents needed</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">{t("Documents needed", "Необходимые документы")}</p>
                 <div className="grid grid-cols-2 gap-1.5">
                   {s.required_documents.map((d, i) => (
                     <div key={i} className="flex items-center gap-1.5 text-xs text-foreground/80">
@@ -2238,16 +2428,15 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           </TabsContent>
 
           {/* STRATEGY */}
-          <TabsContent value="strategy" className="px-7 py-6 space-y-5 m-0 focus-visible:outline-none relative">
+          <TabsContent value="strategy" className="px-5 sm:px-7 py-4 sm:py-6 space-y-4 sm:space-y-5 m-0 focus-visible:outline-none relative">
             {/* "Still being drafted" state — when the row is freshly scraped
                 and the daily enrichment cron hasn't filled the soft fields
                 yet (typically 24-48h post-discovery), the Strategy tab would
                 otherwise render blank and look broken. This state acknowledges
-                the gap honestly and points the user at the enlarged
-                detail dialog (the "View full strategy" CTA in the panel
-                header), which always works because it uses the
-                scholarship-deep-dive endpoint to generate content live
-                and doesn't depend on the soft fields. */}
+                the gap honestly and points the user at the same enlarged
+                detail dialog the "Personalized strategy" CTA in the
+                panel header opens; both paths go to the same place so
+                the wording is unified. */}
             {!s.what_to_prepare_first && !s.ideal_candidate_profile && !s.how_to_win
               && !s.strategy_notes && !s.common_rejection_reasons
               && !s.weak_candidate_warning && !s.risk_note && (
@@ -2256,12 +2445,13 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                   <Sparkles className="h-5 w-5 text-primary" />
                 </div>
                 <h4 className="font-heading font-semibold text-base text-foreground mb-1.5">
-                  Get your live strategy
+                  {t("Personalized strategy", "Персональная стратегия")}
                 </h4>
                 <p className="text-xs text-muted-foreground leading-relaxed max-w-md mx-auto mb-4">
-                  This scholarship's pre-written strategy notes are still being drafted by
-                  our cron, but you don't have to wait — open the full strategy panel and our
-                  AI will analyse this scholarship against your profile right now.
+                  {t(
+                    "Our AI will analyze this scholarship against your saved profile and return a tailored strategy — match breakdown, how to win, what to prepare first.",
+                    "Наш ИИ проанализирует эту стипендию по вашему профилю и вернёт персональную стратегию — разбор совпадения, как победить, что подготовить в первую очередь."
+                  )}
                 </p>
                 <button
                   type="button"
@@ -2269,7 +2459,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-primary bg-gradient-to-r from-gold-dark to-gold hover:opacity-90 transition-opacity shadow-sm"
                 >
                   <Sparkles className="h-3.5 w-3.5" />
-                  Generate now
+                  {t("Open", "Открыть")}
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -2278,7 +2468,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             {/* First strategy block — preview, free for everyone (creates desire) */}
             {s.what_to_prepare_first && (
               <div className="border-l-2 border-l-gold bg-muted/30 rounded-r-2xl px-5 py-4">
-                <p className="text-[10px] font-semibold text-foreground mb-1 uppercase tracking-[0.16em]">Start here</p>
+                <p className="text-[10px] font-semibold text-foreground mb-1 uppercase tracking-[0.16em]">{t("Start here", "Начните с этого")}</p>
                 <p className="text-sm text-foreground/80 leading-relaxed">{s.what_to_prepare_first}</p>
               </div>
             )}
@@ -2365,7 +2555,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                       Ideal candidate profile, how-to-win strategy, common rejection reasons, and warnings are part of Founding Pro.
                     </p>
                     <Button variant="gold" size="sm" className="w-full gap-2" onClick={onUnlock}>
-                      <Sparkles className="h-3.5 w-3.5" /> Unlock for $19/mo
+                      <Crown className="h-3.5 w-3.5" /> {t("Unlock for $19/mo", "Открыть за $19/мес")}
                     </Button>
                   </div>
                 </div>
@@ -2425,15 +2615,15 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                third-party report (Manus AI), not yet hand-verified. */}
         {(() => {
           return (
-            <div className="px-7 py-3 border-t border-border bg-muted/20 flex items-center justify-between gap-3 shrink-0">
-              <span className="text-[11px] text-muted-foreground">
-                Click the official site link before applying for the latest details — providers update their pages often.
+            <div className="px-7 py-2.5 border-t border-border/60 bg-canvas-soft/50 flex items-center justify-between gap-3 shrink-0">
+              <span className="text-[10px] text-muted-foreground/70">
+                {t("Verify on the official site before applying.", "Проверьте на официальном сайте перед подачей.")}
               </span>
               <a
                 href={`mailto:hello@topuni.com?subject=${encodeURIComponent("Inaccurate scholarship data: " + s.scholarship_name)}&body=${encodeURIComponent("ID: " + s.scholarship_id + "\n\nWhat's wrong:\n")}`}
-                className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-4 shrink-0"
+                className="text-[10px] text-muted-foreground/70 hover:text-foreground underline underline-offset-4 shrink-0"
               >
-                Report inaccuracy
+                {t("Report inaccuracy", "Сообщить о неточности")}
               </a>
             </div>
           );
@@ -2463,6 +2653,85 @@ const SectionHeader = ({ kicker, title, subtitle, accentClass }: {
   </Reveal>
 );
 
+/* ─── Free-tier paywall surfaces ────────────────────────────────────────
+ * Two flavours: PaywallRow (matches the list-view row geometry so the
+ * locked-rows pitch flows visually with the table); PaywallCard (full-
+ * width tile for grid view). Both link to /pricing and explain how
+ * many more programs Membership unlocks. They render only when the
+ * gate is active — the parent has already done the visibility check.
+ */
+/* Russian noun forms for "scholarship": 1 → стипендия, 2-4 → стипендии,
+ * 5+ → стипендий. Plus the genitive "more scholarships" reads as "ещё
+ * стипендий". This helper picks the right form. */
+const ruScholarshipPlural = (n: number): string => {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return "стипендия";
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "стипендии";
+  return "стипендий";
+};
+
+const PaywallRow = ({ lockedCount, lang = "en" }: { lockedCount: number; lang?: Lang }) => {
+  const ru = lang === "ru";
+  return (
+    <Link
+      to={ru ? "/pricing/ru" : "/pricing"}
+      className="block border-t border-gold/30 bg-gradient-to-r from-gold/8 via-gold/4 to-gold/8 hover:from-gold/12 hover:to-gold/12 transition-colors px-4 py-5 sm:py-6"
+    >
+      <div className="flex items-center gap-3 sm:gap-4">
+        <span className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br from-gold-dark to-gold shadow-sm shrink-0">
+          <Crown className="h-5 w-5 text-primary" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-heading font-semibold text-[15px] text-foreground leading-tight">
+            {ru
+              ? `Ещё ${lockedCount} ${ruScholarshipPlural(lockedCount)} с подпиской`
+              : `${lockedCount} more ${lockedCount === 1 ? "scholarship" : "scholarships"} with Membership`}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+            {ru
+              ? "Бесплатный доступ — первые 5 стипендий. Подписка открывает всю базу, AI-стратегию, отслеживание дедлайнов и больше."
+              : "Free covers your first 5 picks. Membership unlocks the full database, AI strategy, deadline tracking, and more."}
+          </p>
+        </div>
+        <ArrowRight className="h-4 w-4 text-gold-dark shrink-0" />
+      </div>
+    </Link>
+  );
+};
+
+const PaywallCard = ({ lockedCount, className = "", lang = "en" }: { lockedCount: number; className?: string; lang?: Lang }) => {
+  const ru = lang === "ru";
+  return (
+    <Link
+      to={ru ? "/pricing/ru" : "/pricing"}
+      className={`block rounded-2xl border border-gold/35 bg-gradient-to-br from-gold/10 via-gold/5 to-transparent hover:border-gold/55 hover:from-gold/15 transition-all p-5 sm:p-6 ${className}`}
+    >
+      <div className="flex items-start gap-4">
+        <span className="inline-flex items-center justify-center h-11 w-11 rounded-xl bg-gradient-to-br from-gold-dark to-gold shadow-sm shrink-0">
+          <Crown className="h-5 w-5 text-primary" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-heading font-semibold text-base sm:text-lg text-foreground leading-tight">
+            {ru
+              ? `Ещё ${lockedCount} ${ruScholarshipPlural(lockedCount)} с подпиской`
+              : `${lockedCount} more ${lockedCount === 1 ? "scholarship" : "scholarships"} with Membership`}
+          </p>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1 leading-relaxed max-w-2xl">
+            {ru
+              ? "Бесплатно вы видите первые 5 — этого достаточно, чтобы оценить базу. Подписка открывает каждую программу, AI-разбор стратегии, отслеживание дедлайнов и работу с рекомендателями."
+              : "Free covers your first 5 picks so you can sample the database. Membership unlocks every program, the AI strategy deep dive, deadline tracking, and recommender follow-ups."}
+          </p>
+          <span className="inline-flex items-center gap-1.5 mt-3 text-xs sm:text-sm font-semibold text-gold-dark dark:text-gold">
+            {ru ? "Тарифы" : "See pricing"}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+};
+
 /* ─── Main ───────────────────────────────────────────────────────────── */
 interface Props { language?: "en" | "ru" }
 
@@ -2470,7 +2739,48 @@ const Discover = ({ language = "en" }: Props) => {
   const navigate = useNavigate();
   const { user, subscription } = useAuth();
   const isMember = subscription.tier === "founding" || subscription.tier === "pro";
+
+  /* Translation helper. The Discover surface used to render almost
+   * entirely in English regardless of route — only the top nav strip
+   * was Russian-aware. This `t(en, ru)` helper returns the right
+   * string per language and is threaded through every visible label,
+   * CTA, section header, and empty-state copy. Internal helpers
+   * (deadlineDisplay, ScholarRow, ScholarCard) accept a `lang` arg /
+   * prop so the same translation flows into row-level text too. */
+  const ru = language === "ru";
+  const t = (en: string, ruText: string) => (ru ? ruText : en);
+
+  /* Free-tier scholarship gate. Free users see a generous-but-finite
+   * preview window (FREE_VISIBLE_LIMIT rows). Past that, a paywall
+   * card explains how many more are unlocked with Membership. Members
+   * + admins see all rows. The admin path lets the founder keep
+   * iterating on the free experience without paying himself; toggle
+   * via ?admin=1 in the URL or by being signed in with an ADMIN_EMAIL. */
+  const FREE_VISIBLE_LIMIT = 5;
+  // Run once per mount: ?admin=1 / ?admin=0 in the URL flips the
+  // localStorage flag so the user can opt the device into admin mode
+  // without code changes.
+  useEffect(() => { consumeAdminUrlFlag(); }, []);
+  const adminBypass = isAdminUser(user) || isAdminBypass();
+  const gateActive = !isMember && !adminBypass;
   const [foundingLeft, setFoundingLeft] = useState<{ left: number; cap: number } | null>(null);
+
+  /* Temporary "beta" banner — surfaces honesty about the data quality
+   * while the verification + enrichment pipelines are still catching
+   * up. Dismissal persists per-device via localStorage so we don't
+   * nag returning users. Pull it once we hit ~95% verification on the
+   * core regions; the localStorage key won't be re-keyed so anyone
+   * who dismissed it stays dismissed. */
+  const [betaDismissed, setBetaDismissed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try { return window.localStorage.getItem("topuni_discover_beta_dismissed") === "1"; }
+    catch { return false; }
+  });
+  const dismissBeta = () => {
+    setBetaDismissed(true);
+    try { window.localStorage.setItem("topuni_discover_beta_dismissed", "1"); }
+    catch { /* private mode — fine, just won't persist */ }
+  };
 
   useEffect(() => {
     supabase.from("founding_member_counter")
@@ -2758,7 +3068,7 @@ const Discover = ({ language = "en" }: Props) => {
       .map(v => v.display);
   }, [rows]);
 
-  const filtered = useMemo(() => {
+  const filteredAll = useMemo(() => {
     let list = ranked;
     if (filters.search) {
       // Search now hits the fields a user actually types when looking
@@ -2846,6 +3156,18 @@ const Discover = ({ language = "en" }: Props) => {
     if (sortBy === "selectivity") { const o: Record<string, number> = { low: 0, medium: 1, high: 2, very_high: 3, unknown: 4 }; return [...list].sort((a, b) => (o[a.selectivity] ?? 4) - (o[b.selectivity] ?? 4)); }
     return list;
   }, [ranked, filters, sortBy, hidden, showHidden]);
+
+  /* Free-tier gating — slice the filtered list to FREE_VISIBLE_LIMIT
+   * for users who aren't paid + aren't admin. Everything downstream
+   * (sections bucketing, card/list render, outcome RPC fetches) reads
+   * `filtered`, so a single slice here propagates. The paywall card
+   * is rendered separately at the end of the list/grid below, using
+   * `filteredAll.length - filtered.length` as the locked count. */
+  const filtered = useMemo(
+    () => (gateActive ? filteredAll.slice(0, FREE_VISIBLE_LIMIT) : filteredAll),
+    [filteredAll, gateActive]
+  );
+  const lockedCount = filteredAll.length - filtered.length;
 
   const sections = useMemo(() => {
     const top = filtered.filter(s => s.priority === "strong_match");
@@ -2946,7 +3268,13 @@ const Discover = ({ language = "en" }: Props) => {
 
   const activeFiltersCount = [filters.search !== "", filters.coverage !== "all", filters.degree !== "all", filters.selectivity !== "all", filters.field !== "all", filters.hostCountry !== "all", filters.demographic !== "all", filters.onlyEligible, filters.closingSoon].filter(Boolean).length;
 
-  const analysisTexts = [
+  const analysisTexts = ru ? [
+    `Сканируем ${rows.length || 200}+ стипендий`,
+    `Фильтруем по гражданству${wiz.nationality ? `: ${wiz.nationality}` : ""}`,
+    `Подбираем программы ${wiz.degrees.length > 0 ? wiz.degrees.join(" / ") : "вашего уровня"}${wiz.field ? ` в направлении ${wiz.field}` : ""}`,
+    "Оцениваем академические пороги и селективность",
+    "Ранжируем лучшие возможности",
+  ] : [
     `Scanning ${rows.length || 200}+ scholarships`,
     `Filtering by nationality${wiz.nationality ? `: ${wiz.nationality}` : ""}`,
     `Matching ${wiz.degrees.length > 0 ? wiz.degrees.join(" / ") : "your degree"} programs${wiz.field ? ` in ${wiz.field}` : ""}`,
@@ -2969,7 +3297,14 @@ const Discover = ({ language = "en" }: Props) => {
             (home, account, language, escape-to-other-products) in
             half the height. Same pattern Linear / Notion / Stripe
             Dashboard use. */}
-        {phase !== "results" && <Navigation language={language} />}
+        {phase !== "results" && (
+          /* Use overlay nav variant on the dark phases (landing /
+             wizard / analyzing) so the navy hero gradient extends
+             through the nav strip. Without this, in dark mode the
+             nav's own surface tint clashed with the navy hero
+             behind it — same color family, no clear separation. */
+          <Navigation language={language} variant={dark ? "overlay" : "default"} />
+        )}
         {phase === "results" && <DiscoverAppBar language={language} />}
 
         <AnimatePresence mode="wait">
@@ -2986,33 +3321,57 @@ const Discover = ({ language = "en" }: Props) => {
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-gold" />
                   </span>
                   <span className="text-primary-foreground/85 text-xs font-semibold tracking-wide">
-                    Live scholarship database
+                    {t("Live scholarship database", "Живая база стипендий")}
                   </span>
                 </motion.div>
 
                 <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
                   className="font-heading text-[clamp(2.75rem,7vw,5.5rem)] font-bold text-primary-foreground leading-[1.02] tracking-[-0.03em]">
-                  The scholarships<br />
-                  <span className="text-gold">made for you.</span>
+                  {ru ? (
+                    <>Стипендии,<br /><span className="text-gold">созданные для вас.</span></>
+                  ) : (
+                    <>The scholarships<br /><span className="text-gold">made for you.</span></>
+                  )}
                 </motion.h1>
 
                 <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32, duration: 0.7 }}
                   className="text-primary-foreground/55 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed font-light">
-                  Answer four questions. We rank every scholarship in our database against your profile and show how each one aligns with you.
+                  {t(
+                    "Answer four questions. We rank every scholarship in our database against your profile and show how each one aligns with you.",
+                    "Ответьте на четыре вопроса. Мы оценим каждую стипендию в нашей базе по вашему профилю и покажем, как каждая из них вам подходит."
+                  )}
                 </motion.p>
 
                 <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 0.7 }}
                   className="flex flex-col items-center gap-4 pt-2">
-                  <Button variant="gold" size="lg" className="text-base px-12 py-7 hover:scale-[1.02] transition-transform gap-2.5" onClick={() => setPhase("wizard")}>
-                    Find my scholarships
+                  {/* Round-27 IA: TopUni AI is the front door. The intake
+                      form there generates the personalized strategy AND
+                      seeds the Discover profile, so the user goes through
+                      a single onboarding rather than the same nationality/
+                      level/GPA questions twice. The wizard below is kept
+                      as a "skip strategy" path for users who want to
+                      browse the database immediately. */}
+                  <Button
+                    variant="gold"
+                    size="lg"
+                    className="text-base px-12 py-7 hover:scale-[1.02] transition-transform gap-2.5"
+                    onClick={() => navigate(language === "ru" ? "/topuni-ai/ru" : "/topuni-ai")}
+                  >
+                    {t("Get my personalized strategy", "Моя персональная стратегия")}
                     <ArrowRight className="h-5 w-5" />
                   </Button>
-                  <div className="flex items-center justify-center gap-5 text-xs text-primary-foreground/35 font-medium tracking-wide">
-                    <span className="flex items-center gap-1.5"><Zap className="h-3 w-3 text-gold" /> 2 minutes</span>
+                  <button
+                    onClick={() => setPhase("wizard")}
+                    className="text-xs text-primary-foreground/45 hover:text-primary-foreground/80 underline-offset-4 hover:underline transition-colors"
+                  >
+                    {t("or skip strategy and just browse the database", "или пропустить стратегию и сразу к базе")}
+                  </button>
+                  <div className="flex items-center justify-center gap-5 text-xs text-primary-foreground/35 font-medium tracking-wide pt-1">
+                    <span className="flex items-center gap-1.5"><Zap className="h-3 w-3 text-gold" /> {t("2 minutes", "2 минуты")}</span>
                     <span className="opacity-50">·</span>
-                    <span>No account needed</span>
+                    <span>{t("No account needed", "Без регистрации")}</span>
                     <span className="opacity-50">·</span>
-                    <span>Free during beta</span>
+                    <span>{t("Free during beta", "Бесплатно во время беты")}</span>
                   </div>
                 </motion.div>
               </motion.div>
@@ -3045,23 +3404,23 @@ const Discover = ({ language = "en" }: Props) => {
                 {wizardStep === 0 && (
                   <motion.div key="ws0" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.5 }}
                     className="flex-1 flex flex-col items-center justify-center px-6 py-10 max-w-xl mx-auto w-full text-center relative z-10">
-                    <p className="text-gold text-xs font-semibold uppercase tracking-[0.25em] mb-5">Step 1 · Hello</p>
-                    <h2 className="font-heading text-[clamp(2rem,5vw,3.25rem)] font-bold text-primary-foreground mb-4 tracking-[-0.02em] leading-[1.05]">Let's start with you.</h2>
-                    <p className="text-primary-foreground/50 mb-12 text-base">Just so we can save your matches.</p>
+                    <p className="text-gold text-xs font-semibold uppercase tracking-[0.25em] mb-5">{t("Step 1 · Hello", "Шаг 1 · Знакомство")}</p>
+                    <h2 className="font-heading text-[clamp(2rem,5vw,3.25rem)] font-bold text-primary-foreground mb-4 tracking-[-0.02em] leading-[1.05]">{t("Let's start with you.", "Начнём с вас.")}</h2>
+                    <p className="text-primary-foreground/50 mb-12 text-base">{t("Just so we can save your matches.", "Чтобы мы могли сохранить ваши совпадения.")}</p>
                     <div className="w-full space-y-5 text-left">
                       <div className="space-y-2">
-                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">Your name</label>
-                        <Input value={wiz.fullName} onChange={e => setWiz(w => ({ ...w, fullName: e.target.value }))} placeholder="First name (optional)"
+                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">{t("Your name", "Ваше имя")}</label>
+                        <Input value={wiz.fullName} onChange={e => setWiz(w => ({ ...w, fullName: e.target.value }))} placeholder={t("First name (optional)", "Имя (необязательно)")}
                           className="bg-primary-foreground/[0.04] border-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/25 h-12 text-base backdrop-blur-md focus-visible:border-gold/50 focus-visible:bg-primary-foreground/[0.06] transition-colors" />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">Email</label>
+                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">{t("Email", "Email")}</label>
                         <Input type="email" value={wiz.email} onChange={e => setWiz(w => ({ ...w, email: e.target.value }))} placeholder="you@email.com"
                           className="bg-primary-foreground/[0.04] border-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/25 h-12 text-base backdrop-blur-md focus-visible:border-gold/50 focus-visible:bg-primary-foreground/[0.06] transition-colors" />
                       </div>
                     </div>
                     <Button variant="gold" size="lg" className="mt-10 px-12 gap-2 text-base" disabled={!wiz.email} onClick={() => setWizardStep(1)}>
-                      Continue <ArrowRight className="h-5 w-5" />
+                      {t("Continue", "Дальше")} <ArrowRight className="h-5 w-5" />
                     </Button>
                   </motion.div>
                 )}
@@ -3069,9 +3428,9 @@ const Discover = ({ language = "en" }: Props) => {
                 {wizardStep === 1 && (
                   <motion.div key="ws1" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.5 }}
                     className="flex-1 flex flex-col items-center justify-center px-6 py-10 max-w-xl mx-auto w-full text-center relative z-10">
-                    <p className="text-gold text-xs font-semibold uppercase tracking-[0.25em] mb-5">Step 2 · Origin</p>
-                    <h2 className="font-heading text-[clamp(2rem,5vw,3.25rem)] font-bold text-primary-foreground mb-4 tracking-[-0.02em] leading-[1.05]">Where are you from?</h2>
-                    <p className="text-primary-foreground/50 mb-8 text-base max-w-md mx-auto">Your nationality unlocks the right eligibility. Type or pick — every country works.</p>
+                    <p className="text-gold text-xs font-semibold uppercase tracking-[0.25em] mb-5">{t("Step 2 · Origin", "Шаг 2 · Откуда")}</p>
+                    <h2 className="font-heading text-[clamp(2rem,5vw,3.25rem)] font-bold text-primary-foreground mb-4 tracking-[-0.02em] leading-[1.05]">{t("Where are you from?", "Откуда вы?")}</h2>
+                    <p className="text-primary-foreground/50 mb-8 text-base max-w-md mx-auto">{t("Your nationality unlocks the right eligibility. Type or pick — every country works.", "Ваше гражданство открывает нужные критерии. Введите или выберите — подойдёт любая страна.")}</p>
 
                     {/* Typeahead — single input that filters the full country
                         list. Click a result or press Enter to accept the typed
@@ -3081,7 +3440,7 @@ const Discover = ({ language = "en" }: Props) => {
                         value={wiz.nationality}
                         onChange={e => setWiz(w => ({ ...w, nationality: e.target.value }))}
                         onKeyDown={e => { if (e.key === "Enter" && wiz.nationality.trim()) setWizardStep(2); }}
-                        placeholder="Type your country (any)…"
+                        placeholder={t("Type your country (any)…", "Введите вашу страну (любую)…")}
                         className="bg-primary-foreground/[0.04] border-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/30 h-14 text-base backdrop-blur-md focus-visible:border-gold/50"
                       />
                       {(() => {
@@ -3097,7 +3456,7 @@ const Discover = ({ language = "en" }: Props) => {
                         return (
                           <div className="mt-4">
                             {q && matches.length > 0 && (
-                              <p className="text-[10px] uppercase tracking-[0.2em] text-primary-foreground/35 text-left mb-2">Matches</p>
+                              <p className="text-[10px] uppercase tracking-[0.2em] text-primary-foreground/35 text-left mb-2">{t("Matches", "Совпадения")}</p>
                             )}
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                               {matches.map(c => (
@@ -3110,7 +3469,7 @@ const Discover = ({ language = "en" }: Props) => {
                             </div>
                             {q && matches.length === 0 && (
                               <p className="text-primary-foreground/45 text-sm mt-3">
-                                No exact match — that's fine, your typed entry will be used.
+                                {t("No exact match — that's fine, your typed entry will be used.", "Точного совпадения нет — ничего страшного, мы используем введённое значение.")}
                               </p>
                             )}
                             {wiz.nationality.trim() && (
@@ -3120,7 +3479,7 @@ const Discover = ({ language = "en" }: Props) => {
                                 className="mt-6 px-12 gap-2"
                                 onClick={() => setWizardStep(2)}
                               >
-                                {exact ? `Continue as ${exact.v}` : `Continue with "${wiz.nationality.trim()}"`} <ArrowRight className="h-4 w-4" />
+                                {exact ? t(`Continue as ${exact.v}`, `Дальше как ${exact.v}`) : t(`Continue with "${wiz.nationality.trim()}"`, `Дальше с «${wiz.nationality.trim()}»`)} <ArrowRight className="h-4 w-4" />
                               </Button>
                             )}
                           </div>
@@ -3133,9 +3492,9 @@ const Discover = ({ language = "en" }: Props) => {
                 {wizardStep === 2 && (
                   <motion.div key="ws2" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.5 }}
                     className="flex-1 flex flex-col items-center justify-center px-6 py-10 max-w-2xl mx-auto w-full text-center relative z-10">
-                    <p className="text-gold text-xs font-semibold uppercase tracking-[0.25em] mb-5">Step 3 · Path</p>
-                    <h2 className="font-heading text-[clamp(2rem,5vw,3.25rem)] font-bold text-primary-foreground mb-4 tracking-[-0.02em] leading-[1.05]">What will you study?</h2>
-                    <p className="text-primary-foreground/50 mb-10 text-base">Pick every level you're considering — multiple is fine.</p>
+                    <p className="text-gold text-xs font-semibold uppercase tracking-[0.25em] mb-5">{t("Step 3 · Path", "Шаг 3 · Направление")}</p>
+                    <h2 className="font-heading text-[clamp(2rem,5vw,3.25rem)] font-bold text-primary-foreground mb-4 tracking-[-0.02em] leading-[1.05]">{t("What will you study?", "Что будете изучать?")}</h2>
+                    <p className="text-primary-foreground/50 mb-10 text-base">{t("Pick every level you're considering — multiple is fine.", "Отметьте все уровни, которые рассматриваете — можно несколько.")}</p>
                     <div className="w-full grid grid-cols-3 gap-4 mb-10">
                       {DEGREES.map((d, i) => {
                         const selected = wiz.degrees.includes(d.v);
@@ -3163,7 +3522,7 @@ const Discover = ({ language = "en" }: Props) => {
                     <AnimatePresence>
                       {wiz.degrees.length > 0 && (
                         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} className="w-full">
-                          <p className="text-primary-foreground/50 text-sm mb-4">And your field?</p>
+                          <p className="text-primary-foreground/50 text-sm mb-4">{t("And your field?", "И ваше направление?")}</p>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                             {FIELDS.map((f, i) => (
                               <motion.button key={f.v} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
@@ -3180,7 +3539,7 @@ const Discover = ({ language = "en" }: Props) => {
                       {wiz.degrees.length > 0 && wiz.field && (
                         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-7">
                           <Button variant="gold" size="lg" onClick={() => setWizardStep(3)} className="px-12 gap-2">
-                            Continue <ArrowRight className="h-5 w-5" />
+                            {t("Continue", "Дальше")} <ArrowRight className="h-5 w-5" />
                           </Button>
                         </motion.div>
                       )}
@@ -3191,9 +3550,9 @@ const Discover = ({ language = "en" }: Props) => {
                 {wizardStep === 3 && (
                   <motion.div key="ws3" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.5 }}
                     className="flex-1 flex flex-col items-center justify-center px-6 py-10 max-w-lg mx-auto w-full text-center relative z-10">
-                    <p className="text-gold text-xs font-semibold uppercase tracking-[0.25em] mb-5">Step 4 · Stats</p>
-                    <h2 className="font-heading text-[clamp(2rem,5vw,3.25rem)] font-bold text-primary-foreground mb-4 tracking-[-0.02em] leading-[1.05]">Your scores.</h2>
-                    <p className="text-primary-foreground/50 mb-10 text-base">Leave blank if you don't have them yet.</p>
+                    <p className="text-gold text-xs font-semibold uppercase tracking-[0.25em] mb-5">{t("Step 4 · Stats", "Шаг 4 · Баллы")}</p>
+                    <h2 className="font-heading text-[clamp(2rem,5vw,3.25rem)] font-bold text-primary-foreground mb-4 tracking-[-0.02em] leading-[1.05]">{t("Your scores.", "Ваши результаты.")}</h2>
+                    <p className="text-primary-foreground/50 mb-10 text-base">{t("Leave blank if you don't have them yet.", "Оставьте пустым, если ещё не сдавали.")}</p>
                     <div className="w-full space-y-6 text-left">
                       <div className="space-y-2">
                         <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">GPA</label>
@@ -3223,7 +3582,7 @@ const Discover = ({ language = "en" }: Props) => {
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">SAT (undergrad applicants)</label>
+                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">{t("SAT (undergrad applicants)", "SAT (для бакалавриата)")}</label>
                         <Input value={wiz.sat} onChange={e => setWiz(w => ({ ...w, sat: e.target.value }))} placeholder="e.g. 1450"
                           className="bg-primary-foreground/[0.04] border-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/25 h-12 backdrop-blur-md focus-visible:border-gold/50" />
                       </div>
@@ -3231,18 +3590,18 @@ const Discover = ({ language = "en" }: Props) => {
                           boost on programs designed for these groups.
                           Multi-select chips; nothing required. */}
                       <div className="space-y-2 pt-2">
-                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">Eligibility groups (optional)</label>
-                        <p className="text-[11px] text-primary-foreground/40 -mt-1">Tap any that apply — surfaces programs designed for you.</p>
+                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">{t("Eligibility groups (optional)", "Категории (необязательно)")}</label>
+                        <p className="text-[11px] text-primary-foreground/40 -mt-1">{t("Tap any that apply — surfaces programs designed for you.", "Отметьте подходящее — откроем программы, созданные специально для вас.")}</p>
                         <div className="flex flex-wrap gap-1.5">
                           {[
-                            { v: "women", l: "Women" },
-                            { v: "first-generation", l: "First-generation" },
-                            { v: "low-income", l: "Need-based" },
-                            { v: "refugee", l: "Refugee" },
-                            { v: "indigenous", l: "Indigenous" },
+                            { v: "women", l: t("Women", "Женщины") },
+                            { v: "first-generation", l: t("First-generation", "Первое поколение") },
+                            { v: "low-income", l: t("Need-based", "По доходу") },
+                            { v: "refugee", l: t("Refugee", "Беженцы") },
+                            { v: "indigenous", l: t("Indigenous", "Коренные народы") },
                             { v: "lgbtq", l: "LGBTQ+" },
-                            { v: "underrepresented-minority", l: "Underrepresented" },
-                            { v: "disability", l: "Disability" },
+                            { v: "underrepresented-minority", l: t("Underrepresented", "Недопредставленные") },
+                            { v: "disability", l: t("Disability", "Инвалидность") },
                           ].map(d => {
                             const on = wiz.demographics.includes(d.v);
                             return (
@@ -3267,7 +3626,7 @@ const Discover = ({ language = "en" }: Props) => {
                       </div>
                     </div>
                     <Button variant="gold" size="lg" className="mt-10 px-12 gap-2 text-base" onClick={completeWizard}>
-                      <Sparkles className="h-5 w-5" /> Reveal my matches
+                      <Sparkles className="h-5 w-5" /> {t("Reveal my matches", "Показать совпадения")}
                     </Button>
                   </motion.div>
                 )}
@@ -3311,6 +3670,33 @@ const Discover = ({ language = "en" }: Props) => {
           {/* ══ RESULTS — distinctive app-shell experience ══ */}
           {phase === "results" && (
             <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7 }}>
+              {/* Beta banner — slim, gold-bordered, dismissible. Tells
+                  users honestly that we're still verifying + adding
+                  programs, so they don't bounce when a search returns
+                  fewer rows than they expected. */}
+              {!betaDismissed && (
+                <div className="bg-gold/10 border-b border-gold/30">
+                  <div className="max-w-7xl mx-auto px-5 sm:px-8 py-2 flex items-center gap-3">
+                    <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-[0.18em] bg-gold-dark text-primary shrink-0">
+                      {t("Beta", "Бета")}
+                    </span>
+                    <p className="text-[12px] sm:text-[13px] text-foreground/80 leading-snug flex-1 min-w-0">
+                      {t(
+                        "We're still verifying programs and expanding the database daily. Always confirm details on the official site before applying.",
+                        "Мы пока проверяем программы и расширяем базу. Всегда подтверждайте детали на официальном сайте перед подачей."
+                      )}
+                    </p>
+                    <button
+                      onClick={dismissBeta}
+                      aria-label={t("Dismiss beta notice", "Закрыть уведомление о бете")}
+                      className="shrink-0 inline-flex items-center justify-center h-6 w-6 rounded text-foreground/50 hover:text-foreground hover:bg-foreground/[0.06] transition-colors"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Trending strip removed — felt tacky against the rest of
                   the navy/gold product chrome. Closest-deadline scholarships
                   still surface via the SavedDeadlineBanner and via the
@@ -3396,8 +3782,7 @@ const Discover = ({ language = "en" }: Props) => {
                             onClick={() => setPhase("wizard")}
                             className="inline-flex items-center gap-1.5 text-sm font-semibold text-gold-dark hover:text-foreground transition-colors group"
                           >
-                            <Sparkles className="w-3.5 h-3.5" />
-                            Build profile to see fit scoring
+                            {t("Build profile to see fit scoring", "Заполните профиль для оценки совпадения")}
                             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                           </button>
                         )}
@@ -3431,22 +3816,24 @@ const Discover = ({ language = "en" }: Props) => {
                 <div className="max-w-7xl mx-auto px-6 sm:px-8 py-3 flex items-center gap-2.5 flex-wrap">
                   <div className="relative flex-1 min-w-[200px] max-w-md">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                    <Input ref={searchInputRef} value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} placeholder="Search names, providers, fields, tags…   (/ to focus)"
+                    <Input ref={searchInputRef} value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} placeholder={t("Search names, providers, fields, tags…   (/ to focus)", "Поиск по названию, организации, направлению, тегам…   (/ — фокус)")}
                       className="pl-10 h-10 text-sm rounded-lg" />
                     {filters.search && <button onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>}
                   </div>
 
                   <Button variant="outline" size="default" className="lg:hidden gap-1.5 h-10 rounded-lg" onClick={() => setFiltersOpen(true)}>
-                    <Filter className="h-4 w-4" />Filters{activeFiltersCount > 0 && <Badge className="h-5 px-1.5 text-[10px] bg-gold/20 text-gold-dark dark:text-gold border-0 ml-0.5">{activeFiltersCount}</Badge>}
+                    <Filter className="h-4 w-4" />{t("Filters", "Фильтры")}{activeFiltersCount > 0 && <Badge className="h-5 px-1.5 text-[10px] bg-gold/20 text-gold-dark dark:text-gold border-0 ml-0.5">{activeFiltersCount}</Badge>}
                   </Button>
 
                   <Select value={sortBy} onValueChange={v => setSortBy(v as SortBy)}>
                     <SelectTrigger className="w-[156px] h-10 text-sm rounded-lg"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="match">Best match</SelectItem>
-                      <SelectItem value="deadline">Deadline first</SelectItem>
-                      <SelectItem value="value">Highest value</SelectItem>
-                      <SelectItem value="selectivity">Most accessible</SelectItem>
+                      <SelectItem value="match">{t("Best match", "Лучшее совпадение")}</SelectItem>
+                      <SelectItem value="deadline">{t("Deadline first", "Сначала по дедлайну")}</SelectItem>
+                      <SelectItem value="value">{t("Highest value", "Наибольшая сумма")}</SelectItem>
+                      {/* "Most accessible" sort retired — selectivity
+                          metadata is incomplete on most rows so the
+                          sort produced near-random ordering. */}
                     </SelectContent>
                   </Select>
 
@@ -3462,17 +3849,17 @@ const Discover = ({ language = "en" }: Props) => {
                         onClick={() => setViewMode("grid")}
                         className={`h-full px-3 text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === "grid" ? "bg-foreground/[0.06] text-foreground" : "text-muted-foreground hover:text-foreground"}`}
                         aria-pressed={viewMode === "grid"}
-                        title="Grid view"
+                        title={t("Grid view", "Сетка")}
                       >
-                        <LayoutGrid className="h-3.5 w-3.5" /><span className="hidden sm:inline">Grid</span>
+                        <LayoutGrid className="h-3.5 w-3.5" /><span className="hidden sm:inline">{t("Grid", "Сетка")}</span>
                       </button>
                       <button
                         onClick={() => setViewMode("list")}
                         className={`h-full px-3 text-xs font-medium flex items-center gap-1.5 transition-colors border-l border-border ${viewMode === "list" ? "bg-foreground/[0.06] text-foreground" : "text-muted-foreground hover:text-foreground"}`}
                         aria-pressed={viewMode === "list"}
-                        title="List view"
+                        title={t("List view", "Список")}
                       >
-                        <List className="h-3.5 w-3.5" /><span className="hidden sm:inline">List</span>
+                        <List className="h-3.5 w-3.5" /><span className="hidden sm:inline">{t("List", "Список")}</span>
                       </button>
                     </div>
                   )}
@@ -3486,7 +3873,7 @@ const Discover = ({ language = "en" }: Props) => {
                       onClick={() => setCompareOpen(true)}
                     >
                       <Columns3 className="h-4 w-4" />
-                      <span className="hidden sm:inline">Compare</span>
+                      <span className="hidden sm:inline">{t("Compare", "Сравнить")}</span>
                       <Badge className="h-5 px-1.5 text-[10px] bg-gold text-primary border-0">{compareSet.size}</Badge>
                     </Button>
                   )}
@@ -3498,10 +3885,10 @@ const Discover = ({ language = "en" }: Props) => {
                       size="default"
                       className="h-10 rounded-lg gap-1.5 text-xs text-muted-foreground hover:text-foreground"
                       onClick={() => setShowHidden(v => !v)}
-                      title={showHidden ? "Hide hidden" : "Show hidden"}
+                      title={showHidden ? t("Hide hidden", "Скрыть") : t("Show hidden", "Показать скрытые")}
                     >
                       {showHidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                      <span className="hidden sm:inline">{hidden.size} hidden</span>
+                      <span className="hidden sm:inline">{hidden.size} {t("hidden", "скрыто")}</span>
                     </Button>
                   )}
 
@@ -3584,7 +3971,7 @@ const Discover = ({ language = "en" }: Props) => {
                           <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground flex items-center gap-2"><SlidersHorizontal className="h-3.5 w-3.5" />Refine</h3>
                           {activeFiltersCount > 0 && <Badge className="h-5 px-1.5 text-[10px] bg-gold/20 text-gold-dark dark:text-gold border-0">{activeFiltersCount}</Badge>}
                         </div>
-                        <FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} fieldsAvailable={fieldsAvailable} />
+                        <FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} fieldsAvailable={fieldsAvailable} lang={language} />
                       </div>
 
                       {/* Founding membership card — visible always (until user is a member) */}
@@ -3596,7 +3983,7 @@ const Discover = ({ language = "en" }: Props) => {
                           <div className="absolute -top-1/3 right-0 w-1/2 h-full rounded-full blur-[60px] opacity-20" style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 60%)" }} />
                           <div className="relative">
                             <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold-light mb-2">
-                              <Sparkles className="h-3 w-3" /> Founding Pro
+                              <Crown className="h-3 w-3" /> Founding Pro
                             </div>
                             <p className="font-heading font-bold text-sm leading-tight mb-1">Unlock the full database + workshops with our founders.</p>
                             <p className="text-[11px] text-primary-foreground/65 mb-3">Lifetime price lock. Capped at {foundingLeft.cap} members.</p>
@@ -3613,7 +4000,7 @@ const Discover = ({ language = "en" }: Props) => {
 
                       {isMember && (
                         <div className="rounded-xl border border-gold/30 bg-gold/8 px-3 py-2.5 flex items-center gap-2">
-                          <Sparkles className="h-3.5 w-3.5 text-gold-dark" />
+                          <Crown className="h-3.5 w-3.5 text-gold-dark" />
                           <span className="text-[11px] font-semibold text-gold-dark">{subscription.tier === "founding" ? "Founding member" : "Pro member"}</span>
                         </div>
                       )}
@@ -3666,8 +4053,7 @@ const Discover = ({ language = "en" }: Props) => {
                           </Button>
                           <Button asChild variant="gold" size="sm" className="gap-1.5">
                             <Link to={language === "ru" ? "/submit/ru" : "/submit"}>
-                              <Sparkles className="h-3.5 w-3.5" />
-                              Submit a scholarship
+                              {t("Submit a scholarship", "Предложить стипендию")}
                             </Link>
                           </Button>
                         </div>
@@ -3723,6 +4109,7 @@ const Discover = ({ language = "en" }: Props) => {
                             isComparing: compareSet.has(s.scholarship_id),
                             onToggleCompare: (e: React.MouseEvent) => { e.stopPropagation(); toggleCompare(s.scholarship_id); },
                             outcomes: outcomesMap.get(s.scholarship_id),
+                            lang: language,
                           });
                           // List-mode column header is intentionally label-only.
                           // Sort is driven by the dropdown above the grid —
@@ -3730,11 +4117,9 @@ const Discover = ({ language = "en" }: Props) => {
                           // suggesting click-to-sort that wasn't reliable.
                           return (
                             <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
-                              <div className="hidden sm:grid grid-cols-[52px,minmax(0,3fr),minmax(0,1.4fr),minmax(0,0.8fr),auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                                <span className="text-center">Score</span>
+                              <div className="hidden sm:grid grid-cols-[minmax(0,1fr),170px,auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                                 <span>Scholarship</span>
-                                <span>Award · Deadline</span>
-                                <span>Status</span>
+                                <span className="text-right">Award · Deadline</span>
                                 <span className="text-right pr-2">Actions</span>
                               </div>
                               {items.map((s, i) => <ScholarRow {...cp(s, i)} />)}
@@ -3801,6 +4186,7 @@ const Discover = ({ language = "en" }: Props) => {
                             isComparing: compareSet.has(s.scholarship_id),
                             onToggleCompare: (e: React.MouseEvent) => { e.stopPropagation(); toggleCompare(s.scholarship_id); },
                             outcomes: outcomesMap.get(s.scholarship_id),
+                            lang: language,
                           });
 
                           if (viewMode === "list") {
@@ -3808,14 +4194,13 @@ const Discover = ({ language = "en" }: Props) => {
                             // dropdown above the grid (one source of truth).
                             return (
                               <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
-                                <div className="hidden sm:grid grid-cols-[52px,minmax(0,3fr),minmax(0,1.4fr),minmax(0,0.8fr),auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                                  <span className="text-center">Score</span>
+                                <div className="hidden sm:grid grid-cols-[minmax(0,1fr),170px,auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                                   <span>Scholarship</span>
-                                  <span>Award · Deadline</span>
-                                  <span>Status</span>
+                                  <span className="text-right">Award · Deadline</span>
                                   <span className="text-right pr-2">Actions</span>
                                 </div>
                                 {filtered.map((s, i) => <ScholarRow {...cardProps(s, i)} />)}
+                                {lockedCount > 0 && <PaywallRow lockedCount={lockedCount} lang={language} />}
                               </div>
                             );
                           }
@@ -3835,14 +4220,15 @@ const Discover = ({ language = "en" }: Props) => {
                             return (
                               <section>
                                 <SectionHeader
-                                  kicker="Database"
-                                  title="All scholarships"
-                                  subtitle="Build your profile (top right) to see which ones fit you best."
+                                  kicker={t("Database", "База")}
+                                  title={t("All scholarships", "Все стипендии")}
+                                  subtitle={t("Build your profile (top right) to see which ones fit you best.", "Заполните профиль (вверху справа), чтобы увидеть, какие подходят лучше.")}
                                   accentClass="text-foreground/60"
                                 />
                                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
                                   {sections.stretch.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
                                 </div>
+                                {lockedCount > 0 && <PaywallCard lockedCount={lockedCount} className="mt-4" lang={language} />}
                               </section>
                             );
                           }
@@ -3857,7 +4243,10 @@ const Discover = ({ language = "en" }: Props) => {
                                   WHETHER the user is likely to win. */}
                               {sections.strong.length > 0 && (
                                 <section>
-                                  <SectionHeader kicker="Strong fit" title="These align with your profile" subtitle="Your stated nationality, level, and field overlap with the program's audience."
+                                  <SectionHeader
+                                    kicker={t("Strong fit", "Хорошее совпадение")}
+                                    title={t("These align with your profile", "Эти подходят вашему профилю")}
+                                    subtitle={t("Your stated nationality, level, and field overlap with the program's audience.", "Ваши гражданство, уровень и направление совпадают с целевой аудиторией программы.")}
                                     count={sections.strong.length} accentClass="text-gold-dark dark:text-gold" />
                                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
                                     {sections.strong.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
@@ -3867,7 +4256,10 @@ const Discover = ({ language = "en" }: Props) => {
 
                               {sections.competitive.length > 0 && (
                                 <section>
-                                  <SectionHeader kicker="Worth a closer look" title="Selective programs that match your direction" subtitle="Some thresholds are tight — read the requirements before drafting."
+                                  <SectionHeader
+                                    kicker={t("Worth a closer look", "Стоит присмотреться")}
+                                    title={t("Selective programs that match your direction", "Селективные программы по вашему направлению")}
+                                    subtitle={t("Some thresholds are tight — read the requirements before drafting.", "Некоторые пороги жёсткие — прочитайте требования до подачи.")}
                                     count={sections.competitive.length} accentClass="text-primary dark:text-primary-bright" />
                                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
                                     {sections.competitive.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
@@ -3877,13 +4269,18 @@ const Discover = ({ language = "en" }: Props) => {
 
                               {sections.stretch.length > 0 && (
                                 <section>
-                                  <SectionHeader kicker="Flagship programs" title="The rest of the catalog" subtitle="Highly selective on paper. People do win these every year."
+                                  <SectionHeader
+                                    kicker={t("Flagship programs", "Флагманские программы")}
+                                    title={t("The rest of the catalog", "Остальной каталог")}
+                                    subtitle={t("Highly selective on paper. People do win these every year.", "Очень селективные на бумаге. Каждый год кто-то их выигрывает.")}
                                     count={sections.stretch.length} accentClass="text-muted-foreground" />
                                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
                                     {sections.stretch.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
                                   </div>
                                 </section>
                               )}
+
+                              {lockedCount > 0 && <PaywallCard lockedCount={lockedCount} className="mt-2" lang={language} />}
                             </>
                           );
                         })()}
@@ -4152,6 +4549,7 @@ const Discover = ({ language = "en" }: Props) => {
                         onToggleHide={(e) => { e.stopPropagation(); toggleHide(s.scholarship_id); }}
                         isComparing={compareSet.has(s.scholarship_id)}
                         onToggleCompare={(e) => { e.stopPropagation(); toggleCompare(s.scholarship_id); }}
+                        lang={language}
                       />
                     ))}
                   </div>
@@ -4168,7 +4566,7 @@ const Discover = ({ language = "en" }: Props) => {
               <div className="absolute -top-1/3 left-1/4 w-2/3 h-full rounded-full blur-[120px] opacity-20" style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 60%)" }} />
               <div className="relative">
                 <div className="inline-flex items-center gap-2 bg-gold/15 border border-gold/30 px-3 py-1 rounded-full mb-5">
-                  <Sparkles className="h-3 w-3 text-gold-light" />
+                  <Crown className="h-3 w-3 text-gold-light" />
                   <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold-light">Founding Pro</span>
                 </div>
                 <SheetHeader>
@@ -4219,8 +4617,8 @@ const Discover = ({ language = "en" }: Props) => {
         {/* Mobile filters */}
         <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
           <SheetContent side="left" className="w-[300px] overflow-y-auto">
-            <SheetHeader><SheetTitle className="flex items-center gap-2"><SlidersHorizontal className="h-4 w-4" />Filters</SheetTitle></SheetHeader>
-            <div className="mt-5"><FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} fieldsAvailable={fieldsAvailable} /></div>
+            <SheetHeader><SheetTitle className="flex items-center gap-2"><SlidersHorizontal className="h-4 w-4" />{t("Filters", "Фильтры")}</SheetTitle></SheetHeader>
+            <div className="mt-5"><FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} fieldsAvailable={fieldsAvailable} lang={language} /></div>
           </SheetContent>
         </Sheet>
 
@@ -4240,6 +4638,7 @@ const Discover = ({ language = "en" }: Props) => {
           isMember={isMember}
           onUnlock={() => setPaywallOpen("strategy")}
           onExpand={() => openDetail && setExpandedDetail(openDetail)}
+          lang={language}
         />
 
         <ExpandedScholarshipDialog
@@ -4249,6 +4648,7 @@ const Discover = ({ language = "en" }: Props) => {
           onApply={() => expandedDetail?.official_url && window.open(expandedDetail.official_url, "_blank", "noopener,noreferrer")}
           onSave={() => expandedDetail && toggleBookmark(expandedDetail.scholarship_id)}
           isBookmarked={expandedDetail ? shortlist.has(expandedDetail.scholarship_id) : false}
+          lang={language}
         />
       </div>
     </div>

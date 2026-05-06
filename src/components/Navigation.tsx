@@ -36,19 +36,22 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
   const isRussian = language === "ru";
   const basePath = isRussian ? "/ru" : "/";
 
-  // Tighter IA: 5 product surfaces in linear order. TopUni AI →
-  // Discover → Workspace covers the funnel from intake → browse → do.
-  // Academy + Pricing live alongside as platform surfaces. Team /
-  // Journal / Partner-with-us live in the footer where company-tier
-  // surfaces belong. Names match the page-level labels exactly so
-  // there's no "Pipeline" vs "Workspace" or "AI brief" vs "TopUni
-  // AI" inconsistency between nav and content.
+  // Tighter IA: TopUni AI → Discover → Workspace covers the funnel
+  // from intake → browse → do. Academy lives alongside as a platform
+  // surface. Pricing / Team / Journal / Partner-with-us live in the
+  // footer where they belong; Pricing also surfaces inside in-app
+  // upgrade flows where the user is already in conversion intent.
+  //
+  // Workspace is HIDDEN from nav for unauthenticated visitors — it
+  // requires auth to do anything (it reads/writes the user's tracker)
+  // and showing it next to a Sign-in button creates an unnecessary
+  // dead-end click. Authed users see Workspace + their Account chip;
+  // anonymous users see TopUni AI / Discover / Academy + Sign-in.
   const navItems = [
     { label: "TopUni AI",                                     path: isRussian ? "/topuni-ai/ru" : "/topuni-ai" },
     { label: isRussian ? "Стипендии"   : "Discover",          path: isRussian ? "/discover/ru" : "/discover" },
-    { label: isRussian ? "Рабочая зона" : "Workspace",        path: isRussian ? "/pipeline/ru" : "/pipeline" },
+    ...(user ? [{ label: isRussian ? "Рабочая зона" : "Workspace", path: isRussian ? "/pipeline/ru" : "/pipeline" }] : []),
     { label: isRussian ? "Академия"    : "Academy",           path: "/academy" },
-    { label: isRussian ? "Цены"        : "Pricing",           path: isRussian ? "/pricing/ru" : "/pricing" },
   ];
 
   const isActive = (path: string, exact?: boolean) =>

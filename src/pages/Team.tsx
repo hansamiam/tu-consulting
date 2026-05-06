@@ -274,12 +274,14 @@ const Team = () => {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border/30 bg-background/80 backdrop-blur-sm py-6 mt-12">
-        <div className="container mx-auto px-4 text-center">
-          <Footer language="en" variant="light" />
-        </div>
-      </footer>
+      {/* Footer — the Footer component already provides its own <footer>
+          element with internal max-w container, grid layout, and padding.
+          The page used to wrap it in another <footer> + container +
+          text-center, which forced the "TopUni" wordmark and the link
+          column to render center-aligned and broke the two-column
+          layout. Now we render Footer directly so it uses its own
+          layout. */}
+      <Footer language="en" variant="light" />
     </div>
   );
 };

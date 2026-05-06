@@ -56,7 +56,7 @@ BEGIN
   --     college, school, programme, programs, ltd, inc, plc
   --   · Common decorations: international, global, world, official
   raw := regexp_replace(raw,
-    '\m(scholarships?|fellowships?|programmes?|programs?|awards?|scholars?|grants?|bursari?es?|bursarys?|prizes?|internships?|the|of|for|in|by|at|to|on|and|with|a|an|from|into|between|across|foundation|stiftung|trust|council|society|association|organi[sz]ations?|institute|university|college|school|ltd|inc|plc|gmbh|international|global|world|official)\M',
+    '\m(scholarships?|fellowships?|programmes?|programs?|awards?|scholars?|students?|grants?|bursari?es?|bursarys?|prizes?|internships?|the|of|for|in|by|at|to|on|and|with|a|an|from|into|between|across|foundation|stiftung|trust|council|society|association|organi[sz]ations?|institute|university|college|school|ltd|inc|plc|gmbh|international|global|world|official)\M',
     ' ', 'g');
   -- Strip years
   raw := regexp_replace(raw, '\m(19|20)\d{2}\M', ' ', 'g');
@@ -121,6 +121,11 @@ END
 $$;
 
 -- ─── 2. Recompute canonical_key on every existing row ─────────────────────────
+-- v3 collapses keys that v2 kept distinct, so the existing UNIQUE index
+-- would reject the recompute mid-flight. Drop it, recompute, dedupe, then
+-- restore the UNIQUE index at the end.
+DROP INDEX IF EXISTS public.uniq_scholarships_canonical_key;
+
 UPDATE public.scholarships
 SET canonical_key = public.normalize_scholarship_key(scholarship_name, provider_name, host_country);
 
@@ -204,3 +209,8 @@ BEGIN
   RAISE NOTICE 'dedup_v3: merged % loser rows into survivors', merged_count;
 END
 $$;
+
+-- ─── 5. Restore the UNIQUE index now that survivors are unique ────────────────
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_scholarships_canonical_key
+  ON public.scholarships(canonical_key)
+  WHERE canonical_key IS NOT NULL;

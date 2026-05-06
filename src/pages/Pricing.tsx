@@ -172,10 +172,15 @@ const Pricing = ({ language = "en" }: PricingProps) => {
   const claimed = foundingLeft != null ? foundingCap - foundingLeft : 0;
   const claimedPct = foundingLeft != null ? Math.round((claimed / foundingCap) * 100) : 0;
 
+  // CTA: founding members keep the Crown (genuine status moment); the
+  // default "Become a member" CTA used to also wear a Sparkles icon
+  // which read as "AI magic" and competed with every actual AI surface
+  // on the site. Plain typography is fine — the gold button is doing
+  // the heavy visual work already.
   const ctaLabel = loading ? <Loader2 className="w-4 h-4 animate-spin" />
     : isFounding ? <><Crown className="w-4 h-4" /> {t.cta.isFounding}</>
     : foundingLeft === 0 ? t.cta.soldOut
-    : <><Sparkles className="w-4 h-4" /> {t.cta.claim}</>;
+    : t.cta.claim;
 
   return (
     <div className="min-h-screen bg-background">

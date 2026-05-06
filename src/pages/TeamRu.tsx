@@ -265,12 +265,9 @@ const TeamRu = () => {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border/30 bg-background/80 backdrop-blur-sm py-6 mt-12">
-        <div className="container mx-auto px-4 text-center">
-          <Footer language="ru" variant="light" />
-        </div>
-      </footer>
+      {/* Footer — same layout-breaking wrapper retired here as in
+          Team.tsx; Footer renders its own <footer> + grid layout. */}
+      <Footer language="ru" variant="light" />
     </div>
   );
 };
