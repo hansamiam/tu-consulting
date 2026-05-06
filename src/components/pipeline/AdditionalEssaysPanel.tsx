@@ -28,6 +28,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import type { AdditionalEssay } from "@/hooks/useApplicationTracker";
+import { EssayOutlineCard } from "@/components/pipeline/EssayOutlineCard";
 
 interface Props {
   scholarshipId: string;
@@ -362,6 +363,26 @@ const EssayCard = ({ essay, index, scholarshipName, language, onChange, onRemove
             className="resize-y font-sans text-[14px] leading-relaxed"
           />
           <div className="mt-2 flex flex-wrap items-center gap-2">
+            {/* Outline scaffold — most useful for additional essays
+                because each one has a distinct prompt + word ceiling
+                and the writer's already deep enough into the
+                application to want structure tailored to THIS essay's
+                question. Hides once the draft is past the structural
+                question (400+ words). */}
+            {wc < 400 && (
+              <EssayOutlineCard
+                scholarshipName={scholarshipName}
+                essayPrompt={essay.prompt}
+                essayTitle={essay.title}
+                wordTarget={target}
+                language={language}
+                onInsert={(scaffold) => {
+                  const next = draft.trim() ? `${scaffold}\n\n${draft}` : scaffold;
+                  setDraft(next);
+                  onChange({ draft: next });
+                }}
+              />
+            )}
             <Button
               variant="outline"
               size="sm"

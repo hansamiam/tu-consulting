@@ -32,6 +32,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
+import { EssayOutlineCard } from "@/components/pipeline/EssayOutlineCard";
 
 interface Opener { angle: string; text: string; }
 
@@ -324,6 +325,23 @@ export const EssayDraftPanel = ({ scholarshipId, scholarshipName, value, onChang
             className="resize-y font-sans text-[14px] leading-relaxed"
           />
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
+            {/* Outline button — shows whenever the draft is empty or
+                short, since that's when "I don't know how to structure
+                this" is the actual problem. Hides once the user has
+                400+ words in (past the structural question). */}
+            {draft.trim().split(/\s+/).filter(Boolean).length < 400 && (
+              <EssayOutlineCard
+                scholarshipName={scholarshipName}
+                wordTarget={target}
+                language={language}
+                onInsert={(scaffold) => {
+                  const next = draft.trim() ? `${scaffold}\n\n${draft}` : scaffold;
+                  setDraft(next);
+                  onChange(next);
+                  setSavedAt(Date.now());
+                }}
+              />
+            )}
             {draft.trim().length < 80 && (
               <Button
                 variant="outline"
