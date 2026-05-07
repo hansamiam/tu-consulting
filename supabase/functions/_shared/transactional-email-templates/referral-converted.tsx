@@ -5,61 +5,98 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 
-const SITE_NAME = 'TopUni Consulting'
 const SITE_URL = 'https://topuni.org'
 
 interface Props {
   name?: string
   referralCount?: number      // total premium conversions so far for this referrer
+  language?: 'en' | 'ru'
 }
 
-const ReferralConvertedEmail = ({ name, referralCount = 1 }: Props) => {
-  const ordinal =
-    referralCount === 1 ? 'first' :
-    referralCount === 2 ? 'second' :
-    referralCount === 3 ? 'third' :
-    `${referralCount}th`
+const enOrdinal = (n: number): string =>
+  n === 1 ? 'first' : n === 2 ? 'second' : n === 3 ? 'third' : `${n}th`
+
+const ruOrdinal = (n: number): string =>
+  n === 1 ? 'первый' : n === 2 ? 'второй' : n === 3 ? 'третий' : `${n}-й`
+
+const COPY = {
+  en: {
+    htmlLang: 'en',
+    preview: (ord: string) => `Your ${ord} friend just upgraded — your free month is queued.`,
+    headingNamed: (n: string) => `${n}, a friend you referred just upgraded.`,
+    headingNeutral: 'Hi, a friend you referred just upgraded.',
+    leadPre: 'Your ',
+    leadPost: ' referral converted to Premium. As promised — you both get a free month of Premium added to your subscription.',
+    nextKicker: 'What happens next',
+    nextBody: 'The free month gets credited within 24 hours. Your next billing date moves out by 30 days. No action needed on your end. Your friend gets the same — their first month is on us.',
+    seeReferralsCta: 'See your referrals',
+    referPath: '/refer',
+    keepGoingHead: 'Keep going.',
+    keepGoingBody: 'No cap on referrals. Every friend who upgrades = another free month for you. Share your code:',
+    shareCta: 'Get my share link',
+    teamSignoff: '— The TopUni Consulting team',
+    questions: 'Questions? Reply to this email — we read every message.',
+    subjectFirst: '🎉 Your first referral just upgraded — free month queued',
+    subjectMore: (ord: string) => `🎉 Your ${ord} referral upgraded — another free month queued`,
+    ordinal: enOrdinal,
+  },
+  ru: {
+    htmlLang: 'ru',
+    preview: (ord: string) => `Ваш ${ord} друг апгрейднулся — бесплатный месяц вам зачисляется.`,
+    headingNamed: (n: string) => `${n}, друг по вашей рекомендации только что оформил подписку.`,
+    headingNeutral: 'Привет — друг по вашей рекомендации только что оформил подписку.',
+    leadPre: 'Ваш ',
+    leadPost: ' приглашённый перешёл на Premium. Как и обещали — вам и ему по бесплатному месяцу подписки.',
+    nextKicker: 'Что дальше',
+    nextBody: 'Бесплатный месяц зачисляется в течение 24 часов. Дата следующего списания отодвинется на 30 дней. От вас ничего не требуется. Ваш друг получает то же самое — его первый месяц за наш счёт.',
+    seeReferralsCta: 'Открыть мои рекомендации',
+    referPath: '/refer/ru',
+    keepGoingHead: 'Продолжайте.',
+    keepGoingBody: 'Лимита на рекомендации нет. Каждый друг с подпиской = ещё один бесплатный месяц вам. Делитесь ссылкой:',
+    shareCta: 'Получить ссылку',
+    teamSignoff: '— Команда TopUni Consulting',
+    questions: 'Вопросы? Просто ответьте на это письмо — мы читаем каждое.',
+    subjectFirst: '🎉 Ваша первая рекомендация апгрейднулась — бесплатный месяц вам зачисляется',
+    subjectMore: (ord: string) => `🎉 Ваш ${ord} приглашённый апгрейднулся — ещё один бесплатный месяц вам`,
+    ordinal: ruOrdinal,
+  },
+} as const
+
+const ReferralConvertedEmail = ({ name, referralCount = 1, language = 'en' }: Props) => {
+  const c = COPY[language === 'ru' ? 'ru' : 'en']
+  const ordinal = c.ordinal(referralCount)
 
   return (
-    <Html lang="en" dir="ltr">
+    <Html lang={c.htmlLang} dir="ltr">
       <Head />
-      <Preview>Your {ordinal} friend just upgraded — your free month is queued.</Preview>
+      <Preview>{c.preview(ordinal)}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={h1}>{name ? `${name},` : 'Hi,'} a friend you referred just upgraded.</Heading>
+          <Heading style={h1}>{name ? c.headingNamed(name) : c.headingNeutral}</Heading>
           <Text style={lead}>
-            Your <strong>{ordinal}</strong> referral converted to Premium. As promised — you both get a free month
-            of Premium added to your subscription.
+            {c.leadPre}<strong>{ordinal}</strong>{c.leadPost}
           </Text>
 
           <Section style={card}>
-            <Text style={cardKicker}>What happens next</Text>
-            <Text style={cardText}>
-              The free month gets credited within 24 hours. Your next billing date moves out by 30 days. No action
-              needed on your end. Your friend gets the same — their first month is on us.
-            </Text>
+            <Text style={cardKicker}>{c.nextKicker}</Text>
+            <Text style={cardText}>{c.nextBody}</Text>
           </Section>
 
           <Section style={btnWrap}>
-            <Button href={`${SITE_URL}/refer`} style={primaryBtn}>See your referrals</Button>
+            <Button href={`${SITE_URL}${c.referPath}`} style={primaryBtn}>{c.seeReferralsCta}</Button>
           </Section>
 
           <Hr style={hr} />
 
-          <Text style={subhead}>Keep going.</Text>
-          <Text style={text}>
-            No cap on referrals. Every friend who upgrades = another free month for you.
-            Share your code:
-          </Text>
+          <Text style={subhead}>{c.keepGoingHead}</Text>
+          <Text style={text}>{c.keepGoingBody}</Text>
           <Section style={codeRow}>
-            <Button href={`${SITE_URL}/refer`} style={secondaryBtn}>Get my share link</Button>
+            <Button href={`${SITE_URL}${c.referPath}`} style={secondaryBtn}>{c.shareCta}</Button>
           </Section>
 
           <Hr style={hr} />
-          <Text style={footer}>— The {SITE_NAME} team</Text>
-          <Text style={footerSmall}>
-            Questions? Reply to this email — we read every message.
-          </Text>
+          <Text style={footer}>{c.teamSignoff}</Text>
+          <Text style={footerSmall}>{c.questions}</Text>
         </Container>
       </Body>
     </Html>
@@ -69,14 +106,16 @@ const ReferralConvertedEmail = ({ name, referralCount = 1 }: Props) => {
 export const template = {
   component: ReferralConvertedEmail,
   subject: ((data: Record<string, any>) => {
+    const c = COPY[data.language === 'ru' ? 'ru' : 'en']
     const n = Number(data.referralCount) || 1
-    if (n === 1) return '🎉 Your first referral just upgraded — free month queued'
-    return `🎉 Your ${n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`} referral upgraded — another free month queued`
+    if (n === 1) return c.subjectFirst
+    return c.subjectMore(c.ordinal(n))
   }),
   displayName: 'Referral converted to Premium',
   previewData: {
     name: 'Aizada',
     referralCount: 1,
+    language: 'en',
   },
 } satisfies TemplateEntry
 

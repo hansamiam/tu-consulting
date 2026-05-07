@@ -152,11 +152,12 @@ Deno.serve(async (req) => {
           // directly without admin scopes).
           const { data: refProfile } = await admin
             .from("student_profiles")
-            .select("email, full_name")
+            .select("email, full_name, language")
             .eq("user_id", ref.referrer_user_id)
             .maybeSingle();
           if (refProfile?.email) {
             try {
+              const refLang: "en" | "ru" = (refProfile as { language?: string | null }).language === "ru" ? "ru" : "en";
               await admin.functions.invoke("send-transactional-email", {
                 body: {
                   recipientEmail: refProfile.email,
@@ -172,6 +173,7 @@ Deno.serve(async (req) => {
                   templateData: {
                     name: refProfile.full_name?.split(" ")[0] ?? undefined,
                     referralCount: (rc?.premium_conversions ?? 0) + 1,
+                    language: refLang,
                   },
                 },
               });
