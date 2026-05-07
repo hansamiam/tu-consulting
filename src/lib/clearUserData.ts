@@ -71,10 +71,15 @@ const USER_DATA_KEYS = [
 ];
 
 /** Prefix matchers for keys we generate dynamically per scholarship /
- *  per profile hash. All wiped on sign-out. */
+ *  per profile hash / per user. All wiped on sign-out. */
 const USER_DATA_PREFIXES = [
   "topuni_essay_target_",        // per-scholarship word target
   "topuni-brief-emailed:",       // per-profile-hash email-sent flag
+  "tu_milestone_",               // per-user idempotent milestone marker
+                                 // (use-track-milestone). Without this,
+                                 // user A's milestone-already-fired flag
+                                 // would block user B from getting the
+                                 // same milestone toast on the same browser.
 ];
 
 export const clearUserDataLocalStorage = (): void => {

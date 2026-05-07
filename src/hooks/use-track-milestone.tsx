@@ -4,7 +4,6 @@ import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Sparkles } from "lucide-react";
 
 const cacheKey = (uid: string, key: string) => `tu_milestone_${uid}_${key}`;
 
@@ -29,10 +28,21 @@ export const useTrackMilestone = () => {
           return;
         }
         if (data?.trial_activated) {
-          toast.success("🎁 5-day Pro trial unlocked!", {
-            description: "You've earned full access to every premium tool. Enjoy!",
-            duration: 8000,
-          });
+          // Detect language from URL pathname — the hook doesn't get
+          // a language prop, but a Russian user on /discover/ru
+          // shouldn't see an English unlock celebration toast.
+          const isRu = typeof window !== "undefined" &&
+            (window.location.pathname.startsWith("/ru") ||
+             /\/(?:ru)(?:$|\/)/.test(window.location.pathname));
+          toast.success(
+            isRu ? "5-дневный Pro-доступ открыт" : "5-day Pro trial unlocked",
+            {
+              description: isRu
+                ? "Полный доступ ко всем премиум-инструментам. Пользуйтесь."
+                : "You've earned full access to every premium tool. Enjoy.",
+              duration: 8000,
+            },
+          );
           // Refresh sub state so banners + gates update immediately
           await refreshSubscription();
         }
