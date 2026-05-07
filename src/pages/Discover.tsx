@@ -705,6 +705,7 @@ const STOP_WORDS = new Set(["and", "or", "of", "the", "in", "for", "to"]);
 const humanize = (s: string | null | undefined): string => {
   if (!s) return "";
   return s.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim().split(" ")
+    .filter(Boolean)
     .map((w, i) => i > 0 && STOP_WORDS.has(w.toLowerCase()) ? w.toLowerCase() : w[0].toUpperCase() + w.slice(1).toLowerCase())
     .join(" ");
 };
