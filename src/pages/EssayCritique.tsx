@@ -298,6 +298,15 @@ const EssayCritique = ({ language = "en" }: EssayCritiqueProps) => {
     setResult(""); setError(null); setTier(null); setGeneratedAt(null);
   };
 
+  // Navigation away mid-stream → abort. Without this the fetch
+  // keeps streaming after the page unmounts (server tokens billed,
+  // setState warnings on the unmounted component).
+  useEffect(() => {
+    return () => {
+      cancelRef.current?.abort();
+    };
+  }, []);
+
   const aiPath = language === "ru" ? "/topuni-ai/ru" : "/topuni-ai";
   const pricingPath = language === "ru" ? "/pricing/ru" : "/pricing";
 

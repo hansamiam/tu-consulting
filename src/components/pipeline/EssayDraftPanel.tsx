@@ -265,6 +265,16 @@ export const EssayDraftPanel = ({ scholarshipId, scholarshipName, value, onChang
     setCritiquing(false);
   };
 
+  // Abort any in-flight critique stream when the panel unmounts.
+  // Without this, closing the detail sheet mid-critique left the
+  // request streaming server-side (tokens billed) and the React
+  // setState calls would warn "Can't update an unmounted component."
+  useEffect(() => {
+    return () => {
+      if (abortRef.current) abortRef.current.abort();
+    };
+  }, []);
+
   const wordCount = draft.trim() ? draft.trim().split(/\s+/).length : 0;
   const charCount = draft.length;
   const pct = Math.min(150, Math.round((wordCount / target) * 100));

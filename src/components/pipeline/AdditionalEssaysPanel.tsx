@@ -288,6 +288,15 @@ const EssayCard = ({ essay, index, scholarshipName, language, onChange, onRemove
     setCritiquing(false);
   };
 
+  // Abort any in-flight critique on unmount — same fix as the
+  // primary EssayDraftPanel. Closing the detail sheet mid-critique
+  // would otherwise leave the server-side stream running.
+  useEffect(() => {
+    return () => {
+      if (abortRef.current) abortRef.current.abort();
+    };
+  }, []);
+
   const wc = wordCount(draft);
   const pct = Math.min(150, Math.round((wc / target) * 100));
   const progressTone =
