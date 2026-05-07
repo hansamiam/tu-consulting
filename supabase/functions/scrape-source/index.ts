@@ -33,6 +33,7 @@ import {
   cleanTargetDemographics,
   extractDemographicsFromCitizenship,
   stripUserRelative,
+  inferHostCountryFromNames,
 } from "../_shared/scholarshipFields.ts";
 
 const corsHeaders = {
@@ -142,6 +143,7 @@ Field semantics:
 - target_degree_level: subset of ["bachelor","master","phd","postdoc"]
 - eligible_countries: ISO country names. Empty array means "open globally".
 - application_deadline: ISO YYYY-MM-DD if a specific date; omit if rolling or unknown.
+- deadline_type: DEFAULT to "annual" — almost every fellowship/scholarship runs on a yearly cycle even when this year's date isn't visible on the page. Use "rolling" ONLY when the page explicitly says continuous / no deadline / accepted year-round. Use "one-time" only for a clearly one-shot opportunity (e.g. a 75th-anniversary grant). Use "unknown" only when there's truly no signal. Misclassifying annual programs as "rolling" hides real deadlines from the student.
 - ideal_candidate_profile: 1-2 sentences describing who has the best shot.
 - weak_candidate_warning: 1 sentence on common red flags / who shouldn't apply.
 - best_for_tags: short tags like ["public-policy","developing-countries","mid-career"]
@@ -340,9 +342,36 @@ function validateExtracted(x: unknown): ExtractedScholarship | null {
   if (!cleanedProvider) return null;
   o.provider_name = cleanedProvider;
 
-  const cleanedCountry = cleanHostCountry(o.host_country as string);
+  // host_country: try LLM-extracted value first; if blank, infer from
+  // the program + provider name patterns. Many well-known scholarships
+  // (Chevening, DAAD, Fulbright, MEXT, East-West Center) embed their
+  // country in the name itself, but the LLM often omits the field
+  // because the page body doesn't repeat it.
+  let cleanedCountry = cleanHostCountry(o.host_country as string);
+  if (!cleanedCountry) {
+    const inferred = inferHostCountryFromNames(
+      o.scholarship_name as string,
+      o.provider_name as string,
+    );
+    if (inferred) cleanedCountry = inferred;
+  }
   if (!cleanedCountry) return null;
   o.host_country = cleanedCountry;
+
+  // deadline_type: LLMs lean toward "rolling" as a "I don't know" tag,
+  // which falsely tags annual fellowships as continuous-intake. If the
+  // program is one of the well-known annual cycles (Chevening, Rhodes,
+  // Fulbright, DAAD, etc.) AND the LLM said "rolling" or omitted the
+  // field, override to "annual". Avoids hiding real deadlines from
+  // students. (The actual application_deadline date stays whatever the
+  // LLM extracted — we're only correcting the cycle type.)
+  const dt = (o.deadline_type as string | undefined) ?? null;
+  if (dt === null || dt === "rolling" || dt === "unknown") {
+    const haystack = `${o.scholarship_name as string} | ${o.provider_name as string}`;
+    if (/\b(chevening|rhodes|gates cambridge|clarendon|marshall scholar|commonwealth scholarship|fulbright|knight[\-\s]?hennessy|schwarzman|yenching|mext|kgsp|korean? government scholarship|vanier|trudeau|eiffel|daad|deutschlandstipendium|heinrich b[oö]ll|konrad[\-\s]?adenauer|friedrich[\-\s]?ebert|swiss government|swedish institute|orange knowledge|holland scholar|australia awards|erasmus mundus|aga khan|mastercard foundation scholar|p\.?d\.?soros|jack kent cooke|gates millennium|hispanic scholarship fund|east[\-\s]?west center)\b/i.test(haystack)) {
+      o.deadline_type = "annual";
+    }
+  }
 
   if (Array.isArray(o.target_fields)) {
     const cleaned = cleanTargetFields(o.target_fields);

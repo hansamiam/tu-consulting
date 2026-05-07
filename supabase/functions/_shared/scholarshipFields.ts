@@ -251,3 +251,135 @@ export function cleanAwardText(raw: string | null | undefined): string | null {
   if (t.length > 200) t = t.slice(0, 198).trimEnd() + "…";
   return t;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Country inference from program / provider name
+ * ─────────────────────────────────────────────────────────────────────────
+ *
+ * The LLM extractor sometimes leaves host_country empty even when the
+ * scholarship's name screams its country (Chevening = UK, DAAD = Germany,
+ * Fulbright = US, MEXT = Japan, East-West Center = US/Hawaii). This
+ * function pattern-matches the well-known program names + provider name
+ * keywords to backfill a country when the LLM left it blank.
+ *
+ * Returned value is the canonical country name as it appears in
+ * REGIONAL_ACCENT (countryAccent.ts) so the silhouette + palette resolve
+ * correctly. Returns null if no high-confidence pattern matches — better
+ * to leave host_country empty than to mis-attribute a row.
+ *
+ * Used by:
+ *   · scrape-source: post-LLM fallback when extracted host_country is
+ *     null or empty (defensive).
+ *   · 20260507150000_backfill_host_country.sql: one-shot backfill of
+ *     existing rows via the SQL mirror of these patterns.
+ *
+ * If you add a pattern here, add the same pattern to the SQL function
+ * in the migration so backfill stays in sync. */
+
+interface CountryPattern {
+  /** Regex to match against `${name} | ${provider}`. Case-insensitive. */
+  pattern: RegExp;
+  /** Canonical host_country value to write. */
+  country: string;
+}
+
+// Patterns ordered by specificity — most-specific first so e.g.
+// "American University in Cairo" matches Egypt before the generic
+// "American" → US fallback.
+const COUNTRY_PATTERNS: CountryPattern[] = [
+  // ─── Programs whose names are 1:1 with their host country ────────
+  { pattern: /\bchevening\b/i,                          country: "United Kingdom" },
+  { pattern: /\bgates cambridge\b/i,                    country: "United Kingdom" },
+  { pattern: /\brhodes scholar/i,                       country: "United Kingdom" },
+  { pattern: /\bclarendon\b/i,                          country: "United Kingdom" },
+  { pattern: /\bweidenfeld[\-\s]?hoffmann/i,            country: "United Kingdom" },
+  { pattern: /\bcommonwealth scholarship/i,             country: "United Kingdom" },
+  { pattern: /\bmarshall scholar/i,                     country: "United Kingdom" },
+  { pattern: /\boxford\b|\bcambridge\b/i,               country: "United Kingdom" }, // generic university
+  { pattern: /\bbritish\s+council\b/i,                  country: "United Kingdom" },
+  { pattern: /\bcambridge trust\b/i,                    country: "United Kingdom" },
+
+  { pattern: /\bdaad\b|\bdeutscher? akademisch/i,       country: "Germany" },
+  { pattern: /\bheinrich b[oö]ll\b/i,                   country: "Germany" },
+  { pattern: /\bkonrad[\-\s]?adenauer\b/i,              country: "Germany" },
+  { pattern: /\bfriedrich[\-\s]?ebert\b/i,              country: "Germany" },
+  { pattern: /\brosa luxemburg\b/i,                     country: "Germany" },
+  { pattern: /\bhans[\-\s]?b[oö]ckler\b/i,              country: "Germany" },
+  { pattern: /\bhumboldt\b.*scholar|stipend|fellow/i,   country: "Germany" },
+  { pattern: /\bdeutschlandstipendium\b/i,              country: "Germany" },
+
+  { pattern: /\bfulbright\b/i,                          country: "United States" },
+  { pattern: /\beast[\-\s]?west center\b/i,             country: "United States" },
+  { pattern: /\bknight[\-\s]?hennessy\b/i,              country: "United States" },
+  { pattern: /\bp\.?d\.?soros\b|\bpaul.{0,4}daisy soros\b/i, country: "United States" },
+  { pattern: /\bjack kent cooke\b/i,                    country: "United States" },
+  { pattern: /\bgates millennium\b/i,                   country: "United States" },
+  { pattern: /\bcoca[\-\s]?cola scholar/i,              country: "United States" },
+  { pattern: /\bhispanic scholarship fund\b/i,          country: "United States" },
+  { pattern: /\b(harvard|yale|princeton|stanford|mit|columbia|cornell|dartmouth|brown|penn|nyu|ucla|berkeley|chicago|northwestern|duke)\b/i,
+                                                        country: "United States" },
+
+  { pattern: /\beiffel\s+excellence\b|\beiffel\s+scholar/i,   country: "France" },
+  { pattern: /\bcampus\s?france\b/i,                    country: "France" },
+  { pattern: /\bsorbonne\b|\bpsl\b|\bsciences\s+po\b/i, country: "France" },
+
+  { pattern: /\bmext\b|\bmonbukagakusho\b/i,            country: "Japan" },
+  { pattern: /\bjasso\b/i,                              country: "Japan" },
+  { pattern: /\b(tokyo|kyoto|osaka|waseda|keio)\s+university\b/i, country: "Japan" },
+
+  { pattern: /\bschwarzman\s+scholar/i,                 country: "China" },
+  { pattern: /\byenching\s+(academy|scholar)\b/i,       country: "China" },
+  { pattern: /\b(tsinghua|peking|fudan|shanghai jiao tong)\b/i, country: "China" },
+  { pattern: /\b(chinese|china)\s+government\s+scholarship\b/i, country: "China" },
+
+  { pattern: /\bkgsp\b|\bkorean? government scholarship\b|\bglobal korea scholarship\b/i, country: "South Korea" },
+  { pattern: /\b(seoul national|kaist|postech|yonsei)\b/i, country: "South Korea" },
+
+  { pattern: /\bvanier\s+canada\b|\bvanier\s+scholar/i, country: "Canada" },
+  { pattern: /\btrudeau\s+(scholar|foundation)\b/i,     country: "Canada" },
+  { pattern: /\b(university of toronto|mcgill|ubc|waterloo)\b/i, country: "Canada" },
+
+  { pattern: /\baustralia\s+awards?\b|\bdfat\b.*scholar/i, country: "Australia" },
+  { pattern: /\b(university of melbourne|sydney|anu|monash|unsw|uq\b|queensland)\b/i, country: "Australia" },
+
+  { pattern: /\b(swiss\s+government|eth\s+z[uü]rich|epfl)\b/i, country: "Switzerland" },
+  { pattern: /\bswedish\s+institute\b/i,                country: "Sweden" },
+  { pattern: /\borange\s+knowledge\b|\bholland\s+scholar/i, country: "Netherlands" },
+  { pattern: /\b(asean|nus\b|ntu\b|smu)\s+(scholar|fellow)/i, country: "Singapore" },
+  { pattern: /\b(singapore international|nus|smu)\b/i,  country: "Singapore" },
+
+  { pattern: /\bnew zealand\s+(government|aid|scholar)/i, country: "New Zealand" },
+  { pattern: /\b(university of auckland|otago|victoria university of wellington)\b/i, country: "New Zealand" },
+
+  { pattern: /\bfapesp\b|\bcapes\b|\bcnpq\b/i,          country: "Brazil" },
+
+  { pattern: /\bkhazanah\b/i,                           country: "Malaysia" },
+  { pattern: /\b(national university of singapore|nanyang technological)\b/i, country: "Singapore" },
+
+  // ─── Multi-country / EU programs — explicit Multiple ────────────
+  { pattern: /\berasmus\s+mundus\b/i,                   country: "Multiple countries" },
+  { pattern: /\baga\s+khan\s+(foundation|development)/i, country: "Multiple countries" },
+  { pattern: /\brotary\s+peace\s+(fellow|scholar)/i,    country: "Multiple countries" },
+  { pattern: /\bmastercard\s+foundation\s+scholar/i,    country: "Multiple countries" },
+
+  // ─── Generic provider keywords (lowest specificity, last) ────────
+  // These fire when the more-specific named-program patterns above
+  // didn't match. Catches e.g. "Government of Ireland Postgraduate
+  // Scholarship Programme" without a named-program brand.
+  { pattern: /\b(government of |republic of )?ireland\b/i,    country: "Ireland" },
+  { pattern: /\b(government of |united states of )?(america|usa)\b/i, country: "United States" },
+];
+
+/** Infer host_country from the scholarship + provider name when the LLM
+ *  left it empty. Returns null if no high-confidence pattern matches. */
+export function inferHostCountryFromNames(
+  scholarshipName: string | null | undefined,
+  providerName: string | null | undefined,
+): string | null {
+  const haystack = `${scholarshipName ?? ""} | ${providerName ?? ""}`.trim();
+  if (haystack.length < 4) return null;
+  for (const { pattern, country } of COUNTRY_PATTERNS) {
+    if (pattern.test(haystack)) return country;
+  }
+  return null;
+}

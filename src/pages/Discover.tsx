@@ -1480,43 +1480,54 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           travel poster strip rather than a database row. Text stays on
           the left where the silhouette opacity is lowest. */}
       <div className={`relative bg-gradient-to-r ${accent} px-4 h-14 flex items-center gap-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/95 overflow-hidden whitespace-nowrap`}>
-        {/* Country landmark icon, anchored right. The flag-pattern texture
-            that used to sit underneath was retired (round 22) — it
-            failed to find a good shape for most countries and read as
-            noise rather than the "campus postcard" texture intended. */}
-        <CountryArt country={s.host_country} className="absolute right-2 inset-y-0 h-full opacity-35 pointer-events-none" />
+        {/* Country landmark icon, anchored right. Bounded width so it
+            never overlaps the chip strip on the left. The flag-pattern
+            texture that used to sit underneath was retired (round 22). */}
+        <CountryArt country={s.host_country} className="absolute right-2 inset-y-0 h-full max-w-[35%] opacity-35 pointer-events-none" />
         {/* fade-from-left so silhouette + pattern don't compete with text */}
         <span className={`absolute inset-0 bg-gradient-to-r from-black/30 via-black/5 to-transparent pointer-events-none`} />
-        <span className="relative flex items-center gap-2 min-w-0 flex-1">
+        <span className="relative flex items-center gap-2 min-w-0 flex-1 pr-[35%]">
           {s.host_country && (
             <span className="truncate drop-shadow-sm">{shortCountry(s.host_country)}</span>
           )}
-          {s.target_demographics && s.target_demographics.length > 0 && (
-            <>
-              <span className="text-white/40 shrink-0">·</span>
-              <span className="inline-flex items-center gap-1 text-gold-light/95 drop-shadow-sm shrink-0">
-                {humanizeDemographic(s.target_demographics[0])}
-                {s.target_demographics.length > 1 && ` +${s.target_demographics.length - 1}`}
-              </span>
-            </>
-          )}
-          {isFullRide && (
-            <>
-              <span className="text-white/40 shrink-0">·</span>
-              <span className="inline-flex items-center gap-1 text-gold-light drop-shadow-sm shrink-0">
-                <Award className="h-2.5 w-2.5" />
-                {ru ? "Полное" : "Full ride"}
-              </span>
-            </>
-          )}
-          {(s.selectivity === "very_high" || s.selectivity === "high") && (
-            <>
-              <span className="text-white/40 shrink-0">·</span>
-              <span className="inline-flex items-center text-white/95 drop-shadow-sm shrink-0">
-                {ru ? "Престижная" : "Prestigious"}
-              </span>
-            </>
-          )}
+          {/* Chip priority on the band: country (always) > full-ride badge >
+              prestigious badge > one demographic. We used to render every
+              chip including a "+N" overflow indicator; on cards with long
+              country names + multi-demographic eligibility the strip
+              overflowed under the silhouette and the "+1" was the part
+              users saw cut off. Cap to ONE secondary chip total — the
+              detail sheet carries the rest. */}
+          {(() => {
+            const secondary: React.ReactNode[] = [];
+            if (isFullRide) {
+              secondary.push(
+                <span key="fr" className="inline-flex items-center gap-1 text-gold-light drop-shadow-sm shrink-0">
+                  <Award className="h-2.5 w-2.5" />
+                  {ru ? "Полное" : "Full ride"}
+                </span>,
+              );
+            }
+            if (secondary.length === 0 && (s.selectivity === "very_high" || s.selectivity === "high")) {
+              secondary.push(
+                <span key="ps" className="inline-flex items-center text-white/95 drop-shadow-sm shrink-0">
+                  {ru ? "Престижная" : "Prestigious"}
+                </span>,
+              );
+            }
+            if (secondary.length === 0 && s.target_demographics && s.target_demographics.length > 0) {
+              secondary.push(
+                <span key="dm" className="inline-flex items-center gap-1 text-gold-light/95 drop-shadow-sm shrink-0 truncate max-w-[40%]">
+                  {humanizeDemographic(s.target_demographics[0])}
+                </span>,
+              );
+            }
+            return secondary.length > 0 ? (
+              <>
+                <span className="text-white/40 shrink-0">·</span>
+                {secondary[0]}
+              </>
+            ) : null;
+          })()}
         </span>
       </div>
 
