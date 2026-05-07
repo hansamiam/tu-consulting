@@ -156,11 +156,17 @@ Field hygiene (NON-NEGOTIABLE — these are the rules generic LLMs break):
 - host_country: a SINGLE country name. If the program is genuinely multi-country, use exactly "Multiple countries" — never "Multiple (Korea, Japan, etc.)" or "Various (primarily Africa)".
 - target_demographics: array of canonical tags from this CONSTRAINED SET ONLY (free text gets rejected): "women", "men", "lgbtq", "first-generation", "low-income", "refugee", "displaced", "indigenous", "underrepresented-stem", "underrepresented-minority", "disability", "military-veteran", "rural", "mature-student". Add a tag ONLY when the program text EXPLICITLY restricts to or specifically targets that group. Do NOT add tags as a vibe — a "leadership" scholarship that mentions women in passing is NOT "women"-targeted. citizenship_requirements is for COUNTRY of citizenship; demographic constraints (gender / identity / income / refugee status) belong here, not there.
 
+Official URL extraction (DATA QUALITY GATE — get this wrong and we publish links to aggregator sites instead of apply pages):
+- official_url MUST be the page where students actually apply or read the program's authoritative description — typically the program's own .gov / .edu / foundation site.
+- If the page you're reading IS that authoritative page (Source category = "official"), the source URL itself is fine.
+- If the page you're reading is an aggregator listing (Source category = "aggregator", or the URL is at scholarshipportal.com / opportunitydesk.org / etc.), DO NOT use the source URL — extract the actual apply URL from the page content (usually a "Visit official page" / "Apply here" link). If no such URL is in the page content, OMIT the field — better an empty official_url than an aggregator link presented as official.
+
 Set confidence honestly. Better to flag low-confidence than to publish noise.`;
 
-const USER_PROMPT_TEMPLATE = (sourceName: string, sourceUrl: string, hint: string | null, markdown: string) => `
+const USER_PROMPT_TEMPLATE = (sourceName: string, sourceUrl: string, sourceCategory: string | null, hint: string | null, markdown: string) => `
 Source name: ${sourceName}
 Source URL: ${sourceUrl}
+Source category: ${sourceCategory || "(unknown)"}
 Source hint (parser guidance from admin): ${hint || "(none)"}
 
 Page content (markdown, may be truncated):
@@ -175,7 +181,7 @@ Extract every scholarship program described on this page. Return strictly:
       "scholarship_name": "...",
       "provider_name": "...",
       "host_country": "...",
-      "official_url": "${sourceUrl}",
+      "official_url": "<the apply URL — see rules below>",
       "coverage_type": "full_ride|partial|tuition_only|stipend|other",
       "award_amount_text": "...",
       "estimated_total_value_usd": 50000,
@@ -564,7 +570,7 @@ serve(async (req) => {
       tier: "pro",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: USER_PROMPT_TEMPLATE(src.name, src.url, src.parser_hint, truncated) },
+        { role: "user", content: USER_PROMPT_TEMPLATE(src.name, src.url, src.category, src.parser_hint, truncated) },
       ],
     });
     if (!resp.ok) throw new Error(`LLM HTTP ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
@@ -681,11 +687,22 @@ serve(async (req) => {
 
     if (isAutoPublish) {
       autoPublished++;
+      // Official URL fallback: only fall back to src.url when the source
+      // is the official program page itself. For aggregator sources
+      // (scholarshipportal.com, opportunitydesk.org, etc.) the source URL
+      // is a third-party listing — publishing it as the official URL
+      // misrepresents it and can mislead students. The DB trigger
+      // is_aggregator_url() also flags it, but better to never publish
+      // it as official in the first place. Null here is fine —
+      // verification cron will pick it up and the UI shows a "no
+      // official link yet" state instead of a misleading link.
+      const isAggregatorSource = src.category === "aggregator";
+      const fallbackOfficial = isAggregatorSource ? null : src.url;
       const upsertPayload: Record<string, unknown> = {
         scholarship_name:                s.scholarship_name,
         provider_name:                   s.provider_name,
         host_country:                    s.host_country,
-        official_url:                    s.official_url || src.url,
+        official_url:                    s.official_url || fallbackOfficial,
         coverage_type:                   s.coverage_type,
         award_amount_text:               s.award_amount_text ?? null,
         estimated_total_value_usd:       s.estimated_total_value_usd ?? null,
