@@ -62,6 +62,7 @@ const PaymentCanceled      = lazy(() => import("./pages/PaymentCanceled"));
 const Unsubscribe          = lazy(() => import("./pages/Unsubscribe"));
 const Pricing              = lazy(() => import("./pages/Pricing"));
 const AuthCallback         = lazy(() => import("./pages/AuthCallback"));
+const AuthResetPassword    = lazy(() => import("./pages/AuthResetPassword"));
 const Account              = lazy(() => import("./pages/Account"));
 const AdminSources         = lazy(() => import("./pages/admin/Sources"));
 const AdminQueue           = lazy(() => import("./pages/admin/ScholarshipQueue"));
@@ -199,6 +200,7 @@ const App = () => (
           <Route path="/pricing" element={<Pricing language="en" />} />
           <Route path="/pricing/ru" element={<Pricing language="ru" />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/auth/reset-password" element={<AuthResetPassword />} />
           <Route path="/account" element={<Account language="en" />} />
           <Route path="/account/ru" element={<Account language="ru" />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

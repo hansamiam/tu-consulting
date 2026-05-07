@@ -18,10 +18,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Check, Sparkles, Mail, Bookmark, Clock, Bot } from "lucide-react";
+import { Loader2, Sparkles, Bookmark, Clock, Bot, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { setPendingAccount, type PendingAccountPayload } from "@/lib/pendingAccount";
-import { setPostAuthRedirect } from "@/lib/postAuthRedirect";
 
 interface Props {
   open: boolean;
@@ -49,10 +48,11 @@ export function SaveBriefPrompt({
 }: Props) {
   const isRu = language === "ru";
   const t = (en: string, ru: string) => (isRu ? ru : en);
-  const { user, signInWithMagicLink } = useAuth();
+  const { user, signUpWithPassword, signInWithPassword } = useAuth();
   const [email, setEmail] = useState<string>(defaultEmail ?? payload.profile.email ?? "");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Already authed — nothing to do; the dialog should not have been shown
@@ -60,30 +60,37 @@ export function SaveBriefPrompt({
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || submitting) return;
+    if (!email.trim() || !password || submitting) return;
+    if (password.length < 8) {
+      setError(t("Password needs at least 8 characters.", "Пароль — минимум 8 символов."));
+      return;
+    }
     setError(null);
     setSubmitting(true);
 
-    // Stash the pending payload BEFORE triggering signup, so the magic
-    // link returning into a fresh tab still has access to it via LS.
+    // Stash the pending payload BEFORE the auth call, so AuthContext's
+    // post-sign-in drain can pick it up the moment SIGNED_IN fires.
     setPendingAccount({
       ...payload,
       profile: { ...payload.profile, email: email.trim() },
       createdAt: Date.now(),
     });
 
-    // Tell AuthCallback to send the user back to the AI dashboard.
-    // Uses localStorage (cross-tab) so the magic-link target survives
-    // an email client opening the link in a new tab.
-    setPostAuthRedirect(isRu ? "/topuni-ai/ru" : "/topuni-ai");
-
-    const { error: authErr } = await signInWithMagicLink(email.trim());
+    // Try sign-up first. If the email already has an account, fall back
+    // to sign-in with the same password — saves the user one click and
+    // routes returning students into the same flow.
+    let result = await signUpWithPassword(email.trim(), password);
+    if (result.error && /already (registered|exists)|user.*exists/i.test(result.error)) {
+      result = await signInWithPassword(email.trim(), password);
+    }
     setSubmitting(false);
-    if (authErr) {
-      setError(authErr);
+    if (result.error) {
+      setError(result.error);
       return;
     }
-    setDone(true);
+    // Drain runs from AuthContext; close the dialog so the dashboard
+    // re-renders as authed.
+    onOpenChange(false);
   };
 
   return (
@@ -106,8 +113,8 @@ export function SaveBriefPrompt({
           </DialogTitle>
           <DialogDescription className="text-sm leading-relaxed">
             {t(
-              "Right now everything lives on this browser only — clear your cookies and it's gone. Sign up (no password) and we'll keep it across devices plus email you before each deadline.",
-              "Сейчас всё хранится только в этом браузере — очистите cookies и оно пропадёт. Регистрация (без пароля) — синхронизация и напоминания за день до каждого дедлайна.",
+              "Right now everything lives on this browser only — clear your cookies and it's gone. Pick an email + password and we'll keep your brief across devices plus remind you before each deadline.",
+              "Сейчас всё хранится только в этом браузере — очистите cookies и оно пропадёт. Email + пароль — синхронизация на всех устройствах и напоминания за день до каждого дедлайна.",
             )}
           </DialogDescription>
         </DialogHeader>
@@ -160,69 +167,72 @@ export function SaveBriefPrompt({
           </div>
         )}
 
-        {done ? (
-          <div className="py-4 space-y-4">
-            <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm font-medium">
-              <Check className="h-4 w-4" /> {t("Email sent", "Письмо отправлено")}
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {t(
-                `Check ${email} for the magic link. Click it and you're in — your brief and tracker move to your account automatically.`,
-                `Проверьте ${email} — там ссылка для входа. Перейдите по ней, и ваш брифинг и список переедут на аккаунт автоматически.`
-              )}
-            </p>
-            <p className="text-[11px] text-muted-foreground/80">
-              {t(
-                "Don't see it? Check spam, or close and try again.",
-                "Не видите? Проверьте спам или попробуйте ещё раз."
-              )}
-            </p>
+        <form onSubmit={submit} className="space-y-3 py-2">
+          <div className="space-y-1.5">
+            <label className="text-xs uppercase tracking-wider font-medium text-foreground">
+              {t("Email", "Электронная почта")}
+            </label>
+            <Input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@email.com"
+              className="h-11"
+              autoComplete="email"
+              autoFocus
+            />
           </div>
-        ) : (
-          <form onSubmit={submit} className="space-y-3 py-2">
-            <div className="space-y-1.5">
-              <label className="text-xs uppercase tracking-wider font-medium text-foreground">
-                {t("Email", "Электронная почта")}
-              </label>
+          <div className="space-y-1.5">
+            <label className="text-xs uppercase tracking-wider font-medium text-foreground">
+              {t("Password", "Пароль")}
+            </label>
+            <div className="relative">
               <Input
-                type="email"
+                type={showPassword ? "text" : "password"}
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@email.com"
-                className="h-11"
-                autoFocus
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={t("Min 8 characters", "Минимум 8 символов")}
+                className="h-11 pr-10"
+                autoComplete="new-password"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-foreground"
+                aria-label={showPassword ? t("Hide password", "Скрыть пароль") : t("Show password", "Показать пароль")}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
-            {error && (
-              <p className="text-xs text-destructive leading-relaxed">{error}</p>
+          </div>
+          {error && (
+            <p className="text-xs text-destructive leading-relaxed">{error}</p>
+          )}
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            {t(
+              "Already have an account? Same email + password signs you in.",
+              "Уже есть аккаунт? Тот же email и пароль — войдёте."
             )}
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              {t(
-                "We'll email you a one-click link to verify. No password.",
-                "Отправим ссылку для входа в один клик. Без пароля."
+          </p>
+          <DialogFooter className="gap-2 pt-2">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>
+              {t("Maybe later", "Позже")}
+            </Button>
+            <Button type="submit" variant="gold" disabled={submitting || !email.trim() || !password} className="gap-1.5">
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {t("Saving…", "Сохраняем…")}
+                </>
+              ) : (
+                t("Save my brief", "Сохранить брифинг")
               )}
-            </p>
-            <DialogFooter className="gap-2 pt-2">
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>
-                {t("Maybe later", "Позже")}
-              </Button>
-              <Button type="submit" variant="gold" disabled={submitting || !email.trim()} className="gap-1.5">
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    {t("Sending…", "Отправляем…")}
-                  </>
-                ) : (
-                  <>
-                    <Mail className="w-4 h-4" />
-                    {t("Send the link", "Отправить ссылку")}
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        )}
+            </Button>
+          </DialogFooter>
+        </form>
 
         <div className="border-t border-border/60 pt-3 text-[11px] text-muted-foreground/80 space-y-1.5">
           <div className="flex items-start gap-1.5">

@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { Mail, Loader2, CheckCircle2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 type Props = {
@@ -12,33 +12,104 @@ type Props = {
   title?: string;
   description?: string;
   language?: "en" | "ru";
+  /** Initial mode — defaults to "signin". Pass "signup" when the prompt
+   *  is wedged into a flow that's clearly creating a new account
+   *  (SaveBriefPrompt, founding-member CTA, etc.). */
+  initialMode?: "signin" | "signup";
 };
 
+type Mode = "signin" | "signup" | "reset";
+
+const MIN_PASSWORD = 8;
+
+/* AuthDialog — primary auth surface. Round 96 switched from magic-link
+ * to email + password. Magic-link required users to leave the tab,
+ * check their email, and click back — friction that bled conversion
+ * (especially on Russian audiences with mailbox-app habits that buried
+ * the message). Password auth is one-tap-and-you're-in.
+ *
+ * Three modes share the dialog:
+ *   · signin → email + password
+ *   · signup → email + password (with min-length hint)
+ *   · reset  → email only, sends Supabase reset email
+ *
+ * Google OAuth stays as the top option — the cleanest first-tap.
+ *
+ * Existing magic-link-only users without a password go through:
+ *   1. Try sign in → "Invalid login credentials"
+ *   2. Click "Forgot password?"
+ *   3. Get reset email → set password → done
+ * (Standard Supabase password-reset flow, no migration needed.) */
 export const AuthDialog = ({
   open,
   onOpenChange,
   title,
   description,
   language = "en",
+  initialMode = "signin",
 }: Props) => {
   const ru = language === "ru";
   const t = (en: string, r: string) => (ru ? r : en);
-  const { signInWithMagicLink, signInWithGoogle } = useAuth();
+  const { signInWithPassword, signUpWithPassword, sendPasswordReset, signInWithGoogle } = useAuth();
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
-  const handleMagicLink = async (e: React.FormEvent) => {
+  const reset = () => {
+    setEmail("");
+    setPassword("");
+    setShowPassword(false);
+    setResetSent(false);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
+
     setLoading(true);
-    const { error } = await signInWithMagicLink(email.trim());
-    setLoading(false);
-    if (error) {
-      toast.error(error);
+
+    if (mode === "reset") {
+      const { error } = await sendPasswordReset(email.trim());
+      setLoading(false);
+      if (error) { toast.error(error); return; }
+      setResetSent(true);
       return;
     }
-    setSent(true);
+
+    if (!password) { setLoading(false); return; }
+    if (mode === "signup" && password.length < MIN_PASSWORD) {
+      toast.error(t(`Password needs at least ${MIN_PASSWORD} characters.`, `Минимум ${MIN_PASSWORD} символов в пароле.`));
+      setLoading(false);
+      return;
+    }
+
+    const fn = mode === "signup" ? signUpWithPassword : signInWithPassword;
+    const { error } = await fn(email.trim(), password);
+    setLoading(false);
+
+    if (error) {
+      // Friendlier toast for the common case: legacy magic-link user
+      // trying to sign in for the first time.
+      if (mode === "signin" && /invalid (login|credentials)/i.test(error)) {
+        toast.error(
+          t("Wrong email or password. New here? Switch to Sign up. Used a magic link before? Tap Forgot password.",
+            "Неверный email или пароль. Новый аккаунт? Переключитесь на Регистрацию. Раньше входили по ссылке? Нажмите «Забыли пароль»."),
+        );
+      } else {
+        toast.error(error);
+      }
+      return;
+    }
+
+    if (mode === "signup") {
+      toast.success(t("Account created — you're signed in.", "Аккаунт создан — вы вошли."));
+    }
+    // Dialog closes on the next render; the AuthContext drain may also
+    // navigate away via window.location.assign (post-auth redirect).
+    onOpenChange(false);
   };
 
   const handleGoogle = async () => {
@@ -50,25 +121,37 @@ export const AuthDialog = ({
     }
   };
 
+  const titleByMode = {
+    signin: t("Sign in to continue", "Войдите, чтобы продолжить"),
+    signup: t("Create your TopUni account", "Создать аккаунт TopUni"),
+    reset:  t("Reset your password", "Сброс пароля"),
+  }[mode];
+
+  const descByMode = {
+    signin: t("Email and password — no email round-trip.", "Email и пароль — без писем."),
+    signup: t("Pick a password you'll remember. We'll save your brief and pipeline to your account.", "Выберите пароль. Брифинг и воронка сохранятся в вашем аккаунте."),
+    reset:  t("Enter your email; we'll send a link to set a new password.", "Введите email — пришлём ссылку для нового пароля."),
+  }[mode];
+
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) { setSent(false); setEmail(""); } onOpenChange(o); }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) reset(); onOpenChange(o); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{title ?? t("Sign in to continue", "Войдите, чтобы продолжить")}</DialogTitle>
-          <DialogDescription>
-            {description ?? t("We'll email you a one-tap link. No password needed.", "Отправим ссылку на email — войти в один клик. Пароль не нужен.")}
-          </DialogDescription>
+          <DialogTitle>{title ?? titleByMode}</DialogTitle>
+          <DialogDescription>{description ?? descByMode}</DialogDescription>
         </DialogHeader>
 
-        {sent ? (
-          <div className="flex flex-col items-center text-center py-8 space-y-3">
-            <CheckCircle2 className="w-12 h-12 text-green-500" />
-            <h3 className="font-semibold text-lg">{t("Check your email", "Проверьте почту")}</h3>
+        {resetSent ? (
+          <div className="text-center py-6 space-y-2">
+            <p className="font-semibold text-foreground">{t("Check your email", "Проверьте почту")}</p>
             <p className="text-sm text-muted-foreground">
               {ru
-                ? <>Мы отправили ссылку для входа на <strong>{email}</strong>. Нажмите её — и вы внутри.</>
-                : <>We sent a sign-in link to <strong>{email}</strong>. Click it and you're in.</>}
+                ? <>Мы отправили ссылку для сброса пароля на <strong>{email}</strong>.</>
+                : <>We sent a password-reset link to <strong>{email}</strong>.</>}
             </p>
+            <Button variant="ghost" size="sm" onClick={() => { setMode("signin"); reset(); }} className="text-muted-foreground mt-2">
+              {t("Back to sign in", "Назад к входу")}
+            </Button>
           </div>
         ) : (
           <div className="space-y-4 pt-2">
@@ -89,7 +172,7 @@ export const AuthDialog = ({
               <div className="h-px flex-1 bg-border" />
             </div>
 
-            <form onSubmit={handleMagicLink} className="space-y-3">
+            <form onSubmit={handleSubmit} className="space-y-3">
               <Input
                 type="email"
                 placeholder="you@example.com"
@@ -97,13 +180,73 @@ export const AuthDialog = ({
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={loading}
+                autoComplete="email"
                 className="h-11"
               />
-              <Button type="submit" className="w-full h-11 gap-2" disabled={loading}>
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-                {t("Send magic link", "Отправить ссылку для входа")}
+              {mode !== "reset" && (
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder={t("Password", "Пароль")}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={mode === "signup" ? MIN_PASSWORD : undefined}
+                    disabled={loading}
+                    autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                    className="h-11 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((s) => !s)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-foreground"
+                    aria-label={showPassword ? t("Hide password", "Скрыть пароль") : t("Show password", "Показать пароль")}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              )}
+              {mode === "signup" && (
+                <p className="text-[11px] text-muted-foreground">
+                  {t(`At least ${MIN_PASSWORD} characters.`, `Минимум ${MIN_PASSWORD} символов.`)}
+                </p>
+              )}
+              <Button type="submit" className="w-full h-11" disabled={loading}>
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> :
+                  mode === "signin" ? t("Sign in", "Войти") :
+                  mode === "signup" ? t("Create account", "Создать аккаунт") :
+                                      t("Send reset link", "Отправить ссылку")}
               </Button>
             </form>
+
+            <div className="flex items-center justify-between text-xs">
+              {mode === "signin" ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => { setMode("signup"); setPassword(""); }}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {t("New here? Sign up", "Новый аккаунт? Регистрация")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setMode("reset"); setPassword(""); }}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {t("Forgot password?", "Забыли пароль?")}
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { setMode("signin"); setPassword(""); }}
+                  className="text-muted-foreground hover:text-foreground transition-colors mx-auto"
+                >
+                  {t("Already have an account? Sign in", "Уже есть аккаунт? Войти")}
+                </button>
+              )}
+            </div>
 
             <p className="text-xs text-muted-foreground text-center">
               {ru

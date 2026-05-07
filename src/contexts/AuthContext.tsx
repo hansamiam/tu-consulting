@@ -2,6 +2,70 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback 
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
+/* Inline post-sign-in drain — mirrors what AuthCallback does for the
+ * magic-link / OAuth round-trip. Password sign-in completes synchronously
+ * (no email click), so we have to run the same side effects ourselves
+ * instead of routing through /auth/callback.
+ *
+ *   1. persistPendingAccount → write the wizard's profile + cached
+ *      brief into student_profiles + pathway_reports
+ *   2. register-referral → link the visitor's pending referral code
+ *      to the new user_id
+ *   3. consumePostAuthRedirect → navigate to wherever the user
+ *      originally meant to go (/pricing, /topuni-ai/ru, etc.) using a
+ *      hard navigation since AuthContext doesn't have access to the
+ *      router
+ *
+ * Each step is best-effort; any failure logs and continues so a flaky
+ * referral RPC can't block sign-in. */
+async function runPostSignInDrain(): Promise<void> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) return;
+
+    const [
+      { getPendingAccount, clearPendingAccount },
+      { getPendingReferral, clearPendingReferral },
+      { consumePostAuthRedirect },
+    ] = await Promise.all([
+      import("@/lib/pendingAccount"),
+      import("@/lib/referralCapture"),
+      import("@/lib/postAuthRedirect"),
+    ]);
+
+    const pending = getPendingAccount();
+    if (pending) {
+      try {
+        const persist = await import("@/lib/persistPendingAccount");
+        await persist.persistPendingAccount(session.user.id, pending);
+      } catch (e) {
+        console.warn("[AuthContext] persistPendingAccount failed", e);
+      }
+      clearPendingAccount();
+    }
+
+    const referralCode = getPendingReferral();
+    if (referralCode) {
+      try {
+        await supabase.functions.invoke("register-referral", { body: { code: referralCode } });
+      } catch (e) {
+        console.warn("[AuthContext] register-referral failed", e);
+      }
+      clearPendingReferral();
+    }
+
+    const dest = consumePostAuthRedirect();
+    if (dest) {
+      // Hard nav — AuthContext doesn't have access to react-router's
+      // navigate(). The destination is already validated as a same-
+      // origin path by setPostAuthRedirect's callers.
+      window.location.assign(dest);
+    }
+  } catch (e) {
+    console.warn("[AuthContext] post-sign-in drain failed", e);
+  }
+}
+
 export type SubscriptionInfo = {
   tier: "free" | "pro" | "founding";
   status: string | null;
@@ -34,6 +98,19 @@ type AuthContextType = {
   loading: boolean;
   subscription: SubscriptionInfo;
   refreshSubscription: () => Promise<void>;
+  /** Email + password sign-in. Returns { error } where error is the
+   *  human-readable message from Supabase, or null on success. */
+  signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>;
+  /** Email + password sign-up. Same return shape. The new user receives
+   *  a Supabase confirm-email message before they can sign in IF email
+   *  confirmation is required in the project settings; otherwise they're
+   *  signed in immediately. */
+  signUpWithPassword: (email: string, password: string) => Promise<{ error: string | null }>;
+  /** Send a password-reset email. Used both for legacy magic-link users
+   *  who never set a password AND for genuine forgot-password cases. */
+  sendPasswordReset: (email: string) => Promise<{ error: string | null }>;
+  /** Legacy — kept for the few call sites that still want a passwordless
+   *  flow (e.g. SaveBriefPrompt). New auth dialogs use password. */
   signInWithMagicLink: (email: string) => Promise<{ error: string | null }>;
   signInWithGoogle: () => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
@@ -153,6 +230,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (user) await loadSubscription(user.id);
   }, [user, loadSubscription]);
 
+  const signInWithPassword = useCallback(async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!error) {
+      // Same post-auth side effects the magic-link round-trip used to
+      // run via /auth/callback — pendingAccount drain, referral
+      // registration, post-auth redirect. Done inline because password
+      // sign-in is synchronous (no email round-trip), so we can't lean
+      // on the existing AuthCallback page for the same flow.
+      void runPostSignInDrain();
+    }
+    return { error: error?.message ?? null };
+  }, []);
+
+  const signUpWithPassword = useCallback(async (email: string, password: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      // emailRedirectTo only matters when the project requires email
+      // confirmation. Routing through /auth/callback is harmless when
+      // it doesn't (the user is already signed in inline) and matches
+      // the magic-link path otherwise.
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    });
+    if (!error) void runPostSignInDrain();
+    return { error: error?.message ?? null };
+  }, []);
+
+  const sendPasswordReset = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    });
+    return { error: error?.message ?? null };
+  }, []);
+
   const signInWithMagicLink = useCallback(async (email: string) => {
     const { error } = await supabase.auth.signInWithOtp({
       email,
@@ -202,6 +313,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         loading,
         subscription,
         refreshSubscription,
+        signInWithPassword,
+        signUpWithPassword,
+        sendPasswordReset,
         signInWithMagicLink,
         signInWithGoogle,
         signOut,

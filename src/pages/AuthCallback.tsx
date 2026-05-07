@@ -9,9 +9,10 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
 import { Loader2 } from "lucide-react";
-import { clearPendingAccount, getPendingAccount, type PendingAccountPayload } from "@/lib/pendingAccount";
+import { clearPendingAccount, getPendingAccount } from "@/lib/pendingAccount";
 import { clearPendingReferral, getPendingReferral } from "@/lib/referralCapture";
 import { consumePostAuthRedirect } from "@/lib/postAuthRedirect";
+import { persistPendingAccount } from "@/lib/persistPendingAccount";
 
 const AuthCallback = () => {
   const navigate = useNavigate();
@@ -117,61 +118,3 @@ const AuthCallback = () => {
 };
 
 export default AuthCallback;
-
-/* ─── Persisters ─────────────────────────────────────────────────
-   Upserts the wizard's profile into student_profiles and the cached
-   pathway into pathway_reports. Numeric coercions are forgiving:
-   "3.7" / 3.7 / "" all resolve sanely. */
-async function persistPendingAccount(userId: string, p: PendingAccountPayload) {
-  const profile = p.profile ?? {};
-
-  const num = (v: unknown): number | null => {
-    if (v === null || v === undefined || v === "") return null;
-    const n = typeof v === "number" ? v : parseFloat(String(v));
-    return Number.isFinite(n) ? n : null;
-  };
-  const intNum = (v: unknown): number | null => {
-    const n = num(v);
-    return n === null ? null : Math.round(n);
-  };
-
-  await supabase.from("student_profiles").upsert(
-    {
-      user_id: userId,
-      full_name: profile.fullName ?? null,
-      email: profile.email ?? null,
-      nationality: profile.nationality ?? null,
-      grade_level: profile.gradeLevel ?? null,
-      gpa: num(profile.gpa),
-      gpa_scale: num(profile.gpaScale),
-      ielts: num(profile.ielts),
-      toefl: num(profile.toefl),
-      sat: intNum(profile.sat),
-      target_countries: profile.targetCountries ?? null,
-      major: profile.major ?? null,
-      field_of_study: profile.fieldOfStudy ?? profile.major ?? null,
-      budget: profile.budget ?? null,
-      scholarship_needed: profile.scholarshipNeeded === "yes" ? true : profile.scholarshipNeeded === "no" ? false : null,
-      timeline: profile.timeline ?? null,
-      prestige_weight: intNum(profile.prestige),
-      scholarship_weight: intNum(profile.scholarshipPriority),
-      career_roi_weight: intNum(profile.careerRoi),
-      visa_weight: intNum(profile.visaAccess),
-      location_weight: intNum(profile.locationPref),
-    },
-    { onConflict: "user_id" },
-  );
-
-  if (p.pathway && p.pathway.content && p.pathway.content.length > 100) {
-    await supabase.from("pathway_reports").upsert(
-      {
-        user_id: userId,
-        profile_hash: p.pathway.profileHash || "pending",
-        content: p.pathway.content,
-        language: p.pathway.language || "en",
-        report_grade: p.pathway.grade || "basic",
-      },
-      { onConflict: "user_id" },
-    );
-  }
-}
