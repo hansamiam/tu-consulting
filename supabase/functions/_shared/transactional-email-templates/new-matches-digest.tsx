@@ -5,8 +5,6 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 
-const SITE_NAME = 'TopUni'
-
 interface MatchLite {
   name: string
   hostCountry?: string
@@ -23,7 +21,55 @@ interface Props {
   matches: MatchLite[]
   totalNew: number
   manageUrl: string
+  language?: 'en' | 'ru'
 }
+
+const COPY = {
+  en: {
+    htmlLang: 'en',
+    leadOne: (s: string) => `1 new scholarship just matched your "${s}" search.`,
+    leadMany: (n: number, s: string) => `${n} new scholarships just matched your "${s}" search.`,
+    headingNamed: (n: string, total: number) =>
+      `${n}, ${total === 1 ? 'a new match for your saved search.' : 'new matches for your saved search.'}`,
+    headingNeutral: (total: number) =>
+      `Hi, ${total === 1 ? 'a new match for your saved search.' : 'new matches for your saved search.'}`,
+    openLabel: 'Open',
+    deadlineLabel: 'Deadline',
+    openApp: 'Open the application →',
+    moreCount: (n: number) => `+ ${n} more match${n === 1 ? '' : 'es'}.`,
+    seeAll: 'See all on Discover →',
+    cta: 'Open this search on Discover',
+    footerPause: "Don't want these? ",
+    footerPauseLink: 'Pause this saved search',
+    footerPauseSuffix: ' from your account.',
+    teamSignoff: '— The TopUni Team',
+    subjectOne: (s: string) => `1 new match for "${s}"`,
+    subjectMany: (n: number, s: string) => `${n} new matches for "${s}"`,
+    fallbackSearch: 'your saved search',
+  },
+  ru: {
+    htmlLang: 'ru',
+    leadOne: (s: string) => `Новая стипендия совпала с вашим поиском «${s}».`,
+    leadMany: (n: number, s: string) => `${n} новых стипендий совпало с вашим поиском «${s}».`,
+    headingNamed: (n: string, total: number) =>
+      `${n}, ${total === 1 ? 'новое совпадение по вашему поиску.' : 'новые совпадения по вашему поиску.'}`,
+    headingNeutral: (total: number) =>
+      `Привет — ${total === 1 ? 'новое совпадение по вашему поиску.' : 'новые совпадения по вашему поиску.'}`,
+    openLabel: 'Открытый',
+    deadlineLabel: 'Дедлайн',
+    openApp: 'Открыть заявку →',
+    moreCount: (n: number) => `+ ещё ${n}.`,
+    seeAll: 'Все совпадения в Discover →',
+    cta: 'Открыть этот поиск в Discover',
+    footerPause: 'Не нужны такие письма? ',
+    footerPauseLink: 'Поставить этот поиск на паузу',
+    footerPauseSuffix: ' в настройках аккаунта.',
+    teamSignoff: '— Команда TopUni',
+    subjectOne: (s: string) => `Новое совпадение по «${s}»`,
+    subjectMany: (n: number, s: string) => `${n} новых совпадений по «${s}»`,
+    fallbackSearch: 'ваш сохранённый поиск',
+  },
+} as const
 
 const NewMatchesDigestEmail = ({
   name,
@@ -32,33 +78,32 @@ const NewMatchesDigestEmail = ({
   matches,
   totalNew,
   manageUrl,
+  language = 'en',
 }: Props) => {
-  const lead =
-    totalNew === 1
-      ? `1 new scholarship just matched your "${searchName}" search.`
-      : `${totalNew} new scholarships just matched your "${searchName}" search.`
+  const c = COPY[language === 'ru' ? 'ru' : 'en']
+  const lead = totalNew === 1 ? c.leadOne(searchName) : c.leadMany(totalNew, searchName)
 
   return (
-    <Html lang="en" dir="ltr">
+    <Html lang={c.htmlLang} dir="ltr">
       <Head />
       <Preview>{lead}</Preview>
       <Body style={main}>
         <Container style={container}>
           <Heading style={h1}>
-            {name ? `${name},` : 'Hi,'} {totalNew === 1 ? 'a new match for your saved search.' : 'new matches for your saved search.'}
+            {name ? c.headingNamed(name, totalNew) : c.headingNeutral(totalNew)}
           </Heading>
           <Text style={leadText}>{lead}</Text>
 
           <Section style={card}>
             {matches.slice(0, 8).map((m, i) => (
               <Section key={i} style={i === 0 ? rowFirst : row}>
-                <Text style={kicker}>{m.hostCountry || 'Open'}{m.coverage ? ` · ${m.coverage}` : ''}</Text>
+                <Text style={kicker}>{m.hostCountry || c.openLabel}{m.coverage ? ` · ${m.coverage}` : ''}</Text>
                 <Heading style={h2}>{m.name}</Heading>
                 {m.amount && <Text style={amountText}>{m.amount}</Text>}
-                {m.deadline && <Text style={deadlineText}>Deadline: <strong>{m.deadline}</strong></Text>}
+                {m.deadline && <Text style={deadlineText}>{c.deadlineLabel}: <strong>{m.deadline}</strong></Text>}
                 {m.url && (
                   <Text style={linkText}>
-                    <a href={m.url} style={subtleLink}>Open the application →</a>
+                    <a href={m.url} style={subtleLink}>{c.openApp}</a>
                   </Text>
                 )}
               </Section>
@@ -67,22 +112,20 @@ const NewMatchesDigestEmail = ({
 
           {matches.length > 8 && (
             <Text style={subtle}>
-              + {totalNew - 8} more match{totalNew - 8 === 1 ? '' : 'es'}.{' '}
-              <a href={searchUrl} style={subtleLink}>See all on Discover →</a>
+              {c.moreCount(totalNew - 8)}{' '}
+              <a href={searchUrl} style={subtleLink}>{c.seeAll}</a>
             </Text>
           )}
 
           <Section style={btnWrap}>
-            <Button href={searchUrl} style={primaryBtn}>
-              Open this search on Discover
-            </Button>
+            <Button href={searchUrl} style={primaryBtn}>{c.cta}</Button>
           </Section>
 
           <Hr style={hr} />
           <Text style={footer}>
-            Don't want these? <a href={manageUrl} style={subtleLink}>Pause this saved search</a> from your account.
+            {c.footerPause}<a href={manageUrl} style={subtleLink}>{c.footerPauseLink}</a>{c.footerPauseSuffix}
           </Text>
-          <Text style={footer}>— The {SITE_NAME} Team</Text>
+          <Text style={footer}>{c.teamSignoff}</Text>
         </Container>
       </Body>
     </Html>
@@ -92,10 +135,11 @@ const NewMatchesDigestEmail = ({
 export const template = {
   component: NewMatchesDigestEmail,
   subject: ((data: Record<string, any>) => {
+    const c = COPY[data.language === 'ru' ? 'ru' : 'en']
     const total = Number(data.totalNew) || 0
-    const label = data.searchName || 'your saved search'
-    if (total === 1) return `1 new match for "${label}"`
-    return `${total} new matches for "${label}"`
+    const label = data.searchName || c.fallbackSearch
+    if (total === 1) return c.subjectOne(label)
+    return c.subjectMany(total, label)
   }),
   displayName: 'Saved-search new matches',
   previewData: {
@@ -109,6 +153,7 @@ export const template = {
       { name: 'Heinrich Böll Foundation Scholarship', hostCountry: 'Germany', coverage: 'Stipend', deadline: 'September 1, 2026', url: 'https://example.com' },
       { name: 'Konrad-Adenauer-Stiftung PhD', hostCountry: 'Germany', coverage: 'Stipend', url: 'https://example.com' },
     ],
+    language: 'en',
   },
 } satisfies TemplateEntry
 

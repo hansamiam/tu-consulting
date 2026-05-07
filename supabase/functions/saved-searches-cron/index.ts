@@ -48,18 +48,22 @@ interface ScholarshipMatch {
   created_at: string;
 }
 
-const formatDate = (iso: string | null): string | undefined => {
+const formatDate = (iso: string | null, lang: "en" | "ru" = "en"): string | undefined => {
   if (!iso) return undefined;
-  return new Date(iso).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  return new Date(iso).toLocaleDateString(lang === "ru" ? "ru-RU" : "en-US", {
+    year: "numeric", month: "long", day: "numeric",
+  });
 };
 
-const formatCoverage = (c: string | null): string | undefined => {
+const COVERAGE_LABELS = {
+  en: { full_ride: "Full ride", tuition_only: "Tuition only", partial: "Partial", stipend: "Stipend" },
+  ru: { full_ride: "Полное покрытие", tuition_only: "Только обучение", partial: "Частичное", stipend: "Стипендия" },
+} as const;
+
+const formatCoverage = (c: string | null, lang: "en" | "ru" = "en"): string | undefined => {
   if (!c) return undefined;
-  if (c === "full_ride") return "Full ride";
-  if (c === "tuition_only") return "Tuition only";
-  if (c === "partial") return "Partial";
-  if (c === "stipend") return "Stipend";
-  return c;
+  const labels = COVERAGE_LABELS[lang];
+  return (labels as Record<string, string>)[c] ?? c;
 };
 
 /* The Discover client filter language. Mirror the predicates here so a
@@ -149,9 +153,9 @@ Deno.serve(async (req) => {
   const userIds = Array.from(new Set(searches.map((s) => s.user_id)));
   const { data: profiles } = await supa
     .from("student_profiles")
-    .select("user_id, full_name, email, nudge_opt_out")
+    .select("user_id, full_name, email, nudge_opt_out, language")
     .in("user_id", userIds);
-  const profileMap = new Map<string, { full_name: string | null; email: string | null; nudge_opt_out: boolean }>(
+  const profileMap = new Map<string, { full_name: string | null; email: string | null; nudge_opt_out: boolean; language: string | null }>(
     (profiles ?? []).map((p) => [p.user_id, p as any]),
   );
 
@@ -200,6 +204,8 @@ Deno.serve(async (req) => {
 
     try {
       const today = new Date().toISOString().slice(0, 10);
+      const userLang: "en" | "ru" = profile.language === "ru" ? "ru" : "en";
+      const ru = userLang === "ru";
       const { error: sendErr } = await supa.functions.invoke("send-transactional-email", {
         body: {
           recipientEmail: profile.email,
@@ -208,17 +214,18 @@ Deno.serve(async (req) => {
           templateData: {
             name: profile.full_name?.split(" ")[0] || undefined,
             searchName: search.name,
-            searchUrl: `${SITE}/discover`,
-            manageUrl: `${SITE}/account?action=saved-searches`,
+            searchUrl: `${SITE}${ru ? "/discover/ru" : "/discover"}`,
+            manageUrl: `${SITE}${ru ? "/account/ru" : "/account"}?action=saved-searches`,
             totalNew: newMatches.length,
             matches: newMatches.slice(0, 8).map((m) => ({
               name: m.scholarship_name,
               hostCountry: m.host_country || undefined,
-              coverage: formatCoverage(m.coverage_type),
-              deadline: formatDate(m.application_deadline),
+              coverage: formatCoverage(m.coverage_type, userLang),
+              deadline: formatDate(m.application_deadline, userLang),
               url: m.official_url || undefined,
               amount: m.award_amount_text || undefined,
             })),
+            language: userLang,
           },
         },
       });
