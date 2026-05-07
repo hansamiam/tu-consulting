@@ -305,9 +305,17 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
     setAwardStep("capture");
   };
 
+  // Sync the note-draft from the tracker ONLY when the detail sheet
+  // opens for a different scholarship. Previously this also ran on
+  // every tracker.notesMap change — and notesMap is a fresh Map ref
+  // on every state mutation (saving an essay draft, toggling a
+  // shortlist, anything). So a user editing notes for scholarship A
+  // while ANY other tracker change fired would have their in-progress
+  // typing overwritten with the last-persisted DB value.
   useEffect(() => {
     if (openDetail) setDraftNote(tracker.notesMap[openDetail.scholarship_id] || "");
-  }, [openDetail, tracker.notesMap]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openDetail?.scholarship_id]);
 
   const saveNote = () => {
     if (!openDetail) return;
