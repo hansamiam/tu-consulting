@@ -1729,18 +1729,104 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shortlistKey, liveMatches]);
 
+  /* Brief-mentioned scholarships — the AI brief mentions scholarships from
+     a wider semantic-search retrieval set than `liveMatches` (which is
+     limited to the user's targetCountries top-6 by deadline). Without this
+     hydration, FundingShortlist sees a `**Gates Cambridge**` bullet but
+     `liveMatches` only has US scholarships → renders as muted "unverified"
+     card with a dotted underline, even though Gates Cambridge exists in
+     the DB and has a deadline + funding amount we could surface.
+
+     Pulls the bolded names from the funding-pathway section of the brief
+     and resolves any not already in liveMatches by ilike. Cheap (1 query
+     per generation, capped at 12 names) and only runs once the brief
+     finishes streaming. */
+  const [briefMentioned, setBriefMentioned] = useState<LiveMatch[]>([]);
+  useEffect(() => {
+    if (pathwayLoading || !pathwayContent) return;
+    // Extract `**Name**` bullets from the funding section. The funding
+    // shortlist heading varies by language ("Funding pathway" / "Финансирование");
+    // we just scan the whole brief — name-collisions with non-funding
+    // bolds are fine since we filter to scholarship rows server-side.
+    const names = new Set<string>();
+    const re = /^\s*[-*]\s+\*\*([^*]+)\*\*/gm;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(pathwayContent)) !== null) {
+      const n = m[1].trim();
+      // Strip trailing parenthetical years/notes the AI sometimes adds:
+      // "Chevening (UK gov)" → "Chevening".
+      const clean = n.replace(/\s*\([^)]*\)\s*$/, "").trim();
+      if (clean.length >= 4 && clean.length <= 80) names.add(clean);
+    }
+    if (names.size === 0) {
+      if (briefMentioned.length > 0) setBriefMentioned([]);
+      return;
+    }
+    // Skip names already covered by liveMatches.
+    const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    const liveNorm = liveMatches.map((lm) => norm(lm.scholarship_name));
+    const remaining = Array.from(names).filter((n) => {
+      const nn = norm(n);
+      return !liveNorm.some((ln) => ln === nn || ln.includes(nn) || nn.includes(ln));
+    });
+    if (remaining.length === 0) {
+      if (briefMentioned.length > 0) setBriefMentioned([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      // ilike OR over up to 12 names. Each filter expression is
+      // `scholarship_name.ilike.%name%` — escape `%` and `,` in the name.
+      const filters = remaining.slice(0, 12)
+        .map((n) => `scholarship_name.ilike.%${n.replace(/[%,]/g, " ")}%`)
+        .join(",");
+      const { data } = await supabase
+        .from("scholarships")
+        .select(
+          "scholarship_id, scholarship_name, provider_name, host_country, " +
+          "coverage_type, award_amount_text, estimated_total_value_usd, " +
+          "application_deadline, why_this_fits, official_url, " +
+          "verification_status, last_verified_at"
+        )
+        .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
+        .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null")
+        .or(filters)
+        .limit(24);
+      if (cancelled || !data) return;
+      // Dedup by scholarship_id; keep best name-match per AI-mentioned name.
+      const byId = new Map<string, LiveMatch>();
+      for (const row of data as LiveMatch[]) {
+        if (!byId.has(row.scholarship_id)) byId.set(row.scholarship_id, row);
+      }
+      setBriefMentioned(Array.from(byId.values()));
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathwayContent, pathwayLoading, liveMatches]);
+
   /* Combined match set — feeds every surface that resolves scholarship
      names to rich cards (counselor responses, brief funding-shortlist
      cross-reference, brief inline-card decoration). De-duplicated by
      scholarship_id with liveMatches winning (those have similarity
-     scoring + are the AI's retrieval set). */
+     scoring + are the AI's retrieval set), then savedExtras (user
+     intent), then briefMentioned (AI mention resolution). */
   const allMatches = useMemo(() => {
-    const seen = new Set(liveMatches.map((m) => m.scholarship_id));
-    return [
-      ...liveMatches,
-      ...savedExtras.filter((s) => !seen.has(s.scholarship_id)),
-    ];
-  }, [liveMatches, savedExtras]);
+    const seen = new Set<string>();
+    const out: LiveMatch[] = [];
+    for (const m of liveMatches) {
+      if (seen.has(m.scholarship_id)) continue;
+      seen.add(m.scholarship_id); out.push(m);
+    }
+    for (const m of savedExtras) {
+      if (seen.has(m.scholarship_id)) continue;
+      seen.add(m.scholarship_id); out.push(m);
+    }
+    for (const m of briefMentioned) {
+      if (seen.has(m.scholarship_id)) continue;
+      seen.add(m.scholarship_id); out.push(m);
+    }
+    return out;
+  }, [liveMatches, savedExtras, briefMentioned]);
 
   // Chat state — persisted to localStorage so the conversation survives reloads.
   const [chatMessages, setChatMessages] = useState<Msg[]>(() => {
@@ -3114,7 +3200,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             taskKey={taskKey}
                             isRu={isRu}
                             onOpenDiscover={() => navigate(isRu ? "/discover/ru" : "/discover")}
-                            liveMatches={liveMatches}
+                            liveMatches={allMatches}
                             onSaveScholarship={handleSaveScholarship}
                             savedSet={tracker.shortlist}
                             structured={structuredBrief}
@@ -3273,7 +3359,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             taskKey={taskKey}
                             isRu={isRu}
                             onOpenDiscover={() => navigate(isRu ? "/discover/ru" : "/discover")}
-                            liveMatches={liveMatches}
+                            liveMatches={allMatches}
                             onSaveScholarship={handleSaveScholarship}
                             savedSet={tracker.shortlist}
                             structured={structuredBrief}
