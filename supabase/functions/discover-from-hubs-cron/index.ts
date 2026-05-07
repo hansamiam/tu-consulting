@@ -42,9 +42,11 @@ const json = (status: number, body: unknown) =>
 
 // One discover-from-hub call takes ~5-15s (Firecrawl + pro-tier LLM).
 // Cap per tick keeps us under the 60s edge function timeout even with
-// slow hubs and gives back-pressure on Firecrawl spend.
-const MAX_HUBS_PER_TICK = 6;
-const THROTTLE_MS = 1500;
+// slow hubs and gives back-pressure on Firecrawl spend. With
+// CONCURRENCY=3, 12 hubs × ~10s avg / 3 ≈ 40s — fits inside the
+// timeout with headroom and 2× the previous serial cap.
+const MAX_HUBS_PER_TICK = 12;
+const CONCURRENCY = 3;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -79,9 +81,7 @@ serve(async (req) => {
   const results: { hub: string; ok: boolean; inserted?: number; error?: string }[] = [];
   let totalInserted = 0;
 
-  for (let i = 0; i < hubs.length; i++) {
-    const h = hubs[i];
-    if (i > 0) await new Promise(r => setTimeout(r, THROTTLE_MS));
+  const dispatchOne = async (h: typeof hubs[number]) => {
     try {
       const r = await fetch(`${SUPABASE_URL}/functions/v1/discover-from-hub`, {
         method: "POST",
@@ -94,18 +94,36 @@ serve(async (req) => {
       const payload = await r.json().catch(() => ({}));
       const ok = r.ok && payload?.ok !== false;
       const inserted = typeof payload?.inserted === "number" ? payload.inserted : 0;
-      if (ok) totalInserted += inserted;
-      results.push({ hub: h.name, ok, inserted });
+      return { hub: h.name, ok, inserted };
     } catch (e) {
-      results.push({ hub: h.name, ok: false, error: (e as Error).message });
+      return { hub: h.name, ok: false, error: (e as Error).message };
     }
+  };
+
+  // Bounded-concurrency worker pool (same pattern as scrape-cron-dispatcher).
+  // Three in flight × ~10s avg = ~3 Firecrawl req/s sustained, well
+  // under the per-second cap. Slow hubs no longer bottleneck the whole tick.
+  const queue = [...hubs];
+  const workers: Promise<void>[] = [];
+  for (let i = 0; i < Math.min(CONCURRENCY, queue.length); i++) {
+    workers.push((async () => {
+      while (queue.length > 0) {
+        const next = queue.shift();
+        if (!next) return;
+        const r = await dispatchOne(next);
+        if (r.ok && typeof r.inserted === "number") totalInserted += r.inserted;
+        results.push(r);
+      }
+    })());
   }
+  await Promise.all(workers);
 
   return json(200, {
     ok: true,
     hubs_processed: results.length,
     total_inserted: totalInserted,
     duration_ms: Date.now() - startedAt,
+    concurrency: CONCURRENCY,
     results,
   });
 });

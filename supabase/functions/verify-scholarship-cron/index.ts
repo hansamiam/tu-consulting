@@ -29,9 +29,22 @@ const json = (status: number, body: unknown) =>
 // Cap per run so a misconfigured deploy can't burn the entire AI/Firecrawl
 // budget in one cron tick. 100 × ~$0.0035 = $0.35/day max spend.
 const MAX_PER_RUN = 100;
-// Throttle between calls so the AI gateway and Firecrawl don't see
-// burst traffic.
-const THROTTLE_MS = 1500;
+
+// Concurrent verify-scholarship calls. Each call hits Firecrawl + an
+// AI extraction; ~3s avg. With CONCURRENCY=4 and no per-call throttle,
+// throughput is ~1.3 verifies/s — well under Firecrawl's per-second
+// cap and ~10× the previous serial+throttle rate.
+const CONCURRENCY = 4;
+
+// Deadline for the entire run. Supabase edge functions cap at ~150s
+// on paid tier; we leave 10s headroom for the JSON response. Pre-fix
+// the serial loop with 100 candidates × 1.5s throttle would have
+// blown past 450s, so most candidates never got verified before the
+// runtime killed the function. Now workers stop claiming new work
+// when within 5s of the deadline so already-in-flight verifies have
+// time to complete and report back.
+const RUN_DEADLINE_MS = 140_000;
+const WORKER_QUIT_HEADROOM_MS = 5_000;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -71,10 +84,10 @@ Deno.serve(async (req) => {
   };
   const errors: string[] = [];
 
-  for (let i = 0; i < candidates.length; i++) {
-    const c = candidates[i];
-    if (i > 0) await new Promise(r => setTimeout(r, THROTTLE_MS));
+  const startedAt = Date.now();
+  let processed = 0;
 
+  const verifyOne = async (c: typeof candidates[number]) => {
     try {
       const { data, error } = await supa.functions.invoke<{
         ok: boolean;
@@ -85,24 +98,45 @@ Deno.serve(async (req) => {
       if (error) {
         errors.push(`${c.scholarship_name}: ${error.message}`);
         counters.other++;
-        continue;
+        return;
       }
 
       const status = data?.status ?? "other";
-      if (status in counters) {
-        counters[status as keyof typeof counters]++;
-      } else {
-        counters.other++;
-      }
+      if (status in counters) counters[status as keyof typeof counters]++;
+      else counters.other++;
     } catch (e) {
       errors.push(`${c.scholarship_name}: ${(e as Error).message}`);
       counters.other++;
     }
+  };
+
+  // Bounded-concurrency worker pool with a soft deadline. Workers
+  // stop pulling new jobs when they're about to exceed RUN_DEADLINE_MS,
+  // so in-flight verifies have a window to finish and report back
+  // before the edge runtime hard-kills the function.
+  const queue = [...candidates];
+  const workers: Promise<void>[] = [];
+  for (let i = 0; i < Math.min(CONCURRENCY, queue.length); i++) {
+    workers.push((async () => {
+      while (queue.length > 0) {
+        const elapsed = Date.now() - startedAt;
+        if (elapsed > RUN_DEADLINE_MS - WORKER_QUIT_HEADROOM_MS) return;
+        const next = queue.shift();
+        if (!next) return;
+        await verifyOne(next);
+        processed++;
+      }
+    })());
   }
+  await Promise.all(workers);
 
   return json(200, {
     ok: true,
     candidates: candidates.length,
+    processed,
+    deferred: candidates.length - processed,
+    duration_ms: Date.now() - startedAt,
+    concurrency: CONCURRENCY,
     results: counters,
     errors,
   });
