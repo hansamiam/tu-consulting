@@ -263,7 +263,7 @@ const InteractiveActionPlan = ({ markdown, completedTasks, onToggle, taskKey, is
                     ? `Открыть полные ${gatedBlocks.length} ${gatedBlocks.length === 1 ? "блок" : "блока"} плана`
                     : `Unlock the rest of your ${gatedBlocks.length === 1 ? "plan" : "90-day plan"}`}
                   subline={isRu
-                    ? "Вы видите план Weeks 1-2 бесплатно. Pro раскрывает Weeks 3-12 с неделя-за-неделя задачами и проверкой прогресса."
+                    ? "Недели 1–2 — бесплатно. Pro раскрывает недели 3–12 с задачами по каждой неделе и отслеживанием прогресса."
                     : "Weeks 1-2 are free. Pro unlocks Weeks 3-12 with week-by-week deliverables and progress tracking."}
                 >
                   <div className="space-y-6">
@@ -653,7 +653,7 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combine
                     gateId="brief-funding-extra-matches"
                     headline={headline}
                     subline={isRu
-                      ? "Топ-3 видны бесплатно. Pro раскрывает все ранжированные совпадения со стратегией под каждое и разбивкой match-score."
+                      ? "Топ-3 видны бесплатно. Pro раскрывает все ранжированные совпадения со стратегией под каждое и разбивкой оценки соответствия."
                       : "Top 3 are free. Pro unlocks every ranked match with strategy notes and per-factor match-score breakdown."}
                   >
                     <div className="space-y-2.5">
