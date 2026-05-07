@@ -842,7 +842,15 @@ function injectJsonLd(payload: object) {
   const s = document.createElement("script");
   s.type = "application/ld+json";
   s.dataset.topuniLd = "true";
-  s.text = JSON.stringify(payload);
+  // JSON.stringify doesn't escape "<" by default — a scholarship
+  // name or eligibility text containing "</script>" would close the
+  // tag early and inject arbitrary HTML into <head>. Replace the
+  // unsafe sequences with unicode escapes so the JSON parser still
+  // sees them but the HTML parser doesn't. Belt-and-suspenders since
+  // our content is LLM-scraped, but cheap and correct.
+  s.text = JSON.stringify(payload)
+    .replace(/<\/script>/gi, "<\\/script>")
+    .replace(/<!--/g, "<\\u0021--");
   document.head.appendChild(s);
 }
 

@@ -231,7 +231,13 @@ function injectJsonLd(payload: object) {
   const el = document.createElement("script");
   el.id = id;
   el.type = "application/ld+json";
-  el.text = JSON.stringify(payload);
+  // Escape script-closing sequences. The FAQ copy is hard-coded
+  // here so the practical risk is low, but consistency with the
+  // other injectJsonLd helpers means a future copy-paste from a
+  // dynamic source can't accidentally regress.
+  el.text = JSON.stringify(payload)
+    .replace(/<\/script>/gi, "<\\/script>")
+    .replace(/<!--/g, "<\\u0021--");
   document.head.appendChild(el);
 }
 

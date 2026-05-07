@@ -214,7 +214,12 @@ function injectJsonLd(payload: object) {
   const el = document.createElement("script");
   el.id = id;
   el.type = "application/ld+json";
-  el.text = JSON.stringify(payload);
+  // Escape \</script> + <!-- so a stray sequence in article content
+  // can't break out of the JSON-LD block. See ScholarshipDetail
+  // injectJsonLd for the same defense.
+  el.text = JSON.stringify(payload)
+    .replace(/<\/script>/gi, "<\\/script>")
+    .replace(/<!--/g, "<\\u0021--");
   document.head.appendChild(el);
 }
 

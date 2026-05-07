@@ -764,7 +764,11 @@ function injectJsonLd(payload: object) {
   const s = document.createElement("script");
   s.type = "application/ld+json";
   s.dataset.topuniLd = "true";
-  s.text = JSON.stringify(payload);
+  // Escape script-closing sequences — see ScholarshipDetail.injectJsonLd
+  // for the same defense (LLM-scraped content could contain </script>).
+  s.text = JSON.stringify(payload)
+    .replace(/<\/script>/gi, "<\\/script>")
+    .replace(/<!--/g, "<\\u0021--");
   document.head.appendChild(s);
 }
 
