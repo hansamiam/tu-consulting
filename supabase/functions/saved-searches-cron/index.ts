@@ -41,10 +41,16 @@ interface ScholarshipMatch {
   award_amount_text: string | null;
   estimated_total_value_usd: number | null;
   official_url: string | null;
-  field_of_study: string | null;
-  degree_level: string | null;
-  selectivity: string | null;
+  /* Real scholarships-table columns. Earlier this interface declared
+   * `field_of_study` / `degree_level` / `selectivity` which are columns
+   * on the `programs` table — silently NULL on scholarship rows, so
+   * the corresponding filters in applyFilters() were no-ops and users
+   * got digests of rows that did not match their saved filter. */
+  target_fields: string[] | null;
+  target_degree_level: string[] | null;
+  selectivity_level: string | null;
   target_demographics: string[] | null;
+  data_completeness_score: number | null;
   created_at: string;
 }
 
@@ -87,14 +93,27 @@ function applyFilters(scholarship: ScholarshipMatch, filters: Record<string, unk
       if (scholarship.coverage_type !== f.coverage) return false;
     }
   }
-  if (f.degree && f.degree !== "all" && scholarship.degree_level !== f.degree) return false;
-  if (f.field && f.field !== "all" && scholarship.field_of_study !== f.field) return false;
+  // Degree filter — match if the scholarship's target_degree_level array
+  // contains the requested level. Empty/null means "any" → pass.
+  if (f.degree && f.degree !== "all") {
+    const levels = scholarship.target_degree_level ?? [];
+    if (levels.length > 0 && !levels.includes(f.degree)) return false;
+  }
+  // Field filter — match against ANY entry in target_fields. Both sides
+  // case-insensitive so "Computer Science" / "computer science" match.
+  // The catalog is canonicalized to Title Case via 20260507200000 so
+  // a direct case-insensitive compare is sufficient.
+  if (f.field && f.field !== "all") {
+    const fields = scholarship.target_fields ?? [];
+    const want = f.field.toLowerCase();
+    if (fields.length > 0 && !fields.some((v) => typeof v === "string" && v.toLowerCase() === want)) return false;
+  }
   if (f.selectivity && f.selectivity !== "all") {
     // The "Competitive" bucket includes both high + very_high.
     if (f.selectivity === "high") {
-      if (scholarship.selectivity !== "high" && scholarship.selectivity !== "very_high") return false;
+      if (scholarship.selectivity_level !== "high" && scholarship.selectivity_level !== "very_high") return false;
     } else {
-      if (scholarship.selectivity !== f.selectivity) return false;
+      if (scholarship.selectivity_level !== f.selectivity) return false;
     }
   }
   if (f.hostCountry && f.hostCountry !== "all" && scholarship.host_country !== f.hostCountry) return false;
@@ -169,11 +188,17 @@ Deno.serve(async (req) => {
     .select(
       "scholarship_id, scholarship_name, host_country, coverage_type, " +
       "application_deadline, award_amount_text, estimated_total_value_usd, " +
-      "official_url, field_of_study, degree_level, selectivity, " +
-      "target_demographics, created_at",
+      "official_url, target_fields, target_degree_level, selectivity_level, " +
+      "target_demographics, data_completeness_score, created_at",
     )
     .in("verification_status", ["verified", "stale", "pending"])
     .in("lifecycle_status", ["active", "reopens_annually"])
+    // Quality floor — only digest rows that carry enough information to
+    // be useful in an email subject line. Matches the Discover min-info
+    // gate intent (≥2 substantive signals beyond name+provider+country).
+    // Filters out the thinnest aggregator-derived rows that would
+    // otherwise pad the digest with nothing-to-evaluate entries.
+    .or("data_completeness_score.gte.10,data_completeness_score.is.null")
     .gte("created_at", window)
     .returns<ScholarshipMatch[]>();
   const recent = recentScholarships ?? [];
