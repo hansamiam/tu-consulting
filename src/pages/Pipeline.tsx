@@ -32,6 +32,7 @@ import { CountryArt } from "@/lib/countryArt";
 import { accentForCountry, shortCountry } from "@/lib/countryAccent";
 import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
 import { daysUntil } from "@/lib/dates";
+import { toast } from "sonner";
 import { CalendarSubscribeDialog } from "@/components/pipeline/CalendarSubscribeDialog";
 import { EssayDraftPanel } from "@/components/pipeline/EssayDraftPanel";
 import { AdditionalEssaysPanel } from "@/components/pipeline/AdditionalEssaysPanel";
@@ -130,7 +131,7 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
     let cancelled = false;
     setLoading(true);
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("scholarships")
         .select(
           "scholarship_id, scholarship_name, provider_name, host_country, " +
@@ -141,6 +142,17 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
         )
         .in("scholarship_id", trackedIds);
       if (cancelled) return;
+      if (error) {
+        // Don't blow away `rows` — keep whatever we already had so the
+        // user's board doesn't suddenly empty out on a transient
+        // network blip. Surface the failure as a toast so the user
+        // knows to retry.
+        toast.error(language === "ru"
+          ? "Не удалось загрузить ваш pipeline. Проверьте соединение."
+          : "Couldn't refresh your pipeline. Check your connection.");
+        setLoading(false);
+        return;
+      }
       setRows((data as Scholarship[]) ?? []);
       setLoading(false);
     })();
