@@ -14,7 +14,12 @@ const SAVED_3_PROMPT_KEY = "tu_saved3_prompt_shown";
 
 export const getWatchlist = (): string[] => {
   try {
-    return JSON.parse(localStorage.getItem(WATCHLIST_KEY) || "[]");
+    const parsed = JSON.parse(localStorage.getItem(WATCHLIST_KEY) || "[]");
+    // Defend against manually-corrupted localStorage (or a v2 schema
+    // landing in v1's slot): a non-array would throw on .includes /
+    // .indexOf in toggleWatchlist, taking the whole save flow down.
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((x): x is string => typeof x === "string");
   } catch {
     return [];
   }
