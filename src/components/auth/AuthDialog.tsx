@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { setPostAuthRedirect, consumePostAuthRedirect } from "@/lib/postAuthRedirect";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
@@ -87,6 +88,15 @@ export const AuthDialog = ({
     }
 
     if (mode === "signup") {
+      // If email-confirmation is required the user round-trips through
+      // /auth/callback after clicking the email link. Pre-set a Russian
+      // redirect so they land back on the same locale they signed up
+      // from instead of defaulting to English /account.
+      if (ru) {
+        const existing = consumePostAuthRedirect();
+        if (existing) setPostAuthRedirect(existing);
+        else setPostAuthRedirect(window.location.pathname || "/account/ru");
+      }
       const { error, needsConfirmation } = await signUpWithPassword(email.trim(), password);
       setLoading(false);
       if (error) { toast.error(error); return; }
@@ -121,6 +131,18 @@ export const AuthDialog = ({
   };
 
   const handleGoogle = async () => {
+    // Preserve the language the user is currently in. Without this a
+    // Russian visitor signing in via Google from /account/ru lands on
+    // /account (English) post-OAuth because AuthCallback's default is
+    // English. Only set if no other surface (Pricing, SaveBriefPrompt)
+    // has already claimed the redirect — peek-and-restore so we don't
+    // clobber an existing claim.
+    const existing = consumePostAuthRedirect();
+    if (existing) {
+      setPostAuthRedirect(existing);
+    } else if (ru) {
+      setPostAuthRedirect(window.location.pathname || "/account/ru");
+    }
     setLoading(true);
     const { error } = await signInWithGoogle();
     if (error) {
