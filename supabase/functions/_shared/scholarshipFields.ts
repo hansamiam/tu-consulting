@@ -33,6 +33,171 @@ export function cleanScholarshipName(name: string): string {
   return n;
 }
 
+/** Provider canonicalization map. Many famous funders are stored under
+ *  many string variants — "DAAD" / "Deutscher Akademischer Austauschdienst"
+ *  / "German Academic Exchange Service"; "UNESCO" / "United Nations
+ *  Educational, Scientific and Cultural Organization"; "MEXT" /
+ *  "Japanese Ministry of Education, Culture, Sports, Science and
+ *  Technology". Without collapsing these to one form, the Discover
+ *  provider filter, provider-page SEO, and brief LLM "list of funders"
+ *  all see fragmented sets.
+ *
+ *  Keys are lowercase comparison forms (after the same normalization
+ *  that canonicalizeProvider() applies — strip punctuation, collapse
+ *  whitespace). Values are the canonical short form. Order in the
+ *  map doesn't matter; lookup is exact. */
+const PROVIDER_SYNONYMS_MAP: Record<string, string> = {
+  // German Academic Exchange Service
+  "daad": "DAAD",
+  "deutscher akademischer austauschdienst": "DAAD",
+  "german academic exchange service": "DAAD",
+
+  // UNESCO
+  "unesco": "UNESCO",
+  "united nations educational scientific and cultural organization": "UNESCO",
+
+  // Japanese MEXT
+  "mext": "MEXT",
+  "ministry of education culture sports science and technology": "MEXT",
+  "japanese ministry of education culture sports science and technology": "MEXT",
+  "monbukagakusho": "MEXT",
+
+  // Chinese government
+  "csc": "China Scholarship Council",
+  "china scholarship council": "China Scholarship Council",
+
+  // Korean government
+  "kgsp": "Korean Government Scholarship Program",
+  "korean government scholarship program": "Korean Government Scholarship Program",
+  "global korea scholarship": "Korean Government Scholarship Program",
+  "gks": "Korean Government Scholarship Program",
+
+  // Australian government
+  "australia awards": "Australia Awards",
+  "australian awards": "Australia Awards",
+  "australia awards scholarships": "Australia Awards",
+
+  // UK Government / Foreign Office
+  "chevening": "Chevening",
+  "chevening scholarship": "Chevening",
+  "chevening scholarships": "Chevening",
+  "uk foreign and commonwealth office": "Chevening",
+
+  // Commonwealth
+  "commonwealth scholarship commission": "Commonwealth Scholarship Commission",
+  "csc uk": "Commonwealth Scholarship Commission",
+
+  // Fulbright
+  "fulbright": "Fulbright",
+  "fulbright program": "Fulbright",
+  "fulbright commission": "Fulbright",
+  "us fulbright": "Fulbright",
+  "u s fulbright": "Fulbright",
+
+  // Schwarzman Scholars
+  "schwarzman scholars": "Schwarzman Scholars",
+  "schwarzman foundation": "Schwarzman Scholars",
+
+  // Rhodes
+  "rhodes trust": "Rhodes Trust",
+  "rhodes scholarships": "Rhodes Trust",
+  "rhodes scholarship": "Rhodes Trust",
+
+  // Gates Cambridge
+  "gates cambridge": "Gates Cambridge",
+  "gates cambridge trust": "Gates Cambridge",
+
+  // Knight-Hennessy Scholars
+  "knight hennessy scholars": "Knight-Hennessy Scholars",
+  "knight hennessy": "Knight-Hennessy Scholars",
+  "knight-hennessy scholars": "Knight-Hennessy Scholars",
+  "knight-hennessy": "Knight-Hennessy Scholars",
+  "stanford knight hennessy scholars": "Knight-Hennessy Scholars",
+
+  // Mastercard Foundation
+  "mastercard foundation": "Mastercard Foundation",
+  "mastercard foundation scholars program": "Mastercard Foundation",
+  "the mastercard foundation": "Mastercard Foundation",
+
+  // Aga Khan Foundation
+  "aga khan foundation": "Aga Khan Foundation",
+  "aga khan development network": "Aga Khan Foundation",
+
+  // Joint Japan/World Bank
+  "joint japan world bank graduate scholarship program": "Joint Japan/World Bank Scholarship",
+  "jjwbgsp": "Joint Japan/World Bank Scholarship",
+  "joint japan world bank scholarship": "Joint Japan/World Bank Scholarship",
+
+  // Erasmus Mundus / EU
+  "european commission erasmus": "Erasmus Mundus",
+  "erasmus mundus": "Erasmus Mundus",
+  "erasmus": "Erasmus Mundus",
+  "european commission": "Erasmus Mundus",
+  "eacea": "Erasmus Mundus",
+
+  // Eiffel
+  "campus france eiffel": "Eiffel Excellence Scholarship",
+  "eiffel excellence": "Eiffel Excellence Scholarship",
+  "eiffel scholarship": "Eiffel Excellence Scholarship",
+
+  // Vanier
+  "vanier canada graduate scholarship": "Vanier Canada Graduate Scholarships",
+  "vanier scholarship": "Vanier Canada Graduate Scholarships",
+  "vanier scholarships": "Vanier Canada Graduate Scholarships",
+
+  // Marshall Aid Commemoration Commission
+  "marshall scholarship": "Marshall Scholarships",
+  "marshall scholarships": "Marshall Scholarships",
+  "marshall aid commemoration commission": "Marshall Scholarships",
+
+  // World Health Organization
+  "who": "World Health Organization",
+  "world health organization": "World Health Organization",
+
+  // Open Society Foundations
+  "open society foundations": "Open Society Foundations",
+  "open society foundation": "Open Society Foundations",
+  "osf": "Open Society Foundations",
+  "soros foundation": "Open Society Foundations",
+
+  // Ford Foundation
+  "ford foundation": "Ford Foundation",
+  "ford foundation international fellowships": "Ford Foundation",
+
+  // Rotary
+  "rotary foundation": "Rotary Foundation",
+  "the rotary foundation": "Rotary Foundation",
+  "rotary international": "Rotary Foundation",
+  "rotary peace fellowship": "Rotary Foundation",
+};
+
+/** Lowercase comparison-key form of a raw provider string. Strips
+ *  trailing parentheticals + punctuation, collapses whitespace,
+ *  drops trivial articles ("the"). Mirror of the SQL function in
+ *  20260507260000_canonicalize_providers.sql — keep in sync. */
+function normalizeProviderKey(raw: string): string {
+  return raw
+    .toLowerCase()
+    .replace(/\s*\([^)]*\)\s*/g, " ")
+    .replace(/[.,/&'’]/g, " ")
+    .replace(/\bthe\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Resolve a provider string to its canonical short form when known.
+ *  Returns null only when input is empty/junk; otherwise returns the
+ *  canonical form (synonym match) or the original cleaned string
+ *  (passthrough). Designed to compose AFTER cleanProvider() has run. */
+export function canonicalizeProviderName(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const key = normalizeProviderKey(trimmed);
+  if (!key) return null;
+  return PROVIDER_SYNONYMS_MAP[key] ?? trimmed;
+}
+
 /** Returns null when the value is junk (Various / Multiple / TBD …) so
  *  the caller can drop the field rather than persist garbage. */
 export function cleanProvider(raw: string | null | undefined): string | null {
@@ -61,8 +226,13 @@ export function cleanProvider(raw: string | null | undefined): string | null {
   p = p.replace(/\s*\([^)]*\)\s*$/, "").trim();
   if (PROVIDER_JUNK.test(p)) return null;
   p = p.replace(/^(The\s+)?(Trustees|Board|Council|Office)\s+of\s+(the\s+)?/i, "");
-  if (p.length > 60) p = p.slice(0, 58).trimEnd() + "…";
-  return p;
+  // Apply known-funder canonicalization BEFORE the length cap. Long
+  // raw forms ("United Nations Educational, Scientific and Cultural
+  // Organization") would otherwise get truncated past their canonical
+  // synonym match — we'd miss the lookup and end up storing a sliced
+  // ellipsis instead of "UNESCO".
+  const canonical = canonicalizeProviderName(p) ?? p;
+  return canonical.length > 60 ? canonical.slice(0, 58).trimEnd() + "…" : canonical;
 }
 
 /** Field-of-study canonicalization map. MIRROR of the
