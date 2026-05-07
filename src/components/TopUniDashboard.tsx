@@ -1686,7 +1686,14 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
-    try { localStorage.setItem("topuni-chat-history", JSON.stringify(chatMessages)); } catch { /* ignore */ }
+    // Debounce the localStorage write — streaming an assistant turn
+    // can fire 100s of chatMessages updates per response, each one
+    // re-serializing the entire history. Settling the writes at 600 ms
+    // keeps the persistence responsive without churning the disk.
+    const id = setTimeout(() => {
+      try { localStorage.setItem("topuni-chat-history", JSON.stringify(chatMessages)); } catch { /* ignore */ }
+    }, 600);
+    return () => clearTimeout(id);
   }, [chatMessages]);
 
   // Auto-grow the textarea as the user types, capped at ~5 lines.
