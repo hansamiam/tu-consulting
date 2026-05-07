@@ -1493,11 +1493,17 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       // it cache-hit and showed the old framing.
       nat: profile.nationality, lvl: profile.gradeLevel,
       lang: language, grade: reportGrade,
-      // Pro depth fingerprints — when the user fills the upgrade dialog
-      // we want the cache to invalidate so the regenerated brief sticks.
-      d: proDepth.topActivity ? "1" : "0",
-      s2: proDepth.personalStory ? "1" : "0",
-      sc: proDepth.namedSchools ? "1" : "0",
+      // Pro depth fingerprints — fingerprint the actual CONTENT (not
+      // just whether it's filled), mirroring the backend's
+      // computeBriefHash which slices each field to 200 chars. The
+      // earlier "1"/"0" emptiness flag meant editing the topActivity
+      // text from "robotics" to "tennis" left the frontend cache
+      // intact → the brief didn't change even though the backend
+      // would have regenerated. 200-char slice keeps the hash bounded
+      // for users who paste long stories.
+      d: (proDepth.topActivity ?? "").slice(0, 200),
+      s2: (proDepth.personalStory ?? "").slice(0, 200),
+      sc: (proDepth.namedSchools ?? "").slice(0, 200),
     });
     let h = 0;
     for (let i = 0; i < fingerprint.length; i++) h = ((h << 5) - h + fingerprint.charCodeAt(i)) | 0;
