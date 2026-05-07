@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import type { Session } from "@supabase/supabase-js";
 import { Loader2 } from "lucide-react";
 import { clearPendingAccount, getPendingAccount, type PendingAccountPayload } from "@/lib/pendingAccount";
 import { clearPendingReferral, getPendingReferral } from "@/lib/referralCapture";
@@ -32,15 +33,37 @@ const AuthCallback = () => {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      // Give Supabase a tick to parse the hash + establish the session
-      await new Promise((r) => setTimeout(r, 400));
-      const { data } = await supabase.auth.getSession();
+      // Wait for Supabase to parse the hash + establish a session.
+      // Previously this was a fixed 400 ms sleep; on a slow connection
+      // the session hadn't arrived yet and the page bounced the user to
+      // "/" with the pending-account drain skipped — wizard profile +
+      // brief never persisted. Subscribe to onAuthStateChange so we
+      // continue the moment SIGNED_IN fires, with a 6 s safety net.
+      const session = await new Promise<Session | null>((resolve) => {
+        let done = false;
+        const finish = (s: Session | null) => { if (done) return; done = true; resolve(s); };
+        // Peek synchronously — if the SDK already has a session we
+        // don't need to wait for an event.
+        supabase.auth.getSession().then(({ data }) => {
+          if (data.session) finish(data.session);
+        });
+        const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+          if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && s) finish(s);
+        });
+        // Safety net — bail after 6 s so we never wedge here forever.
+        setTimeout(async () => {
+          const { data } = await supabase.auth.getSession();
+          sub.subscription.unsubscribe();
+          finish(data.session ?? null);
+        }, 6000);
+      });
       if (cancelled) return;
 
-      if (!data.session) {
+      if (!session) {
         navigate("/", { replace: true });
         return;
       }
+      const data = { session };
 
       // Drain pending account payload (set by SaveBriefPrompt before the
       // magic-link email was triggered). Best-effort — failures here
