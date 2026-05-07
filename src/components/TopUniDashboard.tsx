@@ -3821,12 +3821,15 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         onSubmit={(depth) => {
           setProDepth(depth);
           try { localStorage.setItem(PRO_DEPTH_KEY, JSON.stringify(depth)); } catch { /* ignore */ }
-          // Regenerate at the deeper tier with the new context. The
-          // reportGrade derivation already flips to premium when
-          // hasProDepth becomes true on the next render — but we kick
-          // off the call here directly to avoid one render of stale
-          // basic content showing before the regen starts.
-          setTimeout(() => generatePathway(), 50);
+          // Regeneration is now triggered automatically by the
+          // profileHash-watching effect (round 96) — proDepth content
+          // is part of the hash, so changing the depth flips the hash
+          // → cache miss → generatePathway. The previous explicit
+          // setTimeout(() => generatePathway(), 50) double-fired the
+          // generation (once via effect, once via setTimeout); the
+          // first stream got aborted by the second's abortController
+          // swap. Letting the effect own this keeps a single source of
+          // truth for "when do we regenerate."
         }}
       />
 
