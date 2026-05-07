@@ -134,7 +134,7 @@ export function SaveBriefPrompt({
             this device. Loss aversion is much sharper than generic
             "save your work." Each item only renders if we have a real
             count; the strip itself hides if there's nothing to show. */}
-        {!done && (liveMatchCount || savedCount || closestUrgent) && (
+        {(liveMatchCount || savedCount || closestUrgent) && (
           <div className="grid grid-cols-3 gap-2 -mx-1 mb-1">
             {typeof liveMatchCount === "number" && liveMatchCount > 0 && (
               <div className="flex flex-col items-start gap-1 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
