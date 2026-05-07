@@ -12,12 +12,64 @@ interface Props {
   name?: string
   // The AI-generated body — markdown-ish. We render it as paragraphs;
   // if it contains markdown we won't fully resolve it (kept simple).
+  // Already-localized by the caller — the cron prompts the model in
+  // the user's language so this body is RU for RU users.
   aiBody: string
   trackedCount?: number
   urgentDeadlines?: number
   statusPending?: number
   unsubscribeUrl?: string
+  language?: 'en' | 'ru'
 }
+
+const COPY = {
+  en: {
+    htmlLang: 'en',
+    greetingNamed: (n: string) => `${n},`,
+    greetingNeutral: 'Hi,',
+    subtitle: "This week's plan from your TopUni coach.",
+    statTracked: (n: number) => `${n} tracked`,
+    statUrgent: (n: number) => `${n} closing in 30 days`,
+    statPending: (n: number) => `${n} no status set`,
+    previewFallback: 'Your week ahead',
+    openPipeline: 'Open my pipeline →',
+    pipelinePath: '/pipeline',
+    counselorLink: 'Talk to my AI counselor',
+    counselorPath: '/topuni-ai',
+    discoverLink: 'Find new scholarships',
+    discoverPath: '/discover',
+    footerWhy: "You're getting this because you have active applications saved in TopUni. Nudges are weekly.",
+    footerPause: 'Pause weekly nudges',
+    footerSignoff: '— The TopUni Consulting team',
+    subjectUrgent: (n: string | undefined, c: number) =>
+      `${n ? `${n}, ` : ''}${c} ${c === 1 ? 'deadline' : 'deadlines'} this month — what to do this week`,
+    subjectDefault: (n: string | undefined) =>
+      `${n ? `${n}'s ` : 'Your '}3 things this week`,
+  },
+  ru: {
+    htmlLang: 'ru',
+    greetingNamed: (n: string) => `${n},`,
+    greetingNeutral: 'Привет,',
+    subtitle: 'План на неделю от вашего TopUni-коуча.',
+    statTracked: (n: number) => `${n} в работе`,
+    statUrgent: (n: number) => `${n} закрывается за 30 дн.`,
+    statPending: (n: number) => `${n} без статуса`,
+    previewFallback: 'Ваша неделя',
+    openPipeline: 'Открыть pipeline →',
+    pipelinePath: '/pipeline/ru',
+    counselorLink: 'AI-советник',
+    counselorPath: '/topuni-ai/ru',
+    discoverLink: 'Найти новые стипендии',
+    discoverPath: '/discover/ru',
+    footerWhy: 'Вы получаете это потому что у вас есть активные заявки в TopUni. Напоминания — раз в неделю.',
+    footerPause: 'Поставить напоминания на паузу',
+    footerSignoff: '— Команда TopUni Consulting',
+    subjectUrgent: (n: string | undefined, c: number) =>
+      `${n ? `${n}, ` : ''}${c} ${c === 1 ? 'дедлайн' : 'дедлайнов'} в этом месяце — план на неделю`,
+    subjectDefault: (n: string | undefined) =>
+      `${n ? `${n}: ` : ''}3 шага на эту неделю`,
+  },
+} as const
 
 /** Cheap markdown → react: split paragraphs, bold **text**, * italic */
 const renderMarkdown = (md: string): React.ReactNode[] => {
@@ -45,24 +97,25 @@ const renderInline = (s: string): React.ReactNode => {
   })
 }
 
-const WeeklyNudgeEmail = ({ name, aiBody, trackedCount = 0, urgentDeadlines = 0, statusPending = 0, unsubscribeUrl }: Props) => {
-  const greeting = name ? `${name},` : 'Hi,'
+const WeeklyNudgeEmail = ({ name, aiBody, trackedCount = 0, urgentDeadlines = 0, statusPending = 0, unsubscribeUrl, language = 'en' }: Props) => {
+  const c = COPY[language === 'ru' ? 'ru' : 'en']
+  const greeting = name ? c.greetingNamed(name) : c.greetingNeutral
   const statsLine = (() => {
     const parts: string[] = []
-    if (trackedCount > 0) parts.push(`${trackedCount} tracked`)
-    if (urgentDeadlines > 0) parts.push(`${urgentDeadlines} closing in 30 days`)
-    if (statusPending > 0) parts.push(`${statusPending} no status set`)
+    if (trackedCount > 0) parts.push(c.statTracked(trackedCount))
+    if (urgentDeadlines > 0) parts.push(c.statUrgent(urgentDeadlines))
+    if (statusPending > 0) parts.push(c.statPending(statusPending))
     return parts.join(' · ')
   })()
 
   return (
-    <Html lang="en" dir="ltr">
+    <Html lang={c.htmlLang} dir="ltr">
       <Head />
-      <Preview>{aiBody.split(/\n+/).find((l) => l.trim())?.slice(0, 110) || 'Your week ahead'}</Preview>
+      <Preview>{aiBody.split(/\n+/).find((l) => l.trim())?.slice(0, 110) || c.previewFallback}</Preview>
       <Body style={main}>
         <Container style={container}>
           <Heading style={h1}>{greeting}</Heading>
-          <Heading style={h2}>This week's plan from your TopUni coach.</Heading>
+          <Heading style={h2}>{c.subtitle}</Heading>
 
           {statsLine && (
             <Section style={statsBox}>
@@ -77,19 +130,17 @@ const WeeklyNudgeEmail = ({ name, aiBody, trackedCount = 0, urgentDeadlines = 0,
           <Hr style={hr} />
 
           <Section style={ctaWrap}>
-            <Button href={`${SITE_URL}/pipeline`} style={primaryBtn}>Open my pipeline →</Button>
+            <Button href={`${SITE_URL}${c.pipelinePath}`} style={primaryBtn}>{c.openPipeline}</Button>
           </Section>
           <Text style={subtle}>
-            <a href={`${SITE_URL}/topuni-ai`} style={link}>Talk to my AI counselor</a> · <a href={`${SITE_URL}/discover`} style={link}>Find new scholarships</a>
+            <a href={`${SITE_URL}${c.counselorPath}`} style={link}>{c.counselorLink}</a> · <a href={`${SITE_URL}${c.discoverPath}`} style={link}>{c.discoverLink}</a>
           </Text>
 
           <Hr style={hr} />
+          <Text style={footer}>{c.footerWhy}</Text>
           <Text style={footer}>
-            You're getting this because you have active applications saved in TopUni. Nudges are weekly.
-          </Text>
-          <Text style={footer}>
-            {unsubscribeUrl ? <a href={unsubscribeUrl} style={footerLink}>Pause weekly nudges</a> : null}
-            {' '}— The {SITE_NAME} team
+            {unsubscribeUrl ? <a href={unsubscribeUrl} style={footerLink}>{c.footerPause}</a> : null}
+            {' '}{c.footerSignoff}
           </Text>
         </Container>
       </Body>
@@ -102,8 +153,9 @@ export const template = {
   subject: ((data: Record<string, any>) => {
     const name = data.name as string | undefined
     const urgent = Number(data.urgentDeadlines) || 0
-    if (urgent >= 1) return `${name ? `${name}, ` : ''}${urgent} ${urgent === 1 ? 'deadline' : 'deadlines'} this month — what to do this week`
-    return `${name ? `${name}'s ` : 'Your '}3 things this week`
+    const c = COPY[data.language === 'ru' ? 'ru' : 'en']
+    if (urgent >= 1) return c.subjectUrgent(name, urgent)
+    return c.subjectDefault(name)
   }),
   displayName: 'Weekly nudge',
   previewData: {
