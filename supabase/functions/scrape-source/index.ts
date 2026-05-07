@@ -35,6 +35,7 @@ import {
   stripUserRelative,
   inferHostCountryFromNames,
   isKnownAnnualProgram,
+  knownProgramValueUsd,
 } from "../_shared/scholarshipFields.ts";
 
 const corsHeaders = {
@@ -145,6 +146,18 @@ Field semantics:
 - eligible_countries: ISO country names. Empty array means "open globally".
 - application_deadline: ISO YYYY-MM-DD if a specific date; omit if rolling or unknown.
 - deadline_type: DEFAULT to "annual" — almost every fellowship/scholarship runs on a yearly cycle even when this year's date isn't visible on the page. Use "rolling" ONLY when the page explicitly says continuous / no deadline / accepted year-round. Use "one-time" only for a clearly one-shot opportunity (e.g. a 75th-anniversary grant). Use "unknown" only when there's truly no signal. Misclassifying annual programs as "rolling" hides real deadlines from the student.
+
+DEADLINE EXTRACTION (DATA QUALITY GATE — way too many rows landed with deadline_type='rolling' because the LLM defaulted there when the date wasn't obvious):
+- Scan the ENTIRE page for any of these phrases / patterns and extract the date that follows: "Deadline:", "Application deadline:", "Apply by", "Closes on", "Closing date", "Submissions close", "Applications due", "Last day to apply", "Submission deadline", "Application opens" + window endpoint.
+- The date may be in many formats: "November 5, 2026" / "5 November 2026" / "5/11/2026" / "11/05/2026" (assume US format on .com / .gov / .edu domains and DMY on UK / EU domains) / "2026-11-05". Always emit ISO YYYY-MM-DD.
+- If the page mentions a typical month/window without a specific date this year ("applications open in October", "deadline is in November each year"), DO NOT fabricate a date — leave application_deadline empty but DO set deadline_type="annual" with the month/window noted in `notes`.
+- Many program pages bury the deadline at the bottom (FAQ section, sidebar). Read past the marketing copy.
+
+FINANCIAL VALUE EXTRACTION (DATA QUALITY GATE — too many rows show only generic "tuition covered" / "stipend" with no $$$ amount):
+- ALWAYS attempt to populate estimated_total_value_usd. The user wants a single number that represents the realistic FULL-CYCLE value (not per-month, not per-year — the full multi-year award) so the catalog can sort + sum.
+- If the page gives a per-year number, multiply by the program duration (master = 2yr typical, PhD = 4yr typical) to land at the total. Make this estimate transparent by leaving the per-year breakdown in award_amount_text.
+- If the page only says "full tuition", look for the program's tuition number elsewhere on the page or use a defensible estimate based on the host_country (US private $80K/yr, US public out-of-state $40K/yr, UK £35K/yr ≈ $45K, Germany €0 tuition, EU public ~€2K/yr, Australia AU$45K ≈ $30K). It's better to publish a directional range than to leave the field NULL — students need a number to compare.
+- Award_amount_text: include a $ figure or range whenever you can ("Full UK tuition (~£28K/yr) + £18,000 stipend × 1yr = ~£46K total"). Avoid the bare "Tuition covered" / "Stipend" labels — those tell the student nothing they don't already get from coverage_type.
 - ideal_candidate_profile: 1-2 sentences describing who has the best shot.
 - weak_candidate_warning: 1 sentence on common red flags / who shouldn't apply.
 - best_for_tags: short tags like ["public-policy","developing-countries","mid-career"]
@@ -371,6 +384,21 @@ function validateExtracted(x: unknown): ExtractedScholarship | null {
     if (isKnownAnnualProgram(o.scholarship_name as string, o.provider_name as string)) {
       o.deadline_type = "annual";
     }
+  }
+
+  // Financial value floor — when the LLM left estimated_total_value_usd
+  // null but the program is one of the well-known entries with a stable
+  // public total (Chevening, Rhodes, Schwarzman, MEXT, etc.), publish
+  // the canonical figure so the catalog can sort/sum correctly. Better
+  // a directional number than NULL — the user explicitly called out
+  // "thers gotta be more that provide at least an estimate range or
+  // minimum or max or something dig more financial info."
+  if (o.estimated_total_value_usd == null) {
+    const known = knownProgramValueUsd(
+      o.scholarship_name as string,
+      o.provider_name as string,
+    );
+    if (known) o.estimated_total_value_usd = known;
   }
 
   if (Array.isArray(o.target_fields)) {

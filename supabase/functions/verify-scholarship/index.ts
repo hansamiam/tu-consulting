@@ -42,6 +42,7 @@ import {
   stripUserRelative,
   inferHostCountryFromNames,
   isKnownAnnualProgram,
+  knownProgramValueUsd,
 } from "../_shared/scholarshipFields.ts";
 
 const corsHeaders = {
@@ -357,6 +358,18 @@ Deno.serve(async (req) => {
       )) {
         fresh.deadline_type = "annual";
       }
+    }
+    // Financial floor — same fallback as scrape-source. If the
+    // re-extract returned NULL/0 for estimated_total_value_usd but
+    // we know the canonical figure for this program, write it back
+    // so re-verifying a row doesn't blank out the value we previously
+    // backfilled.
+    if (fresh.estimated_total_value_usd == null || fresh.estimated_total_value_usd === 0) {
+      const known = knownProgramValueUsd(
+        fresh.scholarship_name ?? stored.scholarship_name,
+        fresh.provider_name ?? stored.provider_name,
+      );
+      if (known) fresh.estimated_total_value_usd = known;
     }
     if (fresh.award_amount_text) fresh.award_amount_text = cleanAwardText(fresh.award_amount_text);
     if (Array.isArray(fresh.target_fields)) {

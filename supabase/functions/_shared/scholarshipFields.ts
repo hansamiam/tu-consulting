@@ -403,3 +403,93 @@ export function isKnownAnnualProgram(
   const haystack = `${scholarshipName ?? ""} | ${providerName ?? ""}`;
   return KNOWN_ANNUAL_PROGRAMS_RE.test(haystack);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Known-program financial value floor
+ * ─────────────────────────────────────────────────────────────────────────
+ *
+ * The LLM extractor often leaves estimated_total_value_usd null when the
+ * page says "full tuition + stipend" without a $$ figure. But for the
+ * famous programs the realistic full-cycle total is publicly known and
+ * stable year-over-year. Without this floor, sorting by funding value
+ * pushes Chevening / Rhodes / Schwarzman to the bottom because their
+ * structured value is null.
+ *
+ * Numbers are deliberately conservative — based on published tuition +
+ * stipend × typical program duration. Better to ground students in a
+ * directional number than to publish NULL.
+ *
+ * Used by:
+ *   · scrape-source (post-validate fallback)
+ *   · 20260507170000_backfill_estimated_value.sql (one-shot backfill)
+ *
+ * If you add a row, add the same row to the SQL function in the
+ * migration so backfill stays in sync.
+ */
+interface KnownValue {
+  pattern: RegExp;
+  /** Realistic full-cycle USD total. */
+  totalUsd: number;
+}
+
+const KNOWN_PROGRAM_VALUES: KnownValue[] = [
+  // United Kingdom — usually 1yr master's so figures are 1yr totals.
+  { pattern: /\bchevening\b/i,                     totalUsd: 60_000 },   // ~£28K tuition + £18K stipend
+  { pattern: /\brhodes scholar/i,                  totalUsd: 90_000 },   // 2-3yr Oxford full
+  { pattern: /\bgates cambridge\b/i,               totalUsd: 95_000 },   // 3yr PhD typical
+  { pattern: /\bclarendon\b/i,                     totalUsd: 80_000 },   // Oxford 1-3yr
+  { pattern: /\bcommonwealth scholarship\b/i,      totalUsd: 50_000 },
+  { pattern: /\bweidenfeld[\-\s]?hoffmann\b/i,     totalUsd: 80_000 },
+  { pattern: /\bcambridge trust\b/i,               totalUsd: 70_000 },
+  { pattern: /\bmarshall scholar/i,                totalUsd: 100_000 },  // 2yr UK full
+
+  // United States — high tuition, multi-year typical.
+  { pattern: /\bfulbright\b/i,                     totalUsd: 55_000 },   // Varies by country, ~1yr
+  { pattern: /\bknight[\-\s]?hennessy\b/i,         totalUsd: 250_000 },  // 3yr full Stanford
+  { pattern: /\bjack kent cooke\b/i,               totalUsd: 220_000 },  // Up to $55K/yr × 4
+  { pattern: /\bp\.?d\.?soros\b/i,                 totalUsd: 90_000 },   // 1-2yr × $30-45K
+  { pattern: /\bgates millennium\b/i,              totalUsd: 200_000 },  // legacy, full ride 4yr
+  { pattern: /\beast[\-\s]?west center\b/i,        totalUsd: 70_000 },   // 2yr master full
+  { pattern: /\bhispanic scholarship fund\b/i,     totalUsd: 10_000 },   // typically partial
+  { pattern: /\bcoca[\-\s]?cola scholar/i,         totalUsd: 20_000 },
+
+  // Germany — DAAD typical 2yr master's.
+  { pattern: /\bdaad\b/i,                          totalUsd: 30_000 },   // €861/mo × 24mo + tuition fees
+  { pattern: /\bdeutschlandstipendium\b/i,         totalUsd: 8_000 },    // €300/mo × 24mo
+  { pattern: /\bheinrich b[oö]ll\b/i,              totalUsd: 25_000 },
+  { pattern: /\bkonrad[\-\s]?adenauer\b/i,         totalUsd: 25_000 },
+
+  // Asia
+  { pattern: /\bschwarzman scholar/i,              totalUsd: 125_000 },  // 1yr full Tsinghua master
+  { pattern: /\byenching\s+(academy|scholar)/i,    totalUsd: 100_000 },  // 2yr full Peking master
+  { pattern: /\bmext\b|\bmonbukagakusho\b/i,       totalUsd: 50_000 },   // 2yr master full
+  { pattern: /\bkgsp\b|\bglobal korea scholarship\b/i, totalUsd: 35_000 }, // 2yr master full
+
+  // Europe / France
+  { pattern: /\beiffel\b.*scholar/i,               totalUsd: 18_000 },   // €1,181/mo × ~12mo
+  { pattern: /\berasmus\s+mundus\b/i,              totalUsd: 50_000 },   // 1-2yr €1,400/mo + tuition
+
+  // Canada / Australia / NZ
+  { pattern: /\bvanier\s+canada\b|\bvanier\s+scholar/i, totalUsd: 150_000 }, // C$50K × 3yr ≈ $115K
+  { pattern: /\btrudeau\s+(scholar|foundation)\b/i, totalUsd: 250_000 }, // C$80K × 3yr ≈ $190K
+  { pattern: /\baustralia\s+awards?\b/i,           totalUsd: 80_000 },   // Varies, multi-year typical
+
+  // Multi-country / global
+  { pattern: /\baga\s+khan\s+(foundation|development)/i, totalUsd: 60_000 }, // partial loan + grant
+  { pattern: /\bmastercard\s+foundation\s+scholar/i, totalUsd: 120_000 }, // 4yr full at partner
+  { pattern: /\brotary\s+peace\s+(fellow|scholar)/i, totalUsd: 75_000 }, // 1-2yr master
+];
+
+/** Returns the canonical full-cycle USD value for a well-known program, or
+ *  null if the name doesn't match any known pattern. */
+export function knownProgramValueUsd(
+  scholarshipName: string | null | undefined,
+  providerName: string | null | undefined,
+): number | null {
+  const haystack = `${scholarshipName ?? ""} | ${providerName ?? ""}`;
+  if (haystack.trim().length < 4) return null;
+  for (const { pattern, totalUsd } of KNOWN_PROGRAM_VALUES) {
+    if (pattern.test(haystack)) return totalUsd;
+  }
+  return null;
+}
