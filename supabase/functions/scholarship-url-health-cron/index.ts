@@ -39,6 +39,86 @@ type CheckResult =
   | { status: "redirect"; httpCode: number; resolvedTo: string | null }
   | { status: "fail"; httpCode: number | null; reason: string };
 
+/* Soft-404 detection. Many providers return HTTP 200 even when the
+ * underlying program page is gone (rebrand redirected to a generic
+ * landing page, Wagtail/Drupal CMS missing-slug fallback, JS-shell
+ * apps that show "Not Found" client-side). Without sniffing the body
+ * we'd happily mark these "ok" forever and keep linking students to
+ * dead pages.
+ *
+ * Strategy: read the first ~64KB only (Read at most this much then
+ * cancel the rest), pull <title> and a clipped main-content slice,
+ * match against known soft-404 marker phrases. Only fires when the
+ * content is short enough OR the title is unambiguously a 404 — we
+ * don't want to flag a real page that mentions "Page not found"
+ * inside a long article. */
+const SOFT_404_TITLE_RE = /(\b404\b|page\s+not\s+found|not\s+found\b|page\s+(?:doesn'?t\s+exist|expired|removed)|sorry,\s+(?:this|that)\s+page|nothing\s+here)/i;
+const SOFT_404_BODY_RE  = /(this\s+page\s+(?:doesn'?t|does\s+not)\s+exist|the\s+(?:page|content|scholarship)\s+(?:you\s+(?:are\s+)?(?:looking|requested)|you've?\s+requested)\s+(?:could\s+not\s+be\s+found|cannot\s+be\s+found|isn'?t\s+available|is\s+no\s+longer\s+available|has\s+(?:moved|been\s+removed))|sorry,?\s+we\s+(?:couldn'?t|can'?t|cannot)\s+find|page\s+(?:has\s+been|was)\s+(?:moved|removed|deleted)|you\s+took\s+a\s+wrong\s+turn|404\s+(?:error|not\s+found))/i;
+
+const MAX_BODY_BYTES = 64 * 1024; // 64KB cap on body read
+
+async function readBodyClipped(resp: Response): Promise<string> {
+  if (!resp.body) return "";
+  const reader = resp.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (total < MAX_BODY_BYTES) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      total += value.length;
+    }
+  } catch {
+    /* ignore — partial body still useful */
+  } finally {
+    try { reader.cancel(); } catch { /* ignore */ }
+  }
+  // Concat without splitting multi-byte UTF-8 sequences; TextDecoder
+  // handles trailing partial codepoints with stream:false fine for our
+  // marker matching purposes.
+  const merged = new Uint8Array(Math.min(total, MAX_BODY_BYTES));
+  let offset = 0;
+  for (const c of chunks) {
+    const room = merged.length - offset;
+    if (room <= 0) break;
+    merged.set(c.subarray(0, room), offset);
+    offset += Math.min(c.length, room);
+  }
+  return new TextDecoder("utf-8").decode(merged);
+}
+
+function detectSoft404(html: string): { soft404: boolean; reason?: string } {
+  if (!html) return { soft404: false };
+  const titleMatch = html.match(/<title[^>]*>([^<]{0,200})<\/title>/i);
+  const title = titleMatch?.[1]?.trim() ?? "";
+  if (title && SOFT_404_TITLE_RE.test(title)) {
+    return { soft404: true, reason: `soft_404_title: ${title.slice(0, 80)}` };
+  }
+  // Body checks — strip tags to avoid attribute-name false positives
+  // ("notfound" CSS class), then match against a window of text.
+  const text = html
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  // Two conditions to fire on body matches:
+  //   (a) Soft-404 phrase appears in the first 800 chars of visible
+  //       text (above-the-fold for most pages)
+  //   (b) OR overall page text is short AND a soft-404 phrase appears
+  //       anywhere — short pages with these phrases are almost always
+  //       error pages, not real content. Cap: 1500 chars.
+  const head = text.slice(0, 800);
+  if (SOFT_404_BODY_RE.test(head)) {
+    return { soft404: true, reason: "soft_404_above_fold" };
+  }
+  if (text.length < 1500 && SOFT_404_BODY_RE.test(text)) {
+    return { soft404: true, reason: "soft_404_thin_page" };
+  }
+  return { soft404: false };
+}
+
 async function checkUrl(rawUrl: string): Promise<CheckResult> {
   let url = rawUrl.trim();
   if (!url) return { status: "fail", httpCode: null, reason: "empty url" };
@@ -72,12 +152,25 @@ async function checkUrl(rawUrl: string): Promise<CheckResult> {
       clearTimeout(tid);
     }
     lastCode = resp.status;
-    // Cancel the body read — we don't care about content
-    try { resp.body?.cancel(); } catch { /* ignore */ }
 
     if (resp.status >= 200 && resp.status < 300) {
+      // Soft-404 sniff before declaring "ok". Only check when the
+      // response advertises HTML (some PDFs / JSON endpoints return 200
+      // without HTML and shouldn't be parsed for soft-404 markers).
+      const ct = resp.headers.get("content-type") ?? "";
+      if (/text\/html|application\/xhtml/i.test(ct)) {
+        const body = await readBodyClipped(resp);
+        const sniff = detectSoft404(body);
+        if (sniff.soft404) {
+          return { status: "fail", httpCode: resp.status, reason: sniff.reason };
+        }
+      } else {
+        try { resp.body?.cancel(); } catch { /* ignore */ }
+      }
       return { status: didRedirect ? "redirect" : "ok", httpCode: resp.status, resolvedTo: didRedirect ? current : null };
     }
+    // Non-2xx: cancel body, follow redirects or return fail
+    try { resp.body?.cancel(); } catch { /* ignore */ }
     if (resp.status >= 300 && resp.status < 400) {
       const loc = resp.headers.get("location");
       if (!loc || redirects >= MAX_REDIRECTS) {
