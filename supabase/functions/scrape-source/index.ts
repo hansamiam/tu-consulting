@@ -551,7 +551,12 @@ function normalizeKey(name: string, provider: string, _country: string): string 
     .trim();
 }
 
-/** Build the embedding source_text the existing embed-scholarships worker expects. */
+/** Build the embedding source_text the existing embed-scholarships worker expects.
+ *  NOTE: embed-scholarships actually re-derives source_text via the SQL
+ *  scholarship_embedding_source() function (migration 20260507230000),
+ *  so this column is for INSERT-time visibility only — it's overwritten
+ *  on the next embed cron tick. Keep the field set in sync with the
+ *  SQL function so debugging the column matches what got vectorised. */
 function buildEmbeddingSourceText(s: ExtractedScholarship): string {
   return [
     s.scholarship_name,
@@ -561,9 +566,12 @@ function buildEmbeddingSourceText(s: ExtractedScholarship): string {
     s.award_amount_text ?? "",
     s.target_degree_level?.length ? `Levels: ${s.target_degree_level.join(", ")}` : "",
     s.target_fields?.length ? `Fields: ${s.target_fields.join(", ")}` : "",
+    s.eligible_countries?.length ? `Eligible countries: ${s.eligible_countries.join(", ")}` : "",
+    s.target_demographics?.length ? `Targets: ${s.target_demographics.join(", ")}` : "",
     s.eligibility_requirements ?? "",
     s.ideal_candidate_profile ?? "",
     s.best_for_tags?.length ? `Best for: ${s.best_for_tags.join(", ")}` : "",
+    s.notes ?? "",
   ].filter(Boolean).join(" | ");
 }
 
