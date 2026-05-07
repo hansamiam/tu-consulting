@@ -266,8 +266,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const sendPasswordReset = useCallback(async (email: string) => {
+    // Land Russian users on the Russian variant so the reset page copy
+    // matches the language they were just using. Detect from the path
+    // they're on right now (the dialog is invoked inline from EN/RU pages).
+    const isRu = /\/ru(\/|$|\?)/.test(window.location.pathname);
+    const path = isRu ? "/auth/reset-password/ru" : "/auth/reset-password";
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
+      redirectTo: `${window.location.origin}${path}`,
     });
     return { error: error?.message ?? null };
   }, []);

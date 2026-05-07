@@ -200,7 +200,8 @@ const App = () => (
           <Route path="/pricing" element={<Pricing language="en" />} />
           <Route path="/pricing/ru" element={<Pricing language="ru" />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/auth/reset-password" element={<AuthResetPassword />} />
+          <Route path="/auth/reset-password" element={<AuthResetPassword language="en" />} />
+          <Route path="/auth/reset-password/ru" element={<AuthResetPassword language="ru" />} />
           <Route path="/account" element={<Account language="en" />} />
           <Route path="/account/ru" element={<Account language="ru" />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
