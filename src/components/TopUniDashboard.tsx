@@ -2070,7 +2070,12 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       lang: language,
       bh: briefHead.length,
       bs: briefHead.slice(0, 300),
-      tr: trackedSnapshot.ids.length,
+      // Fingerprint the actual id set, not just the length. Removing
+      // scholarship A and adding scholarship B keeps the length the
+      // same, so the prior `tr: ids.length` comparison cache-hit and
+      // re-served a greeting that still referenced A by name.
+      // ids is already sorted in trackedSnapshot, so this is stable.
+      tr: trackedSnapshot.ids.join(","),
       ts: trackedSnapshot.statusFingerprint,
     });
     let h = 5381;
@@ -2163,7 +2168,11 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     profile.fullName, profile.nationality, profile.gradeLevel,
     profile.gpa, profile.ielts, targetCountriesKey, profile.major, language,
     greetingFiredHash, greetingLoading,
-    trackedSnapshot.ids.length, trackedSnapshot.statusFingerprint,
+    // Was trackedSnapshot.ids.length — that compared only count, so a
+    // swap of "remove A, add B" left the dep stable and the effect
+    // never re-ran with the new pipeline. Joined sorted IDs are a
+    // primitive string → cheap to compare and accurate.
+    trackedSnapshot.ids.join(","), trackedSnapshot.statusFingerprint,
   ]);
 
   // Abort controllers for long-running streams so an unmount /
