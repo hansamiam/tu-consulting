@@ -125,7 +125,7 @@ const Account = ({ language = "en" }: AccountProps) => {
           <p className="text-sm text-muted-foreground mt-1">
             {t(
               "Your application work lives in Workspace. This page is just for billing and settings.",
-              "Работа над заявками — в Workspace. Здесь только подписка и настройки.",
+              "Работа над заявками — в Рабочей зоне. Здесь только подписка и настройки.",
             )}
           </p>
         </header>
@@ -136,7 +136,7 @@ const Account = ({ language = "en" }: AccountProps) => {
           onClick={() => navigate(ru ? "/pipeline/ru" : "/pipeline")}
           className="text-xs text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
         >
-          ← {t("Back to Workspace", "К Workspace")}
+          ← {t("Back to Workspace", "В Рабочую зону")}
         </button>
       </main>
       <Footer language={language} />
