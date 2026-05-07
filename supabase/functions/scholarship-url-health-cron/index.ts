@@ -24,8 +24,8 @@ const corsHeaders = {
 
 const REQUEST_TIMEOUT_MS = 6000;
 const MAX_REDIRECTS = 3;
-const CONCURRENCY = 5;
-const BATCH_SIZE = 80;            // rows per cron invocation
+const CONCURRENCY = 8;
+const BATCH_SIZE = 500;           // rows per cron invocation
 const USER_AGENT = "TopUni-URL-Health-Bot/1.0 (+https://topuni.org)";
 
 interface QueueRow {
