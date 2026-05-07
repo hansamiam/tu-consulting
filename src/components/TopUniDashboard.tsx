@@ -30,8 +30,6 @@ import { BriefChapterNav } from "@/components/brief/BriefChapterNav";
 import { BriefMasthead } from "@/components/brief/BriefMasthead";
 import { ProSectionsTeaser } from "@/components/brief/ProSectionsTeaser";
 import { SavedDeadlineBanner } from "@/components/SavedDeadlineBanner";
-import { DeadlineTimeline } from "@/components/brief/DeadlineTimeline";
-import { FundingStack } from "@/components/brief/FundingStack";
 import { PremiumSection } from "@/components/brief/PremiumSection";
 import { CombinedFundingChart } from "@/components/brief/CombinedFundingChart";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
@@ -2942,9 +2940,15 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                     onDownloadPdf={() => window.print()}
                   />
 
-                  {/* Hero KPI strip — first thing the user sees when the brief
-                      lands. Numbers come from liveMatches + brief word count
-                      so they re-render live as new sections stream in. */}
+                  {/* Hero KPI strip — single concise widget the user sees
+                      when the brief lands. Round 96: removed the
+                      DeadlineTimeline, FundingStack, and profile-chip
+                      strip that used to sit above the brief content.
+                      Five stacked widget blocks before the actual
+                      strategic-positioning paragraph was the "all over
+                      the place" feeling — the Live Matches grid below
+                      already surfaces deadlines + funding inline, and
+                      the BriefMasthead already shows the profile. */}
                   {!pathwayLoading && (
                     <BriefHeroStats
                       liveMatches={liveMatches}
@@ -2952,37 +2956,6 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                       isRu={isRu}
                     />
                   )}
-
-                  {/* 12-month deadline timeline — visceral urgency. Hidden
-                      when there are <2 upcoming deadlines (component returns
-                      null). Clicks send the user to Discover. */}
-                  {!pathwayLoading && (
-                    <DeadlineTimeline
-                      liveMatches={liveMatches}
-                      isRu={isRu}
-                      onSelectMatch={() => navigate(isRu ? "/discover/ru" : "/discover")}
-                    />
-                  )}
-
-                  {/* Combined funding stack viz — top 5 matches as a stacked
-                      horizontal bar so the reader sees the money pile up. */}
-                  {!pathwayLoading && (
-                    <FundingStack liveMatches={liveMatches} isRu={isRu} />
-                  )}
-
-                  {/* Profile recap chips — visual context, no chart, no fluff */}
-                  <div className="not-prose flex flex-wrap gap-2 mb-8 pb-6 border-b border-border">
-                    {[
-                      profile.gradeLevel,
-                      profile.major,
-                      profile.gpa ? `GPA ${profile.gpa}` : null,
-                      profile.ielts ? `IELTS ${profile.ielts}` : null,
-                      profile.sat ? `SAT ${profile.sat}` : null,
-                      ...(profile.targetCountries || []),
-                    ].filter(Boolean).map((chip) => (
-                      <span key={chip as string} className="text-xs bg-muted/50 text-foreground/80 border border-border px-2.5 py-1 rounded-full font-medium">{chip as string}</span>
-                    ))}
-                  </div>
 
                   {/* Split the markdown into [positioning] and [rest] so the
                       Strategic Brief leads (analysis first), then the live
