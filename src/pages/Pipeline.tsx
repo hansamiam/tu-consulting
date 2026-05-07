@@ -1100,10 +1100,15 @@ const PipelineCard = ({
           cards so the user sees the same scholarship as the same
           object across surfaces. Landmark silhouette overlaid right. */}
       <div className={`relative h-7 bg-gradient-to-r ${accent} overflow-hidden`}>
-        <CountryArt country={s.host_country} className="absolute right-1 inset-y-0 h-full opacity-35 pointer-events-none text-white" />
+        {/* Silhouette is bounded so it never covers the days-chip on
+            the right. Earlier the unbounded h-full image could span the
+            full width on narrow cards and partially clip the deadline
+            countdown — same class of bug as the Discover ScholarCard
+            "+1" overflow (615cd5c). */}
+        <CountryArt country={s.host_country} className="absolute right-1 inset-y-0 h-full max-w-[28%] opacity-35 pointer-events-none text-white" />
         <span className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-transparent pointer-events-none" />
         <div className="relative h-full flex items-center justify-between gap-2 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/95 whitespace-nowrap">
-          <span className="truncate drop-shadow-sm">
+          <span className="truncate drop-shadow-sm min-w-0">
             {s.host_country ? shortCountry(s.host_country) : "—"}
           </span>
           <span className={`tabular-nums shrink-0 px-1.5 py-0.5 rounded ${days !== null && days <= 7 ? "bg-destructive text-destructive-foreground" : days !== null && days <= 30 ? "bg-amber-500 text-amber-950" : "bg-white/15 text-white/95"}`}>
