@@ -69,6 +69,7 @@ const AdminSubmissions     = lazy(() => import("./pages/admin/Submissions"));
 const AdminUniversities    = lazy(() => import("./pages/admin/Universities"));
 const AdminScholarshipVerification = lazy(() => import("./pages/admin/ScholarshipVerification"));
 const AdminAnalyticsFunnel       = lazy(() => import("./pages/admin/AnalyticsFunnel"));
+const AdminAcademy               = lazy(() => import("./pages/admin/Academy"));
 const SubmitScholarship    = lazy(() => import("./pages/SubmitScholarship"));
 
 const queryClient = new QueryClient();
@@ -186,6 +187,7 @@ const App = () => (
           <Route path="/admin/universities" element={<AdminUniversities />} />
           <Route path="/admin/scholarships-verification" element={<AdminScholarshipVerification />} />
           <Route path="/admin/analytics" element={<AdminAnalyticsFunnel />} />
+          <Route path="/admin/academy" element={<AdminAcademy />} />
           <Route path="/academy" element={<Academy />} />
           <Route path="/blog/guide/:slug" element={<CountryGuide language="en" />} />
           <Route path="/blog/guide/:slug/ru" element={<CountryGuide language="ru" />} />

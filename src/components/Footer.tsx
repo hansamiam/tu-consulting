@@ -8,19 +8,17 @@ interface FooterProps {
 // Footer surfaces only what's NOT in primary nav (or what doubles as a
 // conversion driver). Workspace was removed because it lives in primary
 // nav; Pricing now also lives in footer-only since we trimmed it from
-// primary nav. Journal in the Russian footer reads "Blog (in English)"
-// because the editorial content is EN-only and we don't want to lead
-// Russian visitors to a 404-feeling experience.
+// primary nav.
 const FOOTER_LINKS_EN = [
   { to: "/team",      label: "Team" },
   { to: "/pricing",   label: "Pricing" },
-  { to: "/blog",      label: "Journal" },
+  { to: "/blog",      label: "Blog" },
   { to: "/submit",    label: "Partner with us" },
 ];
 const FOOTER_LINKS_RU = [
   { to: "/team/ru",      label: "Команда" },
   { to: "/pricing/ru",   label: "Цены" },
-  { to: "/blog",         label: "Блог (на английском)" },
+  { to: "/blog",         label: "Блог" },
   { to: "/submit/ru",    label: "Сотрудничество" },
 ];
 

@@ -1,7 +1,8 @@
-// Academy — public sees the waitlist landing; founder sees the actual
-// Academy hub (workshops + office hours + guides). When Academy ships
-// publicly, the founder allowlist will be replaced with a "subscribed"
-// check via the subscriptions table.
+// Academy — every visitor sees the waitlist landing. The
+// AcademyFounderHub (workshops + office hours + guides) is now an
+// admin-only surface at /admin/academy; the public /academy route
+// always shows the waitlist regardless of auth state, so signed-in
+// users don't get a different page than anon users.
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Navigation from "@/components/Navigation";
@@ -13,9 +14,6 @@ import { Sparkles, Check, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
-import { isFounder } from "@/lib/founder";
-import { AcademyFounderHub } from "@/components/academy/AcademyFounderHub";
 import samuelPhoto from "@/assets/samuel.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
 import joshPhoto from "@/assets/josh.jpg";
@@ -30,23 +28,9 @@ const FACULTY = [
 ];
 
 const Academy = () => {
-  const { user } = useAuth();
-  const founder = isFounder(user?.email);
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
-
-  // Founder sees the actual Academy hub behind the public waitlist wall;
-  // public still gets the waitlist landing below.
-  if (founder) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navigation />
-        <AcademyFounderHub />
-        <Footer language="en" />
-      </div>
-    );
-  }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
