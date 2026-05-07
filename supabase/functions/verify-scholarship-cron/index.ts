@@ -54,14 +54,18 @@ Deno.serve(async (req) => {
   if (!SUPABASE_URL || !SERVICE_ROLE) return json(500, { error: "Missing Supabase env" });
   const supa = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-  // Candidates: have a source_url, not currently broken, ordered by oldest
-  // verification timestamp first (NULLs first → never-verified rows are
-  // top of queue).
+  // Candidates: have a source_url, not currently broken. Order by
+  // data_completeness_score ASC first (the migration 20260507190000
+  // index supports this) so low-quality rows get re-verified ahead of
+  // already-rich ones — re-verification is the only path by which a
+  // thin row can pick up missing data. Then last_verified_at ASC so
+  // within an equal-completeness band we prefer the stalest row.
   const { data: candidates, error: candErr } = await supa
     .from("scholarships")
-    .select("scholarship_id, scholarship_name, last_verified_at, verification_status")
+    .select("scholarship_id, scholarship_name, last_verified_at, verification_status, data_completeness_score")
     .not("source_url", "is", null)
     .neq("verification_status", "broken")
+    .order("data_completeness_score", { ascending: true, nullsFirst: true })
     .order("last_verified_at", { ascending: true, nullsFirst: true })
     .limit(MAX_PER_RUN);
 
