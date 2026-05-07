@@ -389,6 +389,7 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
       if (result.length > 0) {
         const itemList = {
           "@type": "ItemList",
+          "@id": `${resolved.meta.canonical}#list`,
           name: resolved.meta.h1,
           description: resolved.meta.description,
           itemListElement: result.slice(0, 25).map((r, i) => ({
@@ -398,11 +399,71 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
             url: `${SITE}/scholarships/${r.scholarship_id}`,
           })),
         };
+
+        // BreadcrumbList — Home > Scholarships > {Country|Field} >
+        // {SecondaryLabel} (only for country-field hubs). Lets Google
+        // render the breadcrumb path in SERPs and reinforces the
+        // hub→detail link graph.
+        const crumbs: { "@type": "ListItem"; position: number; name: string; item: string }[] = [
+          { "@type": "ListItem", position: 1, name: "Home", item: `${SITE}/` },
+          { "@type": "ListItem", position: 2, name: "Scholarships", item: `${SITE}/discover` },
+        ];
+        if (mode === "country" || mode === "country-field") {
+          crumbs.push({
+            "@type": "ListItem",
+            position: crumbs.length + 1,
+            name: resolved.label,
+            item: `${SITE}/scholarships/by-country/${slug}`,
+          });
+        } else if (mode === "field") {
+          crumbs.push({
+            "@type": "ListItem",
+            position: crumbs.length + 1,
+            name: resolved.label,
+            item: `${SITE}/scholarships/by-field/${slug}`,
+          });
+        }
+        if (mode === "country-field" && resolved.secondaryLabel) {
+          crumbs.push({
+            "@type": "ListItem",
+            position: crumbs.length + 1,
+            name: `${resolved.secondaryLabel} in ${resolved.label}`,
+            item: `${SITE}/scholarships/in/${slug}/${fieldSlug}`,
+          });
+        }
+        if (mode === "theme" && resolved.theme) {
+          crumbs.push({
+            "@type": "ListItem",
+            position: crumbs.length + 1,
+            name: resolved.label,
+            item: resolved.meta.canonical,
+          });
+        }
+        const breadcrumbs = {
+          "@type": "BreadcrumbList",
+          "@id": `${resolved.meta.canonical}#breadcrumbs`,
+          itemListElement: crumbs,
+        };
+
+        // CollectionPage — wrap the whole hub as a CollectionPage that
+        // references the ItemList. Google understands this pattern and
+        // it gives the page a clearer top-level type than a bare ItemList.
+        const collectionPage = {
+          "@type": "CollectionPage",
+          "@id": `${resolved.meta.canonical}#page`,
+          url: resolved.meta.canonical,
+          name: resolved.meta.h1,
+          description: resolved.meta.description,
+          mainEntity: { "@id": `${resolved.meta.canonical}#list` },
+          breadcrumb: { "@id": `${resolved.meta.canonical}#breadcrumbs` },
+        };
+
         const faqEntities = buildHubFaqEntities(mode, resolved.label, result);
-        const graph: object[] = [itemList];
+        const graph: object[] = [collectionPage, breadcrumbs, itemList];
         if (faqEntities.length > 0) {
           graph.push({
             "@type": "FAQPage",
+            "@id": `${resolved.meta.canonical}#faq`,
             mainEntity: faqEntities,
           });
         }
