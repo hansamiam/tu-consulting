@@ -19,6 +19,7 @@
 //   { slug: string, url: string, expiresAt: string | null, isOwner: boolean }
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, clientIp } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,6 +67,19 @@ Deno.serve(async (req) => {
     const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
     if (!SUPABASE_URL || !SERVICE_ROLE || !ANON_KEY) return json(500, { error: "Supabase env not configured" });
+
+    // Rate limit per IP. Each call writes a 200–100,000-char row to
+    // shared_briefs (and the URL is publicly addressable). Without a
+    // cap an attacker could spray thousands of polluted briefs into
+    // the table — DB bloat plus garbage-content URLs that index if
+    // someone ever links them. 4/min is generous for legitimate use
+    // (a user typically shares once per session).
+    {
+      const supaRL = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+      const ip = clientIp(req);
+      const ok = await checkRateLimit(supaRL, { key: `share-brief:${ip}`, perMinute: 4 });
+      if (!ok) return json(429, { error: "Rate limit exceeded — try again in a minute." });
+    }
 
     const body = (await req.json().catch(() => ({}))) as ShareBody;
     const content = (body.content ?? "").trim();
