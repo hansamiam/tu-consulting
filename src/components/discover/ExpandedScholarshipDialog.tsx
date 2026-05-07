@@ -160,7 +160,7 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
                   className="gap-1.5 bg-white/10 hover:bg-white/20 text-white border-white/30"
                 >
                   {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
-                  {isBookmarked ? t("Saved", "Сохранено") : t("Save to pipeline", "Сохранить в Workspace")}
+                  {isBookmarked ? t("Saved", "Сохранено") : t("Save", "Сохранить")}
                 </Button>
               </div>
             </div>

@@ -84,12 +84,17 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
           className="group inline-flex items-center gap-2 shrink-0 hover:opacity-90 transition-opacity"
           aria-label="Discover"
         >
-          <span className="inline-flex items-center justify-center h-7 w-7 rounded-lg bg-gradient-to-br from-gold-dark to-gold text-primary shadow-sm ring-1 ring-gold/40">
-            <Compass className="h-3.5 w-3.5" />
+          <span className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-gradient-to-br from-gold-dark to-gold text-primary shadow-sm ring-1 ring-gold/40">
+            <Compass className="h-4 w-4" />
           </span>
+          {/* Visual weight matched to the main Navigation logo
+              (font-heading text-lg sm:text-xl). The eyebrow + wordmark
+              stack reads as the same brand size — pre-fix the Discover
+              wordmark was visibly smaller than every other top-nav
+              "TopUni" in the app. */}
           <div className="leading-tight hidden sm:block">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-gold-dark dark:text-gold-light">TopUni</p>
-            <p className="font-heading text-[15px] font-bold tracking-tight text-foreground -mt-0.5">Discover</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark dark:text-gold-light">TopUni</p>
+            <p className="font-heading text-lg sm:text-xl font-bold tracking-tight text-foreground -mt-0.5 leading-none">Discover</p>
           </div>
         </Link>
 

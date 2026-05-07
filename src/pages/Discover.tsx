@@ -1628,35 +1628,39 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           </div>
         )}
 
-        {/* Action row — bookmark stays visible (stateful affordance); the
-            whole card is the click target so no separate CTA. */}
-        <div className="flex items-center justify-end mt-auto pt-2.5 border-t border-border/50" onClick={(e) => e.stopPropagation()}>
+        {/* Action row. Round 38 changes per user feedback ("shortlist
+            button is too not obvious", "compare/share only on hover —
+            unnecessary effect, just keep them there"):
+            • Save is a prominent labeled button now, gold when saved.
+            • Compare + Share always visible (no opacity-0 hover gate). */}
+        <div className="flex items-center justify-between gap-1.5 mt-auto pt-2.5 border-t border-border/50" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={onBookmark}
+            aria-label={isBookmarked ? (ru ? "Удалить из сохранённых" : "Remove from saved") : (ru ? "Сохранить" : "Save")}
+            className={`flex-1 inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-md text-[12px] font-semibold transition-all ${
+              isBookmarked
+                ? "bg-gold/15 text-gold-dark hover:bg-gold/20 ring-1 ring-gold/30"
+                : "bg-foreground/[0.04] text-foreground hover:bg-foreground/[0.08] ring-1 ring-border/60 hover:ring-foreground/30"
+            }`}
+          >
+            {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
+            {isBookmarked ? (ru ? "Сохранено" : "Saved") : (ru ? "Сохранить" : "Save")}
+          </button>
           <div className="flex items-center gap-0.5">
-            <button
-              onClick={onBookmark}
-              aria-label={isBookmarked ? "Remove from shortlist" : "Save to shortlist"}
-              title={isBookmarked ? "Saved · click to remove" : "Save to shortlist"}
-              className={`p-1.5 rounded-md transition-all ${isBookmarked ? "text-gold-dark bg-gold/10 hover:bg-gold/15" : "text-muted-foreground hover:text-gold-dark hover:bg-muted/60"}`}
-            >
-              {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
-            </button>
             <button
               onClick={onToggleCompare}
               aria-label={isComparing ? "Remove from compare" : "Add to compare"}
               title={isComparing ? "Remove from compare" : "Add to compare"}
-              className={`p-1.5 rounded-md transition-all ${isComparing ? "text-gold-dark bg-gold/10" : "text-muted-foreground hover:text-foreground hover:bg-muted/60 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100"}`}
+              className={`p-1.5 rounded-md transition-all ${isComparing ? "text-gold-dark bg-gold/10" : "text-muted-foreground hover:text-foreground hover:bg-muted/60"}`}
             >
               <GitCompare className="h-3.5 w-3.5" />
             </button>
-            {/* Share replaces the old More dropdown ("Hide from list" /
-                "Official page"). Hide was rarely used; the official
-                page is one click away inside the detail sheet. */}
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); shareScholarship(s, lang); }}
               aria-label={ru ? "Поделиться стипендией" : "Share this scholarship"}
               title={ru ? "Поделиться" : "Share"}
-              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100"
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
             >
               <Share2 className="h-3.5 w-3.5" />
             </button>
@@ -3977,7 +3981,7 @@ const Discover = ({ language = "en" }: Props) => {
                           // duplication. Pipeline removed earlier;
                           // tracking lives on /pipeline.
                           { id: "browse" as AppSection,      label: "Browse",       icon: Layers,        count: 0 },
-                          { id: "shortlist" as AppSection,   label: "Shortlist",    icon: BookmarkCheck, count: shortlist.size,  accent: shortlist.size > 0 },
+                          { id: "shortlist" as AppSection,   label: "Saved",        icon: BookmarkCheck, count: shortlist.size,  accent: shortlist.size > 0 },
                         ]).map(item => {
                           const Icon = item.icon;
                           const active = appSection === item.id;
@@ -4124,7 +4128,7 @@ const Discover = ({ language = "en" }: Props) => {
                           <div className="flex items-baseline justify-between pb-5 border-b border-border/60">
                             <div>
                               <p className="text-gold-dark text-[11px] font-semibold uppercase tracking-[0.22em] mb-1">
-                                {appSection === "shortlist" ? "Shortlist" : "Collections"}
+                                {appSection === "shortlist" ? "Saved" : "Collections"}
                               </p>
                               <h2 className="font-heading text-2xl font-bold tracking-tight text-foreground">
                                 {appSection === "shortlist" ? "Saved scholarships" : "Collections"}
@@ -4635,7 +4639,7 @@ const Discover = ({ language = "en" }: Props) => {
                     {paywallOpen === "compare" && "Compare more than 2 scholarships."}
                   </SheetTitle>
                   <p className="text-primary-foreground/65 text-sm leading-relaxed pt-1 text-left">
-                    {paywallOpen === "shortlist" && `You've saved your free ${SHORTLIST_FREE_LIMIT}. Founding Pro members keep an unlimited shortlist plus per-scholarship status tracking and notes.`}
+                    {paywallOpen === "shortlist" && `You've saved your free ${SHORTLIST_FREE_LIMIT}. Founding Pro members get unlimited saves plus per-scholarship status tracking and notes.`}
                     {paywallOpen === "strategy" && "Strategy notes — ideal-candidate profile, how-to-win approach, common rejection reasons, weak-candidate warnings — are part of the Founding Pro membership."}
                     {paywallOpen === "compare" && "Compare up to three scholarships side-by-side as a Founding Pro member."}
                   </p>

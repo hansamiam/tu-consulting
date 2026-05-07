@@ -75,7 +75,7 @@ const COLUMNS: { key: AppStatus | "shortlisted" | "active"; label: { en: string;
 ];
 
 const STATUS_OPTIONS: { value: AppStatus | null | "shortlisted"; label: { en: string; ru: string } }[] = [
-  { value: "shortlisted", label: { en: "Shortlisted only",  ru: "В шорт-лист" } },
+  { value: "shortlisted", label: { en: "Saved only",         ru: "Только сохранённые" } },
   { value: "researching", label: { en: "Researching",       ru: "Изучаю" } },
   { value: "drafting",    label: { en: "Drafting",          ru: "Готовлю" } },
   { value: "submitted",   label: { en: "Submitted",         ru: "Подал" } },
@@ -734,7 +734,7 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                               return opt?.label[isRu ? "ru" : "en"] ?? s;
                             }
                             return tracker.shortlist.has(openDetail.scholarship_id)
-                              ? t("Shortlisted only", "В шорт-листе")
+                              ? t("Saved only", "Только сохранённые")
                               : t("Set status", "Поставить статус");
                           })()}
                         </span>

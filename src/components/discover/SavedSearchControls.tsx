@@ -44,7 +44,7 @@ export const SavedSearchControls = ({ filters, hasActiveFilters, onApply }: Prop
     setSaving(true);
     try {
       await create({ name: name.trim(), filters, alertEnabled });
-      toast.success("Search saved" + (alertEnabled ? " · alerts on" : ""));
+      toast.success("Filter saved" + (alertEnabled ? " · alerts on" : ""));
       setSaveOpen(false);
       setName("");
     } catch (e) {
@@ -56,7 +56,18 @@ export const SavedSearchControls = ({ filters, hasActiveFilters, onApply }: Prop
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 pt-3 border-t border-border/60">
+      {/* Section header — without it the two buttons floated under the
+          filters with no context, and the "Save search" affordance got
+          confused with the per-scholarship "Save" bookmark on the cards.
+          The label makes it explicit: this saves THIS FILTER COMBO,
+          not a scholarship. */}
+      <p className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground/80 leading-tight">
+        Saved filter combos
+      </p>
+      <p className="text-[11px] text-muted-foreground/70 leading-snug">
+        Bookmark the current filter set to re-apply later, with optional daily email alerts when new scholarships match.
+      </p>
       <div className="flex items-center gap-2">
         <Button
           variant="outline"
@@ -64,10 +75,10 @@ export const SavedSearchControls = ({ filters, hasActiveFilters, onApply }: Prop
           className="flex-1 h-8 text-xs gap-1.5 justify-center"
           onClick={() => setSaveOpen(true)}
           disabled={!isAuthed || !hasActiveFilters}
-          title={!isAuthed ? "Sign in to save searches" : !hasActiveFilters ? "Tune some filters first" : undefined}
+          title={!isAuthed ? "Sign in to save filter combos" : !hasActiveFilters ? "Tune some filters first" : undefined}
         >
           <BookmarkPlus className="h-3.5 w-3.5" />
-          Save search
+          Save filter
         </Button>
         <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
           <DropdownMenuTrigger asChild>
@@ -76,7 +87,7 @@ export const SavedSearchControls = ({ filters, hasActiveFilters, onApply }: Prop
               size="sm"
               className="h-8 px-2.5 text-xs gap-1"
               disabled={!isAuthed || searches.length === 0}
-              title={!isAuthed ? "Sign in to view saved searches" : searches.length === 0 ? "No saved searches yet" : undefined}
+              title={!isAuthed ? "Sign in to view saved filters" : searches.length === 0 ? "No saved filters yet" : "Open saved filters"}
             >
               <Bookmark className="h-3.5 w-3.5" />
               {searches.length > 0 && <span className="tabular-nums">{searches.length}</span>}
@@ -85,7 +96,7 @@ export const SavedSearchControls = ({ filters, hasActiveFilters, onApply }: Prop
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-72 p-1.5">
             {searches.length === 0 ? (
-              <p className="text-xs text-muted-foreground px-3 py-2">No saved searches yet.</p>
+              <p className="text-xs text-muted-foreground px-3 py-2">No saved filters yet.</p>
             ) : (
               <ul className="space-y-0.5 max-h-72 overflow-y-auto">
                 {searches.map((s) => (
@@ -135,9 +146,9 @@ export const SavedSearchControls = ({ filters, hasActiveFilters, onApply }: Prop
       <Dialog open={saveOpen} onOpenChange={(o) => { setSaveOpen(o); if (!o) setName(""); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-heading text-lg leading-tight">Save this search</DialogTitle>
+            <DialogTitle className="font-heading text-lg leading-tight">Save this filter combo</DialogTitle>
             <DialogDescription className="text-sm">
-              Name it so future-you remembers what it's for.
+              Name it so future-you remembers what it's for. Re-apply in one click later — or get a daily email when new scholarships match.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -168,7 +179,7 @@ export const SavedSearchControls = ({ filters, hasActiveFilters, onApply }: Prop
               <X className="h-3.5 w-3.5" /> Cancel
             </Button>
             <Button variant="gold" onClick={submit} disabled={!name.trim() || saving}>
-              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save search"}
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save filter"}
             </Button>
           </DialogFooter>
         </DialogContent>
