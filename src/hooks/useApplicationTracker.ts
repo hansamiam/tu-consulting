@@ -256,6 +256,27 @@ let hasEssayCol: boolean | undefined;
 let hasRecommendersCol: boolean | undefined;
 let hasAdditionalEssaysCol: boolean | undefined;
 
+/* Module-level coordination so the N InlineScholarshipCard instances
+ * inside a brief don't each fire their own application_tracker pull
+ * (= N redundant DB roundtrips of the same query) and so a mutation
+ * in one instance propagates to the others within the same tab.
+ *
+ * `inflightPull` dedupes concurrent pulls per user_id. The first
+ * caller drives the network; later callers await the same promise.
+ *
+ * `TRACKER_EVENT` is dispatched by every successful local mutation
+ * so other instances of the hook re-read from localStorage and
+ * re-render with the freshest state. The cross-tab `storage` event
+ * already covers other tabs; this covers other components in the
+ * same tab. */
+const inflightPull = new Map<string, Promise<DbRow[] | null>>();
+const TRACKER_EVENT = "tu:tracker";
+
+function broadcastTrackerChange() {
+  if (typeof window === "undefined") return;
+  try { window.dispatchEvent(new CustomEvent(TRACKER_EVENT)); } catch { /* ignore */ }
+}
+
 interface ApplicationTrackerApi {
   state: State;
   // Map-style getters
@@ -320,37 +341,49 @@ export function useApplicationTracker(): ApplicationTrackerApi {
         if (hasAdditionalEssaysCol !== false) cols.push("additional_essays");
         return cols.join(", ");
       };
-      let data: DbRow[] | null = null;
+      // Dedupe concurrent pulls — N InlineScholarshipCards mounting at
+      // the same time each used to fire their own identical query.
+      // First caller drives the request; later callers await the same
+      // promise and skip the network entirely.
+      const userId = user.id;
+      let data: DbRow[] | null;
       let error: { message: string; code?: string } | null = null;
-      // First attempt — whichever flags aren't explicitly false get included.
-      {
-        const r = await supabase
-          .from("application_tracker")
-          .select(buildSelect())
-          .eq("user_id", user.id)
-          .returns<DbRow[]>();
-        if (r.error) {
-          if (/awarded_amount_usd/i.test(r.error.message)) hasAwardCol = false;
-          if (/essay_draft/i.test(r.error.message)) hasEssayCol = false;
-          if (/recommenders/i.test(r.error.message)) hasRecommendersCol = false;
-          if (/additional_essays/i.test(r.error.message)) hasAdditionalEssaysCol = false;
-        } else {
+      const existing = inflightPull.get(userId);
+      if (existing) {
+        try { data = await existing; } catch { data = null; }
+      } else {
+        const p = (async (): Promise<DbRow[] | null> => {
+          // First attempt — whichever flags aren't explicitly false get included.
+          const r1 = await supabase
+            .from("application_tracker")
+            .select(buildSelect())
+            .eq("user_id", userId)
+            .returns<DbRow[]>();
+          if (r1.error) {
+            if (/awarded_amount_usd/i.test(r1.error.message)) hasAwardCol = false;
+            if (/essay_draft/i.test(r1.error.message)) hasEssayCol = false;
+            if (/recommenders/i.test(r1.error.message)) hasRecommendersCol = false;
+            if (/additional_essays/i.test(r1.error.message)) hasAdditionalEssaysCol = false;
+            // Retry once with whichever flags are now known false.
+            const r2 = await supabase
+              .from("application_tracker")
+              .select(buildSelect())
+              .eq("user_id", userId)
+              .returns<DbRow[]>();
+            if (r2.error) {
+              error = r2.error;
+              return null;
+            }
+            return r2.data;
+          }
           if (hasAwardCol === undefined) hasAwardCol = true;
           if (hasEssayCol === undefined) hasEssayCol = true;
           if (hasRecommendersCol === undefined) hasRecommendersCol = true;
           if (hasAdditionalEssaysCol === undefined) hasAdditionalEssaysCol = true;
-          data = r.data;
-        }
-      }
-      // Retry once with whatever flags are now known false.
-      if (data == null) {
-        const r = await supabase
-          .from("application_tracker")
-          .select(buildSelect())
-          .eq("user_id", user.id)
-          .returns<DbRow[]>();
-        data = r.data;
-        error = r.error;
+          return r1.data;
+        })();
+        inflightPull.set(userId, p);
+        try { data = await p; } finally { inflightPull.delete(userId); }
       }
       if (cancelled) return;
       if (error) {
@@ -523,6 +556,11 @@ export function useApplicationTracker(): ApplicationTrackerApi {
       }
       return next;
     });
+    // Tell other instances of this hook (e.g. inline cards inside the
+    // brief, the Pipeline page open in a side rail) that local state
+    // changed so their UIs reflect the toggle without waiting for a
+    // separate event.
+    broadcastTrackerChange();
     scheduleFlush();
   }, [scheduleFlush, isAuthed]);
 
@@ -547,6 +585,28 @@ export function useApplicationTracker(): ApplicationTrackerApi {
 
   /* Cleanup the debounce timer on unmount */
   useEffect(() => () => { if (flushTimer.current) clearTimeout(flushTimer.current); }, []);
+
+  /* Cross-instance + cross-tab sync — re-load from localStorage
+   * whenever another instance broadcasts a change or another tab
+   * writes the LS_KEY directly. Without this, two InlineScholarship-
+   * Cards in the same brief can disagree about whether a scholarship
+   * is shortlisted (each carries its own state). */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onChange = () => {
+      const fresh = loadFromLocalStorage();
+      setState(fresh);
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === LS_KEY) onChange();
+    };
+    window.addEventListener(TRACKER_EVENT, onChange);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener(TRACKER_EVENT, onChange);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
 
   /* Convenience accessors used by old call sites (Discover.tsx) */
   const status = useMemo(() => {
