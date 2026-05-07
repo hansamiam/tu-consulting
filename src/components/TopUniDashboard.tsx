@@ -2011,6 +2011,41 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /* Auto-regenerate when the profile-hash changes to a value with no
+   * cached content — the most common trigger is the user upgrading to
+   * Pro, which flips reportGrade from "basic" to "premium" and changes
+   * the hash. Pre-fix the dashboard kept rendering the cached basic
+   * brief until the user manually clicked Regenerate, so the entire
+   * "you're a Pro now" moment was invisible.
+   *
+   * Guards: skip while a generation is already in flight, and skip if
+   * the new hash matches the cached content already in pathwayContent
+   * (the restored useMemo handles that path). Also bail when the
+   * profile isn't filled — there's nothing meaningful to generate. */
+  useEffect(() => {
+    if (!isProfileFilled) return;
+    if (pathwayLoading) return;
+    if (restored) {
+      // Cache hit for the new hash — load it instead of regenerating.
+      if (restored.content !== pathwayContent) {
+        setPathwayContent(restored.content);
+        setPathwayGenerated(true);
+        setPathwayGeneratedAt(restored.generatedAt);
+      }
+      return;
+    }
+    // Cache miss for the new hash. If we currently have stale content
+    // (from a previous hash), clear it and regenerate.
+    if (pathwayContent || pathwayGenerated) {
+      setPathwayContent("");
+      setPathwayGenerated(false);
+      setPathwayGeneratedAt(null);
+      setStructuredBrief(null);
+      generatePathway();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileHash]);
+
   /* In-page counselor handoff — used by brief surfaces (e.g. the
      Strategic Positioning's "Plan this with the counselor" CTA below
      the 30-day call) to switch tabs and seed the chat input without
