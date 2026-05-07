@@ -44,9 +44,16 @@ const USER_DATA_KEYS = [
   "topuni_discover_profile",
   "topuni_profile_changed_at",
 
-  // Wizard draft + intake + Pro depth.
+  // Wizard draft + intake + Pro depth (the actual Pro-depth key is
+  // "topuni-pro-depth-v1"; the older "-brief-depth" is kept for the
+  // legacy migration path in case anyone still has it).
   "topuni-intake-draft-v1",
+  "topuni-pro-depth-v1",
   "topuni-pro-brief-depth",
+
+  // Completed action-plan tasks (the brief's interactive checkboxes).
+  // User-specific progress — should not leak to the next account.
+  "topuni-tasks-done",
 
   // Watchlist + saved-3 prompt flag.
   "topuni_watchlist",
