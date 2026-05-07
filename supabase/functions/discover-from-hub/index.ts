@@ -211,18 +211,30 @@ serve(async (req) => {
     .in("url", urls);
   const existingSet = new Set((existing ?? []).map((r) => r.url));
 
+  // Category for discovered rows: the URLs we extract from a hub are
+  // individual program pages (chevening.org/scholarships,
+  // daad.de/sub-program/...), NOT themselves aggregators. Inheriting
+  // hubCategory='aggregator' was wrong — it told scrape-source to treat
+  // these as aggregator sources, which suppresses the src.url fallback
+  // for official_url even when src.url IS the official page (the recent
+  // 6cf1982 fix). Force 'official' for aggregator-derived rows; pass
+  // through the hub's category for non-aggregator hubs (e.g. an admin
+  // hub categorised as 'university' yields university-page URLs).
+  const inheritedCategory = hubCategory === "aggregator" ? "official" : (hubCategory ?? "discovered");
+
   const toInsert = candidates
     .filter((c) => !existingSet.has(c.url))
     .map((c) => ({
       name: c.name.slice(0, 200),
       url: c.url,
       source_type: "html" as const,
-      region: hubRegion,                      // inherit the hub's region tag
-      category: hubCategory ?? "discovered",  // mark as discovered if hub has no category
+      region: hubRegion,
+      category: inheritedCategory,
       // Discovered sources start at a slower cadence (5 days) — they
       // haven't proven their reliability yet. The dispatcher's circuit
       // breaker handles failures; admins can promote good ones to faster
-      // cadence later.
+      // cadence later. The smart-cadence cron (20260507100000) will
+      // also auto-tune this once the source has 5+ runs of history.
       frequency_hours: 120,
       parser_hint: c.hint?.slice(0, 500) ?? null,
       is_active: true,
