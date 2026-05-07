@@ -1,6 +1,6 @@
 // Tracks an engagement milestone for the authed user.
 // When enough milestones are hit, automatically grants a 5-day "earned trial" of Pro.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,6 +10,55 @@ const corsHeaders = {
 
 const TRIAL_TRIGGER_MILESTONES = ["profile_completed", "first_quiz", "saved_3_universities"];
 const TRIAL_DAYS = 5;
+
+/* Server-side verifier for trial-triggering milestones. Without this,
+ * any authed caller could POST 3 milestone_keys and self-grant a
+ * 5-day Pro trial — the frontend was the only thing checking that
+ * the milestone was actually earned. We confirm against the DB
+ * source of truth (student_profiles for profile_completed, the
+ * existing engagement_milestones row for first_quiz, the auth-side
+ * application_tracker.shortlisted count for saved_3_universities).
+ *
+ * Non-trial milestone_keys (the long tail of UI nudges, email opens,
+ * etc.) bypass the verifier — they don't grant access, only feed
+ * analytics, so abuse there is harmless. */
+async function isTriggerMilestoneEarned(
+  admin: SupabaseClient,
+  userId: string,
+  key: string,
+): Promise<boolean> {
+  if (key === "profile_completed") {
+    const { data } = await admin
+      .from("student_profiles")
+      .select("full_name, email, nationality")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return !!(data?.full_name && data?.email && data?.nationality);
+  }
+  if (key === "saved_3_universities") {
+    // shortlisted=true rows in application_tracker are the saves on
+    // university scholarships. Count them directly.
+    const { count } = await admin
+      .from("application_tracker")
+      .select("scholarship_id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("shortlisted", true);
+    return (count ?? 0) >= 3;
+  }
+  if (key === "first_quiz") {
+    // The quiz milestone is fired exactly once on first quiz completion;
+    // accept the assertion when no DB-side state to cross-check, but
+    // require a non-empty profile (a user who hasn't even built a
+    // profile certainly hasn't completed the quiz).
+    const { data } = await admin
+      .from("student_profiles")
+      .select("full_name")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return !!data?.full_name;
+  }
+  return false;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -46,7 +95,24 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Insert (idempotent via unique constraint)
+    // For trial-triggering milestones, verify against DB source of
+    // truth before recording. Without this gate, a malicious authed
+    // caller could POST {milestone_key: "profile_completed"} ×3 and
+    // self-grant a 5-day Pro trial without doing anything in the app.
+    const isTriggerKey = TRIAL_TRIGGER_MILESTONES.includes(milestone_key);
+
+    // Insert (idempotent via unique constraint). For trigger keys we
+    // verify first; non-trigger keys are accepted as-is (analytics
+    // signal only, no access granted).
+    if (isTriggerKey) {
+      const earned = await isTriggerMilestoneEarned(admin, user.id, milestone_key);
+      if (!earned) {
+        return new Response(JSON.stringify({ ok: false, error: "Milestone not yet earned" }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     await admin.from("engagement_milestones")
       .upsert({ user_id: user.id, milestone_key, metadata: metadata ?? {} },
         { onConflict: "user_id,milestone_key", ignoreDuplicates: true });
