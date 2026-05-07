@@ -117,6 +117,13 @@ interface ExtractedScholarship {
   eligibility_requirements?: string;
   confidence: number;
   notes?: string;
+  /* Partner institutions for joint / consortium programs (Erasmus
+   * Mundus, EPFLglobaLeaders, Joint MA at Sciences Po + Columbia).
+   * SYSTEM_PROMPT instructs the LLM to emit an empty/missing field
+   * when partners aren't explicit on the page; validateExtracted()
+   * scrubs filler entries so we never persist "Various" / "Multiple"
+   * placeholders. */
+  partner_universities?: string[];
 }
 
 interface LLMExtractionResponse {
@@ -883,6 +890,7 @@ serve(async (req) => {
         next_step:                       s.next_step ?? null,
         risk_note:                       s.risk_note ?? null,
         eligibility_requirements:        s.eligibility_requirements ?? null,
+        partner_universities:            s.partner_universities ?? null,
         verified:                        false,
         last_verified_date:              new Date().toISOString().slice(0, 10),
         // First-class verification metadata (see DATA_PIPELINE_AUDIT.md):

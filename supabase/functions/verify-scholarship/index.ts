@@ -91,6 +91,7 @@ const BACKFILL_NULL_FIELDS = [
   "target_fields",
   "target_degree_level",
   "target_demographics",
+  "partner_universities",
 ] as const;
 
 type DiffField = typeof DIFF_FIELDS[number];
@@ -119,6 +120,7 @@ interface ExtractedFields {
   target_degree_level?: string[] | null;
   eligible_countries?: string[] | null;
   target_demographics?: string[] | null;
+  partner_universities?: string[] | null;
   confidence: number;
 }
 
@@ -212,7 +214,7 @@ Deno.serve(async (req) => {
       "estimated_total_value_usd, min_gpa, min_ielts, min_toefl, min_sat, " +
       "essay_required, recommendation_letters_required, interview_required, " +
       "citizenship_requirements, eligibility_requirements, " +
-      "target_fields, target_degree_level, eligible_countries, target_demographics, " +
+      "target_fields, target_degree_level, eligible_countries, target_demographics, partner_universities, " +
       "why_this_fits, how_to_win, ideal_candidate_profile, " +
       "what_to_prepare_first, strategy_notes, weak_candidate_warning, " +
       "source_url, official_url, verification_status, last_verified_at"
