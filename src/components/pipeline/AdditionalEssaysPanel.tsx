@@ -238,8 +238,16 @@ const EssayCard = ({ essay, index, scholarshipName, language, onChange, onRemove
         signal: controller.signal,
       });
       if (!res.ok || !res.body) {
-        const text = await res.text().catch(() => "");
-        throw new Error(text || `Request failed (${res.status})`);
+        // Parse JSON error body when the edge fn returns one;
+        // otherwise the toast renders the raw \`{"error":"..."}\`
+        // string. Same shape as EssayDraftPanel's critique fetch.
+        const raw = await res.text().catch(() => "");
+        let message = raw || `Request failed (${res.status})`;
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed.error === "string") message = parsed.error;
+        } catch { /* keep raw */ }
+        throw new Error(message);
       }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();

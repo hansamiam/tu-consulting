@@ -210,8 +210,18 @@ export const EssayDraftPanel = ({ scholarshipId, scholarshipName, value, onChang
         signal: controller.signal,
       });
       if (!res.ok || !res.body) {
-        const text = await res.text().catch(() => "");
-        throw new Error(text || `Request failed (${res.status})`);
+        // Prefer parsed JSON error body — every edge fn returns
+        // { error: "..." } on failure. Fall back to raw text only
+        // if the body isn't JSON. Without this, a 429 body of
+        // \`{"error":"Rate limit exceeded..."}\` showed up as the
+        // raw JSON string in the toast.
+        const raw = await res.text().catch(() => "");
+        let message = raw || `Request failed (${res.status})`;
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed.error === "string") message = parsed.error;
+        } catch { /* keep raw */ }
+        throw new Error(message);
       }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
