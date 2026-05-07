@@ -1463,10 +1463,12 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   const [proUnlockOpen, setProUnlockOpen] = useState(false);
   const hasProDepth = !!(proDepth.topActivity || proDepth.personalStory || proDepth.namedSchools);
 
-  // The active grade for THIS render: members always get premium; non-members
-  // get premium too if they've filled the Pro depth fields (the on-demand
-  // upgrade path). Otherwise basic.
-  const reportGrade: "basic" | "premium" = (isMember || hasProDepth) ? "premium" : "basic";
+  // The active grade for THIS render: members get premium, period.
+  // Non-members never get premium — Pro depth questions are gated
+  // behind membership now (round 96), so a non-member can no longer
+  // self-upgrade by filling 3 free fields. Earlier flow: anon user
+  // fills depth → free premium brief → silent revenue leak.
+  const reportGrade: "basic" | "premium" = isMember ? "premium" : "basic";
 
   /* Profile hash — bumps when ANY signal changes that should invalidate
      the cached brief: identity fields, language, AND the reportGrade
@@ -2853,12 +2855,51 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                         {t("Pro brief", "Pro-брифинг")}
                       </div>
                       <h3 className="font-heading text-lg sm:text-xl font-bold tracking-tight text-foreground mb-1.5">
-                        {t("Want this brief written more about you specifically?",
-                           "Хотите чтобы брифинг был написан конкретно про вас?")}
+                        {t("Want this brief rewritten specifically about you?",
+                           "Хотите брифинг конкретно про вас?")}
                       </h3>
                       <p className="text-sm text-muted-foreground leading-relaxed">
-                        {t("Three more questions — your activities, your story, your named target schools — and the AI rewrites the brief at premium tier. Strategic positioning, essay angles, and shortlist all reference your story directly. Free, no signup.",
-                           "Ещё три вопроса — ваши активности, ваша история, конкретные университеты — и AI перепишет брифинг на премиум-уровне. Позиционирование, ракурсы эссе и шорт-лист будут ссылаться на вашу историю напрямую. Бесплатно, без регистрации.")}
+                        {t("TopUni Membership unlocks the Pro brief — three depth questions about your story, then the AI rewrites the brief at premium tier. Strategic positioning, essay angles, shortlist — all anchored to what makes you specifically credible.",
+                           "Подписка TopUni открывает Pro-брифинг — три вопроса о вас, и AI переписывает брифинг на премиум-уровне. Позиционирование, ракурсы эссе и шорт-лист — со ссылками на вашу историю.")}
+                      </p>
+                    </div>
+                    <Button
+                      variant="gold"
+                      onClick={() => navigate(isRu ? "/pricing/ru" : "/pricing")}
+                      className="gap-1.5 shrink-0"
+                    >
+                      <Crown className="w-4 h-4" />
+                      {t("See membership", "Открыть подписку")}
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Member-only Pro brief unlock — paid users get the
+                  3-question depth dialog because the gate above is
+                  Stripe, not free. Surfaces only AFTER membership is
+                  active so non-members never see the path that used to
+                  let them self-grant a Pro brief without paying. */}
+              {pathwayContent && !pathwayLoading && isMember && !hasProDepth && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                  className="not-prose mb-8 rounded-xl border border-gold/40 bg-gradient-to-br from-gold/8 to-transparent p-5 sm:p-6 print:hidden"
+                >
+                  <div className="flex items-start gap-4 flex-wrap">
+                    <div className="min-w-0 flex-1">
+                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-[0.18em] uppercase bg-gradient-to-r from-gold-dark to-gold text-primary mb-2">
+                        <Crown className="w-3 h-3" />
+                        {t("Pro brief", "Pro-брифинг")}
+                      </div>
+                      <h3 className="font-heading text-lg sm:text-xl font-bold tracking-tight text-foreground mb-1.5">
+                        {t("Three quick questions to unlock your Pro brief.",
+                           "Три быстрых вопроса — и вы получите Pro-брифинг.")}
+                      </h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {t("Your activities, your story, your named target schools — the AI rewrites the brief at premium tier with these in context.",
+                           "Активности, история, конкретные университеты — AI перепишет брифинг с учётом этих данных.")}
                       </p>
                     </div>
                     <Button
@@ -2867,7 +2908,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                       className="gap-1.5 shrink-0"
                     >
                       <Sparkles className="w-4 h-4" />
-                      {t("Unlock Pro brief", "Открыть Pro-брифинг")}
+                      {t("Answer & rewrite", "Ответить и переписать")}
                     </Button>
                   </div>
                 </motion.div>
