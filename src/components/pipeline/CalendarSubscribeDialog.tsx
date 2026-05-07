@@ -49,9 +49,16 @@ export const CalendarSubscribeDialog = ({ open, onOpenChange, language = "en" }:
       const { data, error } = await supabase.rpc("get_or_create_my_calendar_token");
       if (cancelled) return;
       if (error) {
-        toast.error(error.message.includes("Not authenticated")
-          ? t("Sign in to subscribe to your deadlines.", "Войдите, чтобы подписаться на дедлайны.")
-          : `${error.code ?? "error"}: ${error.message}`);
+        // Don't surface raw Postgres error codes / messages to the
+        // user — they're confusing. Special-case the common auth
+        // failure; everything else gets a generic try-again toast
+        // with the raw message logged to console for debugging.
+        if (error.message.includes("Not authenticated")) {
+          toast.error(t("Sign in to subscribe to your deadlines.", "Войдите, чтобы подписаться на дедлайны."));
+        } else {
+          console.warn("[calendar-subscribe] token fetch failed", error);
+          toast.error(t("Couldn't generate calendar link. Try again.", "Не удалось создать ссылку календаря. Попробуйте снова."));
+        }
       } else if (typeof data === "string") {
         setToken(data);
       }
@@ -92,7 +99,8 @@ export const CalendarSubscribeDialog = ({ open, onOpenChange, language = "en" }:
     const { data, error } = await supabase.rpc("rotate_my_calendar_token");
     setRotating(false);
     if (error) {
-      toast.error(`${error.code ?? "error"}: ${error.message}`);
+      console.warn("[calendar-subscribe] rotate failed", error);
+      toast.error(t("Couldn't rotate the token. Try again.", "Не удалось сменить токен. Попробуйте снова."));
       return;
     }
     if (typeof data === "string") {
