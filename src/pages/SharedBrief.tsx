@@ -95,10 +95,12 @@ const SharedBriefPage = () => {
           "application_deadline, official_url, verification_status, " +
           "last_verified_at"
         )
-        // Match the brief's read-side filter — only verified/stale rows
-        // surface to recipients. Pending/broken scholarships in the
-        // brief markdown render as plain bold text (handled by
-        // EnrichedMarkdown's looksLikeScholarshipName fallback).
+        // Match the brief's read-side filter — verified, stale, and
+        // pending rows surface to recipients (the latter under the
+        // platform-wide "confirm on official site" disclaimer; see
+        // commit 015281a). Only 'broken' is excluded; broken rows
+        // referenced in the brief markdown render as plain bold text
+        // via EnrichedMarkdown's looksLikeScholarshipName fallback.
         .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
         // Lifecycle filter — closed_archived rows shouldn't surface
         // as live cards on a shared brief read by a third party. The

@@ -1621,7 +1621,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
      to the brief's funding-shortlist match-lookup.
 
      Fetch only IDs that aren't already in liveMatches (skip the round-
-     trip when there's overlap) and only verified/stale rows. */
+     trip when there's overlap) and only non-broken rows (pending is
+     allowed under the disclaimer policy — see commit 015281a). */
   const [savedExtras, setSavedExtras] = useState<LiveMatch[]>([]);
   // Stable key for tracker.shortlist — Set reference flips each render
   // even when membership is unchanged. Hoisting also lets ESLint
@@ -2094,8 +2095,9 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           const { data: hydrated } = await supabase
             .from("scholarships")
             .select("scholarship_id, scholarship_name, application_deadline")
-            // Only hydrate verified/stale rows — the greeting should never
-            // reference broken or pending data.
+            // Hydrate everything except 'broken'. Pending rows are
+            // surfaced under the platform-wide "always confirm on the
+            // official site" disclaimer (see commit 015281a).
             .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
             .in("scholarship_id", trackedSnapshot.ids)
             .limit(20);
