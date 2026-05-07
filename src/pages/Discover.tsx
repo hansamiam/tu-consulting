@@ -3915,13 +3915,37 @@ const Discover = ({ language = "en" }: Props) => {
                           </div>
                         </div>
                       ) : (
-                        <button
-                          onClick={() => navigate(language === "ru" ? "/topuni-ai/ru" : "/topuni-ai")}
-                          className="inline-flex items-center gap-1.5 text-sm font-semibold text-gold-dark hover:text-foreground transition-colors group"
-                        >
-                          {t("Build profile to see fit scoring", "Заполните профиль для оценки совпадения")}
-                          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                        </button>
+                        // Pre-profile: same counter geometry as the
+                        // profiled state so the strip's height stays
+                        // stable when the user fills their profile —
+                        // less layout jank. Counters use the unfiltered
+                        // catalogue total so unprofiled users see the
+                        // database scale up front.
+                        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="font-heading font-bold text-foreground text-base sm:text-lg tabular-nums leading-none">{matchCount}</span>
+                            <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-muted-foreground/85">{t("scholarships", "стипендий")}</span>
+                          </div>
+                          {closingSoon > 0 && (
+                            <div className="flex items-baseline gap-1.5 pl-3 border-l border-border/60">
+                              <span className={`font-heading font-bold text-base sm:text-lg tabular-nums leading-none ${closingSoon >= 5 ? "text-destructive" : "text-amber-700 dark:text-amber-400"}`}>{closingSoon}</span>
+                              <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-muted-foreground/85">{t("closing 30d", "закрыв. 30д")}</span>
+                            </div>
+                          )}
+                          {fundingText && (
+                            <div className="flex items-baseline gap-1.5 pl-3 border-l border-border/60">
+                              <span className="font-heading font-bold text-gold-dark dark:text-gold text-base sm:text-lg tabular-nums leading-none">{fundingText}</span>
+                              <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-muted-foreground/85">{t("total value", "общая сумма")}</span>
+                            </div>
+                          )}
+                          <button
+                            onClick={() => navigate(language === "ru" ? "/topuni-ai/ru" : "/topuni-ai")}
+                            className="ml-auto inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-gold-dark hover:text-foreground transition-colors group whitespace-nowrap"
+                          >
+                            {t("Build profile to see your fit", "Заполните профиль")}
+                            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
