@@ -2142,12 +2142,21 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     trackedSnapshot.ids.length, trackedSnapshot.statusFingerprint,
   ]);
 
+  // Abort controllers for long-running streams so an unmount /
+  // navigation cancels the in-flight server-side stream instead of
+  // leaving it billing tokens until completion. Tracked per stream
+  // type so a chat send can run alongside the brief without one
+  // aborting the other.
+  const briefAbortRef = useRef<AbortController | null>(null);
+  const chatAbortRef = useRef<AbortController | null>(null);
+
   const streamSSE = async (
     url: string,
     body: any,
     onDelta: (chunk: string) => void,
     onDone: () => void,
     onError?: (status: number, message: string) => void,
+    signal?: AbortSignal,
   ) => {
     // Pass the user's session JWT when authed so edge functions can
     // resolve user_id via getUser() — needed for the counselor's
@@ -2155,15 +2164,25 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     // to anon key for unauthenticated callers.
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-    const resp = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-      },
-      body: JSON.stringify(body),
-    });
+    let resp: Response;
+    try {
+      resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify(body),
+        signal,
+      });
+    } catch (e) {
+      // AbortError → caller's unmount cleanup; don't toast / fallback.
+      if ((e as Error).name === "AbortError") return;
+      if (onError) onError(0, (e as Error).message || "Network error");
+      else { onDelta((e as Error).message || "Network error"); onDone(); }
+      return;
+    }
 
     if (!resp.ok || !resp.body) {
       const errData = await resp.json().catch(() => ({}));
@@ -2186,29 +2205,39 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     let textBuffer = "";
     let streamDone = false;
 
-    while (!streamDone) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      textBuffer += decoder.decode(value, { stream: true });
+    try {
+      while (!streamDone) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        textBuffer += decoder.decode(value, { stream: true });
 
-      let newlineIndex: number;
-      while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
-        let line = textBuffer.slice(0, newlineIndex);
-        textBuffer = textBuffer.slice(newlineIndex + 1);
-        if (line.endsWith("\r")) line = line.slice(0, -1);
-        if (line.startsWith(":") || line.trim() === "") continue;
-        if (!line.startsWith("data: ")) continue;
-        const jsonStr = line.slice(6).trim();
-        if (jsonStr === "[DONE]") { streamDone = true; break; }
-        try {
-          const parsed = JSON.parse(jsonStr);
-          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-          if (content) onDelta(content);
-        } catch {
-          textBuffer = line + "\n" + textBuffer;
-          break;
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") { streamDone = true; break; }
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) onDelta(content);
+          } catch {
+            textBuffer = line + "\n" + textBuffer;
+            break;
+          }
         }
       }
+    } catch (e) {
+      // AbortError fires when the caller's signal aborts mid-stream.
+      // Treat it as silent — the unmount cleanup is the user intent;
+      // no toast, no onDone progression (component is gone anyway).
+      if ((e as Error).name === "AbortError") return;
+      if (onError) onError(0, (e as Error).message || "Stream error");
+      else { onDelta((e as Error).message || "Stream error"); onDone(); }
+      return;
     }
 
     if (textBuffer.trim()) {
@@ -2333,6 +2362,12 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   };
 
   const generatePathway = async () => {
+    // Abort any prior in-flight brief stream so a re-trigger doesn't
+    // leave the previous generation running in the background.
+    briefAbortRef.current?.abort();
+    const briefController = new AbortController();
+    briefAbortRef.current = briefController;
+
     setPathwayLoading(true);
     setPathwayContent("");
     let soFar = "";
@@ -2532,6 +2567,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         toast.error(userMessage);
         void track("brief_generation_failed", { status, tier: reportGrade });
       },
+      briefController.signal,
     );
   };
 
@@ -2563,6 +2599,13 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     setChatInput("");
     setChatLoading(true);
 
+    // Abort any prior in-flight chat send (rare — chatLoading guard
+    // covers the common case) and stash a fresh controller so the
+    // unmount cleanup can cancel this turn if the user navigates away.
+    chatAbortRef.current?.abort();
+    const chatController = new AbortController();
+    chatAbortRef.current = chatController;
+
     // Lazy-create the DB session for authed users so each turn lands
     // in counselor_messages. Anon users get null → server keeps the
     // existing localStorage-only path.
@@ -2591,9 +2634,21 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       CHAT_URL,
       { messages: allMessages, language, profile, reportSummary, sessionId },
       (chunk) => upsertAssistant(chunk),
-      () => setChatLoading(false)
+      () => setChatLoading(false),
+      undefined,
+      chatController.signal,
     );
   };
+
+  // Unmount cleanup — abort any in-flight brief or chat stream so
+  // navigating away from /topuni-ai mid-stream cancels the
+  // server-side generation instead of leaving it running.
+  useEffect(() => {
+    return () => {
+      briefAbortRef.current?.abort();
+      chatAbortRef.current?.abort();
+    };
+  }, []);
 
   // (Tracker functions removed along with the tracker tab — application
   // status is tracked inside Discover now.)
