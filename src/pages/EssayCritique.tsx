@@ -188,16 +188,25 @@ const EssayCritique = ({ language = "en" }: EssayCritiqueProps) => {
     } catch { /* ignore */ }
   }, []);
 
+  // Debounce the localStorage write — it ran on every keystroke AND
+  // every AI critique stream chunk. With a 5000-char essay + a long
+  // streamed result, JSON.stringify + setItem on every render was
+  // burning 1-2ms / event for state the user can survive losing 600ms
+  // of. 600ms feels instant for save and avoids the per-chunk cost
+  // entirely (chunks fire faster than the debounce trailing edge).
   useEffect(() => {
-    try {
-      const payload: PersistedDraft = {
-        essay, essayType, targetSchool, targetScholarship, prompt, wordLimit,
-        lastResult: result || undefined,
-        lastResultTier: tier ?? undefined,
-        generatedAt: generatedAt ?? undefined,
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    } catch { /* ignore */ }
+    const id = window.setTimeout(() => {
+      try {
+        const payload: PersistedDraft = {
+          essay, essayType, targetSchool, targetScholarship, prompt, wordLimit,
+          lastResult: result || undefined,
+          lastResultTier: tier ?? undefined,
+          generatedAt: generatedAt ?? undefined,
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      } catch { /* ignore */ }
+    }, 600);
+    return () => window.clearTimeout(id);
   }, [essay, essayType, targetSchool, targetScholarship, prompt, wordLimit, result, tier, generatedAt]);
 
   useEffect(() => {
