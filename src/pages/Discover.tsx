@@ -1413,10 +1413,10 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              shareScholarship(s, language);
+              shareScholarship(s, lang);
             }}
-            aria-label={language === "ru" ? "Поделиться стипендией" : "Share this scholarship"}
-            title={language === "ru" ? "Поделиться" : "Share"}
+            aria-label={ru ? "Поделиться стипендией" : "Share this scholarship"}
+            title={ru ? "Поделиться" : "Share"}
             className="hidden sm:inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
           >
             <Share2 className="h-4 w-4" />
@@ -1641,9 +1641,9 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
                 page is one click away inside the detail sheet. */}
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); shareScholarship(s, language); }}
-              aria-label={language === "ru" ? "Поделиться стипендией" : "Share this scholarship"}
-              title={language === "ru" ? "Поделиться" : "Share"}
+              onClick={(e) => { e.stopPropagation(); shareScholarship(s, lang); }}
+              aria-label={ru ? "Поделиться стипендией" : "Share this scholarship"}
+              title={ru ? "Поделиться" : "Share"}
               className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100"
             >
               <Share2 className="h-3.5 w-3.5" />
