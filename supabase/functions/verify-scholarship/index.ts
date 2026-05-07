@@ -43,6 +43,7 @@ import {
   inferHostCountryFromNames,
   isKnownAnnualProgram,
   knownProgramValueUsd,
+  inferDegreeLevelsFromNames,
 } from "../_shared/scholarshipFields.ts";
 
 const corsHeaders = {
@@ -370,6 +371,14 @@ Deno.serve(async (req) => {
         fresh.provider_name ?? stored.provider_name,
       );
       if (known) fresh.estimated_total_value_usd = known;
+    }
+    // Degree-level inference — same fallback as scrape-source.
+    if (!Array.isArray(fresh.target_degree_level) || fresh.target_degree_level.length === 0) {
+      const inferred = inferDegreeLevelsFromNames(
+        fresh.scholarship_name ?? stored.scholarship_name,
+        fresh.provider_name ?? stored.provider_name,
+      );
+      if (inferred.length > 0) fresh.target_degree_level = inferred;
     }
     if (fresh.award_amount_text) fresh.award_amount_text = cleanAwardText(fresh.award_amount_text);
     if (Array.isArray(fresh.target_fields)) {

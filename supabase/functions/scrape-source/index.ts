@@ -36,6 +36,7 @@ import {
   inferHostCountryFromNames,
   isKnownAnnualProgram,
   knownProgramValueUsd,
+  inferDegreeLevelsFromNames,
 } from "../_shared/scholarshipFields.ts";
 
 const corsHeaders = {
@@ -132,6 +133,14 @@ Strict rules:
 - If the page is a navigational/index page with no actual scholarship details visible, return {"scholarships":[]}.
 - NEVER hallucinate amounts, deadlines, or eligibility. If uncertain, omit the field — do not guess.
 - Set confidence per scholarship: 0.95+ when most fields are present and verifiable from the text; 0.85+ when core fields (name/provider/country/coverage/eligibility) are clear; 0.7 when partial; <0.7 when extracted from very thin signals.
+
+ANTI-FABRICATION (THIS IS THE HARDEST RULE — INCORRECT DATA IS WORSE THAN MISSING DATA):
+- Every numeric value (award amount, GPA min, IELTS/TOEFL min, deadline date, recommendation count) MUST be traceable to a specific phrase in the page content. If you can't quote the source phrase, OMIT the field.
+- Do NOT default to round numbers. "$10,000", "$5,000", "$1,000" are common LLM defaults when guessing — only emit those exact values when the page literally says them. Same for GPA 3.0/3.5/4.0 minima.
+- Do NOT extrapolate from a sister scholarship. If this program's page doesn't list a stipend, don't borrow the stipend from another program at the same university.
+- Do NOT invent partner_universities. If the page doesn't list specific partners, leave the field empty.
+- Do NOT use "Various" / "Multiple" / "Several" / "All" / "Open" / "TBD" as a value for ANY field. Those tokens are LLM filler — they get rejected server-side and just waste your output tokens.
+- If the entire page is too thin to confidently fill scholarship_name + provider_name + host_country + coverage_type, skip the row (return fewer entries) rather than emit a low-confidence ghost row.
 
 INCLUSION SCOPE (decide whether to extract a scholarship at all):
 - INCLUDE if the program is open to international applicants worldwide, OR explicitly targets immigrants / refugees / displaced students / first-generation students / heritage-community students. This means US-based scholarships specifically for Korean American, Latino/Hispanic, Vietnamese American, Asian American Pacific Islander, African American immigrant, Caribbean diaspora, Middle Eastern American, etc. communities ARE in scope — those students fit our audience.
@@ -401,6 +410,19 @@ function validateExtracted(x: unknown): ExtractedScholarship | null {
     if (known) o.estimated_total_value_usd = known;
   }
 
+  // Degree-level inference — when LLM left target_degree_level empty
+  // but the program name telegraphs the level ("PhD Fellowship",
+  // "Master's Scholarship", "Doctoral grant"). Without this, those
+  // rows never match a degree filter on Discover and stay invisible
+  // to a user who selected "Master's" in the dropdown.
+  if (!Array.isArray(o.target_degree_level) || o.target_degree_level.length === 0) {
+    const inferred = inferDegreeLevelsFromNames(
+      o.scholarship_name as string,
+      o.provider_name as string,
+    );
+    if (inferred.length > 0) o.target_degree_level = inferred;
+  }
+
   if (Array.isArray(o.target_fields)) {
     const cleaned = cleanTargetFields(o.target_fields);
     o.target_fields = cleaned.length > 0 ? cleaned : undefined;
@@ -450,6 +472,31 @@ function validateExtracted(x: unknown): ExtractedScholarship | null {
 
   // Drop / clamp numeric nonsense
   clampNumeric(o);
+
+  // Anti-fabrication scrub — even after our cleanup, any field whose
+  // value is a "Various" / "Multiple" / "Open" / "TBD" filler that
+  // slipped past the SYSTEM_PROMPT contract gets nulled. These tokens
+  // tell the user nothing they don't already know from the structured
+  // data and they pollute the catalog with fake-substance.
+  const FILLER = /^(various|multiple|several|open|all applicants|tbd|n\/a|none|—|-|to be determined)$/i;
+  for (const f of [
+    "duration_text", "language_requirements", "citizenship_requirements",
+    "ideal_candidate_profile", "weak_candidate_warning",
+    "what_to_prepare_first", "next_step", "risk_note",
+  ] as const) {
+    const v = (o as Record<string, unknown>)[f];
+    if (typeof v === "string" && FILLER.test(v.trim())) {
+      (o as Record<string, unknown>)[f] = undefined;
+    }
+  }
+  // partner_universities: drop the array entirely if every entry is filler.
+  if (Array.isArray(o.partner_universities)) {
+    const real = (o.partner_universities as string[]).filter((u) =>
+      typeof u === "string" && u.trim().length > 2 && !FILLER.test(u.trim()),
+    );
+    o.partner_universities = real.length > 0 ? real : undefined;
+  }
+
   return o as unknown as ExtractedScholarship;
 }
 

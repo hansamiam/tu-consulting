@@ -493,3 +493,44 @@ export function knownProgramValueUsd(
   }
   return null;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Degree-level inference from program name
+ * ─────────────────────────────────────────────────────────────────────────
+ *
+ * Many scholarship rows have NULL target_degree_level so they never match
+ * a Master's / PhD / Bachelor filter — even when the program name screams
+ * the level ("PhD Fellowship in Computer Science", "Master's Scholarship
+ * for Indonesian Students", "Erasmus Mundus Joint Master Degree").
+ *
+ * This function pattern-matches the program + provider name to infer one
+ * or more degree levels. Returns canonical lowercase tags matching
+ * Discover's filter values: "bachelor" / "master" / "phd" / "postdoc".
+ * Returns empty array when no high-confidence pattern matches.
+ *
+ * Mirror SQL in 20260507180000_backfill_target_degree_level.sql.
+ */
+const DEGREE_PATTERNS: { re: RegExp; level: string }[] = [
+  // PhD / doctoral
+  { re: /\b(ph\.?d|doctoral|doctorate|doctor of philosophy|d\.?phil|dphil)\b/i,    level: "phd" },
+  // Postdoc — must precede the bachelor pattern because "postdoctoral"
+  // contains "doc" but is its own tier.
+  { re: /\b(postdoc(toral)?|post[\-\s]?doctoral)\b/i,                              level: "postdoc" },
+  // Master's
+  { re: /\b(master'?s?|m\.?sc|m\.?phil|m\.?eng|m\.?b\.?a|graduate fellowship|joint master|master degree)\b/i, level: "master" },
+  // Bachelor's / undergrad
+  { re: /\b(bachelor'?s?|undergrad(uate)?|b\.?sc|b\.?eng|b\.?a\b|first[\-\s]?cycle)\b/i, level: "bachelor" },
+];
+
+export function inferDegreeLevelsFromNames(
+  scholarshipName: string | null | undefined,
+  providerName: string | null | undefined,
+): string[] {
+  const haystack = `${scholarshipName ?? ""} | ${providerName ?? ""}`;
+  if (haystack.trim().length < 4) return [];
+  const out = new Set<string>();
+  for (const { re, level } of DEGREE_PATTERNS) {
+    if (re.test(haystack)) out.add(level);
+  }
+  return Array.from(out);
+}
