@@ -141,6 +141,7 @@ ANTI-FABRICATION (THIS IS THE HARDEST RULE — INCORRECT DATA IS WORSE THAN MISS
 - Do NOT invent partner_universities. If the page doesn't list specific partners, leave the field empty.
 - Do NOT use "Various" / "Multiple" / "Several" / "All" / "Open" / "TBD" as a value for ANY field. Those tokens are LLM filler — they get rejected server-side and just waste your output tokens.
 - If the entire page is too thin to confidently fill scholarship_name + provider_name + host_country + coverage_type, skip the row (return fewer entries) rather than emit a low-confidence ghost row.
+- MINIMUM-INFORMATION GATE (server-side enforced — rows below this bar get rejected): besides the four required fields above, every row must carry at least 2 of these substantive signals: (a) deadline date or non-unknown deadline_type, (b) funding figure (estimated_total_value_usd or award_amount_text with an actual number/range), (c) target_degree_level array, (d) target_fields array, (e) eligibility info (eligible_countries / citizenship_requirements / eligibility_requirements), (f) substantive narrative (ideal_candidate_profile / why_this_fits / how_to_win ≥60 chars). Don't waste tokens on a row that can't clear this — return it as fewer entries instead.
 
 INCLUSION SCOPE (decide whether to extract a scholarship at all):
 - INCLUDE if the program is open to international applicants worldwide, OR explicitly targets immigrants / refugees / displaced students / first-generation students / heritage-community students. This means US-based scholarships specifically for Korean American, Latino/Hispanic, Vietnamese American, Asian American Pacific Islander, African American immigrant, Caribbean diaspora, Middle Eastern American, etc. communities ARE in scope — those students fit our audience.
@@ -496,6 +497,37 @@ function validateExtracted(x: unknown): ExtractedScholarship | null {
     );
     o.partner_universities = real.length > 0 ? real : undefined;
   }
+
+  // Minimum-information gate. Name + provider + country alone aren't
+  // enough — that just means a page mentioned a scholarship's title.
+  // Require at least 2 of the substantive signals below before we
+  // publish the row. Otherwise it's a thin aggregator-style entry
+  // that pollutes Discover with no actionable data for the student.
+  const hasDeadline = Boolean(
+    o.application_deadline ||
+    (typeof o.deadline_type === "string" && o.deadline_type !== "unknown"),
+  );
+  const hasFunding = Boolean(
+    o.estimated_total_value_usd || o.award_amount_text,
+  );
+  const hasDegree = Array.isArray(o.target_degree_level) &&
+    (o.target_degree_level as unknown[]).length > 0;
+  const hasFields = Array.isArray(o.target_fields) &&
+    (o.target_fields as unknown[]).length > 0;
+  const hasEligibility = Boolean(
+    (Array.isArray(o.eligible_countries) && (o.eligible_countries as unknown[]).length > 0) ||
+    o.citizenship_requirements ||
+    o.eligibility_requirements,
+  );
+  const hasNarrative = (
+    (typeof o.ideal_candidate_profile === "string" && (o.ideal_candidate_profile as string).trim().length >= 60) ||
+    (typeof o.why_this_fits === "string" && (o.why_this_fits as string).trim().length >= 60) ||
+    (typeof o.how_to_win === "string" && (o.how_to_win as string).trim().length >= 60)
+  );
+  const signalCount = [
+    hasDeadline, hasFunding, hasDegree, hasFields, hasEligibility, hasNarrative,
+  ].filter(Boolean).length;
+  if (signalCount < 2) return null;
 
   return o as unknown as ExtractedScholarship;
 }
