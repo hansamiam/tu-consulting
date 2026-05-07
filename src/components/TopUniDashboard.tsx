@@ -3174,7 +3174,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                       the BriefMasthead already shows the profile. */}
                   {!pathwayLoading && (
                     <BriefHeroStats
-                      liveMatches={liveMatches}
+                      liveMatches={allMatches}
                       briefContent={pathwayContent}
                       isRu={isRu}
                     />
