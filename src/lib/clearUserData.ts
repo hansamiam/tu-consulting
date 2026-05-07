@@ -27,6 +27,10 @@ const USER_DATA_KEYS = [
   // Application tracker (saved scholarships, statuses, notes, essay
   // drafts, recommenders, awarded amounts).
   "topuni-app-tracker-v2",
+  // Pending-flush dirty-id set for the tracker. Without wiping, user
+  // B inherits user A's "needs upsert" markers and would push user A's
+  // residual local state into user B's DB on first auth-pull.
+  "topuni-app-tracker-pending-v1",
   // Legacy 4-key tracker shape kept as migration source — also
   // clear so a fresh sign-in doesn't re-rehydrate from it.
   "tu_status_map", "tu_notes_map", "tu_shortlist", "tu_hidden",

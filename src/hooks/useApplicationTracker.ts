@@ -101,6 +101,34 @@ interface State {
 // Single localStorage key (was four). Stored as a JSON object.
 const LS_KEY = "topuni-app-tracker-v2";
 
+/* Persistent set of scholarship IDs whose local entry is newer than
+ * what the DB last accepted. Survives across unmount → remount so a
+ * tab close within the 600 ms debounce window doesn't silently lose
+ * the user's edit when the next session's DB-pull would otherwise
+ * overwrite the local-but-unflushed value with the stale DB row.
+ *
+ * Cleared per-id once the upsert succeeds. Read on mount, fed back
+ * into pendingRef + used to mark "local wins" during the merge. */
+const LS_PENDING_KEY = "topuni-app-tracker-pending-v1";
+
+function loadPendingIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(LS_PENDING_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? new Set(arr.filter((x): x is string => typeof x === "string")) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function savePendingIds(ids: Set<string>) {
+  try {
+    if (ids.size === 0) localStorage.removeItem(LS_PENDING_KEY);
+    else localStorage.setItem(LS_PENDING_KEY, JSON.stringify(Array.from(ids)));
+  } catch { /* ignore */ }
+}
+
 const emptyState = (): State => ({
   byScholarship: new Map(),
   shortlist: new Set(),
@@ -264,7 +292,9 @@ export function useApplicationTracker(): ApplicationTrackerApi {
   const [state, setState] = useState<State>(() => loadFromLocalStorage());
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
-  // Pending DB upserts — debounced flush
+  // Pending DB upserts — debounced flush. Seeded from the persisted
+  // pending-IDs set so a tab-close within the debounce window doesn't
+  // drop the in-flight write on the floor.
   const pendingRef = useRef<Map<string, TrackerEntry>>(new Map());
   const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -328,11 +358,18 @@ export function useApplicationTracker(): ApplicationTrackerApi {
         setIsSyncing(false);
         return;
       }
-      // Merge: start with current local, overlay DB (DB wins for fields it has)
+      // Merge: start with current local, overlay DB (DB wins for fields
+      // it has) — except for IDs the persistent pending set marks as
+      // "local newer than DB", which keep their local value and re-queue
+      // for upsert. Without this, an unflushed local edit (e.g. tab
+      // closed within 600 ms of typing a note) gets silently overwritten
+      // by the stale DB row on the next session's pull.
+      const persistedPending = loadPendingIds();
       setState((prev) => {
         const merged = new Map(prev.byScholarship);
         const localOnly: { id: string; e: TrackerEntry }[] = [];
         for (const r of data ?? []) {
+          if (persistedPending.has(r.scholarship_id)) continue; // local wins
           merged.set(r.scholarship_id, entryFromDb(r));
         }
         // Find local entries that aren't in the DB → push them up next flush
@@ -341,6 +378,12 @@ export function useApplicationTracker(): ApplicationTrackerApi {
           if (!inDb && !entryIsEmpty(e)) localOnly.push({ id, e });
         }
         for (const { id, e } of localOnly) pendingRef.current.set(id, e);
+        // Re-queue every persisted-pending local entry so the upcoming
+        // flush actually pushes the local-wins values to the DB.
+        for (const id of persistedPending) {
+          const e = merged.get(id);
+          if (e) pendingRef.current.set(id, e);
+        }
         const next = rehydrate(Object.fromEntries(merged));
         saveToLocalStorage(next);
         return next;
@@ -382,6 +425,7 @@ export function useApplicationTracker(): ApplicationTrackerApi {
           if (includeAdditionalEssays) base.additional_essays = e.additionalEssays ?? null;
           return base;
         });
+      const flushedIds = Array.from(pending.keys());
       pendingRef.current = new Map();
       setIsSyncing(true);
       let { error } = await supabase
@@ -418,8 +462,16 @@ export function useApplicationTracker(): ApplicationTrackerApi {
             additionalEssays: e.additionalEssays ?? null,
           });
         }
+        // Pending IDs stay in the persistent set — they're still local-newer.
       } else {
         setLastSyncedAt(Date.now());
+        // Successful upsert — clear the just-flushed IDs from the
+        // persistent dirty set so they don't get re-queued unnecessarily
+        // on the next mount. Anything mutated *during* the flush is
+        // already back in the set via updateEntry.
+        const persisted = loadPendingIds();
+        for (const id of flushedIds) persisted.delete(id);
+        savePendingIds(persisted);
       }
     }, 600);
   }, [isAuthed, user?.id]);
@@ -461,10 +513,18 @@ export function useApplicationTracker(): ApplicationTrackerApi {
       }
       const next = rehydrate(Object.fromEntries(nextMap));
       saveToLocalStorage(next);
+      // Mark this id as dirty in the persistent pending set so an
+      // unmount within the 600 ms debounce window doesn't drop it.
+      // Anon users have nothing to flush — skip the bookkeeping.
+      if (isAuthed) {
+        const persisted = loadPendingIds();
+        persisted.add(id);
+        savePendingIds(persisted);
+      }
       return next;
     });
     scheduleFlush();
-  }, [scheduleFlush]);
+  }, [scheduleFlush, isAuthed]);
 
   const setStatus = useCallback((id: string, status: AppStatus | null) => updateEntry(id, { status }), [updateEntry]);
   const setNote = useCallback((id: string, note: string) => updateEntry(id, { notes: note }), [updateEntry]);
