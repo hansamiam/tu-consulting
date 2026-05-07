@@ -34,10 +34,14 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   private handleReload = () => window.location.reload();
-  private handleHome = () => { window.location.href = "/"; };
 
   public render() {
     if (this.state.hasError) {
+      // Detect language from URL — error boundaries don't get the
+      // language prop, but the user's path tells us.
+      const path = typeof window !== "undefined" ? window.location.pathname : "/";
+      const isRu = path.startsWith("/ru") || /\/(?:ru)(?:$|\/)/.test(path);
+      const t = (en: string, ru: string) => (isRu ? ru : en);
       return (
         <div className="min-h-screen bg-background flex items-center justify-center px-4">
           <div className="max-w-md w-full text-center space-y-6">
@@ -46,10 +50,13 @@ export class ErrorBoundary extends Component<Props, State> {
             </div>
             <div className="space-y-2">
               <h1 className="text-2xl font-heading font-bold text-foreground">
-                Something went wrong
+                {t("Something went wrong", "Что-то пошло не так")}
               </h1>
               <p className="text-sm text-muted-foreground">
-                The page hit an unexpected error. Try reloading — your data is safe.
+                {t(
+                  "The page hit an unexpected error. Try reloading — your data is safe.",
+                  "Страница встретила неожиданную ошибку. Попробуйте перезагрузить — ваши данные не потеряны.",
+                )}
               </p>
               {this.state.error?.message && (
                 <p className="text-xs text-muted-foreground/60 font-mono mt-3 p-2 bg-muted rounded">
@@ -59,15 +66,12 @@ export class ErrorBoundary extends Component<Props, State> {
             </div>
             <div className="flex gap-3 justify-center">
               <Button onClick={this.handleReload} variant="default" className="gap-2">
-                <RotateCw className="h-4 w-4" /> Reload page
+                <RotateCw className="h-4 w-4" /> {t("Reload page", "Перезагрузить")}
               </Button>
-              <Button onClick={this.handleHome} variant="outline" className="gap-2">
-                <Home className="h-4 w-4" /> Home
+              <Button onClick={() => { window.location.href = isRu ? "/ru" : "/"; }} variant="outline" className="gap-2">
+                <Home className="h-4 w-4" /> {t("Home", "Главная")}
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground/50">
-              If this keeps happening, message us on WhatsApp.
-            </p>
           </div>
         </div>
       );

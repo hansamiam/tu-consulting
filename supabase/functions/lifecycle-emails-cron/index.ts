@@ -31,6 +31,7 @@ interface ProfileRow {
   email: string | null;
   nudge_opt_out: boolean;
   created_at: string | null;
+  language: string | null;
 }
 
 interface AuthUser {
@@ -108,7 +109,7 @@ Deno.serve(async (req) => {
   const userIds = allUsers.map((u) => u.id);
   const { data: profiles } = await supa
     .from("student_profiles")
-    .select("user_id, full_name, email, nudge_opt_out, created_at")
+    .select("user_id, full_name, email, nudge_opt_out, created_at, language")
     .in("user_id", userIds);
   const profileMap = new Map<string, ProfileRow>(
     (profiles ?? []).map((p) => [p.user_id as string, p as ProfileRow]),
@@ -125,6 +126,11 @@ Deno.serve(async (req) => {
     if (profile?.nudge_opt_out) { skipped++; continue; }
 
     const firstName = profile?.full_name?.split(" ")[0]?.trim() || undefined;
+    const userLang: "en" | "ru" = profile?.language === "ru" ? "ru" : "en";
+    const ru = userLang === "ru";
+    const localizedDiscover = `${SITE}${ru ? "/discover/ru" : "/discover"}`;
+    const localizedPipeline = `${SITE}${ru ? "/pipeline/ru" : "/pipeline"}`;
+    const localizedManage = `${SITE}${ru ? "/account/ru" : "/account"}?action=pause-nudges`;
 
     const createdAt = u.created_at ? new Date(u.created_at) : null;
     const lastSignIn = u.last_sign_in_at ? new Date(u.last_sign_in_at) : null;
@@ -154,9 +160,10 @@ Deno.serve(async (req) => {
                 templateData: {
                   name: firstName,
                   briefReady: !!brief,
-                  discoverUrl: `${SITE}/discover`,
-                  pipelineUrl: `${SITE}/pipeline`,
-                  manageUrl: `${SITE}/account?action=pause-nudges`,
+                  discoverUrl: localizedDiscover,
+                  pipelineUrl: localizedPipeline,
+                  manageUrl: localizedManage,
+                  language: userLang,
                 },
               },
             });
@@ -199,9 +206,10 @@ Deno.serve(async (req) => {
                   name: firstName,
                   trackedCount,
                   upcomingDeadlineCount,
-                  pipelineUrl: `${SITE}/pipeline`,
-                  discoverUrl: `${SITE}/discover`,
-                  manageUrl: `${SITE}/account?action=pause-nudges`,
+                  pipelineUrl: localizedPipeline,
+                  discoverUrl: localizedDiscover,
+                  manageUrl: localizedManage,
+                  language: userLang,
                 },
               },
             });
@@ -247,9 +255,10 @@ Deno.serve(async (req) => {
                   daysAway: Math.floor(daysAway),
                   newScholarshipsSinceVisit: newCount ?? 0,
                   trackedCount: trackedCount ?? 0,
-                  pipelineUrl: `${SITE}/pipeline`,
-                  discoverUrl: `${SITE}/discover`,
-                  manageUrl: `${SITE}/account?action=pause-nudges`,
+                  pipelineUrl: localizedPipeline,
+                  discoverUrl: localizedDiscover,
+                  manageUrl: localizedManage,
+                  language: userLang,
                 },
               },
             });

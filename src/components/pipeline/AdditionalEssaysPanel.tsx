@@ -168,14 +168,33 @@ const EssayCard = ({ essay, index, scholarshipName, language, onChange, onRemove
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [essay.id]);
 
+  // Latest typed draft + onChange ref so unmount-cleanup can flush
+  // the in-flight debounced save. Closing the panel within 800ms of
+  // the last keystroke would otherwise drop the most recent edits —
+  // unacceptable for an essay editor.
+  const latestDraftRef = useRef<string>(essay.draft);
+  const onChangeRef = useRef(onChange);
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+
   const onDraftChange = (next: string) => {
     setDraft(next);
+    latestDraftRef.current = next;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       onChange({ draft: next });
       debounceRef.current = null;
     }, 800);
   };
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+        onChangeRef.current({ draft: latestDraftRef.current });
+      }
+    };
+  }, []);
 
   const onTitleBlur = () => {
     if (title.trim() && title !== essay.title) onChange({ title: title.trim() });
@@ -219,8 +238,16 @@ const EssayCard = ({ essay, index, scholarshipName, language, onChange, onRemove
         signal: controller.signal,
       });
       if (!res.ok || !res.body) {
-        const text = await res.text().catch(() => "");
-        throw new Error(text || `Request failed (${res.status})`);
+        // Parse JSON error body when the edge fn returns one;
+        // otherwise the toast renders the raw \`{"error":"..."}\`
+        // string. Same shape as EssayDraftPanel's critique fetch.
+        const raw = await res.text().catch(() => "");
+        let message = raw || `Request failed (${res.status})`;
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed.error === "string") message = parsed.error;
+        } catch { /* keep raw */ }
+        throw new Error(message);
       }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -260,6 +287,15 @@ const EssayCard = ({ essay, index, scholarshipName, language, onChange, onRemove
     if (abortRef.current) abortRef.current.abort();
     setCritiquing(false);
   };
+
+  // Abort any in-flight critique on unmount — same fix as the
+  // primary EssayDraftPanel. Closing the detail sheet mid-critique
+  // would otherwise leave the server-side stream running.
+  useEffect(() => {
+    return () => {
+      if (abortRef.current) abortRef.current.abort();
+    };
+  }, []);
 
   const wc = wordCount(draft);
   const pct = Math.min(150, Math.round((wc / target) * 100));

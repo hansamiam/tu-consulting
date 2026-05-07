@@ -40,6 +40,10 @@ import {
   cleanTargetDemographics,
   extractDemographicsFromCitizenship,
   stripUserRelative,
+  inferHostCountryFromNames,
+  isKnownAnnualProgram,
+  knownProgramValueUsd,
+  inferDegreeLevelsFromNames,
 } from "../_shared/scholarshipFields.ts";
 
 const corsHeaders = {
@@ -87,6 +91,7 @@ const BACKFILL_NULL_FIELDS = [
   "target_fields",
   "target_degree_level",
   "target_demographics",
+  "partner_universities",
 ] as const;
 
 type DiffField = typeof DIFF_FIELDS[number];
@@ -115,6 +120,7 @@ interface ExtractedFields {
   target_degree_level?: string[] | null;
   eligible_countries?: string[] | null;
   target_demographics?: string[] | null;
+  partner_universities?: string[] | null;
   confidence: number;
 }
 
@@ -208,7 +214,7 @@ Deno.serve(async (req) => {
       "estimated_total_value_usd, min_gpa, min_ielts, min_toefl, min_sat, " +
       "essay_required, recommendation_letters_required, interview_required, " +
       "citizenship_requirements, eligibility_requirements, " +
-      "target_fields, target_degree_level, eligible_countries, target_demographics, " +
+      "target_fields, target_degree_level, eligible_countries, target_demographics, partner_universities, " +
       "why_this_fits, how_to_win, ideal_candidate_profile, " +
       "what_to_prepare_first, strategy_notes, weak_candidate_warning, " +
       "source_url, official_url, verification_status, last_verified_at"
@@ -330,6 +336,52 @@ Deno.serve(async (req) => {
     if (fresh.scholarship_name) fresh.scholarship_name = cleanScholarshipName(fresh.scholarship_name);
     if (fresh.provider_name) fresh.provider_name = cleanProvider(fresh.provider_name) ?? undefined;
     if (fresh.host_country) fresh.host_country = cleanHostCountry(fresh.host_country) ?? undefined;
+    // Country inference fallback — same logic as scrape-source. If the
+    // re-extract left host_country empty but the program name is one
+    // of the well-known patterns (Chevening, DAAD, Fulbright, etc.),
+    // infer the country so the row stops rendering against the generic
+    // "Multiple countries" globe. Stored.host_country may already have
+    // a value from a previous extraction; we only fill `fresh` when it's
+    // blank, so the diff-vs-stored path still detects real changes.
+    if (!fresh.host_country) {
+      const inferred = inferHostCountryFromNames(
+        fresh.scholarship_name ?? stored.scholarship_name,
+        fresh.provider_name ?? stored.provider_name,
+      );
+      if (inferred) fresh.host_country = inferred;
+    }
+    // Deadline-type override — same heuristic as scrape-source. The LLM
+    // re-extract is just as prone to defaulting to "rolling" when the
+    // page doesn't list a date. Force "annual" for known-annual programs
+    // so re-verification doesn't regress a correctly-tagged row.
+    if (fresh.deadline_type === null || fresh.deadline_type === "rolling" || fresh.deadline_type === "unknown" || fresh.deadline_type === undefined) {
+      if (isKnownAnnualProgram(
+        fresh.scholarship_name ?? stored.scholarship_name,
+        fresh.provider_name ?? stored.provider_name,
+      )) {
+        fresh.deadline_type = "annual";
+      }
+    }
+    // Financial floor — same fallback as scrape-source. If the
+    // re-extract returned NULL/0 for estimated_total_value_usd but
+    // we know the canonical figure for this program, write it back
+    // so re-verifying a row doesn't blank out the value we previously
+    // backfilled.
+    if (fresh.estimated_total_value_usd == null || fresh.estimated_total_value_usd === 0) {
+      const known = knownProgramValueUsd(
+        fresh.scholarship_name ?? stored.scholarship_name,
+        fresh.provider_name ?? stored.provider_name,
+      );
+      if (known) fresh.estimated_total_value_usd = known;
+    }
+    // Degree-level inference — same fallback as scrape-source.
+    if (!Array.isArray(fresh.target_degree_level) || fresh.target_degree_level.length === 0) {
+      const inferred = inferDegreeLevelsFromNames(
+        fresh.scholarship_name ?? stored.scholarship_name,
+        fresh.provider_name ?? stored.provider_name,
+      );
+      if (inferred.length > 0) fresh.target_degree_level = inferred;
+    }
     if (fresh.award_amount_text) fresh.award_amount_text = cleanAwardText(fresh.award_amount_text);
     if (Array.isArray(fresh.target_fields)) {
       const cleaned = cleanTargetFields(fresh.target_fields);

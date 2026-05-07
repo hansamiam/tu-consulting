@@ -75,12 +75,22 @@ export function InlineScholarshipCard({ scholarship: s, showMeta = true }: Props
   const focusedId = useFocusScholarship();
   const isFocused = !!focusedId && focusedId === s.scholarship_id;
 
+  // Detect language from the URL pathname — this card is rendered
+  // inside both EN and RU briefs (via EnrichedMarkdown which doesn't
+  // pass a language prop), and a Russian user shouldn't see an
+  // English save toast or English aria-labels.
+  const isRu = typeof window !== "undefined" &&
+    (window.location.pathname.startsWith("/ru") ||
+     /\/(?:ru)(?:$|\/)/.test(window.location.pathname));
+
   const handleSave = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     tracker.toggleShortlist(s.scholarship_id);
     toast.success(
-      isSaved ? `Removed from your pipeline` : `Saved to your pipeline`,
+      isSaved
+        ? (isRu ? "Удалено из воронки" : "Removed from your pipeline")
+        : (isRu ? "Сохранено в воронку" : "Saved to your pipeline"),
       { description: cleanScholarshipName(s.scholarship_name) }
     );
   };
@@ -133,8 +143,12 @@ export function InlineScholarshipCard({ scholarship: s, showMeta = true }: Props
         {/* Save button — adds to application_tracker via the existing hook */}
         <button
           onClick={handleSave}
-          aria-label={isSaved ? "Remove from pipeline" : "Save to pipeline"}
-          title={isSaved ? "Saved · click to remove" : "Save to your pipeline"}
+          aria-label={isSaved
+            ? (isRu ? "Убрать из воронки" : "Remove from pipeline")
+            : (isRu ? "Сохранить в воронку" : "Save to pipeline")}
+          title={isSaved
+            ? (isRu ? "Сохранено · нажмите чтобы убрать" : "Saved · click to remove")
+            : (isRu ? "Сохранить в воронку" : "Save to your pipeline")}
           className={`shrink-0 px-2.5 border-l transition-colors ${
             isSaved
               ? "bg-gold/15 border-gold/40 text-gold-dark hover:bg-gold/25"
@@ -151,8 +165,8 @@ export function InlineScholarshipCard({ scholarship: s, showMeta = true }: Props
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            aria-label="Open the official scholarship page"
-            title="Official site"
+            aria-label={isRu ? "Открыть официальную страницу" : "Open the official scholarship page"}
+            title={isRu ? "Официальный сайт" : "Official site"}
             className="shrink-0 px-2.5 border-l border-gold/30 text-muted-foreground hover:bg-gold/10 hover:text-gold-dark transition-colors flex items-center"
           >
             <ExternalLink className="w-3.5 h-3.5" />

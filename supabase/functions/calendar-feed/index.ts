@@ -61,15 +61,21 @@ const escText = (s: string): string =>
     .replace(/;/g, "\\;");
 
 function fold(line: string): string {
-  // Fold at 73 octets to leave room for the leading space on continuation lines.
+  // RFC 5545: lines must not exceed 75 octets, excluding CRLF.
+  // Continuation lines start with a single linear-whitespace octet
+  // (space) which does not consume source — only the next 74 source
+  // chars fit before the next fold.
+  //
+  // The previous loop subtracted 1 from chunk.length on every
+  // continuation iteration, leaving the source pointer one short.
+  // Worst case: a source line of length 75 + 73*N + 1 (e.g. 76, 149,
+  // 222, …) terminated with a 1-char trailing chunk that advanced
+  // the pointer by 0 → infinite loop → 504 on the calendar feed.
+  // Any scholarship description ≥76 chars after escaping would hit it.
   if (line.length <= 75) return line;
-  const out: string[] = [];
-  let i = 0;
-  while (i < line.length) {
-    const chunk = line.slice(i, i === 0 ? i + 75 : i + 74);
-    out.push(i === 0 ? chunk : " " + chunk);
-    i += chunk.length - (i === 0 ? 0 : 1);
-    if (i === 0) i = 75;
+  const out: string[] = [line.slice(0, 75)];
+  for (let i = 75; i < line.length; i += 74) {
+    out.push(" " + line.slice(i, i + 74));
   }
   return out.join("\r\n");
 }

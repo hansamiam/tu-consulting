@@ -42,7 +42,7 @@ function getOrMintAnonymousId(): string {
   }
 }
 
-export type ScholarshipEventType = "viewed" | "saved" | "unsaved" | "dismissed" | "clicked" | "shared" | "applied";
+type ScholarshipEventType = "viewed" | "saved" | "unsaved" | "dismissed" | "clicked" | "shared" | "applied";
 
 export function useScholarshipTracking() {
   const anonId = useMemo(getOrMintAnonymousId, []);

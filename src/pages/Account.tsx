@@ -57,20 +57,42 @@ const Account = ({ language = "en" }: AccountProps) => {
         }
         window.history.replaceState({}, "", ru ? "/account/ru" : "/account");
       } else if (justSubscribed) {
-        // Webhook can race the redirect — retry up to 3× so the
-        // user sees their new tier immediately after Stripe.
-        for (let i = 0; i < 3; i++) {
+        // Webhook can race the redirect — retry up to 5× until the
+        // subscription actually flips to active in our DB. The earlier
+        // "break on first invoke success" exited even when the DB hadn't
+        // caught up yet, so the user landed on /account?subscribed=1
+        // still labelled as free for a few seconds, which felt broken
+        // ("did my payment go through?").
+        let active = false;
+        for (let i = 0; i < 5; i++) {
           if (cancelled) return;
           try {
             await supabase.functions.invoke("check-subscription");
             await refreshSubscription();
-            break;
-          } catch {
-            await new Promise((r) => setTimeout(r, 1500));
-          }
+            // refreshSubscription updates the AuthContext state on
+            // next render — read the latest from the DB directly so we
+            // don't gate on stale React state inside this loop.
+            const { data: u } = await supabase.auth.getUser();
+            if (u.user?.id) {
+              const { data: sub } = await supabase
+                .from("subscriptions")
+                .select("status, tier")
+                .eq("user_id", u.user.id)
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              if (sub && ["active", "trialing"].includes(sub.status as string) && ["pro", "founding"].includes(sub.tier as string)) {
+                active = true;
+                break;
+              }
+            }
+          } catch { /* network blip — retry */ }
+          await new Promise((r) => setTimeout(r, 1500));
         }
         if (cancelled) return;
-        toast.success(t("Welcome aboard! Your membership is active.", "Добро пожаловать! Ваше членство активно."));
+        toast.success(active
+          ? t("Welcome aboard! Your membership is active.", "Добро пожаловать! Ваше членство активно.")
+          : t("Payment received. Your membership is being activated — give it a moment.", "Платёж получен. Подписка активируется — подождите немного."));
         window.history.replaceState({}, "", ru ? "/account/ru" : "/account");
       } else {
         await refreshSubscription();
@@ -98,7 +120,7 @@ const Account = ({ language = "en" }: AccountProps) => {
             {t("Sign in", "Войти")}
           </button>
         </div>
-        <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
+        <AuthDialog open={authOpen} onOpenChange={setAuthOpen} language={language} />
       </div>
     );
   }
@@ -125,7 +147,7 @@ const Account = ({ language = "en" }: AccountProps) => {
           <p className="text-sm text-muted-foreground mt-1">
             {t(
               "Your application work lives in Workspace. This page is just for billing and settings.",
-              "Работа над заявками — в Workspace. Здесь только подписка и настройки.",
+              "Работа над заявками — в Рабочей зоне. Здесь только подписка и настройки.",
             )}
           </p>
         </header>
@@ -136,7 +158,7 @@ const Account = ({ language = "en" }: AccountProps) => {
           onClick={() => navigate(ru ? "/pipeline/ru" : "/pipeline")}
           className="text-xs text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
         >
-          ← {t("Back to Workspace", "К Workspace")}
+          ← {t("Back to Workspace", "В Рабочую зону")}
         </button>
       </main>
       <Footer language={language} />

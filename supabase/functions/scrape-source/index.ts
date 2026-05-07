@@ -33,6 +33,10 @@ import {
   cleanTargetDemographics,
   extractDemographicsFromCitizenship,
   stripUserRelative,
+  inferHostCountryFromNames,
+  isKnownAnnualProgram,
+  knownProgramValueUsd,
+  inferDegreeLevelsFromNames,
 } from "../_shared/scholarshipFields.ts";
 
 const corsHeaders = {
@@ -113,6 +117,13 @@ interface ExtractedScholarship {
   eligibility_requirements?: string;
   confidence: number;
   notes?: string;
+  /* Partner institutions for joint / consortium programs (Erasmus
+   * Mundus, EPFLglobaLeaders, Joint MA at Sciences Po + Columbia).
+   * SYSTEM_PROMPT instructs the LLM to emit an empty/missing field
+   * when partners aren't explicit on the page; validateExtracted()
+   * scrubs filler entries so we never persist "Various" / "Multiple"
+   * placeholders. */
+  partner_universities?: string[];
 }
 
 interface LLMExtractionResponse {
@@ -130,6 +141,15 @@ Strict rules:
 - NEVER hallucinate amounts, deadlines, or eligibility. If uncertain, omit the field — do not guess.
 - Set confidence per scholarship: 0.95+ when most fields are present and verifiable from the text; 0.85+ when core fields (name/provider/country/coverage/eligibility) are clear; 0.7 when partial; <0.7 when extracted from very thin signals.
 
+ANTI-FABRICATION (THIS IS THE HARDEST RULE — INCORRECT DATA IS WORSE THAN MISSING DATA):
+- Every numeric value (award amount, GPA min, IELTS/TOEFL min, deadline date, recommendation count) MUST be traceable to a specific phrase in the page content. If you can't quote the source phrase, OMIT the field.
+- Do NOT default to round numbers. "$10,000", "$5,000", "$1,000" are common LLM defaults when guessing — only emit those exact values when the page literally says them. Same for GPA 3.0/3.5/4.0 minima.
+- Do NOT extrapolate from a sister scholarship. If this program's page doesn't list a stipend, don't borrow the stipend from another program at the same university.
+- Do NOT invent partner_universities. If the page doesn't list specific partners, leave the field empty.
+- Do NOT use "Various" / "Multiple" / "Several" / "All" / "Open" / "TBD" as a value for ANY field. Those tokens are LLM filler — they get rejected server-side and just waste your output tokens.
+- If the entire page is too thin to confidently fill scholarship_name + provider_name + host_country + coverage_type, skip the row (return fewer entries) rather than emit a low-confidence ghost row.
+- MINIMUM-INFORMATION GATE (server-side enforced — rows below this bar get rejected): besides the four required fields above, every row must carry at least 2 of these substantive signals: (a) deadline date or non-unknown deadline_type, (b) funding figure (estimated_total_value_usd or award_amount_text with an actual number/range), (c) target_degree_level array, (d) target_fields array, (e) eligibility info (eligible_countries / citizenship_requirements / eligibility_requirements), (f) substantive narrative (ideal_candidate_profile / why_this_fits / how_to_win ≥60 chars). Don't waste tokens on a row that can't clear this — return it as fewer entries instead.
+
 INCLUSION SCOPE (decide whether to extract a scholarship at all):
 - INCLUDE if the program is open to international applicants worldwide, OR explicitly targets immigrants / refugees / displaced students / first-generation students / heritage-community students. This means US-based scholarships specifically for Korean American, Latino/Hispanic, Vietnamese American, Asian American Pacific Islander, African American immigrant, Caribbean diaspora, Middle Eastern American, etc. communities ARE in scope — those students fit our audience.
 - INCLUDE if the program targets refugees, asylum seekers, DACA recipients, undocumented students, dreamers, or any cross-border identity.
@@ -142,6 +162,19 @@ Field semantics:
 - target_degree_level: subset of ["bachelor","master","phd","postdoc"]
 - eligible_countries: ISO country names. Empty array means "open globally".
 - application_deadline: ISO YYYY-MM-DD if a specific date; omit if rolling or unknown.
+- deadline_type: DEFAULT to "annual" — almost every fellowship/scholarship runs on a yearly cycle even when this year's date isn't visible on the page. Use "rolling" ONLY when the page explicitly says continuous / no deadline / accepted year-round. Use "one-time" only for a clearly one-shot opportunity (e.g. a 75th-anniversary grant). Use "unknown" only when there's truly no signal. Misclassifying annual programs as "rolling" hides real deadlines from the student.
+
+DEADLINE EXTRACTION (DATA QUALITY GATE — way too many rows landed with deadline_type='rolling' because the LLM defaulted there when the date wasn't obvious):
+- Scan the ENTIRE page for any of these phrases / patterns and extract the date that follows: "Deadline:", "Application deadline:", "Apply by", "Closes on", "Closing date", "Submissions close", "Applications due", "Last day to apply", "Submission deadline", "Application opens" + window endpoint.
+- The date may be in many formats: "November 5, 2026" / "5 November 2026" / "5/11/2026" / "11/05/2026" (assume US format on .com / .gov / .edu domains and DMY on UK / EU domains) / "2026-11-05". Always emit ISO YYYY-MM-DD.
+- If the page mentions a typical month/window without a specific date this year ("applications open in October", "deadline is in November each year"), DO NOT fabricate a date — leave application_deadline empty but DO set deadline_type="annual" with the month/window noted in `notes`.
+- Many program pages bury the deadline at the bottom (FAQ section, sidebar). Read past the marketing copy.
+
+FINANCIAL VALUE EXTRACTION (DATA QUALITY GATE — too many rows show only generic "tuition covered" / "stipend" with no $$$ amount):
+- ALWAYS attempt to populate estimated_total_value_usd. The user wants a single number that represents the realistic FULL-CYCLE value (not per-month, not per-year — the full multi-year award) so the catalog can sort + sum.
+- If the page gives a per-year number, multiply by the program duration (master = 2yr typical, PhD = 4yr typical) to land at the total. Make this estimate transparent by leaving the per-year breakdown in award_amount_text.
+- If the page only says "full tuition", look for the program's tuition number elsewhere on the page or use a defensible estimate based on the host_country (US private $80K/yr, US public out-of-state $40K/yr, UK £35K/yr ≈ $45K, Germany €0 tuition, EU public ~€2K/yr, Australia AU$45K ≈ $30K). It's better to publish a directional range than to leave the field NULL — students need a number to compare.
+- Award_amount_text: include a $ figure or range whenever you can ("Full UK tuition (~£28K/yr) + £18,000 stipend × 1yr = ~£46K total"). Avoid the bare "Tuition covered" / "Stipend" labels — those tell the student nothing they don't already get from coverage_type.
 - ideal_candidate_profile: 1-2 sentences describing who has the best shot.
 - weak_candidate_warning: 1 sentence on common red flags / who shouldn't apply.
 - best_for_tags: short tags like ["public-policy","developing-countries","mid-career"]
@@ -156,11 +189,17 @@ Field hygiene (NON-NEGOTIABLE — these are the rules generic LLMs break):
 - host_country: a SINGLE country name. If the program is genuinely multi-country, use exactly "Multiple countries" — never "Multiple (Korea, Japan, etc.)" or "Various (primarily Africa)".
 - target_demographics: array of canonical tags from this CONSTRAINED SET ONLY (free text gets rejected): "women", "men", "lgbtq", "first-generation", "low-income", "refugee", "displaced", "indigenous", "underrepresented-stem", "underrepresented-minority", "disability", "military-veteran", "rural", "mature-student". Add a tag ONLY when the program text EXPLICITLY restricts to or specifically targets that group. Do NOT add tags as a vibe — a "leadership" scholarship that mentions women in passing is NOT "women"-targeted. citizenship_requirements is for COUNTRY of citizenship; demographic constraints (gender / identity / income / refugee status) belong here, not there.
 
+Official URL extraction (DATA QUALITY GATE — get this wrong and we publish links to aggregator sites instead of apply pages):
+- official_url MUST be the page where students actually apply or read the program's authoritative description — typically the program's own .gov / .edu / foundation site.
+- If the page you're reading IS that authoritative page (Source category = "official"), the source URL itself is fine.
+- If the page you're reading is an aggregator listing (Source category = "aggregator", or the URL is at scholarshipportal.com / opportunitydesk.org / etc.), DO NOT use the source URL — extract the actual apply URL from the page content (usually a "Visit official page" / "Apply here" link). If no such URL is in the page content, OMIT the field — better an empty official_url than an aggregator link presented as official.
+
 Set confidence honestly. Better to flag low-confidence than to publish noise.`;
 
-const USER_PROMPT_TEMPLATE = (sourceName: string, sourceUrl: string, hint: string | null, markdown: string) => `
+const USER_PROMPT_TEMPLATE = (sourceName: string, sourceUrl: string, sourceCategory: string | null, hint: string | null, markdown: string) => `
 Source name: ${sourceName}
 Source URL: ${sourceUrl}
+Source category: ${sourceCategory || "(unknown)"}
 Source hint (parser guidance from admin): ${hint || "(none)"}
 
 Page content (markdown, may be truncated):
@@ -175,7 +214,7 @@ Extract every scholarship program described on this page. Return strictly:
       "scholarship_name": "...",
       "provider_name": "...",
       "host_country": "...",
-      "official_url": "${sourceUrl}",
+      "official_url": "<the apply URL — see rules below>",
       "coverage_type": "full_ride|partial|tuition_only|stipend|other",
       "award_amount_text": "...",
       "estimated_total_value_usd": 50000,
@@ -334,9 +373,63 @@ function validateExtracted(x: unknown): ExtractedScholarship | null {
   if (!cleanedProvider) return null;
   o.provider_name = cleanedProvider;
 
-  const cleanedCountry = cleanHostCountry(o.host_country as string);
+  // host_country: try LLM-extracted value first; if blank, infer from
+  // the program + provider name patterns. Many well-known scholarships
+  // (Chevening, DAAD, Fulbright, MEXT, East-West Center) embed their
+  // country in the name itself, but the LLM often omits the field
+  // because the page body doesn't repeat it.
+  let cleanedCountry = cleanHostCountry(o.host_country as string);
+  if (!cleanedCountry) {
+    const inferred = inferHostCountryFromNames(
+      o.scholarship_name as string,
+      o.provider_name as string,
+    );
+    if (inferred) cleanedCountry = inferred;
+  }
   if (!cleanedCountry) return null;
   o.host_country = cleanedCountry;
+
+  // deadline_type: LLMs lean toward "rolling" as a "I don't know" tag,
+  // which falsely tags annual fellowships as continuous-intake. If the
+  // program is one of the well-known annual cycles (Chevening, Rhodes,
+  // Fulbright, DAAD, etc.) AND the LLM said "rolling" or omitted the
+  // field, override to "annual". Avoids hiding real deadlines from
+  // students. (The actual application_deadline date stays whatever the
+  // LLM extracted — we're only correcting the cycle type.)
+  const dt = (o.deadline_type as string | undefined) ?? null;
+  if (dt === null || dt === "rolling" || dt === "unknown") {
+    if (isKnownAnnualProgram(o.scholarship_name as string, o.provider_name as string)) {
+      o.deadline_type = "annual";
+    }
+  }
+
+  // Financial value floor — when the LLM left estimated_total_value_usd
+  // null but the program is one of the well-known entries with a stable
+  // public total (Chevening, Rhodes, Schwarzman, MEXT, etc.), publish
+  // the canonical figure so the catalog can sort/sum correctly. Better
+  // a directional number than NULL — the user explicitly called out
+  // "thers gotta be more that provide at least an estimate range or
+  // minimum or max or something dig more financial info."
+  if (o.estimated_total_value_usd == null) {
+    const known = knownProgramValueUsd(
+      o.scholarship_name as string,
+      o.provider_name as string,
+    );
+    if (known) o.estimated_total_value_usd = known;
+  }
+
+  // Degree-level inference — when LLM left target_degree_level empty
+  // but the program name telegraphs the level ("PhD Fellowship",
+  // "Master's Scholarship", "Doctoral grant"). Without this, those
+  // rows never match a degree filter on Discover and stay invisible
+  // to a user who selected "Master's" in the dropdown.
+  if (!Array.isArray(o.target_degree_level) || o.target_degree_level.length === 0) {
+    const inferred = inferDegreeLevelsFromNames(
+      o.scholarship_name as string,
+      o.provider_name as string,
+    );
+    if (inferred.length > 0) o.target_degree_level = inferred;
+  }
 
   if (Array.isArray(o.target_fields)) {
     const cleaned = cleanTargetFields(o.target_fields);
@@ -387,6 +480,62 @@ function validateExtracted(x: unknown): ExtractedScholarship | null {
 
   // Drop / clamp numeric nonsense
   clampNumeric(o);
+
+  // Anti-fabrication scrub — even after our cleanup, any field whose
+  // value is a "Various" / "Multiple" / "Open" / "TBD" filler that
+  // slipped past the SYSTEM_PROMPT contract gets nulled. These tokens
+  // tell the user nothing they don't already know from the structured
+  // data and they pollute the catalog with fake-substance.
+  const FILLER = /^(various|multiple|several|open|all applicants|tbd|n\/a|none|—|-|to be determined)$/i;
+  for (const f of [
+    "duration_text", "language_requirements", "citizenship_requirements",
+    "ideal_candidate_profile", "weak_candidate_warning",
+    "what_to_prepare_first", "next_step", "risk_note",
+  ] as const) {
+    const v = (o as Record<string, unknown>)[f];
+    if (typeof v === "string" && FILLER.test(v.trim())) {
+      (o as Record<string, unknown>)[f] = undefined;
+    }
+  }
+  // partner_universities: drop the array entirely if every entry is filler.
+  if (Array.isArray(o.partner_universities)) {
+    const real = (o.partner_universities as string[]).filter((u) =>
+      typeof u === "string" && u.trim().length > 2 && !FILLER.test(u.trim()),
+    );
+    o.partner_universities = real.length > 0 ? real : undefined;
+  }
+
+  // Minimum-information gate. Name + provider + country alone aren't
+  // enough — that just means a page mentioned a scholarship's title.
+  // Require at least 2 of the substantive signals below before we
+  // publish the row. Otherwise it's a thin aggregator-style entry
+  // that pollutes Discover with no actionable data for the student.
+  const hasDeadline = Boolean(
+    o.application_deadline ||
+    (typeof o.deadline_type === "string" && o.deadline_type !== "unknown"),
+  );
+  const hasFunding = Boolean(
+    o.estimated_total_value_usd || o.award_amount_text,
+  );
+  const hasDegree = Array.isArray(o.target_degree_level) &&
+    (o.target_degree_level as unknown[]).length > 0;
+  const hasFields = Array.isArray(o.target_fields) &&
+    (o.target_fields as unknown[]).length > 0;
+  const hasEligibility = Boolean(
+    (Array.isArray(o.eligible_countries) && (o.eligible_countries as unknown[]).length > 0) ||
+    o.citizenship_requirements ||
+    o.eligibility_requirements,
+  );
+  const hasNarrative = (
+    (typeof o.ideal_candidate_profile === "string" && (o.ideal_candidate_profile as string).trim().length >= 60) ||
+    (typeof o.why_this_fits === "string" && (o.why_this_fits as string).trim().length >= 60) ||
+    (typeof o.how_to_win === "string" && (o.how_to_win as string).trim().length >= 60)
+  );
+  const signalCount = [
+    hasDeadline, hasFunding, hasDegree, hasFields, hasEligibility, hasNarrative,
+  ].filter(Boolean).length;
+  if (signalCount < 2) return null;
+
   return o as unknown as ExtractedScholarship;
 }
 
@@ -409,7 +558,12 @@ function normalizeKey(name: string, provider: string, _country: string): string 
     .trim();
 }
 
-/** Build the embedding source_text the existing embed-scholarships worker expects. */
+/** Build the embedding source_text the existing embed-scholarships worker expects.
+ *  NOTE: embed-scholarships actually re-derives source_text via the SQL
+ *  scholarship_embedding_source() function (migration 20260507230000),
+ *  so this column is for INSERT-time visibility only — it's overwritten
+ *  on the next embed cron tick. Keep the field set in sync with the
+ *  SQL function so debugging the column matches what got vectorised. */
 function buildEmbeddingSourceText(s: ExtractedScholarship): string {
   return [
     s.scholarship_name,
@@ -419,9 +573,12 @@ function buildEmbeddingSourceText(s: ExtractedScholarship): string {
     s.award_amount_text ?? "",
     s.target_degree_level?.length ? `Levels: ${s.target_degree_level.join(", ")}` : "",
     s.target_fields?.length ? `Fields: ${s.target_fields.join(", ")}` : "",
+    s.eligible_countries?.length ? `Eligible countries: ${s.eligible_countries.join(", ")}` : "",
+    s.target_demographics?.length ? `Targets: ${s.target_demographics.join(", ")}` : "",
     s.eligibility_requirements ?? "",
     s.ideal_candidate_profile ?? "",
     s.best_for_tags?.length ? `Best for: ${s.best_for_tags.join(", ")}` : "",
+    s.notes ?? "",
   ].filter(Boolean).join(" | ");
 }
 
@@ -564,7 +721,7 @@ serve(async (req) => {
       tier: "pro",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: USER_PROMPT_TEMPLATE(src.name, src.url, src.parser_hint, truncated) },
+        { role: "user", content: USER_PROMPT_TEMPLATE(src.name, src.url, src.category, src.parser_hint, truncated) },
       ],
     });
     if (!resp.ok) throw new Error(`LLM HTTP ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
@@ -681,11 +838,22 @@ serve(async (req) => {
 
     if (isAutoPublish) {
       autoPublished++;
+      // Official URL fallback: only fall back to src.url when the source
+      // is the official program page itself. For aggregator sources
+      // (scholarshipportal.com, opportunitydesk.org, etc.) the source URL
+      // is a third-party listing — publishing it as the official URL
+      // misrepresents it and can mislead students. The DB trigger
+      // is_aggregator_url() also flags it, but better to never publish
+      // it as official in the first place. Null here is fine —
+      // verification cron will pick it up and the UI shows a "no
+      // official link yet" state instead of a misleading link.
+      const isAggregatorSource = src.category === "aggregator";
+      const fallbackOfficial = isAggregatorSource ? null : src.url;
       const upsertPayload: Record<string, unknown> = {
         scholarship_name:                s.scholarship_name,
         provider_name:                   s.provider_name,
         host_country:                    s.host_country,
-        official_url:                    s.official_url || src.url,
+        official_url:                    s.official_url || fallbackOfficial,
         coverage_type:                   s.coverage_type,
         award_amount_text:               s.award_amount_text ?? null,
         estimated_total_value_usd:       s.estimated_total_value_usd ?? null,
@@ -722,6 +890,7 @@ serve(async (req) => {
         next_step:                       s.next_step ?? null,
         risk_note:                       s.risk_note ?? null,
         eligibility_requirements:        s.eligibility_requirements ?? null,
+        partner_universities:            s.partner_universities ?? null,
         verified:                        false,
         last_verified_date:              new Date().toISOString().slice(0, 10),
         // First-class verification metadata (see DATA_PIPELINE_AUDIT.md):

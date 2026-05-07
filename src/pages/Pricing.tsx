@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { OutcomesBar } from "@/components/OutcomesBar";
+import { setPostAuthRedirect } from "@/lib/postAuthRedirect";
 
 interface PricingProps { language?: "en" | "ru"; }
 
@@ -154,7 +155,7 @@ const Pricing = ({ language = "en" }: PricingProps) => {
 
   const startCheckout = async () => {
     if (!user) {
-      sessionStorage.setItem("post_auth_redirect", language === "ru" ? "/pricing/ru" : "/pricing");
+      setPostAuthRedirect(language === "ru" ? "/pricing/ru" : "/pricing");
       setAuthOpen(true);
       return;
     }
@@ -170,7 +171,11 @@ const Pricing = ({ language = "en" }: PricingProps) => {
     window.location.href = data.url;
   };
 
-  const isFounding = subscription.tier === "founding";
+  // "Currently a founding-tier subscriber" = tier=founding AND active.
+  // Was previously checking just the tier; a canceled founding user
+  // would have kept the founding CTA + crown rendered as if they were
+  // still in the cohort.
+  const isFounding = subscription.tier === "founding" && subscription.is_active;
   // Regular paid Pro members were previously seeing the "Become a
   // member" CTA on the pricing page, which is misleading — they
   // already are members. Treat any active paid tier (founding OR pro)
@@ -420,7 +425,7 @@ const Pricing = ({ language = "en" }: PricingProps) => {
       </main>
 
       <Footer language={language} />
-      <AuthDialog open={authOpen} onOpenChange={setAuthOpen} title={t.authTitle} description={t.authDesc} />
+      <AuthDialog open={authOpen} onOpenChange={setAuthOpen} title={t.authTitle} description={t.authDesc} language={language} />
     </div>
   );
 };

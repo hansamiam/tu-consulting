@@ -42,12 +42,21 @@ interface Props {
   scholarships?: InlineScholarshipData[];
 }
 
-/** Normalize for fuzzy matching — lowercase, strip common suffixes. */
+/** Normalize for fuzzy matching — lowercase, strip common suffixes.
+ *
+ *  Uses the Unicode property escapes so accented letters (é in
+ *  L'Oréal, ñ, ü), Cyrillic (Программа), and other non-ASCII letter
+ *  classes survive the punctuation strip. The previous \\w-based
+ *  regex was ASCII-only — "L'Oréal Scholars" normalised to "loral
+ *  scholars" (é → stripped) and never matched "L'Oréal Foundation"
+ *  (which normalised to "loral foundation"). Same problem for any
+ *  Russian-brief mention of a Cyrillic-named program.
+ */
 function normalize(s: string): string {
   return s
     .toLowerCase()
     .replace(/[–—]/g, "-")             // em/en dashes → hyphen
-    .replace(/[^\w\s-]/g, "")                    // strip punctuation
+    .replace(/[^\p{L}\p{N}\s-]/gu, "") // keep all Unicode letters/numbers, drop punctuation
     .replace(/\s+/g, " ")
     .trim()
     // strip common terminal nouns so "Chevening" matches "Chevening Scholarships"
@@ -102,7 +111,14 @@ export function EnrichedMarkdown({ children, scholarships }: Props) {
 
   // Track which scholarships we've already swapped this render. Keys are
   // scholarship_id. After the first swap, we render plain bold for repeats.
-  const swappedRef = useMemo(() => new Set<string>(), [children]);
+  // The set is reset on every render so re-renders (e.g. when the
+  // `scholarships` prop arrives after the markdown has already been
+  // shown once) get a clean slate. The previous useMemo([children])
+  // form cached the set across renders with the same children — so
+  // a render-then-rerender flow was silently dropping every inline
+  // card past the first render, because every match was treated as
+  // "already swapped" from the prior pass.
+  const swappedRef = new Set<string>();
 
   return (
     <ReactMarkdown

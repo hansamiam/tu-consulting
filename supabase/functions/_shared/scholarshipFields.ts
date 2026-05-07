@@ -33,6 +33,171 @@ export function cleanScholarshipName(name: string): string {
   return n;
 }
 
+/** Provider canonicalization map. Many famous funders are stored under
+ *  many string variants — "DAAD" / "Deutscher Akademischer Austauschdienst"
+ *  / "German Academic Exchange Service"; "UNESCO" / "United Nations
+ *  Educational, Scientific and Cultural Organization"; "MEXT" /
+ *  "Japanese Ministry of Education, Culture, Sports, Science and
+ *  Technology". Without collapsing these to one form, the Discover
+ *  provider filter, provider-page SEO, and brief LLM "list of funders"
+ *  all see fragmented sets.
+ *
+ *  Keys are lowercase comparison forms (after the same normalization
+ *  that canonicalizeProvider() applies — strip punctuation, collapse
+ *  whitespace). Values are the canonical short form. Order in the
+ *  map doesn't matter; lookup is exact. */
+const PROVIDER_SYNONYMS_MAP: Record<string, string> = {
+  // German Academic Exchange Service
+  "daad": "DAAD",
+  "deutscher akademischer austauschdienst": "DAAD",
+  "german academic exchange service": "DAAD",
+
+  // UNESCO
+  "unesco": "UNESCO",
+  "united nations educational scientific and cultural organization": "UNESCO",
+
+  // Japanese MEXT
+  "mext": "MEXT",
+  "ministry of education culture sports science and technology": "MEXT",
+  "japanese ministry of education culture sports science and technology": "MEXT",
+  "monbukagakusho": "MEXT",
+
+  // Chinese government
+  "csc": "China Scholarship Council",
+  "china scholarship council": "China Scholarship Council",
+
+  // Korean government
+  "kgsp": "Korean Government Scholarship Program",
+  "korean government scholarship program": "Korean Government Scholarship Program",
+  "global korea scholarship": "Korean Government Scholarship Program",
+  "gks": "Korean Government Scholarship Program",
+
+  // Australian government
+  "australia awards": "Australia Awards",
+  "australian awards": "Australia Awards",
+  "australia awards scholarships": "Australia Awards",
+
+  // UK Government / Foreign Office
+  "chevening": "Chevening",
+  "chevening scholarship": "Chevening",
+  "chevening scholarships": "Chevening",
+  "uk foreign and commonwealth office": "Chevening",
+
+  // Commonwealth
+  "commonwealth scholarship commission": "Commonwealth Scholarship Commission",
+  "csc uk": "Commonwealth Scholarship Commission",
+
+  // Fulbright
+  "fulbright": "Fulbright",
+  "fulbright program": "Fulbright",
+  "fulbright commission": "Fulbright",
+  "us fulbright": "Fulbright",
+  "u s fulbright": "Fulbright",
+
+  // Schwarzman Scholars
+  "schwarzman scholars": "Schwarzman Scholars",
+  "schwarzman foundation": "Schwarzman Scholars",
+
+  // Rhodes
+  "rhodes trust": "Rhodes Trust",
+  "rhodes scholarships": "Rhodes Trust",
+  "rhodes scholarship": "Rhodes Trust",
+
+  // Gates Cambridge
+  "gates cambridge": "Gates Cambridge",
+  "gates cambridge trust": "Gates Cambridge",
+
+  // Knight-Hennessy Scholars
+  "knight hennessy scholars": "Knight-Hennessy Scholars",
+  "knight hennessy": "Knight-Hennessy Scholars",
+  "knight-hennessy scholars": "Knight-Hennessy Scholars",
+  "knight-hennessy": "Knight-Hennessy Scholars",
+  "stanford knight hennessy scholars": "Knight-Hennessy Scholars",
+
+  // Mastercard Foundation
+  "mastercard foundation": "Mastercard Foundation",
+  "mastercard foundation scholars program": "Mastercard Foundation",
+  "the mastercard foundation": "Mastercard Foundation",
+
+  // Aga Khan Foundation
+  "aga khan foundation": "Aga Khan Foundation",
+  "aga khan development network": "Aga Khan Foundation",
+
+  // Joint Japan/World Bank
+  "joint japan world bank graduate scholarship program": "Joint Japan/World Bank Scholarship",
+  "jjwbgsp": "Joint Japan/World Bank Scholarship",
+  "joint japan world bank scholarship": "Joint Japan/World Bank Scholarship",
+
+  // Erasmus Mundus / EU
+  "european commission erasmus": "Erasmus Mundus",
+  "erasmus mundus": "Erasmus Mundus",
+  "erasmus": "Erasmus Mundus",
+  "european commission": "Erasmus Mundus",
+  "eacea": "Erasmus Mundus",
+
+  // Eiffel
+  "campus france eiffel": "Eiffel Excellence Scholarship",
+  "eiffel excellence": "Eiffel Excellence Scholarship",
+  "eiffel scholarship": "Eiffel Excellence Scholarship",
+
+  // Vanier
+  "vanier canada graduate scholarship": "Vanier Canada Graduate Scholarships",
+  "vanier scholarship": "Vanier Canada Graduate Scholarships",
+  "vanier scholarships": "Vanier Canada Graduate Scholarships",
+
+  // Marshall Aid Commemoration Commission
+  "marshall scholarship": "Marshall Scholarships",
+  "marshall scholarships": "Marshall Scholarships",
+  "marshall aid commemoration commission": "Marshall Scholarships",
+
+  // World Health Organization
+  "who": "World Health Organization",
+  "world health organization": "World Health Organization",
+
+  // Open Society Foundations
+  "open society foundations": "Open Society Foundations",
+  "open society foundation": "Open Society Foundations",
+  "osf": "Open Society Foundations",
+  "soros foundation": "Open Society Foundations",
+
+  // Ford Foundation
+  "ford foundation": "Ford Foundation",
+  "ford foundation international fellowships": "Ford Foundation",
+
+  // Rotary
+  "rotary foundation": "Rotary Foundation",
+  "the rotary foundation": "Rotary Foundation",
+  "rotary international": "Rotary Foundation",
+  "rotary peace fellowship": "Rotary Foundation",
+};
+
+/** Lowercase comparison-key form of a raw provider string. Strips
+ *  trailing parentheticals + punctuation, collapses whitespace,
+ *  drops trivial articles ("the"). Mirror of the SQL function in
+ *  20260507260000_canonicalize_providers.sql — keep in sync. */
+function normalizeProviderKey(raw: string): string {
+  return raw
+    .toLowerCase()
+    .replace(/\s*\([^)]*\)\s*/g, " ")
+    .replace(/[.,/&'’]/g, " ")
+    .replace(/\bthe\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Resolve a provider string to its canonical short form when known.
+ *  Returns null only when input is empty/junk; otherwise returns the
+ *  canonical form (synonym match) or the original cleaned string
+ *  (passthrough). Designed to compose AFTER cleanProvider() has run. */
+export function canonicalizeProviderName(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const key = normalizeProviderKey(trimmed);
+  if (!key) return null;
+  return PROVIDER_SYNONYMS_MAP[key] ?? trimmed;
+}
+
 /** Returns null when the value is junk (Various / Multiple / TBD …) so
  *  the caller can drop the field rather than persist garbage. */
 export function cleanProvider(raw: string | null | undefined): string | null {
@@ -61,13 +226,125 @@ export function cleanProvider(raw: string | null | undefined): string | null {
   p = p.replace(/\s*\([^)]*\)\s*$/, "").trim();
   if (PROVIDER_JUNK.test(p)) return null;
   p = p.replace(/^(The\s+)?(Trustees|Board|Council|Office)\s+of\s+(the\s+)?/i, "");
-  if (p.length > 60) p = p.slice(0, 58).trimEnd() + "…";
-  return p;
+  // Apply known-funder canonicalization BEFORE the length cap. Long
+  // raw forms ("United Nations Educational, Scientific and Cultural
+  // Organization") would otherwise get truncated past their canonical
+  // synonym match — we'd miss the lookup and end up storing a sliced
+  // ellipsis instead of "UNESCO".
+  const canonical = canonicalizeProviderName(p) ?? p;
+  return canonical.length > 60 ? canonical.slice(0, 58).trimEnd() + "…" : canonical;
+}
+
+/** Field-of-study canonicalization map. MIRROR of the
+ *  FIELD_SYNONYMS_MAP in src/pages/Discover.tsx — keep the two in sync.
+ *  Without this, the LLM emits "Computer Science", "CS", "CSE",
+ *  "Computer Science and Engineering", "Computing", "Software
+ *  Engineering" as separate string values; the Discover field filter,
+ *  the field-hub SEO pages, the match scorer, and the saved-search
+ *  filter then each see a fragmented catalog and miss matches.
+ *
+ *  Keys are lowercase comparison forms (after the same normalization
+ *  that normalizeFieldKey() applies — strip "fields"/"studies"/"related"
+ *  suffixes, drop trailing 's'). Values are Title Case canonical labels
+ *  the DB persists. Display layers consume them as-is. */
+const FIELD_SYNONYMS_MAP: Record<string, string> = {
+  "stem": "STEM",
+  "science technology engineering and math": "STEM",
+  "science technology engineering and mathematic": "STEM",
+  "women in stem": "STEM",
+  "women in science": "STEM",
+  "women in technology": "STEM",
+  "comp sci": "Computer Science",
+  "computer science": "Computer Science",
+  "computer science and engineering": "Computer Science",
+  "computer science and information technology": "Computer Science",
+  "computing": "Computer Science",
+  "software engineering": "Computer Science",
+  "cs": "Computer Science",
+  "cse": "Computer Science",
+  "ai": "Artificial Intelligence",
+  "artificial intelligence": "Artificial Intelligence",
+  "ml": "Machine Learning",
+  "machine learning": "Machine Learning",
+  "ee": "Electrical Engineering",
+  "electrical engineering": "Electrical Engineering",
+  "me": "Mechanical Engineering",
+  "mechanical engineering": "Mechanical Engineering",
+  "ce": "Civil Engineering",
+  "civil engineering": "Civil Engineering",
+  "biz": "Business",
+  "business": "Business",
+  "business administration": "Business",
+  "mba": "Business",
+  "ir": "International Relations",
+  "international relation": "International Relations",
+  "international relations": "International Relations",
+  "intl relation": "International Relations",
+  "global affair": "International Relations",
+  "global affairs": "International Relations",
+  "policy": "Public Policy",
+  "public policy": "Public Policy",
+  "polisci": "Political Science",
+  "poli sci": "Political Science",
+  "political science": "Political Science",
+  "med": "Medicine",
+  "medical": "Medicine",
+  "medicine": "Medicine",
+  "healthcare": "Public Health",
+  "public health": "Public Health",
+  "global health": "Public Health",
+  "humanitie": "Humanities",
+  "humanities": "Humanities",
+  "lit": "Literature",
+  "literature": "Literature",
+  "english": "Literature",
+  "creative writing": "Literature",
+  "fine art": "Art",
+  "visual art": "Art",
+  "art": "Art",
+};
+
+/** Lowercase comparison-key form of a raw field-of-study string.
+ *  Mirror of normalizeFieldKey() in src/pages/Discover.tsx — keep in
+ *  sync. Strips "fields"/"studies"/"related" suffixes, normalizes
+ *  hyphens / underscores / "&", strips trailing 's'. */
+function normalizeFieldComparisonKey(raw: string): string {
+  return raw.toLowerCase()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/&/g, "and")
+    .replace(/\s+(and\s+)?related\s+fields?$/i, "")
+    .replace(/\s+studies$/i, "")
+    .replace(/\s+(and\s+)?related$/i, "")
+    .replace(/\s+fields?$/i, "")
+    .replace(/s$/, "")
+    .trim();
+}
+
+/** Resolve a single field-of-study string to its canonical Title Case
+ *  label using FIELD_SYNONYMS_MAP. If no synonym matches, return a
+ *  Title Case version of the input (so the DB always stores presentable
+ *  values rather than ALL-CAPS or all-lowercase LLM output). */
+export function canonicalizeFieldOfStudy(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const key = normalizeFieldComparisonKey(trimmed);
+  if (!key) return null;
+  const mapped = FIELD_SYNONYMS_MAP[key];
+  if (mapped) return mapped;
+  // Fall back to Title Case of the original (preserve internal punctuation).
+  return trimmed
+    .toLowerCase()
+    .split(/(\s+)/)
+    .map((part) => /\s+/.test(part) ? part : part.charAt(0).toUpperCase() + part.slice(1))
+    .join("");
 }
 
 /** Split comma-list run-ons inside a single entry, drop junk values,
- *  cap entry length. Returns [] if nothing survives the filter so the
- *  caller can OMIT the field rather than persist a junk array. */
+ *  cap entry length, canonicalize via FIELD_SYNONYMS_MAP. Returns []
+ *  if nothing survives so the caller can OMIT the field rather than
+ *  persist a junk array. Dedup happens AFTER canonicalization, so
+ *  ["CS", "Computer Science", "Computing"] collapse to ["Computer Science"]. */
 export function cleanTargetFields(fields: unknown): string[] {
   if (!Array.isArray(fields)) return [];
   const out: string[] = [];
@@ -78,10 +355,12 @@ export function cleanTargetFields(fields: unknown): string[] {
     for (const p of pieces) {
       const trimmed = p.trim();
       if (!trimmed || FIELD_JUNK.test(trimmed) || trimmed.length > 60) continue;
-      const key = trimmed.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push(trimmed);
+      const canonical = canonicalizeFieldOfStudy(trimmed);
+      if (!canonical) continue;
+      const dedupKey = canonical.toLowerCase();
+      if (seen.has(dedupKey)) continue;
+      seen.add(dedupKey);
+      out.push(canonical);
     }
   }
   return out;
@@ -250,4 +529,287 @@ export function cleanAwardText(raw: string | null | undefined): string | null {
   t = t.replace(/\s*\(([^)]*)\)\s*$/, (m, inner) => /\d/.test(inner) ? m : "").trim();
   if (t.length > 200) t = t.slice(0, 198).trimEnd() + "…";
   return t;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Country inference from program / provider name
+ * ─────────────────────────────────────────────────────────────────────────
+ *
+ * The LLM extractor sometimes leaves host_country empty even when the
+ * scholarship's name screams its country (Chevening = UK, DAAD = Germany,
+ * Fulbright = US, MEXT = Japan, East-West Center = US/Hawaii). This
+ * function pattern-matches the well-known program names + provider name
+ * keywords to backfill a country when the LLM left it blank.
+ *
+ * Returned value is the canonical country name as it appears in
+ * REGIONAL_ACCENT (countryAccent.ts) so the silhouette + palette resolve
+ * correctly. Returns null if no high-confidence pattern matches — better
+ * to leave host_country empty than to mis-attribute a row.
+ *
+ * Used by:
+ *   · scrape-source: post-LLM fallback when extracted host_country is
+ *     null or empty (defensive).
+ *   · 20260507150000_backfill_host_country.sql: one-shot backfill of
+ *     existing rows via the SQL mirror of these patterns.
+ *
+ * If you add a pattern here, add the same pattern to the SQL function
+ * in the migration so backfill stays in sync. */
+
+interface CountryPattern {
+  /** Regex to match against `${name} | ${provider}`. Case-insensitive. */
+  pattern: RegExp;
+  /** Canonical host_country value to write. */
+  country: string;
+}
+
+// Patterns ordered by specificity — most-specific first so e.g.
+// "American University in Cairo" matches Egypt before the generic
+// "American" → US fallback.
+const COUNTRY_PATTERNS: CountryPattern[] = [
+  // ─── Programs whose names are 1:1 with their host country ────────
+  { pattern: /\bchevening\b/i,                          country: "United Kingdom" },
+  { pattern: /\bgates cambridge\b/i,                    country: "United Kingdom" },
+  { pattern: /\brhodes scholar/i,                       country: "United Kingdom" },
+  { pattern: /\bclarendon\b/i,                          country: "United Kingdom" },
+  { pattern: /\bweidenfeld[\-\s]?hoffmann/i,            country: "United Kingdom" },
+  { pattern: /\bcommonwealth scholarship/i,             country: "United Kingdom" },
+  { pattern: /\bmarshall scholar/i,                     country: "United Kingdom" },
+  { pattern: /\boxford\b|\bcambridge\b/i,               country: "United Kingdom" }, // generic university
+  { pattern: /\bbritish\s+council\b/i,                  country: "United Kingdom" },
+  { pattern: /\bcambridge trust\b/i,                    country: "United Kingdom" },
+
+  { pattern: /\bdaad\b|\bdeutscher? akademisch/i,       country: "Germany" },
+  { pattern: /\bheinrich b[oö]ll\b/i,                   country: "Germany" },
+  { pattern: /\bkonrad[\-\s]?adenauer\b/i,              country: "Germany" },
+  { pattern: /\bfriedrich[\-\s]?ebert\b/i,              country: "Germany" },
+  { pattern: /\brosa luxemburg\b/i,                     country: "Germany" },
+  { pattern: /\bhans[\-\s]?b[oö]ckler\b/i,              country: "Germany" },
+  { pattern: /\bhumboldt\b.*scholar|stipend|fellow/i,   country: "Germany" },
+  { pattern: /\bdeutschlandstipendium\b/i,              country: "Germany" },
+
+  { pattern: /\bfulbright\b/i,                          country: "United States" },
+  { pattern: /\beast[\-\s]?west center\b/i,             country: "United States" },
+  { pattern: /\bknight[\-\s]?hennessy\b/i,              country: "United States" },
+  { pattern: /\bp\.?d\.?soros\b|\bpaul.{0,4}daisy soros\b/i, country: "United States" },
+  { pattern: /\bjack kent cooke\b/i,                    country: "United States" },
+  { pattern: /\bgates millennium\b/i,                   country: "United States" },
+  { pattern: /\bcoca[\-\s]?cola scholar/i,              country: "United States" },
+  { pattern: /\bhispanic scholarship fund\b/i,          country: "United States" },
+  { pattern: /\b(harvard|yale|princeton|stanford|mit|columbia|cornell|dartmouth|brown|penn|nyu|ucla|berkeley|chicago|northwestern|duke)\b/i,
+                                                        country: "United States" },
+
+  { pattern: /\beiffel\s+excellence\b|\beiffel\s+scholar/i,   country: "France" },
+  { pattern: /\bcampus\s?france\b/i,                    country: "France" },
+  { pattern: /\bsorbonne\b|\bpsl\b|\bsciences\s+po\b/i, country: "France" },
+
+  { pattern: /\bmext\b|\bmonbukagakusho\b/i,            country: "Japan" },
+  { pattern: /\bjasso\b/i,                              country: "Japan" },
+  { pattern: /\b(tokyo|kyoto|osaka|waseda|keio)\s+university\b/i, country: "Japan" },
+
+  { pattern: /\bschwarzman\s+scholar/i,                 country: "China" },
+  { pattern: /\byenching\s+(academy|scholar)\b/i,       country: "China" },
+  { pattern: /\b(tsinghua|peking|fudan|shanghai jiao tong)\b/i, country: "China" },
+  { pattern: /\b(chinese|china)\s+government\s+scholarship\b/i, country: "China" },
+
+  { pattern: /\bkgsp\b|\bkorean? government scholarship\b|\bglobal korea scholarship\b/i, country: "South Korea" },
+  { pattern: /\b(seoul national|kaist|postech|yonsei)\b/i, country: "South Korea" },
+
+  { pattern: /\bvanier\s+canada\b|\bvanier\s+scholar/i, country: "Canada" },
+  { pattern: /\btrudeau\s+(scholar|foundation)\b/i,     country: "Canada" },
+  { pattern: /\b(university of toronto|mcgill|ubc|waterloo)\b/i, country: "Canada" },
+
+  { pattern: /\baustralia\s+awards?\b|\bdfat\b.*scholar/i, country: "Australia" },
+  { pattern: /\b(university of melbourne|sydney|anu|monash|unsw|uq\b|queensland)\b/i, country: "Australia" },
+
+  { pattern: /\b(swiss\s+government|eth\s+z[uü]rich|epfl)\b/i, country: "Switzerland" },
+  { pattern: /\bswedish\s+institute\b/i,                country: "Sweden" },
+  { pattern: /\borange\s+knowledge\b|\bholland\s+scholar/i, country: "Netherlands" },
+  { pattern: /\b(asean|nus\b|ntu\b|smu)\s+(scholar|fellow)/i, country: "Singapore" },
+  { pattern: /\b(singapore international|nus|smu)\b/i,  country: "Singapore" },
+
+  { pattern: /\bnew zealand\s+(government|aid|scholar)/i, country: "New Zealand" },
+  { pattern: /\b(university of auckland|otago|victoria university of wellington)\b/i, country: "New Zealand" },
+
+  { pattern: /\bfapesp\b|\bcapes\b|\bcnpq\b/i,          country: "Brazil" },
+
+  { pattern: /\bkhazanah\b/i,                           country: "Malaysia" },
+  { pattern: /\b(national university of singapore|nanyang technological)\b/i, country: "Singapore" },
+
+  // ─── Multi-country / EU programs — explicit Multiple ────────────
+  { pattern: /\berasmus\s+mundus\b/i,                   country: "Multiple countries" },
+  { pattern: /\baga\s+khan\s+(foundation|development)/i, country: "Multiple countries" },
+  { pattern: /\brotary\s+peace\s+(fellow|scholar)/i,    country: "Multiple countries" },
+  { pattern: /\bmastercard\s+foundation\s+scholar/i,    country: "Multiple countries" },
+
+  // ─── Generic provider keywords (lowest specificity, last) ────────
+  // These fire when the more-specific named-program patterns above
+  // didn't match. Catches e.g. "Government of Ireland Postgraduate
+  // Scholarship Programme" without a named-program brand.
+  { pattern: /\b(government of |republic of )?ireland\b/i,    country: "Ireland" },
+  { pattern: /\b(government of |united states of )?(america|usa)\b/i, country: "United States" },
+];
+
+/** Infer host_country from the scholarship + provider name when the LLM
+ *  left it empty. Returns null if no high-confidence pattern matches. */
+export function inferHostCountryFromNames(
+  scholarshipName: string | null | undefined,
+  providerName: string | null | undefined,
+): string | null {
+  const haystack = `${scholarshipName ?? ""} | ${providerName ?? ""}`.trim();
+  if (haystack.length < 4) return null;
+  for (const { pattern, country } of COUNTRY_PATTERNS) {
+    if (pattern.test(haystack)) return country;
+  }
+  return null;
+}
+
+/** Well-known annual-cycle programs. Used by scrape-source and
+ *  verify-scholarship to override an LLM-default of "rolling"
+ *  (which is the model's tell for "I couldn't find a specific
+ *  date") to "annual" when the program is unmistakably yearly.
+ *
+ *  Keep in sync with the SQL pattern in
+ *  20260507160000_backfill_deadline_type.sql.
+ */
+export const KNOWN_ANNUAL_PROGRAMS_RE = /\b(chevening|rhodes|gates cambridge|clarendon|marshall scholar|commonwealth scholarship|fulbright|knight[\-\s]?hennessy|schwarzman|yenching|mext|kgsp|korean? government scholarship|vanier|trudeau|eiffel|daad|deutschlandstipendium|heinrich b[oö]ll|konrad[\-\s]?adenauer|friedrich[\-\s]?ebert|swiss government|swedish institute|orange knowledge|holland scholar|australia awards|erasmus mundus|aga khan|mastercard foundation scholar|p\.?d\.?soros|jack kent cooke|gates millennium|hispanic scholarship fund|east[\-\s]?west center)\b/i;
+
+/** Returns true when the program name + provider should be treated as
+ *  annual-cycle even when the LLM tagged it rolling/unknown/null. */
+export function isKnownAnnualProgram(
+  scholarshipName: string | null | undefined,
+  providerName: string | null | undefined,
+): boolean {
+  const haystack = `${scholarshipName ?? ""} | ${providerName ?? ""}`;
+  return KNOWN_ANNUAL_PROGRAMS_RE.test(haystack);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Known-program financial value floor
+ * ─────────────────────────────────────────────────────────────────────────
+ *
+ * The LLM extractor often leaves estimated_total_value_usd null when the
+ * page says "full tuition + stipend" without a $$ figure. But for the
+ * famous programs the realistic full-cycle total is publicly known and
+ * stable year-over-year. Without this floor, sorting by funding value
+ * pushes Chevening / Rhodes / Schwarzman to the bottom because their
+ * structured value is null.
+ *
+ * Numbers are deliberately conservative — based on published tuition +
+ * stipend × typical program duration. Better to ground students in a
+ * directional number than to publish NULL.
+ *
+ * Used by:
+ *   · scrape-source (post-validate fallback)
+ *   · 20260507170000_backfill_estimated_value.sql (one-shot backfill)
+ *
+ * If you add a row, add the same row to the SQL function in the
+ * migration so backfill stays in sync.
+ */
+interface KnownValue {
+  pattern: RegExp;
+  /** Realistic full-cycle USD total. */
+  totalUsd: number;
+}
+
+const KNOWN_PROGRAM_VALUES: KnownValue[] = [
+  // United Kingdom — usually 1yr master's so figures are 1yr totals.
+  { pattern: /\bchevening\b/i,                     totalUsd: 60_000 },   // ~£28K tuition + £18K stipend
+  { pattern: /\brhodes scholar/i,                  totalUsd: 90_000 },   // 2-3yr Oxford full
+  { pattern: /\bgates cambridge\b/i,               totalUsd: 95_000 },   // 3yr PhD typical
+  { pattern: /\bclarendon\b/i,                     totalUsd: 80_000 },   // Oxford 1-3yr
+  { pattern: /\bcommonwealth scholarship\b/i,      totalUsd: 50_000 },
+  { pattern: /\bweidenfeld[\-\s]?hoffmann\b/i,     totalUsd: 80_000 },
+  { pattern: /\bcambridge trust\b/i,               totalUsd: 70_000 },
+  { pattern: /\bmarshall scholar/i,                totalUsd: 100_000 },  // 2yr UK full
+
+  // United States — high tuition, multi-year typical.
+  { pattern: /\bfulbright\b/i,                     totalUsd: 55_000 },   // Varies by country, ~1yr
+  { pattern: /\bknight[\-\s]?hennessy\b/i,         totalUsd: 250_000 },  // 3yr full Stanford
+  { pattern: /\bjack kent cooke\b/i,               totalUsd: 220_000 },  // Up to $55K/yr × 4
+  { pattern: /\bp\.?d\.?soros\b/i,                 totalUsd: 90_000 },   // 1-2yr × $30-45K
+  { pattern: /\bgates millennium\b/i,              totalUsd: 200_000 },  // legacy, full ride 4yr
+  { pattern: /\beast[\-\s]?west center\b/i,        totalUsd: 70_000 },   // 2yr master full
+  { pattern: /\bhispanic scholarship fund\b/i,     totalUsd: 10_000 },   // typically partial
+  { pattern: /\bcoca[\-\s]?cola scholar/i,         totalUsd: 20_000 },
+
+  // Germany — DAAD typical 2yr master's.
+  { pattern: /\bdaad\b/i,                          totalUsd: 30_000 },   // €861/mo × 24mo + tuition fees
+  { pattern: /\bdeutschlandstipendium\b/i,         totalUsd: 8_000 },    // €300/mo × 24mo
+  { pattern: /\bheinrich b[oö]ll\b/i,              totalUsd: 25_000 },
+  { pattern: /\bkonrad[\-\s]?adenauer\b/i,         totalUsd: 25_000 },
+
+  // Asia
+  { pattern: /\bschwarzman scholar/i,              totalUsd: 125_000 },  // 1yr full Tsinghua master
+  { pattern: /\byenching\s+(academy|scholar)/i,    totalUsd: 100_000 },  // 2yr full Peking master
+  { pattern: /\bmext\b|\bmonbukagakusho\b/i,       totalUsd: 50_000 },   // 2yr master full
+  { pattern: /\bkgsp\b|\bglobal korea scholarship\b/i, totalUsd: 35_000 }, // 2yr master full
+
+  // Europe / France
+  { pattern: /\beiffel\b.*scholar/i,               totalUsd: 18_000 },   // €1,181/mo × ~12mo
+  { pattern: /\berasmus\s+mundus\b/i,              totalUsd: 50_000 },   // 1-2yr €1,400/mo + tuition
+
+  // Canada / Australia / NZ
+  { pattern: /\bvanier\s+canada\b|\bvanier\s+scholar/i, totalUsd: 150_000 }, // C$50K × 3yr ≈ $115K
+  { pattern: /\btrudeau\s+(scholar|foundation)\b/i, totalUsd: 250_000 }, // C$80K × 3yr ≈ $190K
+  { pattern: /\baustralia\s+awards?\b/i,           totalUsd: 80_000 },   // Varies, multi-year typical
+
+  // Multi-country / global
+  { pattern: /\baga\s+khan\s+(foundation|development)/i, totalUsd: 60_000 }, // partial loan + grant
+  { pattern: /\bmastercard\s+foundation\s+scholar/i, totalUsd: 120_000 }, // 4yr full at partner
+  { pattern: /\brotary\s+peace\s+(fellow|scholar)/i, totalUsd: 75_000 }, // 1-2yr master
+];
+
+/** Returns the canonical full-cycle USD value for a well-known program, or
+ *  null if the name doesn't match any known pattern. */
+export function knownProgramValueUsd(
+  scholarshipName: string | null | undefined,
+  providerName: string | null | undefined,
+): number | null {
+  const haystack = `${scholarshipName ?? ""} | ${providerName ?? ""}`;
+  if (haystack.trim().length < 4) return null;
+  for (const { pattern, totalUsd } of KNOWN_PROGRAM_VALUES) {
+    if (pattern.test(haystack)) return totalUsd;
+  }
+  return null;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Degree-level inference from program name
+ * ─────────────────────────────────────────────────────────────────────────
+ *
+ * Many scholarship rows have NULL target_degree_level so they never match
+ * a Master's / PhD / Bachelor filter — even when the program name screams
+ * the level ("PhD Fellowship in Computer Science", "Master's Scholarship
+ * for Indonesian Students", "Erasmus Mundus Joint Master Degree").
+ *
+ * This function pattern-matches the program + provider name to infer one
+ * or more degree levels. Returns canonical lowercase tags matching
+ * Discover's filter values: "bachelor" / "master" / "phd" / "postdoc".
+ * Returns empty array when no high-confidence pattern matches.
+ *
+ * Mirror SQL in 20260507180000_backfill_target_degree_level.sql.
+ */
+const DEGREE_PATTERNS: { re: RegExp; level: string }[] = [
+  // PhD / doctoral
+  { re: /\b(ph\.?d|doctoral|doctorate|doctor of philosophy|d\.?phil|dphil)\b/i,    level: "phd" },
+  // Postdoc — must precede the bachelor pattern because "postdoctoral"
+  // contains "doc" but is its own tier.
+  { re: /\b(postdoc(toral)?|post[\-\s]?doctoral)\b/i,                              level: "postdoc" },
+  // Master's
+  { re: /\b(master'?s?|m\.?sc|m\.?phil|m\.?eng|m\.?b\.?a|graduate fellowship|joint master|master degree)\b/i, level: "master" },
+  // Bachelor's / undergrad
+  { re: /\b(bachelor'?s?|undergrad(uate)?|b\.?sc|b\.?eng|b\.?a\b|first[\-\s]?cycle)\b/i, level: "bachelor" },
+];
+
+export function inferDegreeLevelsFromNames(
+  scholarshipName: string | null | undefined,
+  providerName: string | null | undefined,
+): string[] {
+  const haystack = `${scholarshipName ?? ""} | ${providerName ?? ""}`;
+  if (haystack.trim().length < 4) return [];
+  const out = new Set<string>();
+  for (const { re, level } of DEGREE_PATTERNS) {
+    if (re.test(haystack)) out.add(level);
+  }
+  return Array.from(out);
 }

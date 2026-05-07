@@ -7,33 +7,71 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import type { Session } from "@supabase/supabase-js";
 import { Loader2 } from "lucide-react";
-import { clearPendingAccount, getPendingAccount, type PendingAccountPayload } from "@/lib/pendingAccount";
+import { clearPendingAccount, getPendingAccount } from "@/lib/pendingAccount";
 import { clearPendingReferral, getPendingReferral } from "@/lib/referralCapture";
+import { consumePostAuthRedirect } from "@/lib/postAuthRedirect";
+import { persistPendingAccount } from "@/lib/persistPendingAccount";
 
 const AuthCallback = () => {
   const navigate = useNavigate();
-  const [status, setStatus] = useState<string>("Signing you in…");
+  // Detect language from the post-auth redirect target so Russian
+  // users see a Russian status during the brief flash before navigate.
+  // Peek without consuming — the consume happens later inside the effect.
+  const isRu = (() => {
+    if (typeof window === "undefined") return false;
+    try {
+      const raw = localStorage.getItem("topuni-post-auth-redirect-v1");
+      if (!raw) return false;
+      const parsed = JSON.parse(raw) as { dest?: string };
+      return typeof parsed.dest === "string" && /\/ru($|\/)/.test(parsed.dest);
+    } catch { return false; }
+  })();
+  const t = (en: string, ru: string) => (isRu ? ru : en);
+  const [status, setStatus] = useState<string>(t("Signing you in…", "Входим в аккаунт…"));
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      // Give Supabase a tick to parse the hash + establish the session
-      await new Promise((r) => setTimeout(r, 400));
-      const { data } = await supabase.auth.getSession();
+      // Wait for Supabase to parse the hash + establish a session.
+      // Previously this was a fixed 400 ms sleep; on a slow connection
+      // the session hadn't arrived yet and the page bounced the user to
+      // "/" with the pending-account drain skipped — wizard profile +
+      // brief never persisted. Subscribe to onAuthStateChange so we
+      // continue the moment SIGNED_IN fires, with a 6 s safety net.
+      const session = await new Promise<Session | null>((resolve) => {
+        let done = false;
+        const finish = (s: Session | null) => { if (done) return; done = true; resolve(s); };
+        // Peek synchronously — if the SDK already has a session we
+        // don't need to wait for an event.
+        supabase.auth.getSession().then(({ data }) => {
+          if (data.session) finish(data.session);
+        });
+        const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+          if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && s) finish(s);
+        });
+        // Safety net — bail after 6 s so we never wedge here forever.
+        setTimeout(async () => {
+          const { data } = await supabase.auth.getSession();
+          sub.subscription.unsubscribe();
+          finish(data.session ?? null);
+        }, 6000);
+      });
       if (cancelled) return;
 
-      if (!data.session) {
+      if (!session) {
         navigate("/", { replace: true });
         return;
       }
+      const data = { session };
 
       // Drain pending account payload (set by SaveBriefPrompt before the
       // magic-link email was triggered). Best-effort — failures here
       // shouldn't block sign-in.
       const pending = getPendingAccount();
       if (pending) {
-        setStatus("Saving your brief and profile…");
+        setStatus(t("Saving your brief and profile…", "Сохраняем брифинг и профиль…"));
         try {
           await persistPendingAccount(data.session.user.id, pending);
         } catch (e) {
@@ -46,7 +84,7 @@ const AuthCallback = () => {
       // landing page that had ?ref=CODE in the URL).
       const referralCode = getPendingReferral();
       if (referralCode) {
-        setStatus("Linking your referral…");
+        setStatus(t("Linking your referral…", "Привязываем реферальный код…"));
         try {
           await supabase.functions.invoke("register-referral", {
             body: { code: referralCode },
@@ -57,13 +95,16 @@ const AuthCallback = () => {
         clearPendingReferral();
       }
 
-      const dest = sessionStorage.getItem("post_auth_redirect") || "/account";
-      sessionStorage.removeItem("post_auth_redirect");
+      // Cross-tab safe — localStorage survives the email-client opening
+      // the magic link in a new tab. sessionStorage was per-tab and
+      // silently lost the target on those flows.
+      const dest = consumePostAuthRedirect() || "/account";
       navigate(dest, { replace: true });
     })();
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
   return (
@@ -77,61 +118,3 @@ const AuthCallback = () => {
 };
 
 export default AuthCallback;
-
-/* ─── Persisters ─────────────────────────────────────────────────
-   Upserts the wizard's profile into student_profiles and the cached
-   pathway into pathway_reports. Numeric coercions are forgiving:
-   "3.7" / 3.7 / "" all resolve sanely. */
-async function persistPendingAccount(userId: string, p: PendingAccountPayload) {
-  const profile = p.profile ?? {};
-
-  const num = (v: unknown): number | null => {
-    if (v === null || v === undefined || v === "") return null;
-    const n = typeof v === "number" ? v : parseFloat(String(v));
-    return Number.isFinite(n) ? n : null;
-  };
-  const intNum = (v: unknown): number | null => {
-    const n = num(v);
-    return n === null ? null : Math.round(n);
-  };
-
-  await supabase.from("student_profiles").upsert(
-    {
-      user_id: userId,
-      full_name: profile.fullName ?? null,
-      email: profile.email ?? null,
-      nationality: profile.nationality ?? null,
-      grade_level: profile.gradeLevel ?? null,
-      gpa: num(profile.gpa),
-      gpa_scale: num(profile.gpaScale),
-      ielts: num(profile.ielts),
-      toefl: num(profile.toefl),
-      sat: intNum(profile.sat),
-      target_countries: profile.targetCountries ?? null,
-      major: profile.major ?? null,
-      field_of_study: profile.fieldOfStudy ?? profile.major ?? null,
-      budget: profile.budget ?? null,
-      scholarship_needed: profile.scholarshipNeeded === "yes" ? true : profile.scholarshipNeeded === "no" ? false : null,
-      timeline: profile.timeline ?? null,
-      prestige_weight: intNum(profile.prestige),
-      scholarship_weight: intNum(profile.scholarshipPriority),
-      career_roi_weight: intNum(profile.careerRoi),
-      visa_weight: intNum(profile.visaAccess),
-      location_weight: intNum(profile.locationPref),
-    },
-    { onConflict: "user_id" },
-  );
-
-  if (p.pathway && p.pathway.content && p.pathway.content.length > 100) {
-    await supabase.from("pathway_reports").upsert(
-      {
-        user_id: userId,
-        profile_hash: p.pathway.profileHash || "pending",
-        content: p.pathway.content,
-        language: p.pathway.language || "en",
-        report_grade: p.pathway.grade || "basic",
-      },
-      { onConflict: "user_id" },
-    );
-  }
-}

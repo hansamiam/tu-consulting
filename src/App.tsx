@@ -62,6 +62,7 @@ const PaymentCanceled      = lazy(() => import("./pages/PaymentCanceled"));
 const Unsubscribe          = lazy(() => import("./pages/Unsubscribe"));
 const Pricing              = lazy(() => import("./pages/Pricing"));
 const AuthCallback         = lazy(() => import("./pages/AuthCallback"));
+const AuthResetPassword    = lazy(() => import("./pages/AuthResetPassword"));
 const Account              = lazy(() => import("./pages/Account"));
 const AdminSources         = lazy(() => import("./pages/admin/Sources"));
 const AdminQueue           = lazy(() => import("./pages/admin/ScholarshipQueue"));
@@ -69,6 +70,7 @@ const AdminSubmissions     = lazy(() => import("./pages/admin/Submissions"));
 const AdminUniversities    = lazy(() => import("./pages/admin/Universities"));
 const AdminScholarshipVerification = lazy(() => import("./pages/admin/ScholarshipVerification"));
 const AdminAnalyticsFunnel       = lazy(() => import("./pages/admin/AnalyticsFunnel"));
+const AdminAcademy               = lazy(() => import("./pages/admin/Academy"));
 const SubmitScholarship    = lazy(() => import("./pages/SubmitScholarship"));
 
 const queryClient = new QueryClient();
@@ -186,6 +188,7 @@ const App = () => (
           <Route path="/admin/universities" element={<AdminUniversities />} />
           <Route path="/admin/scholarships-verification" element={<AdminScholarshipVerification />} />
           <Route path="/admin/analytics" element={<AdminAnalyticsFunnel />} />
+          <Route path="/admin/academy" element={<AdminAcademy />} />
           <Route path="/academy" element={<Academy />} />
           <Route path="/blog/guide/:slug" element={<CountryGuide language="en" />} />
           <Route path="/blog/guide/:slug/ru" element={<CountryGuide language="ru" />} />
@@ -197,6 +200,8 @@ const App = () => (
           <Route path="/pricing" element={<Pricing language="en" />} />
           <Route path="/pricing/ru" element={<Pricing language="ru" />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/auth/reset-password" element={<AuthResetPassword language="en" />} />
+          <Route path="/auth/reset-password/ru" element={<AuthResetPassword language="ru" />} />
           <Route path="/account" element={<Account language="en" />} />
           <Route path="/account/ru" element={<Account language="ru" />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

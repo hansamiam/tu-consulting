@@ -13,6 +13,7 @@ import { FileText, Search, ArrowRight, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cleanScholarshipName } from "@/lib/scholarshipFields";
 import { shortCountry } from "@/lib/countryAccent";
+import { daysUntil } from "@/lib/dates";
 
 interface ScholarshipLite {
   scholarship_id: string;
@@ -30,12 +31,6 @@ interface Props {
 
 const wordCount = (s: string): number => (s.trim() ? s.trim().split(/\s+/).length : 0);
 
-const daysUntil = (iso: string | null): number | null => {
-  if (!iso) return null;
-  const t = new Date(iso).getTime();
-  if (Number.isNaN(t)) return null;
-  return Math.ceil((t - Date.now()) / 86_400_000);
-};
 
 const previewLine = (s: string, max = 180): string => {
   const trimmed = s.trim().replace(/\s+/g, " ");

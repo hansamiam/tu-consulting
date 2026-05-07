@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { isAdminUser } from "@/lib/adminMode";
 import { SaveBriefPrompt } from "@/components/topuni/SaveBriefPrompt";
 import { DocumentManager } from "@/components/topuni/DocumentManager";
 import { CounselorSessions } from "@/components/topuni/CounselorSessions";
@@ -29,8 +30,6 @@ import { BriefChapterNav } from "@/components/brief/BriefChapterNav";
 import { BriefMasthead } from "@/components/brief/BriefMasthead";
 import { ProSectionsTeaser } from "@/components/brief/ProSectionsTeaser";
 import { SavedDeadlineBanner } from "@/components/SavedDeadlineBanner";
-import { DeadlineTimeline } from "@/components/brief/DeadlineTimeline";
-import { FundingStack } from "@/components/brief/FundingStack";
 import { PremiumSection } from "@/components/brief/PremiumSection";
 import { CombinedFundingChart } from "@/components/brief/CombinedFundingChart";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
@@ -262,7 +261,7 @@ const InteractiveActionPlan = ({ markdown, completedTasks, onToggle, taskKey, is
                     ? `Открыть полные ${gatedBlocks.length} ${gatedBlocks.length === 1 ? "блок" : "блока"} плана`
                     : `Unlock the rest of your ${gatedBlocks.length === 1 ? "plan" : "90-day plan"}`}
                   subline={isRu
-                    ? "Вы видите план Weeks 1-2 бесплатно. Pro раскрывает Weeks 3-12 с неделя-за-неделя задачами и проверкой прогресса."
+                    ? "Недели 1–2 — бесплатно. Pro раскрывает недели 3–12 с задачами по каждой неделе и отслеживанием прогресса."
                     : "Weeks 1-2 are free. Pro unlocks Weeks 3-12 with week-by-week deliverables and progress tracking."}
                 >
                   <div className="space-y-6">
@@ -294,41 +293,69 @@ const UniversityShortlist = ({ markdown, isRu, onOpenDiscover, onRegen, isRegene
   const { title, buckets } = useMemo(() => {
     const lines = markdown.split("\n");
     let title = "";
-    const buckets: { heading: string; items: { name: string; detail: string }[] }[] = [];
+    const buckets: { heading: string; items: { name: string; headline: string; details: string[] }[] }[] = [];
     let cur: typeof buckets[number] | null = null;
-    let pendingBullet: string[] = [];
+    /* The premium + basic prompts emit each university as ONE
+     * `**Name**` bullet followed by 1-3 plain bullets describing the
+     * program / acceptance rate / USP. Earlier the parser flushed on
+     * every bullet, so a single university with 4 bullets rendered
+     * as 4 separate cards in the grid — visual chaos and double-
+     * counting.
+     *
+     * The fix: track the current item, and treat a non-`**`-starting
+     * bullet as a sub-detail to append to the current item. A new
+     * `**` bullet flushes the current item and starts a new one. */
+    let curItem: typeof buckets[number]["items"][number] | null = null;
+    let pendingLines: string[] = [];
 
-    const flushPending = () => {
-      if (cur && pendingBullet.length > 0) {
-        const text = pendingBullet.join(" ").trim();
-        const m = text.match(/^\*\*([^*]+)\*\*\s*[—–-]?\s*(.*)$/);
-        if (m) {
-          cur.items.push({ name: m[1].trim(), detail: m[2].trim() });
-        } else if (text) {
-          cur.items.push({ name: text.replace(/^\*\*|\*\*$/g, "").trim(), detail: "" });
-        }
-        pendingBullet = [];
+    const flushPendingIntoCurItem = () => {
+      if (!curItem || pendingLines.length === 0) return;
+      const text = pendingLines.join(" ").replace(/\s+/g, " ").trim();
+      pendingLines = [];
+      if (text) curItem.details.push(text);
+    };
+
+    const startNewItem = (bulletText: string) => {
+      if (!cur) return;
+      flushPendingIntoCurItem();
+      const m = bulletText.match(/^\*\*([^*]+)\*\*\s*[—–-]?\s*(.*)$/);
+      if (m) {
+        curItem = { name: m[1].trim(), headline: m[2].trim(), details: [] };
+      } else {
+        curItem = { name: bulletText.replace(/\*\*/g, "").trim(), headline: "", details: [] };
       }
+      cur.items.push(curItem);
     };
 
     for (const raw of lines) {
       const line = raw.trim();
-      if (!line) { flushPending(); continue; }
+      if (!line) { flushPendingIntoCurItem(); continue; }
       if (line.startsWith("## ")) {
         title = line.slice(3).trim();
       } else if (line.startsWith("### ")) {
-        flushPending();
+        flushPendingIntoCurItem();
+        curItem = null;
         cur = { heading: line.slice(4).trim(), items: [] };
         buckets.push(cur);
       } else if (cur && /^([-*]|\d+\.)\s+/.test(line)) {
-        flushPending();
-        pendingBullet = [line.replace(/^([-*]|\d+\.)\s+/, "").trim()];
-      } else if (cur && pendingBullet.length > 0) {
-        // Continuation of a bullet (multi-line bullet)
-        pendingBullet.push(line);
+        const bulletText = line.replace(/^([-*]|\d+\.)\s+/, "").trim();
+        // A bullet starting with `**Name**` is a new university; a
+        // bullet without it is a sub-detail under the current item.
+        if (/^\*\*[^*]+\*\*/.test(bulletText)) {
+          startNewItem(bulletText);
+        } else if (curItem) {
+          flushPendingIntoCurItem();
+          pendingLines = [bulletText];
+        } else {
+          // No anchor `**` row yet — fall back to treating it as a
+          // standalone item so we don't drop content silently.
+          startNewItem(bulletText);
+        }
+      } else if (curItem) {
+        pendingLines.push(line);
       }
     }
-    flushPending();
+    flushPendingIntoCurItem();
     return { title, buckets: buckets.filter(b => b.items.length > 0) };
   }, [markdown]);
 
@@ -376,10 +403,17 @@ const UniversityShortlist = ({ markdown, isRu, onOpenDiscover, onRegen, isRegene
                     <h4 className="font-heading font-semibold text-[15px] text-foreground tracking-tight leading-snug mb-1">
                       {item.name}
                     </h4>
-                    {item.detail && (
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        {renderInline(item.detail)}
+                    {item.headline && (
+                      <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+                        {renderInline(item.headline)}
                       </p>
+                    )}
+                    {item.details.length > 0 && (
+                      <ul className="text-[11px] text-muted-foreground/85 leading-relaxed space-y-0.5 list-disc pl-4 marker:text-muted-foreground/40">
+                        {item.details.map((d, di) => (
+                          <li key={di}>{renderInline(d)}</li>
+                        ))}
+                      </ul>
                     )}
                   </div>
                 ))}
@@ -436,32 +470,65 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combine
   const { title, items } = useMemo(() => {
     const lines = markdown.split("\n");
     let title = "";
-    const items: { name: string; detail: string }[] = [];
-    let pending: string[] = [];
+    type Item = { name: string; headline: string; details: string[] };
+    const items: Item[] = [];
+    let curItem: Item | null = null;
+    let pendingLines: string[] = [];
 
-    const flush = () => {
-      if (pending.length === 0) return;
-      const text = pending.join(" ").trim();
-      const m = text.match(/^\*\*([^*]+)\*\*\s*[—–-]?\s*(.*)$/);
-      if (m) items.push({ name: m[1].trim(), detail: m[2].trim() });
-      else if (text) items.push({ name: text.replace(/\*+/g, "").trim(), detail: "" });
-      pending = [];
+    const flushPendingIntoCurItem = () => {
+      if (!curItem || pendingLines.length === 0) return;
+      const text = pendingLines.join(" ").replace(/\s+/g, " ").trim();
+      pendingLines = [];
+      if (text) curItem.details.push(text);
     };
 
+    const startNewItem = (bulletText: string) => {
+      flushPendingIntoCurItem();
+      const m = bulletText.match(/^\*\*([^*]+)\*\*\s*[—–-]?\s*(.*)$/);
+      if (m) {
+        curItem = { name: m[1].trim(), headline: m[2].trim(), details: [] };
+      } else {
+        curItem = { name: bulletText.replace(/\*+/g, "").trim(), headline: "", details: [] };
+      }
+      items.push(curItem);
+    };
+
+    /* Each scholarship in the prompt is one `**Name**` bullet plus 1-2
+     * plain sub-bullets (why-fits, deadline). Pre-fix the parser
+     * flushed on every bullet, so a single scholarship became 2-3
+     * separate cards — confusing + visually broken. Now sub-bullets
+     * append to the current item's details list. */
     for (const raw of lines) {
       const line = raw.trim();
-      if (!line) { flush(); continue; }
+      if (!line) { flushPendingIntoCurItem(); continue; }
       if (line.startsWith("## ")) {
         title = line.slice(3).trim();
       } else if (/^([-*]|\d+\.)\s+/.test(line)) {
-        flush();
-        pending = [line.replace(/^([-*]|\d+\.)\s+/, "").trim()];
-      } else if (pending.length > 0 && !line.startsWith("#")) {
-        pending.push(line);
+        const bulletText = line.replace(/^([-*]|\d+\.)\s+/, "").trim();
+        if (/^\*\*[^*]+\*\*/.test(bulletText)) {
+          startNewItem(bulletText);
+        } else if (curItem) {
+          flushPendingIntoCurItem();
+          pendingLines = [bulletText];
+        } else {
+          startNewItem(bulletText);
+        }
+      } else if (curItem && !line.startsWith("#")) {
+        pendingLines.push(line);
       }
     }
-    flush();
-    return { title, items };
+    flushPendingIntoCurItem();
+    // Backwards-compat: keep `detail` for downstream code that already
+    // reads it. Compose from headline + first detail line so existing
+    // call sites (single-line render) still see something useful while
+    // the new sub-bullet UI consumes details[].
+    return {
+      title,
+      items: items.map(it => ({
+        ...it,
+        detail: [it.headline, ...it.details].filter(Boolean).join(" · "),
+      })),
+    };
   }, [markdown]);
 
   // Cross-reference AI scholarship names against the live DB list
@@ -652,7 +719,7 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combine
                     gateId="brief-funding-extra-matches"
                     headline={headline}
                     subline={isRu
-                      ? "Топ-3 видны бесплатно. Pro раскрывает все ранжированные совпадения со стратегией под каждое и разбивкой match-score."
+                      ? "Топ-3 видны бесплатно. Pro раскрывает все ранжированные совпадения со стратегией под каждое и разбивкой оценки соответствия."
                       : "Top 3 are free. Pro unlocks every ranked match with strategy notes and per-factor match-score breakdown."}
                   >
                     <div className="space-y-2.5">
@@ -1224,13 +1291,13 @@ export const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, is
           }
         }
         if (PATHWAY_ESSAYS_SECTION_REGEX.test(section)) {
-          const hasContent = /^\s*([-*]|\d+\.|\#)\s+/m.test(section.split("\n").slice(1).join("\n"));
+          const hasContent = /^\s*([-*]|\d+\.|#)\s+/m.test(section.split("\n").slice(1).join("\n"));
           if (hasContent) {
             return <div key={i} {...anchorProps}><EssayAngles markdown={section} isRu={isRu} onAskCounselor={onAskCounselor} /></div>;
           }
         }
         if (PATHWAY_GAPS_SECTION_REGEX.test(section)) {
-          const hasContent = /^\s*([-*]|\d+\.|\#)\s+/m.test(section.split("\n").slice(1).join("\n"));
+          const hasContent = /^\s*([-*]|\d+\.|#)\s+/m.test(section.split("\n").slice(1).join("\n"));
           if (hasContent) {
             return <div key={i} {...anchorProps}><HonestGaps markdown={section} isRu={isRu} onAskCounselor={onAskCounselor} /></div>;
           }
@@ -1415,14 +1482,22 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
 
   /* Auth + premium tier resolution — declared early because profileHash
      depends on reportGrade. Members get the premium prompt (15-20
-     universities, deeper sections, Gemini 2.5 Pro). */
+     universities, deeper sections, Gemini 2.5 Pro).
+     Tightened in round 55: previous OR chain included `tier === "pro"`
+     and `tier === "founding"` independently of subscription status,
+     so a user whose subscription was canceled (Stripe webhook flipped
+     status to "canceled" but DB tier stayed "pro") still passed as a
+     member — silent revenue leak. is_active already captures
+     active+trialing+earned_trial. is_founding_member is the lifetime
+     status badge for founders who paid the launch price; keep it.
+     isAdminUser bypasses for the admin allowlist so the founder can
+     test premium surfaces without maintaining a paid sub on every
+     test account. */
   const { user, subscription } = useAuth();
   const isMember = !!subscription && (
     subscription.is_active ||
     subscription.is_founding_member ||
-    subscription.earned_trial_active ||
-    subscription.tier === "pro" ||
-    subscription.tier === "founding"
+    isAdminUser(user)
   );
   // Application tracker — used to wire the action-plan items' "Save"
   // pill into the user's pipeline. The same hook powers /pipeline,
@@ -1454,30 +1529,55 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   const [proUnlockOpen, setProUnlockOpen] = useState(false);
   const hasProDepth = !!(proDepth.topActivity || proDepth.personalStory || proDepth.namedSchools);
 
-  // The active grade for THIS render: members always get premium; non-members
-  // get premium too if they've filled the Pro depth fields (the on-demand
-  // upgrade path). Otherwise basic.
-  const reportGrade: "basic" | "premium" = (isMember || hasProDepth) ? "premium" : "basic";
+  // The active grade for THIS render: members get premium, period.
+  // Non-members never get premium — Pro depth questions are gated
+  // behind membership now (round 96), so a non-member can no longer
+  // self-upgrade by filling 3 free fields. Earlier flow: anon user
+  // fills depth → free premium brief → silent revenue leak.
+  const reportGrade: "basic" | "premium" = isMember ? "premium" : "basic";
 
   /* Profile hash — bumps when ANY signal changes that should invalidate
      the cached brief: identity fields, language, AND the reportGrade
      (so a user who upgrades from basic to premium auto-regenerates the
      deeper version on next visit, not the stale basic one). */
+  // Stable string key for profile.targetCountries so the deps array
+  // can be statically checked. The array reference flips on every
+  // render even when the underlying values are identical.
+  const targetCountriesKey = (profile.targetCountries ?? []).join(",");
   const profileHash = useMemo(() => {
     const fingerprint = JSON.stringify({
-      n: profile.fullName, g: profile.gpa, i: profile.ielts, s: profile.sat,
+      n: profile.fullName, g: profile.gpa,
+      // Test-score fingerprints. ielts + sat were already in but
+      // toefl was missing — a user adding a TOEFL score later got a
+      // stale brief that hadn't seen it (the pathway fn uses toefl
+      // for eligibility filtering, so the cache miss should fire).
+      i: profile.ielts, tf: profile.toefl, s: profile.sat,
       m: profile.major, c: profile.targetCountries, b: profile.budget,
+      // Nationality + grade-level were missing from the fingerprint
+      // even though the pathway fn (a) feeds nationality into
+      // eligibility + visa-difficulty framing, and (b) uses
+      // gradeLevel/degree to filter scholarships by target degree.
+      // Editing either one should regenerate the brief; previously
+      // it cache-hit and showed the old framing.
+      nat: profile.nationality, lvl: profile.gradeLevel,
       lang: language, grade: reportGrade,
-      // Pro depth fingerprints — when the user fills the upgrade dialog
-      // we want the cache to invalidate so the regenerated brief sticks.
-      d: proDepth.topActivity ? "1" : "0",
-      s2: proDepth.personalStory ? "1" : "0",
-      sc: proDepth.namedSchools ? "1" : "0",
+      // Pro depth fingerprints — fingerprint the actual CONTENT (not
+      // just whether it's filled), mirroring the backend's
+      // computeBriefHash which slices each field to 200 chars. The
+      // earlier "1"/"0" emptiness flag meant editing the topActivity
+      // text from "robotics" to "tennis" left the frontend cache
+      // intact → the brief didn't change even though the backend
+      // would have regenerated. 200-char slice keeps the hash bounded
+      // for users who paste long stories.
+      d: (proDepth.topActivity ?? "").slice(0, 200),
+      s2: (proDepth.personalStory ?? "").slice(0, 200),
+      sc: (proDepth.namedSchools ?? "").slice(0, 200),
     });
     let h = 0;
     for (let i = 0; i < fingerprint.length; i++) h = ((h << 5) - h + fingerprint.charCodeAt(i)) | 0;
     return `p${h.toString(36)}`;
-  }, [profile.fullName, profile.gpa, profile.ielts, profile.sat, profile.major, profile.targetCountries?.join(","), profile.budget, language, reportGrade, proDepth.topActivity, proDepth.personalStory, proDepth.namedSchools]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile.fullName, profile.gpa, profile.ielts, profile.toefl, profile.sat, profile.major, targetCountriesKey, profile.budget, profile.nationality, profile.gradeLevel, language, reportGrade, proDepth.topActivity, proDepth.personalStory, proDepth.namedSchools]);
 
   const PATHWAY_STORAGE_KEY = "topuni-pathway-cache";
 
@@ -1568,7 +1668,13 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       // Only surface verified + stale rows in the brief sidebar matches —
       // matches the LLM's retrieval filter so what the brief mentions and
       // what the cards show are aligned.
-      .or("verification_status.is.null,verification_status.in.(verified,stale,pending)");
+      .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
+      // Lifecycle filter — closed_archived rows shouldn't appear as
+      // live matches in the brief sidebar even when the user's target
+      // countries match. The pathway fn already filters by lifecycle
+      // server-side; aligning this client query keeps the brief's
+      // text and the sidebar cards consistent.
+      .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null");
       if (profile.targetCountries && profile.targetCountries.length > 0) {
         q = q.in("host_country", profile.targetCountries);
       }
@@ -1577,7 +1683,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         .limit(6);
       if (data) setLiveMatches(data as LiveMatch[]);
     })();
-  }, [profile.fullName, profile.targetCountries?.join(",")]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile.fullName, targetCountriesKey]);
 
   /* Saved-but-not-top-matched scholarships — the user may have saved
      scholarships from /discover that don't appear in their auto-fetched
@@ -1588,8 +1695,13 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
      to the brief's funding-shortlist match-lookup.
 
      Fetch only IDs that aren't already in liveMatches (skip the round-
-     trip when there's overlap) and only verified/stale rows. */
+     trip when there's overlap) and only non-broken rows (pending is
+     allowed under the disclaimer policy — see commit 015281a). */
   const [savedExtras, setSavedExtras] = useState<LiveMatch[]>([]);
+  // Stable key for tracker.shortlist — Set reference flips each render
+  // even when membership is unchanged. Hoisting also lets ESLint
+  // statically check the deps array.
+  const shortlistKey = Array.from(tracker.shortlist).sort().join(",");
   useEffect(() => {
     const liveIds = new Set(liveMatches.map((m) => m.scholarship_id));
     const idsToFetch = Array.from(tracker.shortlist).filter((id) => !liveIds.has(id));
@@ -1614,21 +1726,107 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       setSavedExtras(data as LiveMatch[]);
     })();
     return () => { cancelled = true; };
-  // tracker.shortlist is a Set so we hash by sorted-key string for stable deps
-  }, [Array.from(tracker.shortlist).sort().join(","), liveMatches]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shortlistKey, liveMatches]);
+
+  /* Brief-mentioned scholarships — the AI brief mentions scholarships from
+     a wider semantic-search retrieval set than `liveMatches` (which is
+     limited to the user's targetCountries top-6 by deadline). Without this
+     hydration, FundingShortlist sees a `**Gates Cambridge**` bullet but
+     `liveMatches` only has US scholarships → renders as muted "unverified"
+     card with a dotted underline, even though Gates Cambridge exists in
+     the DB and has a deadline + funding amount we could surface.
+
+     Pulls the bolded names from the funding-pathway section of the brief
+     and resolves any not already in liveMatches by ilike. Cheap (1 query
+     per generation, capped at 12 names) and only runs once the brief
+     finishes streaming. */
+  const [briefMentioned, setBriefMentioned] = useState<LiveMatch[]>([]);
+  useEffect(() => {
+    if (pathwayLoading || !pathwayContent) return;
+    // Extract `**Name**` bullets from the funding section. The funding
+    // shortlist heading varies by language ("Funding pathway" / "Финансирование");
+    // we just scan the whole brief — name-collisions with non-funding
+    // bolds are fine since we filter to scholarship rows server-side.
+    const names = new Set<string>();
+    const re = /^\s*[-*]\s+\*\*([^*]+)\*\*/gm;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(pathwayContent)) !== null) {
+      const n = m[1].trim();
+      // Strip trailing parenthetical years/notes the AI sometimes adds:
+      // "Chevening (UK gov)" → "Chevening".
+      const clean = n.replace(/\s*\([^)]*\)\s*$/, "").trim();
+      if (clean.length >= 4 && clean.length <= 80) names.add(clean);
+    }
+    if (names.size === 0) {
+      if (briefMentioned.length > 0) setBriefMentioned([]);
+      return;
+    }
+    // Skip names already covered by liveMatches.
+    const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    const liveNorm = liveMatches.map((lm) => norm(lm.scholarship_name));
+    const remaining = Array.from(names).filter((n) => {
+      const nn = norm(n);
+      return !liveNorm.some((ln) => ln === nn || ln.includes(nn) || nn.includes(ln));
+    });
+    if (remaining.length === 0) {
+      if (briefMentioned.length > 0) setBriefMentioned([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      // ilike OR over up to 12 names. Each filter expression is
+      // `scholarship_name.ilike.%name%` — escape `%` and `,` in the name.
+      const filters = remaining.slice(0, 12)
+        .map((n) => `scholarship_name.ilike.%${n.replace(/[%,]/g, " ")}%`)
+        .join(",");
+      const { data } = await supabase
+        .from("scholarships")
+        .select(
+          "scholarship_id, scholarship_name, provider_name, host_country, " +
+          "coverage_type, award_amount_text, estimated_total_value_usd, " +
+          "application_deadline, why_this_fits, official_url, " +
+          "verification_status, last_verified_at"
+        )
+        .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
+        .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null")
+        .or(filters)
+        .limit(24);
+      if (cancelled || !data) return;
+      // Dedup by scholarship_id; keep best name-match per AI-mentioned name.
+      const byId = new Map<string, LiveMatch>();
+      for (const row of data as LiveMatch[]) {
+        if (!byId.has(row.scholarship_id)) byId.set(row.scholarship_id, row);
+      }
+      setBriefMentioned(Array.from(byId.values()));
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathwayContent, pathwayLoading, liveMatches]);
 
   /* Combined match set — feeds every surface that resolves scholarship
      names to rich cards (counselor responses, brief funding-shortlist
      cross-reference, brief inline-card decoration). De-duplicated by
      scholarship_id with liveMatches winning (those have similarity
-     scoring + are the AI's retrieval set). */
+     scoring + are the AI's retrieval set), then savedExtras (user
+     intent), then briefMentioned (AI mention resolution). */
   const allMatches = useMemo(() => {
-    const seen = new Set(liveMatches.map((m) => m.scholarship_id));
-    return [
-      ...liveMatches,
-      ...savedExtras.filter((s) => !seen.has(s.scholarship_id)),
-    ];
-  }, [liveMatches, savedExtras]);
+    const seen = new Set<string>();
+    const out: LiveMatch[] = [];
+    for (const m of liveMatches) {
+      if (seen.has(m.scholarship_id)) continue;
+      seen.add(m.scholarship_id); out.push(m);
+    }
+    for (const m of savedExtras) {
+      if (seen.has(m.scholarship_id)) continue;
+      seen.add(m.scholarship_id); out.push(m);
+    }
+    for (const m of briefMentioned) {
+      if (seen.has(m.scholarship_id)) continue;
+      seen.add(m.scholarship_id); out.push(m);
+    }
+    return out;
+  }, [liveMatches, savedExtras, briefMentioned]);
 
   // Chat state — persisted to localStorage so the conversation survives reloads.
   const [chatMessages, setChatMessages] = useState<Msg[]>(() => {
@@ -1648,7 +1846,14 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
-    try { localStorage.setItem("topuni-chat-history", JSON.stringify(chatMessages)); } catch { /* ignore */ }
+    // Debounce the localStorage write — streaming an assistant turn
+    // can fire 100s of chatMessages updates per response, each one
+    // re-serializing the entire history. Settling the writes at 600 ms
+    // keeps the persistence responsive without churning the disk.
+    const id = setTimeout(() => {
+      try { localStorage.setItem("topuni-chat-history", JSON.stringify(chatMessages)); } catch { /* ignore */ }
+    }, 600);
+    return () => clearTimeout(id);
   }, [chatMessages]);
 
   // Auto-grow the textarea as the user types, capped at ~5 lines.
@@ -1693,20 +1898,31 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   const [greetingLoading, setGreetingLoading] = useState(false);
   const [greetingFiredHash, setGreetingFiredHash] = useState<string | null>(null);
 
+  // Single in-flight insert promise. Without this, two rapid sends
+  // before chatSessionId state propagated would each spawn a separate
+  // counselor_sessions row — splitting messages across orphaned
+  // sessions for what the user perceived as one conversation.
+  const ensureSessionPromiseRef = useRef<Promise<string | null> | null>(null);
   const ensureSession = async (): Promise<string | null> => {
     if (chatSessionId) return chatSessionId;
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return null;
-      const { data, error } = await supabase
-        .from("counselor_sessions")
-        .insert({ user_id: session.user.id, language })
-        .select("session_id")
-        .single();
-      if (error || !data) return null;
-      setChatSessionId(data.session_id);
-      return data.session_id;
-    } catch { return null; }
+    if (ensureSessionPromiseRef.current) return ensureSessionPromiseRef.current;
+    const p = (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return null;
+        const { data, error } = await supabase
+          .from("counselor_sessions")
+          .insert({ user_id: session.user.id, language })
+          .select("session_id")
+          .single();
+        if (error || !data) return null;
+        setChatSessionId(data.session_id);
+        return data.session_id as string;
+      } catch { return null; }
+      finally { ensureSessionPromiseRef.current = null; }
+    })();
+    ensureSessionPromiseRef.current = p;
+    return p;
   };
 
   const clearChat = async () => {
@@ -1776,6 +1992,14 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       }
     } catch (e) {
       console.error("share-brief failed", e);
+      // Surface failure to the user — they clicked "Share" expecting a
+      // link, and a silent failure leaves them staring at a stopped
+      // spinner with no idea what to do next.
+      toast.error(
+        language === "ru"
+          ? "Не удалось создать ссылку — попробуйте ещё раз."
+          : "Couldn't create share link — please try again.",
+      );
     } finally {
       setShareLoading(false);
     }
@@ -1787,7 +2011,16 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       await navigator.clipboard.writeText(shareUrl);
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 2000);
-    } catch { /* ignore */ }
+    } catch {
+      // Clipboard API can fail when the page isn't HTTPS, the user
+      // denies permission, or in some embedded webviews. Surface
+      // the URL via toast so the user can long-press / right-click
+      // to copy manually instead of seeing nothing happen.
+      toast.error(
+        language === "ru" ? "Не удалось скопировать — выделите ссылку вручную" : "Couldn't copy — select the link manually",
+        { description: shareUrl, duration: 8000 },
+      );
+    }
   };
 
 
@@ -1821,10 +2054,13 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         .map(m => m.application_deadline ? Math.ceil((new Date(m.application_deadline).getTime() - Date.now()) / 86400000) : null)
         .filter((d): d is number => d !== null && d > 0)
         .sort((a, b) => a - b)[0] ?? null;
+      const isRu = language === "ru";
       const statsParts: string[] = [];
-      statsParts.push(`${liveMatches.length} matches`);
-      if (totalText) statsParts.push(`${totalText} potential funding`);
-      if (closestDays !== null) statsParts.push(`earliest deadline in ${closestDays} days`);
+      statsParts.push(isRu ? `${liveMatches.length} совпадений` : `${liveMatches.length} matches`);
+      if (totalText) statsParts.push(isRu ? `потенциал — ${totalText}` : `${totalText} potential funding`);
+      if (closestDays !== null) statsParts.push(
+        isRu ? `ближайший дедлайн — ${closestDays} дн.` : `earliest deadline in ${closestDays} days`,
+      );
       const statsLine = statsParts.join(" · ");
 
       const topMatches = liveMatches.slice(0, 3).map(m => m.scholarship_name);
@@ -1840,6 +2076,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             topMatches,
             major: profile.major,
             targetCountries: profile.targetCountries,
+            language,
           },
         },
       });
@@ -1865,10 +2102,50 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   const [activeTab, setActiveTab] = useState<string>(isProfileFilled ? "pathway" : "counselor");
 
   useEffect(() => {
+    // Mount-only — intentional. Profile changes are handled by the
+    // profileHash → restored cache invalidation path, not by re-firing
+    // this effect. Including the deps would cause double-generation
+    // when the brief itself updates state during streaming.
     if (!pathwayGenerated && isProfileFilled) {
       generatePathway();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /* Auto-regenerate when the profile-hash changes to a value with no
+   * cached content — the most common trigger is the user upgrading to
+   * Pro, which flips reportGrade from "basic" to "premium" and changes
+   * the hash. Pre-fix the dashboard kept rendering the cached basic
+   * brief until the user manually clicked Regenerate, so the entire
+   * "you're a Pro now" moment was invisible.
+   *
+   * Guards: skip while a generation is already in flight, and skip if
+   * the new hash matches the cached content already in pathwayContent
+   * (the restored useMemo handles that path). Also bail when the
+   * profile isn't filled — there's nothing meaningful to generate. */
+  useEffect(() => {
+    if (!isProfileFilled) return;
+    if (pathwayLoading) return;
+    if (restored) {
+      // Cache hit for the new hash — load it instead of regenerating.
+      if (restored.content !== pathwayContent) {
+        setPathwayContent(restored.content);
+        setPathwayGenerated(true);
+        setPathwayGeneratedAt(restored.generatedAt);
+      }
+      return;
+    }
+    // Cache miss for the new hash. If we currently have stale content
+    // (from a previous hash), clear it and regenerate.
+    if (pathwayContent || pathwayGenerated) {
+      setPathwayContent("");
+      setPathwayGenerated(false);
+      setPathwayGeneratedAt(null);
+      setStructuredBrief(null);
+      generatePathway();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileHash]);
 
   /* In-page counselor handoff — used by brief surfaces (e.g. the
      Strategic Positioning's "Plan this with the counselor" CTA below
@@ -1981,18 +2258,28 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     if (pathwayLoading) return; // wait until streaming is done so the brief is stable
 
     // Hash the inputs that change the greeting. Profile + brief head +
-    // pipeline fingerprint. Cheap djb2-like hash.
+    // pipeline fingerprint. Cheap djb2-like hash. nationality + language
+    // were missing — a user toggling language would see a stale-language
+    // greeting from cache, and editing nationality wouldn't refresh the
+    // visa-difficulty / eligibility framing.
     const briefHead = (pathwayContent || "").slice(0, 800);
     const hashInput = JSON.stringify({
       n: profile.fullName,
+      nat: profile.nationality,
       gl: profile.gradeLevel,
       g: profile.gpa,
       i: profile.ielts,
       tc: profile.targetCountries,
       m: profile.major,
+      lang: language,
       bh: briefHead.length,
       bs: briefHead.slice(0, 300),
-      tr: trackedSnapshot.ids.length,
+      // Fingerprint the actual id set, not just the length. Removing
+      // scholarship A and adding scholarship B keeps the length the
+      // same, so the prior `tr: ids.length` comparison cache-hit and
+      // re-served a greeting that still referenced A by name.
+      // ids is already sorted in trackedSnapshot, so this is stable.
+      tr: trackedSnapshot.ids.join(","),
       ts: trackedSnapshot.statusFingerprint,
     });
     let h = 5381;
@@ -2030,8 +2317,9 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           const { data: hydrated } = await supabase
             .from("scholarships")
             .select("scholarship_id, scholarship_name, application_deadline")
-            // Only hydrate verified/stale rows — the greeting should never
-            // reference broken or pending data.
+            // Hydrate everything except 'broken'. Pending rows are
+            // surfaced under the platform-wide "always confirm on the
+            // official site" disclaimer (see commit 015281a).
             .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
             .in("scholarship_id", trackedSnapshot.ids)
             .limit(20);
@@ -2073,35 +2361,79 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         setGreetingLoading(false);
       }
     })();
+    // Deps must mirror the hashInput inputs above so editing any
+    // greeting-relevant field re-runs the effect (which then recomputes
+    // hashInput and cache-busts if needed). nationality + language were
+    // missing pre round 60 — same omission as the round-57 fingerprint
+    // fix on the brief side.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isProfileFilled, chatMessages.length, pathwayLoading, pathwayContent,
-    profile.fullName, profile.gradeLevel, profile.gpa, profile.ielts,
-    profile.targetCountries, profile.major, language,
+    profile.fullName, profile.nationality, profile.gradeLevel,
+    profile.gpa, profile.ielts, targetCountriesKey, profile.major, language,
     greetingFiredHash, greetingLoading,
-    trackedSnapshot.ids.length, trackedSnapshot.statusFingerprint,
+    // Was trackedSnapshot.ids.length — that compared only count, so a
+    // swap of "remove A, add B" left the dep stable and the effect
+    // never re-ran with the new pipeline. Joined sorted IDs are a
+    // primitive string → cheap to compare and accurate.
+    trackedSnapshot.ids.join(","), trackedSnapshot.statusFingerprint,
   ]);
 
-  const streamSSE = async (url: string, body: any, onDelta: (chunk: string) => void, onDone: () => void) => {
+  // Abort controllers for long-running streams so an unmount /
+  // navigation cancels the in-flight server-side stream instead of
+  // leaving it billing tokens until completion. Tracked per stream
+  // type so a chat send can run alongside the brief without one
+  // aborting the other.
+  const briefAbortRef = useRef<AbortController | null>(null);
+  const chatAbortRef = useRef<AbortController | null>(null);
+
+  const streamSSE = async (
+    url: string,
+    body: any,
+    onDelta: (chunk: string) => void,
+    onDone: () => void,
+    onError?: (status: number, message: string) => void,
+    signal?: AbortSignal,
+  ) => {
     // Pass the user's session JWT when authed so edge functions can
     // resolve user_id via getUser() — needed for the counselor's
     // live-case context (tracker / tasks / cached brief). Falls back
     // to anon key for unauthenticated callers.
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-    const resp = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-      },
-      body: JSON.stringify(body),
-    });
+    let resp: Response;
+    try {
+      resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify(body),
+        signal,
+      });
+    } catch (e) {
+      // AbortError → caller's unmount cleanup; don't toast / fallback.
+      if ((e as Error).name === "AbortError") return;
+      if (onError) onError(0, (e as Error).message || "Network error");
+      else { onDelta((e as Error).message || "Network error"); onDone(); }
+      return;
+    }
 
     if (!resp.ok || !resp.body) {
       const errData = await resp.json().catch(() => ({}));
-      onDelta(errData.error || "Something went wrong. Please try again.");
-      onDone();
+      const message = errData.error || "Something went wrong. Please try again.";
+      // Prefer the dedicated error path so callers can keep
+      // pathwayGenerated=false and surface a retry. Fall back to
+      // writing the error into the content stream for callers that
+      // haven't been migrated to onError yet.
+      if (onError) {
+        onError(resp.status, message);
+      } else {
+        onDelta(message);
+        onDone();
+      }
       return;
     }
 
@@ -2110,29 +2442,39 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     let textBuffer = "";
     let streamDone = false;
 
-    while (!streamDone) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      textBuffer += decoder.decode(value, { stream: true });
+    try {
+      while (!streamDone) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        textBuffer += decoder.decode(value, { stream: true });
 
-      let newlineIndex: number;
-      while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
-        let line = textBuffer.slice(0, newlineIndex);
-        textBuffer = textBuffer.slice(newlineIndex + 1);
-        if (line.endsWith("\r")) line = line.slice(0, -1);
-        if (line.startsWith(":") || line.trim() === "") continue;
-        if (!line.startsWith("data: ")) continue;
-        const jsonStr = line.slice(6).trim();
-        if (jsonStr === "[DONE]") { streamDone = true; break; }
-        try {
-          const parsed = JSON.parse(jsonStr);
-          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-          if (content) onDelta(content);
-        } catch {
-          textBuffer = line + "\n" + textBuffer;
-          break;
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") { streamDone = true; break; }
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) onDelta(content);
+          } catch {
+            textBuffer = line + "\n" + textBuffer;
+            break;
+          }
         }
       }
+    } catch (e) {
+      // AbortError fires when the caller's signal aborts mid-stream.
+      // Treat it as silent — the unmount cleanup is the user intent;
+      // no toast, no onDone progression (component is gone anyway).
+      if ((e as Error).name === "AbortError") return;
+      if (onError) onError(0, (e as Error).message || "Stream error");
+      else { onDelta((e as Error).message || "Stream error"); onDone(); }
+      return;
     }
 
     if (textBuffer.trim()) {
@@ -2240,6 +2582,16 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             }));
           } catch { /* ignore */ }
         },
+        // Section regen used to silently swallow errors — the user
+        // clicked "Regenerate" and saw NOTHING happen on failure.
+        // Toast a contextual message so they know the click landed.
+        (status, message) => {
+          const isRateLimit = status === 429;
+          const userMessage = isRateLimit
+            ? (language === "ru" ? "Превышен лимит запросов — попробуйте через минуту." : "Rate limit hit — try again in a minute.")
+            : (language === "ru" ? `Не удалось перегенерировать раздел: ${message}` : `Couldn't regenerate section: ${message}`);
+          toast.error(userMessage);
+        },
       );
     } finally {
       setRegeneratingSectionId(null);
@@ -2247,6 +2599,12 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   };
 
   const generatePathway = async () => {
+    // Abort any prior in-flight brief stream so a re-trigger doesn't
+    // leave the previous generation running in the background.
+    briefAbortRef.current?.abort();
+    const briefController = new AbortController();
+    briefAbortRef.current = briefController;
+
     setPathwayLoading(true);
     setPathwayContent("");
     let soFar = "";
@@ -2392,7 +2750,9 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                 if (!shareData?.url) return;
 
                 // Compose stats line + top-3 from liveMatches (same shape
-                // the in-dialog "Email me" path uses).
+                // the in-dialog "Email me" path uses). Localized so
+                // Russian users get a Russian eyebrow stats line.
+                const isRu = language === "ru";
                 const total = liveMatches.reduce((s, m) => s + (m.estimated_total_value_usd || 0), 0);
                 const totalText = total >= 1_000_000
                   ? `$${(total / 1_000_000).toFixed(1)}M`
@@ -2401,9 +2761,13 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                   .map(m => m.application_deadline ? Math.ceil((new Date(m.application_deadline).getTime() - Date.now()) / 86400000) : null)
                   .filter((d): d is number => d !== null && d > 0)
                   .sort((a, b) => a - b)[0] ?? null;
-                const statsParts: string[] = [`${liveMatches.length} matches`];
-                if (totalText) statsParts.push(`${totalText} potential funding`);
-                if (closestDays !== null) statsParts.push(`earliest deadline in ${closestDays} days`);
+                const statsParts: string[] = [
+                  isRu ? `${liveMatches.length} совпадений` : `${liveMatches.length} matches`,
+                ];
+                if (totalText) statsParts.push(isRu ? `потенциал — ${totalText}` : `${totalText} potential funding`);
+                if (closestDays !== null) statsParts.push(
+                  isRu ? `ближайший дедлайн — ${closestDays} дн.` : `earliest deadline in ${closestDays} days`,
+                );
 
                 await supabase.functions.invoke("send-transactional-email", {
                   body: {
@@ -2417,6 +2781,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                       topMatches: liveMatches.slice(0, 3).map(m => m.scholarship_name),
                       major: profile.major,
                       targetCountries: profile.targetCountries,
+                      language,
                     },
                   },
                 });
@@ -2427,7 +2792,26 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             })();
           }
         }
-      }
+      },
+      // Error path — keep pathwayGenerated=false so the user can
+      // retry. Surface the error via toast (and clear any partial
+      // streamed content). Don't mark "brief_generation_completed"
+      // since nothing actually completed, and don't cache the error
+      // text as if it were the brief.
+      (status, message) => {
+        setPathwayLoading(false);
+        setPathwayContent("");
+        const isRateLimit = status === 429;
+        const isAuth = status === 401 || status === 403;
+        const userMessage = isRateLimit
+          ? (language === "ru" ? "Превышен лимит запросов — попробуйте через минуту." : "Rate limit hit — try again in a minute.")
+          : isAuth
+          ? (language === "ru" ? "Сессия истекла — войдите заново." : "Session expired — please sign in again.")
+          : (language === "ru" ? `Не удалось сгенерировать брифинг: ${message}` : `Couldn't generate brief: ${message}`);
+        toast.error(userMessage);
+        void track("brief_generation_failed", { status, tier: reportGrade });
+      },
+      briefController.signal,
     );
   };
 
@@ -2459,6 +2843,13 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     setChatInput("");
     setChatLoading(true);
 
+    // Abort any prior in-flight chat send (rare — chatLoading guard
+    // covers the common case) and stash a fresh controller so the
+    // unmount cleanup can cancel this turn if the user navigates away.
+    chatAbortRef.current?.abort();
+    const chatController = new AbortController();
+    chatAbortRef.current = chatController;
+
     // Lazy-create the DB session for authed users so each turn lands
     // in counselor_messages. Anon users get null → server keeps the
     // existing localStorage-only path.
@@ -2487,9 +2878,44 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       CHAT_URL,
       { messages: allMessages, language, profile, reportSummary, sessionId },
       (chunk) => upsertAssistant(chunk),
-      () => setChatLoading(false)
+      () => setChatLoading(false),
+      // Without an explicit onError, streamSSE injects the error text
+      // as a content chunk → it renders as if the AI said "Rate limit
+      // exceeded. Please slow down." which looks unhinged. Toast the
+      // error, reset loading, and roll back the user's just-pushed
+      // message so they can retry without an orphaned echo of their
+      // own send hanging in the chat.
+      (status, message) => {
+        setChatLoading(false);
+        setChatMessages(prev => {
+          const last = prev[prev.length - 1];
+          // Only roll back if we never streamed any assistant content
+          // (i.e. the failure was at request-time, not mid-stream).
+          if (last?.role === "user" && assistantSoFar === "") {
+            return prev.slice(0, -1);
+          }
+          return prev;
+        });
+        const friendly = status === 429
+          ? t("Slow down a sec — too many messages too fast. Try again in a minute.",
+              "Слишком много сообщений подряд. Подождите минуту и попробуйте снова.")
+          : message || t("Couldn't reach the counselor. Try again.",
+                          "Не удалось связаться с советником. Попробуйте снова.");
+        toast.error(friendly);
+      },
+      chatController.signal,
     );
   };
+
+  // Unmount cleanup — abort any in-flight brief or chat stream so
+  // navigating away from /topuni-ai mid-stream cancels the
+  // server-side generation instead of leaving it running.
+  useEffect(() => {
+    return () => {
+      briefAbortRef.current?.abort();
+      chatAbortRef.current?.abort();
+    };
+  }, []);
 
   // (Tracker functions removed along with the tracker tab — application
   // status is tracked inside Discover now.)
@@ -2661,12 +3087,51 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                         {t("Pro brief", "Pro-брифинг")}
                       </div>
                       <h3 className="font-heading text-lg sm:text-xl font-bold tracking-tight text-foreground mb-1.5">
-                        {t("Want this brief written more about you specifically?",
-                           "Хотите чтобы брифинг был написан конкретно про вас?")}
+                        {t("Want this brief rewritten specifically about you?",
+                           "Хотите брифинг конкретно про вас?")}
                       </h3>
                       <p className="text-sm text-muted-foreground leading-relaxed">
-                        {t("Three more questions — your activities, your story, your named target schools — and the AI rewrites the brief at premium tier. Strategic positioning, essay angles, and shortlist all reference your story directly. Free, no signup.",
-                           "Ещё три вопроса — ваши активности, ваша история, конкретные университеты — и AI перепишет брифинг на премиум-уровне. Позиционирование, ракурсы эссе и шорт-лист будут ссылаться на вашу историю напрямую. Бесплатно, без регистрации.")}
+                        {t("TopUni Membership unlocks the Pro brief — three depth questions about your story, then the AI rewrites the brief at premium tier. Strategic positioning, essay angles, shortlist — all anchored to what makes you specifically credible.",
+                           "Подписка TopUni открывает Pro-брифинг — три вопроса о вас, и AI переписывает брифинг на премиум-уровне. Позиционирование, ракурсы эссе и шорт-лист — со ссылками на вашу историю.")}
+                      </p>
+                    </div>
+                    <Button
+                      variant="gold"
+                      onClick={() => navigate(isRu ? "/pricing/ru" : "/pricing")}
+                      className="gap-1.5 shrink-0"
+                    >
+                      <Crown className="w-4 h-4" />
+                      {t("See membership", "Открыть подписку")}
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Member-only Pro brief unlock — paid users get the
+                  3-question depth dialog because the gate above is
+                  Stripe, not free. Surfaces only AFTER membership is
+                  active so non-members never see the path that used to
+                  let them self-grant a Pro brief without paying. */}
+              {pathwayContent && !pathwayLoading && isMember && !hasProDepth && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                  className="not-prose mb-8 rounded-xl border border-gold/40 bg-gradient-to-br from-gold/8 to-transparent p-5 sm:p-6 print:hidden"
+                >
+                  <div className="flex items-start gap-4 flex-wrap">
+                    <div className="min-w-0 flex-1">
+                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-[0.18em] uppercase bg-gradient-to-r from-gold-dark to-gold text-primary mb-2">
+                        <Crown className="w-3 h-3" />
+                        {t("Pro brief", "Pro-брифинг")}
+                      </div>
+                      <h3 className="font-heading text-lg sm:text-xl font-bold tracking-tight text-foreground mb-1.5">
+                        {t("Three quick questions to unlock your Pro brief.",
+                           "Три быстрых вопроса — и вы получите Pro-брифинг.")}
+                      </h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {t("Your activities, your story, your named target schools — the AI rewrites the brief at premium tier with these in context.",
+                           "Активности, история, конкретные университеты — AI перепишет брифинг с учётом этих данных.")}
                       </p>
                     </div>
                     <Button
@@ -2675,7 +3140,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                       className="gap-1.5 shrink-0"
                     >
                       <Sparkles className="w-4 h-4" />
-                      {t("Unlock Pro brief", "Открыть Pro-брифинг")}
+                      {t("Answer & rewrite", "Ответить и переписать")}
                     </Button>
                   </div>
                 </motion.div>
@@ -2709,47 +3174,22 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                     onDownloadPdf={() => window.print()}
                   />
 
-                  {/* Hero KPI strip — first thing the user sees when the brief
-                      lands. Numbers come from liveMatches + brief word count
-                      so they re-render live as new sections stream in. */}
+                  {/* Hero KPI strip — single concise widget the user sees
+                      when the brief lands. Round 96: removed the
+                      DeadlineTimeline, FundingStack, and profile-chip
+                      strip that used to sit above the brief content.
+                      Five stacked widget blocks before the actual
+                      strategic-positioning paragraph was the "all over
+                      the place" feeling — the Live Matches grid below
+                      already surfaces deadlines + funding inline, and
+                      the BriefMasthead already shows the profile. */}
                   {!pathwayLoading && (
                     <BriefHeroStats
-                      liveMatches={liveMatches}
+                      liveMatches={allMatches}
                       briefContent={pathwayContent}
                       isRu={isRu}
                     />
                   )}
-
-                  {/* 12-month deadline timeline — visceral urgency. Hidden
-                      when there are <2 upcoming deadlines (component returns
-                      null). Clicks send the user to Discover. */}
-                  {!pathwayLoading && (
-                    <DeadlineTimeline
-                      liveMatches={liveMatches}
-                      isRu={isRu}
-                      onSelectMatch={() => navigate(isRu ? "/discover/ru" : "/discover")}
-                    />
-                  )}
-
-                  {/* Combined funding stack viz — top 5 matches as a stacked
-                      horizontal bar so the reader sees the money pile up. */}
-                  {!pathwayLoading && (
-                    <FundingStack liveMatches={liveMatches} isRu={isRu} />
-                  )}
-
-                  {/* Profile recap chips — visual context, no chart, no fluff */}
-                  <div className="not-prose flex flex-wrap gap-2 mb-8 pb-6 border-b border-border">
-                    {[
-                      profile.gradeLevel,
-                      profile.major,
-                      profile.gpa ? `GPA ${profile.gpa}` : null,
-                      profile.ielts ? `IELTS ${profile.ielts}` : null,
-                      profile.sat ? `SAT ${profile.sat}` : null,
-                      ...(profile.targetCountries || []),
-                    ].filter(Boolean).map((chip) => (
-                      <span key={chip as string} className="text-xs bg-muted/50 text-foreground/80 border border-border px-2.5 py-1 rounded-full font-medium">{chip as string}</span>
-                    ))}
-                  </div>
 
                   {/* Split the markdown into [positioning] and [rest] so the
                       Strategic Brief leads (analysis first), then the live
@@ -2771,7 +3211,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             taskKey={taskKey}
                             isRu={isRu}
                             onOpenDiscover={() => navigate(isRu ? "/discover/ru" : "/discover")}
-                            liveMatches={liveMatches}
+                            liveMatches={allMatches}
                             onSaveScholarship={handleSaveScholarship}
                             savedSet={tracker.shortlist}
                             structured={structuredBrief}
@@ -2930,7 +3370,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             taskKey={taskKey}
                             isRu={isRu}
                             onOpenDiscover={() => navigate(isRu ? "/discover/ru" : "/discover")}
-                            liveMatches={liveMatches}
+                            liveMatches={allMatches}
                             onSaveScholarship={handleSaveScholarship}
                             savedSet={tracker.shortlist}
                             structured={structuredBrief}
@@ -3501,12 +3941,15 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         onSubmit={(depth) => {
           setProDepth(depth);
           try { localStorage.setItem(PRO_DEPTH_KEY, JSON.stringify(depth)); } catch { /* ignore */ }
-          // Regenerate at the deeper tier with the new context. The
-          // reportGrade derivation already flips to premium when
-          // hasProDepth becomes true on the next render — but we kick
-          // off the call here directly to avoid one render of stale
-          // basic content showing before the regen starts.
-          setTimeout(() => generatePathway(), 50);
+          // Regeneration is now triggered automatically by the
+          // profileHash-watching effect (round 96) — proDepth content
+          // is part of the hash, so changing the depth flips the hash
+          // → cache miss → generatePathway. The previous explicit
+          // setTimeout(() => generatePathway(), 50) double-fired the
+          // generation (once via effect, once via setTimeout); the
+          // first stream got aborted by the second's abortController
+          // swap. Letting the effect own this keeps a single source of
+          // truth for "when do we regenerate."
         }}
       />
 
@@ -3551,6 +3994,12 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             profile: {
               fullName: profile.fullName,
               email: profile.email,
+              // nationality was being silently dropped here — without
+              // it AuthCallback's student_profiles upsert wrote a NULL
+              // nationality, then Discover's semantic match had no
+              // citizenship filter to apply. Wizard captures it on
+              // step 1; carry it through.
+              nationality: profile.nationality,
               gradeLevel: profile.gradeLevel,
               gpa: profile.gpa,
               ielts: profile.ielts,

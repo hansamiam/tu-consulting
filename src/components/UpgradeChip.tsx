@@ -31,7 +31,11 @@ interface Props {
 
 export const UpgradeChip = ({ surface, message, variant = "inline", language = "en", className = "" }: Props) => {
   const { subscription } = useAuth();
-  const isMember = subscription.tier === "founding" || subscription.tier === "pro";
+  // Use is_active (paid + period valid OR earned trial) so a user
+  // whose subscription was canceled in Stripe (DB tier still "pro"
+  // until backfilled) sees the chip again — they should be prompted
+  // to resubscribe, not hidden as a "still member".
+  const isMember = subscription.is_active || subscription.is_founding_member;
   if (isMember) return null;
 
   const ru = language === "ru";

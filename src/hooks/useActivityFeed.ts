@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
 import { getProfileChangedAt } from "@/components/discover/DiscoverProfileGate";
+import { daysUntil } from "@/lib/dates";
 
 export type ActivityKind =
   | "saved_search_alert"   // saved-search-cron just emailed new matches
@@ -52,12 +53,6 @@ const saveLastSeen = (ts: number) => {
   try { localStorage.setItem(LS_KEY, ts.toString()); } catch { /* ignore */ }
 };
 
-const daysUntil = (iso: string | null): number | null => {
-  if (!iso) return null;
-  const t = new Date(iso).getTime();
-  if (Number.isNaN(t)) return null;
-  return Math.ceil((t - Date.now()) / 86_400_000);
-};
 
 interface SchLite {
   scholarship_id: string;

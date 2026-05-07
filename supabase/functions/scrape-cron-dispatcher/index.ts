@@ -29,8 +29,18 @@ const json = (status: number, body: unknown) =>
 
 // Don't try to scrape more than this in one dispatcher tick — keeps us
 // under the 60s function timeout and avoids burning Firecrawl credits
-// in a runaway burst.
-const MAX_SOURCES_PER_TICK = 20;
+// in a runaway burst. With CONCURRENCY=5, 40 sources × ~5s avg / 5 ≈
+// 40s — fits inside the timeout with headroom and ~doubles throughput
+// vs the serial 20-source ceiling.
+const MAX_SOURCES_PER_TICK = 40;
+
+// Concurrent scrape-source calls. Firecrawl's free tier allows ~10
+// req/s, paid ~50 req/s. Each scrape-source call holds a Firecrawl
+// connection for ~2-5s, so 5 in flight averages ~1-3 req/s — well
+// under both tier limits with headroom for OpenAI rate-limits too.
+// (Pre-rewrite: serial = 1 in flight = 1 req/source-burst, leaving
+// most of Firecrawl's bandwidth idle.)
+const CONCURRENCY = 5;
 
 // Stop hammering a source once it's failed this many times in a row.
 const FAILURE_CIRCUIT_BREAKER = 5;
@@ -94,9 +104,12 @@ serve(async (req) => {
   const startedAt = Date.now();
   const results: { source_id: string; name: string; status: number; ok: boolean; ms: number }[] = [];
 
-  // Serial fan-out — each scrape-source call is self-contained, and serializing
-  // keeps Firecrawl + OpenAI within rate limits without coordination.
-  for (const s of due) {
+  // Parallel fan-out with bounded concurrency. Each scrape-source call
+  // is self-contained (its own Firecrawl + LLM round-trip), so they
+  // parallelize cleanly. Throttling at CONCURRENCY=5 keeps Firecrawl
+  // request rate well under the per-second cap while ~5×ing throughput
+  // vs the previous serial loop.
+  const dispatchOne = async (s: typeof due[number]) => {
     const t0 = Date.now();
     let status = 0;
     let ok = false;
@@ -114,13 +127,32 @@ serve(async (req) => {
     } catch (e) {
       console.error(`Dispatch ${s.name} failed:`, e);
     }
-    results.push({ source_id: s.source_id, name: s.name, status, ok, ms: Date.now() - t0 });
+    return { source_id: s.source_id, name: s.name, status, ok, ms: Date.now() - t0 };
+  };
+
+  // Worker pool — fixed-size set of in-flight promises. Each worker
+  // pulls the next source off the queue when it finishes its current
+  // call. This is the standard Promise-pool pattern; faster than
+  // chunking because slow sources don't bottleneck a fast batch.
+  const queue = [...due];
+  const workers: Promise<void>[] = [];
+  for (let i = 0; i < Math.min(CONCURRENCY, queue.length); i++) {
+    workers.push((async () => {
+      while (queue.length > 0) {
+        const next = queue.shift();
+        if (!next) return;
+        const r = await dispatchOne(next);
+        results.push(r);
+      }
+    })());
   }
+  await Promise.all(workers);
 
   return json(200, {
     ok: true,
     dispatched: results.length,
     duration_ms: Date.now() - startedAt,
+    concurrency: CONCURRENCY,
     results,
   });
 });

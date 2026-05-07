@@ -37,8 +37,6 @@ export interface CollectionPreset {
   apply: (set: (patch: Record<string, unknown>) => void) => void;
 }
 
-const ASIA_TWO = new Set(["South Korea", "Korea", "Japan"]);
-
 export const COLLECTION_PRESETS: CollectionPreset[] = [
   {
     id: "fully-funded",
@@ -83,13 +81,22 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
     apply: set => set({ degree: "master's" }),
   },
   {
-    id: "korea-japan",
-    label: "Korea & Japan",
-    sub: "East-Asia routes",
+    id: "korea-route",
+    label: "South Korea",
+    sub: "Korean Government Scholarship + KAIST track",
     Icon: Globe,
     accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
-    predicate: s => !!s.host_country && ASIA_TWO.has(s.host_country),
-    apply: set => set({ hostCountry: "Japan" }), // best single-value approximation; user can switch to Korea via the dropdown
+    predicate: s => s.host_country === "South Korea" || s.host_country === "Korea",
+    apply: set => set({ hostCountry: "South Korea" }),
+  },
+  {
+    id: "japan-route",
+    label: "Japan",
+    sub: "MEXT + university programs",
+    Icon: Globe,
+    accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
+    predicate: s => s.host_country === "Japan",
+    apply: set => set({ hostCountry: "Japan" }),
   },
   {
     id: "us-route",
@@ -116,7 +123,12 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
     Icon: Cpu,
     accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
     predicate: s => (s.target_fields || []).some(f => /comp|software|tech|data|engineer|ai|machine/i.test(f || "")),
-    apply: set => set({ field: "Computer Science & IT" }),
+    // Match the dropdown's canonical key — Discover's normalizeFieldKey
+    // collapses "Computer Science & IT" → "computer science and it" and
+    // would return zero matches against rows whose target_fields are
+    // just "Computer Science". Using "Computer Science" lands on the
+    // canonical bucket the dropdown actually exposes.
+    apply: set => set({ field: "Computer Science" }),
   },
   {
     id: "public-health",
@@ -125,7 +137,7 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
     Icon: Heart,
     accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
     predicate: s => (s.target_fields || []).some(f => /public[\s_]?health|develop|policy|epidemic|nutrition|medic/i.test(f || "")),
-    apply: set => set({ field: "Medicine & Health" }),
+    apply: set => set({ field: "Public Health" }),
   },
   // Demographic-eligibility collections — surface programs designed for
   // specific groups. Each tile pre-applies the demographic filter so

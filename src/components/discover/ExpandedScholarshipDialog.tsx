@@ -47,6 +47,9 @@ interface ScholarshipLite {
   /* Optional program-specific cover image (renders as hero band when
    * present; country gradient + landmark silhouette is the fallback). */
   cover_image_url?: string | null;
+  /* When the row first landed in our catalogue. Drives the NEW pill
+   * surfaced in the dialog hero — same 7-day window as cards/sheet. */
+  created_at?: string | null;
 }
 
 interface ProfileLite {
@@ -133,11 +136,21 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
               <X className="h-4 w-4" />
             </button>
             <div className="relative px-6 sm:px-9 py-7 sm:py-9">
-              {country && (
-                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/85 mb-2.5">
-                  {t("Scholarship", "Стипендия")} · {country}
-                </p>
-              )}
+              <div className="flex items-center gap-2 mb-2.5">
+                {country && (
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/85">
+                    {t("Scholarship", "Стипендия")} · {country}
+                  </p>
+                )}
+                {/* NEW pill — consistent across cards / sheet header /
+                    dialog so the freshness signal travels with the row. */}
+                {s.created_at && Date.now() - new Date(s.created_at).getTime() < 7 * 86_400_000 && (
+                  <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.18em] text-emerald-100 bg-emerald-500/25 ring-1 ring-emerald-300/40 px-1.5 py-0.5 rounded">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 animate-pulse" />
+                    {ru ? "Новое" : "New"}
+                  </span>
+                )}
+              </div>
               <h2 className="font-heading text-2xl sm:text-3xl font-bold tracking-[-0.02em] leading-tight mb-2 max-w-3xl">
                 {cleanedName}
               </h2>
@@ -160,7 +173,7 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
                   className="gap-1.5 bg-white/10 hover:bg-white/20 text-white border-white/30"
                 >
                   {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
-                  {isBookmarked ? t("Saved", "Сохранено") : t("Save to pipeline", "Сохранить в Workspace")}
+                  {isBookmarked ? t("Saved", "Сохранено") : t("Save", "Сохранить")}
                 </Button>
               </div>
             </div>

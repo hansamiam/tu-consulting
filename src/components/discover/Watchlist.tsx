@@ -14,7 +14,12 @@ const SAVED_3_PROMPT_KEY = "tu_saved3_prompt_shown";
 
 export const getWatchlist = (): string[] => {
   try {
-    return JSON.parse(localStorage.getItem(WATCHLIST_KEY) || "[]");
+    const parsed = JSON.parse(localStorage.getItem(WATCHLIST_KEY) || "[]");
+    // Defend against manually-corrupted localStorage (or a v2 schema
+    // landing in v1's slot): a non-array would throw on .includes /
+    // .indexOf in toggleWatchlist, taking the whole save flow down.
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((x): x is string => typeof x === "string");
   } catch {
     return [];
   }
@@ -26,6 +31,10 @@ export const toggleWatchlist = (id: string): string[] => {
   if (idx >= 0) list.splice(idx, 1);
   else list.push(id);
   localStorage.setItem(WATCHLIST_KEY, JSON.stringify(list));
+  // Notify same-tab listeners. The native \`storage\` event only fires
+  // in OTHER tabs, so without this dispatch the WatchlistDrawer
+  // wouldn't update its count until next render.
+  try { window.dispatchEvent(new Event("tu:watchlist")); } catch { /* SSR / locked-down env */ }
   return list;
 };
 
@@ -48,15 +57,24 @@ export const WatchlistButton = ({ universityId, onToggle }: WatchlistButtonProps
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // Derive saved state from the post-toggle list so React + localStorage
+    // can never drift (cross-tab edits, double-fire on rapid click, etc.).
+    // The previous \`setSaved(s => !s)\` was a parallel toggle that didn't
+    // verify against the source of truth.
     const list = toggleWatchlist(universityId);
-    setSaved(s => !s);
+    const isNowSaved = list.includes(universityId);
+    setSaved(isNowSaved);
     onToggle?.();
 
-    if (list.length >= 3) {
+    // The "saved-3" milestone should fire on the SAVE that crosses the
+    // 3rd item — not on an UNSAVE that drops back to 3 from 4. Gate on
+    // both isNowSaved (we just added) AND list.length === 3 so the
+    // upgrade prompt doesn't pop while the user is removing items.
+    if (isNowSaved && list.length === 3) {
       track("saved_3_universities", { count: list.length });
       if (!subscription.is_active && !localStorage.getItem(SAVED_3_PROMPT_KEY)) {
         localStorage.setItem(SAVED_3_PROMPT_KEY, "1");
-        toast("🎯 You've saved 3 universities!", {
+        toast("You've saved 3 universities", {
           description: "Unlock the full admissions strategy with TopUni Membership.",
           action: { label: "See plans", onClick: () => navigate("/pricing") },
           duration: 9000,
@@ -83,8 +101,25 @@ export const WatchlistDrawer = ({ universities, language }: WatchlistDrawerProps
   const refreshList = () => setWatchlistIds(getWatchlist());
 
   useEffect(() => {
-    const interval = setInterval(refreshList, 1000);
-    return () => clearInterval(interval);
+    // Listen for cross-tab + cross-component watchlist mutations.
+    // Was a 1s polling interval that hammered the synchronous
+    // localStorage read 60×/min while the user just stared at the
+    // page — wasteful and wouldn't survive a CPU-throttled tab.
+    // \`storage\` event fires for cross-tab writes; the custom
+    // \`tu:watchlist\` event we dispatch from same-tab toggles
+    // covers same-tab updates (storage events don't fire for the
+    // tab that did the write).
+    const onStorage = (e: StorageEvent) => {
+      if (e.key && e.key !== WATCHLIST_KEY) return;
+      refreshList();
+    };
+    const onSelf = () => refreshList();
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("tu:watchlist", onSelf);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("tu:watchlist", onSelf);
+    };
   }, []);
 
   const watchlistUnis = universities.filter(u => watchlistIds.includes(u.university_id));

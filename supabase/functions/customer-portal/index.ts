@@ -39,7 +39,23 @@ Deno.serve(async (req) => {
       });
     }
 
-    const origin = req.headers.get("origin") || "https://topuniconsulting.com";
+    // Origin allowlist — same fix as create-checkout. Stripe billing
+    // portal return_url ends up in the user's browser, so a spoofed
+    // Origin would let an attacker pin the portal "Done" button to
+    // their own URL.
+    const PUBLIC_SITE = Deno.env.get("PUBLIC_SITE_URL") ?? "https://topuni.org";
+    const ALLOWED_ORIGINS = new Set([
+      PUBLIC_SITE,
+      "https://topuni.org",
+      "https://www.topuni.org",
+      "https://topuniconsulting.com",
+      "https://www.topuniconsulting.com",
+    ]);
+    const requestedOrigin = req.headers.get("origin") ?? "";
+    const isLocalhost = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(requestedOrigin);
+    const origin = (ALLOWED_ORIGINS.has(requestedOrigin) || isLocalhost)
+      ? requestedOrigin
+      : PUBLIC_SITE;
     const portal = await stripe.billingPortal.sessions.create({
       customer: customers.data[0].id,
       return_url: `${origin}/account`,

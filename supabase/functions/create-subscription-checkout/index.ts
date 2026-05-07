@@ -72,7 +72,22 @@ Deno.serve(async (req) => {
     const existing = await stripe.customers.list({ email: user.email, limit: 1 });
     const customerId = existing.data[0]?.id;
 
-    const origin = req.headers.get("origin") || "https://topuniconsulting.com";
+    // Origin allowlist — see same fix in create-checkout. The previous
+    // code took whatever Origin the caller sent, letting an attacker
+    // redirect a paid customer to attacker-controlled URL post-checkout.
+    const PUBLIC_SITE = Deno.env.get("PUBLIC_SITE_URL") ?? "https://topuni.org";
+    const ALLOWED_ORIGINS = new Set([
+      PUBLIC_SITE,
+      "https://topuni.org",
+      "https://www.topuni.org",
+      "https://topuniconsulting.com",
+      "https://www.topuniconsulting.com",
+    ]);
+    const requestedOrigin = req.headers.get("origin") ?? "";
+    const isLocalhost = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(requestedOrigin);
+    const origin = (ALLOWED_ORIGINS.has(requestedOrigin) || isLocalhost)
+      ? requestedOrigin
+      : PUBLIC_SITE;
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,

@@ -147,9 +147,12 @@ const COPY = {
 const EssayCritique = ({ language = "en" }: EssayCritiqueProps) => {
   const t = COPY[language];
   const { user, subscription } = useAuth();
+  // is_active already covers paid+period-valid AND earned_trial_active
+  // (see AuthContext.loadSubscription). is_founding_member is the
+  // lifetime perk. The trailing tier-name checks were granting
+  // premium to canceled-pro users — closed in round 55.
   const isPremium = !!subscription && (
-    subscription.is_active || subscription.is_founding_member || subscription.earned_trial_active ||
-    subscription.tier === "pro" || subscription.tier === "founding"
+    subscription.is_active || subscription.is_founding_member
   );
   void user; // (kept for future per-user analytics)
 
@@ -185,16 +188,25 @@ const EssayCritique = ({ language = "en" }: EssayCritiqueProps) => {
     } catch { /* ignore */ }
   }, []);
 
+  // Debounce the localStorage write — it ran on every keystroke AND
+  // every AI critique stream chunk. With a 5000-char essay + a long
+  // streamed result, JSON.stringify + setItem on every render was
+  // burning 1-2ms / event for state the user can survive losing 600ms
+  // of. 600ms feels instant for save and avoids the per-chunk cost
+  // entirely (chunks fire faster than the debounce trailing edge).
   useEffect(() => {
-    try {
-      const payload: PersistedDraft = {
-        essay, essayType, targetSchool, targetScholarship, prompt, wordLimit,
-        lastResult: result || undefined,
-        lastResultTier: tier ?? undefined,
-        generatedAt: generatedAt ?? undefined,
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    } catch { /* ignore */ }
+    const id = window.setTimeout(() => {
+      try {
+        const payload: PersistedDraft = {
+          essay, essayType, targetSchool, targetScholarship, prompt, wordLimit,
+          lastResult: result || undefined,
+          lastResultTier: tier ?? undefined,
+          generatedAt: generatedAt ?? undefined,
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      } catch { /* ignore */ }
+    }, 600);
+    return () => window.clearTimeout(id);
   }, [essay, essayType, targetSchool, targetScholarship, prompt, wordLimit, result, tier, generatedAt]);
 
   useEffect(() => {
@@ -294,6 +306,15 @@ const EssayCritique = ({ language = "en" }: EssayCritiqueProps) => {
     setEssay(""); setTargetSchool(""); setTargetScholarship(""); setPrompt(""); setWordLimit("");
     setResult(""); setError(null); setTier(null); setGeneratedAt(null);
   };
+
+  // Navigation away mid-stream → abort. Without this the fetch
+  // keeps streaming after the page unmounts (server tokens billed,
+  // setState warnings on the unmounted component).
+  useEffect(() => {
+    return () => {
+      cancelRef.current?.abort();
+    };
+  }, []);
 
   const aiPath = language === "ru" ? "/topuni-ai/ru" : "/topuni-ai";
   const pricingPath = language === "ru" ? "/pricing/ru" : "/pricing";

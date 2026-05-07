@@ -152,19 +152,28 @@ Deno.serve(async (req) => {
           // directly without admin scopes).
           const { data: refProfile } = await admin
             .from("student_profiles")
-            .select("email, full_name")
+            .select("email, full_name, language")
             .eq("user_id", ref.referrer_user_id)
             .maybeSingle();
           if (refProfile?.email) {
             try {
+              const refLang: "en" | "ru" = (refProfile as { language?: string | null }).language === "ru" ? "ru" : "en";
               await admin.functions.invoke("send-transactional-email", {
                 body: {
                   recipientEmail: refProfile.email,
                   templateName: "referral-converted",
-                  idempotencyKey: `ref-${ref.referrer_user_id}-${ref.referred_user_id}`,
+                  // Idempotency must be per (referrer, referee) so each
+                  // converted friend triggers exactly one notify. Using
+                  // ref.referred_user_id was a typo — that field isn't
+                  // selected (the column is referee_user_id) so it
+                  // resolved to undefined and every conversion under the
+                  // same referrer collided on `ref-<uuid>-undefined`,
+                  // silently dropping every notification past the first.
+                  idempotencyKey: `ref-${ref.referrer_user_id}-${user.id}`,
                   templateData: {
                     name: refProfile.full_name?.split(" ")[0] ?? undefined,
                     referralCount: (rc?.premium_conversions ?? 0) + 1,
+                    language: refLang,
                   },
                 },
               });

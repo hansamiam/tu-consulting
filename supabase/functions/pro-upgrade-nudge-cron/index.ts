@@ -58,6 +58,7 @@ interface ProfileRow {
   target_countries: string[] | null;
   last_brief_generated_at: string | null;
   pro_nudge_sent_at: string | null;
+  language: string | null;
 }
 
 Deno.serve(async (req) => {
@@ -80,7 +81,7 @@ Deno.serve(async (req) => {
   // Resolve the candidate cohort: brief age in window, never been pro-nudged.
   const { data: candidates, error: candErr } = await supa
     .from("student_profiles")
-    .select("user_id, full_name, email, major, field_of_study, target_countries, last_brief_generated_at, pro_nudge_sent_at")
+    .select("user_id, full_name, email, major, field_of_study, target_countries, last_brief_generated_at, pro_nudge_sent_at, language")
     .gte("last_brief_generated_at", minBriefAt)
     .lte("last_brief_generated_at", maxBriefAt)
     .is("pro_nudge_sent_at", null)
@@ -136,12 +137,13 @@ Deno.serve(async (req) => {
           idempotencyKey: `pro-nudge-${profile.user_id}`,
           templateData: {
             firstName: profile.full_name?.split(" ")[0] || undefined,
-            briefUrl: `${SITE}/topuni-ai`,
-            pricingUrl: `${SITE}/pricing`,
+            briefUrl: profile.language === "ru" ? `${SITE}/topuni-ai/ru` : `${SITE}/topuni-ai`,
+            pricingUrl: profile.language === "ru" ? `${SITE}/pricing/ru` : `${SITE}/pricing`,
             major: profile.major ?? profile.field_of_study ?? undefined,
             targetCountries: profile.target_countries ?? [],
             daysSinceBrief,
             foundingDiscountActive: FOUNDING_DISCOUNT_ACTIVE,
+            language: profile.language === "ru" ? "ru" : "en",
           },
         },
       });

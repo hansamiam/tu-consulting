@@ -80,7 +80,11 @@ export function ShareScholarshipModal({
       toast.success(t.linkCopied);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error("Couldn't copy. Long-press the link to copy manually.");
+      toast.error(
+        language === "ru"
+          ? "Не удалось скопировать. Зажмите ссылку и скопируйте вручную."
+          : "Couldn't copy. Long-press the link to copy manually.",
+      );
     }
   };
 

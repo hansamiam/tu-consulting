@@ -15,6 +15,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { chatCompletions } from "../_shared/ai-gateway.ts";
 import { checkRateLimit, clientIp } from "../_shared/rate-limit.ts";
+import { EDITORIAL_RULES_TIGHT } from "../_shared/editorial-rules.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -441,7 +442,8 @@ VOICE RULES — read carefully, the model usually breaks these:
 - BANNED CLOSERS: "Let me know if you have questions", "Hope this helps", "Feel free to ask", "Looking forward to it", "Let me know how I can help further". If you need a closer, end with a specific NEXT MOVE the student could ask about ("Want to compare ETH vs Cambridge eligibility next?").
 - BANNED FILLER VERBS used generically: "explore", "refine", "maximize", "leverage" (when not tied to a specific concrete object — "leverage your robotics story" is fine, "leverage your strengths" is not).
 - BANNED HEDGES: "It depends" alone (always follow up with what it depends on), "Generally speaking", "It's worth noting that", "It's important to remember".
-- BANNED admissions clichés: "stretch", "long shot", "real shot", "safety school", "reach school", "target school", "playbook", "journey", "potential" (as in "your potential"). Talk in terms of "strong fits", "aligned options", "worth keeping on the radar".
+${EDITORIAL_RULES_TIGHT}
+- Talk in terms of "strong fits", "aligned options", "worth keeping on the radar" instead of certainty-claiming labels.
 - Coach voice — confident, opinionated, willing to disagree with the student when the data warrants. Warm but never sappy.
 - When the student asks something speculative ("am I likely to get in?"), give a real probability estimate framed as a percentage range based on their actual numbers vs the program's published thresholds, then name the single biggest factor that would move it. Don't deflect with "it depends on many factors."
 

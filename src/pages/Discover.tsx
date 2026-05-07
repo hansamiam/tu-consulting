@@ -51,6 +51,7 @@ import {
   compactAward,
   humanizeDemographic,
 } from "@/lib/scholarshipFields";
+import { daysUntil } from "@/lib/dates";
 import { ALL_COUNTRIES } from "@/data/countries";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAdminUser, isAdminBypass, consumeAdminUrlFlag } from "@/lib/adminMode";
@@ -68,11 +69,15 @@ const SHORTLIST_FREE_LIMIT = 5;
  * toast confirmation. The shared URL is the public /scholarships/:id
  * page which renders for SEO + handles direct loads even for
  * non-signed-in users. */
-const shareScholarship = async (s: { scholarship_id: string; scholarship_name: string; provider_name: string | null }) => {
+const shareScholarship = async (
+  s: { scholarship_id: string; scholarship_name: string; provider_name: string | null },
+  language: "en" | "ru" = "en",
+) => {
   const url = `${window.location.origin}/scholarships/${s.scholarship_id}`;
   const cleanedName = cleanScholarshipName(s.scholarship_name);
   const cleanedProv = cleanProvider(s.provider_name);
   const title = cleanedProv ? `${cleanedName} — ${cleanedProv}` : cleanedName;
+  const ru = language === "ru";
   const navAny = navigator as Navigator & { share?: (data: { title?: string; url?: string }) => Promise<void> };
   if (navAny.share) {
     try {
@@ -84,9 +89,9 @@ const shareScholarship = async (s: { scholarship_id: string; scholarship_name: s
   }
   try {
     await navigator.clipboard.writeText(url);
-    toast.success("Link copied", { description: cleanedName });
+    toast.success(ru ? "Ссылка скопирована" : "Link copied", { description: cleanedName });
   } catch {
-    toast.error("Couldn't copy — long-press the URL to share");
+    toast.error(ru ? "Не удалось скопировать — зажмите URL для шеринга" : "Couldn't copy — long-press the URL to share");
   }
 };
 
@@ -129,6 +134,19 @@ interface Scholarship {
    * ExpandedScholarshipDialog. When null we fall back to the
    * country-tinted gradient + landmark silhouette treatment. */
   cover_image_url?: string | null;
+  /* When the row first landed in our catalogue. Drives the "NEW" pill
+   * shown for scholarships added in the last 7 days. ISO timestamp. */
+  created_at?: string | null;
+  /* LLM-reported extraction confidence in [0,1]. <0.7 means we extracted
+   * from very thin signals — score should be discounted so the row only
+   * dominates ranking when no richer alternative competes. */
+  confidence?: number | null;
+  /* Count of substantive fields populated, 0–18. Maintained server-side
+   * by the scholarships_completeness_score trigger. Used as a small
+   * scoring tie-breaker (more-populated rows surface ahead of equally-
+   * matching but sparser rows) and could drive a UI "verified data"
+   * badge later. */
+  data_completeness_score?: number | null;
 }
 
 interface Profile {
@@ -466,10 +484,12 @@ const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: numbe
   // Effort
   const effort: Scored["effort"] = (s.effort_level as Scored["effort"]) ?? "medium";
 
-  // Deadline urgency bonus (close enough to apply, not closed)
+  // Deadline urgency bonus (close enough to apply, not closed).
+  // d === 0 (today) gets the boost — same-day deadline is still
+  // applicable and is the *most* urgent kind, not the least.
   if (s.application_deadline) {
     const days = Math.ceil((new Date(s.application_deadline).getTime() - Date.now()) / 86400000);
-    if (days > 0 && days < 60) match += 4;
+    if (days >= 0 && days < 60) match += 4;
   }
 
   /* Semantic similarity from pgvector (when present): up to +20 boost
@@ -485,6 +505,28 @@ const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: numbe
     match += bonus;
     if (bonus >= 12) reasons.push("Hits the field and goals you described");
     else if (bonus >= 6) reasons.push("Touches your field area");
+  }
+
+  // Trust calibration — discount the score by extraction confidence and
+  // reward data completeness. Without this, a sparse row that happens
+  // to embedding-match a profile can pip a fully-populated row that's
+  // a slightly better fit. The catalog quality work (anti-fabrication,
+  // min-info gate, completeness scoring) only pays off when ranking
+  // honors it.
+  //
+  // confidence shaping: rows with confidence ≥0.85 are unaffected; below
+  // 0.85 we shave proportionally, capped at -8. We never zero a row out
+  // on confidence alone — the user can still see and decide.
+  const conf = typeof s.confidence === "number" ? s.confidence : 0.85;
+  if (conf < 0.85) {
+    match -= Math.round((0.85 - Math.max(0, conf)) * 16); // up to -13.6 at conf=0
+    match = Math.max(match, 0);
+  }
+  // completeness shaping: max +6 for fully-populated (18/18), 0 baseline
+  // at completeness ≤8 ("just-enough" rows). Linear in between.
+  const comp = typeof s.data_completeness_score === "number" ? s.data_completeness_score : 8;
+  if (comp > 8) {
+    match += Math.min(6, Math.round((comp - 8) * 0.6));
   }
 
   if (eligibility === "likely" && match >= 70) eligibility = "eligible";
@@ -573,7 +615,8 @@ const COLLECTIONS: CollectionDef[] = [
     accentClass: "text-destructive",
     filter: (s) => {
       const d = daysUntil(s.application_deadline);
-      return d !== null && d > 0 && d <= 31;
+      // Include today (d === 0) — closes-today is the act-now case.
+      return d !== null && d >= 0 && d <= 31;
     },
     sort: (a, b) => {
       if (!a.application_deadline) return 1;
@@ -673,11 +716,76 @@ const dateOnly = (d: string | null) => {
   if (Number.isNaN(t)) return null;
   return new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 };
-const daysUntil = (d: string | null) => {
-  if (!d) return null;
-  const t = new Date(d).getTime();
-  if (Number.isNaN(t)) return null;
-  return Math.ceil((t - Date.now()) / 86400000);
+
+/* "NEW" badge — true when the scholarship landed in our catalogue
+ * within the last 7 days. Drives a small gold pill on cards/rows so
+ * users notice fresh additions instead of having to hunt for them. */
+const NEW_WINDOW_MS = 7 * 86_400_000;
+const isNewScholarship = (createdAt: string | null | undefined): boolean => {
+  if (!createdAt) return false;
+  const t = new Date(createdAt).getTime();
+  if (Number.isNaN(t)) return false;
+  return Date.now() - t < NEW_WINDOW_MS;
+};
+
+/* Field-name normalization — drops noise suffixes ("and related fields",
+ * "studies"), unifies separators + plurals, and applies a synonym map
+ * (cs → computer science, women in stem → stem, etc.). Used by BOTH the
+ * dropdown builder (so duplicates collapse into one option) and the
+ * filter-match logic (so picking "STEM" matches a row with "Women in
+ * STEM" in target_fields). Keep both call sites in lockstep — diverging
+ * the normalizers re-introduces the dropdown/match drift the user
+ * called out (2026-05-07). */
+const FIELD_SYNONYMS_MAP: Record<string, string> = {
+  "stem": "stem",
+  "science technology engineering and math": "stem",
+  "science technology engineering and mathematic": "stem",
+  "women in stem": "stem",
+  "women in science": "stem",
+  "women in technology": "stem",
+  "comp sci": "computer science",
+  "cs": "computer science",
+  "cse": "computer science",
+  "ai": "artificial intelligence",
+  "ml": "machine learning",
+  "ee": "electrical engineering",
+  "me": "mechanical engineering",
+  "ce": "civil engineering",
+  "biz": "business",
+  "mba": "business",
+  "ir": "international relation",
+  "intl relation": "international relation",
+  "global affair": "international relation",
+  "policy": "public policy",
+  "polisci": "political science",
+  "poli sci": "political science",
+  "med": "medicine",
+  "medical": "medicine",
+  "healthcare": "public health",
+  "global health": "public health",
+  "humanitie": "humanity",
+  "lit": "literature",
+  "english": "literature",
+  "creative writing": "literature",
+  "fine art": "art",
+  "visual art": "art",
+};
+
+export const normalizeFieldKey = (raw: string): string => {
+  let key = raw.toLowerCase()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/&/g, "and")
+    // Drop noise suffixes — "development related fields" → "development",
+    // "social science studies" → "social science", etc.
+    .replace(/\s+(and\s+)?related\s+fields?$/i, "")
+    .replace(/\s+studies$/i, "")
+    .replace(/\s+(and\s+)?related$/i, "")
+    .replace(/\s+fields?$/i, "")
+    .replace(/s$/, "")
+    .trim();
+  if (FIELD_SYNONYMS_MAP[key]) key = FIELD_SYNONYMS_MAP[key];
+  return key;
 };
 
 const WIZARD_STEPS = 4;
@@ -703,6 +811,7 @@ const STOP_WORDS = new Set(["and", "or", "of", "the", "in", "for", "to"]);
 const humanize = (s: string | null | undefined): string => {
   if (!s) return "";
   return s.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim().split(" ")
+    .filter(Boolean)
     .map((w, i) => i > 0 && STOP_WORDS.has(w.toLowerCase()) ? w.toLowerCase() : w[0].toUpperCase() + w.slice(1).toLowerCase())
     .join(" ");
 };
@@ -1299,6 +1408,14 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
             and prestige info still drive scoring and surface inside
             the detail sheet. Uniform geometry across every row. */}
         <div className="min-w-0">
+          {isNewScholarship(s.created_at) && (
+            <div className="mb-1">
+              <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 ring-1 ring-emerald-500/30 px-1.5 py-0.5 rounded">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                {ru ? "Новое" : "New"}
+              </span>
+            </div>
+          )}
           <h3
             className="font-heading font-semibold text-[15px] text-foreground tracking-tight group-hover:text-gold-dark transition-colors leading-tight"
             style={{ display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2, overflow: "hidden" } as React.CSSProperties}
@@ -1411,10 +1528,10 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              shareScholarship(s);
+              shareScholarship(s, lang);
             }}
-            aria-label="Share this scholarship"
-            title="Share"
+            aria-label={ru ? "Поделиться стипендией" : "Share this scholarship"}
+            title={ru ? "Поделиться" : "Share"}
             className="hidden sm:inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
           >
             <Share2 className="h-4 w-4" />
@@ -1477,43 +1594,54 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           travel poster strip rather than a database row. Text stays on
           the left where the silhouette opacity is lowest. */}
       <div className={`relative bg-gradient-to-r ${accent} px-4 h-14 flex items-center gap-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/95 overflow-hidden whitespace-nowrap`}>
-        {/* Country landmark icon, anchored right. The flag-pattern texture
-            that used to sit underneath was retired (round 22) — it
-            failed to find a good shape for most countries and read as
-            noise rather than the "campus postcard" texture intended. */}
-        <CountryArt country={s.host_country} className="absolute right-2 inset-y-0 h-full opacity-35 pointer-events-none" />
+        {/* Country landmark icon, anchored right. Bounded width so it
+            never overlaps the chip strip on the left. The flag-pattern
+            texture that used to sit underneath was retired (round 22). */}
+        <CountryArt country={s.host_country} className="absolute right-2 inset-y-0 h-full max-w-[35%] opacity-35 pointer-events-none" />
         {/* fade-from-left so silhouette + pattern don't compete with text */}
         <span className={`absolute inset-0 bg-gradient-to-r from-black/30 via-black/5 to-transparent pointer-events-none`} />
-        <span className="relative flex items-center gap-2 min-w-0 flex-1">
+        <span className="relative flex items-center gap-2 min-w-0 flex-1 pr-[35%]">
           {s.host_country && (
             <span className="truncate drop-shadow-sm">{shortCountry(s.host_country)}</span>
           )}
-          {s.target_demographics && s.target_demographics.length > 0 && (
-            <>
-              <span className="text-white/40 shrink-0">·</span>
-              <span className="inline-flex items-center gap-1 text-gold-light/95 drop-shadow-sm shrink-0">
-                {humanizeDemographic(s.target_demographics[0])}
-                {s.target_demographics.length > 1 && ` +${s.target_demographics.length - 1}`}
-              </span>
-            </>
-          )}
-          {isFullRide && (
-            <>
-              <span className="text-white/40 shrink-0">·</span>
-              <span className="inline-flex items-center gap-1 text-gold-light drop-shadow-sm shrink-0">
-                <Award className="h-2.5 w-2.5" />
-                {ru ? "Полное" : "Full ride"}
-              </span>
-            </>
-          )}
-          {(s.selectivity === "very_high" || s.selectivity === "high") && (
-            <>
-              <span className="text-white/40 shrink-0">·</span>
-              <span className="inline-flex items-center text-white/95 drop-shadow-sm shrink-0">
-                {ru ? "Престижная" : "Prestigious"}
-              </span>
-            </>
-          )}
+          {/* Chip priority on the band: country (always) > full-ride badge >
+              prestigious badge > one demographic. We used to render every
+              chip including a "+N" overflow indicator; on cards with long
+              country names + multi-demographic eligibility the strip
+              overflowed under the silhouette and the "+1" was the part
+              users saw cut off. Cap to ONE secondary chip total — the
+              detail sheet carries the rest. */}
+          {(() => {
+            const secondary: React.ReactNode[] = [];
+            if (isFullRide) {
+              secondary.push(
+                <span key="fr" className="inline-flex items-center gap-1 text-gold-light drop-shadow-sm shrink-0">
+                  <Award className="h-2.5 w-2.5" />
+                  {ru ? "Полное" : "Full ride"}
+                </span>,
+              );
+            }
+            if (secondary.length === 0 && (s.selectivity === "very_high" || s.selectivity === "high")) {
+              secondary.push(
+                <span key="ps" className="inline-flex items-center text-white/95 drop-shadow-sm shrink-0">
+                  {ru ? "Престижная" : "Prestigious"}
+                </span>,
+              );
+            }
+            if (secondary.length === 0 && s.target_demographics && s.target_demographics.length > 0) {
+              secondary.push(
+                <span key="dm" className="inline-flex items-center gap-1 text-gold-light/95 drop-shadow-sm shrink-0 truncate max-w-[40%]">
+                  {humanizeDemographic(s.target_demographics[0])}
+                </span>,
+              );
+            }
+            return secondary.length > 0 ? (
+              <>
+                <span className="text-white/40 shrink-0">·</span>
+                {secondary[0]}
+              </>
+            ) : null;
+          })()}
         </span>
       </div>
 
@@ -1523,6 +1651,15 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
             on long names like "MEXT Japanese Government Scholarship -..."
             in the screenshot). Provider truncates on a single line below. */}
         <div className="min-w-0">
+          {/* NEW pill — first 7 days after a scholarship lands in the
+              catalogue. Helps users notice fresh additions without
+              having to manually compare against last visit. */}
+          {isNewScholarship(s.created_at) && (
+            <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 ring-1 ring-emerald-500/30 px-1.5 py-0.5 rounded mb-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              {ru ? "Новое" : "New"}
+            </span>
+          )}
           <h3 className="font-heading text-[15px] font-semibold leading-[1.2] tracking-[-0.01em] text-foreground line-clamp-3 group-hover:text-gold-dark transition-colors mb-1">
             {cleanScholarshipName(s.scholarship_name)}
           </h3>
@@ -1614,35 +1751,39 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           </div>
         )}
 
-        {/* Action row — bookmark stays visible (stateful affordance); the
-            whole card is the click target so no separate CTA. */}
-        <div className="flex items-center justify-end mt-auto pt-2.5 border-t border-border/50" onClick={(e) => e.stopPropagation()}>
+        {/* Action row. Round 38 changes per user feedback ("shortlist
+            button is too not obvious", "compare/share only on hover —
+            unnecessary effect, just keep them there"):
+            • Save is a prominent labeled button now, gold when saved.
+            • Compare + Share always visible (no opacity-0 hover gate). */}
+        <div className="flex items-center justify-between gap-1.5 mt-auto pt-2.5 border-t border-border/50" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={onBookmark}
+            aria-label={isBookmarked ? (ru ? "Удалить из сохранённых" : "Remove from saved") : (ru ? "Сохранить" : "Save")}
+            className={`flex-1 inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-md text-[12px] font-semibold transition-all ${
+              isBookmarked
+                ? "bg-gold/15 text-gold-dark hover:bg-gold/20 ring-1 ring-gold/30"
+                : "bg-foreground/[0.04] text-foreground hover:bg-foreground/[0.08] ring-1 ring-border/60 hover:ring-foreground/30"
+            }`}
+          >
+            {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
+            {isBookmarked ? (ru ? "Сохранено" : "Saved") : (ru ? "Сохранить" : "Save")}
+          </button>
           <div className="flex items-center gap-0.5">
-            <button
-              onClick={onBookmark}
-              aria-label={isBookmarked ? "Remove from shortlist" : "Save to shortlist"}
-              title={isBookmarked ? "Saved · click to remove" : "Save to shortlist"}
-              className={`p-1.5 rounded-md transition-all ${isBookmarked ? "text-gold-dark bg-gold/10 hover:bg-gold/15" : "text-muted-foreground hover:text-gold-dark hover:bg-muted/60"}`}
-            >
-              {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
-            </button>
             <button
               onClick={onToggleCompare}
               aria-label={isComparing ? "Remove from compare" : "Add to compare"}
               title={isComparing ? "Remove from compare" : "Add to compare"}
-              className={`p-1.5 rounded-md transition-all ${isComparing ? "text-gold-dark bg-gold/10" : "text-muted-foreground hover:text-foreground hover:bg-muted/60 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100"}`}
+              className={`p-1.5 rounded-md transition-all ${isComparing ? "text-gold-dark bg-gold/10" : "text-muted-foreground hover:text-foreground hover:bg-muted/60"}`}
             >
               <GitCompare className="h-3.5 w-3.5" />
             </button>
-            {/* Share replaces the old More dropdown ("Hide from list" /
-                "Official page"). Hide was rarely used; the official
-                page is one click away inside the detail sheet. */}
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); shareScholarship(s); }}
-              aria-label="Share this scholarship"
-              title="Share"
-              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100"
+              onClick={(e) => { e.stopPropagation(); shareScholarship(s, lang); }}
+              aria-label={ru ? "Поделиться стипендией" : "Share this scholarship"}
+              title={ru ? "Поделиться" : "Share"}
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
             >
               <Share2 className="h-3.5 w-3.5" />
             </button>
@@ -1963,89 +2104,99 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             </div>
           );
         })()}
-        {/* ── HEADER (cream, editorial — no thick navy block). Mobile
-              padding tightened so the panel doesn't push the apply CTA
-              below the fold. */}
-        <div className="relative bg-canvas-soft px-5 sm:px-7 pt-4 sm:pt-6 pb-4 sm:pb-6 overflow-hidden shrink-0 border-b border-border">
-          {/* Soft top wash so the header has navy presence without a slab */}
-          <div className="absolute inset-x-0 top-0 h-24 pointer-events-none"
-            style={{ backgroundImage: "linear-gradient(180deg, hsl(var(--primary) / 0.06) 0%, transparent 100%)" }} />
-          {/* Subtle gold ambient */}
-          <div className="absolute -top-1/3 right-0 w-1/2 h-full rounded-full blur-[120px] opacity-[0.10] pointer-events-none" style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 60%)" }} />
-
-          <SheetHeader className="relative space-y-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap mb-2">
-                  <SelectivityChip level={s.selectivity} />
-                </div>
-                {/* Eligibility framing reworked in round 6 — earlier copy
-                    ('You qualify on paper' / 'Near miss' / 'Doesn't fit')
-                    over-claimed certainty from a thin profile. Show only
-                    the FACTUAL gaps when there are clear ones; otherwise
-                    say nothing. */}
-                {s.eligibility === "missing" && s.warnings.length > 0 && (
-                  <p className="text-muted-foreground text-xs">
-                    Watch: {s.warnings.slice(0, 1)[0]}
-                  </p>
-                )}
-                {s.eligibility === "not_eligible" && s.warnings.length > 0 && (
-                  <p className="text-destructive/85 text-xs">
-                    {s.warnings.slice(0, 1)[0]}
-                  </p>
-                )}
-              </div>
-              {/* Score column removed — the row-card badge already carries
-                  the score, and stamping a big '55/100' on the detail
-                  panel hero just compounded the "weak score" perception
-                  when the cluster of rows trended toward 55-65. */}
+        {/* ── HEADER (premium editorial — drops the gold-ambient + linear
+              navy wash overlays from the previous build; both stacked on
+              top of the canvas-soft bg and read as fussy at sheet scale.
+              User feedback: "right panel pull up aesthetic UI just still
+              not satisfied revamp improve do whatever you need to do
+              still ugly." Now: clean canvas-soft surface, precise
+              typography, generous spacing, single visual focal point. */}
+        <div className="bg-canvas-soft px-6 sm:px-8 pt-5 sm:pt-7 pb-5 sm:pb-6 shrink-0 border-b border-border">
+          <SheetHeader className="space-y-3.5">
+            <div className="flex items-start gap-3">
+              <SelectivityChip level={s.selectivity} />
+              {isNewScholarship(s.created_at) && (
+                <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 ring-1 ring-emerald-500/30 px-1.5 py-0.5 rounded">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  {ru ? "Новое" : "New"}
+                </span>
+              )}
             </div>
 
-            <SheetTitle className="text-foreground font-heading text-[26px] leading-[1.12] tracking-[-0.02em] pt-1 text-left">{cleanScholarshipName(s.scholarship_name)}</SheetTitle>
-            <p className="text-muted-foreground text-sm text-left">
+            <SheetTitle className="text-foreground font-heading text-[26px] sm:text-[30px] leading-[1.1] tracking-[-0.02em] text-left">
+              {cleanScholarshipName(s.scholarship_name)}
+            </SheetTitle>
+            <p className="text-muted-foreground text-sm text-left -mt-1">
               {[cleanProvider(s.provider_name), s.host_country && shortCountry(s.host_country)].filter(Boolean).join(" · ")}
             </p>
+
+            {/* Eligibility framing reworked in round 6 — earlier copy
+                ('You qualify on paper' / 'Near miss' / 'Doesn't fit')
+                over-claimed certainty from a thin profile. Show only
+                the FACTUAL gaps when there are clear ones; otherwise
+                say nothing. */}
+            {s.eligibility === "missing" && s.warnings.length > 0 && (
+              <p className="text-muted-foreground text-xs">
+                Watch: {s.warnings.slice(0, 1)[0]}
+              </p>
+            )}
+            {s.eligibility === "not_eligible" && s.warnings.length > 0 && (
+              <p className="text-destructive/85 text-xs">
+                {s.warnings.slice(0, 1)[0]}
+              </p>
+            )}
           </SheetHeader>
 
-          {/* Key facts — inline list, no tile squares. The tiles felt
-              UI-noisy with their own borders + labels in tracking and
-              their own bg, when the page is already a card with a
-              header. Now: simple Award · Deadline · (optional total)
-              line that reads like editorial metadata. Long award
-              descriptions get a clamp-to-2-lines subline below.
-              Total-value subline only appears when it differs from
-              the compact label (round-22 dedup logic preserved). */}
-          <div className="relative mt-3 sm:mt-4 space-y-1.5">
-            <div className="flex items-baseline gap-3 flex-wrap text-[13px]">
-              <span className="inline-flex items-baseline gap-1.5">
-                <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{t("Award", "Финансирование")}</span>
-                <span className="text-foreground font-bold">{compactAward(s) ?? COVERAGE_LABEL[s.coverage_type] ?? "—"}</span>
-              </span>
-              <span className="text-muted-foreground/30" aria-hidden>·</span>
-              <span className="inline-flex items-baseline gap-1.5">
-                <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{t("Deadline", "Дедлайн")}</span>
-                <span className={`font-semibold ${dl.cls}`}>{dl.text}</span>
-                {deadlineDate && <span className="text-muted-foreground/70 text-[11px]">· {deadlineDate}</span>}
-              </span>
-              {s.estimated_total_value_usd && (() => {
-                const compact = compactAward(s);
-                const total = fmtValue(s.estimated_total_value_usd);
-                if (compact && compact.replace(/\s/g, "") === total.replace(/\s/g, "")) return null;
-                return (
-                  <>
-                    <span className="text-muted-foreground/30" aria-hidden>·</span>
-                    <span className="inline-flex items-baseline gap-1.5">
-                      <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{t("Total", "Итого")}</span>
-                      <span className="text-gold-dark dark:text-gold font-semibold">≈ {total}</span>
-                    </span>
-                  </>
-                );
-              })()}
-            </div>
-            {s.award_amount_text && s.award_amount_text.length > 16 && (
-              <p className="text-[12px] text-muted-foreground leading-snug line-clamp-2">{s.award_amount_text}</p>
-            )}
-          </div>
+          {/* Key facts — clean 3-up grid (was an inline · separated line
+              that crowded long values). Each cell stacks its label
+              uppercase-eyebrow / value-bold-large for editorial weight.
+              Total cell only renders when distinct from the Award
+              compact label (round-22 dedup logic preserved). */}
+          {(() => {
+            const compact = compactAward(s) ?? COVERAGE_LABEL[s.coverage_type] ?? "—";
+            const totalDistinct = (() => {
+              if (!s.estimated_total_value_usd) return null;
+              const total = fmtValue(s.estimated_total_value_usd);
+              if (compact.replace(/\s/g, "") === total.replace(/\s/g, "")) return null;
+              return total;
+            })();
+            return (
+              <div className={`mt-5 grid ${totalDistinct ? "grid-cols-3" : "grid-cols-2"} gap-px rounded-xl bg-border/60 ring-1 ring-border/60 overflow-hidden`}>
+                <div className="bg-canvas-soft px-3.5 py-2.5">
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/85 mb-0.5">
+                    {t("Award", "Финансирование")}
+                  </p>
+                  <p className="font-heading font-bold text-foreground text-[15px] tabular-nums leading-tight truncate">
+                    {compact}
+                  </p>
+                </div>
+                <div className="bg-canvas-soft px-3.5 py-2.5">
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/85 mb-0.5">
+                    {t("Deadline", "Дедлайн")}
+                  </p>
+                  <p className={`font-heading font-bold text-[15px] tabular-nums leading-tight truncate ${dl.cls}`}>
+                    {dl.text}
+                  </p>
+                  {deadlineDate && (
+                    <p className="text-[10px] text-muted-foreground/70 leading-tight mt-0.5 truncate">{deadlineDate}</p>
+                  )}
+                </div>
+                {totalDistinct && (
+                  <div className="bg-canvas-soft px-3.5 py-2.5">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/85 mb-0.5">
+                      {t("Total", "Итого")}
+                    </p>
+                    <p className="font-heading font-bold text-gold-dark dark:text-gold text-[15px] tabular-nums leading-tight truncate">
+                      ≈ {totalDistinct}
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+          {s.award_amount_text && s.award_amount_text.length > 16 && (
+            <p className="text-[12px] text-muted-foreground/85 leading-snug line-clamp-2 mt-2">{s.award_amount_text}</p>
+          )}
 
           {/* Header CTAs — Apply (gold), Bookmark, and an escape hatch
               to the dedicated /scholarships/:id full-page view for
@@ -2111,27 +2262,11 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               )}
             </p>
           )}
-          {/* Promoted CTA into the centered enlarged modal. The right
-              panel intentionally keeps the personalized deep dive OUT
-              so it stays scannable; this button is how users get to
-              the heavy content (match breakdown, how-to-win,
-              ideal-candidate profile). Label says "Personalized
-              strategy" because the deep dive is AI-generated against
-              the saved profile — and unifying with the (formerly
-              "Get your live strategy") empty-state CTA on the Strategy
-              tab so the two paths to the same destination read the
-              same. */}
-          <button
-            type="button"
-            onClick={onExpand}
-            className="mt-3 w-full inline-flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-gold/10 via-gold/5 to-gold/10 border border-gold/30 hover:border-gold/50 hover:from-gold/15 hover:to-gold/15 transition-all group"
-          >
-            <span className="inline-flex items-center gap-2 text-[12px] font-semibold text-gold-dark dark:text-gold">
-              <Sparkles className="h-3.5 w-3.5" />
-              {t("Personalized strategy", "Персональная стратегия")}
-            </span>
-            <ArrowRight className="h-3.5 w-3.5 text-gold-dark/70 dark:text-gold/70 group-hover:translate-x-0.5 transition-transform" />
-          </button>
+          {/* The "Personalized strategy" middle-of-header CTA was
+              removed — the Strategy → button now lives in the tab
+              strip below as the natural place to look for it (where
+              the old Strategy tab used to be). One CTA per affordance,
+              no duplication. */}
 
           {/* URL health warning — surfaces the URL freshness checker's
               verdict. 3+ consecutive fails = link probably moved.
@@ -2161,13 +2296,21 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             modal opened from the "View full strategy" CTA above.
             Without that split, the right panel stretched vertically
             with cut-off text on every long deep-dive section. */}
+        {/* Tabs reduced to TWO (was three: Overview / Requirements /
+            Strategy). The Strategy tab and the "Personalized strategy"
+            CTA both opened the same deep-dive content — the user called
+            out the overlap ("the personalized strategy to open the more
+            detailed view and the strategy tab overlap in idea"). The
+            side sheet is now scan-mode (Overview = facts, Requirements
+            = checklist) and the focused dialog is the single home for
+            strategy depth. Cleaner mental model + the dialog has the
+            screen real estate the long-form strategy fields need. */}
         <Tabs defaultValue="overview" className="flex-1 flex flex-col">
           <div className="px-7 pt-5 border-b border-border bg-background sticky top-0 z-10 overflow-x-auto scrollbar-hide">
             <TabsList className="bg-transparent p-0 h-auto gap-5 sm:gap-7 w-max sm:w-full justify-start rounded-none -mb-px">
               {([
                 { v: "overview",     label: t("Overview",     "Обзор") },
                 { v: "requirements", label: t("Requirements", "Требования") },
-                { v: "strategy",     label: t("Strategy",     "Стратегия") },
               ] as const).map((tab) => (
                 <TabsTrigger
                   key={tab.v}
@@ -2177,6 +2320,19 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                   {tab.label}
                 </TabsTrigger>
               ))}
+              {/* The strategy CTA lives in the tab strip so the
+                  affordance is right where users would have looked for
+                  the old Strategy tab. Distinct gold treatment makes it
+                  read as a primary action, not just another tab. */}
+              <button
+                type="button"
+                onClick={onExpand}
+                className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 mb-1.5 rounded-md text-xs font-semibold text-primary bg-gradient-to-r from-gold-dark to-gold hover:opacity-90 transition-opacity shadow-sm shrink-0"
+              >
+                <Sparkles className="h-3 w-3" />
+                {t("Strategy", "Стратегия")}
+                <ArrowRight className="h-3 w-3" />
+              </button>
             </TabsList>
           </div>
 
@@ -2207,6 +2363,73 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                 </p>
               );
             })()}
+
+            {/* Page-derived facts — what the program ACTUALLY says about
+                itself, not interpretation. Surfaces fields the LLM
+                extracted from the source page so Overview stops feeling
+                like just "title regurgitate". User feedback (2026-05-07):
+                "right now the overview is pure regurgitate of title
+                worthless basic. needs to be actually interesting or
+                from their website etc." Each block renders only when the
+                underlying data is present so the tab degrades cleanly
+                for sparse rows. */}
+            {s.eligibility_requirements && s.eligibility_requirements.trim().length > 30 && (
+              <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-3.5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">
+                  {t("Eligibility (from program)", "Право на участие (от программы)")}
+                </p>
+                <p className="text-sm text-foreground/85 leading-relaxed">
+                  {s.eligibility_requirements.length > 600
+                    ? s.eligibility_requirements.slice(0, 580).trimEnd() + "…"
+                    : s.eligibility_requirements}
+                </p>
+              </div>
+            )}
+
+            {(s.duration_text || s.language_requirements || s.citizenship_requirements) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {s.duration_text && (
+                  <div className="rounded-xl border border-border/60 bg-card px-3.5 py-2.5">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
+                      {t("Duration", "Длительность")}
+                    </p>
+                    <p className="text-sm text-foreground/85 leading-snug">{s.duration_text}</p>
+                  </div>
+                )}
+                {s.language_requirements && (
+                  <div className="rounded-xl border border-border/60 bg-card px-3.5 py-2.5">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
+                      {t("Language", "Язык")}
+                    </p>
+                    <p className="text-sm text-foreground/85 leading-snug">{s.language_requirements}</p>
+                  </div>
+                )}
+                {s.citizenship_requirements && (
+                  <div className="rounded-xl border border-border/60 bg-card px-3.5 py-2.5 sm:col-span-2">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
+                      {t("Citizenship / nationality", "Гражданство")}
+                    </p>
+                    <p className="text-sm text-foreground/85 leading-snug">{s.citizenship_requirements}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {Array.isArray(s.partner_universities) && s.partner_universities.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">
+                  {t("Partner universities", "Партнёрские университеты")}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {s.partner_universities.slice(0, 12).map((u, i) => (
+                    <span key={i} className="text-xs text-foreground/85 bg-primary/[0.04] border border-primary/15 px-2.5 py-1 rounded-md">{u}</span>
+                  ))}
+                  {s.partner_universities.length > 12 && (
+                    <span className="text-xs text-muted-foreground self-center">+{s.partner_universities.length - 12} more</span>
+                  )}
+                </div>
+              </div>
+            )}
 
             {s.reasons.length > 0 && (
               <div>
@@ -2389,141 +2612,12 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             )}
           </TabsContent>
 
-          {/* STRATEGY */}
-          <TabsContent value="strategy" className="px-5 sm:px-7 py-4 sm:py-6 space-y-4 sm:space-y-5 m-0 focus-visible:outline-none relative">
-            {/* "Still being drafted" state — when the row is freshly scraped
-                and the daily enrichment cron hasn't filled the soft fields
-                yet (typically 24-48h post-discovery), the Strategy tab would
-                otherwise render blank and look broken. This state acknowledges
-                the gap honestly and points the user at the same enlarged
-                detail dialog the "Personalized strategy" CTA in the
-                panel header opens; both paths go to the same place so
-                the wording is unified. */}
-            {!s.what_to_prepare_first && !s.ideal_candidate_profile && !s.how_to_win
-              && !s.strategy_notes && !s.common_rejection_reasons
-              && !s.weak_candidate_warning && !s.risk_note && (
-              <div className="rounded-2xl border border-gold/25 bg-gradient-to-br from-gold/10 via-gold/[0.04] to-transparent px-5 py-7 text-center">
-                <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br from-gold-dark to-gold mx-auto mb-3 shadow-sm">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                </div>
-                <h4 className="font-heading font-semibold text-base text-foreground mb-1.5">
-                  {t("Personalized strategy", "Персональная стратегия")}
-                </h4>
-                <p className="text-xs text-muted-foreground leading-relaxed max-w-md mx-auto mb-4">
-                  {t(
-                    "Our AI will analyze this scholarship against your saved profile and return a tailored strategy — match breakdown, how to win, what to prepare first.",
-                    "Наш ИИ проанализирует эту стипендию по вашему профилю и вернёт персональную стратегию — разбор совпадения, как победить, что подготовить в первую очередь."
-                  )}
-                </p>
-                <button
-                  type="button"
-                  onClick={onExpand}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-primary bg-gradient-to-r from-gold-dark to-gold hover:opacity-90 transition-opacity shadow-sm"
-                >
-                  <Sparkles className="h-3.5 w-3.5" />
-                  {t("Open", "Открыть")}
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            )}
-
-            {/* First strategy block — preview, free for everyone (creates desire) */}
-            {s.what_to_prepare_first && (
-              <div className="border-l-2 border-l-gold bg-muted/30 rounded-r-2xl px-5 py-4">
-                <p className="text-[10px] font-semibold text-foreground mb-1 uppercase tracking-[0.16em]">{t("Start here", "Начните с этого")}</p>
-                <p className="text-sm text-foreground/80 leading-relaxed">{s.what_to_prepare_first}</p>
-              </div>
-            )}
-
-            {/* Members-only content (or unlocked if isMember). Skip the
-                whole branch when no soft fields are populated — the
-                "still being drafted" state above already handles that. */}
-            {(s.ideal_candidate_profile || s.how_to_win || s.strategy_notes
-              || s.common_rejection_reasons || s.weak_candidate_warning || s.risk_note) && (
-              isMember ? (
-              <>
-                {s.ideal_candidate_profile && (
-                  <div className="bg-primary/[0.03] border border-primary/15 rounded-2xl p-5">
-                    <h4 className="text-[10px] font-semibold text-primary dark:text-primary-bright mb-2 flex items-center gap-2 uppercase tracking-[0.16em]">
-                      <UserCheck className="h-3 w-3" /> Ideal candidate
-                    </h4>
-                    <p className="text-sm text-foreground/85 leading-relaxed">{s.ideal_candidate_profile}</p>
-                  </div>
-                )}
-                {s.how_to_win && (
-                  <div className="bg-gold/5 border border-gold/20 rounded-2xl p-5">
-                    <h4 className="text-[10px] font-semibold text-gold-dark dark:text-gold mb-2 flex items-center gap-2 uppercase tracking-[0.16em]">
-                      <Lightbulb className="h-3 w-3" /> How to win
-                    </h4>
-                    <p className="text-sm text-foreground/85 leading-relaxed">{s.how_to_win}</p>
-                  </div>
-                )}
-                {s.strategy_notes && (
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Strategy notes</p>
-                    <p className="text-sm text-foreground/80 leading-relaxed">{s.strategy_notes}</p>
-                  </div>
-                )}
-                {s.common_rejection_reasons && (
-                  <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-5">
-                    <h4 className="text-[10px] font-semibold text-destructive mb-2 flex items-center gap-2 uppercase tracking-[0.16em]">
-                      <AlertOctagon className="h-3 w-3" /> Why people get rejected
-                    </h4>
-                    <p className="text-sm text-foreground/85 leading-relaxed">{s.common_rejection_reasons}</p>
-                  </div>
-                )}
-                {s.weak_candidate_warning && (
-                  <div className="border-l-2 border-warning bg-warning/5 rounded-r-2xl px-5 py-4">
-                    <p className="text-[10px] font-semibold text-warning mb-1 uppercase tracking-[0.16em]">Don't apply if...</p>
-                    <p className="text-sm text-foreground/80 leading-relaxed">{s.weak_candidate_warning}</p>
-                  </div>
-                )}
-                {s.risk_note && (
-                  <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-4">
-                    <p className="text-sm font-semibold text-destructive mb-1 flex items-center gap-1.5"><AlertTriangle className="h-4 w-4" />Watch out</p>
-                    <p className="text-sm text-foreground/80 leading-relaxed">{s.risk_note}</p>
-                  </div>
-                )}
-              </>
-            ) : (
-              /* Soft paywall — show first 1-2 lines blurred + an unlock CTA */
-              <div className="relative">
-                <div className="space-y-5 pointer-events-none select-none">
-                  {s.ideal_candidate_profile && (
-                    <div className="bg-primary/[0.03] border border-primary/15 rounded-2xl p-5">
-                      <h4 className="text-[10px] font-semibold text-primary dark:text-primary-bright mb-2 flex items-center gap-2 uppercase tracking-[0.16em]">
-                        <UserCheck className="h-3 w-3" /> Ideal candidate
-                      </h4>
-                      <p className="text-sm text-foreground/85 leading-relaxed line-clamp-2 blur-[3px]">{s.ideal_candidate_profile}</p>
-                    </div>
-                  )}
-                  {s.how_to_win && (
-                    <div className="bg-gold/5 border border-gold/20 rounded-2xl p-5">
-                      <h4 className="text-[10px] font-semibold text-gold-dark mb-2 flex items-center gap-2 uppercase tracking-[0.16em]">
-                        <Lightbulb className="h-3 w-3" /> How to win
-                      </h4>
-                      <p className="text-sm text-foreground/85 leading-relaxed line-clamp-2 blur-[3px]">{s.how_to_win}</p>
-                    </div>
-                  )}
-                </div>
-                {/* Lock overlay */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-t from-background via-background/95 to-background/40 pt-16">
-                  <div className="bg-card border border-gold/30 rounded-2xl p-5 max-w-sm w-full text-center shadow-md">
-                    <div className="inline-flex items-center justify-center h-9 w-9 rounded-full bg-gold/10 border border-gold/25 mb-3">
-                      <Lock className="h-4 w-4 text-gold-dark" />
-                    </div>
-                    <h4 className="font-heading font-bold text-base text-foreground mb-1.5">Strategy notes are members-only</h4>
-                    <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-                      Ideal candidate profile, how-to-win strategy, common rejection reasons, and warnings are part of Founding Pro.
-                    </p>
-                    <Button variant="gold" size="sm" className="w-full gap-2" onClick={onUnlock}>
-                      <Crown className="h-3.5 w-3.5" /> {t("Unlock for $19/mo", "Открыть за $19/мес")}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </TabsContent>
+          {/* STRATEGY tab content removed — depth lives in
+              ExpandedScholarshipDialog. The history is in commit
+              c6a074f if a future build wants to re-extract the
+              previous Ideal Candidate / How to Win / Strategy Notes
+              markup. Marker block kept so jumping by anchor in this
+              file lines up with the block-comment landmarks. */}
 
           {/* APPLY */}
         </Tabs>
@@ -2700,7 +2794,12 @@ interface Props { language?: "en" | "ru" }
 const Discover = ({ language = "en" }: Props) => {
   const navigate = useNavigate();
   const { user, subscription } = useAuth();
-  const isMember = subscription.tier === "founding" || subscription.tier === "pro";
+  // is_active = (active|trialing paid sub with period valid) OR
+  // earned_trial_active. is_founding_member is the lifetime perk.
+  // Bare tier check (the previous form) treated canceled-pro users
+  // as members until the DB tier column was backfilled, leaking
+  // premium access.
+  const isMember = subscription.is_active || subscription.is_founding_member;
 
   /* Translation helper. The Discover surface used to render almost
    * entirely in English regardless of route — only the top nav strip
@@ -2893,11 +2992,16 @@ const Discover = ({ language = "en" }: Props) => {
   }, []);
 
   useEffect(() => {
-    const stored = getStoredProfile();
-    if (stored?.nationality) {
-      // targetDegree may be a single value (legacy) or comma-separated (new).
-      // Split, then normalize legacy "phd" / "master" tokens to canonical
-      // values used by scoring.
+    // Hydrate from localStorage on mount AND any time the user changes
+    // (sign-in fires AuthContext.runPostSignInDrain → pullProfileFromDb
+    // → saveProfile → LS write). Without re-running on auth change,
+    // Discover sat with the empty pre-signin profile until full refresh.
+    // Also subscribes to the cross-tab `storage` event so a profile
+    // update in another tab (TopUni AI wizard, profile editor) flows
+    // through here too.
+    const apply = () => {
+      const stored = getStoredProfile();
+      if (!stored?.nationality) return;
       const rawLevels = (stored.targetDegree || "")
         .split(/[,/]+/).map(s => s.trim()).filter(Boolean);
       const canonicalize = (lvl: string) => {
@@ -2918,8 +3022,19 @@ const Discover = ({ language = "en" }: Props) => {
         demographics: Array.isArray(stored.demographics) ? stored.demographics : [],
         targetCountries: Array.isArray(stored.targetCountries) ? stored.targetCountries : [],
       });
-    }
-  }, []);
+    };
+    apply();
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === null || e.key === "topuni_discover_profile") apply();
+    };
+    const onSelf = () => apply();
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("tu:profile", onSelf);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("tu:profile", onSelf);
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     if (phase !== "analyzing") return;
@@ -3073,13 +3188,11 @@ const Discover = ({ language = "en" }: Props) => {
         if (!item || FIELD_JUNK.test(item)) return;
         if (item.length > 42) return;
 
-        const key = item.toLowerCase()
-          .replace(/[-_]+/g, " ")
-          .replace(/\s+/g, " ")
-          .replace(/s$/, "")
-          .replace(/&/g, "and");
+        const key = normalizeFieldKey(item);
+        // Skip empty post-normalization keys (e.g. raw was just "fields").
+        if (!key || key.length < 2) return;
 
-        const display = titleCaseField(item.replace(/[-_]+/g, " ").replace(/\s+/g, " "));
+        const display = titleCaseField(key);
         const cur = counts.get(key);
         if (cur) cur.n++;
         else counts.set(key, { display, n: 1 });
@@ -3153,21 +3266,19 @@ const Discover = ({ language = "en" }: Props) => {
         && s.target_demographics.includes(filters.demographic));
     }
     if (filters.field !== "all") {
-      // Mirror the dedupe pipeline used to build the dropdown: comma-
-      // split run-on LLM strings, normalise separators + trailing-s +
-      // & vs and. Without this, picking "Engineering" wouldn't match
-      // a row whose target_fields contained "Computer Science,
-      // Engineering" (single comma-joined entry).
-      const norm = (f: string) => f.toLowerCase()
-        .replace(/[-_]+/g, " ")
-        .replace(/\s+/g, " ")
-        .replace(/&/g, "and")
-        .replace(/s$/, "");
-      const want = norm(filters.field);
+      // Use the SAME normalizeFieldKey() the dropdown builder uses so
+      // selecting "STEM" matches a row whose target_fields contains
+      // "Women in STEM" or "Science, Technology, Engineering and Math".
+      // Pre-fix the inline norm here only handled separators + plurals;
+      // it didn't apply the synonym map or strip "related fields", so
+      // the dropdown would offer a consolidated "STEM" option but
+      // selecting it filtered against a stricter key and returned 0
+      // matches.
+      const want = normalizeFieldKey(filters.field);
       list = list.filter(s =>
         s.target_fields?.some(f => {
           const splits = f.split(/\s*[,/;]\s*/).filter(Boolean);
-          return splits.some(item => norm(item) === want);
+          return splits.some(item => normalizeFieldKey(item) === want);
         }),
       );
     }
@@ -3335,8 +3446,13 @@ const Discover = ({ language = "en" }: Props) => {
         <AnimatePresence mode="wait">
           {/* ══ LANDING ══ */}
           {phase === "landing" && (
+            // min-h-screen (not 100vh-64px) because the navigation here
+            // is overlay-mode (transparent, on top of the navy hero) —
+            // it doesn't take layout space, so subtracting 64px biased
+            // the vertical centering up by ~32px on mobile and the
+            // hero content sat above the optical centre.
             <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className="relative min-h-[calc(100vh-64px)] flex flex-col items-center justify-center px-6 text-center overflow-hidden">
+              className="relative min-h-screen flex flex-col items-center justify-center px-6 text-center overflow-hidden">
 
               <motion.div style={{ opacity: heroOpacity, y: heroY }} className="max-w-4xl mx-auto relative z-10 space-y-9">
                 <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.7 }}
@@ -3751,61 +3867,118 @@ const Discover = ({ language = "en" }: Props) => {
                   ? FIELDS.find(f => f.v === profile.field)?.i ?? null
                   : null;
                 const countryAccent = accentForCountry(profile.country);
+                // Live counters derived from `ranked` (the post-score
+                // result set). Pre-redesign the strip just regurgitated
+                // the profile chips with no signal of what the database
+                // had actually surfaced; user feedback was "is that
+                // really the best we can come up with?". These three
+                // numbers tell the user immediately what's at stake:
+                // total opportunities, urgency, and dollar value.
+                const matchCount = ranked.length;
+                const now = Date.now();
+                const closingSoon = ranked.filter(r => {
+                  if (!r.application_deadline) return false;
+                  const days = Math.ceil((new Date(r.application_deadline).getTime() - now) / 86400000);
+                  return days >= 0 && days <= 30;
+                }).length;
+                const totalFunding = ranked.reduce((sum, r) => sum + (r.estimated_total_value_usd ?? 0), 0);
+                const fundingText = totalFunding >= 1_000_000
+                  ? `$${(totalFunding / 1_000_000).toFixed(totalFunding >= 10_000_000 ? 0 : 1)}M`
+                  : totalFunding >= 1000
+                    ? `$${Math.round(totalFunding / 1000)}K`
+                    : null;
                 return (
                   <div className="relative bg-canvas-soft/60 border-b border-border/60 overflow-hidden">
-                    {/* Round-33 tightening: profile context strip used to
-                        be py-5 sm:py-6 with full-size chips. That ate
-                        ~80px of vertical space for what's essentially
-                        "here's what we know about you" context. Now
-                        py-2 sm:py-2.5 with smaller chips so it reads as
-                        a slim subtitle bar rather than a competing
-                        section. Total profile context line is now ~36px
-                        instead of ~80px. */}
-                    <div className="relative max-w-7xl mx-auto px-5 sm:px-8 py-2 sm:py-2.5 flex items-center gap-1.5 flex-wrap">
-                      <div className="flex items-center gap-1.5 flex-wrap min-w-0 flex-1">
-                        {isProfileFilled ? (
-                          <>
-                            <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/80 font-semibold mr-1">
-                              {t("Matches for", "Под профиль")}
+                    {/* Two rows now (was a single chip strip):
+                        1. Live counters — matches / closing soon / total funding
+                        2. Profile context chips — country / degree / field
+                        Counter row is the user's "what does the database
+                        say about ME" signal; profile row is the "this is
+                        what we filtered on" provenance. */}
+                    <div className="relative max-w-7xl mx-auto px-5 sm:px-8 py-2.5 sm:py-3">
+                      {isProfileFilled ? (
+                        <div className="flex items-start sm:items-center gap-3 flex-wrap">
+                          {/* Live counters — the headline numbers */}
+                          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="font-heading font-bold text-foreground text-base sm:text-lg tabular-nums leading-none">{matchCount}</span>
+                              <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-muted-foreground/85">{t("matches", "совпадений")}</span>
+                            </div>
+                            {closingSoon > 0 && (
+                              <div className="flex items-baseline gap-1.5 pl-3 border-l border-border/60">
+                                <span className={`font-heading font-bold text-base sm:text-lg tabular-nums leading-none ${closingSoon >= 5 ? "text-destructive" : "text-amber-700 dark:text-amber-400"}`}>{closingSoon}</span>
+                                <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-muted-foreground/85">{t("closing 30d", "закрыв. 30д")}</span>
+                              </div>
+                            )}
+                            {fundingText && (
+                              <div className="flex items-baseline gap-1.5 pl-3 border-l border-border/60">
+                                <span className="font-heading font-bold text-gold-dark dark:text-gold text-base sm:text-lg tabular-nums leading-none">{fundingText}</span>
+                                <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-muted-foreground/85">{t("total value", "общая сумма")}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Profile chips — provenance, smaller weight */}
+                          <div className="flex items-center gap-1.5 flex-wrap sm:ml-auto">
+                            <span className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground/70 font-semibold">
+                              {t("for", "для")}
                             </span>
                             {profile.country && (
-                              <span className={`inline-flex items-center gap-1 text-[11px] font-semibold text-white px-2 py-0.5 rounded-full bg-gradient-to-r ${countryAccent}`}>
-                                {countryFlag && <span className="text-xs leading-none">{countryFlag}</span>}
+                              <span className={`inline-flex items-center gap-1 text-[10px] font-semibold text-white px-2 py-0.5 rounded-full bg-gradient-to-r ${countryAccent}`}>
+                                {countryFlag && <span className="text-[11px] leading-none">{countryFlag}</span>}
                                 {profile.country}
                               </span>
                             )}
                             {profile.degrees && profile.degrees.length > 0 && (
-                              <span className="inline-flex items-center gap-1 text-[11px] text-foreground/80 bg-card border border-border/70 px-2 py-0.5 rounded-full font-medium">
+                              <span className="inline-flex items-center gap-1 text-[10px] text-foreground/75 bg-card border border-border/70 px-2 py-0.5 rounded-full font-medium">
                                 <GraduationCap className="h-3 w-3 text-gold-dark" />
                                 {profile.degrees.join(" / ")}
                               </span>
                             )}
                             {profile.field && (
-                              <span className="inline-flex items-center gap-1 text-[11px] text-foreground/80 bg-card border border-border/70 px-2 py-0.5 rounded-full font-medium">
+                              <span className="inline-flex items-center gap-1 text-[10px] text-foreground/75 bg-card border border-border/70 px-2 py-0.5 rounded-full font-medium">
                                 {fieldEmoji && <span className="leading-none">{fieldEmoji}</span>}
                                 {profile.field}
                               </span>
                             )}
-                            {profile.gpa && (
-                              <span className="text-[10px] text-muted-foreground tabular-nums">GPA {profile.gpa}/{profile.gpaScale}</span>
-                            )}
-                            {profile.ielts && (
-                              <span className="text-[10px] text-muted-foreground tabular-nums">IELTS {profile.ielts}</span>
-                            )}
-                            <button onClick={resetProfile} className="text-[11px] text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline ml-auto">
+                            <button onClick={resetProfile} className="text-[10px] text-muted-foreground/80 hover:text-foreground transition-colors underline-offset-4 hover:underline ml-1">
                               {t("Edit", "Изменить")}
                             </button>
-                          </>
-                        ) : (
+                          </div>
+                        </div>
+                      ) : (
+                        // Pre-profile: same counter geometry as the
+                        // profiled state so the strip's height stays
+                        // stable when the user fills their profile —
+                        // less layout jank. Counters use the unfiltered
+                        // catalogue total so unprofiled users see the
+                        // database scale up front.
+                        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="font-heading font-bold text-foreground text-base sm:text-lg tabular-nums leading-none">{matchCount}</span>
+                            <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-muted-foreground/85">{t("scholarships", "стипендий")}</span>
+                          </div>
+                          {closingSoon > 0 && (
+                            <div className="flex items-baseline gap-1.5 pl-3 border-l border-border/60">
+                              <span className={`font-heading font-bold text-base sm:text-lg tabular-nums leading-none ${closingSoon >= 5 ? "text-destructive" : "text-amber-700 dark:text-amber-400"}`}>{closingSoon}</span>
+                              <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-muted-foreground/85">{t("closing 30d", "закрыв. 30д")}</span>
+                            </div>
+                          )}
+                          {fundingText && (
+                            <div className="flex items-baseline gap-1.5 pl-3 border-l border-border/60">
+                              <span className="font-heading font-bold text-gold-dark dark:text-gold text-base sm:text-lg tabular-nums leading-none">{fundingText}</span>
+                              <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-muted-foreground/85">{t("total value", "общая сумма")}</span>
+                            </div>
+                          )}
                           <button
                             onClick={() => navigate(language === "ru" ? "/topuni-ai/ru" : "/topuni-ai")}
-                            className="inline-flex items-center gap-1.5 text-sm font-semibold text-gold-dark hover:text-foreground transition-colors group"
+                            className="ml-auto inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-gold-dark hover:text-foreground transition-colors group whitespace-nowrap"
                           >
-                            {t("Build profile to see fit scoring", "Заполните профиль для оценки совпадения")}
+                            {t("Build profile to see your fit", "Заполните профиль")}
                             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                           </button>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -3925,7 +4098,12 @@ const Discover = ({ language = "en" }: Props) => {
                 <div className="flex gap-8">
                   {/* ─── SIDEBAR — Discover navigation rail ─── */}
                   <aside className="hidden lg:block w-[232px] shrink-0">
-                    <div className="sticky top-24 space-y-3.5">
+                    {/* Sticky offset = nav (64px) + toolbar (~64px py-3 +
+                        h-10) + 12px breathing room. Pre-fix the sidebar
+                        was top-24 (96px) so it slid under the toolbar
+                        on scroll and the "Browse" / "Saved" labels got
+                        clipped behind the search bar (user-reported). */}
+                    <div className="sticky top-36 space-y-3.5">
                       <nav className="bg-card border border-border rounded-2xl p-3 shadow-sm">
                         {([
                           // Two surfaces: Browse the database, or
@@ -3937,7 +4115,7 @@ const Discover = ({ language = "en" }: Props) => {
                           // duplication. Pipeline removed earlier;
                           // tracking lives on /pipeline.
                           { id: "browse" as AppSection,      label: "Browse",       icon: Layers,        count: 0 },
-                          { id: "shortlist" as AppSection,   label: "Shortlist",    icon: BookmarkCheck, count: shortlist.size,  accent: shortlist.size > 0 },
+                          { id: "shortlist" as AppSection,   label: "Saved",        icon: BookmarkCheck, count: shortlist.size,  accent: shortlist.size > 0 },
                         ]).map(item => {
                           const Icon = item.icon;
                           const active = appSection === item.id;
@@ -4084,7 +4262,7 @@ const Discover = ({ language = "en" }: Props) => {
                           <div className="flex items-baseline justify-between pb-5 border-b border-border/60">
                             <div>
                               <p className="text-gold-dark text-[11px] font-semibold uppercase tracking-[0.22em] mb-1">
-                                {appSection === "shortlist" ? "Shortlist" : "Collections"}
+                                {appSection === "shortlist" ? "Saved" : "Collections"}
                               </p>
                               <h2 className="font-heading text-2xl font-bold tracking-tight text-foreground">
                                 {appSection === "shortlist" ? "Saved scholarships" : "Collections"}
@@ -4595,7 +4773,7 @@ const Discover = ({ language = "en" }: Props) => {
                     {paywallOpen === "compare" && "Compare more than 2 scholarships."}
                   </SheetTitle>
                   <p className="text-primary-foreground/65 text-sm leading-relaxed pt-1 text-left">
-                    {paywallOpen === "shortlist" && `You've saved your free ${SHORTLIST_FREE_LIMIT}. Founding Pro members keep an unlimited shortlist plus per-scholarship status tracking and notes.`}
+                    {paywallOpen === "shortlist" && `You've saved your free ${SHORTLIST_FREE_LIMIT}. Founding Pro members get unlimited saves plus per-scholarship status tracking and notes.`}
                     {paywallOpen === "strategy" && "Strategy notes — ideal-candidate profile, how-to-win approach, common rejection reasons, weak-candidate warnings — are part of the Founding Pro membership."}
                     {paywallOpen === "compare" && "Compare up to three scholarships side-by-side as a Founding Pro member."}
                   </p>

@@ -2,6 +2,7 @@ import * as React from 'npm:react@18.3.1'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
+import { checkRateLimit, clientIp } from '../_shared/rate-limit.ts'
 
 // Configuration baked in at scaffold time — do NOT change these manually.
 // To update, re-run the email domain setup flow.
@@ -52,6 +53,30 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     )
+  }
+
+  // Per-IP rate limit. verify_jwt=true at the gateway only enforces a
+  // valid JWT (anon key counts), so anyone with the public anon key
+  // could otherwise spray TopUni-branded emails to arbitrary addresses
+  // — sender-reputation poisoning + phishing-template-replay risk.
+  // Bypass for service_role callers (cron jobs may legitimately fan
+  // out to many recipients per minute).
+  const SB_SECRET = Deno.env.get('SB_SECRET_KEY') ?? ''
+  const SR_LEGACY = supabaseServiceKey
+  const bearer = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim()
+  const isServiceRole =
+    (SR_LEGACY && bearer === SR_LEGACY) ||
+    (SB_SECRET && bearer === SB_SECRET)
+  if (!isServiceRole) {
+    const supaRL = createClient(supabaseUrl, supabaseServiceKey)
+    const ip = clientIp(req)
+    const ok = await checkRateLimit(supaRL, { key: `send-email:${ip}`, perMinute: 5 })
+    if (!ok) {
+      return new Response(
+        JSON.stringify({ error: 'Rate limit exceeded' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
   }
 
   // Parse request body

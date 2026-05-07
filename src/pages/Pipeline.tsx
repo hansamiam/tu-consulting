@@ -28,14 +28,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { supabase } from "@/integrations/supabase/client";
 import { useApplicationTracker, type AppStatus } from "@/hooks/useApplicationTracker";
 import { useAuth } from "@/contexts/AuthContext";
-// ScholarshipChecklist + DueThisWeek imports retired round 39.
-// Both components were removed from render in round 34 (overpromised
-// feature polish) but their imports stayed dangling. Files remain at
-// src/components/pipeline/DueThisWeek.tsx and ScholarshipChecklist.tsx
-// for if/when we reintroduce.
 import { CountryArt } from "@/lib/countryArt";
 import { accentForCountry, shortCountry } from "@/lib/countryAccent";
 import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
+import { daysUntil } from "@/lib/dates";
+import { toast } from "sonner";
 import { CalendarSubscribeDialog } from "@/components/pipeline/CalendarSubscribeDialog";
 import { EssayDraftPanel } from "@/components/pipeline/EssayDraftPanel";
 import { AdditionalEssaysPanel } from "@/components/pipeline/AdditionalEssaysPanel";
@@ -78,7 +75,7 @@ const COLUMNS: { key: AppStatus | "shortlisted" | "active"; label: { en: string;
 ];
 
 const STATUS_OPTIONS: { value: AppStatus | null | "shortlisted"; label: { en: string; ru: string } }[] = [
-  { value: "shortlisted", label: { en: "Shortlisted only",  ru: "В шорт-лист" } },
+  { value: "shortlisted", label: { en: "Saved only",         ru: "Только сохранённые" } },
   { value: "researching", label: { en: "Researching",       ru: "Изучаю" } },
   { value: "drafting",    label: { en: "Drafting",          ru: "Готовлю" } },
   { value: "submitted",   label: { en: "Submitted",         ru: "Подал" } },
@@ -95,12 +92,6 @@ const fmtMoney = (v: number | null | undefined): string | null => {
   return `$${v}`;
 };
 
-const daysUntil = (iso: string | null): number | null => {
-  if (!iso) return null;
-  const t = new Date(iso).getTime();
-  if (Number.isNaN(t)) return null;
-  return Math.ceil((t - Date.now()) / 86400_000);
-};
 
 interface PipelineProps {
   language?: "en" | "ru";
@@ -140,7 +131,7 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
     let cancelled = false;
     setLoading(true);
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("scholarships")
         .select(
           "scholarship_id, scholarship_name, provider_name, host_country, " +
@@ -151,6 +142,17 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
         )
         .in("scholarship_id", trackedIds);
       if (cancelled) return;
+      if (error) {
+        // Don't blow away `rows` — keep whatever we already had so the
+        // user's board doesn't suddenly empty out on a transient
+        // network blip. Surface the failure as a toast so the user
+        // knows to retry.
+        toast.error(language === "ru"
+          ? "Не удалось загрузить ваш pipeline. Проверьте соединение."
+          : "Couldn't refresh your pipeline. Check your connection.");
+        setLoading(false);
+        return;
+      }
       setRows((data as Scholarship[]) ?? []);
       setLoading(false);
     })();
@@ -203,7 +205,10 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
     );
     const urgent = active.filter((r) => {
       const d = daysUntil(r.application_deadline);
-      return d !== null && d > 0 && d <= 30;
+      // Include today (d === 0) — a same-day deadline is the *most*
+      // urgent kind. Excluding it (the previous `d > 0` bound) hid
+      // exactly the row the banner was supposed to surface.
+      return d !== null && d >= 0 && d <= 30;
     });
     const stackUsd = active.reduce((s, r) => s + (r.estimated_total_value_usd ?? 0), 0);
     const submitted = rows.filter((r) => tracker.statusMap[r.scholarship_id] === "submitted").length;
@@ -312,9 +317,17 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
     setAwardStep("capture");
   };
 
+  // Sync the note-draft from the tracker ONLY when the detail sheet
+  // opens for a different scholarship. Previously this also ran on
+  // every tracker.notesMap change — and notesMap is a fresh Map ref
+  // on every state mutation (saving an essay draft, toggling a
+  // shortlist, anything). So a user editing notes for scholarship A
+  // while ANY other tracker change fired would have their in-progress
+  // typing overwritten with the last-persisted DB value.
   useEffect(() => {
     if (openDetail) setDraftNote(tracker.notesMap[openDetail.scholarship_id] || "");
-  }, [openDetail, tracker.notesMap]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openDetail?.scholarship_id]);
 
   const saveNote = () => {
     if (!openDetail) return;
@@ -429,17 +442,7 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
           </div>
         ) : trackedIds.length === 0 ? (
           <EmptyState language={language} />
-        ) : (
-          <>
-            {/* Round-34: DueThisWeek banner retired. The aggregated
-                checklist-blocker callout was overpromising the scope
-                of features we currently ship reliably; the simpler
-                signal is "see your kanban → click into a scholarship
-                → its detail sheet shows the next action." Removing
-                the banner keeps the page focused on the actual
-                tracker rather than a stack of editorial summaries. */}
-          </>
-        )}
+        ) : null}
         {/* View toggle — by-category (kanban) vs flat list. Only shown
             when there's actual tracked content; on the empty state the
             toggle would just sit above an empty page. */}
@@ -575,12 +578,6 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
           <h2 className="font-heading text-lg sm:text-xl font-bold text-foreground mb-4 tracking-tight">
             {t("Upcoming deadlines", "Ближайшие дедлайны")}
           </h2>
-          {/* Round-34: replaced the full month-grid WorkspaceCalendar
-              with a compact UpcomingDeadlines list — same data
-              (next-N tracked-scholarship deadlines), tighter
-              footprint. The "month view" use case is covered by the
-              .ics calendar feed (Apple / Google / Outlook get the
-              full grid natively). */}
           <UpcomingDeadlines
             rows={rows.map(r => ({
               scholarship_id: r.scholarship_id,
@@ -737,7 +734,7 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                               return opt?.label[isRu ? "ru" : "en"] ?? s;
                             }
                             return tracker.shortlist.has(openDetail.scholarship_id)
-                              ? t("Shortlisted only", "В шорт-листе")
+                              ? t("Saved only", "Только сохранённые")
                               : t("Set status", "Поставить статус");
                           })()}
                         </span>
@@ -765,19 +762,6 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-
-                {/* Round-34: ScholarshipChecklist component removed
-                    from this surface. The AI-generated 8-item
-                    checklist (Documents / Essays / Recommendations /
-                    Portal Actions / Logistics) was overpromising
-                    polish we don't yet ship reliably; cached
-                    completion state, mid-rendering flicker, and
-                    sometimes-stale items made it feel half-baked.
-                    The user's own Notes + RecommendersPanel + Essay
-                    drafter cover the same ground at a quality bar
-                    we can actually hold. The checklist returns when
-                    the underlying generation is solid enough to be
-                    a feature, not a placeholder. */}
 
                 {/* Notes */}
                 <div>
@@ -1116,10 +1100,15 @@ const PipelineCard = ({
           cards so the user sees the same scholarship as the same
           object across surfaces. Landmark silhouette overlaid right. */}
       <div className={`relative h-7 bg-gradient-to-r ${accent} overflow-hidden`}>
-        <CountryArt country={s.host_country} className="absolute right-1 inset-y-0 h-full opacity-35 pointer-events-none text-white" />
+        {/* Silhouette is bounded so it never covers the days-chip on
+            the right. Earlier the unbounded h-full image could span the
+            full width on narrow cards and partially clip the deadline
+            countdown — same class of bug as the Discover ScholarCard
+            "+1" overflow (615cd5c). */}
+        <CountryArt country={s.host_country} className="absolute right-1 inset-y-0 h-full max-w-[28%] opacity-35 pointer-events-none text-white" />
         <span className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-transparent pointer-events-none" />
         <div className="relative h-full flex items-center justify-between gap-2 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/95 whitespace-nowrap">
-          <span className="truncate drop-shadow-sm">
+          <span className="truncate drop-shadow-sm min-w-0">
             {s.host_country ? shortCountry(s.host_country) : "—"}
           </span>
           <span className={`tabular-nums shrink-0 px-1.5 py-0.5 rounded ${days !== null && days <= 7 ? "bg-destructive text-destructive-foreground" : days !== null && days <= 30 ? "bg-amber-500 text-amber-950" : "bg-white/15 text-white/95"}`}>

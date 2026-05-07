@@ -128,12 +128,19 @@ Hard rules:
 
 ${EDITORIAL_RULES_TIGHT}`;
 
-async function generateNudge(caseBlock: string): Promise<string> {
+async function generateNudge(caseBlock: string, language: "en" | "ru" = "en"): Promise<string> {
+  // Russian users get the body in Russian. The model writes in
+  // whichever language the user-side instruction asks for; the system
+  // prompt rules stay in English (the editorial rules are the same
+  // regardless of output language).
+  const userInstruction = language === "ru"
+    ? `Напиши еженедельный план для этого студента на русском языке. Без приветствия — шаблон email сам поздоровается. 120-200 слов. Конкретные названия стипендий из данных, не выдумывай.\n\n${caseBlock}`
+    : `Write the week's check-in for this student:\n\n${caseBlock}`;
   const resp = await chatCompletions({
     tier: "flash",
     messages: [
       { role: "system", content: NUDGE_SYSTEM_PROMPT },
-      { role: "user", content: `Write the week's check-in for this student:\n\n${caseBlock}` },
+      { role: "user", content: userInstruction },
     ],
     stream: false,
   });
@@ -176,7 +183,7 @@ Deno.serve(async (req) => {
 
   const { data: profiles, error: profileErr } = await supa
     .from("student_profiles")
-    .select("user_id, full_name, email, major, field_of_study, target_countries, gpa, ielts, last_nudge_sent_at")
+    .select("user_id, full_name, email, major, field_of_study, target_countries, gpa, ielts, last_nudge_sent_at, language")
     .eq("nudge_opt_out", false)
     .or(`last_nudge_sent_at.is.null,last_nudge_sent_at.lt.${cooldown}`)
     .returns<ProfileRow[]>();
@@ -236,7 +243,8 @@ Deno.serve(async (req) => {
 
       const { block, stats } = buildCaseBlock(profile, tracker ?? [], taskCount ?? 0);
 
-      const aiBody = await generateNudge(block);
+      const userLang: "en" | "ru" = (profile as { language?: string | null }).language === "ru" ? "ru" : "en";
+      const aiBody = await generateNudge(block, userLang);
 
       // Send via the existing transactional email pipeline
       const firstName = profile.full_name?.split(" ")[0]?.trim();
@@ -262,7 +270,10 @@ Deno.serve(async (req) => {
             trackedCount: stats.tracked,
             urgentDeadlines: stats.urgent,
             statusPending: stats.pending,
-            unsubscribeUrl: `${SITE}/account?action=pause-nudges`,
+            unsubscribeUrl: userLang === "ru"
+              ? `${SITE}/account/ru?action=pause-nudges`
+              : `${SITE}/account?action=pause-nudges`,
+            language: userLang,
           },
         },
       });

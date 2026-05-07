@@ -102,8 +102,14 @@ export const EssayDraftPanel = ({ scholarshipId, scholarshipName, value, onChang
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedAt]);
 
+  // Latest typed draft, captured for the unmount-flush. The debounce
+  // closure keeps an older `next` snapshot — if the user closes the
+  // detail sheet within 800ms of their last keystroke we'd lose those
+  // last characters. Hold the live value in a ref so cleanup can flush.
+  const latestDraftRef = useRef<string>(value);
   const onTextChange = (next: string) => {
     setDraft(next);
+    latestDraftRef.current = next;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       onChange(next);
@@ -111,6 +117,24 @@ export const EssayDraftPanel = ({ scholarshipId, scholarshipName, value, onChang
       setSavedAt(Date.now());
     }, 800);
   };
+
+  // Flush any pending debounced save on unmount so a panel close mid-
+  // typing doesn't drop the last few characters. Essay text is the
+  // most expensive thing the user has ever typed in TopUni — losing
+  // even a sentence to a 0.8s debounce is unacceptable.
+  // Use a ref for onChange so cleanup gets the freshest dispatcher
+  // without re-running on every render.
+  const onChangeRef = useRef(onChange);
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+        onChangeRef.current(latestDraftRef.current);
+      }
+    };
+  }, []);
 
   // ─── Word target ──────────────────────────────────────────────────
   const [target, setTarget] = useState<WordTarget>(() => loadTarget(scholarshipId));
@@ -186,8 +210,18 @@ export const EssayDraftPanel = ({ scholarshipId, scholarshipName, value, onChang
         signal: controller.signal,
       });
       if (!res.ok || !res.body) {
-        const text = await res.text().catch(() => "");
-        throw new Error(text || `Request failed (${res.status})`);
+        // Prefer parsed JSON error body — every edge fn returns
+        // { error: "..." } on failure. Fall back to raw text only
+        // if the body isn't JSON. Without this, a 429 body of
+        // \`{"error":"Rate limit exceeded..."}\` showed up as the
+        // raw JSON string in the toast.
+        const raw = await res.text().catch(() => "");
+        let message = raw || `Request failed (${res.status})`;
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed.error === "string") message = parsed.error;
+        } catch { /* keep raw */ }
+        throw new Error(message);
       }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -230,6 +264,16 @@ export const EssayDraftPanel = ({ scholarshipId, scholarshipName, value, onChang
     if (abortRef.current) abortRef.current.abort();
     setCritiquing(false);
   };
+
+  // Abort any in-flight critique stream when the panel unmounts.
+  // Without this, closing the detail sheet mid-critique left the
+  // request streaming server-side (tokens billed) and the React
+  // setState calls would warn "Can't update an unmounted component."
+  useEffect(() => {
+    return () => {
+      if (abortRef.current) abortRef.current.abort();
+    };
+  }, []);
 
   const wordCount = draft.trim() ? draft.trim().split(/\s+/).length : 0;
   const charCount = draft.length;

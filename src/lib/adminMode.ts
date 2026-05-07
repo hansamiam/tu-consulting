@@ -13,7 +13,7 @@
  * admin mode for that.
  */
 
-export const ADMIN_EMAILS = [
+const ADMIN_EMAILS = [
   "samuel.shn.han@gmail.com",
 ];
 

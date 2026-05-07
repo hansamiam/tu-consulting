@@ -450,7 +450,10 @@ serve(async (req) => {
           .select(
             "scholarship_id, scholarship_name, provider_name, host_country, " +
             "coverage_type, award_amount_text, estimated_total_value_usd, " +
-            "target_degree_level, target_fields, application_deadline, " +
+            "target_degree_level, target_fields, target_demographics, " +
+            "eligible_countries, application_deadline, deadline_type, " +
+            "min_gpa, gpa_scale, min_ielts, min_toefl, " +
+            "selectivity_level, ideal_candidate_profile, " +
             "eligibility_requirements, citizenship_requirements, official_url, " +
             "source_url, last_verified_at, verification_status, " +
             "why_this_fits, strategy_notes"
@@ -564,15 +567,63 @@ serve(async (req) => {
       const cleanedAward = cleanAwardText(s.award_amount_text);
       const fields = (s.target_fields || []).filter(Boolean).join(", ");
       const levels = (s.target_degree_level || []).filter(Boolean).join(", ");
+      const demographics = (s.target_demographics || []).filter(Boolean).join(", ");
+      const eligibleCountries = (s.eligible_countries || []).filter(Boolean).slice(0, 8).join(", ");
       const elig = String(s.eligibility_requirements || "").slice(0, 240);
+      const ideal = String(s.ideal_candidate_profile || "").slice(0, 200);
       const sim = typeof s._similarity === "number" ? ` (relevance ${(s._similarity * 100).toFixed(0)}%)` : "";
       const eligTag = s._eligible === false ? " [eligibility unclear — review]" : "";
       const focusTag = s._focus ? " [STUDENT'S FOCUS — they arrived from this scholarship's detail page]" : "";
+
+      // Numeric thresholds — only render the line when at least one is
+      // present, so the LLM doesn't get a blizzard of "—".
+      const thresholdParts: string[] = [];
+      if (s.min_gpa) thresholdParts.push(`GPA ≥ ${s.min_gpa}/${s.gpa_scale ?? 4.0}`);
+      if (s.min_ielts) thresholdParts.push(`IELTS ≥ ${s.min_ielts}`);
+      if (s.min_toefl) thresholdParts.push(`TOEFL ≥ ${s.min_toefl}`);
+      const thresholds = thresholdParts.length > 0 ? `\n   Thresholds: ${thresholdParts.join("; ")}` : "";
+
+      // Total value — surface the dollar figure so the LLM can compare
+      // ROI across scholarships. The award_amount_text is human-readable
+      // but unstructured; estimated_total_value_usd is the canonical
+      // sortable number students actually use to triage.
+      const totalValue = s.estimated_total_value_usd
+        ? `\n   Total value: ~$${Math.round(s.estimated_total_value_usd).toLocaleString()}`
+        : "";
+
+      // Selectivity tier — drives the "should you spend 20 hours on this
+      // application" call. Without it, the LLM can't honestly tell a
+      // candidate that Schwarzman is a 1-in-2,000 long-bet.
+      const selectivity = s.selectivity_level
+        ? `\n   Selectivity: ${s.selectivity_level}`
+        : "";
+
+      // Demographic targeting — when a scholarship is specifically for
+      // women / refugees / first-gen / etc., the LLM needs to surface
+      // alignment (or honest mismatch) for the student.
+      const audience = demographics
+        ? `\n   Audience: ${demographics}`
+        : "";
+
+      // Eligible-country list — geographic restriction. Only render the
+      // first 8 to keep the context compact.
+      const geo = eligibleCountries
+        ? `\n   Eligible countries: ${eligibleCountries}`
+        : "";
+
+      // Editorial fit line — the catalog's own "who fits this" sentence.
+      // Helpful prior for the LLM when the student's profile is borderline.
+      const idealLine = ideal
+        ? `\n   Ideal candidate: ${ideal}`
+        : "";
+
+      const deadlineLine = `${s.application_deadline || "varies"}${s.deadline_type ? ` (${s.deadline_type})` : ""}`;
+
       return `${i + 1}. ${cleanedName}${sim}${eligTag}${focusTag}
    Provider: ${cleanedProv}; host: ${cleanedCountry}
-   Coverage: ${s.coverage_type}${cleanedAward ? ` — ${cleanedAward}` : ""}
-   Levels: ${levels || "any"}; fields: ${fields || "any"}
-   Deadline: ${s.application_deadline || "varies"}; URL: ${s.official_url || "—"}
+   Coverage: ${s.coverage_type}${cleanedAward ? ` — ${cleanedAward}` : ""}${totalValue}
+   Levels: ${levels || "any"}; fields: ${fields || "any"}${selectivity}${thresholds}${audience}${geo}${idealLine}
+   Deadline: ${deadlineLine}; URL: ${s.official_url || "—"}
    Eligibility: ${elig || "—"}`;
     }).join("\n\n");
 
@@ -764,8 +815,8 @@ One short paragraph (3-4 sentences) of specific encouragement based on this stud
 Throughout:
 - Be exceptionally specific. This is the premium tier — every paragraph should feel hand-written for this student.
 - Use real data from the database — name universities, programs, scholarships, deadlines.
-- Avoid the words "stretch," "long shot," "real shot," "safety school."
-- Confident, direct voice. The student should feel respected.`;
+
+${EDITORIAL_RULES}`;
 
     const studentNationality = (profile.nationality || "").trim();
     const audienceLine = studentNationality

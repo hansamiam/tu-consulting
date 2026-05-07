@@ -70,6 +70,15 @@ export const saveProfile = (profile: DiscoverProfile) => {
   localStorage.setItem(STORAGE_KEY, nextSerialized);
   if (prevSerialized !== nextSerialized) {
     try { localStorage.setItem(PROFILE_CHANGED_TS_KEY, Date.now().toString()); } catch { /* ignore */ }
+    // Cross-tab + cross-component update broadcast. The native `storage`
+    // event only fires in OTHER tabs — same-tab listeners (e.g. the
+    // Discover effect that re-hydrates profile state on change) need
+    // this custom event to pick up edits made in TopUni AI / Account /
+    // wherever within the same tab. Mirrors the tu:tracker / tu:watchlist
+    // pattern used elsewhere.
+    if (typeof window !== "undefined") {
+      try { window.dispatchEvent(new CustomEvent("tu:profile")); } catch { /* ignore */ }
+    }
     // Cross-device sync — fire-and-forget round-trip to student_profiles
     // when authed. Pre-this commit, profile edits only ever lived in
     // localStorage; a user editing on mobile would see a stale profile

@@ -101,6 +101,34 @@ interface State {
 // Single localStorage key (was four). Stored as a JSON object.
 const LS_KEY = "topuni-app-tracker-v2";
 
+/* Persistent set of scholarship IDs whose local entry is newer than
+ * what the DB last accepted. Survives across unmount → remount so a
+ * tab close within the 600 ms debounce window doesn't silently lose
+ * the user's edit when the next session's DB-pull would otherwise
+ * overwrite the local-but-unflushed value with the stale DB row.
+ *
+ * Cleared per-id once the upsert succeeds. Read on mount, fed back
+ * into pendingRef + used to mark "local wins" during the merge. */
+const LS_PENDING_KEY = "topuni-app-tracker-pending-v1";
+
+function loadPendingIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(LS_PENDING_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? new Set(arr.filter((x): x is string => typeof x === "string")) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function savePendingIds(ids: Set<string>) {
+  try {
+    if (ids.size === 0) localStorage.removeItem(LS_PENDING_KEY);
+    else localStorage.setItem(LS_PENDING_KEY, JSON.stringify(Array.from(ids)));
+  } catch { /* ignore */ }
+}
+
 const emptyState = (): State => ({
   byScholarship: new Map(),
   shortlist: new Set(),
@@ -228,7 +256,28 @@ let hasEssayCol: boolean | undefined;
 let hasRecommendersCol: boolean | undefined;
 let hasAdditionalEssaysCol: boolean | undefined;
 
-export interface ApplicationTrackerApi {
+/* Module-level coordination so the N InlineScholarshipCard instances
+ * inside a brief don't each fire their own application_tracker pull
+ * (= N redundant DB roundtrips of the same query) and so a mutation
+ * in one instance propagates to the others within the same tab.
+ *
+ * `inflightPull` dedupes concurrent pulls per user_id. The first
+ * caller drives the network; later callers await the same promise.
+ *
+ * `TRACKER_EVENT` is dispatched by every successful local mutation
+ * so other instances of the hook re-read from localStorage and
+ * re-render with the freshest state. The cross-tab `storage` event
+ * already covers other tabs; this covers other components in the
+ * same tab. */
+const inflightPull = new Map<string, Promise<DbRow[] | null>>();
+const TRACKER_EVENT = "tu:tracker";
+
+function broadcastTrackerChange() {
+  if (typeof window === "undefined") return;
+  try { window.dispatchEvent(new CustomEvent(TRACKER_EVENT)); } catch { /* ignore */ }
+}
+
+interface ApplicationTrackerApi {
   state: State;
   // Map-style getters
   status: Map<string, AppStatus>;
@@ -264,7 +313,9 @@ export function useApplicationTracker(): ApplicationTrackerApi {
   const [state, setState] = useState<State>(() => loadFromLocalStorage());
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
-  // Pending DB upserts — debounced flush
+  // Pending DB upserts — debounced flush. Seeded from the persisted
+  // pending-IDs set so a tab-close within the debounce window doesn't
+  // drop the in-flight write on the floor.
   const pendingRef = useRef<Map<string, TrackerEntry>>(new Map());
   const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -290,37 +341,49 @@ export function useApplicationTracker(): ApplicationTrackerApi {
         if (hasAdditionalEssaysCol !== false) cols.push("additional_essays");
         return cols.join(", ");
       };
-      let data: DbRow[] | null = null;
+      // Dedupe concurrent pulls — N InlineScholarshipCards mounting at
+      // the same time each used to fire their own identical query.
+      // First caller drives the request; later callers await the same
+      // promise and skip the network entirely.
+      const userId = user.id;
+      let data: DbRow[] | null;
       let error: { message: string; code?: string } | null = null;
-      // First attempt — whichever flags aren't explicitly false get included.
-      {
-        const r = await supabase
-          .from("application_tracker")
-          .select(buildSelect())
-          .eq("user_id", user.id)
-          .returns<DbRow[]>();
-        if (r.error) {
-          if (/awarded_amount_usd/i.test(r.error.message)) hasAwardCol = false;
-          if (/essay_draft/i.test(r.error.message)) hasEssayCol = false;
-          if (/recommenders/i.test(r.error.message)) hasRecommendersCol = false;
-          if (/additional_essays/i.test(r.error.message)) hasAdditionalEssaysCol = false;
-        } else {
+      const existing = inflightPull.get(userId);
+      if (existing) {
+        try { data = await existing; } catch { data = null; }
+      } else {
+        const p = (async (): Promise<DbRow[] | null> => {
+          // First attempt — whichever flags aren't explicitly false get included.
+          const r1 = await supabase
+            .from("application_tracker")
+            .select(buildSelect())
+            .eq("user_id", userId)
+            .returns<DbRow[]>();
+          if (r1.error) {
+            if (/awarded_amount_usd/i.test(r1.error.message)) hasAwardCol = false;
+            if (/essay_draft/i.test(r1.error.message)) hasEssayCol = false;
+            if (/recommenders/i.test(r1.error.message)) hasRecommendersCol = false;
+            if (/additional_essays/i.test(r1.error.message)) hasAdditionalEssaysCol = false;
+            // Retry once with whichever flags are now known false.
+            const r2 = await supabase
+              .from("application_tracker")
+              .select(buildSelect())
+              .eq("user_id", userId)
+              .returns<DbRow[]>();
+            if (r2.error) {
+              error = r2.error;
+              return null;
+            }
+            return r2.data;
+          }
           if (hasAwardCol === undefined) hasAwardCol = true;
           if (hasEssayCol === undefined) hasEssayCol = true;
           if (hasRecommendersCol === undefined) hasRecommendersCol = true;
           if (hasAdditionalEssaysCol === undefined) hasAdditionalEssaysCol = true;
-          data = r.data;
-        }
-      }
-      // Retry once with whatever flags are now known false.
-      if (data == null) {
-        const r = await supabase
-          .from("application_tracker")
-          .select(buildSelect())
-          .eq("user_id", user.id)
-          .returns<DbRow[]>();
-        data = r.data;
-        error = r.error;
+          return r1.data;
+        })();
+        inflightPull.set(userId, p);
+        try { data = await p; } finally { inflightPull.delete(userId); }
       }
       if (cancelled) return;
       if (error) {
@@ -328,11 +391,18 @@ export function useApplicationTracker(): ApplicationTrackerApi {
         setIsSyncing(false);
         return;
       }
-      // Merge: start with current local, overlay DB (DB wins for fields it has)
+      // Merge: start with current local, overlay DB (DB wins for fields
+      // it has) — except for IDs the persistent pending set marks as
+      // "local newer than DB", which keep their local value and re-queue
+      // for upsert. Without this, an unflushed local edit (e.g. tab
+      // closed within 600 ms of typing a note) gets silently overwritten
+      // by the stale DB row on the next session's pull.
+      const persistedPending = loadPendingIds();
       setState((prev) => {
         const merged = new Map(prev.byScholarship);
         const localOnly: { id: string; e: TrackerEntry }[] = [];
         for (const r of data ?? []) {
+          if (persistedPending.has(r.scholarship_id)) continue; // local wins
           merged.set(r.scholarship_id, entryFromDb(r));
         }
         // Find local entries that aren't in the DB → push them up next flush
@@ -341,6 +411,12 @@ export function useApplicationTracker(): ApplicationTrackerApi {
           if (!inDb && !entryIsEmpty(e)) localOnly.push({ id, e });
         }
         for (const { id, e } of localOnly) pendingRef.current.set(id, e);
+        // Re-queue every persisted-pending local entry so the upcoming
+        // flush actually pushes the local-wins values to the DB.
+        for (const id of persistedPending) {
+          const e = merged.get(id);
+          if (e) pendingRef.current.set(id, e);
+        }
         const next = rehydrate(Object.fromEntries(merged));
         saveToLocalStorage(next);
         return next;
@@ -382,6 +458,7 @@ export function useApplicationTracker(): ApplicationTrackerApi {
           if (includeAdditionalEssays) base.additional_essays = e.additionalEssays ?? null;
           return base;
         });
+      const flushedIds = Array.from(pending.keys());
       pendingRef.current = new Map();
       setIsSyncing(true);
       let { error } = await supabase
@@ -418,33 +495,45 @@ export function useApplicationTracker(): ApplicationTrackerApi {
             additionalEssays: e.additionalEssays ?? null,
           });
         }
+        // Pending IDs stay in the persistent set — they're still local-newer.
       } else {
         setLastSyncedAt(Date.now());
+        // Successful upsert — clear the just-flushed IDs from the
+        // persistent dirty set so they don't get re-queued unnecessarily
+        // on the next mount. Anything mutated *during* the flush is
+        // already back in the set via updateEntry.
+        const persisted = loadPendingIds();
+        for (const id of flushedIds) persisted.delete(id);
+        savePendingIds(persisted);
       }
     }, 600);
   }, [isAuthed, user?.id]);
 
-  /* Apply a partial update to one scholarship's entry — local + queue DB */
-  const updateEntry = useCallback((id: string, patch: TrackerEntry) => {
+  /* Apply a partial update to one scholarship's entry — local + queue DB.
+   * `patch` may be a function that receives the current entry — use this
+   * form for any toggle (shortlist, hidden) so rapid double-clicks read
+   * the *committed* state instead of the stale render-time state. */
+  const updateEntry = useCallback((id: string, patch: TrackerEntry | ((cur: TrackerEntry) => TrackerEntry)) => {
     setState((prev) => {
       const cur = prev.byScholarship.get(id) ?? {};
+      const p = typeof patch === "function" ? patch(cur) : patch;
       // Status flipping away from 'accepted' should clear any previously
       // captured award amount — otherwise stale outcomes pollute stats.
-      const nextStatus = "status" in patch ? patch.status : cur.status ?? null;
+      const nextStatus = "status" in p ? p.status : cur.status ?? null;
       const clearAward = nextStatus !== "accepted";
       const nextEntry: TrackerEntry = {
         status: nextStatus ?? null,
-        notes: "notes" in patch ? patch.notes : cur.notes ?? null,
-        shortlisted: "shortlisted" in patch ? !!patch.shortlisted : !!cur.shortlisted,
-        hidden: "hidden" in patch ? !!patch.hidden : !!cur.hidden,
+        notes: "notes" in p ? p.notes : cur.notes ?? null,
+        shortlisted: "shortlisted" in p ? !!p.shortlisted : !!cur.shortlisted,
+        hidden: "hidden" in p ? !!p.hidden : !!cur.hidden,
         awardedAmountUsd: clearAward
           ? null
-          : "awardedAmountUsd" in patch
-            ? patch.awardedAmountUsd ?? null
+          : "awardedAmountUsd" in p
+            ? p.awardedAmountUsd ?? null
             : cur.awardedAmountUsd ?? null,
-        essayDraft: "essayDraft" in patch ? patch.essayDraft ?? null : cur.essayDraft ?? null,
-        recommenders: "recommenders" in patch ? patch.recommenders ?? null : cur.recommenders ?? null,
-        additionalEssays: "additionalEssays" in patch ? patch.additionalEssays ?? null : cur.additionalEssays ?? null,
+        essayDraft: "essayDraft" in p ? p.essayDraft ?? null : cur.essayDraft ?? null,
+        recommenders: "recommenders" in p ? p.recommenders ?? null : cur.recommenders ?? null,
+        additionalEssays: "additionalEssays" in p ? p.additionalEssays ?? null : cur.additionalEssays ?? null,
       };
       const nextMap = new Map(prev.byScholarship);
       if (entryIsEmpty(nextEntry)) {
@@ -457,10 +546,23 @@ export function useApplicationTracker(): ApplicationTrackerApi {
       }
       const next = rehydrate(Object.fromEntries(nextMap));
       saveToLocalStorage(next);
+      // Mark this id as dirty in the persistent pending set so an
+      // unmount within the 600 ms debounce window doesn't drop it.
+      // Anon users have nothing to flush — skip the bookkeeping.
+      if (isAuthed) {
+        const persisted = loadPendingIds();
+        persisted.add(id);
+        savePendingIds(persisted);
+      }
       return next;
     });
+    // Tell other instances of this hook (e.g. inline cards inside the
+    // brief, the Pipeline page open in a side rail) that local state
+    // changed so their UIs reflect the toggle without waiting for a
+    // separate event.
+    broadcastTrackerChange();
     scheduleFlush();
-  }, [scheduleFlush]);
+  }, [scheduleFlush, isAuthed]);
 
   const setStatus = useCallback((id: string, status: AppStatus | null) => updateEntry(id, { status }), [updateEntry]);
   const setNote = useCallback((id: string, note: string) => updateEntry(id, { notes: note }), [updateEntry]);
@@ -468,26 +570,43 @@ export function useApplicationTracker(): ApplicationTrackerApi {
   const setEssayDraft = useCallback((id: string, draft: string | null) => updateEntry(id, { essayDraft: draft }), [updateEntry]);
   const setRecommenders = useCallback((id: string, list: Recommender[] | null) => updateEntry(id, { recommenders: list }), [updateEntry]);
   const setAdditionalEssays = useCallback((id: string, list: AdditionalEssay[] | null) => updateEntry(id, { additionalEssays: list }), [updateEntry]);
-  const toggleShortlist = useCallback((id: string) => {
-    setState((prev) => {
-      const cur = prev.byScholarship.get(id);
-      const next = !(cur?.shortlisted);
-      // Defer to updateEntry path on next render via a microtask so we keep state coherent
-      queueMicrotask(() => updateEntry(id, { shortlisted: next }));
-      return prev;
-    });
-  }, [updateEntry]);
-  const toggleHidden = useCallback((id: string) => {
-    setState((prev) => {
-      const cur = prev.byScholarship.get(id);
-      const next = !(cur?.hidden);
-      queueMicrotask(() => updateEntry(id, { hidden: next }));
-      return prev;
-    });
-  }, [updateEntry]);
+  // Toggles use the function form so two rapid clicks each see the
+  // committed state — previously they captured `next` from the
+  // render-time snapshot and queued microtasks with the *same* target
+  // value, so a double-click silently dropped the second flip.
+  const toggleShortlist = useCallback(
+    (id: string) => updateEntry(id, (cur) => ({ shortlisted: !cur.shortlisted })),
+    [updateEntry],
+  );
+  const toggleHidden = useCallback(
+    (id: string) => updateEntry(id, (cur) => ({ hidden: !cur.hidden })),
+    [updateEntry],
+  );
 
   /* Cleanup the debounce timer on unmount */
   useEffect(() => () => { if (flushTimer.current) clearTimeout(flushTimer.current); }, []);
+
+  /* Cross-instance + cross-tab sync — re-load from localStorage
+   * whenever another instance broadcasts a change or another tab
+   * writes the LS_KEY directly. Without this, two InlineScholarship-
+   * Cards in the same brief can disagree about whether a scholarship
+   * is shortlisted (each carries its own state). */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onChange = () => {
+      const fresh = loadFromLocalStorage();
+      setState(fresh);
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === LS_KEY) onChange();
+    };
+    window.addEventListener(TRACKER_EVENT, onChange);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener(TRACKER_EVENT, onChange);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
 
   /* Convenience accessors used by old call sites (Discover.tsx) */
   const status = useMemo(() => {

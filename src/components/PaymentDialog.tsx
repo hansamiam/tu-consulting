@@ -13,7 +13,7 @@ import { ExitIntentRecovery } from "@/components/ExitIntentRecovery";
 
 // Map a display name → server catalog key. The server is the source of truth
 // for actual prices, so we never trust the client number.
-export const PRODUCT_KEY_MAP: Record<string, string> = {
+const PRODUCT_KEY_MAP: Record<string, string> = {
   "Starter Package": "starter",
   "Standard Package": "standard",
   "Premium Package": "premium",

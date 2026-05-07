@@ -1,9 +1,11 @@
 /* Country landmark watermarks for Discover cards.
  *
- * Each scholarship card carries a subtle silhouette of a recognizable
- * landmark from the host country, watermarked into the gradient band.
- * Triggers imagination ("Eiffel for France, Mt Fuji for Japan") without
- * the visual chaos of full hero photos.
+ * Each scholarship card carries a silhouette of a recognizable landmark
+ * from the host country. These have to read iconic at a glance —
+ * "Eiffel = Paris/France", "Maple leaf flag = Canada", "Statue of
+ * Liberty = US" — without any explanation. Generic-building shapes
+ * fail the test; a building that *could* be in Berlin, Vienna, or
+ * Prague is worse than no silhouette at all.
  *
  * Implementation choice: hand-drawn inline SVG. No image fetches, no
  * licensing, no broken-link risk — and silhouettes read cleaner at
@@ -12,13 +14,10 @@
  * Each silhouette uses currentColor so it inherits the band's white
  * text colour. Wrap with opacity at the call site.
  *
- * Coverage tier:
- *   · 22 hand-drawn landmarks for top scholarship-host countries
- *   · Generic globe-marker for the long tail
- *
  * SVGs use viewBox 0 0 120 60 — wider-than-tall to fit alongside text
- * in the band. Anchor right of the band so the country label stays
- * readable on the left.
+ * in the band. Most landmarks anchor right of the band so the country
+ * label stays readable on the left. Some flag-icon landmarks (maple
+ * leaf, sun-disk) center themselves.
  */
 
 import React from "react";
@@ -31,309 +30,558 @@ const wrap = (children: React.ReactNode) => (
 
 /* ─── Landmarks ──────────────────────────────────────────────────────── */
 
-// Mt Fuji + sun (Japan)
+// Mt Fuji + sun (Japan) — symmetrical snow-capped cone, rising sun
+// behind. Snow cap is the giveaway for Fuji vs a generic mountain.
 const fuji = wrap(
   <>
-    <circle cx="92" cy="18" r="6" />
-    <path d="M40 52 L72 12 L104 52 Z" />
-    <path d="M62 26 L66 32 L70 22 L74 30 L78 24 L82 30 L72 32 Z" fill="#fff" opacity="0.5" />
+    <circle cx="98" cy="20" r="7" />
+    {/* Mountain body */}
+    <path d="M40 54 L72 12 L104 54 Z" />
+    {/* Snow cap — the iconic jagged white tip */}
+    <path d="M62 26 L66 32 L70 22 L74 30 L78 24 L82 30 L72 32 Z" fill="#fff" opacity="0.55" />
+    {/* Base shadow */}
+    <path d="M40 54 L104 54 L100 56 L44 56 Z" opacity="0.4" />
   </>
 );
 
-// Eiffel Tower (France)
+// Eiffel Tower (France) — four legs, two arches, narrow body, antenna
+// on top. Re-drawn as a true silhouette outline rather than the
+// previous criss-cross paths which read as a Christmas tree at low
+// opacity. The dual lower arches + the pointed top are what make it
+// unmistakable.
 const eiffel = wrap(
-  <path d="M75 6 L82 6 L82 14 L84 22 L88 36 L94 52 L84 52 L82 42 L75 42 L75 36 L82 36 L82 28 L78 28 L78 22 L74 22 L74 14 L75 14 Z M68 6 L75 6 L75 14 L74 14 L74 22 L70 22 L70 28 L74 28 L74 36 L68 36 L68 42 L75 42 L73 52 L63 52 L69 36 L73 22 L75 14 L68 14 Z" />
+  <>
+    {/* Outer silhouette — base flares wide, body tapers, antenna spike */}
+    <path d="M62 54 L70 38 L72 26 L74 16 L75 8 L76 4 L77 8 L78 16 L80 26 L82 38 L90 54 L84 54 L80 44 L78 38 L76 38 L74 38 L72 38 L72 44 L68 54 Z" />
+    {/* Lower arch — the iconic Champ-de-Mars view */}
+    <path d="M64 50 Q76 38 88 50 L88 54 L82 54 Q76 46 70 54 L64 54 Z" />
+    {/* Mid-platform line */}
+    <rect x="71" y="22" width="10" height="1.5" opacity="0.6" />
+    <rect x="69" y="34" width="14" height="1.5" opacity="0.6" />
+    {/* Antenna */}
+    <rect x="75.5" y="0" width="1" height="8" />
+  </>
 );
 
-// Big Ben — wider rectangular tower with stepped top, clock face,
-// and a clearly distinguishable spire. Earlier version was reading
-// as an upward arrow because the spire was too dominant relative
-// to the body.
+// Big Ben (UK) — square clock tower with a clear clock face and the
+// pyramidal spire. Roman-numeral hint via a cross on the clock face
+// to differentiate from a generic spire.
 const bigBen = wrap(
   <>
-    {/* Tower base — wider, taller, recognizably a building */}
-    <rect x="70" y="20" width="20" height="32" />
-    {/* Stepped clock-face section */}
-    <rect x="68" y="24" width="24" height="14" />
-    {/* Clock face circle */}
-    <circle cx="80" cy="31" r="3.5" fill="currentColor" opacity="0.35" />
-    <circle cx="80" cy="31" r="2" fill="#fff" opacity="0.55" />
-    {/* Belfry cap */}
-    <rect x="72" y="14" width="16" height="6" />
+    {/* Tower base */}
+    <rect x="70" y="22" width="20" height="30" />
+    {/* Clock-face section — slightly wider than the base */}
+    <rect x="67" y="26" width="26" height="14" />
+    {/* Clock face */}
+    <circle cx="80" cy="33" r="4.5" fill="currentColor" opacity="0.35" />
+    <circle cx="80" cy="33" r="3.2" fill="#fff" opacity="0.8" />
+    {/* Clock hands — points to 12 + 3 ish */}
+    <line x1="80" y1="33" x2="80" y2="30" stroke="currentColor" strokeWidth="0.6" />
+    <line x1="80" y1="33" x2="83" y2="33" stroke="currentColor" strokeWidth="0.6" />
+    {/* Belfry above the clock */}
+    <rect x="71" y="18" width="18" height="6" />
     {/* Pyramidal roof */}
-    <polygon points="72,14 88,14 80,4" />
-    {/* Tiny spire on top */}
-    <rect x="79" y="0" width="2" height="4" />
+    <polygon points="71,18 89,18 80,8" />
+    {/* Spire */}
+    <rect x="79.3" y="2" width="1.4" height="6" />
+    <circle cx="80" cy="2" r="1" />
     {/* Ground line */}
-    <rect x="64" y="50" width="32" height="2" fill="currentColor" opacity="0.6" />
+    <rect x="64" y="51" width="32" height="2" opacity="0.6" />
   </>
 );
 
-// Statue of Liberty crown (US — east coast iconic)
+// Statue of Liberty (US) — full figure: torch arm raised, crown with
+// 7 spikes, robe-draped body, pedestal. Dramatically more iconic than
+// the previous crown-only crop, which read as a generic obelisk.
 const liberty = wrap(
   <>
-    <path d="M75 52 L75 32 L66 32 L80 6 L94 32 L85 32 L85 52 Z" />
-    <path d="M70 26 L80 12 L90 26" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.6" />
-    <circle cx="80" cy="22" r="1.5" />
+    {/* Pedestal */}
+    <rect x="72" y="48" width="18" height="6" />
+    <rect x="74" y="46" width="14" height="2" opacity="0.6" />
+    {/* Robe / body */}
+    <path d="M76 48 L76 28 L78 24 L82 24 L84 28 L84 48 Z" />
+    {/* Head + crown spikes (7 — canonical) */}
+    <circle cx="80" cy="20" r="3" />
+    <path d="M73 17 L75 11 L76 16 L78 9 L80 16 L82 9 L84 16 L85 11 L87 17" />
+    {/* Torch arm — raised high */}
+    <path d="M82 24 L88 14 L90 4 L92 4 L92 14 L86 24 Z" />
+    {/* Flame */}
+    <path d="M89 4 Q91 -2 93 4 Q92 0 91 4 Z" />
+    {/* Tablet held in left arm */}
+    <rect x="68" y="28" width="6" height="9" opacity="0.85" />
+    <line x1="69" y1="30" x2="73" y2="30" stroke="#fff" strokeWidth="0.4" opacity="0.7" />
+    <line x1="69" y1="32" x2="73" y2="32" stroke="#fff" strokeWidth="0.4" opacity="0.7" />
+    <line x1="69" y1="34" x2="73" y2="34" stroke="#fff" strokeWidth="0.4" opacity="0.7" />
   </>
 );
 
-// Brandenburg Gate columns (Germany)
+// Brandenburg Gate (Germany) — colonnade with pediment + the
+// quadriga (chariot) on top. The quadriga is what separates this
+// from a generic columned building.
 const brandenburg = wrap(
   <>
-    <rect x="52" y="14" width="56" height="6" />
-    <rect x="55" y="20" width="4" height="32" />
-    <rect x="64" y="20" width="4" height="32" />
-    <rect x="73" y="20" width="4" height="32" />
-    <rect x="82" y="20" width="4" height="32" />
-    <rect x="91" y="20" width="4" height="32" />
-    <rect x="100" y="20" width="4" height="32" />
-    <rect x="64" y="6" width="32" height="8" />
+    {/* Quadriga — abstracted: 4 horses + chariot */}
+    <rect x="68" y="2" width="24" height="3" />
+    <circle cx="71" cy="5" r="1" />
+    <circle cx="76" cy="5" r="1" />
+    <circle cx="84" cy="5" r="1" />
+    <circle cx="89" cy="5" r="1" />
+    {/* Pediment / entablature */}
+    <rect x="50" y="14" width="60" height="4" />
+    <polygon points="60,14 80,5 100,14" opacity="0.7" />
+    {/* Six Doric columns */}
+    <rect x="55" y="18" width="4" height="34" />
+    <rect x="64" y="18" width="4" height="34" />
+    <rect x="73" y="18" width="4" height="34" />
+    <rect x="83" y="18" width="4" height="34" />
+    <rect x="92" y="18" width="4" height="34" />
+    <rect x="101" y="18" width="4" height="34" />
+    {/* Base */}
+    <rect x="50" y="52" width="60" height="2" opacity="0.7" />
   </>
 );
 
-// Pagoda (China — multi-roof)
+// Forbidden City pagoda + lantern (China) — three-tier upturned roofs
+// with the central lantern that distinguishes it from generic SE-Asia
+// pagodas.
 const pagoda = wrap(
   <>
-    <path d="M62 16 L98 16 L94 22 L66 22 Z" />
-    <path d="M64 26 L96 26 L92 32 L68 32 Z" />
-    <path d="M66 36 L94 36 L90 42 L70 42 Z" />
-    <rect x="76" y="42" width="8" height="10" />
-    <rect x="78" y="6" width="4" height="10" />
-    <circle cx="80" cy="6" r="2" />
+    {/* Central spire / lantern on top */}
+    <circle cx="80" cy="6" r="2.5" />
+    <rect x="79" y="8" width="2" height="4" />
+    {/* Top roof — narrowest, pronounced upturned eaves */}
+    <path d="M68 16 L92 16 Q90 20 80 12 Q70 20 68 16 Z" />
+    {/* Mid roof */}
+    <path d="M64 24 L96 24 Q94 28 80 20 Q66 28 64 24 Z" />
+    {/* Bottom roof — widest */}
+    <path d="M58 34 L102 34 Q100 38 80 30 Q60 38 58 34 Z" />
+    {/* Body / entrance */}
+    <rect x="72" y="38" width="16" height="14" />
+    <rect x="78" y="42" width="4" height="10" fill="#fff" opacity="0.5" />
   </>
 );
 
-// Maple leaf (Canada) — recognizable 11-point silhouette of the
-// flag's central icon. Earlier version read as an 8-pointed star
-// because the points were too symmetrical and not pinched at the
-// stem. This version follows the canonical maple-leaf outline:
-// pointed tip up, lobes left/right at 30°/60°/120°, stem at the
-// bottom.
+// Maple leaf (Canada) — canonical 11-point silhouette as it appears
+// on the flag. No stem (the flag version), centered. The shape with
+// 5 lobes per side and 1 point at the top is what people recognize
+// instantly.
 const maple = wrap(
   <g transform="translate(80 30)">
-    <path d="M 0,-22
-             L 3,-12
-             L 11,-15
-             L 9,-7
-             L 19,-4
-             L 12,2
-             L 16,8
-             L 7,7
-             L 9,15
-             L 2,11
-             L 0,22
-             L -2,11
-             L -9,15
-             L -7,7
-             L -16,8
-             L -12,2
-             L -19,-4
-             L -9,-7
-             L -11,-15
-             L -3,-12
+    <path d="M 0,-24
+             L 4,-12
+             L 14,-15
+             L 11,-6
+             L 22,-3
+             L 14,3
+             L 18,10
+             L 8,9
+             L 11,18
+             L 2,13
+             L 0,24
+             L -2,13
+             L -11,18
+             L -8,9
+             L -18,10
+             L -14,3
+             L -22,-3
+             L -11,-6
+             L -14,-15
+             L -4,-12
              Z" />
-    {/* Stem */}
-    <rect x="-1" y="18" width="2" height="6" />
   </g>
 );
 
-// Sydney Opera House (Australia)
+// Sydney Opera House (Australia) — overlapping sail/shell roofs in
+// the iconic stepped arrangement. The asymmetric sails are what
+// distinguish it from any other concert hall.
 const opera = wrap(
   <>
-    <path d="M40 52 Q44 22 60 26 Q56 38 60 52 Z" />
-    <path d="M56 52 Q60 26 76 30 Q72 40 76 52 Z" />
-    <path d="M72 52 Q76 30 92 34 Q88 42 92 52 Z" />
-    <path d="M88 52 Q92 34 108 38 Q104 44 108 52 Z" />
+    {/* Harbour line — anchor */}
+    <rect x="36" y="52" width="80" height="2" opacity="0.5" />
+    {/* Five sail shells, ascending then descending */}
+    <path d="M40 52 Q44 32 56 30 Q56 42 60 52 Z" />
+    <path d="M54 52 Q58 26 72 24 Q72 38 76 52 Z" />
+    <path d="M70 52 Q76 20 90 18 Q90 36 94 52 Z" />
+    <path d="M86 52 Q92 24 102 22 Q102 38 106 52 Z" />
+    <path d="M100 52 Q104 32 114 30 Q114 42 118 52 Z" />
   </>
 );
 
-// Marina Bay Sands triple-tower (Singapore)
+// Marina Bay Sands (Singapore) — three towers connected by the
+// horizontal SkyPark roof. The cantilevered top is what makes it
+// instantly identifiable as Singapore.
 const marinaBay = wrap(
   <>
-    <rect x="50" y="22" width="10" height="30" />
-    <rect x="68" y="18" width="10" height="34" />
-    <rect x="86" y="22" width="10" height="30" />
-    <path d="M44 22 L102 22 L98 16 L48 16 Z" />
+    {/* Three towers — tapering inward at the top */}
+    <path d="M50 52 L52 22 L60 22 L58 52 Z" />
+    <path d="M68 52 L70 18 L78 18 L76 52 Z" />
+    <path d="M86 52 L88 22 L96 22 L94 52 Z" />
+    {/* SkyPark — cantilevered out beyond the towers, the iconic
+        "boat on three pillars" silhouette */}
+    <path d="M44 22 L102 22 L104 14 L102 16 L48 16 L46 14 Z" />
+    <rect x="44" y="16" width="60" height="6" opacity="0.85" />
+    {/* Hint of trees / pool on top */}
+    <circle cx="60" cy="13" r="1" opacity="0.6" />
+    <circle cx="80" cy="13" r="1" opacity="0.6" />
+    <circle cx="92" cy="13" r="1" opacity="0.6" />
   </>
 );
 
-// Burj Khalifa tall spike (UAE)
+// Burj Khalifa (UAE) — the world's tallest, distinctive setbacks.
 const burj = wrap(
   <>
-    <path d="M76 52 L78 18 L80 4 L82 18 L84 52 Z" />
-    <path d="M72 52 L74 28 L86 28 L88 52 Z" opacity="0.85" />
-    <path d="M68 52 L70 36 L90 36 L92 52 Z" opacity="0.7" />
+    {/* Antenna spire */}
+    <rect x="79.5" y="0" width="1" height="6" />
+    {/* Tapering body with stepped setbacks — the distinctive triple-lobe */}
+    <path d="M75 52 L77 28 L78 12 L80 6 L82 12 L83 28 L85 52 Z" />
+    <path d="M71 52 L73 30 L77 30 L75 52 Z" opacity="0.85" />
+    <path d="M85 52 L87 30 L83 30 L85 52 Z" opacity="0.85" />
+    <path d="M67 52 L69 38 L73 38 L71 52 Z" opacity="0.7" />
+    <path d="M89 52 L91 38 L87 38 L89 52 Z" opacity="0.7" />
   </>
 );
 
-// Taj Mahal (India)
+// Taj Mahal (India) — central onion dome + four minarets + reflecting
+// pool hint. Iconic symmetry.
 const taj = wrap(
   <>
-    <rect x="68" y="36" width="24" height="16" />
-    <path d="M72 36 Q80 18 88 36 Z" />
-    <path d="M62 30 L62 52" stroke="currentColor" strokeWidth="2" />
-    <path d="M98 30 L98 52" stroke="currentColor" strokeWidth="2" />
-    <circle cx="80" cy="20" r="2" />
+    {/* Reflecting-pool line */}
+    <rect x="50" y="52" width="60" height="2" opacity="0.5" />
+    {/* Main building base */}
+    <rect x="68" y="38" width="24" height="14" />
+    {/* Central onion dome */}
+    <path d="M70 38 Q70 22 80 18 Q90 22 90 38 Z" />
+    <path d="M78 18 L80 12 L82 18 Z" />
+    <circle cx="80" cy="11" r="1" />
+    {/* Four minarets — the symmetric corners */}
+    <path d="M58 28 L60 26 L62 28 L62 50 L58 50 Z" />
+    <path d="M98 28 L100 26 L102 28 L102 50 L98 50 Z" />
+    {/* Smaller dome caps on minarets */}
+    <circle cx="60" cy="26" r="1.5" />
+    <circle cx="100" cy="26" r="1.5" />
+    {/* Side mini-domes */}
+    <path d="M64 38 Q64 32 68 30 Q68 38 68 38 Z" opacity="0.85" />
+    <path d="M96 38 Q96 32 92 30 Q92 38 92 38 Z" opacity="0.85" />
   </>
 );
 
-// Pyramids (Egypt)
+// Pyramids of Giza (Egypt) — three pyramids in the canonical staggered
+// arrangement, with the Sphinx hint in the foreground.
 const pyramids = wrap(
   <>
-    <path d="M50 52 L72 18 L94 52 Z" />
-    <path d="M82 52 L100 26 L118 52 Z" opacity="0.7" />
+    {/* Three pyramids — tallest centered, smaller flanking */}
+    <path d="M48 52 L66 22 L84 52 Z" />
+    <path d="M70 52 L88 14 L106 52 Z" />
+    <path d="M94 52 L106 30 L118 52 Z" opacity="0.85" />
+    {/* Sphinx hint — couchant lion silhouette in front */}
+    <path d="M40 52 L42 48 L48 46 L52 48 L50 52 Z" opacity="0.7" />
+    {/* Sand line */}
+    <rect x="36" y="52" width="84" height="2" opacity="0.5" />
   </>
 );
 
-// Matterhorn (Switzerland)
+// Matterhorn (Switzerland) — sharp asymmetric peak with the
+// distinctive bent crown that sets it apart from a generic alpine peak.
 const matterhorn = wrap(
   <>
-    <path d="M40 52 L72 8 L86 28 L100 18 L116 52 Z" />
-    <path d="M68 14 L72 16 L70 22 L75 18 L73 26 L78 22 L75 28" fill="#fff" opacity="0.45" />
+    <path d="M40 54 L70 18 L78 26 L88 12 L100 22 L116 54 Z" />
+    {/* Snow streaks on the dark side */}
+    <path d="M68 22 L72 26 L70 30 L74 26 L72 32" stroke="#fff" strokeWidth="0.6" fill="none" opacity="0.5" />
+    {/* Bent peak — Matterhorn's distinctive lean */}
+    <path d="M86 14 L88 12 L92 18" fill="#fff" opacity="0.55" />
   </>
 );
 
-// Windmill (Netherlands)
+// Windmill (Netherlands) — traditional Dutch four-sail mill with
+// brick body and balcony. Sails are the unmistakable mark.
 const windmill = wrap(
   <>
-    <path d="M76 52 L80 22 L84 22 L88 52 Z" />
+    {/* Tower body — tapered */}
+    <path d="M74 52 L78 22 L86 22 L90 52 Z" />
+    {/* Cap */}
+    <path d="M76 22 L88 22 L86 18 L78 18 Z" />
+    {/* Balcony */}
+    <rect x="73" y="38" width="18" height="2" opacity="0.7" />
+    {/* Door */}
+    <rect x="80" y="44" width="4" height="8" fill="#fff" opacity="0.5" />
+    {/* Hub */}
     <circle cx="82" cy="22" r="2" />
-    <path d="M82 22 L82 4 L86 6 L82 22" />
-    <path d="M82 22 L100 22 L98 26 L82 22" />
-    <path d="M82 22 L82 40 L78 38 L82 22" />
-    <path d="M82 22 L64 22 L66 18 L82 22" />
+    {/* Four sails — spinning angle, narrow + lath texture */}
+    <path d="M82 22 L82 4 L86 4 L84 22 Z" />
+    <path d="M82 22 L100 22 L100 26 L82 24 Z" />
+    <path d="M82 22 L82 40 L78 40 L80 22 Z" />
+    <path d="M82 22 L64 22 L64 18 L82 20 Z" />
   </>
 );
 
-// Christ the Redeemer (Brazil)
+// Christ the Redeemer (Brazil) — figure with arms outstretched on
+// the mountain, viewed from below. The cruciform pose is the icon.
 const redeemer = wrap(
   <>
-    <path d="M76 52 L76 32 L70 32 L70 26 L76 26 L76 16 Q80 14 84 16 L84 26 L90 26 L90 32 L84 32 L84 52 Z" />
-    <circle cx="80" cy="12" r="2" />
+    {/* Mountain base — Corcovado hint */}
+    <path d="M58 54 Q80 50 102 54 L102 56 L58 56 Z" opacity="0.5" />
+    {/* Pedestal */}
+    <rect x="74" y="44" width="12" height="8" />
+    {/* Body — robe */}
+    <path d="M76 44 L77 28 L83 28 L84 44 Z" />
+    {/* Outstretched arms — the iconic cruciform */}
+    <rect x="60" y="24" width="40" height="4" />
+    {/* Drapery on arms */}
+    <path d="M60 28 L60 32 L70 30 L70 28 Z" opacity="0.7" />
+    <path d="M100 28 L100 32 L90 30 L90 28 Z" opacity="0.7" />
+    {/* Head */}
+    <circle cx="80" cy="22" r="2" />
   </>
 );
 
-// Hanok (Korea — traditional roof curve)
+// Hanok (South Korea) — traditional gabled tile roof with the
+// distinctive concave curve and ridge ornaments.
 const hanok = wrap(
   <>
-    <path d="M44 32 Q60 12 80 18 Q100 12 116 32 L114 36 Q98 26 80 28 Q62 26 46 36 Z" />
-    <rect x="58" y="36" width="44" height="16" />
-    <rect x="76" y="40" width="8" height="12" fill="#fff" opacity="0.45" />
+    {/* Tile roof with deep concave curve — the signature */}
+    <path d="M44 30 Q60 14 80 18 Q100 14 116 30 L114 34 Q98 24 80 26 Q62 24 46 34 Z" />
+    {/* Ridge ornaments — chimi at the eaves */}
+    <circle cx="46" cy="32" r="1.5" />
+    <circle cx="114" cy="32" r="1.5" />
+    {/* Ridge cap */}
+    <rect x="78" y="14" width="4" height="3" />
+    {/* Wall */}
+    <rect x="58" y="34" width="44" height="18" />
+    {/* Wooden door — hanok grid */}
+    <rect x="76" y="38" width="8" height="14" fill="#fff" opacity="0.5" />
+    <line x1="76" y1="45" x2="84" y2="45" stroke="currentColor" strokeWidth="0.4" opacity="0.7" />
+    <line x1="80" y1="38" x2="80" y2="52" stroke="currentColor" strokeWidth="0.4" opacity="0.7" />
   </>
 );
 
-// Sagrada-style spires (Spain)
+// Sagrada Família (Spain) — the four central spires with the
+// distinctive lattice/spire texture Gaudí designed.
 const sagrada = wrap(
   <>
+    {/* Four progressively-taller central towers — the Nativity facade */}
     <path d="M58 52 L60 30 L62 36 L64 28 L66 38 L68 52 Z" />
     <path d="M70 52 L72 18 L74 30 L76 12 L78 30 L80 18 L82 52 Z" />
-    <path d="M84 52 L86 24 L88 32 L90 18 L92 32 L94 24 L96 52 Z" />
-    <path d="M98 52 L100 30 L102 36 L104 32 L106 38 L108 52 Z" />
+    <path d="M84 52 L86 18 L88 30 L90 12 L92 30 L94 18 L96 52 Z" />
+    <path d="M98 52 L100 30 L102 36 L104 28 L106 38 L108 52 Z" />
+    {/* Cross atop the central tallest */}
+    <rect x="79.5" y="6" width="1" height="6" />
+    <rect x="77.5" y="8" width="5" height="1" />
+    {/* Lattice texture hints */}
+    <line x1="74" y1="22" x2="76" y2="22" stroke="#fff" strokeWidth="0.4" opacity="0.5" />
+    <line x1="86" y1="22" x2="88" y2="22" stroke="#fff" strokeWidth="0.4" opacity="0.5" />
   </>
 );
 
-// Colosseum arches (Italy)
+// Colosseum (Italy) — three-tier arched ellipse. The arches at three
+// different sizes are what say "Roman amphitheater" specifically.
 const colosseum = wrap(
   <>
-    <path d="M40 52 Q40 26 80 24 Q120 26 120 52 Z" />
-    <circle cx="56" cy="42" r="4" fill="#fff" opacity="0.5" />
-    <circle cx="68" cy="38" r="4" fill="#fff" opacity="0.5" />
-    <circle cx="80" cy="36" r="4" fill="#fff" opacity="0.5" />
-    <circle cx="92" cy="38" r="4" fill="#fff" opacity="0.5" />
-    <circle cx="104" cy="42" r="4" fill="#fff" opacity="0.5" />
+    {/* Outer ellipse profile */}
+    <path d="M40 52 Q40 22 80 20 Q120 22 120 52 Z" />
+    {/* Top tier — small arches */}
+    <circle cx="56" cy="42" r="3" fill="#fff" opacity="0.5" />
+    <circle cx="68" cy="36" r="3" fill="#fff" opacity="0.5" />
+    <circle cx="80" cy="34" r="3" fill="#fff" opacity="0.5" />
+    <circle cx="92" cy="36" r="3" fill="#fff" opacity="0.5" />
+    <circle cx="104" cy="42" r="3" fill="#fff" opacity="0.5" />
+    {/* Middle tier — medium arches */}
+    <ellipse cx="56" cy="48" rx="2.5" ry="3" fill="#fff" opacity="0.45" />
+    <ellipse cx="68" cy="46" rx="2.5" ry="3" fill="#fff" opacity="0.45" />
+    <ellipse cx="80" cy="45" rx="2.5" ry="3" fill="#fff" opacity="0.45" />
+    <ellipse cx="92" cy="46" rx="2.5" ry="3" fill="#fff" opacity="0.45" />
+    <ellipse cx="104" cy="48" rx="2.5" ry="3" fill="#fff" opacity="0.45" />
+    {/* Damaged section — characteristic missing wall on the south side */}
+    <path d="M44 52 L44 32 Q50 22 54 26 L54 52 Z" opacity="0.5" />
   </>
 );
 
-// Saint Basil's onion domes (Russia)
+// Saint Basil's Cathedral (Russia) — multi-spired onion-dome cathedral
+// with the unmistakable swirl of colours rendered as patterned domes.
 const stBasils = wrap(
   <>
-    <path d="M50 52 L50 36 Q56 26 62 36 L62 52 Z" />
-    <path d="M64 52 L64 30 Q72 14 80 30 L80 52 Z" />
-    <path d="M82 52 L82 36 Q88 26 94 36 L94 52 Z" />
-    <path d="M96 52 L96 30 Q104 18 112 30 L112 52 Z" />
-    <circle cx="56" cy="22" r="2" />
-    <circle cx="72" cy="10" r="2" />
-    <circle cx="88" cy="22" r="2" />
-    <circle cx="104" cy="14" r="2" />
+    {/* Five domes — central tallest, four flanking */}
+    {/* Far left */}
+    <path d="M48 52 L48 34 Q54 24 60 34 L60 52 Z" />
+    <circle cx="54" cy="28" r="2.5" />
+    {/* Mid left */}
+    <path d="M62 52 L62 32 Q68 22 74 32 L74 52 Z" />
+    <circle cx="68" cy="24" r="2.5" />
+    {/* Center — tallest, elaborate */}
+    <path d="M76 52 L76 28 Q80 8 84 28 L84 52 Z" />
+    <circle cx="80" cy="6" r="2" />
+    <rect x="79.5" y="2" width="1" height="4" />
+    {/* Mid right */}
+    <path d="M86 52 L86 32 Q92 22 98 32 L98 52 Z" />
+    <circle cx="92" cy="24" r="2.5" />
+    {/* Far right */}
+    <path d="M100 52 L100 34 Q106 24 112 34 L112 52 Z" />
+    <circle cx="106" cy="28" r="2.5" />
+    {/* Crosses on each dome — Orthodox three-bar */}
+    <rect x="53.5" y="22" width="1" height="4" />
+    <rect x="67.5" y="18" width="1" height="4" />
+    <rect x="91.5" y="18" width="1" height="4" />
+    <rect x="105.5" y="22" width="1" height="4" />
   </>
 );
 
-// Hong Kong skyline
+// Hong Kong skyline (Victoria Harbour) — varied tower heights with
+// the distinctive IFC tapered crown.
 const hkSkyline = wrap(
   <>
     <rect x="40" y="32" width="6" height="20" />
     <rect x="48" y="22" width="8" height="30" />
     <rect x="58" y="14" width="6" height="38" />
+    {/* IFC-style tapered top */}
+    <path d="M58 14 L61 8 L64 14 Z" />
     <rect x="66" y="20" width="10" height="32" />
     <rect x="78" y="8" width="6" height="44" />
-    <path d="M81 8 L81 0" stroke="currentColor" strokeWidth="1" />
+    <rect x="80" y="0" width="2" height="8" />
     <rect x="86" y="16" width="8" height="36" />
     <rect x="96" y="24" width="6" height="28" />
     <rect x="104" y="20" width="8" height="32" />
+    <path d="M104 20 L108 14 L112 20 Z" />
     <rect x="114" y="28" width="4" height="24" />
+    {/* Harbour line */}
+    <rect x="36" y="52" width="84" height="2" opacity="0.7" />
   </>
 );
 
-// Lion silhouette (Africa generic — can substitute for SA, Kenya, Ethiopia, etc.)
+// Acacia tree + sun (Sub-Saharan Africa) — savanna icon. Wide flat
+// canopy is the signature.
 const acacia = wrap(
   <>
-    {/* acacia tree silhouette + sunset oval — distinctively African savanna */}
-    <ellipse cx="80" cy="28" rx="32" ry="8" />
-    <rect x="78" y="28" width="4" height="24" />
-    <path d="M70 38 L74 52 M86 38 L90 52" stroke="currentColor" strokeWidth="2" />
+    {/* Sun */}
+    <circle cx="48" cy="20" r="6" opacity="0.7" />
+    {/* Acacia canopy — wide flat-topped umbrella */}
+    <ellipse cx="86" cy="30" rx="26" ry="8" />
+    <ellipse cx="86" cy="26" rx="20" ry="5" opacity="0.85" />
+    {/* Trunk + branching */}
+    <rect x="84" y="30" width="4" height="20" />
+    <path d="M86 36 L78 30 M86 36 L94 30" stroke="currentColor" strokeWidth="1.2" />
+    {/* Ground */}
+    <rect x="40" y="52" width="80" height="2" opacity="0.6" />
   </>
 );
 
-// Yurt — Central Asia (Kazakhstan, Kyrgyzstan, Mongolia, Turkmenistan)
+// Yurt (Central Asia — Kazakhstan, Kyrgyzstan, Mongolia, Turkmenistan) —
+// dome with shanyrak crown opening + door + tundyk smoke ring.
 const yurt = wrap(
   <>
-    {/* dome + door — instantly recognisable nomadic dwelling */}
-    <path d="M52 52 L52 36 Q52 18 80 18 Q108 18 108 36 L108 52 Z" />
-    <rect x="74" y="38" width="12" height="14" fill="#fff" opacity="0.4" />
-    <path d="M52 36 L108 36" stroke="currentColor" strokeWidth="1" opacity="0.5" />
-    <path d="M80 18 L80 36" stroke="currentColor" strokeWidth="1" opacity="0.4" />
-    <circle cx="80" cy="18" r="2" fill="#fff" opacity="0.5" />
+    {/* Domed body — wider base, rounded top */}
+    <path d="M50 52 L50 36 Q50 16 80 16 Q110 16 110 36 L110 52 Z" />
+    {/* Door — felt panel */}
+    <path d="M73 52 L73 38 Q73 34 80 34 Q87 34 87 38 L87 52 Z" fill="#fff" opacity="0.45" />
+    {/* Shanyrak — central crown opening, cross of structural ribs */}
+    <circle cx="80" cy="16" r="3" fill="#fff" opacity="0.4" />
+    <line x1="77" y1="16" x2="83" y2="16" stroke="currentColor" strokeWidth="0.6" />
+    <line x1="80" y1="13" x2="80" y2="19" stroke="currentColor" strokeWidth="0.6" />
+    {/* Roof ribs radiating from shanyrak */}
+    <line x1="80" y1="16" x2="55" y2="35" stroke="#fff" strokeWidth="0.5" opacity="0.4" />
+    <line x1="80" y1="16" x2="80" y2="36" stroke="#fff" strokeWidth="0.5" opacity="0.4" />
+    <line x1="80" y1="16" x2="105" y2="35" stroke="#fff" strokeWidth="0.5" opacity="0.4" />
   </>
 );
 
-// Khan Shatyr — modern Kazakhstan (Astana's tent landmark)
+// Khan Shatyr (Astana, Kazakhstan) — modern conical tent.
 const khanShatyr = wrap(
   <>
-    {/* tall conical tent */}
-    <path d="M80 6 L60 50 L100 50 Z" />
-    <path d="M80 6 L80 50" stroke="#fff" strokeWidth="0.8" opacity="0.45" />
-    <path d="M68 36 L92 36" stroke="#fff" strokeWidth="0.5" opacity="0.4" />
-    <path d="M64 44 L96 44" stroke="#fff" strokeWidth="0.5" opacity="0.4" />
-    <rect x="58" y="50" width="44" height="2" />
+    <path d="M80 4 L58 50 L102 50 Z" />
+    {/* Spiral cable lines */}
+    <path d="M68 40 L92 40" stroke="#fff" strokeWidth="0.5" opacity="0.45" />
+    <path d="M64 46 L96 46" stroke="#fff" strokeWidth="0.5" opacity="0.45" />
+    <path d="M72 32 L88 32" stroke="#fff" strokeWidth="0.5" opacity="0.45" />
+    {/* Apex spire */}
+    <rect x="79.5" y="0" width="1" height="4" />
+    {/* Base */}
+    <rect x="56" y="50" width="48" height="2" opacity="0.7" />
   </>
 );
 
-// Mosque silhouette — minarets + dome (Indonesia, Malaysia, Pakistan, MENA fallback)
+// Mosque silhouette — minarets + dome (Indonesia, Malaysia, Pakistan,
+// MENA fallback). Crescent on top differentiates from Christian
+// cathedrals.
 const mosque = wrap(
   <>
-    <rect x="56" y="42" width="48" height="10" />
-    {/* central dome */}
-    <path d="M68 42 Q80 22 92 42" />
-    <path d="M80 18 L80 22" stroke="currentColor" strokeWidth="1.5" />
-    <circle cx="80" cy="16" r="2" />
-    {/* left minaret */}
-    <rect x="50" y="22" width="4" height="20" />
-    <path d="M48 22 L56 22 L52 14 Z" />
-    {/* right minaret */}
-    <rect x="106" y="22" width="4" height="20" />
-    <path d="M104 22 L112 22 L108 14 Z" />
+    {/* Mosque body */}
+    <rect x="56" y="40" width="48" height="12" />
+    {/* Central dome */}
+    <path d="M68 40 Q80 18 92 40" />
+    {/* Crescent moon on top of dome */}
+    <path d="M80 14 Q83 14 83 11 Q83 8 80 8 Q82 11 80 14 Z" />
+    <rect x="79.5" y="14" width="1" height="3" />
+    {/* Left minaret with bulb */}
+    <rect x="50" y="22" width="4" height="18" />
+    <circle cx="52" cy="20" r="2.5" />
+    <rect x="51.5" y="14" width="1" height="4" />
+    {/* Right minaret with bulb */}
+    <rect x="106" y="22" width="4" height="18" />
+    <circle cx="108" cy="20" r="2.5" />
+    <rect x="107.5" y="14" width="1" height="4" />
+    {/* Door arch */}
+    <path d="M76 52 L76 46 Q80 42 84 46 L84 52 Z" fill="#fff" opacity="0.45" />
   </>
 );
 
-// Caucasus mountains — sharper twin peaks for Caucasus region
+// Caucasus mountains — sharper twin peaks with a small cross atop.
 const caucasus = wrap(
   <>
     <path d="M40 52 L60 22 L72 38 L86 18 L102 42 L120 52 Z" />
     <path d="M55 28 L60 22 L65 28" stroke="#fff" strokeWidth="0.5" fill="none" opacity="0.5" />
     <path d="M82 22 L86 18 L90 22" stroke="#fff" strokeWidth="0.5" fill="none" opacity="0.5" />
+    {/* Snow caps */}
+    <path d="M58 24 L60 22 L62 24 L60 26 Z" fill="#fff" opacity="0.6" />
+    <path d="M84 20 L86 18 L88 20 L86 22 Z" fill="#fff" opacity="0.6" />
   </>
 );
+
+// Star + Southern Cross (Australia / NZ) — the constellation that
+// flies on both Australian and NZ flags. More distinct than reusing
+// opera house for both.
+const southernCross = wrap(
+  <>
+    {/* Large central star — Commonwealth star */}
+    <g transform="translate(60 30)">
+      <polygon points="0,-12 3,-4 12,-4 5,2 8,11 0,5 -8,11 -5,2 -12,-4 -3,-4" opacity="0.9" />
+    </g>
+    {/* Southern Cross — five stars in the canonical configuration */}
+    <circle cx="92" cy="14" r="2.5" /> {/* Gacrux — top */}
+    <circle cx="100" cy="28" r="2.5" /> {/* Becrux — right */}
+    <circle cx="86" cy="34" r="2" /> {/* Acrux — bottom */}
+    <circle cx="78" cy="22" r="1.7" /> {/* Delta */}
+    <circle cx="106" cy="40" r="1.4" opacity="0.85" /> {/* Epsilon — small */}
+  </>
+);
+
+// Silver fern (New Zealand) — distinctive frond shape from the rugby
+// jersey + flag debate. Way more iconic than reusing the opera house.
+const silverFern = wrap(
+  <g transform="translate(80 32)">
+    {/* Central stem */}
+    <rect x="-0.6" y="-22" width="1.2" height="44" />
+    {/* Fronds — alternating left and right, decreasing in size */}
+    {[
+      [-1, -18, 18, -10],
+      [1, -18, -18, -10],
+      [-1, -10, 16, -4],
+      [1, -10, -16, -4],
+      [-1, -2, 14, 2],
+      [1, -2, -14, 2],
+      [-1, 6, 11, 9],
+      [1, 6, -11, 9],
+      [-1, 13, 7, 15],
+      [1, 13, -7, 15],
+    ].map(([cx, cy, ex, ey], i) => (
+      <path
+        key={i}
+        d={`M ${cx} ${cy} Q ${(cx + ex) / 2} ${cy - 1} ${ex} ${ey} Q ${(cx + ex) / 2} ${cy + 2} ${cx} ${cy} Z`}
+      />
+    ))}
+  </g>
+);
+
+// Cherry blossom branch (Japan alternative — for breadth, when Fuji
+// would feel repetitive).
+// Unused now but reserved.
 
 // Generic globe with pin (default fallback)
 const globe = wrap(
@@ -355,6 +603,10 @@ const globe = wrap(
  * Reasonable fallbacks: countries without a specific landmark fall to
  * a regional sibling (e.g. Austria → Brandenburg-style columns,
  * Norway → Matterhorn) so the long tail still feels intentional.
+ *
+ * A & NZ now have their own flag-derived icons (Southern Cross +
+ * Silver Fern) instead of sharing Opera House — the user called out
+ * Opera-House-everywhere as too generic.
  */
 const COUNTRY_ART: Record<string, React.ReactNode> = {
   // Asia-Pacific
@@ -362,7 +614,7 @@ const COUNTRY_ART: Record<string, React.ReactNode> = {
   Korea: hanok, "South Korea": hanok, "North Korea": hanok,
   Singapore: marinaBay, Malaysia: mosque, Indonesia: mosque,
   Thailand: pagoda, Vietnam: pagoda, Philippines: marinaBay,
-  Australia: opera, "New Zealand": opera, Brunei: marinaBay,
+  Australia: southernCross, "New Zealand": silverFern, Brunei: marinaBay,
   India: taj, "Sri Lanka": taj, Pakistan: mosque, Bangladesh: mosque, Nepal: caucasus,
 
   // Central Asia

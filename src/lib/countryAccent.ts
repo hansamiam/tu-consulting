@@ -30,62 +30,108 @@
  * its own visual identity via landmark + pattern + hue.
  */
 
-export const REGIONAL_ACCENT: Record<string, string> = {
+const REGIONAL_ACCENT: Record<string, string> = {
+  /* DESIGN NOTE (2026-05-07 rewrite):
+   *
+   * Pre-rewrite, ~12 countries shared the "blue → rose" palette
+   * (US, France, UK, Australia, NZ, Norway, Russia, South Korea,
+   * Czechia, Slovakia, Croatia, Romania). Sitting next to each other
+   * in a Discover grid they read as identical. The user called this
+   * out — "Australia and US look way too similar."
+   *
+   * The fix: every country in the long-blue cluster gets a *different*
+   * mid-stop hue (wine / plum / teal / coral / rust / ochre). Same
+   * tonal floor (deep dark base, mid-saturation accent) so the navy
+   * card chrome stays consistent and white text reads everywhere.
+   * Two countries should never share an exact gradient unless they're
+   * intentional regional siblings (Caucasus, Central Asia).
+   */
   // ─── North America ─────────────────────────────────────────────
-  "United States":       "from-blue-900 via-blue-800 to-rose-900",
-  "Canada":              "from-rose-900 via-red-800 to-rose-900",
-  "Mexico":              "from-emerald-900 via-emerald-800 to-rose-900",
+  // US: navy + wine + cream-bronze — patriotic but warmer than the
+  //     pre-rewrite plain blue→rose so it stops twinning with AU/UK.
+  "United States":       "from-blue-950 via-rose-950 to-amber-900",
+  // Canada: red-and-white maple identity — keep red dominance, add
+  //          warm cedar mid for forest country feel.
+  "Canada":              "from-red-900 via-rose-900 to-orange-900",
+  "Mexico":              "from-emerald-900 via-amber-900 to-red-900",
   // ─── UK & Ireland ──────────────────────────────────────────────
-  "United Kingdom":      "from-indigo-900 via-violet-900 to-rose-900",
+  // UK: deep royal — purple/violet keeps the "Crown" reading and
+  //     stays distinct from US/France blue.
+  "United Kingdom":      "from-violet-950 via-purple-900 to-red-900",
   "Ireland":             "from-emerald-900 via-emerald-800 to-orange-900",
   // ─── Continental Europe ───────────────────────────────────────
-  "Germany":             "from-zinc-900 via-stone-900 to-amber-900",
-  "France":              "from-blue-900 via-indigo-900 to-rose-900",
-  "Netherlands":         "from-orange-900 via-amber-900 to-blue-900",
-  "Switzerland":         "from-rose-900 via-rose-800 to-rose-900",
-  "Sweden":              "from-blue-900 via-blue-800 to-amber-800",
-  "Norway":              "from-blue-950 via-blue-900 to-rose-900",
-  "Denmark":             "from-rose-900 via-red-900 to-rose-900",
+  // Germany: black/red/gold flag — keep dark base, gold accent.
+  "Germany":             "from-zinc-950 via-red-950 to-amber-800",
+  // France: indigo + wine — distinguishes from US (which is now
+  //          warmer) and from UK (which leans purple).
+  "France":              "from-indigo-950 via-violet-950 to-rose-900",
+  "Netherlands":         "from-orange-900 via-amber-800 to-blue-900",
+  // Switzerland: deep red + alpine charcoal — was monotone rose.
+  "Switzerland":         "from-red-950 via-rose-900 to-zinc-800",
+  "Sweden":              "from-blue-900 via-cyan-900 to-amber-800",
+  // Norway: wine-leaning red + slate — was duplicate of AU.
+  "Norway":              "from-rose-950 via-red-900 to-blue-900",
+  "Denmark":             "from-red-950 via-rose-900 to-rose-950",
   "Finland":             "from-sky-900 via-blue-900 to-blue-800",
-  "Iceland":             "from-blue-950 via-cyan-900 to-blue-900",
-  "Spain":               "from-rose-900 via-amber-900 to-rose-900",
-  "Italy":               "from-emerald-900 via-emerald-800 to-rose-900",
-  "Belgium":             "from-zinc-900 via-amber-900 to-rose-900",
-  "Austria":             "from-rose-900 via-stone-800 to-rose-900",
-  "Czechia":             "from-blue-900 via-indigo-900 to-rose-900",
-  "Czech Republic":      "from-blue-900 via-indigo-900 to-rose-900",
-  "Poland":              "from-stone-800 via-rose-900 to-rose-900",
-  "Hungary":             "from-rose-900 via-stone-800 to-emerald-900",
-  "Romania":             "from-blue-900 via-amber-900 to-rose-900",
-  "Bulgaria":            "from-stone-800 via-emerald-900 to-rose-900",
-  "Croatia":             "from-rose-900 via-stone-800 to-blue-900",
-  "Lithuania":           "from-amber-900 via-emerald-900 to-rose-900",
-  "Latvia":              "from-rose-950 via-rose-900 to-rose-950",
-  "Slovakia":            "from-stone-800 via-blue-900 to-rose-900",
-  "Estonia":             "from-blue-900 via-zinc-900 to-stone-800",
-  "Greece":              "from-blue-900 via-blue-800 to-blue-900",
-  "Portugal":            "from-emerald-900 via-emerald-800 to-rose-900",
-  "Russia":              "from-blue-900 via-stone-800 to-rose-900",
-  "Ukraine":             "from-blue-900 via-blue-800 to-amber-900",
-  "EU":                  "from-blue-900 via-blue-800 to-amber-800",
-  "European Union":      "from-blue-900 via-blue-800 to-amber-800",
+  "Iceland":             "from-cyan-900 via-blue-900 to-slate-900",
+  // Spain: sangre y oro — saturated red→gold.
+  "Spain":               "from-red-900 via-orange-900 to-amber-800",
+  "Italy":               "from-emerald-900 via-stone-800 to-red-900",
+  "Belgium":             "from-zinc-900 via-amber-900 to-red-900",
+  "Austria":             "from-red-900 via-stone-800 to-red-900",
+  // Czechia: navy + sky + wine — distinguishes from FR by the
+  //          sky-blue mid (Czech flag has the lighter blue triangle).
+  "Czechia":             "from-blue-950 via-sky-900 to-rose-900",
+  "Czech Republic":      "from-blue-950 via-sky-900 to-rose-900",
+  "Poland":              "from-stone-800 via-red-900 to-rose-900",
+  "Hungary":             "from-red-900 via-stone-800 to-emerald-900",
+  "Romania":             "from-blue-900 via-amber-900 to-red-900",
+  "Bulgaria":            "from-stone-800 via-emerald-900 to-red-900",
+  // Croatia: red+white+blue checkerboard — wine + slate so it stops
+  //           reading like AU/NZ.
+  "Croatia":             "from-rose-950 via-zinc-800 to-blue-900",
+  "Lithuania":           "from-amber-900 via-emerald-900 to-red-900",
+  "Latvia":              "from-rose-950 via-stone-900 to-rose-950",
+  // Slovakia: tricolor white/blue/red — rose + slate + indigo so it
+  //           visually echoes the flag's stripes order.
+  "Slovakia":            "from-rose-900 via-slate-800 to-indigo-900",
+  "Estonia":             "from-blue-900 via-slate-900 to-stone-800",
+  "Greece":              "from-blue-900 via-cyan-900 to-blue-950",
+  "Portugal":            "from-emerald-900 via-emerald-800 to-red-900",
+  // Russia: was duplicate blue→stone→rose. Now wine-and-gold
+  //          (Imperial colors) + slate — distinct from AU/US/FR.
+  "Russia":              "from-rose-950 via-stone-900 to-amber-900",
+  "Ukraine":             "from-blue-900 via-sky-700 to-amber-700",
+  // EU: stars-on-blue — pure deep blue, no rose tail (that's the
+  //     unique signature; nothing else is blue→blue).
+  "EU":                  "from-blue-950 via-blue-900 to-blue-800",
+  "European Union":      "from-blue-950 via-blue-900 to-blue-800",
   // ─── East Asia ─────────────────────────────────────────────────
-  "China":               "from-rose-900 via-red-900 to-amber-900",
-  "Japan":               "from-rose-950 via-rose-900 to-stone-900",
-  "South Korea":         "from-blue-900 via-indigo-900 to-rose-900",
-  "Taiwan":              "from-rose-900 via-blue-900 to-blue-800",
-  "Hong Kong":           "from-rose-900 via-rose-800 to-rose-900",
+  "China":               "from-red-900 via-red-800 to-amber-800",
+  // Japan: wine + ink + sun — rising-sun warmth.
+  "Japan":               "from-rose-950 via-stone-900 to-rose-900",
+  // South Korea: indigo + coral — distinct from CZ/FR. Trigrams
+  //              hint via warm coral on dark blue (the taegeuk).
+  "South Korea":         "from-indigo-950 via-blue-900 to-orange-800",
+  "Taiwan":              "from-red-900 via-blue-900 to-blue-800",
+  // Hong Kong: bauhinia red + harbour neon teal.
+  "Hong Kong":           "from-red-900 via-rose-900 to-teal-900",
   "Macau":               "from-emerald-900 via-emerald-800 to-emerald-900",
   // ─── Southeast Asia & Oceania ─────────────────────────────────
-  "Singapore":           "from-rose-900 via-rose-800 to-stone-800",
-  "Malaysia":            "from-blue-900 via-amber-900 to-rose-900",
-  "Indonesia":           "from-rose-900 via-red-900 to-stone-800",
-  "Thailand":            "from-blue-900 via-rose-900 to-blue-900",
-  "Vietnam":             "from-rose-900 via-red-900 to-amber-900",
-  "Philippines":         "from-blue-900 via-rose-900 to-amber-900",
+  // Singapore: red+white crescent, harbour at night.
+  "Singapore":           "from-red-900 via-rose-900 to-slate-900",
+  "Malaysia":            "from-blue-900 via-amber-900 to-red-900",
+  "Indonesia":           "from-red-900 via-red-800 to-stone-800",
+  "Thailand":            "from-red-900 via-blue-900 to-red-900",
+  "Vietnam":             "from-red-900 via-red-800 to-amber-800",
+  "Philippines":         "from-blue-900 via-red-900 to-amber-700",
   "Brunei":              "from-amber-900 via-stone-800 to-zinc-900",
-  "Australia":           "from-blue-950 via-blue-900 to-rose-900",
-  "New Zealand":         "from-blue-950 via-blue-900 to-rose-900",
+  // Australia: deep teal + sunburnt ochre — Great Barrier Reef +
+  //            outback. Was a duplicate blue→rose; now visually
+  //            unmistakable as Southern Hemisphere.
+  "Australia":           "from-teal-900 via-cyan-900 to-orange-800",
+  // New Zealand: forest green + silver — silver-fern country.
+  "New Zealand":         "from-emerald-950 via-emerald-900 to-slate-700",
   // ─── South Asia ───────────────────────────────────────────────
   "India":               "from-orange-900 via-amber-900 to-emerald-900",
   "Pakistan":            "from-emerald-900 via-emerald-800 to-emerald-900",
@@ -146,7 +192,7 @@ export const REGIONAL_ACCENT: Record<string, string> = {
 
 /* Default fallback: distinct deep charcoal — visually signals "we don't
  * know the country yet" rather than passing for any specific country. */
-export const DEFAULT_ACCENT = "from-zinc-800 via-zinc-700 to-zinc-800";
+const DEFAULT_ACCENT = "from-zinc-800 via-zinc-700 to-zinc-800";
 
 export const accentForCountry = (country: string | null | undefined): string => {
   if (!country) return DEFAULT_ACCENT;

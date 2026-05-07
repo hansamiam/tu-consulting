@@ -20,6 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Bookmark, Calendar, Coins, Trophy, FileText, Heart, PauseCircle } from "lucide-react";
 import { toast } from "sonner";
+import { daysUntil } from "@/lib/dates";
 
 interface ScholarshipLite {
   scholarship_id: string;
@@ -43,12 +44,6 @@ const fmtMoney = (v: number): string => {
   return `$${v}`;
 };
 
-const daysUntil = (iso: string | null): number | null => {
-  if (!iso) return null;
-  const t = new Date(iso).getTime();
-  if (Number.isNaN(t)) return null;
-  return Math.ceil((t - Date.now()) / 86_400_000);
-};
 
 export const CancellationSaveDialog = ({ open, onOpenChange, onContinue, language = "en" }: Props) => {
   const ru = language === "ru";
@@ -87,6 +82,9 @@ export const CancellationSaveDialog = ({ open, onOpenChange, onContinue, languag
     [tracker.shortlist, tracker.statusMap],
   );
 
+  // Stable string key for the tracked-IDs set so the effect re-runs only
+  // on actual set membership changes (not on every array-reference flip).
+  const trackedKey = trackedIds.join(",");
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
@@ -109,7 +107,8 @@ export const CancellationSaveDialog = ({ open, onOpenChange, onContinue, languag
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [open, trackedIds.join(","), user?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, trackedKey, user?.id]);
 
   // Stat aggregates — saved count, urgent deadlines, funding stack,
   // won amount. Computed off the merged tracker + hydrated rows.

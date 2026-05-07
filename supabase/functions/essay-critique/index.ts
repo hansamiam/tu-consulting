@@ -25,6 +25,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { chatCompletions } from "../_shared/ai-gateway.ts";
 import { checkRateLimit, clientIp } from "../_shared/rate-limit.ts";
+import { EDITORIAL_RULES_TIGHT } from "../_shared/editorial-rules.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -166,7 +167,7 @@ One sentence: would you, as the admissions reader, want to meet this candidate b
 Rules:
 - Sound like a real reader, not a polite editor. Direct. Specific. Cite the actual words.
 - Avoid "good luck", "hopefully", "I think". Talk in evidence.
-- Avoid "stretch / safety / target / reach" framing.
+${EDITORIAL_RULES_TIGHT}
 - Match the language of the essay where possible — if the essay is in English, respond in English (overrides the lang preference if conflicting).`;
 
     const userMsg = `Here is the essay to critique:

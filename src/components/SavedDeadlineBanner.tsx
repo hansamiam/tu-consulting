@@ -55,6 +55,11 @@ export function SavedDeadlineBanner({ trackedIds, isRu = false, daysWindow = 14 
     } catch { return false; }
   });
 
+  // Stable string key so the effect only re-runs when the *set* of
+  // tracked IDs changes — not when the array reference changes.
+  // ESLint can't statically verify trackedIds.join(",") so we extract
+  // the key here and depend on it explicitly.
+  const trackedKey = trackedIds.join(",");
   useEffect(() => {
     if (trackedIds.length === 0) {
       setRows([]);
@@ -75,7 +80,8 @@ export function SavedDeadlineBanner({ trackedIds, isRu = false, daysWindow = 14 
       setRows(data as ScholarshipDeadline[]);
     })();
     return () => { cancelled = true; };
-  }, [trackedIds.join(",")]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trackedKey]);
 
   const urgent = useMemo(() => {
     const now = Date.now();

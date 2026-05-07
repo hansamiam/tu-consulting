@@ -16,7 +16,106 @@ interface Props {
   amount?: string              // e.g. "Full tuition + $20K stipend"
   scholarshipUrl?: string      // official URL to apply
   trackerUrl: string           // link back to the user's Discover pipeline
+  language?: 'en' | 'ru'
 }
+
+const STATUS_LABELS = {
+  en: {
+    researching: 'Researching',
+    drafting: 'Drafting',
+    submitted: 'Submitted',
+    decision: 'Awaiting decision',
+    accepted: 'Accepted',
+    rejected: 'Rejected',
+  },
+  ru: {
+    researching: 'Изучаю',
+    drafting: 'Пишу заявку',
+    submitted: 'Подал(а)',
+    decision: 'Жду решения',
+    accepted: 'Принят(а)',
+    rejected: 'Отказ',
+  },
+} as const
+
+const COPY = {
+  en: {
+    htmlLang: 'en',
+    urgency: (d: number) =>
+      d <= 0 ? `Today is the deadline.`
+      : d === 1 ? `Tomorrow is the deadline.`
+      : d <= 7 ? `${d} days until the deadline.`
+      : d <= 30 ? `${d} days remaining.`
+      : `Deadline in ${d} days.`,
+    headingNamed: (n: string) => `${n}, a deadline you tracked is coming up.`,
+    headingNeutral: 'Hi, a deadline you tracked is coming up.',
+    kicker: 'Tracking',
+    deadlineLabel: 'Deadline',
+    statusLabel: 'Your last status',
+    openApp: 'Open the application',
+    updateStatus: 'Update status in your pipeline →',
+    weekTitle: 'What to do this week',
+    weekLines: {
+      submitted: 'note the decision date in your calendar; mark Awaiting decision.',
+      drafting: 'get a fresh pair of eyes on your essays — peer or counselor — at least 72h before deadline. Last-minute revisions miss obvious things.',
+      researching: "decide today whether you'll apply. Skipping is a decision; partial applications waste your time more than skipping does.",
+    },
+    weekLabels: {
+      submitted: 'If submitted',
+      drafting: 'If drafting',
+      researching: 'If researching',
+    },
+    mutePre: 'Mute reminders for this scholarship — open it in ',
+    muteLink: 'your tracker',
+    mutePost: ' and change the status to ',
+    muteOption1: 'Rejected',
+    muteJoin: ' or ',
+    muteOption2: 'Decision',
+    teamSignoff: `— The ${SITE_NAME} Team`,
+    subjectToday: (n: string) => `🚨 Today: ${n}`,
+    subjectTomorrow: (n: string) => `🚨 Tomorrow: ${n}`,
+    subjectWeek: (d: number, n: string) => `⏰ ${d} days left — ${n}`,
+    subjectFar: (d: number, n: string) => `${d} days until ${n}`,
+  },
+  ru: {
+    htmlLang: 'ru',
+    urgency: (d: number) =>
+      d <= 0 ? `Сегодня дедлайн.`
+      : d === 1 ? `Завтра дедлайн.`
+      : d <= 7 ? `${d} дн. до дедлайна.`
+      : d <= 30 ? `${d} дн. осталось.`
+      : `Дедлайн через ${d} дн.`,
+    headingNamed: (n: string) => `${n}, ваш дедлайн уже близко.`,
+    headingNeutral: 'Привет — ваш дедлайн уже близко.',
+    kicker: 'В работе',
+    deadlineLabel: 'Дедлайн',
+    statusLabel: 'Ваш статус',
+    openApp: 'Открыть заявку',
+    updateStatus: 'Обновить статус в pipeline →',
+    weekTitle: 'Что сделать на этой неделе',
+    weekLines: {
+      submitted: 'отметьте дату решения в календаре — поставьте статус «Жду решения».',
+      drafting: 'покажите эссе свежему читателю — другу или ментору — минимум за 72 часа до дедлайна. Правки в последний момент упускают очевидное.',
+      researching: 'решите сегодня — подаёте или нет. Пропустить — тоже решение; полузаполненная заявка отнимает больше времени, чем пропуск.',
+    },
+    weekLabels: {
+      submitted: 'Если подали',
+      drafting: 'Если пишете',
+      researching: 'Если изучаете',
+    },
+    mutePre: 'Отключить напоминания — откройте стипендию в ',
+    muteLink: 'pipeline',
+    mutePost: ' и поставьте статус ',
+    muteOption1: 'Отказ',
+    muteJoin: ' или ',
+    muteOption2: 'Жду решения',
+    teamSignoff: `— Команда ${SITE_NAME}`,
+    subjectToday: (n: string) => `🚨 Сегодня: ${n}`,
+    subjectTomorrow: (n: string) => `🚨 Завтра: ${n}`,
+    subjectWeek: (d: number, n: string) => `⏰ ${d} дн. — ${n}`,
+    subjectFar: (d: number, n: string) => `${d} дн. до ${n}`,
+  },
+} as const
 
 const ScholarshipDeadlineEmail = ({
   name,
@@ -27,64 +126,62 @@ const ScholarshipDeadlineEmail = ({
   amount,
   scholarshipUrl,
   trackerUrl,
+  language = 'en',
 }: Props) => {
-  const urgencyLine =
-    daysRemaining <= 0
-      ? `Today is the deadline.`
-      : daysRemaining === 1
-        ? `Tomorrow is the deadline.`
-        : daysRemaining <= 7
-          ? `${daysRemaining} days until the deadline.`
-          : daysRemaining <= 30
-            ? `${daysRemaining} days remaining.`
-            : `Deadline in ${daysRemaining} days.`
-
+  const c = COPY[language === 'ru' ? 'ru' : 'en']
+  const statusLabels = STATUS_LABELS[language === 'ru' ? 'ru' : 'en']
+  const urgencyLine = c.urgency(daysRemaining)
   const urgencyColor =
     daysRemaining <= 7 ? '#b00020' : daysRemaining <= 14 ? '#b8860b' : '#0a2540'
+  const localizedStatus =
+    status && (statusLabels as Record<string, string>)[status]
+      ? (statusLabels as Record<string, string>)[status]
+      : status
 
   return (
-    <Html lang="en" dir="ltr">
+    <Html lang={c.htmlLang} dir="ltr">
       <Head />
-      <Preview>{urgencyLine} {scholarshipName} closes {deadlineDate}.</Preview>
+      <Preview>{urgencyLine} {scholarshipName} {language === 'ru' ? `закрывается ${deadlineDate}.` : `closes ${deadlineDate}.`}</Preview>
       <Body style={main}>
         <Container style={container}>
           <Heading style={h1}>
-            {name ? `${name},` : 'Hi,'} a deadline you tracked is coming up.
+            {name ? c.headingNamed(name) : c.headingNeutral}
           </Heading>
           <Section style={card}>
-            <Text style={kicker}>Tracking</Text>
+            <Text style={kicker}>{c.kicker}</Text>
             <Heading style={h2}>{scholarshipName}</Heading>
             {amount && <Text style={amountText}>{amount}</Text>}
             <Hr style={hr} />
             <Text style={{ ...lead, color: urgencyColor }}>{urgencyLine}</Text>
-            <Text style={text}>Deadline: <strong>{deadlineDate}</strong></Text>
-            {status && <Text style={text}>Your last status: <strong>{status}</strong></Text>}
+            <Text style={text}>{c.deadlineLabel}: <strong>{deadlineDate}</strong></Text>
+            {localizedStatus && <Text style={text}>{c.statusLabel}: <strong>{localizedStatus}</strong></Text>}
           </Section>
 
           <Section style={btnWrap}>
             {scholarshipUrl && (
               <Button href={scholarshipUrl} style={primaryBtn}>
-                Open the application
+                {c.openApp}
               </Button>
             )}
             <Text style={subtle}>
-              <a href={trackerUrl} style={subtleLink}>Update status in your pipeline →</a>
+              <a href={trackerUrl} style={subtleLink}>{c.updateStatus}</a>
             </Text>
           </Section>
 
           <Hr style={hr} />
-          <Heading style={h3}>What to do this week</Heading>
+          <Heading style={h3}>{c.weekTitle}</Heading>
           <Text style={text}>
-            <strong>If submitted:</strong> note the decision date in your calendar; mark <em>Awaiting decision</em>.<br /><br />
-            <strong>If drafting:</strong> get a fresh pair of eyes on your essays — peer or counselor — at least 72h before deadline. Last-minute revisions miss obvious things.<br /><br />
-            <strong>If researching:</strong> decide today whether you'll apply. Skipping is a decision; partial applications waste your time more than skipping does.
+            <strong>{c.weekLabels.submitted}:</strong> {c.weekLines.submitted}<br /><br />
+            <strong>{c.weekLabels.drafting}:</strong> {c.weekLines.drafting}<br /><br />
+            <strong>{c.weekLabels.researching}:</strong> {c.weekLines.researching}
           </Text>
 
           <Hr style={hr} />
           <Text style={footer}>
-            Mute reminders for this scholarship — open it in <a href={trackerUrl} style={subtleLink}>your tracker</a> and change the status to <em>Rejected</em> or <em>Decision</em>.
+            {c.mutePre}<a href={trackerUrl} style={subtleLink}>{c.muteLink}</a>{c.mutePost}
+            <em>{c.muteOption1}</em>{c.muteJoin}<em>{c.muteOption2}</em>.
           </Text>
-          <Text style={footer}>— The {SITE_NAME} Team</Text>
+          <Text style={footer}>{c.teamSignoff}</Text>
         </Container>
       </Body>
     </Html>
@@ -95,10 +192,13 @@ export const template = {
   component: ScholarshipDeadlineEmail,
   subject: ((data: Record<string, any>) => {
     const days = Number(data.daysRemaining) || 0
-    if (days <= 0) return `🚨 Today: ${data.scholarshipName}`
-    if (days === 1) return `🚨 Tomorrow: ${data.scholarshipName}`
-    if (days <= 7) return `⏰ ${days} days left — ${data.scholarshipName}`
-    return `${days} days until ${data.scholarshipName}`
+    const isRu = data.language === 'ru'
+    const c = COPY[isRu ? 'ru' : 'en']
+    const name = data.scholarshipName || ''
+    if (days <= 0) return c.subjectToday(name)
+    if (days === 1) return c.subjectTomorrow(name)
+    if (days <= 7) return c.subjectWeek(days, name)
+    return c.subjectFar(days, name)
   }),
   displayName: 'Scholarship deadline reminder',
   previewData: {
@@ -110,6 +210,7 @@ export const template = {
     amount: 'Full UK tuition + £18,000 stipend',
     scholarshipUrl: 'https://www.chevening.org/scholarships/',
     trackerUrl: 'https://topuni.org/discover',
+    language: 'en',
   },
 } satisfies TemplateEntry
 

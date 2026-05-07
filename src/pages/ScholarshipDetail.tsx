@@ -242,30 +242,116 @@ const ScholarshipDetail = () => {
     setLink("canonical", `https://topuni.org/scholarships/${s.scholarship_id}`);
 
     // ── JSON-LD payload(s) ─────────────────────────────────────────────
-    // Two structured-data graphs: the scholarship credential itself, and
-    // a FAQPage built from the same fields visible on the page. The FAQ
-    // graph lets Google surface the page as a rich result for natural
-    // questions like "who is eligible for {scholarship}" — pure SEO
-    // leverage on already-written content.
-    const credential = {
+    // Four structured-data graphs (each its own @id-able node):
+    //   1. EducationalOccupationalCredential — the scholarship itself,
+    //      enriched with image, audience, educationalLevel.
+    //   2. MonetaryGrant — Google's recommended schema for funding rich
+    //      results. Pulls in funder + amount + eligibleRegion +
+    //      applicationDeadline so the SERP card can render those.
+    //   3. BreadcrumbList — Home > Scholarships > {Country} > {Name}
+    //      (skips country segment when host_country is unset). Lets
+    //      Google show the breadcrumb path under the title in results.
+    //   4. FAQPage — from the same fields visible on the page; supports
+    //      "People also ask" rich snippets.
+    // Pure SEO leverage on data we already have — no new content to
+    // write, just signals Google's parser already understands.
+    const pageUrl = `https://topuni.org/scholarships/${s.scholarship_id}`;
+    const ogImage = ogImageUrl;
+
+    const funder = cleanProv
+      ? { "@type": "Organization", name: cleanProv }
+      : undefined;
+
+    const credential: Record<string, unknown> = {
       "@type": "EducationalOccupationalCredential",
+      "@id": `${pageUrl}#credential`,
       name: cleanName,
       description: s.eligibility_requirements?.slice(0, 400) ?? desc,
-      url: `https://topuni.org/scholarships/${s.scholarship_id}`,
+      url: pageUrl,
+      image: ogImage,
       credentialCategory: "scholarship",
       offers: s.award_amount_text
         ? { "@type": "Offer", description: s.award_amount_text }
         : undefined,
       validThrough: s.application_deadline ?? undefined,
-      provider: cleanProv
-        ? { "@type": "Organization", name: cleanProv }
+      provider: funder,
+      educationalLevel: Array.isArray(s.target_degree_level) && s.target_degree_level.length > 0
+        ? s.target_degree_level.join(", ")
         : undefined,
+      audience: Array.isArray(s.target_demographics) && s.target_demographics.length > 0
+        ? { "@type": "EducationalAudience", educationalRole: s.target_demographics.join(", ") }
+        : undefined,
+      dateModified: s.last_verified_date ?? undefined,
     };
-    const faqEntities = buildFaqEntities(s, cleanName);
+
     const graph: object[] = [credential];
+
+    // MonetaryGrant — only emit when we have an actual dollar figure or
+    // award text; an empty grant node is worse than no node.
+    if (s.estimated_total_value_usd || s.award_amount_text) {
+      const grant: Record<string, unknown> = {
+        "@type": "MonetaryGrant",
+        "@id": `${pageUrl}#grant`,
+        name: cleanName,
+        description: s.award_amount_text ?? undefined,
+        url: pageUrl,
+        funder,
+        about: { "@id": `${pageUrl}#credential` },
+      };
+      if (typeof s.estimated_total_value_usd === "number" && s.estimated_total_value_usd > 0) {
+        grant.amount = {
+          "@type": "MonetaryAmount",
+          value: s.estimated_total_value_usd,
+          currency: "USD",
+        };
+      }
+      if (s.application_deadline) {
+        grant.applicationDeadline = s.application_deadline;
+      }
+      // eligibleRegion: prefer the structured eligible_countries array
+      // when present; fall back to host_country so the grant always has
+      // some geographic context for the SERP.
+      const regions = Array.isArray(s.eligible_countries) && s.eligible_countries.length > 0
+        ? s.eligible_countries
+        : (s.host_country ? [s.host_country] : []);
+      if (regions.length > 0) {
+        grant.eligibleRegion = regions.map((c) => ({ "@type": "Country", name: c }));
+      }
+      graph.push(grant);
+    }
+
+    // BreadcrumbList — Home > Scholarships > {Country} > {Name}.
+    // Country segment only when we have one; the catalog hub still
+    // reads as Scholarships > Name without it.
+    const crumbs: { "@type": "ListItem"; position: number; name: string; item: string }[] = [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://topuni.org/" },
+      { "@type": "ListItem", position: 2, name: "Scholarships", item: "https://topuni.org/discover" },
+    ];
+    if (cleanCountry) {
+      crumbs.push({
+        "@type": "ListItem",
+        position: crumbs.length + 1,
+        name: cleanCountry,
+        item: `https://topuni.org/scholarships/${encodeURIComponent(cleanCountry.toLowerCase())}`,
+      });
+    }
+    crumbs.push({
+      "@type": "ListItem",
+      position: crumbs.length + 1,
+      name: cleanName,
+      item: pageUrl,
+    });
+    graph.push({
+      "@type": "BreadcrumbList",
+      "@id": `${pageUrl}#breadcrumbs`,
+      itemListElement: crumbs,
+    });
+
+    const faqEntities = buildFaqEntities(s, cleanName);
     if (faqEntities.length > 0) {
       graph.push({
         "@type": "FAQPage",
+        "@id": `${pageUrl}#faq`,
         mainEntity: faqEntities,
       });
     }
@@ -842,7 +928,15 @@ function injectJsonLd(payload: object) {
   const s = document.createElement("script");
   s.type = "application/ld+json";
   s.dataset.topuniLd = "true";
-  s.text = JSON.stringify(payload);
+  // JSON.stringify doesn't escape "<" by default — a scholarship
+  // name or eligibility text containing "</script>" would close the
+  // tag early and inject arbitrary HTML into <head>. Replace the
+  // unsafe sequences with unicode escapes so the JSON parser still
+  // sees them but the HTML parser doesn't. Belt-and-suspenders since
+  // our content is LLM-scraped, but cheap and correct.
+  s.text = JSON.stringify(payload)
+    .replace(/<\/script>/gi, "<\\/script>")
+    .replace(/<!--/g, "<\\u0021--");
   document.head.appendChild(s);
 }
 
@@ -867,10 +961,16 @@ function buildFaqEntities(s: Scholarship, cleanedName?: string): object[] {
   // Eligibility — most-searched question for any scholarship.
   push(`Who is eligible for the ${name}?`, s.eligibility_requirements);
   // Funding — combine coverage + amount into one rich answer.
+  // The migration's CHECK constraint allows full_ride + full_tuition
+  // (aliases) and stipend + stipend_only (aliases). Both forms exist
+  // on legacy rows. Map every recognised value; only "unknown" or
+  // null falls through to the generic line.
+  const cov = s.coverage_type;
   const coverageWord =
-    s.coverage_type === "full_ride" ? "a full ride covering tuition and living costs"
-    : s.coverage_type === "tuition_only" ? "tuition costs"
-    : s.coverage_type === "stipend_only" ? "a living stipend"
+    cov === "full_ride" || cov === "full_tuition" ? "a full ride covering tuition and living costs"
+    : cov === "tuition_only" ? "tuition costs"
+    : cov === "stipend" || cov === "stipend_only" ? "a living stipend"
+    : cov === "partial" ? "partial funding"
     : "scholarship funding";
   const fundingParts: string[] = [`The ${name} provides ${coverageWord}.`];
   if (s.award_amount_text) fundingParts.push(s.award_amount_text);
