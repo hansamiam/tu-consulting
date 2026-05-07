@@ -44,13 +44,22 @@ export async function checkRateLimit(
   return data === true;
 }
 
-/** Extract a best-guess client IP from the request headers. */
+/** Extract a best-guess client IP from the request headers.
+ *
+ *  Header preference order is intentional: cf-connecting-ip is set by
+ *  Cloudflare from the actual TCP connection and cannot be spoofed by
+ *  the caller; x-real-ip is typically set by a single trusted proxy
+ *  hop. x-forwarded-for is checked LAST because the first entry is
+ *  client-supplied — an attacker hitting the edge function URL directly
+ *  can prepend any IP they want and rotate to evade per-IP rate limits.
+ *  (The previous "xf first" order leaked the rate-limit ceiling on
+ *  AI-spend endpoints under exactly that scenario.) */
 export function clientIp(req: Request): string {
-  const xf = req.headers.get("x-forwarded-for");
-  if (xf) return xf.split(",")[0].trim();
   const cf = req.headers.get("cf-connecting-ip");
   if (cf) return cf.trim();
   const real = req.headers.get("x-real-ip");
   if (real) return real.trim();
+  const xf = req.headers.get("x-forwarded-for");
+  if (xf) return xf.split(",")[0].trim();
   return "unknown";
 }
