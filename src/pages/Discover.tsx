@@ -137,6 +137,16 @@ interface Scholarship {
   /* When the row first landed in our catalogue. Drives the "NEW" pill
    * shown for scholarships added in the last 7 days. ISO timestamp. */
   created_at?: string | null;
+  /* LLM-reported extraction confidence in [0,1]. <0.7 means we extracted
+   * from very thin signals — score should be discounted so the row only
+   * dominates ranking when no richer alternative competes. */
+  confidence?: number | null;
+  /* Count of substantive fields populated, 0–18. Maintained server-side
+   * by the scholarships_completeness_score trigger. Used as a small
+   * scoring tie-breaker (more-populated rows surface ahead of equally-
+   * matching but sparser rows) and could drive a UI "verified data"
+   * badge later. */
+  data_completeness_score?: number | null;
 }
 
 interface Profile {
@@ -495,6 +505,28 @@ const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: numbe
     match += bonus;
     if (bonus >= 12) reasons.push("Hits the field and goals you described");
     else if (bonus >= 6) reasons.push("Touches your field area");
+  }
+
+  // Trust calibration — discount the score by extraction confidence and
+  // reward data completeness. Without this, a sparse row that happens
+  // to embedding-match a profile can pip a fully-populated row that's
+  // a slightly better fit. The catalog quality work (anti-fabrication,
+  // min-info gate, completeness scoring) only pays off when ranking
+  // honors it.
+  //
+  // confidence shaping: rows with confidence ≥0.85 are unaffected; below
+  // 0.85 we shave proportionally, capped at -8. We never zero a row out
+  // on confidence alone — the user can still see and decide.
+  const conf = typeof s.confidence === "number" ? s.confidence : 0.85;
+  if (conf < 0.85) {
+    match -= Math.round((0.85 - Math.max(0, conf)) * 16); // up to -13.6 at conf=0
+    match = Math.max(match, 0);
+  }
+  // completeness shaping: max +6 for fully-populated (18/18), 0 baseline
+  // at completeness ≤8 ("just-enough" rows). Linear in between.
+  const comp = typeof s.data_completeness_score === "number" ? s.data_completeness_score : 8;
+  if (comp > 8) {
+    match += Math.min(6, Math.round((comp - 8) * 0.6));
   }
 
   if (eligibility === "likely" && match >= 70) eligibility = "eligible";

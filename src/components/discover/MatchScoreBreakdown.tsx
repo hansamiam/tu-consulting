@@ -33,6 +33,13 @@ interface BreakdownRow {
   value_reason: string;
   recency_boost: number;
   recency_reason: string;
+  /* Trust factors — added in 20260507220000. Older deployments returning
+   * the legacy 11-column shape leave these undefined; the row renderer
+   * skips zero/undefined entries. */
+  confidence_adj?: number;
+  confidence_reason?: string;
+  completeness_boost?: number;
+  completeness_reason?: string;
   composite_score: number;
 }
 
@@ -201,6 +208,18 @@ export const MatchScoreBreakdown = ({
       reason: data!.recency_reason,
       delta: fmtBoost(data!.recency_boost),
     },
+    ...(typeof data!.confidence_adj === "number" && data!.confidence_adj < 0 ? [{
+      label: "Extraction confidence",
+      status: (data!.confidence_adj <= -0.025 ? "warn" : "info") as "good"|"warn"|"miss"|"info",
+      reason: data!.confidence_reason ?? "",
+      delta: fmtBoost(data!.confidence_adj),
+    }] : []),
+    ...(typeof data!.completeness_boost === "number" && data!.completeness_boost > 0 ? [{
+      label: "Catalog completeness",
+      status: "good" as "good"|"warn"|"miss"|"info",
+      reason: data!.completeness_reason ?? "",
+      delta: fmtBoost(data!.completeness_boost),
+    }] : []),
   ] : fallbackRows;
 
   return (
