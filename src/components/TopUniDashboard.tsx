@@ -2782,7 +2782,30 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       { messages: allMessages, language, profile, reportSummary, sessionId },
       (chunk) => upsertAssistant(chunk),
       () => setChatLoading(false),
-      undefined,
+      // Without an explicit onError, streamSSE injects the error text
+      // as a content chunk → it renders as if the AI said "Rate limit
+      // exceeded. Please slow down." which looks unhinged. Toast the
+      // error, reset loading, and roll back the user's just-pushed
+      // message so they can retry without an orphaned echo of their
+      // own send hanging in the chat.
+      (status, message) => {
+        setChatLoading(false);
+        setChatMessages(prev => {
+          const last = prev[prev.length - 1];
+          // Only roll back if we never streamed any assistant content
+          // (i.e. the failure was at request-time, not mid-stream).
+          if (last?.role === "user" && assistantSoFar === "") {
+            return prev.slice(0, -1);
+          }
+          return prev;
+        });
+        const friendly = status === 429
+          ? t("Slow down a sec — too many messages too fast. Try again in a minute.",
+              "Слишком много сообщений подряд. Подождите минуту и попробуйте снова.")
+          : message || t("Couldn't reach the counselor. Try again.",
+                          "Не удалось связаться с советником. Попробуйте снова.");
+        toast.error(friendly);
+      },
       chatController.signal,
     );
   };
