@@ -134,6 +134,9 @@ interface Scholarship {
    * ExpandedScholarshipDialog. When null we fall back to the
    * country-tinted gradient + landmark silhouette treatment. */
   cover_image_url?: string | null;
+  /* When the row first landed in our catalogue. Drives the "NEW" pill
+   * shown for scholarships added in the last 7 days. ISO timestamp. */
+  created_at?: string | null;
 }
 
 interface Profile {
@@ -680,6 +683,77 @@ const dateOnly = (d: string | null) => {
   const t = new Date(d).getTime();
   if (Number.isNaN(t)) return null;
   return new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
+
+/* "NEW" badge — true when the scholarship landed in our catalogue
+ * within the last 7 days. Drives a small gold pill on cards/rows so
+ * users notice fresh additions instead of having to hunt for them. */
+const NEW_WINDOW_MS = 7 * 86_400_000;
+const isNewScholarship = (createdAt: string | null | undefined): boolean => {
+  if (!createdAt) return false;
+  const t = new Date(createdAt).getTime();
+  if (Number.isNaN(t)) return false;
+  return Date.now() - t < NEW_WINDOW_MS;
+};
+
+/* Field-name normalization — drops noise suffixes ("and related fields",
+ * "studies"), unifies separators + plurals, and applies a synonym map
+ * (cs → computer science, women in stem → stem, etc.). Used by BOTH the
+ * dropdown builder (so duplicates collapse into one option) and the
+ * filter-match logic (so picking "STEM" matches a row with "Women in
+ * STEM" in target_fields). Keep both call sites in lockstep — diverging
+ * the normalizers re-introduces the dropdown/match drift the user
+ * called out (2026-05-07). */
+const FIELD_SYNONYMS_MAP: Record<string, string> = {
+  "stem": "stem",
+  "science technology engineering and math": "stem",
+  "science technology engineering and mathematic": "stem",
+  "women in stem": "stem",
+  "women in science": "stem",
+  "women in technology": "stem",
+  "comp sci": "computer science",
+  "cs": "computer science",
+  "cse": "computer science",
+  "ai": "artificial intelligence",
+  "ml": "machine learning",
+  "ee": "electrical engineering",
+  "me": "mechanical engineering",
+  "ce": "civil engineering",
+  "biz": "business",
+  "mba": "business",
+  "ir": "international relation",
+  "intl relation": "international relation",
+  "global affair": "international relation",
+  "policy": "public policy",
+  "polisci": "political science",
+  "poli sci": "political science",
+  "med": "medicine",
+  "medical": "medicine",
+  "healthcare": "public health",
+  "global health": "public health",
+  "humanitie": "humanity",
+  "lit": "literature",
+  "english": "literature",
+  "creative writing": "literature",
+  "fine art": "art",
+  "visual art": "art",
+};
+
+export const normalizeFieldKey = (raw: string): string => {
+  let key = raw.toLowerCase()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/&/g, "and")
+    // Drop noise suffixes — "development related fields" → "development",
+    // "social science studies" → "social science", etc.
+    .replace(/\s+(and\s+)?related\s+fields?$/i, "")
+    .replace(/\s+studies$/i, "")
+    .replace(/\s+(and\s+)?related$/i, "")
+    .replace(/\s+fields?$/i, "")
+    .replace(/s$/, "")
+    .trim();
+  if (FIELD_SYNONYMS_MAP[key]) key = FIELD_SYNONYMS_MAP[key];
+  return key;
 };
 
 const WIZARD_STEPS = 4;
@@ -1302,6 +1376,14 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
             and prestige info still drive scoring and surface inside
             the detail sheet. Uniform geometry across every row. */}
         <div className="min-w-0">
+          {isNewScholarship(s.created_at) && (
+            <div className="mb-1">
+              <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 ring-1 ring-emerald-500/30 px-1.5 py-0.5 rounded">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                {ru ? "Новое" : "New"}
+              </span>
+            </div>
+          )}
           <h3
             className="font-heading font-semibold text-[15px] text-foreground tracking-tight group-hover:text-gold-dark transition-colors leading-tight"
             style={{ display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2, overflow: "hidden" } as React.CSSProperties}
@@ -1537,6 +1619,15 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
             on long names like "MEXT Japanese Government Scholarship -..."
             in the screenshot). Provider truncates on a single line below. */}
         <div className="min-w-0">
+          {/* NEW pill — first 7 days after a scholarship lands in the
+              catalogue. Helps users notice fresh additions without
+              having to manually compare against last visit. */}
+          {isNewScholarship(s.created_at) && (
+            <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 ring-1 ring-emerald-500/30 px-1.5 py-0.5 rounded mb-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              {ru ? "Новое" : "New"}
+            </span>
+          )}
           <h3 className="font-heading text-[15px] font-semibold leading-[1.2] tracking-[-0.01em] text-foreground line-clamp-3 group-hover:text-gold-dark transition-colors mb-1">
             {cleanScholarshipName(s.scholarship_name)}
           </h3>
@@ -3112,13 +3203,11 @@ const Discover = ({ language = "en" }: Props) => {
         if (!item || FIELD_JUNK.test(item)) return;
         if (item.length > 42) return;
 
-        const key = item.toLowerCase()
-          .replace(/[-_]+/g, " ")
-          .replace(/\s+/g, " ")
-          .replace(/s$/, "")
-          .replace(/&/g, "and");
+        const key = normalizeFieldKey(item);
+        // Skip empty post-normalization keys (e.g. raw was just "fields").
+        if (!key || key.length < 2) return;
 
-        const display = titleCaseField(item.replace(/[-_]+/g, " ").replace(/\s+/g, " "));
+        const display = titleCaseField(key);
         const cur = counts.get(key);
         if (cur) cur.n++;
         else counts.set(key, { display, n: 1 });
@@ -3192,21 +3281,19 @@ const Discover = ({ language = "en" }: Props) => {
         && s.target_demographics.includes(filters.demographic));
     }
     if (filters.field !== "all") {
-      // Mirror the dedupe pipeline used to build the dropdown: comma-
-      // split run-on LLM strings, normalise separators + trailing-s +
-      // & vs and. Without this, picking "Engineering" wouldn't match
-      // a row whose target_fields contained "Computer Science,
-      // Engineering" (single comma-joined entry).
-      const norm = (f: string) => f.toLowerCase()
-        .replace(/[-_]+/g, " ")
-        .replace(/\s+/g, " ")
-        .replace(/&/g, "and")
-        .replace(/s$/, "");
-      const want = norm(filters.field);
+      // Use the SAME normalizeFieldKey() the dropdown builder uses so
+      // selecting "STEM" matches a row whose target_fields contains
+      // "Women in STEM" or "Science, Technology, Engineering and Math".
+      // Pre-fix the inline norm here only handled separators + plurals;
+      // it didn't apply the synonym map or strip "related fields", so
+      // the dropdown would offer a consolidated "STEM" option but
+      // selecting it filtered against a stricter key and returned 0
+      // matches.
+      const want = normalizeFieldKey(filters.field);
       list = list.filter(s =>
         s.target_fields?.some(f => {
           const splits = f.split(/\s*[,/;]\s*/).filter(Boolean);
-          return splits.some(item => norm(item) === want);
+          return splits.some(item => normalizeFieldKey(item) === want);
         }),
       );
     }
