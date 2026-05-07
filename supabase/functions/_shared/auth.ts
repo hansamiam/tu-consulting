@@ -35,16 +35,21 @@ export async function requireAdminOrService(req: Request): Promise<AuthResult> {
   const token  = header.replace(/^Bearer\s+/i, "").trim();
   if (!token) return { ok: false, reason: "missing bearer token" };
 
-  // Path 1: service-role direct (either legacy JWT or sb_secret short form)
+  // Path 1: service-role direct (either legacy JWT or sb_secret short form).
+  // SECURITY: must be an EXACT value match against an env var. An earlier
+  // version of this helper accepted any token starting with "sb_secret_"
+  // as a fallback for projects where the env var hadn't been exposed —
+  // that was a wide-open backdoor (any caller could craft "sb_secret_xxx"
+  // and bypass into paid Firecrawl/LLM endpoints). The fix is to make
+  // sure the env var is set, not to relax the check.
+  //
+  // If pg_cron breaks here, set the secret explicitly:
+  //   supabase secrets set SB_SECRET_KEY=sb_secret_<value>
+  // (or SUPABASE_SERVICE_ROLE_KEY=sb_secret_<value>). Then redeploy.
   if (
     (SERVICE_ROLE_LEGACY && token === SERVICE_ROLE_LEGACY) ||
     (SB_SECRET_KEY       && token === SB_SECRET_KEY)
   ) {
-    return { ok: true, caller: "service_role" };
-  }
-  // Also: any sb_secret_*-prefixed token bypasses (matches the project's
-  // active secret format even if env not yet exposed under SB_SECRET_KEY).
-  if (token.startsWith("sb_secret_")) {
     return { ok: true, caller: "service_role" };
   }
 
