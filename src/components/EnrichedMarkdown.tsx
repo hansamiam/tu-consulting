@@ -42,12 +42,21 @@ interface Props {
   scholarships?: InlineScholarshipData[];
 }
 
-/** Normalize for fuzzy matching — lowercase, strip common suffixes. */
+/** Normalize for fuzzy matching — lowercase, strip common suffixes.
+ *
+ *  Uses the Unicode property escapes so accented letters (é in
+ *  L'Oréal, ñ, ü), Cyrillic (Программа), and other non-ASCII letter
+ *  classes survive the punctuation strip. The previous \\w-based
+ *  regex was ASCII-only — "L'Oréal Scholars" normalised to "loral
+ *  scholars" (é → stripped) and never matched "L'Oréal Foundation"
+ *  (which normalised to "loral foundation"). Same problem for any
+ *  Russian-brief mention of a Cyrillic-named program.
+ */
 function normalize(s: string): string {
   return s
     .toLowerCase()
     .replace(/[–—]/g, "-")             // em/en dashes → hyphen
-    .replace(/[^\w\s-]/g, "")                    // strip punctuation
+    .replace(/[^\p{L}\p{N}\s-]/gu, "") // keep all Unicode letters/numbers, drop punctuation
     .replace(/\s+/g, " ")
     .trim()
     // strip common terminal nouns so "Chevening" matches "Chevening Scholarships"
