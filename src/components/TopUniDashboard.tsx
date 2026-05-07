@@ -1812,20 +1812,31 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   const [greetingLoading, setGreetingLoading] = useState(false);
   const [greetingFiredHash, setGreetingFiredHash] = useState<string | null>(null);
 
+  // Single in-flight insert promise. Without this, two rapid sends
+  // before chatSessionId state propagated would each spawn a separate
+  // counselor_sessions row — splitting messages across orphaned
+  // sessions for what the user perceived as one conversation.
+  const ensureSessionPromiseRef = useRef<Promise<string | null> | null>(null);
   const ensureSession = async (): Promise<string | null> => {
     if (chatSessionId) return chatSessionId;
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return null;
-      const { data, error } = await supabase
-        .from("counselor_sessions")
-        .insert({ user_id: session.user.id, language })
-        .select("session_id")
-        .single();
-      if (error || !data) return null;
-      setChatSessionId(data.session_id);
-      return data.session_id;
-    } catch { return null; }
+    if (ensureSessionPromiseRef.current) return ensureSessionPromiseRef.current;
+    const p = (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return null;
+        const { data, error } = await supabase
+          .from("counselor_sessions")
+          .insert({ user_id: session.user.id, language })
+          .select("session_id")
+          .single();
+        if (error || !data) return null;
+        setChatSessionId(data.session_id);
+        return data.session_id as string;
+      } catch { return null; }
+      finally { ensureSessionPromiseRef.current = null; }
+    })();
+    ensureSessionPromiseRef.current = p;
+    return p;
   };
 
   const clearChat = async () => {
