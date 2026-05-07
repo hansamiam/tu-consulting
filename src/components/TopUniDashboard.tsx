@@ -293,41 +293,69 @@ const UniversityShortlist = ({ markdown, isRu, onOpenDiscover, onRegen, isRegene
   const { title, buckets } = useMemo(() => {
     const lines = markdown.split("\n");
     let title = "";
-    const buckets: { heading: string; items: { name: string; detail: string }[] }[] = [];
+    const buckets: { heading: string; items: { name: string; headline: string; details: string[] }[] }[] = [];
     let cur: typeof buckets[number] | null = null;
-    let pendingBullet: string[] = [];
+    /* The premium + basic prompts emit each university as ONE
+     * `**Name**` bullet followed by 1-3 plain bullets describing the
+     * program / acceptance rate / USP. Earlier the parser flushed on
+     * every bullet, so a single university with 4 bullets rendered
+     * as 4 separate cards in the grid — visual chaos and double-
+     * counting.
+     *
+     * The fix: track the current item, and treat a non-`**`-starting
+     * bullet as a sub-detail to append to the current item. A new
+     * `**` bullet flushes the current item and starts a new one. */
+    let curItem: typeof buckets[number]["items"][number] | null = null;
+    let pendingLines: string[] = [];
 
-    const flushPending = () => {
-      if (cur && pendingBullet.length > 0) {
-        const text = pendingBullet.join(" ").trim();
-        const m = text.match(/^\*\*([^*]+)\*\*\s*[—–-]?\s*(.*)$/);
-        if (m) {
-          cur.items.push({ name: m[1].trim(), detail: m[2].trim() });
-        } else if (text) {
-          cur.items.push({ name: text.replace(/^\*\*|\*\*$/g, "").trim(), detail: "" });
-        }
-        pendingBullet = [];
+    const flushPendingIntoCurItem = () => {
+      if (!curItem || pendingLines.length === 0) return;
+      const text = pendingLines.join(" ").replace(/\s+/g, " ").trim();
+      pendingLines = [];
+      if (text) curItem.details.push(text);
+    };
+
+    const startNewItem = (bulletText: string) => {
+      if (!cur) return;
+      flushPendingIntoCurItem();
+      const m = bulletText.match(/^\*\*([^*]+)\*\*\s*[—–-]?\s*(.*)$/);
+      if (m) {
+        curItem = { name: m[1].trim(), headline: m[2].trim(), details: [] };
+      } else {
+        curItem = { name: bulletText.replace(/\*\*/g, "").trim(), headline: "", details: [] };
       }
+      cur.items.push(curItem);
     };
 
     for (const raw of lines) {
       const line = raw.trim();
-      if (!line) { flushPending(); continue; }
+      if (!line) { flushPendingIntoCurItem(); continue; }
       if (line.startsWith("## ")) {
         title = line.slice(3).trim();
       } else if (line.startsWith("### ")) {
-        flushPending();
+        flushPendingIntoCurItem();
+        curItem = null;
         cur = { heading: line.slice(4).trim(), items: [] };
         buckets.push(cur);
       } else if (cur && /^([-*]|\d+\.)\s+/.test(line)) {
-        flushPending();
-        pendingBullet = [line.replace(/^([-*]|\d+\.)\s+/, "").trim()];
-      } else if (cur && pendingBullet.length > 0) {
-        // Continuation of a bullet (multi-line bullet)
-        pendingBullet.push(line);
+        const bulletText = line.replace(/^([-*]|\d+\.)\s+/, "").trim();
+        // A bullet starting with `**Name**` is a new university; a
+        // bullet without it is a sub-detail under the current item.
+        if (/^\*\*[^*]+\*\*/.test(bulletText)) {
+          startNewItem(bulletText);
+        } else if (curItem) {
+          flushPendingIntoCurItem();
+          pendingLines = [bulletText];
+        } else {
+          // No anchor `**` row yet — fall back to treating it as a
+          // standalone item so we don't drop content silently.
+          startNewItem(bulletText);
+        }
+      } else if (curItem) {
+        pendingLines.push(line);
       }
     }
-    flushPending();
+    flushPendingIntoCurItem();
     return { title, buckets: buckets.filter(b => b.items.length > 0) };
   }, [markdown]);
 
@@ -375,10 +403,17 @@ const UniversityShortlist = ({ markdown, isRu, onOpenDiscover, onRegen, isRegene
                     <h4 className="font-heading font-semibold text-[15px] text-foreground tracking-tight leading-snug mb-1">
                       {item.name}
                     </h4>
-                    {item.detail && (
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        {renderInline(item.detail)}
+                    {item.headline && (
+                      <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+                        {renderInline(item.headline)}
                       </p>
+                    )}
+                    {item.details.length > 0 && (
+                      <ul className="text-[11px] text-muted-foreground/85 leading-relaxed space-y-0.5 list-disc pl-4 marker:text-muted-foreground/40">
+                        {item.details.map((d, di) => (
+                          <li key={di}>{renderInline(d)}</li>
+                        ))}
+                      </ul>
                     )}
                   </div>
                 ))}
@@ -435,32 +470,65 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combine
   const { title, items } = useMemo(() => {
     const lines = markdown.split("\n");
     let title = "";
-    const items: { name: string; detail: string }[] = [];
-    let pending: string[] = [];
+    type Item = { name: string; headline: string; details: string[] };
+    const items: Item[] = [];
+    let curItem: Item | null = null;
+    let pendingLines: string[] = [];
 
-    const flush = () => {
-      if (pending.length === 0) return;
-      const text = pending.join(" ").trim();
-      const m = text.match(/^\*\*([^*]+)\*\*\s*[—–-]?\s*(.*)$/);
-      if (m) items.push({ name: m[1].trim(), detail: m[2].trim() });
-      else if (text) items.push({ name: text.replace(/\*+/g, "").trim(), detail: "" });
-      pending = [];
+    const flushPendingIntoCurItem = () => {
+      if (!curItem || pendingLines.length === 0) return;
+      const text = pendingLines.join(" ").replace(/\s+/g, " ").trim();
+      pendingLines = [];
+      if (text) curItem.details.push(text);
     };
 
+    const startNewItem = (bulletText: string) => {
+      flushPendingIntoCurItem();
+      const m = bulletText.match(/^\*\*([^*]+)\*\*\s*[—–-]?\s*(.*)$/);
+      if (m) {
+        curItem = { name: m[1].trim(), headline: m[2].trim(), details: [] };
+      } else {
+        curItem = { name: bulletText.replace(/\*+/g, "").trim(), headline: "", details: [] };
+      }
+      items.push(curItem);
+    };
+
+    /* Each scholarship in the prompt is one `**Name**` bullet plus 1-2
+     * plain sub-bullets (why-fits, deadline). Pre-fix the parser
+     * flushed on every bullet, so a single scholarship became 2-3
+     * separate cards — confusing + visually broken. Now sub-bullets
+     * append to the current item's details list. */
     for (const raw of lines) {
       const line = raw.trim();
-      if (!line) { flush(); continue; }
+      if (!line) { flushPendingIntoCurItem(); continue; }
       if (line.startsWith("## ")) {
         title = line.slice(3).trim();
       } else if (/^([-*]|\d+\.)\s+/.test(line)) {
-        flush();
-        pending = [line.replace(/^([-*]|\d+\.)\s+/, "").trim()];
-      } else if (pending.length > 0 && !line.startsWith("#")) {
-        pending.push(line);
+        const bulletText = line.replace(/^([-*]|\d+\.)\s+/, "").trim();
+        if (/^\*\*[^*]+\*\*/.test(bulletText)) {
+          startNewItem(bulletText);
+        } else if (curItem) {
+          flushPendingIntoCurItem();
+          pendingLines = [bulletText];
+        } else {
+          startNewItem(bulletText);
+        }
+      } else if (curItem && !line.startsWith("#")) {
+        pendingLines.push(line);
       }
     }
-    flush();
-    return { title, items };
+    flushPendingIntoCurItem();
+    // Backwards-compat: keep `detail` for downstream code that already
+    // reads it. Compose from headline + first detail line so existing
+    // call sites (single-line render) still see something useful while
+    // the new sub-bullet UI consumes details[].
+    return {
+      title,
+      items: items.map(it => ({
+        ...it,
+        detail: [it.headline, ...it.details].filter(Boolean).join(" · "),
+      })),
+    };
   }, [markdown]);
 
   // Cross-reference AI scholarship names against the live DB list
