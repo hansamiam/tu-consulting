@@ -2317,6 +2317,73 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               );
             })()}
 
+            {/* Page-derived facts — what the program ACTUALLY says about
+                itself, not interpretation. Surfaces fields the LLM
+                extracted from the source page so Overview stops feeling
+                like just "title regurgitate". User feedback (2026-05-07):
+                "right now the overview is pure regurgitate of title
+                worthless basic. needs to be actually interesting or
+                from their website etc." Each block renders only when the
+                underlying data is present so the tab degrades cleanly
+                for sparse rows. */}
+            {s.eligibility_requirements && s.eligibility_requirements.trim().length > 30 && (
+              <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-3.5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">
+                  {t("Eligibility (from program)", "Право на участие (от программы)")}
+                </p>
+                <p className="text-sm text-foreground/85 leading-relaxed">
+                  {s.eligibility_requirements.length > 600
+                    ? s.eligibility_requirements.slice(0, 580).trimEnd() + "…"
+                    : s.eligibility_requirements}
+                </p>
+              </div>
+            )}
+
+            {(s.duration_text || s.language_requirements || s.citizenship_requirements) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {s.duration_text && (
+                  <div className="rounded-xl border border-border/60 bg-card px-3.5 py-2.5">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
+                      {t("Duration", "Длительность")}
+                    </p>
+                    <p className="text-sm text-foreground/85 leading-snug">{s.duration_text}</p>
+                  </div>
+                )}
+                {s.language_requirements && (
+                  <div className="rounded-xl border border-border/60 bg-card px-3.5 py-2.5">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
+                      {t("Language", "Язык")}
+                    </p>
+                    <p className="text-sm text-foreground/85 leading-snug">{s.language_requirements}</p>
+                  </div>
+                )}
+                {s.citizenship_requirements && (
+                  <div className="rounded-xl border border-border/60 bg-card px-3.5 py-2.5 sm:col-span-2">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
+                      {t("Citizenship / nationality", "Гражданство")}
+                    </p>
+                    <p className="text-sm text-foreground/85 leading-snug">{s.citizenship_requirements}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {Array.isArray(s.partner_universities) && s.partner_universities.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">
+                  {t("Partner universities", "Партнёрские университеты")}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {s.partner_universities.slice(0, 12).map((u, i) => (
+                    <span key={i} className="text-xs text-foreground/85 bg-primary/[0.04] border border-primary/15 px-2.5 py-1 rounded-md">{u}</span>
+                  ))}
+                  {s.partner_universities.length > 12 && (
+                    <span className="text-xs text-muted-foreground self-center">+{s.partner_universities.length - 12} more</span>
+                  )}
+                </div>
+              </div>
+            )}
+
             {s.reasons.length > 0 && (
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">{t("Profile signals", "Сигналы профиля")}</p>
