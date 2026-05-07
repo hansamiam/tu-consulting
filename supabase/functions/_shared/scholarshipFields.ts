@@ -65,9 +65,116 @@ export function cleanProvider(raw: string | null | undefined): string | null {
   return p;
 }
 
+/** Field-of-study canonicalization map. MIRROR of the
+ *  FIELD_SYNONYMS_MAP in src/pages/Discover.tsx — keep the two in sync.
+ *  Without this, the LLM emits "Computer Science", "CS", "CSE",
+ *  "Computer Science and Engineering", "Computing", "Software
+ *  Engineering" as separate string values; the Discover field filter,
+ *  the field-hub SEO pages, the match scorer, and the saved-search
+ *  filter then each see a fragmented catalog and miss matches.
+ *
+ *  Keys are lowercase comparison forms (after the same normalization
+ *  that normalizeFieldKey() applies — strip "fields"/"studies"/"related"
+ *  suffixes, drop trailing 's'). Values are Title Case canonical labels
+ *  the DB persists. Display layers consume them as-is. */
+const FIELD_SYNONYMS_MAP: Record<string, string> = {
+  "stem": "STEM",
+  "science technology engineering and math": "STEM",
+  "science technology engineering and mathematic": "STEM",
+  "women in stem": "STEM",
+  "women in science": "STEM",
+  "women in technology": "STEM",
+  "comp sci": "Computer Science",
+  "computer science": "Computer Science",
+  "computer science and engineering": "Computer Science",
+  "computer science and information technology": "Computer Science",
+  "computing": "Computer Science",
+  "software engineering": "Computer Science",
+  "cs": "Computer Science",
+  "cse": "Computer Science",
+  "ai": "Artificial Intelligence",
+  "artificial intelligence": "Artificial Intelligence",
+  "ml": "Machine Learning",
+  "machine learning": "Machine Learning",
+  "ee": "Electrical Engineering",
+  "electrical engineering": "Electrical Engineering",
+  "me": "Mechanical Engineering",
+  "mechanical engineering": "Mechanical Engineering",
+  "ce": "Civil Engineering",
+  "civil engineering": "Civil Engineering",
+  "biz": "Business",
+  "business": "Business",
+  "business administration": "Business",
+  "mba": "Business",
+  "ir": "International Relations",
+  "international relation": "International Relations",
+  "international relations": "International Relations",
+  "intl relation": "International Relations",
+  "global affair": "International Relations",
+  "global affairs": "International Relations",
+  "policy": "Public Policy",
+  "public policy": "Public Policy",
+  "polisci": "Political Science",
+  "poli sci": "Political Science",
+  "political science": "Political Science",
+  "med": "Medicine",
+  "medical": "Medicine",
+  "medicine": "Medicine",
+  "healthcare": "Public Health",
+  "public health": "Public Health",
+  "global health": "Public Health",
+  "humanitie": "Humanities",
+  "humanities": "Humanities",
+  "lit": "Literature",
+  "literature": "Literature",
+  "english": "Literature",
+  "creative writing": "Literature",
+  "fine art": "Art",
+  "visual art": "Art",
+  "art": "Art",
+};
+
+/** Lowercase comparison-key form of a raw field-of-study string.
+ *  Mirror of normalizeFieldKey() in src/pages/Discover.tsx — keep in
+ *  sync. Strips "fields"/"studies"/"related" suffixes, normalizes
+ *  hyphens / underscores / "&", strips trailing 's'. */
+function normalizeFieldComparisonKey(raw: string): string {
+  return raw.toLowerCase()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/&/g, "and")
+    .replace(/\s+(and\s+)?related\s+fields?$/i, "")
+    .replace(/\s+studies$/i, "")
+    .replace(/\s+(and\s+)?related$/i, "")
+    .replace(/\s+fields?$/i, "")
+    .replace(/s$/, "")
+    .trim();
+}
+
+/** Resolve a single field-of-study string to its canonical Title Case
+ *  label using FIELD_SYNONYMS_MAP. If no synonym matches, return a
+ *  Title Case version of the input (so the DB always stores presentable
+ *  values rather than ALL-CAPS or all-lowercase LLM output). */
+export function canonicalizeFieldOfStudy(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const key = normalizeFieldComparisonKey(trimmed);
+  if (!key) return null;
+  const mapped = FIELD_SYNONYMS_MAP[key];
+  if (mapped) return mapped;
+  // Fall back to Title Case of the original (preserve internal punctuation).
+  return trimmed
+    .toLowerCase()
+    .split(/(\s+)/)
+    .map((part) => /\s+/.test(part) ? part : part.charAt(0).toUpperCase() + part.slice(1))
+    .join("");
+}
+
 /** Split comma-list run-ons inside a single entry, drop junk values,
- *  cap entry length. Returns [] if nothing survives the filter so the
- *  caller can OMIT the field rather than persist a junk array. */
+ *  cap entry length, canonicalize via FIELD_SYNONYMS_MAP. Returns []
+ *  if nothing survives so the caller can OMIT the field rather than
+ *  persist a junk array. Dedup happens AFTER canonicalization, so
+ *  ["CS", "Computer Science", "Computing"] collapse to ["Computer Science"]. */
 export function cleanTargetFields(fields: unknown): string[] {
   if (!Array.isArray(fields)) return [];
   const out: string[] = [];
@@ -78,10 +185,12 @@ export function cleanTargetFields(fields: unknown): string[] {
     for (const p of pieces) {
       const trimmed = p.trim();
       if (!trimmed || FIELD_JUNK.test(trimmed) || trimmed.length > 60) continue;
-      const key = trimmed.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push(trimmed);
+      const canonical = canonicalizeFieldOfStudy(trimmed);
+      if (!canonical) continue;
+      const dedupKey = canonical.toLowerCase();
+      if (seen.has(dedupKey)) continue;
+      seen.add(dedupKey);
+      out.push(canonical);
     }
   }
   return out;
