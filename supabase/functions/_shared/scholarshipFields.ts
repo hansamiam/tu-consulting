@@ -383,3 +383,23 @@ export function inferHostCountryFromNames(
   }
   return null;
 }
+
+/** Well-known annual-cycle programs. Used by scrape-source and
+ *  verify-scholarship to override an LLM-default of "rolling"
+ *  (which is the model's tell for "I couldn't find a specific
+ *  date") to "annual" when the program is unmistakably yearly.
+ *
+ *  Keep in sync with the SQL pattern in
+ *  20260507160000_backfill_deadline_type.sql.
+ */
+export const KNOWN_ANNUAL_PROGRAMS_RE = /\b(chevening|rhodes|gates cambridge|clarendon|marshall scholar|commonwealth scholarship|fulbright|knight[\-\s]?hennessy|schwarzman|yenching|mext|kgsp|korean? government scholarship|vanier|trudeau|eiffel|daad|deutschlandstipendium|heinrich b[oö]ll|konrad[\-\s]?adenauer|friedrich[\-\s]?ebert|swiss government|swedish institute|orange knowledge|holland scholar|australia awards|erasmus mundus|aga khan|mastercard foundation scholar|p\.?d\.?soros|jack kent cooke|gates millennium|hispanic scholarship fund|east[\-\s]?west center)\b/i;
+
+/** Returns true when the program name + provider should be treated as
+ *  annual-cycle even when the LLM tagged it rolling/unknown/null. */
+export function isKnownAnnualProgram(
+  scholarshipName: string | null | undefined,
+  providerName: string | null | undefined,
+): boolean {
+  const haystack = `${scholarshipName ?? ""} | ${providerName ?? ""}`;
+  return KNOWN_ANNUAL_PROGRAMS_RE.test(haystack);
+}

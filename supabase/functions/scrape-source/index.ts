@@ -34,6 +34,7 @@ import {
   extractDemographicsFromCitizenship,
   stripUserRelative,
   inferHostCountryFromNames,
+  isKnownAnnualProgram,
 } from "../_shared/scholarshipFields.ts";
 
 const corsHeaders = {
@@ -367,8 +368,7 @@ function validateExtracted(x: unknown): ExtractedScholarship | null {
   // LLM extracted — we're only correcting the cycle type.)
   const dt = (o.deadline_type as string | undefined) ?? null;
   if (dt === null || dt === "rolling" || dt === "unknown") {
-    const haystack = `${o.scholarship_name as string} | ${o.provider_name as string}`;
-    if (/\b(chevening|rhodes|gates cambridge|clarendon|marshall scholar|commonwealth scholarship|fulbright|knight[\-\s]?hennessy|schwarzman|yenching|mext|kgsp|korean? government scholarship|vanier|trudeau|eiffel|daad|deutschlandstipendium|heinrich b[oö]ll|konrad[\-\s]?adenauer|friedrich[\-\s]?ebert|swiss government|swedish institute|orange knowledge|holland scholar|australia awards|erasmus mundus|aga khan|mastercard foundation scholar|p\.?d\.?soros|jack kent cooke|gates millennium|hispanic scholarship fund|east[\-\s]?west center)\b/i.test(haystack)) {
+    if (isKnownAnnualProgram(o.scholarship_name as string, o.provider_name as string)) {
       o.deadline_type = "annual";
     }
   }

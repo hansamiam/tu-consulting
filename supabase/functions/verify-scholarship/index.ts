@@ -40,6 +40,8 @@ import {
   cleanTargetDemographics,
   extractDemographicsFromCitizenship,
   stripUserRelative,
+  inferHostCountryFromNames,
+  isKnownAnnualProgram,
 } from "../_shared/scholarshipFields.ts";
 
 const corsHeaders = {
@@ -330,6 +332,32 @@ Deno.serve(async (req) => {
     if (fresh.scholarship_name) fresh.scholarship_name = cleanScholarshipName(fresh.scholarship_name);
     if (fresh.provider_name) fresh.provider_name = cleanProvider(fresh.provider_name) ?? undefined;
     if (fresh.host_country) fresh.host_country = cleanHostCountry(fresh.host_country) ?? undefined;
+    // Country inference fallback — same logic as scrape-source. If the
+    // re-extract left host_country empty but the program name is one
+    // of the well-known patterns (Chevening, DAAD, Fulbright, etc.),
+    // infer the country so the row stops rendering against the generic
+    // "Multiple countries" globe. Stored.host_country may already have
+    // a value from a previous extraction; we only fill `fresh` when it's
+    // blank, so the diff-vs-stored path still detects real changes.
+    if (!fresh.host_country) {
+      const inferred = inferHostCountryFromNames(
+        fresh.scholarship_name ?? stored.scholarship_name,
+        fresh.provider_name ?? stored.provider_name,
+      );
+      if (inferred) fresh.host_country = inferred;
+    }
+    // Deadline-type override — same heuristic as scrape-source. The LLM
+    // re-extract is just as prone to defaulting to "rolling" when the
+    // page doesn't list a date. Force "annual" for known-annual programs
+    // so re-verification doesn't regress a correctly-tagged row.
+    if (fresh.deadline_type === null || fresh.deadline_type === "rolling" || fresh.deadline_type === "unknown" || fresh.deadline_type === undefined) {
+      if (isKnownAnnualProgram(
+        fresh.scholarship_name ?? stored.scholarship_name,
+        fresh.provider_name ?? stored.provider_name,
+      )) {
+        fresh.deadline_type = "annual";
+      }
+    }
     if (fresh.award_amount_text) fresh.award_amount_text = cleanAwardText(fresh.award_amount_text);
     if (Array.isArray(fresh.target_fields)) {
       const cleaned = cleanTargetFields(fresh.target_fields);
