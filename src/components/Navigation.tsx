@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { Menu, Crown, User as UserIcon } from "lucide-react";
+import { Menu, Crown, User as UserIcon, Settings } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -111,17 +111,37 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
                 so the user always knows where to find their entry
                 point regardless of auth state. */}
             {user ? (
-              <button
-                onClick={() => navigate(isRussian ? "/pipeline/ru" : "/pipeline")}
-                className={cn(
-                  "ml-1 px-3 py-1.5 text-sm font-semibold rounded-md transition-colors",
-                  isOverlay
-                    ? "text-gold-light hover:text-gold border border-gold/30 hover:border-gold/50 bg-primary-foreground/[0.04]"
-                    : "text-gold-dark hover:text-foreground border border-gold/35 hover:border-gold/55 bg-gold/5 hover:bg-gold/10"
-                )}
-              >
-                {isRussian ? "Рабочая зона" : "Workspace"}
-              </button>
+              <>
+                <button
+                  onClick={() => navigate(isRussian ? "/pipeline/ru" : "/pipeline")}
+                  className={cn(
+                    "ml-1 px-3 py-1.5 text-sm font-semibold rounded-md transition-colors",
+                    isOverlay
+                      ? "text-gold-light hover:text-gold border border-gold/30 hover:border-gold/50 bg-primary-foreground/[0.04]"
+                      : "text-gold-dark hover:text-foreground border border-gold/35 hover:border-gold/55 bg-gold/5 hover:bg-gold/10"
+                  )}
+                >
+                  {isRussian ? "Рабочая зона" : "Workspace"}
+                </button>
+                {/* Account icon — separate from Workspace so the user
+                    has a clear, smaller affordance for billing /
+                    settings / sign-out without it competing with the
+                    main work entry. Round 96: split out per user
+                    request "Account separate smaller icon". */}
+                <button
+                  onClick={() => navigate(isRussian ? "/account/ru" : "/account")}
+                  aria-label={isRussian ? "Аккаунт" : "Account"}
+                  title={isRussian ? "Аккаунт и подписка" : "Account & billing"}
+                  className={cn(
+                    "ml-1 inline-flex items-center justify-center h-8 w-8 rounded-full border transition-colors",
+                    isOverlay
+                      ? "border-primary-foreground/20 text-primary-foreground/80 hover:text-gold-light hover:border-primary-foreground/40"
+                      : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30"
+                  )}
+                >
+                  {subscription.tier === "founding" ? <Crown className="w-3.5 h-3.5" /> : <UserIcon className="w-3.5 h-3.5" />}
+                </button>
+              </>
             ) : (
               <button
                 onClick={() => setAuthOpen(true)}
@@ -207,6 +227,13 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
                       >
                         {subscription.tier === "founding" ? <Crown className="w-4 h-4" /> : <UserIcon className="w-4 h-4" />}
                         {isRussian ? "Рабочая зона" : "Workspace"}
+                      </button>
+                      <button
+                        onClick={() => { navigate(isRussian ? "/account/ru" : "/account"); setIsOpen(false); }}
+                        className="px-4 py-2.5 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary text-left flex items-center gap-2"
+                      >
+                        <Settings className="w-4 h-4" />
+                        {isRussian ? "Аккаунт" : "Account"}
                       </button>
                       <p className="px-4 text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
                         {tierLabelMobile}
