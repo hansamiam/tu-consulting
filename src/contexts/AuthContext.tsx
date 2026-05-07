@@ -101,11 +101,13 @@ type AuthContextType = {
   /** Email + password sign-in. Returns { error } where error is the
    *  human-readable message from Supabase, or null on success. */
   signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>;
-  /** Email + password sign-up. Same return shape. The new user receives
-   *  a Supabase confirm-email message before they can sign in IF email
-   *  confirmation is required in the project settings; otherwise they're
-   *  signed in immediately. */
-  signUpWithPassword: (email: string, password: string) => Promise<{ error: string | null }>;
+  /** Email + password sign-up. Returns `needsConfirmation: true` when
+   *  the project has Supabase email confirmation turned on (the default)
+   *  — caller should show "check your email" UX in that case. When
+   *  confirmation is off, the user is signed in inline and the
+   *  post-sign-in drain (pendingAccount + referral + redirect) runs
+   *  before this resolves. */
+  signUpWithPassword: (email: string, password: string) => Promise<{ error: string | null; needsConfirmation?: boolean }>;
   /** Send a password-reset email. Used both for legacy magic-link users
    *  who never set a password AND for genuine forgot-password cases. */
   sendPasswordReset: (email: string) => Promise<{ error: string | null }>;
@@ -244,7 +246,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signUpWithPassword = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       // emailRedirectTo only matters when the project requires email
@@ -253,8 +255,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // the magic-link path otherwise.
       options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     });
-    if (!error) void runPostSignInDrain();
-    return { error: error?.message ?? null };
+    if (error) return { error: error.message, needsConfirmation: false };
+    // If email confirmation is enabled in Supabase project settings,
+    // signUp returns { user, session: null } and the user must click
+    // a confirmation link before they can sign in. The drain only
+    // runs once a session exists (handled inside runPostSignInDrain).
+    void runPostSignInDrain();
+    const needsConfirmation = !data.session;
+    return { error: null, needsConfirmation };
   }, []);
 
   const sendPasswordReset = useCallback(async (email: string) => {

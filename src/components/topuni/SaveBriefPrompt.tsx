@@ -80,12 +80,23 @@ export function SaveBriefPrompt({
     // to sign-in with the same password — saves the user one click and
     // routes returning students into the same flow.
     let result = await signUpWithPassword(email.trim(), password);
+    let confirmationPending = !!result.needsConfirmation;
     if (result.error && /already (registered|exists)|user.*exists/i.test(result.error)) {
-      result = await signInWithPassword(email.trim(), password);
+      const r = await signInWithPassword(email.trim(), password);
+      result = { error: r.error };
+      confirmationPending = false;
     }
     setSubmitting(false);
     if (result.error) {
       setError(result.error);
+      return;
+    }
+    if (confirmationPending) {
+      setError(t(
+        "Account created — check your email to confirm. Your brief is saved and waiting.",
+        "Аккаунт создан — подтвердите email. Брифинг сохранён и ждёт вас.",
+      ));
+      // Don't close — keep the message visible so the user knows what to do next.
       return;
     }
     // Drain runs from AuthContext; close the dialog so the dashboard

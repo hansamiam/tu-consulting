@@ -86,14 +86,28 @@ export const AuthDialog = ({
       return;
     }
 
-    const fn = mode === "signup" ? signUpWithPassword : signInWithPassword;
-    const { error } = await fn(email.trim(), password);
-    setLoading(false);
+    if (mode === "signup") {
+      const { error, needsConfirmation } = await signUpWithPassword(email.trim(), password);
+      setLoading(false);
+      if (error) { toast.error(error); return; }
+      if (needsConfirmation) {
+        toast.success(
+          t("Account created — check your email to confirm and finish signing in.",
+            "Аккаунт создан — проверьте email для подтверждения."),
+        );
+      } else {
+        toast.success(t("Account created — you're signed in.", "Аккаунт создан — вы вошли."));
+      }
+      onOpenChange(false);
+      return;
+    }
 
+    const { error } = await signInWithPassword(email.trim(), password);
+    setLoading(false);
     if (error) {
       // Friendlier toast for the common case: legacy magic-link user
       // trying to sign in for the first time.
-      if (mode === "signin" && /invalid (login|credentials)/i.test(error)) {
+      if (/invalid (login|credentials)/i.test(error)) {
         toast.error(
           t("Wrong email or password. New here? Switch to Sign up. Used a magic link before? Tap Forgot password.",
             "Неверный email или пароль. Новый аккаунт? Переключитесь на Регистрацию. Раньше входили по ссылке? Нажмите «Забыли пароль»."),
@@ -103,12 +117,6 @@ export const AuthDialog = ({
       }
       return;
     }
-
-    if (mode === "signup") {
-      toast.success(t("Account created — you're signed in.", "Аккаунт создан — вы вошли."));
-    }
-    // Dialog closes on the next render; the AuthContext drain may also
-    // navigate away via window.location.assign (post-auth redirect).
     onOpenChange(false);
   };
 
