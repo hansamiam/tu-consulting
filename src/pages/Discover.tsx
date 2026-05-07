@@ -69,11 +69,15 @@ const SHORTLIST_FREE_LIMIT = 5;
  * toast confirmation. The shared URL is the public /scholarships/:id
  * page which renders for SEO + handles direct loads even for
  * non-signed-in users. */
-const shareScholarship = async (s: { scholarship_id: string; scholarship_name: string; provider_name: string | null }) => {
+const shareScholarship = async (
+  s: { scholarship_id: string; scholarship_name: string; provider_name: string | null },
+  language: "en" | "ru" = "en",
+) => {
   const url = `${window.location.origin}/scholarships/${s.scholarship_id}`;
   const cleanedName = cleanScholarshipName(s.scholarship_name);
   const cleanedProv = cleanProvider(s.provider_name);
   const title = cleanedProv ? `${cleanedName} — ${cleanedProv}` : cleanedName;
+  const ru = language === "ru";
   const navAny = navigator as Navigator & { share?: (data: { title?: string; url?: string }) => Promise<void> };
   if (navAny.share) {
     try {
@@ -85,9 +89,9 @@ const shareScholarship = async (s: { scholarship_id: string; scholarship_name: s
   }
   try {
     await navigator.clipboard.writeText(url);
-    toast.success("Link copied", { description: cleanedName });
+    toast.success(ru ? "Ссылка скопирована" : "Link copied", { description: cleanedName });
   } catch {
-    toast.error("Couldn't copy — long-press the URL to share");
+    toast.error(ru ? "Не удалось скопировать — зажмите URL для шеринга" : "Couldn't copy — long-press the URL to share");
   }
 };
 
@@ -1409,10 +1413,10 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              shareScholarship(s);
+              shareScholarship(s, language);
             }}
-            aria-label="Share this scholarship"
-            title="Share"
+            aria-label={language === "ru" ? "Поделиться стипендией" : "Share this scholarship"}
+            title={language === "ru" ? "Поделиться" : "Share"}
             className="hidden sm:inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
           >
             <Share2 className="h-4 w-4" />
@@ -1637,9 +1641,9 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
                 page is one click away inside the detail sheet. */}
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); shareScholarship(s); }}
-              aria-label="Share this scholarship"
-              title="Share"
+              onClick={(e) => { e.stopPropagation(); shareScholarship(s, language); }}
+              aria-label={language === "ru" ? "Поделиться стипендией" : "Share this scholarship"}
+              title={language === "ru" ? "Поделиться" : "Share"}
               className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100"
             >
               <Share2 className="h-3.5 w-3.5" />
