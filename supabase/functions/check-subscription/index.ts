@@ -161,7 +161,14 @@ Deno.serve(async (req) => {
                 body: {
                   recipientEmail: refProfile.email,
                   templateName: "referral-converted",
-                  idempotencyKey: `ref-${ref.referrer_user_id}-${ref.referred_user_id}`,
+                  // Idempotency must be per (referrer, referee) so each
+                  // converted friend triggers exactly one notify. Using
+                  // ref.referred_user_id was a typo — that field isn't
+                  // selected (the column is referee_user_id) so it
+                  // resolved to undefined and every conversion under the
+                  // same referrer collided on `ref-<uuid>-undefined`,
+                  // silently dropping every notification past the first.
+                  idempotencyKey: `ref-${ref.referrer_user_id}-${user.id}`,
                   templateData: {
                     name: refProfile.full_name?.split(" ")[0] ?? undefined,
                     referralCount: (rc?.premium_conversions ?? 0) + 1,
