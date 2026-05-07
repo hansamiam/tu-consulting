@@ -5,8 +5,6 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 
-const SITE_NAME = 'TopUni AI'
-
 interface Props {
   /** First name if known. */
   firstName?: string
@@ -21,7 +19,97 @@ interface Props {
   daysSinceBrief?: number
   /** Whether founding-cohort discount is still available. Caller decides. */
   foundingDiscountActive?: boolean
+  language?: 'en' | 'ru'
 }
+
+const COPY = {
+  en: {
+    htmlLang: 'en',
+    preview: 'The Pro brief adds Career ROI, Visa Pathway, Combined Funding scenarios — all the strategy depth premium consultants charge $5K for.',
+    kicker: 'TopUni Pro · Strategy Brief Upgrade',
+    headingNamed: (n: string) => `${n}, your basic brief is just the surface.`,
+    headingNeutral: 'Your basic brief is just the surface.',
+    sublineFn: (target: string, days: number | undefined) =>
+      `You read your basic brief${days ? ` ${days} days ago` : ''} — built for ${target}.`,
+    forCountries: (cs: string) => `for ${cs}`,
+    intro: "The basic brief gave you a strategic positioning paragraph, a university shortlist, and a funding pathway. That's the table-stakes. The full brief goes much deeper, and it's what every student we've talked to says made the difference between \"I have a list\" and \"I have a strategy.\"",
+    introBoldMarker: 'full brief',
+    diffTitle: 'What Pro adds on top',
+    diff1Label: 'Career ROI breakdown',
+    diff1Desc: (m: string) =>
+      `For each of your top-3 universities: starting salary range in ${m}, employment rate within 6 months, notable employers, where alumni are 5–10 years later.`,
+    diff2Label: 'Combined funding scenarios',
+    diff2Desc: '2–3 plausible stacks of scholarships + need-based aid + country-specific programs that could fully fund you. Total funding for each scenario.',
+    diff3Label: 'Visa & post-graduation pathway',
+    diff3Desc: 'Per-country visa difficulty for your nationality, post-study work permit details, path to permanent residency. Realistic challenges to plan for.',
+    diff4Label: 'Three personalized essay angles',
+    diff4Desc: 'Anchored to your specific profile + activities. Each angle is matched to which 2–3 target universities it plays best to and why.',
+    diff5Label: 'Monthly budget breakdown',
+    diff5Desc: 'For your top 3 cities: rent, food, transport, insurance — realistic ranges. Part-time work options. How scholarship coverage maps onto total cost.',
+    ctaWithDiscount: 'Upgrade — see founding cohort discount',
+    ctaPlain: 'Upgrade to Pro',
+    rereadCta: 'Reread your basic brief →',
+    mathTitle: 'The math',
+    mathConsultantsBold: 'Private consultants:',
+    mathConsultantsBody: ' $5,000–$15,000 for one application year, single-shot strategy session, no live workshops.',
+    mathProBold: 'TopUni Pro:',
+    mathProBody: ' $39/month, the full strategy report, the verified scholarship database with how-to-win notes, monthly live workshops with founders from Yale / Cambridge / Harvard, and the recordings library forever. 30-day money-back guarantee.',
+    secondOpinion: "Reply to this email if you want a second opinion before upgrading — we'll read your basic brief and tell you honestly whether Pro is worth it for your situation.",
+    teamSignoff: '— The TopUni AI Team',
+    fieldFallback: 'your field',
+    subjectFn: (n: string, founding: boolean) =>
+      founding
+        ? n
+          ? `${n}, your Pro brief upgrade is waiting (founding cohort discount)`
+          : `Your Pro brief upgrade is waiting (founding cohort discount)`
+        : n
+          ? `${n}, ready for the Pro version of your brief?`
+          : `Ready for the Pro version of your brief?`,
+  },
+  ru: {
+    htmlLang: 'ru',
+    preview: 'Pro-брифинг добавляет Career ROI, визовый путь, сценарии комбинированного финансирования — глубину стратегии, за которую частные консультанты берут $5K.',
+    kicker: 'TopUni Pro · Апгрейд брифинга',
+    headingNamed: (n: string) => `${n}, базовый брифинг — это только поверхность.`,
+    headingNeutral: 'Базовый брифинг — это только поверхность.',
+    sublineFn: (target: string, days: number | undefined) =>
+      `Вы прочитали базовый брифинг${days ? ` ${days} дн. назад` : ''} — подготовлен для: ${target}.`,
+    forCountries: (cs: string) => `для ${cs}`,
+    intro: 'Базовый брифинг дал вам стратегическое позиционирование, шорт-лист университетов и план финансирования. Это база. Полный брифинг идёт намного глубже — каждый студент, с которым мы общались, говорит, что именно он сделал разницу между «у меня есть список» и «у меня есть стратегия».',
+    introBoldMarker: 'Полный брифинг',
+    diffTitle: 'Что добавляет Pro',
+    diff1Label: 'Career ROI — карьерный возврат',
+    diff1Desc: (m: string) =>
+      `Для каждого из топ-3 университетов: стартовая зарплата в области «${m}», % трудоустройства за 6 месяцев, ключевые работодатели, где выпускники через 5–10 лет.`,
+    diff2Label: 'Сценарии комбинированного финансирования',
+    diff2Desc: '2–3 реалистичных набора стипендий + need-based aid + страновых программ, которые могут полностью покрыть учёбу. Сумма по каждому сценарию.',
+    diff3Label: 'Визовый путь и пост-учёба',
+    diff3Desc: 'Сложность визы для вашей национальности по странам, пост-учебное разрешение на работу, путь к ПМЖ. Реальные сложности на пути.',
+    diff4Label: 'Три персональных угла для эссе',
+    diff4Desc: 'Привязаны к вашему профилю и активностям. Каждый угол сопоставлен с 2–3 университетами, где он сработает лучше всего.',
+    diff5Label: 'Месячный бюджет',
+    diff5Desc: 'Для топ-3 городов: аренда, еда, транспорт, страховка — реальные диапазоны. Варианты подработки. Как покрытие стипендии ложится на общую стоимость.',
+    ctaWithDiscount: 'Апгрейд — со скидкой founding cohort',
+    ctaPlain: 'Перейти на Pro',
+    rereadCta: 'Перечитать базовый брифинг →',
+    mathTitle: 'Математика',
+    mathConsultantsBold: 'Частные консультанты:',
+    mathConsultantsBody: ' $5 000–$15 000 за один цикл подачи, одна стратегическая сессия, без живых воркшопов.',
+    mathProBold: 'TopUni Pro:',
+    mathProBody: ' $39/мес, полный стратегический отчёт, проверенная база стипендий с заметками «как выиграть», ежемесячные живые воркшопы с выпускниками Yale / Cambridge / Harvard и архив записей навсегда. Возврат денег в течение 30 дней.',
+    secondOpinion: 'Ответьте на это письмо, если хотите второе мнение перед апгрейдом — мы прочитаем ваш базовый брифинг и честно скажем, стоит ли Pro в вашей ситуации.',
+    teamSignoff: '— Команда TopUni AI',
+    fieldFallback: 'вашей области',
+    subjectFn: (n: string, founding: boolean) =>
+      founding
+        ? n
+          ? `${n}, апгрейд на Pro ждёт (скидка founding cohort)`
+          : `Апгрейд на Pro ждёт (скидка founding cohort)`
+        : n
+          ? `${n}, готовы к Pro-версии брифинга?`
+          : `Готовы к Pro-версии брифинга?`,
+  },
+} as const
 
 const ProUpgradeNudgeEmail = ({
   firstName,
@@ -31,96 +119,87 @@ const ProUpgradeNudgeEmail = ({
   targetCountries,
   daysSinceBrief,
   foundingDiscountActive = true,
+  language = 'en',
 }: Props) => {
-  const greeting = firstName
-    ? `${firstName}, your basic brief is just the surface.`
-    : 'Your basic brief is just the surface.'
+  const c = COPY[language === 'ru' ? 'ru' : 'en']
+  const greeting = firstName ? c.headingNamed(firstName) : c.headingNeutral
 
   const targetLine = (() => {
     const parts: string[] = []
     if (major) parts.push(major)
-    if (targetCountries && targetCountries.length > 0) parts.push(`for ${targetCountries.slice(0, 2).join(' & ')}`)
+    if (targetCountries && targetCountries.length > 0) parts.push(c.forCountries(targetCountries.slice(0, 2).join(' & ')))
     return parts.join(' ')
   })()
 
+  // Render the intro with the bold marker emphasized.
+  const introParts = c.intro.split(c.introBoldMarker)
+
   return (
-    <Html lang="en" dir="ltr">
+    <Html lang={c.htmlLang} dir="ltr">
       <Head />
-      <Preview>The Pro brief adds Career ROI, Visa Pathway, Combined Funding scenarios — all the strategy depth premium consultants charge $5K for.</Preview>
+      <Preview>{c.preview}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Text style={kicker}>TopUni Pro · Strategy Brief Upgrade</Text>
+          <Text style={kicker}>{c.kicker}</Text>
           <Heading style={h1}>{greeting}</Heading>
 
           {targetLine && (
-            <Text style={subline}>You read your basic brief{daysSinceBrief ? ` ${daysSinceBrief} days ago` : ''} — built for {targetLine}.</Text>
+            <Text style={subline}>{c.sublineFn(targetLine, daysSinceBrief)}</Text>
           )}
 
           <Text style={bodyText}>
-            The basic brief gave you a strategic positioning paragraph, a university shortlist, and a funding pathway. That's the table-stakes. The <strong>full brief</strong> goes much deeper, and it's what every student we've talked to says made the difference between "I have a list" and "I have a strategy."
+            {introParts[0]}<strong>{c.introBoldMarker}</strong>{introParts.slice(1).join(c.introBoldMarker)}
           </Text>
 
           <Section style={diffCard}>
-            <Heading style={h3}>What Pro adds on top</Heading>
+            <Heading style={h3}>{c.diffTitle}</Heading>
 
             <Section style={diffRow}>
-              <Text style={diffLabel}>Career ROI breakdown</Text>
-              <Text style={diffDesc}>
-                For each of your top-3 universities: starting salary range in {major || 'your field'}, employment rate within 6 months, notable employers, where alumni are 5–10 years later.
-              </Text>
+              <Text style={diffLabel}>{c.diff1Label}</Text>
+              <Text style={diffDesc}>{c.diff1Desc(major || c.fieldFallback)}</Text>
             </Section>
 
             <Section style={diffRow}>
-              <Text style={diffLabel}>Combined funding scenarios</Text>
-              <Text style={diffDesc}>
-                2–3 plausible stacks of scholarships + need-based aid + country-specific programs that could fully fund you. Total funding for each scenario.
-              </Text>
+              <Text style={diffLabel}>{c.diff2Label}</Text>
+              <Text style={diffDesc}>{c.diff2Desc}</Text>
             </Section>
 
             <Section style={diffRow}>
-              <Text style={diffLabel}>Visa & post-graduation pathway</Text>
-              <Text style={diffDesc}>
-                Per-country visa difficulty for your nationality, post-study work permit details, path to permanent residency. Realistic challenges to plan for.
-              </Text>
+              <Text style={diffLabel}>{c.diff3Label}</Text>
+              <Text style={diffDesc}>{c.diff3Desc}</Text>
             </Section>
 
             <Section style={diffRow}>
-              <Text style={diffLabel}>Three personalized essay angles</Text>
-              <Text style={diffDesc}>
-                Anchored to your specific profile + activities. Each angle is matched to which 2–3 target universities it plays best to and why.
-              </Text>
+              <Text style={diffLabel}>{c.diff4Label}</Text>
+              <Text style={diffDesc}>{c.diff4Desc}</Text>
             </Section>
 
             <Section style={{ ...diffRow, borderBottom: 'none' }}>
-              <Text style={diffLabel}>Monthly budget breakdown</Text>
-              <Text style={diffDesc}>
-                For your top 3 cities: rent, food, transport, insurance — realistic ranges. Part-time work options. How scholarship coverage maps onto total cost.
-              </Text>
+              <Text style={diffLabel}>{c.diff5Label}</Text>
+              <Text style={diffDesc}>{c.diff5Desc}</Text>
             </Section>
           </Section>
 
           <Section style={btnWrap}>
             <Button href={pricingUrl} style={primaryBtn}>
-              {foundingDiscountActive ? 'Upgrade — see founding cohort discount' : 'Upgrade to Pro'}
+              {foundingDiscountActive ? c.ctaWithDiscount : c.ctaPlain}
             </Button>
             <Text style={subtle}>
-              <a href={briefUrl} style={subtleLink}>Reread your basic brief →</a>
+              <a href={briefUrl} style={subtleLink}>{c.rereadCta}</a>
             </Text>
           </Section>
 
           <Hr style={hr} />
 
-          <Heading style={h3}>The math</Heading>
+          <Heading style={h3}>{c.mathTitle}</Heading>
           <Text style={bodyText}>
-            <strong>Private consultants:</strong> $5,000–$15,000 for one application year, single-shot strategy session, no live workshops.<br /><br />
-            <strong>TopUni Pro:</strong> $39/month, the full strategy report, the verified scholarship database with how-to-win notes, monthly live workshops with founders from Yale / Cambridge / Harvard, and the recordings library forever. 30-day money-back guarantee.
+            <strong>{c.mathConsultantsBold}</strong>{c.mathConsultantsBody}<br /><br />
+            <strong>{c.mathProBold}</strong>{c.mathProBody}
           </Text>
 
           <Hr style={hr} />
-          <Text style={footer}>
-            Reply to this email if you want a second opinion before upgrading — we'll read your basic brief and tell you honestly whether Pro is worth it for your situation.
-          </Text>
-          <Text style={footer}>— The {SITE_NAME} Team</Text>
+          <Text style={footer}>{c.secondOpinion}</Text>
+          <Text style={footer}>{c.teamSignoff}</Text>
         </Container>
       </Body>
     </Html>
@@ -130,15 +209,9 @@ const ProUpgradeNudgeEmail = ({
 export const template = {
   component: ProUpgradeNudgeEmail,
   subject: ((data: Record<string, any>) => {
-    const name = data.firstName || ''
-    if (data.foundingDiscountActive) {
-      return name
-        ? `${name}, your Pro brief upgrade is waiting (founding cohort discount)`
-        : `Your Pro brief upgrade is waiting (founding cohort discount)`
-    }
-    return name
-      ? `${name}, ready for the Pro version of your brief?`
-      : `Ready for the Pro version of your brief?`
+    const c = COPY[data.language === 'ru' ? 'ru' : 'en']
+    const name = data.firstName ? String(data.firstName) : ''
+    return c.subjectFn(name, !!data.foundingDiscountActive)
   }),
   displayName: 'Pro brief upgrade nudge (Day 5)',
   previewData: {
@@ -149,6 +222,7 @@ export const template = {
     targetCountries: ['United Kingdom', 'Germany'],
     daysSinceBrief: 5,
     foundingDiscountActive: true,
+    language: 'en',
   },
 } satisfies TemplateEntry
 
