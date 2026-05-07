@@ -5,8 +5,6 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 
-const SITE = 'TopUni'
-
 interface Props {
   name?: string
   trackedCount: number
@@ -14,52 +12,106 @@ interface Props {
   pipelineUrl: string
   discoverUrl: string
   manageUrl: string
+  language?: 'en' | 'ru'
 }
 
-const ActivationDay7Email = ({ name, trackedCount, upcomingDeadlineCount, pipelineUrl, discoverUrl, manageUrl }: Props) => {
-  const lead = trackedCount === 0
-    ? 'A week in. You haven\'t saved anything yet — totally fine, it just means we don\'t have a plan to react to. The fastest way out of "thinking about it" is to save 3 scholarships and let Pipeline do the deadline-tracking for you.'
-    : trackedCount === 1
-      ? 'A week in. One scholarship saved. The students who actually convert tend to have 5–8 in active rotation — gives the pipeline real signal and means you\'re not pinning everything on a single decision.'
-      : `A week in. ${trackedCount} scholarships saved${upcomingDeadlineCount > 0 ? `, ${upcomingDeadlineCount} with deadlines in the next 30 days` : ''}. Now the work is iterating on essays + tracking status — the membership is built for exactly this stretch.`
+const COPY = {
+  en: {
+    htmlLang: 'en',
+    previewNamed: (n: string) => `${n}, week 1 check-in`,
+    previewNeutral: 'Week 1 check-in',
+    headingNamed: (n: string) => `${n}, your first week.`,
+    headingNeutral: 'Hi, your first week.',
+    leadZero: "A week in. You haven't saved anything yet — totally fine, it just means we don't have a plan to react to. The fastest way out of \"thinking about it\" is to save 3 scholarships and let Pipeline do the deadline-tracking for you.",
+    leadOne: "A week in. One scholarship saved. The students who actually convert tend to have 5–8 in active rotation — gives the pipeline real signal and means you're not pinning everything on a single decision.",
+    leadMany: (count: number, urgent: number) =>
+      `A week in. ${count} scholarships saved${urgent > 0 ? `, ${urgent} with deadlines in the next 30 days` : ''}. Now the work is iterating on essays + tracking status — the membership is built for exactly this stretch.`,
+    nextStepKicker: 'Most-leveraged next step',
+    nextStepZero: 'Open Discover and save 3',
+    nextStepFew: 'Add 2-3 more to Pipeline',
+    nextStepEnough: 'Open Pipeline · what changed',
+    nextStepCta: 'Go',
+    patternsTitle: 'Two patterns from members who win',
+    pattern1Bold: '1. Volume early, edit late.',
+    pattern1Body: 'Save broadly the first two weeks; cull aggressively in week three. Trying to pick perfectly upfront is how you miss good fits.',
+    pattern2Bold: '2. Draft openings before you commit.',
+    pattern2Body: 'Inside any saved scholarship\'s Pipeline row, the "Get 3 starting drafts" button gives you three opening angles. Use it to test which scholarship\'s prompt actually has something to say back.',
+    footerPause: "Don't want check-ins? ",
+    footerPauseLink: 'Pause from your account',
+    footerPauseSuffix: '.',
+    teamSignoff: '— The TopUni Team',
+    subjectZero: (n: string) => `${n ? `${n}, ` : ''}week 1 — let's get you a plan`,
+    subjectMany: (n: string, c: number) => `${n ? `${n}, ` : ''}week 1 check-in (${c} saved)`,
+  },
+  ru: {
+    htmlLang: 'ru',
+    previewNamed: (n: string) => `${n}, итоги первой недели`,
+    previewNeutral: 'Итоги первой недели',
+    headingNamed: (n: string) => `${n}, ваша первая неделя.`,
+    headingNeutral: 'Привет — ваша первая неделя.',
+    leadZero: 'Неделя прошла. Вы пока ничего не сохранили — это нормально, просто нам не на что реагировать. Самый быстрый способ выйти из режима «думаю» — сохранить 3 стипендии и поручить Pipeline вести дедлайны.',
+    leadOne: 'Неделя прошла. Одна стипендия сохранена. У тех, кто реально побеждает, обычно 5–8 в активной работе — это даёт системе сигнал и снимает давление одного-единственного решения.',
+    leadMany: (count: number, urgent: number) =>
+      `Неделя прошла. Сохранено ${count} стипендий${urgent > 0 ? `, у ${urgent} дедлайн в ближайшие 30 дней` : ''}. Теперь работа — это итерация по эссе и отслеживание статусов. Подписка как раз для этого этапа.`,
+    nextStepKicker: 'Самый важный следующий шаг',
+    nextStepZero: 'Открыть Discover и сохранить 3',
+    nextStepFew: 'Добавить ещё 2-3 в Pipeline',
+    nextStepEnough: 'Открыть Pipeline · что изменилось',
+    nextStepCta: 'Перейти',
+    patternsTitle: 'Два паттерна тех, кто побеждает',
+    pattern1Bold: '1. Объём в начале, отбор в конце.',
+    pattern1Body: 'Сохраняйте широко первые две недели, жёстко отсеивайте на третьей. Идеальный выбор сразу — это как пропустить хорошие варианты.',
+    pattern2Bold: '2. Наброски эссе до решения подавать.',
+    pattern2Body: 'В каждой сохранённой стипендии в Pipeline есть кнопка «3 стартовых наброска» — она даёт три угла открытия. Используйте, чтобы понять, на какую тему вам реально есть что сказать.',
+    footerPause: 'Не нужны такие письма? ',
+    footerPauseLink: 'Поставить на паузу',
+    footerPauseSuffix: '.',
+    teamSignoff: '— Команда TopUni',
+    subjectZero: (n: string) => `${n ? `${n}, ` : ''}неделя 1 — соберём план`,
+    subjectMany: (n: string, c: number) => `${n ? `${n}, ` : ''}неделя 1 (сохранено: ${c})`,
+  },
+} as const
 
-  const nextStepLabel = trackedCount === 0
-    ? 'Open Discover and save 3'
-    : trackedCount < 5
-      ? 'Add 2-3 more to Pipeline'
-      : 'Open Pipeline · what changed'
+const ActivationDay7Email = ({ name, trackedCount, upcomingDeadlineCount, pipelineUrl, discoverUrl, manageUrl, language = 'en' }: Props) => {
+  const c = COPY[language === 'ru' ? 'ru' : 'en']
+  const lead = trackedCount === 0 ? c.leadZero
+             : trackedCount === 1 ? c.leadOne
+             : c.leadMany(trackedCount, upcomingDeadlineCount)
 
+  const nextStepLabel = trackedCount === 0 ? c.nextStepZero
+                      : trackedCount < 5 ? c.nextStepFew
+                      : c.nextStepEnough
   const nextStepHref = trackedCount === 0 || trackedCount < 5 ? discoverUrl : pipelineUrl
 
   return (
-    <Html lang="en" dir="ltr">
+    <Html lang={c.htmlLang} dir="ltr">
       <Head />
-      <Preview>{name ? `${name}, week 1 check-in` : 'Week 1 check-in'}</Preview>
+      <Preview>{name ? c.previewNamed(name) : c.previewNeutral}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={h1}>{name ? `${name},` : 'Hi,'} your first week.</Heading>
+          <Heading style={h1}>{name ? c.headingNamed(name) : c.headingNeutral}</Heading>
           <Text style={leadText}>{lead}</Text>
 
           <Section style={card}>
-            <Text style={kicker}>Most-leveraged next step</Text>
+            <Text style={kicker}>{c.nextStepKicker}</Text>
             <Heading style={h2}>{nextStepLabel}</Heading>
-            <Button href={nextStepHref} style={primaryBtn}>Go</Button>
+            <Button href={nextStepHref} style={primaryBtn}>{c.nextStepCta}</Button>
           </Section>
 
           <Hr style={hr} />
-          <Heading style={h3}>Two patterns from members who win</Heading>
+          <Heading style={h3}>{c.patternsTitle}</Heading>
           <Text style={body}>
-            <strong>1. Volume early, edit late.</strong> Save broadly the first two weeks; cull aggressively in week three. Trying to pick perfectly upfront is how you miss good fits.
+            <strong>{c.pattern1Bold}</strong> {c.pattern1Body}
           </Text>
           <Text style={body}>
-            <strong>2. Draft openings before you commit.</strong> Inside any saved scholarship's Pipeline row, the "Get 3 starting drafts" button gives you three opening angles. Use it to test which scholarship's prompt actually has something to say back.
+            <strong>{c.pattern2Bold}</strong> {c.pattern2Body}
           </Text>
 
           <Hr style={hr} />
           <Text style={footer}>
-            Don't want check-ins? <a href={manageUrl} style={subtleLink}>Pause from your account</a>.
+            {c.footerPause}<a href={manageUrl} style={subtleLink}>{c.footerPauseLink}</a>{c.footerPauseSuffix}
           </Text>
-          <Text style={footer}>— The {SITE} Team</Text>
+          <Text style={footer}>{c.teamSignoff}</Text>
         </Container>
       </Body>
     </Html>
@@ -69,10 +121,11 @@ const ActivationDay7Email = ({ name, trackedCount, upcomingDeadlineCount, pipeli
 export const template = {
   component: ActivationDay7Email,
   subject: ((data: Record<string, any>) => {
-    const n = data.name ? `${String(data.name)}, ` : ''
+    const c = COPY[data.language === 'ru' ? 'ru' : 'en']
+    const name = data.name ? String(data.name) : ''
     const tracked = Number(data.trackedCount) || 0
-    if (tracked === 0) return `${n}week 1 — let's get you a plan`
-    return `${n}week 1 check-in (${tracked} saved)`
+    if (tracked === 0) return c.subjectZero(name)
+    return c.subjectMany(name, tracked)
   }),
   displayName: 'Activation · day 7',
   previewData: {
@@ -82,6 +135,7 @@ export const template = {
     pipelineUrl: 'https://topuni.org/pipeline',
     discoverUrl: 'https://topuni.org/discover',
     manageUrl: 'https://topuni.org/account?action=pause-nudges',
+    language: 'en',
   },
 } satisfies TemplateEntry
 

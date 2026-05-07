@@ -5,8 +5,6 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 
-const SITE = 'TopUni'
-
 interface Props {
   name?: string
   daysAway: number
@@ -15,35 +13,80 @@ interface Props {
   pipelineUrl: string
   discoverUrl: string
   manageUrl: string
+  language?: 'en' | 'ru'
 }
 
+const COPY = {
+  en: {
+    htmlLang: 'en',
+    headingNamed: (n: string) => `${n}, we kept the lights on.`,
+    headingNeutral: 'Hi, we kept the lights on.',
+    leadTracked: (days: number, count: number) =>
+      `It's been ${days} days since you checked in. ${count === 1 ? 'You have 1 saved scholarship still in your pipeline' : `You have ${count} saved scholarships still in your pipeline`} — most cycles are decided in the back half, not the start.`,
+    leadFresh: (days: number, newCount: number) =>
+      `It's been ${days} days. We've added ${newCount > 0 ? `${newCount} new scholarships` : 'new scholarships'} to the database since you last visited.`,
+    ctaPipeline: 'Open Pipeline',
+    ctaDiscover: 'Open Discover',
+    newKicker: "New since you've been away",
+    newTitle: (n: number) => `${n} scholarships added`,
+    newBody: "Some of them probably match your saved searches and filters. Worth a 60-second scroll to see if anything's worth saving.",
+    footerPause: 'Not interested anymore? ',
+    footerPauseLink: 'Pause emails from your account',
+    footerPauseSuffix: " or just ignore this — we won't bug you.",
+    teamSignoff: '— The TopUni Team',
+    subjectNew: (n: string, c: number) => `${n}${c} new scholarships since you've been gone`,
+    subjectNoNew: (n: string, d: number) => `${n}${d} days — your TopUni pipeline is still here`,
+    previewSuffix: (d: number) => `${d}+ days since your last visit`,
+  },
+  ru: {
+    htmlLang: 'ru',
+    headingNamed: (n: string) => `${n}, мы держим всё наготове.`,
+    headingNeutral: 'Привет — мы держим всё наготове.',
+    leadTracked: (days: number, count: number) =>
+      `Прошло ${days} дн. с вашего последнего захода. Сохранено в pipeline: ${count}. Большинство циклов решаются во второй половине, а не в начале.`,
+    leadFresh: (days: number, newCount: number) =>
+      `Прошло ${days} дн. Мы добавили ${newCount > 0 ? `${newCount} новых стипендий` : 'новые стипендии'} в базу с момента вашего последнего визита.`,
+    ctaPipeline: 'Открыть Pipeline',
+    ctaDiscover: 'Открыть Discover',
+    newKicker: 'Новое за время вашего отсутствия',
+    newTitle: (n: number) => `Добавлено стипендий: ${n}`,
+    newBody: 'Часть из них наверняка совпадает с вашими сохранёнными поисками. 60 секунд на быструю прокрутку — может найдётся что сохранить.',
+    footerPause: 'Больше не интересно? ',
+    footerPauseLink: 'Поставить письма на паузу',
+    footerPauseSuffix: ' или просто игнорируйте — больше беспокоить не будем.',
+    teamSignoff: '— Команда TopUni',
+    subjectNew: (n: string, c: number) => `${n}${c} новых стипендий с вашего ухода`,
+    subjectNoNew: (n: string, d: number) => `${n}${d} дн. — ваш pipeline всё ещё здесь`,
+    previewSuffix: (d: number) => `${d}+ дн. с последнего визита`,
+  },
+} as const
+
 const InactiveWinbackEmail = ({
-  name, daysAway, newScholarshipsSinceVisit, trackedCount, pipelineUrl, discoverUrl, manageUrl,
+  name, daysAway, newScholarshipsSinceVisit, trackedCount, pipelineUrl, discoverUrl, manageUrl, language = 'en',
 }: Props) => {
+  const c = COPY[language === 'ru' ? 'ru' : 'en']
   const lead = trackedCount > 0
-    ? `It's been ${daysAway} days since you checked in. ${trackedCount === 1 ? 'You have 1 saved scholarship still in your pipeline' : `You have ${trackedCount} saved scholarships still in your pipeline`} — most cycles are decided in the back half, not the start.`
-    : `It's been ${daysAway} days. We've added ${newScholarshipsSinceVisit > 0 ? `${newScholarshipsSinceVisit} new scholarships` : 'new scholarships'} to the database since you last visited.`
+    ? c.leadTracked(daysAway, trackedCount)
+    : c.leadFresh(daysAway, newScholarshipsSinceVisit)
 
   const cta = trackedCount > 0
-    ? { label: 'Open Pipeline', href: pipelineUrl }
-    : { label: 'Open Discover', href: discoverUrl }
+    ? { label: c.ctaPipeline, href: pipelineUrl }
+    : { label: c.ctaDiscover, href: discoverUrl }
 
   return (
-    <Html lang="en" dir="ltr">
+    <Html lang={c.htmlLang} dir="ltr">
       <Head />
-      <Preview>{name ? `${name}, ` : ''}{daysAway}+ days since your last visit</Preview>
+      <Preview>{name ? `${name}, ` : ''}{c.previewSuffix(daysAway)}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={h1}>{name ? `${name},` : 'Hi,'} we kept the lights on.</Heading>
+          <Heading style={h1}>{name ? c.headingNamed(name) : c.headingNeutral}</Heading>
           <Text style={leadText}>{lead}</Text>
 
           {newScholarshipsSinceVisit > 0 && (
             <Section style={card}>
-              <Text style={kicker}>New since you've been away</Text>
-              <Heading style={h2}>{newScholarshipsSinceVisit} scholarships added</Heading>
-              <Text style={body}>
-                Some of them probably match your saved searches and filters. Worth a 60-second scroll to see if anything's worth saving.
-              </Text>
+              <Text style={kicker}>{c.newKicker}</Text>
+              <Heading style={h2}>{c.newTitle(newScholarshipsSinceVisit)}</Heading>
+              <Text style={body}>{c.newBody}</Text>
             </Section>
           )}
 
@@ -53,9 +96,9 @@ const InactiveWinbackEmail = ({
 
           <Hr style={hr} />
           <Text style={footer}>
-            Not interested anymore? <a href={manageUrl} style={subtleLink}>Pause emails from your account</a> or just ignore this — we won't bug you.
+            {c.footerPause}<a href={manageUrl} style={subtleLink}>{c.footerPauseLink}</a>{c.footerPauseSuffix}
           </Text>
-          <Text style={footer}>— The {SITE} Team</Text>
+          <Text style={footer}>{c.teamSignoff}</Text>
         </Container>
       </Body>
     </Html>
@@ -65,11 +108,12 @@ const InactiveWinbackEmail = ({
 export const template = {
   component: InactiveWinbackEmail,
   subject: ((data: Record<string, any>) => {
+    const c = COPY[data.language === 'ru' ? 'ru' : 'en']
     const n = data.name ? `${String(data.name)}, ` : ''
     const days = Number(data.daysAway) || 30
     const newScholarships = Number(data.newScholarshipsSinceVisit) || 0
-    if (newScholarships > 0) return `${n}${newScholarships} new scholarships since you've been gone`
-    return `${n}${days} days — your TopUni pipeline is still here`
+    if (newScholarships > 0) return c.subjectNew(n, newScholarships)
+    return c.subjectNoNew(n, days)
   }),
   displayName: 'Inactive · win-back',
   previewData: {
@@ -80,6 +124,7 @@ export const template = {
     pipelineUrl: 'https://topuni.org/pipeline',
     discoverUrl: 'https://topuni.org/discover',
     manageUrl: 'https://topuni.org/account?action=pause-nudges',
+    language: 'en',
   },
 } satisfies TemplateEntry
 

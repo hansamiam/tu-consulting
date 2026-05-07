@@ -5,65 +5,106 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 
-const SITE = 'TopUni'
-
 interface Props {
   name?: string
   discoverUrl: string
   pipelineUrl: string
   briefReady: boolean
   manageUrl: string
+  language?: 'en' | 'ru'
 }
 
-const ActivationDay1Email = ({ name, discoverUrl, pipelineUrl, briefReady, manageUrl }: Props) => (
-  <Html lang="en" dir="ltr">
-    <Head />
-    <Preview>{name ? `${name}, your TopUni starter steps for today` : 'Your TopUni starter steps for today'}</Preview>
-    <Body style={main}>
-      <Container style={container}>
-        <Heading style={h1}>{name ? `${name},` : 'Welcome,'} day one.</Heading>
-        <Text style={lead}>
-          {briefReady
-            ? 'Your strategy brief is ready. Now we turn it into a working pipeline. Two small actions today get you from passive to active in this cycle:'
-            : 'You signed up — that\'s the easy part. Two small actions today put you ahead of most applicants:'}
-        </Text>
+const COPY = {
+  en: {
+    htmlLang: 'en',
+    previewNamed: (n: string) => `${n}, your TopUni starter steps for today`,
+    previewNeutral: 'Your TopUni starter steps for today',
+    headingNamed: (n: string) => `${n}, day one.`,
+    headingNeutral: 'Welcome, day one.',
+    leadBriefReady: 'Your strategy brief is ready. Now we turn it into a working pipeline. Two small actions today get you from passive to active in this cycle:',
+    leadNoBrief: "You signed up — that's the easy part. Two small actions today put you ahead of most applicants:",
+    step1Kicker: 'Step 1 · 3 min',
+    step1Title: 'Save 3 scholarships you actually like',
+    step1Body: "Open Discover, hit Save on three scholarships that fit. Filter by funding type, country, or your demographic if it helps. Don't overthink — these aren't commitments, they're a starting set.",
+    step1Cta: 'Open Discover',
+    step2Kicker: 'Step 2 · 1 min',
+    step2Title: 'Open your Pipeline',
+    step2Body: 'Anything you saved lives there with deadlines, status, notes. Hitting it once today wires the habit — most TopUni members who win opened Pipeline 5+ times in their first week.',
+    step2Cta: 'Open Pipeline',
+    footerNext: "You'll hear from us at week's end with what to do next. Earlier if a saved deadline gets close.",
+    footerPause: "Don't want activation emails? ",
+    footerPauseLink: 'Pause from your account',
+    footerPauseSuffix: '.',
+    teamSignoff: '— The TopUni Team',
+    subjectFn: (n: string) => `${n ? `${n}, ` : ''}two steps for day one`,
+  },
+  ru: {
+    htmlLang: 'ru',
+    previewNamed: (n: string) => `${n}, ваши первые шаги в TopUni`,
+    previewNeutral: 'Ваши первые шаги в TopUni',
+    headingNamed: (n: string) => `${n}, первый день.`,
+    headingNeutral: 'Добро пожаловать — первый день.',
+    leadBriefReady: 'Ваш стратегический брифинг готов. Теперь превращаем его в рабочий pipeline. Два простых действия сегодня — и вы перешли из «думаю» в «делаю» в этом цикле:',
+    leadNoBrief: 'Вы зарегистрировались — это самое лёгкое. Два простых действия сегодня — и вы впереди большинства кандидатов:',
+    step1Kicker: 'Шаг 1 · 3 мин',
+    step1Title: 'Сохраните 3 стипендии, которые вам подходят',
+    step1Body: 'Откройте Discover и нажмите «Сохранить» на трёх стипендиях. Фильтруйте по типу финансирования, стране или своей категории. Не переусложняйте — это не обязательства, это стартовый набор.',
+    step1Cta: 'Открыть Discover',
+    step2Kicker: 'Шаг 2 · 1 мин',
+    step2Title: 'Откройте свой Pipeline',
+    step2Body: 'Все сохранённые стипендии лежат там — с дедлайнами, статусом, заметками. Один заход сегодня закрепляет привычку: успешные участники TopUni открывают Pipeline 5+ раз в первую неделю.',
+    step2Cta: 'Открыть Pipeline',
+    footerNext: 'Мы напишем в конце недели — что делать дальше. Раньше, если приближается дедлайн.',
+    footerPause: 'Не нужны активационные письма? ',
+    footerPauseLink: 'Поставить на паузу',
+    footerPauseSuffix: '.',
+    teamSignoff: '— Команда TopUni',
+    subjectFn: (n: string) => `${n ? `${n}, ` : ''}два шага в первый день`,
+  },
+} as const
 
-        <Section style={card}>
-          <Text style={kicker}>Step 1 · 3 min</Text>
-          <Heading style={h2}>Save 3 scholarships you actually like</Heading>
-          <Text style={body}>
-            Open Discover, hit Save on three scholarships that fit. Filter by funding type, country, or your demographic if it helps. Don't overthink — these aren't commitments, they're a starting set.
+const ActivationDay1Email = ({ name, discoverUrl, pipelineUrl, briefReady, manageUrl, language = 'en' }: Props) => {
+  const c = COPY[language === 'ru' ? 'ru' : 'en']
+  return (
+    <Html lang={c.htmlLang} dir="ltr">
+      <Head />
+      <Preview>{name ? c.previewNamed(name) : c.previewNeutral}</Preview>
+      <Body style={main}>
+        <Container style={container}>
+          <Heading style={h1}>{name ? c.headingNamed(name) : c.headingNeutral}</Heading>
+          <Text style={lead}>{briefReady ? c.leadBriefReady : c.leadNoBrief}</Text>
+
+          <Section style={card}>
+            <Text style={kicker}>{c.step1Kicker}</Text>
+            <Heading style={h2}>{c.step1Title}</Heading>
+            <Text style={body}>{c.step1Body}</Text>
+            <Button href={discoverUrl} style={primaryBtn}>{c.step1Cta}</Button>
+          </Section>
+
+          <Section style={card}>
+            <Text style={kicker}>{c.step2Kicker}</Text>
+            <Heading style={h2}>{c.step2Title}</Heading>
+            <Text style={body}>{c.step2Body}</Text>
+            <Button href={pipelineUrl} style={secondaryBtn}>{c.step2Cta}</Button>
+          </Section>
+
+          <Hr style={hr} />
+          <Text style={footer}>{c.footerNext}</Text>
+          <Text style={footer}>
+            {c.footerPause}<a href={manageUrl} style={subtleLink}>{c.footerPauseLink}</a>{c.footerPauseSuffix}
           </Text>
-          <Button href={discoverUrl} style={primaryBtn}>Open Discover</Button>
-        </Section>
-
-        <Section style={card}>
-          <Text style={kicker}>Step 2 · 1 min</Text>
-          <Heading style={h2}>Open your Pipeline</Heading>
-          <Text style={body}>
-            Anything you saved lives there with deadlines, status, notes. Hitting it once today wires the habit — most TopUni members who win opened Pipeline 5+ times in their first week.
-          </Text>
-          <Button href={pipelineUrl} style={secondaryBtn}>Open Pipeline</Button>
-        </Section>
-
-        <Hr style={hr} />
-        <Text style={footer}>
-          You'll hear from us at week's end with what to do next. Earlier if a saved deadline gets close.
-        </Text>
-        <Text style={footer}>
-          Don't want activation emails? <a href={manageUrl} style={subtleLink}>Pause from your account</a>.
-        </Text>
-        <Text style={footer}>— The {SITE} Team</Text>
-      </Container>
-    </Body>
-  </Html>
-)
+          <Text style={footer}>{c.teamSignoff}</Text>
+        </Container>
+      </Body>
+    </Html>
+  )
+}
 
 export const template = {
   component: ActivationDay1Email,
   subject: ((data: Record<string, any>) => {
-    const n = data.name ? `${String(data.name)}, ` : ''
-    return `${n}two steps for day one`
+    const c = COPY[data.language === 'ru' ? 'ru' : 'en']
+    return c.subjectFn(data.name ? String(data.name) : '')
   }),
   displayName: 'Activation · day 1',
   previewData: {
@@ -72,6 +113,7 @@ export const template = {
     pipelineUrl: 'https://topuni.org/pipeline',
     briefReady: true,
     manageUrl: 'https://topuni.org/account?action=pause-nudges',
+    language: 'en',
   },
 } satisfies TemplateEntry
 
