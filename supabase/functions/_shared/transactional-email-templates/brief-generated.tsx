@@ -19,7 +19,56 @@ interface Props {
   /** Major + target country chips for personalization */
   major?: string
   targetCountries?: string[]
+  /** "ru" → render the Russian variant, anything else → English. */
+  language?: 'en' | 'ru'
 }
+
+const COPY = {
+  en: {
+    kicker: 'TopUni AI · Strategy Brief',
+    greetingNamed: (n: string) => `${n}, your strategy brief is ready.`,
+    greetingNeutral: 'Your strategy brief is ready.',
+    builtFor: (s: string) => `Built for ${s}.`,
+    forCountries: (cs: string) => `for ${cs}`,
+    previewFallback: 'Your TopUni AI admissions strategy is ready to read.',
+    openBrief: 'Open my brief',
+    topMatches: 'Top scholarship matches',
+    seeAll: 'See all matches and the strategy →',
+    insideTitle: "What's inside",
+    insideRows: [
+      ['Strategic positioning', 'the angle you should lead with this cycle.'],
+      ['University shortlist', 'top fits, aligned options, worth-keeping-on-radar.'],
+      ['Funding pathway', 'exact scholarships, deadlines, and how to combine them.'],
+      ['3 essay angles', 'distinct concepts anchored in your story.'],
+      ['Honest gaps', 'what to close before you submit.'],
+    ] as const,
+    saveLink: 'Save the link — your brief is permanent if you have an account, or stays live for 30 days otherwise.',
+    teamSignoff: '— The TopUni AI Team',
+    htmlLang: 'en',
+  },
+  ru: {
+    kicker: 'TopUni AI · Стратегический брифинг',
+    greetingNamed: (n: string) => `${n}, ваш стратегический брифинг готов.`,
+    greetingNeutral: 'Ваш стратегический брифинг готов.',
+    builtFor: (s: string) => `Подготовлен для: ${s}.`,
+    forCountries: (cs: string) => `для ${cs}`,
+    previewFallback: 'Ваш брифинг TopUni AI готов к прочтению.',
+    openBrief: 'Открыть брифинг',
+    topMatches: 'Лучшие стипендии',
+    seeAll: 'Все совпадения и стратегия →',
+    insideTitle: 'Что внутри',
+    insideRows: [
+      ['Стратегическое позиционирование', 'ваш главный угол подачи в этом цикле.'],
+      ['Шорт-лист университетов', 'лучшие совпадения, альтернативы и резервные варианты.'],
+      ['План финансирования', 'конкретные стипендии, дедлайны и как их комбинировать.'],
+      ['3 угла для эссе', 'разные концепции, основанные на вашей истории.'],
+      ['Честные пробелы', 'что закрыть до подачи.'],
+    ] as const,
+    saveLink: 'Сохраните ссылку — брифинг хранится бессрочно при наличии аккаунта или 30 дней без него.',
+    teamSignoff: '— Команда TopUni AI',
+    htmlLang: 'ru',
+  },
+} as const
 
 const BriefGeneratedEmail = ({
   firstName,
@@ -28,26 +77,30 @@ const BriefGeneratedEmail = ({
   topMatches,
   major,
   targetCountries,
+  language = 'en',
 }: Props) => {
-  const greeting = firstName ? `${firstName}, your strategy brief is ready.` : 'Your strategy brief is ready.'
+  const c = COPY[language === 'ru' ? 'ru' : 'en']
+  const greeting = firstName ? c.greetingNamed(firstName) : c.greetingNeutral
   const targetLine = (() => {
     const parts: string[] = []
     if (major) parts.push(major)
-    if (targetCountries && targetCountries.length > 0) parts.push(`for ${targetCountries.slice(0, 2).join(' & ')}`)
+    if (targetCountries && targetCountries.length > 0) {
+      parts.push(c.forCountries(targetCountries.slice(0, 2).join(' & ')))
+    }
     return parts.join(' ')
   })()
 
   return (
-    <Html lang="en" dir="ltr">
+    <Html lang={c.htmlLang} dir="ltr">
       <Head />
-      <Preview>{statsLine || 'Your TopUni AI admissions strategy is ready to read.'}</Preview>
+      <Preview>{statsLine || c.previewFallback}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Text style={kicker}>TopUni AI · Strategy Brief</Text>
+          <Text style={kicker}>{c.kicker}</Text>
           <Heading style={h1}>{greeting}</Heading>
 
           {targetLine && (
-            <Text style={subline}>Built for {targetLine}.</Text>
+            <Text style={subline}>{c.builtFor(targetLine)}</Text>
           )}
 
           {statsLine && (
@@ -58,14 +111,14 @@ const BriefGeneratedEmail = ({
 
           <Section style={btnWrap}>
             <Button href={briefUrl} style={primaryBtn}>
-              Open my brief
+              {c.openBrief}
             </Button>
           </Section>
 
           {topMatches && topMatches.length > 0 && (
             <>
               <Hr style={hr} />
-              <Heading style={h3}>Top scholarship matches</Heading>
+              <Heading style={h3}>{c.topMatches}</Heading>
               <Text style={text}>
                 {topMatches.slice(0, 3).map((name, i) => (
                   <React.Fragment key={i}>
@@ -74,26 +127,24 @@ const BriefGeneratedEmail = ({
                 ))}
               </Text>
               <Text style={subtle}>
-                <a href={briefUrl} style={subtleLink}>See all matches and the strategy →</a>
+                <a href={briefUrl} style={subtleLink}>{c.seeAll}</a>
               </Text>
             </>
           )}
 
           <Hr style={hr} />
-          <Heading style={h3}>What's inside</Heading>
+          <Heading style={h3}>{c.insideTitle}</Heading>
           <Text style={text}>
-            <strong>Strategic positioning</strong> — the angle you should lead with this cycle.<br />
-            <strong>University shortlist</strong> — top fits, aligned options, worth-keeping-on-radar.<br />
-            <strong>Funding pathway</strong> — exact scholarships, deadlines, and how to combine them.<br />
-            <strong>3 essay angles</strong> — distinct concepts anchored in your story.<br />
-            <strong>Honest gaps</strong> — what to close before you submit.
+            {c.insideRows.map(([label, body], i) => (
+              <React.Fragment key={i}>
+                <strong>{label}</strong> — {body}<br />
+              </React.Fragment>
+            ))}
           </Text>
 
           <Hr style={hr} />
-          <Text style={footer}>
-            Save the link — your brief is permanent if you have an account, or stays live for 30 days otherwise.
-          </Text>
-          <Text style={footer}>— The {SITE_NAME} Team</Text>
+          <Text style={footer}>{c.saveLink}</Text>
+          <Text style={footer}>{c.teamSignoff}</Text>
         </Container>
       </Body>
     </Html>
@@ -103,8 +154,14 @@ const BriefGeneratedEmail = ({
 export const template = {
   component: BriefGeneratedEmail,
   subject: ((data: Record<string, any>) => {
+    const isRu = data.language === 'ru'
     const name = data.firstName || ''
     const major = data.major ? ` ${data.major}` : ''
+    if (isRu) {
+      return name
+        ? `${name}, ваш${major ? ' брифинг' : ' стратегический брифинг'} готов`
+        : `Ваш${major ? ' брифинг' : ' стратегический брифинг'} готов`
+    }
     return name
       ? `${name}, your${major} admissions brief is ready`
       : `Your${major} admissions brief is ready`
@@ -117,6 +174,7 @@ export const template = {
     topMatches: ['Chevening Scholarships', 'DAAD Master Scholarship', 'Knight-Hennessy Scholars'],
     major: 'Computer Science',
     targetCountries: ['United Kingdom', 'Germany'],
+    language: 'en',
   },
 } satisfies TemplateEntry
 

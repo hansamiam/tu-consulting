@@ -2054,10 +2054,13 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         .map(m => m.application_deadline ? Math.ceil((new Date(m.application_deadline).getTime() - Date.now()) / 86400000) : null)
         .filter((d): d is number => d !== null && d > 0)
         .sort((a, b) => a - b)[0] ?? null;
+      const isRu = language === "ru";
       const statsParts: string[] = [];
-      statsParts.push(`${liveMatches.length} matches`);
-      if (totalText) statsParts.push(`${totalText} potential funding`);
-      if (closestDays !== null) statsParts.push(`earliest deadline in ${closestDays} days`);
+      statsParts.push(isRu ? `${liveMatches.length} совпадений` : `${liveMatches.length} matches`);
+      if (totalText) statsParts.push(isRu ? `потенциал — ${totalText}` : `${totalText} potential funding`);
+      if (closestDays !== null) statsParts.push(
+        isRu ? `ближайший дедлайн — ${closestDays} дн.` : `earliest deadline in ${closestDays} days`,
+      );
       const statsLine = statsParts.join(" · ");
 
       const topMatches = liveMatches.slice(0, 3).map(m => m.scholarship_name);
@@ -2073,6 +2076,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             topMatches,
             major: profile.major,
             targetCountries: profile.targetCountries,
+            language,
           },
         },
       });
@@ -2746,7 +2750,9 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                 if (!shareData?.url) return;
 
                 // Compose stats line + top-3 from liveMatches (same shape
-                // the in-dialog "Email me" path uses).
+                // the in-dialog "Email me" path uses). Localized so
+                // Russian users get a Russian eyebrow stats line.
+                const isRu = language === "ru";
                 const total = liveMatches.reduce((s, m) => s + (m.estimated_total_value_usd || 0), 0);
                 const totalText = total >= 1_000_000
                   ? `$${(total / 1_000_000).toFixed(1)}M`
@@ -2755,9 +2761,13 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                   .map(m => m.application_deadline ? Math.ceil((new Date(m.application_deadline).getTime() - Date.now()) / 86400000) : null)
                   .filter((d): d is number => d !== null && d > 0)
                   .sort((a, b) => a - b)[0] ?? null;
-                const statsParts: string[] = [`${liveMatches.length} matches`];
-                if (totalText) statsParts.push(`${totalText} potential funding`);
-                if (closestDays !== null) statsParts.push(`earliest deadline in ${closestDays} days`);
+                const statsParts: string[] = [
+                  isRu ? `${liveMatches.length} совпадений` : `${liveMatches.length} matches`,
+                ];
+                if (totalText) statsParts.push(isRu ? `потенциал — ${totalText}` : `${totalText} potential funding`);
+                if (closestDays !== null) statsParts.push(
+                  isRu ? `ближайший дедлайн — ${closestDays} дн.` : `earliest deadline in ${closestDays} days`,
+                );
 
                 await supabase.functions.invoke("send-transactional-email", {
                   body: {
@@ -2771,6 +2781,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                       topMatches: liveMatches.slice(0, 3).map(m => m.scholarship_name),
                       major: profile.major,
                       targetCountries: profile.targetCountries,
+                      language,
                     },
                   },
                 });
