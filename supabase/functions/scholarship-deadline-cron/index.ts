@@ -48,12 +48,6 @@ interface DueRow {
   } | null;
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  researching: "Researching",
-  drafting: "Drafting application",
-  submitted: "Submitted — awaiting decision",
-};
-
 /* The cadence buckets (days remaining → human label). Used so the same
    row gets exactly one email per bucket: when deadline ticks from "12
    days remaining" down to "10", we don't re-send because they're both
@@ -65,8 +59,8 @@ const bucketFor = (days: number): number | null => {
   return null;
 };
 
-const formatDate = (iso: string): string =>
-  new Date(iso).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+const formatDate = (iso: string, locale = "en-US"): string =>
+  new Date(iso).toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
 
 const formatAmount = (
   amount_text: string | null,
@@ -149,9 +143,9 @@ Deno.serve(async (req) => {
   const userIds = Array.from(new Set(candidates.map((c) => c.user_id)));
   const { data: profiles } = await supa
     .from("student_profiles")
-    .select("user_id, full_name, email, nudge_opt_out")
+    .select("user_id, full_name, email, nudge_opt_out, language")
     .in("user_id", userIds);
-  const profileMap = new Map<string, { full_name: string | null; email: string | null; nudge_opt_out: boolean }>(
+  const profileMap = new Map<string, { full_name: string | null; email: string | null; nudge_opt_out: boolean; language: string | null }>(
     (profiles ?? []).map((p) => [p.user_id, p as any]),
   );
 
@@ -218,12 +212,18 @@ Deno.serve(async (req) => {
           templateData: {
             name: profile.full_name?.split(" ")[0] || undefined,
             scholarshipName: sch.scholarship_name,
-            deadlineDate: formatDate(sch.application_deadline!),
+            // Date formatting follows the user's language so Russian
+            // recipients see Russian month names.
+            deadlineDate: formatDate(sch.application_deadline!, profile.language === "ru" ? "ru-RU" : "en-US"),
             daysRemaining,
-            status: row.status ? STATUS_LABELS[row.status] || row.status : undefined,
+            // Status label is unlocalized — passed as the raw key so the
+            // template can render the localized label from its own
+            // STATUS_LABELS table.
+            status: row.status || undefined,
             amount: formatAmount(sch.award_amount_text, sch.coverage_type, sch.estimated_total_value_usd),
             scholarshipUrl: sch.official_url || undefined,
-            trackerUrl: `${SITE}/discover`,
+            trackerUrl: profile.language === "ru" ? `${SITE}/pipeline/ru` : `${SITE}/pipeline`,
+            language: profile.language === "ru" ? "ru" : "en",
           },
         },
       });
