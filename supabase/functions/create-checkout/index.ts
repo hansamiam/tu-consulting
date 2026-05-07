@@ -138,7 +138,26 @@ Deno.serve(async (req) => {
       console.error("Pre-checkout booking insert failed:", bookingErr);
     }
 
-    const origin = req.headers.get("origin") || "https://topuniconsulting.com";
+    // Resolve the success/cancel origin against an allowlist instead of
+    // trusting the caller's Origin header. The previous code accepted
+    // whatever Origin the request supplied; an attacker could spoof
+    // Origin: https://attacker.example, Stripe would redirect the paid
+    // user there post-checkout with the session_id in the URL — letting
+    // the attacker pull session metadata via verify-payment. Allow
+    // localhost (dev) + the configured site + the legacy domain.
+    const PUBLIC_SITE = Deno.env.get("PUBLIC_SITE_URL") ?? "https://topuni.org";
+    const ALLOWED_ORIGINS = new Set([
+      PUBLIC_SITE,
+      "https://topuni.org",
+      "https://www.topuni.org",
+      "https://topuniconsulting.com",
+      "https://www.topuniconsulting.com",
+    ]);
+    const requestedOrigin = req.headers.get("origin") ?? "";
+    const isLocalhost = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(requestedOrigin);
+    const origin = (ALLOWED_ORIGINS.has(requestedOrigin) || isLocalhost)
+      ? requestedOrigin
+      : PUBLIC_SITE;
     const langSuffix = language === "ru" ? "/ru" : "";
 
     const session = await stripe.checkout.sessions.create({
