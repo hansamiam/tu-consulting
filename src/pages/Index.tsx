@@ -91,7 +91,13 @@ const Index = () => {
             }}
           />
 
-          <div className="relative max-w-5xl mx-auto px-5 sm:px-8 text-center pt-20 pb-24 sm:pt-20 sm:pb-28 w-full">
+          {/* pt-36 on mobile pushes the H1 well below the navy nav band
+              (per user — "Mobile your tailored admission but lower
+              release"; the hero text was sitting too high under the
+              nav). pb shrinks to compensate so the section still fits
+              in 86vh without crowding the next section. Desktop layout
+              is unchanged. */}
+          <div className="relative max-w-5xl mx-auto px-5 sm:px-8 text-center pt-36 pb-12 sm:pt-20 sm:pb-28 w-full">
             <motion.h1
               {...fadeUp(0.15)}
               className="font-heading text-[2.125rem] sm:text-6xl font-bold tracking-tight leading-[1.08] sm:leading-[1.02] mb-6 sm:mb-7 text-balance max-w-4xl mx-auto text-foreground md:text-6xl"

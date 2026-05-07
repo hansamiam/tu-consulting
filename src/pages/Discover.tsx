@@ -2900,11 +2900,16 @@ const Discover = ({ language = "en" }: Props) => {
   }, []);
 
   useEffect(() => {
-    const stored = getStoredProfile();
-    if (stored?.nationality) {
-      // targetDegree may be a single value (legacy) or comma-separated (new).
-      // Split, then normalize legacy "phd" / "master" tokens to canonical
-      // values used by scoring.
+    // Hydrate from localStorage on mount AND any time the user changes
+    // (sign-in fires AuthContext.runPostSignInDrain → pullProfileFromDb
+    // → saveProfile → LS write). Without re-running on auth change,
+    // Discover sat with the empty pre-signin profile until full refresh.
+    // Also subscribes to the cross-tab `storage` event so a profile
+    // update in another tab (TopUni AI wizard, profile editor) flows
+    // through here too.
+    const apply = () => {
+      const stored = getStoredProfile();
+      if (!stored?.nationality) return;
       const rawLevels = (stored.targetDegree || "")
         .split(/[,/]+/).map(s => s.trim()).filter(Boolean);
       const canonicalize = (lvl: string) => {
@@ -2925,8 +2930,19 @@ const Discover = ({ language = "en" }: Props) => {
         demographics: Array.isArray(stored.demographics) ? stored.demographics : [],
         targetCountries: Array.isArray(stored.targetCountries) ? stored.targetCountries : [],
       });
-    }
-  }, []);
+    };
+    apply();
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === null || e.key === "topuni_discover_profile") apply();
+    };
+    const onSelf = () => apply();
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("tu:profile", onSelf);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("tu:profile", onSelf);
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     if (phase !== "analyzing") return;
@@ -3342,8 +3358,13 @@ const Discover = ({ language = "en" }: Props) => {
         <AnimatePresence mode="wait">
           {/* ══ LANDING ══ */}
           {phase === "landing" && (
+            // min-h-screen (not 100vh-64px) because the navigation here
+            // is overlay-mode (transparent, on top of the navy hero) —
+            // it doesn't take layout space, so subtracting 64px biased
+            // the vertical centering up by ~32px on mobile and the
+            // hero content sat above the optical centre.
             <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className="relative min-h-[calc(100vh-64px)] flex flex-col items-center justify-center px-6 text-center overflow-hidden">
+              className="relative min-h-screen flex flex-col items-center justify-center px-6 text-center overflow-hidden">
 
               <motion.div style={{ opacity: heroOpacity, y: heroY }} className="max-w-4xl mx-auto relative z-10 space-y-9">
                 <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.7 }}
