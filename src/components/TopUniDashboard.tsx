@@ -1832,7 +1832,16 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       await navigator.clipboard.writeText(shareUrl);
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 2000);
-    } catch { /* ignore */ }
+    } catch {
+      // Clipboard API can fail when the page isn't HTTPS, the user
+      // denies permission, or in some embedded webviews. Surface
+      // the URL via toast so the user can long-press / right-click
+      // to copy manually instead of seeing nothing happen.
+      toast.error(
+        language === "ru" ? "Не удалось скопировать — выделите ссылку вручную" : "Couldn't copy — select the link manually",
+        { description: shareUrl, duration: 8000 },
+      );
+    }
   };
 
 
