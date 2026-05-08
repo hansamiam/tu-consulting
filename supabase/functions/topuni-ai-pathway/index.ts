@@ -920,6 +920,8 @@ You MUST respond in ${lang}.
 
 You have access to REAL data from our database — both scholarships (retrieved by relevance to this specific student via vector search) and universities. Use only this data when naming options. Cite scholarship names and universities verbatim from the lists below. Do not invent options not present in the data.
 
+DATA TRUST: when a scholarship row in the database below carries a "Source row: thin" marker or a "(per our extraction)" suffix on its thresholds, that row was extracted from a sparse provider page with low confidence. Do NOT quote its min_gpa / min_ielts / etc. as a hard rule the student must clear. Frame those thresholds as "the listing notes a minimum of X — verify on the official site". A thin row's name + provider + country + coverage are still trustworthy; its numeric thresholds may not be.
+
 ${dbContext}
 
 STUDENT PROFILE:
