@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AuthDialog } from "@/components/auth/AuthDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { MembershipSettings } from "@/components/pipeline/MembershipSettings";
+import { ProfileSettingsCard } from "@/components/account/ProfileSettingsCard";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -151,6 +152,8 @@ const Account = ({ language = "en" }: AccountProps) => {
             )}
           </p>
         </header>
+
+        <ProfileSettingsCard language={language} />
 
         <MembershipSettings language={language} variant="standalone" />
 

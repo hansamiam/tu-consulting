@@ -1083,6 +1083,18 @@ const NavyBackdrop = () => (
  *  a chained tag list. The helper picks the most informative facts
  *  (coverage, degree, field, demographic, country, provider) and
  *  weaves them into a real sentence. */
+/* Generate a tight one-line description for cards that lack an
+ * editorial why_this_fits line. The card chrome (country band, provider
+ * row, deadline meta) already carries name/provider/country/deadline,
+ * so this string is JUST what the program FUNDS — not a regurgitation
+ * of the surrounding facts.
+ *
+ * Pre-redesign this returned a two-sentence "A full-ride master's
+ * program in computer science hosted in United States. Funded by MIT,
+ * it specifically supports women in stem applicants" — long, templated,
+ * and duplicating chrome that's already on the card. Now: max ~14
+ * words, no provider repeat, no "hosted in" repeat, demographic folded
+ * into the lead clause when present. */
 function buildScholarshipBlurb(input: {
   name: string;
   provider: string | null;
@@ -1093,76 +1105,80 @@ function buildScholarshipBlurb(input: {
   demographic: string | undefined;
   isFullRide: boolean;
 }): string | null {
-  const { provider, country, coverage, levels, fields, demographic, isFullRide } = input;
+  const { coverage, levels, fields, demographic, isFullRide } = input;
 
-  // Funding-shape phrase. Reads natural ("a full-ride") and lets
-  // article-fronted constructions ("a stipend program") flow.
-  const fundingPhrase = (() => {
-    if (isFullRide) return "a full-ride";
-    if (coverage === "tuition_only") return "a tuition-covering";
-    if (coverage === "stipend") return "a stipend";
-    if (coverage === "partial") return "a partial-funding";
-    if (coverage === "travel") return "a travel-grant";
+  // Funding shape — short, sentence-ready phrase. Drop the indefinite
+  // article; we'll prefix it where appropriate so phrases like "Funds"
+  // / "Stipend for" / "Full ride" can lead naturally.
+  const funding = (() => {
+    if (isFullRide) return "Full ride";
+    if (coverage === "tuition_only") return "Tuition";
+    if (coverage === "stipend") return "Stipend";
+    if (coverage === "partial") return "Partial funding";
+    if (coverage === "travel") return "Travel grant";
     return null;
   })();
 
-  // Degree phrase. Multi-level rows ("undergraduate + master's") get
-  // a softer "open to undergraduate and master's applicants" form.
-  const degreePhrase = (() => {
+  // Degree — pick a single canonical bucket. Multi-level rows collapse
+  // to the highest-priority label rather than spelling out every level
+  // (the detail sheet has the full list).
+  const degree = (() => {
     if (!levels || levels.length === 0) return null;
-    const labelOne = (raw: string) => {
-      const k = raw.toLowerCase();
-      if (k.includes("phd") || k.includes("doctor")) return "PhD";
-      if (k.includes("master")) return "master's";
-      if (k.includes("bachelor") || k.includes("undergrad")) return "bachelor's";
-      if (k.includes("postdoc")) return "postdoc";
-      return raw.toLowerCase();
-    };
-    const cleaned = Array.from(new Set(levels.map(labelOne).filter(Boolean)));
-    if (cleaned.length === 1) return cleaned[0];
-    if (cleaned.length === 2) return `${cleaned[0]} and ${cleaned[1]}`;
-    return `${cleaned.slice(0, -1).join(", ")}, and ${cleaned[cleaned.length - 1]}`;
-  })();
-
-  // Field phrase — first 1-2 entries.
-  const fieldPhrase = (() => {
-    if (!fields || fields.length === 0) return null;
-    const cleaned = fields.filter((f) => f && f.trim()).slice(0, 2);
-    if (cleaned.length === 0) return null;
-    if (cleaned.length === 1) return cleaned[0].toLowerCase();
-    return `${cleaned[0].toLowerCase()} and ${cleaned[1].toLowerCase()}`;
-  })();
-
-  // Demographic phrase — humanized + lowercased.
-  const demoPhrase = demographic ? humanizeDemographic(demographic).toLowerCase() : null;
-
-  // Sentence 1: lead with funding shape + degree, narrow to field if
-  // available. ("A full-ride master's program in computer science")
-  const lead = (() => {
-    const parts: string[] = [];
-    if (fundingPhrase && degreePhrase) parts.push(`${fundingPhrase} ${degreePhrase} program`);
-    else if (fundingPhrase) parts.push(`${fundingPhrase} program`);
-    else if (degreePhrase) parts.push(`A ${degreePhrase} program`);
-    else parts.push("A scholarship program");
-    if (fieldPhrase) parts.push(`in ${fieldPhrase}`);
-    if (country) parts.push(`hosted in ${country}`);
-    return parts.join(" ");
-  })();
-
-  // Sentence 2: provider + demographic if either are available, else
-  // omit. We keep this short — every extra clause raises the chance
-  // of feeling templated.
-  const second = (() => {
-    const bits: string[] = [];
-    if (provider) bits.push(`Funded by ${provider}`);
-    if (demoPhrase) {
-      bits.push(provider ? `it specifically supports ${demoPhrase} applicants` : `Specifically supports ${demoPhrase} applicants`);
+    const seen = new Set<string>();
+    for (const raw of levels) {
+      const k = (raw ?? "").toLowerCase();
+      if (k.includes("phd") || k.includes("doctor")) seen.add("PhD");
+      else if (k.includes("postdoc")) seen.add("postdoctoral");
+      else if (k.includes("master")) seen.add("master's");
+      else if (k.includes("bachelor") || k.includes("undergrad")) seen.add("bachelor's");
     }
-    return bits.length > 0 ? bits.join(", ") : null;
+    // Priority order — pick the most senior level present so a row
+    // that funds multiple levels reads as the more substantive bucket.
+    for (const tier of ["PhD", "postdoctoral", "master's", "bachelor's"] as const) {
+      if (seen.has(tier)) return tier;
+    }
+    return null;
   })();
 
-  if (lead && second) return `${lead.charAt(0).toUpperCase() + lead.slice(1)}. ${second}`;
-  if (lead) return lead.charAt(0).toUpperCase() + lead.slice(1);
+  // Field — single primary field. Title-cased on the way out so the
+  // phrase reads as a proper noun ("Computer Science") rather than the
+  // mid-sentence lowercase ("computer science") used by the old build.
+  const field = (() => {
+    if (!fields || fields.length === 0) return null;
+    const first = fields.find((f) => f && f.trim());
+    return first ? first.trim() : null;
+  })();
+
+  const demo = demographic ? humanizeDemographic(demographic) : null;
+
+  // Compose. Order of preference (read-aloud optimised):
+  //   1. Demographic-targeted: "Funds women in STEM at the master's level."
+  //   2. Full ride: "Full ride for a master's in computer science."
+  //   3. Funding shape + degree + field: "Tuition for a bachelor's in business."
+  //   4. Funding shape + field: "Stipend program in environmental sciences."
+  //   5. Degree + field: "Master's program in physics."
+  //   6. Field only: "Funds graduate study in computer science."
+  if (demo && degree) {
+    return `Funds ${demo.toLowerCase()} at the ${degree} level${field ? ` in ${field.toLowerCase()}` : ""}.`;
+  }
+  if (demo) {
+    return `Funds ${demo.toLowerCase()} applicants${field ? ` in ${field.toLowerCase()}` : ""}.`;
+  }
+  if (funding === "Full ride" && degree) {
+    return `Full ride for a ${degree}${field ? ` in ${field.toLowerCase()}` : ""}.`;
+  }
+  if (funding && degree) {
+    return `${funding} for a ${degree}${field ? ` in ${field.toLowerCase()}` : ""}.`;
+  }
+  if (funding && field) {
+    return `${funding} program in ${field.toLowerCase()}.`;
+  }
+  if (degree && field) {
+    return `${degree.charAt(0).toUpperCase()}${degree.slice(1)} program in ${field.toLowerCase()}.`;
+  }
+  if (field) {
+    return `Funds study in ${field.toLowerCase()}.`;
+  }
   return null;
 }
 
@@ -1693,12 +1709,11 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           </div>
         )}
 
-        {/* Summary — every tile gets 1-2 sentences, never empty. Real
-            editorial line first (`why_this_fits` from enrichment, or
-            meaty match-reason fallback). When neither's available
-            yet, buildScholarshipBlurb constructs a natural-sounding
-            sentence from the structured data so the tile reads like a
-            program description, not a chained tag list. */}
+        {/* Summary — one tight line for the auto-blurb fallback, up to
+            three lines for a real editorial `why_this_fits` (those are
+            usually meatier per-row insight). The auto-blurb no longer
+            duplicates country / provider chrome that already sits in
+            the card surround, so a single line carries it. */}
         {(() => {
           const blurb = why || buildScholarshipBlurb({
             name: cleanScholarshipName(s.scholarship_name),
@@ -1712,7 +1727,7 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           });
           if (!blurb) return <div className="flex-1" aria-hidden />;
           return (
-            <p className={`text-[12px] leading-relaxed line-clamp-3 flex-1 ${why ? "text-foreground/70 italic" : "text-foreground/65"}`}>
+            <p className={`text-[12px] leading-relaxed flex-1 ${why ? "line-clamp-3 text-foreground/70 italic" : "line-clamp-2 text-foreground/65"}`}>
               {blurb.replace(/\.+$/, "")}.
             </p>
           );
