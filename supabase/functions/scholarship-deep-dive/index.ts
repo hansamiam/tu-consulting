@@ -33,11 +33,14 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// Bumped 4 — round 6 dropped odds.bucket display + thirty_day generation.
-// Old cached rows render fine (the client tolerates missing fields) but
-// they still carry the heavier 30-day payload; bumping forces regeneration
-// so the cache rebuilds against the trimmer prompt.
-const SCHEMA_VERSION = 4;
+// Bumped 5 — added trust calibration (thin-row caveats), audience gate
+// (target_demographics restrict-or-target tags), and partner_universities
+// + provenance notes context. Cached v4 rows can over-claim thresholds
+// from thin rows — regenerate so they pick up the verify-on-official-site
+// caveat. Also fixed a bug where the validator required `thirty_day` even
+// though the prompt instructed the LLM to skip it (every faithful v4
+// response was getting rejected and never cached).
+const SCHEMA_VERSION = 5;
 const COST_ESTIMATE_USD = 0.005;
 
 interface InboundProfile {
@@ -211,9 +214,11 @@ Deno.serve(async (req) => {
       "target_fields, application_deadline, deadline_type, " +
       "min_gpa, gpa_scale, min_ielts, min_toefl, min_sat, " +
       "citizenship_requirements, eligible_countries, eligibility_requirements, " +
+      "target_demographics, partner_universities, notes, " +
       "selectivity_level, effort_level, ideal_candidate_profile, " +
       "weak_candidate_warning, why_this_fits, how_to_win, what_to_prepare_first, " +
       "essay_required, recommendation_letters_required, interview_required, " +
+      "confidence, data_completeness_score, " +
       "updated_at"
     )
     .eq("scholarship_id", body.scholarshipId)
@@ -249,16 +254,37 @@ Deno.serve(async (req) => {
 
   const lang = body.language === "ru" ? "Russian" : "English";
   const p = body.profile;
+  // Treat empty strings the same as null/undefined. The wizard saves
+  // skipped fields as "" rather than dropping the key, so naïve `?? "—"`
+  // would render `IELTS: ` (no value) and the LLM would treat that as a
+  // real datum. `pf` collapses falsy strings to a single placeholder.
+  const pf = (v: unknown, fallback = "—"): string => {
+    if (v === null || v === undefined) return fallback;
+    const s = String(v).trim();
+    return s.length > 0 ? s : fallback;
+  };
   const profileLines = [
-    `Nationality: ${p.nationality || "(unspecified)"}`,
-    `Field/major: ${p.major || p.field || "(unspecified)"}`,
-    `Grade level: ${p.gradeLevel || "(unspecified)"}`,
-    `Target countries: ${(p.targetCountries || []).join(", ") || "(unspecified)"}`,
-    `GPA: ${p.gpa ?? "—"}${p.gpaScale ? ` / ${p.gpaScale}` : ""}`,
-    `IELTS: ${p.ielts ?? "—"}`,
-    `TOEFL: ${p.toefl ?? "—"}`,
-    `SAT: ${p.sat ?? "—"}`,
+    `Nationality: ${pf(p.nationality, "(unspecified)")}`,
+    `Field/major: ${pf(p.major || p.field, "(unspecified)")}`,
+    `Grade level: ${pf(p.gradeLevel, "(unspecified)")}`,
+    `Target countries: ${(p.targetCountries || []).filter(Boolean).join(", ") || "(unspecified)"}`,
+    `GPA: ${pf(p.gpa)}${pf(p.gpaScale, "") ? ` / ${pf(p.gpaScale)}` : ""}`,
+    `IELTS: ${pf(p.ielts)}`,
+    `TOEFL: ${pf(p.toefl)}`,
+    `SAT: ${pf(p.sat)}`,
   ].join("\n");
+
+  // Trust signal — drives whether the LLM should treat scraped thresholds
+  // as gospel. confidence < 0.75 OR data_completeness_score < 6 means the
+  // row is thin, so quoting min_gpa as a hard gate would over-claim. Tell
+  // the LLM to caveat ("the listing notes a minimum GPA, but verify on the
+  // official site") rather than asserting it as a rule.
+  const conf = typeof scholarship.confidence === "number" ? scholarship.confidence : null;
+  const comp = typeof scholarship.data_completeness_score === "number" ? scholarship.data_completeness_score : null;
+  const lowTrust = (conf !== null && conf < 0.75) || (comp !== null && comp < 6);
+
+  const partners = Array.isArray(scholarship.partner_universities) ? scholarship.partner_universities : [];
+  const audience = Array.isArray(scholarship.target_demographics) ? scholarship.target_demographics : [];
 
   const scholarshipLines = [
     `Name: ${cleanScholarshipName(scholarship.scholarship_name) || scholarship.scholarship_name}`,
@@ -278,6 +304,8 @@ Deno.serve(async (req) => {
     `Min SAT: ${scholarship.min_sat ?? "—"}`,
     `Citizenship: ${scholarship.citizenship_requirements || "—"}`,
     `Eligible countries: ${(scholarship.eligible_countries || []).join(", ") || "(open)"}`,
+    `Audience tags (program restricts to / specifically targets): ${audience.length > 0 ? audience.join(", ") : "(none)"}`,
+    `Partner universities${partners.length > 0 ? ` (${partners.length})` : ""}: ${partners.slice(0, 12).join(" · ") || "(none listed)"}`,
     `Selectivity: ${scholarship.selectivity_level || "unknown"}`,
     `Effort level: ${scholarship.effort_level || "unknown"}`,
     `Essay required: ${scholarship.essay_required ?? "unknown"}`,
@@ -288,7 +316,17 @@ Deno.serve(async (req) => {
     `Ideal candidate (heuristic): ${scholarship.ideal_candidate_profile || "(none)"}`,
     `Weak candidate warning: ${scholarship.weak_candidate_warning || "(none)"}`,
     `Eligibility prose: ${scholarship.eligibility_requirements || "(none)"}`,
+    `Provenance notes: ${scholarship.notes || "(none)"}`,
+    `Source-row confidence: ${conf !== null ? conf.toFixed(2) : "unknown"} · completeness: ${comp !== null ? comp : "unknown"}/12${lowTrust ? " — TREAT AS THIN ROW" : ""}`,
   ].join("\n");
+
+  const trustClause = lowTrust
+    ? `\nSOURCE TRUST — THIN ROW: this scholarship row was extracted with low confidence (${conf !== null ? conf.toFixed(2) : "?"}) or low completeness (${comp ?? "?"}/12). Do NOT quote min_gpa / min_ielts / min_toefl / min_sat as hard gates if those numbers are present — the underlying page may not actually publish them. In match.breakdown, when comparing to a threshold from a thin row, append "— per our extraction, verify on the official site". Lean on what's clearly known (host country, provider, coverage, target fields/levels) and be honest about gaps. Never invent thresholds the row doesn't have.`
+    : "";
+
+  const audienceClause = audience.length > 0
+    ? `\nAUDIENCE GATE: this program is explicitly restricted to / targets: ${audience.join(", ")}. If the student does not match the gating tag (e.g. program targets "women" and the profile suggests otherwise), surface that as a "miss" in match.breakdown — do NOT pretend it's open to the student.`
+    : "";
 
   const prompt = `You are a Yale/Cambridge/Harvard-trained admissions strategist briefing a specific student on a specific scholarship. The output renders on the student's Discover DetailSheet inside a "My plan" tab — they read it to decide "should I spend 20 hours on this application?" Output ONLY valid JSON matching the schema. No markdown fences. No preamble.
 
@@ -296,8 +334,7 @@ CRITICAL RULES:
 1. Be specific and quantitative. Cite the student's actual numbers.
 2. If the scholarship has a min_gpa / min_ielts / etc. and the student is missing or below it, mark that breakdown line as "miss" or "near" honestly. Do not soften.
 3. odds.bucket = "primary" if the student clearly meets thresholds AND fits the typical admit profile; "competitive" if they're in range but fighting for a slot; "aspirational" if they're below thresholds or far from the typical admit profile.
-4. thirty_day.items must include exactly 4 entries, one per week, with concrete deliverables — "draft personal statement v1" not "work on essay".
-5. Output language: ${lang}.
+4. Output language: ${lang}.${trustClause}${audienceClause}
 
 QUALITY BAR — these are the rules generic AI breaks. We don't:
 ${EDITORIAL_RULES_TIGHT}
@@ -353,9 +390,19 @@ Now output ONLY the JSON. Begin with { and end with }.`;
       ?? "";
     if (!raw) return json(502, { error: "Empty completion" });
     parsed = JSON.parse(isolateJson(raw)) as DeepDiveOutput;
-    // Soft validation — if any required top-level key is missing, fail loudly
-    if (!parsed?.match || !parsed?.strategy || !parsed?.odds || !parsed?.thirty_day) {
-      throw new Error("Schema mismatch: missing top-level section");
+    // Soft validation — match/strategy/odds are required; thirty_day was
+    // intentionally retired (the prompt instructs the LLM to skip it),
+    // so we MUST NOT require it here or every faithful response gets
+    // rejected and we end up caching only outputs from LLMs that ignored
+    // the strip-fields instruction. Also gate on the meaty sub-fields so
+    // a degenerate `{strategy: {}}` doesn't sneak through.
+    if (
+      !parsed?.match?.breakdown?.length
+      || !parsed?.strategy?.headline
+      || !Array.isArray(parsed?.strategy?.points) || parsed.strategy.points.length === 0
+      || !parsed?.odds?.typical_admit_profile
+    ) {
+      throw new Error("Schema mismatch: missing required sub-field");
     }
   } catch (e) {
     console.warn("[scholarship-deep-dive] parse failed", (e as Error).message);
