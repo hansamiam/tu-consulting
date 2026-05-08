@@ -216,7 +216,32 @@ export const accentForCountry = (country: string | null | undefined): string => 
  *      to compact equivalents.
  *   3. Hard-caps any remaining string at ~18 chars so a runaway
  *      descriptive value can never break a row again. */
-export const shortCountry = (country: string): string => {
+// Tight aliases for tight cells (card country band, chips). Long
+// official names like "United Kingdom" / "United Arab Emirates" /
+// "Czech Republic" get truncated mid-word ("United Ki…") inside narrow
+// containers; mapping them to recognisable short forms preserves
+// meaning without ellipsis. Only high-frequency hosts and obvious
+// abbreviations — anything else passes through unchanged so we don't
+// invent labels.
+const TIGHT_ALIASES: Record<string, string> = {
+  "United Kingdom":         "UK",
+  "United States":          "USA",
+  "United States of America": "USA",
+  "United Arab Emirates":   "UAE",
+  "New Zealand":            "NZ",
+  "South Korea":            "S. Korea",
+  "South Africa":           "S. Africa",
+  "Czech Republic":         "Czechia",
+  "Russian Federation":     "Russia",
+  "Republic of Ireland":    "Ireland",
+  "Hong Kong SAR":          "Hong Kong",
+  "Saudi Arabia":           "Saudi Arabia",
+  "European Union":         "EU",
+  "European Economic Area": "EEA",
+  "Dominican Republic":     "Dominican Rep.",
+};
+
+export const shortCountry = (country: string, opts?: { tight?: boolean }): string => {
   const c = country.trim();
   if (/^multiple\s*\(worldwide\)?$/i.test(c)) return "Worldwide";
   if (/^multiple/i.test(c)) {
@@ -231,6 +256,7 @@ export const shortCountry = (country: string): string => {
   // country name. Fall back to a generic label rather than rendering
   // a paragraph in a chip.
   if (c.length > 18) return "Various";
+  if (opts?.tight && TIGHT_ALIASES[c]) return TIGHT_ALIASES[c];
   return c;
 };
 

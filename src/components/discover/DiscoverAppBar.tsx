@@ -18,7 +18,7 @@
  * scrolled cards underneath read clearly. */
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { Compass, ArrowLeft, Crown, User as UserIcon, KanbanSquare } from "lucide-react";
+import { ArrowLeft, Crown, User as UserIcon, KanbanSquare } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthDialog } from "@/components/auth/AuthDialog";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -74,24 +74,15 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
         <span className="hidden sm:block self-stretch w-px bg-border/60 my-3" aria-hidden />
 
         {/* Discover wordmark — visual identity, not the primary nav.
-            Dark-mode tweaks: the small-caps "TopUni" line was rendering
-            in gold-dark which got muddy against the dark background;
-            it now flips to gold-light in dark mode. The compass icon
-            keeps the navy `text-primary` ink on the gold gradient
-            because that combination is part of the brand. */}
+            The gold-gradient compass icon was retired (felt like
+            decoration in a slim product bar that's already crowded with
+            functional chrome). The TopUni eyebrow + Discover wordmark
+            carry the brand on their own. */}
         <Link
           to={home}
           className="group inline-flex items-center gap-2 shrink-0 hover:opacity-90 transition-opacity"
           aria-label="Discover"
         >
-          <span className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-gradient-to-br from-gold-dark to-gold text-primary shadow-sm ring-1 ring-gold/40">
-            <Compass className="h-4 w-4" />
-          </span>
-          {/* Visual weight matched to the main Navigation logo
-              (font-heading text-lg sm:text-xl). The eyebrow + wordmark
-              stack reads as the same brand size — pre-fix the Discover
-              wordmark was visibly smaller than every other top-nav
-              "TopUni" in the app. */}
           <div className="leading-tight hidden sm:block">
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark dark:text-gold-light">TopUni</p>
             <p className="font-heading text-lg sm:text-xl font-bold tracking-tight text-foreground -mt-0.5 leading-none">Discover</p>
@@ -101,20 +92,24 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Pipeline link — the only adjacent surface that's actually
-            useful while inside Discover (saved scholarships → working
-            on them). Other products (TopUni AI, Academy, Pricing) are
-            irrelevant to someone already in the database, and "Home"
-            is already covered by the back button at the far left. */}
-        <button
-          onClick={() => navigate(isRussian ? "/pipeline/ru" : "/pipeline")}
-          className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-foreground/70 hover:text-foreground px-2.5 py-1.5 rounded-md hover:bg-foreground/[0.04] transition-colors"
-        >
-          <KanbanSquare className="h-3.5 w-3.5" />
-          {isRussian ? "Рабочая зона" : "Workspace"}
-        </button>
-
-        <ActivityBell language={language} />
+        {/* Workspace + activity bell — visually grouped so they read as
+            one unit (the Workspace is where every activity event lands;
+            the bell is the inline preview). Shared rounded surface, a
+            subtle vertical rule between them. Round-39 consolidation:
+            previously two separate floating buttons; users had to
+            mentally connect "deadline reminder" with "Workspace" on
+            their own. Now they're one cluster. */}
+        <div className="inline-flex items-center rounded-md border border-border/60 bg-background/40 overflow-hidden">
+          <button
+            onClick={() => navigate(isRussian ? "/pipeline/ru" : "/pipeline")}
+            className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-foreground/75 hover:text-foreground hover:bg-foreground/[0.04] px-2.5 h-8 transition-colors"
+          >
+            <KanbanSquare className="h-3.5 w-3.5" />
+            {isRussian ? "Рабочая зона" : "Workspace"}
+          </button>
+          <span className="hidden sm:block self-stretch w-px bg-border/60" aria-hidden />
+          <ActivityBell language={language} grouped />
+        </div>
 
         <LanguageSwitcher />
 

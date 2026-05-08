@@ -39,9 +39,13 @@ interface Props {
   language?: "en" | "ru";
   /** Visual emphasis on the trigger when on a dark/overlay nav. */
   variant?: "default" | "overlay";
+  /** When the bell sits inside a button-group cluster (e.g. the Discover
+   *  app bar's Workspace+Bell unit), drop the rounded-md so it reads as
+   *  one connected control rather than a separate floating button. */
+  grouped?: boolean;
 }
 
-export const ActivityBell = ({ language = "en", variant = "default" }: Props) => {
+export const ActivityBell = ({ language = "en", variant = "default", grouped = false }: Props) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { events, unreadCount, markAllSeen } = useActivityFeed();
@@ -54,13 +58,14 @@ export const ActivityBell = ({ language = "en", variant = "default" }: Props) =>
   const triggerCls = variant === "overlay"
     ? "text-primary-foreground/80 hover:text-primary-foreground"
     : "text-muted-foreground hover:text-foreground";
+  const shapeCls = grouped ? "" : "rounded-md";
 
   return (
     <Popover onOpenChange={(o) => { if (o) markAllSeen(); }}>
       <PopoverTrigger asChild>
         <button
           aria-label={ru ? "Уведомления" : "Notifications"}
-          className={`relative inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-foreground/[0.05] transition-colors ${triggerCls}`}
+          className={`relative inline-flex items-center justify-center h-8 w-8 ${shapeCls} hover:bg-foreground/[0.05] transition-colors ${triggerCls}`}
         >
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
@@ -121,6 +126,18 @@ export const ActivityBell = ({ language = "en", variant = "default" }: Props) =>
             })}
           </ul>
         )}
+        {/* Workspace bridge — every event eventually lands in /pipeline
+            (saved scholarship, deadline tracker, saved-search match).
+            One footer link makes the relationship explicit so users
+            understand the bell is a fast peek and the Workspace is
+            the persistent home for these. */}
+        <button
+          onClick={() => navigate(ru ? "/pipeline/ru" : "/pipeline")}
+          className="w-full px-4 py-2.5 border-t border-border/60 bg-canvas-soft/50 text-[12px] font-medium text-foreground/80 hover:text-foreground hover:bg-foreground/[0.025] transition-colors flex items-center justify-center gap-1.5"
+        >
+          {ru ? "Открыть рабочую зону" : "Open Workspace"}
+          <ArrowRight className="h-3 w-3" />
+        </button>
       </PopoverContent>
     </Popover>
   );

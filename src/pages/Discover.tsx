@@ -21,7 +21,7 @@ import {
   Target, Flame, Users, FileText,
   AlertOctagon, UserCheck, ShieldAlert, MinusCircle, HelpCircle,
   LayoutGrid, List, EyeOff, Eye, Columns3, Circle, GitCompare,
-  Gem, DollarSign, Crown, Award, Compass, Layers, GraduationCap, Share2,
+  Gem, DollarSign, Crown, Award, Compass, Layers, GraduationCap, Share2, Globe,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
@@ -32,7 +32,6 @@ import { ExpandedScholarshipDialog } from "@/components/discover/ExpandedScholar
 // popover that wrapped the MatchGauge was removed; rows convey fit
 // via section bucketing + sort order now. Re-import if a future
 // surface wants to expose the breakdown.
-import { SavedSearchControls } from "@/components/discover/SavedSearchControls";
 // HoverCard imports retired round 33 alongside MatchGauge — re-add
 // if any future surface wants a hover popover on a row chip.
 import { CountryArt } from "@/lib/countryArt";
@@ -913,11 +912,12 @@ const TIER = {
 
 /* Tag — typed chip primitive used by ScholarRow + ScholarCard so the
  * visual language is consistent across both surfaces. Variants encode
- * intent (country, full-ride, demographic, prestige, outcome) so chip
- * colors don't drift over time as we add new ones inline. The country
- * variant accepts the country gradient string at render time since
- * the gradient is per-row. */
-type TagVariant = "country" | "full-ride" | "demographic" | "prestige" | "outcome";
+ * intent (country, full-ride, demographic, outcome) so chip colors
+ * don't drift over time as we add new ones inline. The country variant
+ * accepts the country gradient string at render time since the
+ * gradient is per-row. The "prestige" variant was retired with the
+ * matching chip on the country band. */
+type TagVariant = "country" | "full-ride" | "demographic" | "outcome";
 const Tag = ({
   variant,
   children,
@@ -942,8 +942,6 @@ const Tag = ({
         return "bg-gold/15 text-gold-dark border border-gold/30";
       case "demographic":
         return "bg-gold/12 text-gold-dark border border-gold/25";
-      case "prestige":
-        return "bg-primary/[0.08] text-primary dark:text-primary-bright border border-primary/20";
       case "outcome":
         return "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 tabular-nums";
     }
@@ -1612,15 +1610,14 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
         <span className={`absolute inset-0 bg-gradient-to-r from-black/30 via-black/5 to-transparent pointer-events-none`} />
         <span className="relative flex items-center gap-2 min-w-0 flex-1 pr-[35%]">
           {s.host_country && (
-            <span className="truncate drop-shadow-sm">{shortCountry(s.host_country)}</span>
+            <span className="truncate drop-shadow-sm">{shortCountry(s.host_country, { tight: true })}</span>
           )}
           {/* Chip priority on the band: country (always) > full-ride badge >
-              prestigious badge > one demographic. We used to render every
-              chip including a "+N" overflow indicator; on cards with long
-              country names + multi-demographic eligibility the strip
-              overflowed under the silhouette and the "+1" was the part
-              users saw cut off. Cap to ONE secondary chip total — the
-              detail sheet carries the rest. */}
+              one demographic. The "Prestigious" chip was retired —
+              selectivity already shapes scoring + bucket placement, and
+              the chip read as marketing-y self-congratulation that
+              didn't help users decide to apply. Cap to ONE secondary
+              chip total — the detail sheet carries the rest. */}
           {(() => {
             const secondary: React.ReactNode[] = [];
             if (isFullRide) {
@@ -1631,16 +1628,15 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
                 </span>,
               );
             }
-            if (secondary.length === 0 && (s.selectivity === "very_high" || s.selectivity === "high")) {
-              secondary.push(
-                <span key="ps" className="inline-flex items-center text-white/95 drop-shadow-sm shrink-0">
-                  {ru ? "Престижная" : "Prestigious"}
-                </span>,
-              );
-            }
             if (secondary.length === 0 && s.target_demographics && s.target_demographics.length > 0) {
               secondary.push(
-                <span key="dm" className="inline-flex items-center gap-1 text-gold-light/95 drop-shadow-sm shrink-0 truncate max-w-[40%]">
+                // Drop the max-w-[40%] cap: with the tight country
+                // alias above ("UK" instead of "United Kingdom") there's
+                // plenty of room for the demographic word, and the cap
+                // was producing chopped chips ("Need-bas…").
+                // whitespace-nowrap keeps the chip on one line; the
+                // outer min-w-0 + flex-1 still prevents overflow.
+                <span key="dm" className="inline-flex items-center gap-1 text-gold-light/95 drop-shadow-sm shrink-0 whitespace-nowrap">
                   {humanizeDemographic(s.target_demographics[0])}
                 </span>,
               );
@@ -1932,14 +1928,12 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
           </div>
         ))}
       </div>
-      {/* Saved-search controls — name + persist the current filter
-          combo, then re-apply later in one click. The cron emails new
-          matches against each saved search daily. */}
-      <SavedSearchControls
-        filters={filters as unknown as Record<string, unknown>}
-        hasActiveFilters={activeCount > 0}
-        onApply={(applied) => setFilters((cur) => ({ ...DEFAULT_FILTERS, ...applied, search: cur.search }) as FilterState)}
-      />
+      {/* Saved-search controls were retired from the Discover filter
+          panel — the section was tall enough that it pushed real
+          filters off the visible viewport on small heights. The
+          underlying saved_searches table + daily-digest cron stay so a
+          future entry point (Workspace, account settings) can resurface
+          the feature without bloating the filter panel. */}
 
       {activeCount > 0 && (
         <Button variant="ghost" size="sm" className="w-full text-xs h-8 text-muted-foreground hover:text-foreground" onClick={() => setFilters(DEFAULT_FILTERS)}>
@@ -3879,12 +3873,17 @@ const Discover = ({ language = "en" }: Props) => {
                   still surface via the SavedDeadlineBanner and via the
                   sort-by-deadline option. */}
 
-              {/* ─── Profile context strip — branches based on whether the
-                  user has profile data. When profile is filled: chips
-                  showing the user's scoring inputs + "Edit" affordance.
-                  When empty: a "Build profile" CTA so the user has a
-                  one-click path to fit-driven bucketing instead of just
-                  browsing the entire DB blind. */}
+              {/* ─── Profile context strip — leads with the user's identity
+                  (country flag + level + field) so the page reads as
+                  "your scholarships, tailored to you" rather than a
+                  database results page. The previous build had three
+                  big counters (matches / closing 30d / $X total value)
+                  which read as marketing more than a personalised
+                  dashboard; replaced with a soft "tailored to" framing
+                  that pulls the same chips the wizard collects. Pre-
+                  profile state keeps a single CTA to build the profile
+                  — the catalogue scale signal lives in the toolbar
+                  result-count below. */}
               {(() => {
                 const isProfileFilled = !!(
                   profile.country ||
@@ -3893,9 +3892,6 @@ const Discover = ({ language = "en" }: Props) => {
                   profile.gpa ||
                   profile.ielts
                 );
-                // Country flag emoji — null when the user typed something
-                // we don't have in ALL_COUNTRIES (e.g. "Other"), in which
-                // case the chip falls back to text-only.
                 const countryFlag = profile.country
                   ? ALL_COUNTRIES.find(c => c.v.toLowerCase() === profile.country.toLowerCase())?.f ?? null
                   : null;
@@ -3903,114 +3899,80 @@ const Discover = ({ language = "en" }: Props) => {
                   ? FIELDS.find(f => f.v === profile.field)?.i ?? null
                   : null;
                 const countryAccent = accentForCountry(profile.country);
-                // Live counters derived from `ranked` (the post-score
-                // result set). Pre-redesign the strip just regurgitated
-                // the profile chips with no signal of what the database
-                // had actually surfaced; user feedback was "is that
-                // really the best we can come up with?". These three
-                // numbers tell the user immediately what's at stake:
-                // total opportunities, urgency, and dollar value.
-                const matchCount = ranked.length;
-                const now = Date.now();
-                const closingSoon = ranked.filter(r => {
-                  if (!r.application_deadline) return false;
-                  const days = Math.ceil((new Date(r.application_deadline).getTime() - now) / 86400000);
-                  return days >= 0 && days <= 30;
-                }).length;
-                const totalFunding = ranked.reduce((sum, r) => sum + (r.estimated_total_value_usd ?? 0), 0);
-                const fundingText = totalFunding >= 1_000_000
-                  ? `$${(totalFunding / 1_000_000).toFixed(totalFunding >= 10_000_000 ? 0 : 1)}M`
-                  : totalFunding >= 1000
-                    ? `$${Math.round(totalFunding / 1000)}K`
-                    : null;
+                const targetCountryChips = (profile.targetCountries ?? []).slice(0, 3);
                 return (
                   <div className="relative bg-canvas-soft/60 border-b border-border/60 overflow-hidden">
-                    {/* Two rows now (was a single chip strip):
-                        1. Live counters — matches / closing soon / total funding
-                        2. Profile context chips — country / degree / field
-                        Counter row is the user's "what does the database
-                        say about ME" signal; profile row is the "this is
-                        what we filtered on" provenance. */}
-                    <div className="relative max-w-7xl mx-auto px-5 sm:px-8 py-2.5 sm:py-3">
+                    <div className="relative max-w-7xl mx-auto px-5 sm:px-8 py-3 sm:py-3.5">
                       {isProfileFilled ? (
-                        <div className="flex items-start sm:items-center gap-3 flex-wrap">
-                          {/* Live counters — the headline numbers */}
-                          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                            <div className="flex items-baseline gap-1.5">
-                              <span className="font-heading font-bold text-foreground text-base sm:text-lg tabular-nums leading-none">{matchCount}</span>
-                              <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-muted-foreground/85">{t("matches", "совпадений")}</span>
-                            </div>
-                            {closingSoon > 0 && (
-                              <div className="flex items-baseline gap-1.5 pl-3 border-l border-border/60">
-                                <span className={`font-heading font-bold text-base sm:text-lg tabular-nums leading-none ${closingSoon >= 5 ? "text-destructive" : "text-amber-700 dark:text-amber-400"}`}>{closingSoon}</span>
-                                <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-muted-foreground/85">{t("closing 30d", "закрыв. 30д")}</span>
-                              </div>
-                            )}
-                            {fundingText && (
-                              <div className="flex items-baseline gap-1.5 pl-3 border-l border-border/60">
-                                <span className="font-heading font-bold text-gold-dark dark:text-gold text-base sm:text-lg tabular-nums leading-none">{fundingText}</span>
-                                <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-muted-foreground/85">{t("total value", "общая сумма")}</span>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Profile chips — provenance, smaller weight */}
-                          <div className="flex items-center gap-1.5 flex-wrap sm:ml-auto">
-                            <span className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground/70 font-semibold">
-                              {t("for", "для")}
-                            </span>
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {/* Identity lockup — eyebrow + chips. Reads as
+                              "Tailored to you · [country] · [level] ·
+                              [field] · [target countries]". The chips
+                              are the same shape the TopUni AI wizard
+                              collects, so the surface feels continuous
+                              with profile setup rather than a separate
+                              database. */}
+                          <span className="text-[10px] uppercase tracking-[0.18em] text-gold-dark dark:text-gold-light font-semibold whitespace-nowrap">
+                            {t("Tailored to you", "Подобрано под вас")}
+                          </span>
+                          <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                             {profile.country && (
-                              <span className={`inline-flex items-center gap-1 text-[10px] font-semibold text-white px-2 py-0.5 rounded-full bg-gradient-to-r ${countryAccent}`}>
-                                {countryFlag && <span className="text-[11px] leading-none">{countryFlag}</span>}
+                              <span className={`inline-flex items-center gap-1 text-[11px] font-semibold text-white px-2 py-0.5 rounded-full bg-gradient-to-r ${countryAccent}`}>
+                                {countryFlag && <span className="text-[12px] leading-none">{countryFlag}</span>}
                                 {profile.country}
                               </span>
                             )}
                             {profile.degrees && profile.degrees.length > 0 && (
-                              <span className="inline-flex items-center gap-1 text-[10px] text-foreground/75 bg-card border border-border/70 px-2 py-0.5 rounded-full font-medium">
+                              <span className="inline-flex items-center gap-1 text-[11px] text-foreground/80 bg-card border border-border/70 px-2 py-0.5 rounded-full font-medium">
                                 <GraduationCap className="h-3 w-3 text-gold-dark" />
                                 {profile.degrees.join(" / ")}
                               </span>
                             )}
                             {profile.field && (
-                              <span className="inline-flex items-center gap-1 text-[10px] text-foreground/75 bg-card border border-border/70 px-2 py-0.5 rounded-full font-medium">
+                              <span className="inline-flex items-center gap-1 text-[11px] text-foreground/80 bg-card border border-border/70 px-2 py-0.5 rounded-full font-medium">
                                 {fieldEmoji && <span className="leading-none">{fieldEmoji}</span>}
                                 {profile.field}
                               </span>
                             )}
-                            <button onClick={resetProfile} className="text-[10px] text-muted-foreground/80 hover:text-foreground transition-colors underline-offset-4 hover:underline ml-1">
-                              {t("Edit", "Изменить")}
-                            </button>
+                            {targetCountryChips.length > 0 && (
+                              <span className="inline-flex items-center gap-1 text-[11px] text-foreground/80 bg-card border border-border/70 px-2 py-0.5 rounded-full font-medium">
+                                <Globe className="h-3 w-3 text-gold-dark" />
+                                {targetCountryChips.join(" · ")}
+                                {(profile.targetCountries?.length ?? 0) > 3 && (
+                                  <span className="text-muted-foreground/70">+{profile.targetCountries.length - 3}</span>
+                                )}
+                              </span>
+                            )}
                           </div>
+                          <button
+                            onClick={resetProfile}
+                            className="text-[11px] text-muted-foreground/85 hover:text-foreground transition-colors underline-offset-4 hover:underline ml-auto whitespace-nowrap"
+                          >
+                            {t("Edit profile", "Изменить профиль")}
+                          </button>
                         </div>
                       ) : (
-                        // Pre-profile: same counter geometry as the
-                        // profiled state so the strip's height stays
-                        // stable when the user fills their profile —
-                        // less layout jank. Counters use the unfiltered
-                        // catalogue total so unprofiled users see the
-                        // database scale up front.
-                        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="font-heading font-bold text-foreground text-base sm:text-lg tabular-nums leading-none">{matchCount}</span>
-                            <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-muted-foreground/85">{t("scholarships", "стипендий")}</span>
+                        // Pre-profile: a single CTA back to the wizard.
+                        // Drop the counters — the toolbar below already
+                        // shows a result count, so two scales of "X
+                        // scholarships" was redundant.
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                          <div>
+                            <p className="text-[10px] uppercase tracking-[0.18em] text-gold-dark dark:text-gold-light font-semibold mb-0.5">
+                              {t("Personalised view", "Персональный вид")}
+                            </p>
+                            <p className="text-sm text-foreground/85 leading-snug">
+                              {t(
+                                "Add your country, level, and field — we'll rank these scholarships against your profile.",
+                                "Укажите страну, уровень и направление — мы отсортируем стипендии по вашему профилю.",
+                              )}
+                            </p>
                           </div>
-                          {closingSoon > 0 && (
-                            <div className="flex items-baseline gap-1.5 pl-3 border-l border-border/60">
-                              <span className={`font-heading font-bold text-base sm:text-lg tabular-nums leading-none ${closingSoon >= 5 ? "text-destructive" : "text-amber-700 dark:text-amber-400"}`}>{closingSoon}</span>
-                              <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-muted-foreground/85">{t("closing 30d", "закрыв. 30д")}</span>
-                            </div>
-                          )}
-                          {fundingText && (
-                            <div className="flex items-baseline gap-1.5 pl-3 border-l border-border/60">
-                              <span className="font-heading font-bold text-gold-dark dark:text-gold text-base sm:text-lg tabular-nums leading-none">{fundingText}</span>
-                              <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-muted-foreground/85">{t("total value", "общая сумма")}</span>
-                            </div>
-                          )}
                           <button
                             onClick={() => navigate(language === "ru" ? "/topuni-ai/ru" : "/topuni-ai")}
-                            className="ml-auto inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-gold-dark hover:text-foreground transition-colors group whitespace-nowrap"
+                            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-gold-dark hover:text-foreground transition-colors group whitespace-nowrap"
                           >
-                            {t("Build profile to see your fit", "Заполните профиль")}
+                            {t("Build my profile", "Заполнить профиль")}
                             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                           </button>
                         </div>
