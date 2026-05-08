@@ -352,7 +352,7 @@ const normalizeSelectivity = (s: string | null): Scored["selectivity"] => {
   return "unknown";
 };
 
-const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: number): Scored => {
+const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: number, saveCount30d?: number): Scored => {
   const reasons: string[] = [];
   const warnings: string[] = [];
   // Base score lowered from 50 → 45. Combined with the steeper
@@ -527,6 +527,16 @@ const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: numbe
   const comp = typeof s.data_completeness_score === "number" ? s.data_completeness_score : 8;
   if (comp > 8) {
     match += Math.min(6, Math.round((comp - 8) * 0.6));
+  }
+
+  // Engagement boost — mirror of match_scholarships RPC's engagement_boost
+  // (20260508010000) on a 100-scale. Saves are the strongest intent signal
+  // we capture; logarithmic so a runaway hit doesn't dominate, capped at
+  // +4 so semantic / eligibility / threshold matches still rule. Cold rows
+  // (no saves yet) contribute 0 — Discover already surfaces NEW pills, so
+  // visibility for fresh rows doesn't depend on this boost.
+  if (typeof saveCount30d === "number" && saveCount30d > 0) {
+    match += Math.min(4, Math.round(Math.log(saveCount30d + 1) * 0.7));
   }
 
   if (eligibility === "likely" && match >= 70) eligibility = "eligible";
@@ -2854,6 +2864,11 @@ const Discover = ({ language = "en" }: Props) => {
   }, []);
 
   const [rows, setRows] = useState<Scholarship[]>([]);
+  /* Save-count map keyed by scholarship_id. Pulled once on mount alongside
+   * the scholarships fetch and re-derived in scoreScholarship via the
+   * engagement boost. Empty Map until the fetch resolves — scoring
+   * still works (the boost is optional). */
+  const [saveCounts, setSaveCounts] = useState<Map<string, number>>(new Map());
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile>({ country: "", degrees: [], gpa: "", gpaScale: "4.0", ielts: "", toefl: "", sat: "", field: "", demographics: [], targetCountries: [] });
   const [phase, setPhase] = useState<Phase>(() => getStoredProfile()?.nationality ? "results" : "landing");
@@ -2971,21 +2986,41 @@ const Discover = ({ language = "en" }: Props) => {
       //
       // We DO order so verified/stale rows surface first (highest trust),
       // then pending/null (newer or not-yet-checked).
-      const { data } = await supabase
-        .from("scholarships")
-        .select("*")
-        .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
-        // Lifecycle filter — closed-recent + closed-archived rows are
-        // hidden from discovery automatically. The DB trigger keeps
-        // lifecycle_status fresh on every UPDATE; the daily cron at
-        // 03:00 UTC handles time-based transitions (a deadline that
-        // passed last night gets flipped today). Direct /scholarships/:id
-        // lookups still work for saved-pipeline + shared-brief links.
-        .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null")
-        .order("estimated_total_value_usd", { ascending: false });
-      if (data) {
-        const cleaned = dedupeAndQualityFilter(data as unknown as Scholarship[]);
+      //
+      // Parallel-fetch the engagement signal (save_count_30d per row).
+      // It feeds scoreScholarship's engagement_boost, mirroring the
+      // match_scholarships RPC's compounding moat. Cheap query; one
+      // round-trip vs. the catalog fetch.
+      const [scholarshipsRes, statsRes] = await Promise.all([
+        supabase
+          .from("scholarships")
+          .select("*")
+          .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
+          // Lifecycle filter — closed-recent + closed-archived rows are
+          // hidden from discovery automatically. The DB trigger keeps
+          // lifecycle_status fresh on every UPDATE; the daily cron at
+          // 03:00 UTC handles time-based transitions (a deadline that
+          // passed last night gets flipped today). Direct /scholarships/:id
+          // lookups still work for saved-pipeline + shared-brief links.
+          .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null")
+          .order("estimated_total_value_usd", { ascending: false }),
+        supabase
+          .from("scholarship_stats")
+          .select("scholarship_id, save_count_30d")
+          .gt("save_count_30d", 0),
+      ]);
+      if (scholarshipsRes.data) {
+        const cleaned = dedupeAndQualityFilter(scholarshipsRes.data as unknown as Scholarship[]);
         setRows(cleaned);
+      }
+      if (statsRes.data) {
+        const m = new Map<string, number>();
+        for (const r of statsRes.data as { scholarship_id: string; save_count_30d: number | null }[]) {
+          if (typeof r.save_count_30d === "number" && r.save_count_30d > 0) {
+            m.set(r.scholarship_id, r.save_count_30d);
+          }
+        }
+        setSaveCounts(m);
       }
       setLoading(false);
     })();
@@ -3134,13 +3169,14 @@ const Discover = ({ language = "en" }: Props) => {
     const p: Profile = hasProfile ? profile : { country: "", degrees: [], gpa: "", gpaScale: "4.0", ielts: "", toefl: "", sat: "", field: "", demographics: [] };
     return rows.map(r => {
       const sim = semantic.matches.get(r.scholarship_id)?.similarity;
-      return scoreScholarship(r, p, sim);
+      const saves = saveCounts.get(r.scholarship_id);
+      return scoreScholarship(r, p, sim, saves);
     }).sort((a, b) => {
       const e = { eligible: 0, likely: 1, missing: 2, not_eligible: 3 };
       if (e[a.eligibility] !== e[b.eligibility]) return e[a.eligibility] - e[b.eligibility];
       return b.match - a.match;
     });
-  }, [rows, profile, semantic.matches]);
+  }, [rows, profile, semantic.matches, saveCounts]);
 
   /* Available host countries + fields, derived from data.
    * Collapse all "Multiple (...)" / "Multiple (Worldwide)" / "Global" /
