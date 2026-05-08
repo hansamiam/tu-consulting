@@ -167,7 +167,7 @@ Field semantics:
 DEADLINE EXTRACTION (DATA QUALITY GATE — way too many rows landed with deadline_type='rolling' because the LLM defaulted there when the date wasn't obvious):
 - Scan the ENTIRE page for any of these phrases / patterns and extract the date that follows: "Deadline:", "Application deadline:", "Apply by", "Closes on", "Closing date", "Submissions close", "Applications due", "Last day to apply", "Submission deadline", "Application opens" + window endpoint.
 - The date may be in many formats: "November 5, 2026" / "5 November 2026" / "5/11/2026" / "11/05/2026" (assume US format on .com / .gov / .edu domains and DMY on UK / EU domains) / "2026-11-05". Always emit ISO YYYY-MM-DD.
-- If the page mentions a typical month/window without a specific date this year ("applications open in October", "deadline is in November each year"), DO NOT fabricate a date — leave application_deadline empty but DO set deadline_type="annual" with the month/window noted in `notes`.
+- If the page mentions a typical month/window without a specific date this year ("applications open in October", "deadline is in November each year"), DO NOT fabricate a date — leave application_deadline empty but DO set deadline_type="annual" with the month/window noted in the eligibility_requirements field.
 - Many program pages bury the deadline at the bottom (FAQ section, sidebar). Read past the marketing copy.
 
 FINANCIAL VALUE EXTRACTION (DATA QUALITY GATE — too many rows show only generic "tuition covered" / "stipend" with no $$$ amount):
