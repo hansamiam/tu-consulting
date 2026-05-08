@@ -40,6 +40,10 @@ interface BreakdownRow {
   confidence_reason?: string;
   completeness_boost?: number;
   completeness_reason?: string;
+  /* Engagement factor — added in 20260508010000. Reads save_count_30d
+   * from scholarship_stats; same defensive optional chaining. */
+  engagement_boost?: number;
+  engagement_reason?: string;
   composite_score: number;
 }
 
@@ -219,6 +223,12 @@ export const MatchScoreBreakdown = ({
       status: "good" as "good"|"warn"|"miss"|"info",
       reason: data!.completeness_reason ?? "",
       delta: fmtBoost(data!.completeness_boost),
+    }] : []),
+    ...(typeof data!.engagement_boost === "number" && data!.engagement_boost > 0 ? [{
+      label: "Student interest",
+      status: "good" as "good"|"warn"|"miss"|"info",
+      reason: data!.engagement_reason ?? "",
+      delta: fmtBoost(data!.engagement_boost),
     }] : []),
   ] : fallbackRows;
 
