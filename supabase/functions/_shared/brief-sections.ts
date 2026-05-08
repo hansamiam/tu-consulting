@@ -81,23 +81,33 @@ ${EDITORIAL_RULES}
 
 const profileBlock = (ctx: BriefContext): string => {
   const p = ctx.profile;
-  const targets = (p.targetCountries ?? []).join(", ") || "Open";
+  // The wizard saves skipped fields as "" rather than dropping the key,
+  // so plain `?? fallback` would let `IELTS: ` (empty) reach the prompt
+  // and the LLM would treat that as a real datum. `pf` collapses falsy
+  // strings to the fallback before they hit the LLM.
+  const pf = (v: unknown, fallback: string): string => {
+    if (v === null || v === undefined) return fallback;
+    const s = String(v).trim();
+    return s.length > 0 ? s : fallback;
+  };
+  const targets = (p.targetCountries ?? []).filter(Boolean).join(", ") || "Open";
+  const gpaScale = pf(p.gpaScale, "");
   const lines = [
-    `- Name: ${p.fullName || "—"}`,
-    `- GPA: ${p.gpa ?? "—"}${p.gpaScale ? ` / ${p.gpaScale}` : ""}`,
-    `- IELTS: ${p.ielts ?? "Not taken"}`,
-    `- SAT: ${p.sat ?? "Not taken"}`,
-    `- Grade level: ${p.gradeLevel ?? "—"}`,
+    `- Name: ${pf(p.fullName, "—")}`,
+    `- GPA: ${pf(p.gpa, "—")}${gpaScale ? ` / ${gpaScale}` : ""}`,
+    `- IELTS: ${pf(p.ielts, "Not taken")}`,
+    `- SAT: ${pf(p.sat, "Not taken")}`,
+    `- Grade level: ${pf(p.gradeLevel, "—")}`,
     `- Target countries: ${targets}`,
-    `- Intended major: ${p.major ?? "Undecided"}`,
-    `- Budget: ${p.budget ?? "Unspecified"}`,
-    `- Needs scholarship: ${p.scholarshipNeeded ?? "—"}`,
-    `- Timeline: ${p.timeline ?? "Flexible"}`,
+    `- Intended major: ${pf(p.major, "Undecided")}`,
+    `- Budget: ${pf(p.budget, "Unspecified")}`,
+    `- Needs scholarship: ${pf(p.scholarshipNeeded, "—")}`,
+    `- Timeline: ${pf(p.timeline, "Flexible")}`,
   ];
   if (p.prestige != null) lines.push(`- Priorities (1-5): Prestige ${p.prestige}, Scholarship ${p.scholarship}, Career ROI ${p.careerRoi}, Visa ${p.visaAccess}, Location ${p.locationPref}`);
-  if (p.topActivity)   lines.push(`- Top activity / achievement: ${p.topActivity}`);
-  if (p.personalStory) lines.push(`- Personal story (their own words): ${p.personalStory}`);
-  if (p.namedSchools)  lines.push(`- Specific schools on their list: ${p.namedSchools}`);
+  if (pf(p.topActivity, ""))   lines.push(`- Top activity / achievement: ${p.topActivity}`);
+  if (pf(p.personalStory, "")) lines.push(`- Personal story (their own words): ${p.personalStory}`);
+  if (pf(p.namedSchools, ""))  lines.push(`- Specific schools on their list: ${p.namedSchools}`);
   return lines.join("\n");
 };
 

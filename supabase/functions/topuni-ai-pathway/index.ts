@@ -451,11 +451,13 @@ serve(async (req) => {
             "scholarship_id, scholarship_name, provider_name, host_country, " +
             "coverage_type, award_amount_text, estimated_total_value_usd, " +
             "target_degree_level, target_fields, target_demographics, " +
+            "partner_universities, " +
             "eligible_countries, application_deadline, deadline_type, " +
             "min_gpa, gpa_scale, min_ielts, min_toefl, " +
             "selectivity_level, ideal_candidate_profile, " +
             "eligibility_requirements, citizenship_requirements, official_url, " +
             "source_url, last_verified_at, verification_status, " +
+            "confidence, data_completeness_score, " +
             "why_this_fits, strategy_notes"
           )
           .in("scholarship_id", ids)
@@ -575,13 +577,40 @@ serve(async (req) => {
       const eligTag = s._eligible === false ? " [eligibility unclear — review]" : "";
       const focusTag = s._focus ? " [STUDENT'S FOCUS — they arrived from this scholarship's detail page]" : "";
 
+      // Trust signal — when a row was extracted with low confidence or
+      // low completeness, its thresholds (min_gpa etc.) should not be
+      // quoted as gospel by the LLM. Tag the row so the brief caveats
+      // appropriately rather than telling a 3.6-GPA student they don't
+      // qualify because of a min_gpa we extracted at 25% confidence.
+      const conf = typeof s.confidence === "number" ? s.confidence : null;
+      const comp = typeof s.data_completeness_score === "number" ? s.data_completeness_score : null;
+      const thinRow = (conf !== null && conf < 0.75) || (comp !== null && comp < 6);
+      const trustTag = thinRow
+        ? "\n   Source row: thin — verify thresholds against the official site rather than asserting them as hard rules."
+        : "";
+
       // Numeric thresholds — only render the line when at least one is
-      // present, so the LLM doesn't get a blizzard of "—".
+      // present, so the LLM doesn't get a blizzard of "—". When the
+      // source row is thin, suffix a soft-caveat marker so the brief
+      // copy doesn't over-claim.
       const thresholdParts: string[] = [];
       if (s.min_gpa) thresholdParts.push(`GPA ≥ ${s.min_gpa}/${s.gpa_scale ?? 4.0}`);
       if (s.min_ielts) thresholdParts.push(`IELTS ≥ ${s.min_ielts}`);
       if (s.min_toefl) thresholdParts.push(`TOEFL ≥ ${s.min_toefl}`);
-      const thresholds = thresholdParts.length > 0 ? `\n   Thresholds: ${thresholdParts.join("; ")}` : "";
+      const thresholds = thresholdParts.length > 0
+        ? `\n   Thresholds: ${thresholdParts.join("; ")}${thinRow ? " (per our extraction)" : ""}`
+        : "";
+
+      // Partner universities — when a scholarship covers study at one of
+      // a fixed list of institutions (DAAD partner unis, Erasmus Mundus
+      // consortia), surface 6 so the LLM can name real institutions in
+      // the strategy paragraph instead of saying "various universities".
+      const partners = Array.isArray(s.partner_universities)
+        ? s.partner_universities.filter(Boolean).slice(0, 6)
+        : [];
+      const partnersLine = partners.length > 0
+        ? `\n   Partner universities: ${partners.join(" · ")}${(s.partner_universities?.length ?? 0) > partners.length ? ` (+${s.partner_universities.length - partners.length} more)` : ""}`
+        : "";
 
       // Total value — surface the dollar figure so the LLM can compare
       // ROI across scholarships. The award_amount_text is human-readable
@@ -622,9 +651,9 @@ serve(async (req) => {
       return `${i + 1}. ${cleanedName}${sim}${eligTag}${focusTag}
    Provider: ${cleanedProv}; host: ${cleanedCountry}
    Coverage: ${s.coverage_type}${cleanedAward ? ` — ${cleanedAward}` : ""}${totalValue}
-   Levels: ${levels || "any"}; fields: ${fields || "any"}${selectivity}${thresholds}${audience}${geo}${idealLine}
+   Levels: ${levels || "any"}; fields: ${fields || "any"}${selectivity}${thresholds}${audience}${geo}${idealLine}${partnersLine}
    Deadline: ${deadlineLine}; URL: ${s.official_url || "—"}
-   Eligibility: ${elig || "—"}`;
+   Eligibility: ${elig || "—"}${trustTag}`;
     }).join("\n\n");
 
     const universityContext = relevantUnis.map((u: any) => {
