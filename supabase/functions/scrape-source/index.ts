@@ -575,6 +575,12 @@ function buildEmbeddingSourceText(s: ExtractedScholarship): string {
     s.target_fields?.length ? `Fields: ${s.target_fields.join(", ")}` : "",
     s.eligible_countries?.length ? `Eligible countries: ${s.eligible_countries.join(", ")}` : "",
     s.target_demographics?.length ? `Targets: ${s.target_demographics.join(", ")}` : "",
+    // Joint-program partner institutions. First 12 names cover the usual
+    // consortium size; longer tails carry less marketing weight. Without
+    // this, a query like "Heidelberg medicine" never matches the
+    // Erasmus Mundus consortium that lists Heidelberg as a partner.
+    s.partner_universities?.length ? `Partner universities: ${s.partner_universities.slice(0, 12).join(", ")}` : "",
+    s.language_requirements ? `Language: ${s.language_requirements}` : "",
     s.eligibility_requirements ?? "",
     s.ideal_candidate_profile ?? "",
     s.best_for_tags?.length ? `Best for: ${s.best_for_tags.join(", ")}` : "",
