@@ -459,6 +459,11 @@ Deno.serve(async (req) => {
         verification_status: "verified",
         last_verified_at: now,
         verified: true,
+        // Refresh confidence on every clean re-verify so the trust
+        // calibration in match_scholarships sees the LLM's most-recent
+        // read of how well-grounded this row is. Counts as a quality
+        // update, not a material diff (no DIFF_FIELDS membership).
+        confidence: fresh.confidence,
         ...backfillUpdates,
       })
       .eq("scholarship_id", stored.scholarship_id);
@@ -490,6 +495,11 @@ Deno.serve(async (req) => {
     .update({
       verification_status: "stale",
       last_verified_at: now,
+      // Refresh confidence on diff-staged path too — even when
+      // material diffs are queued for admin review, the LLM's read
+      // of "how grounded was this extraction" is independent and
+      // should keep current.
+      confidence: fresh.confidence,
       // Apply opportunistic backfill even when material diffs exist —
       // a row that has BOTH a deadline drift AND a previously-missing
       // eligible_countries should still get the additive backfill;

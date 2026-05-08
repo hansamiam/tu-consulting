@@ -49,8 +49,10 @@ AS $$
     coalesce('Ideal candidate: ' || left(s.ideal_candidate_profile, 400)  || '. ', '') ||
     coalesce('Citizenship: '    || s.citizenship_requirements             || '. ', '') ||
     coalesce('Eligibility: '    || left(s.eligibility_requirements, 800)  || '. ', '') ||
-    coalesce('Strategy: '       || left(s.strategy_notes, 400)            || '. ', '') ||
-    coalesce('Notes: '          || left(s.notes, 400)                     || '. ', '')
+    coalesce('Strategy: '       || left(s.strategy_notes, 400)            || '. ', '')
+    -- s.notes dropped — column exists on scholarship_staging only; see
+    -- 20260507230000 for the same fix in the prior embedding-source
+    -- revision. Add back here if a published `notes` column ever lands.
   );
 $$;
 

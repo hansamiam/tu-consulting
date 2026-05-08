@@ -9,7 +9,37 @@
 -- + completeness_reason. Updates composite_score to include them.
 -- =============================================================================
 
+-- Add the `confidence` column on public.scholarships before defining
+-- match_score_breakdown. The function body references s.confidence in
+-- a LANGUAGE sql body, which Postgres parses (and resolves columns
+-- against) at CREATE time. Putting the ALTER and the CREATE in the
+-- same transaction means the column is visible by the time the parser
+-- gets to the function. NULL default — the trust math treats NULL as
+-- a no-op (`WHEN c.confidence IS NULL THEN 0.0`), so existing rows
+-- rank exactly as they did before until scrape-source /
+-- verify-scholarship populate the field.
+--
+-- This was originally meant to ship in 20260507210000 but that file
+-- was applied as a no-op before we discovered the missing column.
+-- Idempotent (`IF NOT EXISTS`) so re-running on dev DBs is safe.
+ALTER TABLE public.scholarships
+  ADD COLUMN IF NOT EXISTS confidence numeric(3,2)
+  CHECK (confidence IS NULL OR (confidence >= 0 AND confidence <= 1));
+
+COMMENT ON COLUMN public.scholarships.confidence IS
+  'LLM-reported extraction confidence in [0, 1]. NULL means unknown / not yet captured. Used by match_scholarships trust calibration.';
+
 DROP FUNCTION IF EXISTS public.match_score_breakdown(uuid, vector(1536), text, numeric, numeric, text);
+
+-- Drop the legacy 5-arg eligibility predicate so 5-arg calls below
+-- resolve unambiguously to the 7-arg superset (with NULL TOEFL/SAT
+-- defaults) added in 20260505040000. Without this, PostgreSQL throws
+-- 42725 ("function ... is not unique") because both overloads match
+-- a 5-arg invocation. The 7-arg signature is a true superset; every
+-- pre-existing 5-arg call still works.
+DROP FUNCTION IF EXISTS public.scholarship_passes_eligibility(
+  public.scholarships, text, numeric, numeric, text
+);
 
 CREATE OR REPLACE FUNCTION public.match_score_breakdown(
   scholarship_id   uuid,

@@ -49,8 +49,12 @@ AS $$
     coalesce('Ideal candidate: ' || left(s.ideal_candidate_profile, 400)  || '. ', '') ||
     coalesce('Citizenship: '    || s.citizenship_requirements             || '. ', '') ||
     coalesce('Eligibility: '    || left(s.eligibility_requirements, 800)  || '. ', '') ||
-    coalesce('Strategy: '       || left(s.strategy_notes, 400)            || '. ', '') ||
-    coalesce('Notes: '          || left(s.notes, 400)                     || '. ', '')
+    coalesce('Strategy: '       || left(s.strategy_notes, 400)            || '. ', '')
+    -- s.notes was referenced in the original draft of this migration but
+    -- public.scholarships has no `notes` column — the field exists only
+    -- on scholarship_staging where scrape-source lands LLM extractions.
+    -- Dropped here so the function can be created; can be added later if
+    -- a notes column is ever promoted to the published table.
   );
 $$;
 

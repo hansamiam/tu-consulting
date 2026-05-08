@@ -899,6 +899,13 @@ serve(async (req) => {
         partner_universities:            s.partner_universities ?? null,
         verified:                        false,
         last_verified_date:              new Date().toISOString().slice(0, 10),
+        // Persist LLM-reported extraction confidence so the
+        // match_scholarships trust calibration (added in 20260507240000)
+        // can gently penalize low-confidence rows when ranking. NULL on
+        // the column = "unknown / not yet captured" = no penalty, so
+        // pre-this-deploy rows stay neutral until verify-scholarship
+        // re-touches them and updates the value.
+        confidence:                      s.confidence,
         // First-class verification metadata (see DATA_PIPELINE_AUDIT.md):
         // source_url is the page we extracted FROM (may differ from the
         // scholarship's apply-here URL); last_verified_at is timestamp-
