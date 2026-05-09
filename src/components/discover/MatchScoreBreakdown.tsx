@@ -48,6 +48,11 @@ interface BreakdownRow {
    * (high/medium/low/unknown) keyed off the linked provider record. */
   provider_trust_boost?: number;
   provider_trust_reason?: string;
+  /* Consensus factor — added in 20260509060000. Reads consensus_score
+   * (0-10) computed from scholarship_evidence rows; rewards rows
+   * confirmed by multiple independent authoritative sources. */
+  consensus_boost?: number;
+  consensus_reason?: string;
   composite_score: number;
 }
 
@@ -239,6 +244,12 @@ export const MatchScoreBreakdown = ({
       status: (data!.provider_trust_boost > 0 ? "good" : "info") as "good"|"warn"|"miss"|"info",
       reason: data!.provider_trust_reason ?? "",
       delta: fmtBoost(data!.provider_trust_boost),
+    }] : []),
+    ...(typeof data!.consensus_boost === "number" && data!.consensus_boost > 0 ? [{
+      label: "Source consensus",
+      status: "good" as "good"|"warn"|"miss"|"info",
+      reason: data!.consensus_reason ?? "",
+      delta: fmtBoost(data!.consensus_boost),
     }] : []),
   ] : fallbackRows;
 
