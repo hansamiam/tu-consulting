@@ -1414,7 +1414,7 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
           glance. Same palette as the card hero band. */}
       <div className={`w-1 shrink-0 bg-gradient-to-b ${accent} ${isFullRide ? "ring-1 ring-inset ring-gold/30" : ""}`} aria-hidden />
 
-      <div className="flex-1 grid grid-cols-[minmax(0,1fr),auto] sm:grid-cols-[minmax(0,1fr),170px,auto] items-center gap-4 px-4 py-3 min-h-[68px] min-w-0">
+      <div className="flex-1 grid grid-cols-[minmax(0,1fr),auto] sm:grid-cols-[minmax(0,1fr),170px,128px] items-center gap-4 px-4 py-3 min-h-[68px] min-w-0">
         {/* Country-art circle badge retired (round 21). It carried country
             identity (already conveyed by the left accent stripe + the
             country chip below) and doubled as the MatchScoreBreakdown
@@ -1522,12 +1522,15 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
           </span>
         </div>
 
-        {/* Actions — three clear affordances. Compare retired (lower-
-            priority feature, lived in this slot at the cost of icon
-            legibility). Open-details retired from dropdown — clicking
-            the row body already opens the detail sheet, that menu item
-            was duplicate. */}
-        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+        {/* Actions — three clear affordances always rendered, in a
+            fixed-width column (128px) so every row's geometry lines
+            up with the header AND with every other row. Open-link
+            button falls back gracefully so it's never absent: prefers
+            official_url (non-aggregator) → source_url (non-aggregator)
+            → disabled spacer with tooltip. That last state preserves
+            column width; previously the button vanished entirely on
+            aggregator-derived rows, jittering the row width. */}
+        <div className="flex items-center justify-end gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
           {/* Save — heart-bookmark, always visible. Gold when saved. */}
           <button
             onClick={onBookmark}
@@ -1542,23 +1545,52 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
             {isBookmarked ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
           </button>
 
-          {/* Open official site + Share — desktop only. On mobile they
-              squeezed the name into ~150px of width and the row went
-              squish. Tapping the row body opens the detail sheet,
-              which has its own "Apply on official site" CTA, so
-              there's no functional loss on mobile. */}
-          {s.official_url && !isAggregatorUrl(s.official_url) && (
-            <a
-              href={s.official_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Open official application page"
-              title="Open official application page"
-              className="hidden sm:inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-            >
-              <ExternalLink className="h-4 w-4" />
-            </a>
-          )}
+          {/* Open external link — desktop only. Three states share the
+              same slot so the column width never moves:
+              1. official_url + non-aggregator → "Open official
+                 application page" (preferred)
+              2. source_url + non-aggregator   → "View source page"
+                 (fallback — at least lets the user verify on the
+                 page we extracted from)
+              3. Neither, or only aggregator URLs → disabled spacer
+                 with tooltip explaining why. */}
+          {(() => {
+            const officialUsable = s.official_url && !isAggregatorUrl(s.official_url);
+            const sourceUsable   = s.source_url && !isAggregatorUrl(s.source_url);
+            const href = officialUsable ? s.official_url : sourceUsable ? s.source_url : null;
+            const label = officialUsable
+              ? (ru ? "Открыть официальную страницу заявки" : "Open official application page")
+              : sourceUsable
+                ? (ru ? "Посмотреть исходную страницу" : "View source page")
+                : (ru ? "Прямой ссылки нет — откройте детали" : "No direct link — open details for the apply path");
+            if (!href) {
+              return (
+                <span
+                  aria-label={label}
+                  title={label}
+                  className="hidden sm:inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground/30 cursor-help"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </span>
+              );
+            }
+            return (
+              <a
+                href={href!}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={label}
+                title={label}
+                className={`hidden sm:inline-flex items-center justify-center h-8 w-8 rounded-md transition-colors ${
+                  officialUsable
+                    ? "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                    : "text-muted-foreground/60 hover:text-foreground hover:bg-muted/60"
+                }`}
+              >
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            );
+          })()}
 
           {/* Share — replaces the old "Not relevant — hide" dropdown
               which was rarely used and added cognitive load to every
@@ -4368,10 +4400,10 @@ const Discover = ({ language = "en" }: Props) => {
                           // suggesting click-to-sort that wasn't reliable.
                           return (
                             <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
-                              <div className="hidden sm:grid grid-cols-[minmax(0,1fr),170px,auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                              <div className="hidden sm:grid grid-cols-[minmax(0,1fr),170px,128px] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                                 <span>Scholarship</span>
                                 <span className="text-right">Award · Deadline</span>
-                                <span className="text-right pr-2">Actions</span>
+                                <span className="text-right pr-1">Actions</span>
                               </div>
                               {items.map((s, i) => <ScholarRow {...cp(s, i)} />)}
                             </div>
@@ -4445,10 +4477,10 @@ const Discover = ({ language = "en" }: Props) => {
                             // dropdown above the grid (one source of truth).
                             return (
                               <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
-                                <div className="hidden sm:grid grid-cols-[minmax(0,1fr),170px,auto] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                                <div className="hidden sm:grid grid-cols-[minmax(0,1fr),170px,128px] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                                   <span>Scholarship</span>
                                   <span className="text-right">Award · Deadline</span>
-                                  <span className="text-right pr-2">Actions</span>
+                                  <span className="text-right pr-1">Actions</span>
                                 </div>
                                 {filtered.map((s, i) => <ScholarRow {...cardProps(s, i)} />)}
                                 {lockedCount > 0 && <PaywallRow lockedCount={lockedCount} lang={language} />}
