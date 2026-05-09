@@ -1,51 +1,27 @@
-// Academy — every visitor sees the waitlist landing. The
-// AcademyFounderHub (workshops + office hours + guides) is now an
+// Academy — public landing for the upcoming June launch.
+// The AcademyFounderHub (workshops + office hours + guides) is now an
 // admin-only surface at /admin/academy; the public /academy route
-// always shows the waitlist regardless of auth state, so signed-in
+// always shows the launch landing regardless of auth state, so signed-in
 // users don't get a different page than anon users.
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Sparkles, Check, Loader2 } from "lucide-react";
+import { Sparkles, Globe, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import samuelPhoto from "@/assets/samuel.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
-import joshPhoto from "@/assets/josh.jpg";
-import aigulPhoto from "@/assets/aigul.jpeg";
 
-// PILLARS / SAMPLE_WORKSHOPS retired round 10 alongside their sections.
-const FACULTY = [
-  { name: "Samuel Han",            credential: "Yale",                photo: samuelPhoto, brings: "Personal statement strategy, US admissions" },
-  { name: "Nurzada Abdivalieva",   credential: "Cambridge · Tsinghua", photo: nurzadaPhoto, brings: "Schwarzman path, UK & China admissions" },
-  { name: "Josh Hughes",           credential: "Harvard",             photo: joshPhoto,   brings: "Interview signal, scholarship interviews" },
-  { name: "Aigul Abdoubaetova",    credential: "Ex-OSCE Academy",     photo: aigulPhoto,  brings: "Funding stack design, country deep-dives" },
+// Round-29: pruned the founder grid from 4 → 2 (Samuel + Nurzada). The
+// rest of the cohort experience comes through rotating guest experts —
+// emphasised below the founder pair so the page reads as
+// "two founders + a global expert network" rather than a static cohort.
+const FOUNDERS = [
+  { name: "Samuel Han",          credential: "Yale",                  photo: samuelPhoto, brings: "Personal statement strategy, US admissions" },
+  { name: "Nurzada Abdivalieva", credential: "Cambridge · Tsinghua",   photo: nurzadaPhoto, brings: "Schwarzman path, UK & China admissions" },
 ];
 
 const Academy = () => {
-  const [email, setEmail] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState(false);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim()) return;
-    setSubmitting(true);
-    const { error } = await supabase.from("waitlist_emails").insert({ email: email.trim().toLowerCase() });
-    setSubmitting(false);
-    if (error && !error.message.toLowerCase().includes("duplicate")) {
-      toast.error("Couldn't save your email. Try again?");
-      return;
-    }
-    setDone(true);
-    toast.success("You're on the list. We'll email when Academy opens.");
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -55,103 +31,111 @@ const Academy = () => {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(var(--gold)/0.1),_transparent_60%)]" />
         <div className="relative max-w-3xl mx-auto px-4 text-center">
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 bg-gold/15 border border-gold/40 px-3 py-1 rounded-full text-gold text-xs font-semibold mb-6">
-            <Sparkles className="h-3.5 w-3.5" /> Coming soon
+            <Sparkles className="h-3.5 w-3.5" /> Launching in June
           </motion.div>
           <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="text-4xl sm:text-6xl font-heading font-bold text-primary-foreground mb-5 leading-tight tracking-tight">
             TopUni <span className="text-gold">Academy</span>
           </motion.h1>
           <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-primary-foreground/75 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
-            Workshops, country guides, and office hours — taught directly by founders who went through Yale, Cambridge, and Harvard themselves.
+            Workshops, country guides, and office hours from founders who went through Yale and Cambridge themselves — joined by guest experts from across the world.
           </motion.p>
         </div>
       </section>
 
-      {/* TAUGHT BY FOUNDERS ────────────────────────────────────────── */}
+      {/* FOUNDERS ──────────────────────────────────────────────────── */}
       <section className="max-w-5xl mx-auto px-4 pt-16 sm:pt-20 pb-10">
         <div className="text-center max-w-2xl mx-auto mb-10">
-          <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">Taught by founders</p>
+          <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">From the founders</p>
           <h2 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground leading-tight">
-            The people who've been through it teach the cohort.
+            Two founders. One mission.
           </h2>
-          <p className="text-sm text-muted-foreground leading-relaxed mt-3">
-            Not TAs, not pre-recorded talking heads, not freelancers. The four people listed below run every cohort personally.
+          <p className="text-sm text-muted-foreground leading-relaxed mt-3 max-w-xl mx-auto">
+            Every cohort runs personally with the people who've been through the admissions and scholarship gauntlet themselves.
           </p>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {FACULTY.map((f) => (
+        <div className="grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto">
+          {FOUNDERS.map((f) => (
             <motion.div
               key={f.name}
               initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4 }}
-              className="bg-card border border-border rounded-xl p-5 text-center"
+              className="bg-card border border-border rounded-2xl p-6 text-center"
             >
               <img
                 src={f.photo}
                 alt={f.name}
-                className="h-16 w-16 rounded-full object-cover mx-auto mb-3 ring-1 ring-border"
+                className="h-20 w-20 rounded-full object-cover mx-auto mb-4 ring-1 ring-border"
               />
-              <h3 className="font-heading font-semibold text-base text-foreground tracking-tight leading-tight">
+              <h3 className="font-heading font-semibold text-lg text-foreground tracking-tight leading-tight">
                 {f.name}
               </h3>
-              <p className="text-[11px] uppercase tracking-[0.18em] text-gold-dark font-semibold mt-1.5">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-gold-dark font-semibold mt-2">
                 {f.credential}
               </p>
-              <p className="text-xs text-muted-foreground leading-snug mt-3">
+              <p className="text-sm text-muted-foreground leading-snug mt-3">
                 {f.brings}
               </p>
             </motion.div>
           ))}
         </div>
+
+        {/* Guest expert network — replaces the static 4-person faculty
+            grid. The promise: rotating cohort programming with topic-
+            specific specialists invited from around the world. Visual
+            treatment is intentionally airy + abstract (no fake names /
+            faces) so it doesn't read as vapor — and a soft gold-tinted
+            navy gradient block ties this section back to the rest of
+            the brand palette. */}
+        <div className="mt-12 sm:mt-14">
+          <div className="relative rounded-2xl border border-border bg-gradient-to-br from-primary/[0.04] via-card to-gold/[0.05] p-7 sm:p-9 overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_hsl(var(--gold)/0.07),_transparent_55%)] pointer-events-none" />
+            <div className="relative max-w-2xl">
+              <div className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">
+                <Globe className="h-3 w-3" />
+                Plus a global expert network
+              </div>
+              <h3 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground leading-tight mb-3">
+                Topic-specific specialists, invited from across the world.
+              </h3>
+              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                Every cohort brings in subject-matter guests — from admissions officers, scholarship alumni, essay editors who've shaped winning applications, country-specific advisors who know which programs actually open doors. The roster rotates per cohort so you get the right voice for the room you're applying into.
+              </p>
+              <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-gold-dark" /> Admissions officers</span>
+                <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-gold-dark" /> Scholarship alumni</span>
+                <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-gold-dark" /> Essay editors</span>
+                <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-gold-dark" /> Country specialists</span>
+                <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-gold-dark" /> Topic experts</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
-      {/* Round-10 simplification: PILLARS / SAMPLE LINEUP / WHAT IT
-          ISN'T sections retired. Earlier the page over-explained Academy
-          before it had even shipped — three editorial blocks about
-          formats / sample sessions / negative-space positioning. The
-          waitlist below is the only thing the page needs to do at this
-          stage. */}
-
-      {/* WAITLIST ────────────────────────────────────────────────── */}
+      {/* CTA ─────────────────────────────────────────────────────── */}
       <section className="max-w-2xl mx-auto px-4 pb-20">
-        <Card className="border-gold/30">
-          <CardContent className="p-7">
-            <h3 className="font-heading text-lg font-bold text-foreground mb-2 tracking-tight">
-              Get notified when Academy opens
-            </h3>
-            <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-              Waitlist members get the first cohort spots before public signup. We'll email you the moment doors open — no other emails until then.
-            </p>
-
-            {done ? (
-              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm font-medium">
-                <Check className="h-4 w-4" /> You're on the list — we'll be in touch.
-              </div>
-            ) : (
-              <form onSubmit={submit} className="flex flex-col sm:flex-row gap-2">
-                <Input
-                  type="email"
-                  required
-                  placeholder="you@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="flex-1"
-                />
-                <Button type="submit" variant="gold" disabled={submitting}>
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Notify me"}
-                </Button>
-              </form>
-            )}
-
-            <div className="mt-6 pt-6 border-t border-border/60 text-center">
-              <p className="text-xs text-muted-foreground">
-                Looking for ranked scholarships now?{" "}
-                <Link to="/discover" className="underline text-foreground hover:text-gold-dark transition-colors">Open Discover →</Link>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl border border-gold/30 bg-card p-7 text-center">
+          <h3 className="font-heading text-lg sm:text-xl font-bold text-foreground mb-2 tracking-tight">
+            Doors open in June.
+          </h3>
+          <p className="text-sm text-muted-foreground mb-5 leading-relaxed max-w-md mx-auto">
+            Until then, the rest of TopUni — the AI brief and the scholarship Discover database — is live and free during beta.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2.5 sm:justify-center">
+            <Button asChild variant="gold" className="gap-1.5">
+              <Link to="/topuni-ai">
+                Build my strategy <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="gap-1.5">
+              <Link to="/discover">
+                Open Discover
+              </Link>
+            </Button>
+          </div>
+        </div>
       </section>
 
       {/* Bottom bookend — gradient ramp into the navy footer */}
