@@ -145,7 +145,7 @@ export function GenerationPipeline({ profile, isRu = false }: Props) {
         <h3 className="font-heading text-2xl font-bold text-foreground tracking-tight mb-1">
           {profile.fullName
             ? t(`Building ${profile.fullName.split(" ")[0]}'s strategy`, `Готовим стратегию для ${profile.fullName.split(" ")[0]}`)
-            : t("Building your strategic brief", "Готовим ваш стратегический брифинг")}
+            : t("Building your strategy report", "Готовим ваш стратегический отчёт")}
         </h3>
         <p className="text-sm text-muted-foreground">
           {t("This usually takes 20–40 seconds. The brief streams in below as it generates.",

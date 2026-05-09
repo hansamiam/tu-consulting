@@ -533,26 +533,15 @@ const ScholarshipDetail = () => {
           {(() => {
             const p = cleanProvider(s.provider_name);
             if (!p) return null;
-            const isVerified = providerMeta?.trust_tier === "high";
-            return (
-              <div className="flex flex-wrap items-center gap-2 mb-5">
-                {providerMeta?.slug ? (
-                  <Link
-                    to={`/scholarships/by-provider/${providerMeta.slug}`}
-                    className="text-primary-foreground/85 text-sm sm:text-base underline-offset-4 hover:underline"
-                  >
-                    {p}
-                  </Link>
-                ) : (
-                  <p className="text-primary-foreground/80 text-sm sm:text-base">{p}</p>
-                )}
-                {isVerified && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/20 text-emerald-100 text-[10px] font-bold uppercase tracking-[0.12em] px-2 py-0.5">
-                    <ShieldCheck className="w-3 h-3" />
-                    Verified funder
-                  </span>
-                )}
-              </div>
+            return providerMeta?.slug ? (
+              <Link
+                to={`/scholarships/by-provider/${providerMeta.slug}`}
+                className="text-primary-foreground/85 text-sm sm:text-base underline-offset-4 hover:underline mb-5 inline-block"
+              >
+                {p}
+              </Link>
+            ) : (
+              <p className="text-primary-foreground/80 text-sm sm:text-base mb-5">{p}</p>
             );
           })()}
           <div className="flex flex-wrap gap-2 mb-6">

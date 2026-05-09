@@ -299,7 +299,7 @@ const SharedBriefPage = () => {
             Download hidden because the recipient isn't the author; Print
             stays so a parent can print to PDF. */}
         <BriefMasthead
-          studentName={firstName ? `${firstName}'s strategy report` : (isRu ? "Стратегический брифинг" : "Strategy report")}
+          studentName={firstName ? `${firstName}'s strategy report` : (isRu ? "Стратегический отчёт" : "Strategy report")}
           profile={{
             gradeLevel: brief.profile_grade_level ?? undefined,
             major: major ?? undefined,

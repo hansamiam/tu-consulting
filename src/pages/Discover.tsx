@@ -870,12 +870,29 @@ const fmtValue = (v: number) => v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}
 
 type Lang = "en" | "ru";
 
-const deadlineDisplay = (d: string | null, lang: Lang = "en") => {
+const deadlineDisplay = (d: string | null, lang: Lang = "en", deadlineType?: string | null) => {
   // Restrained color scale — red only when truly urgent (≤7d). Past that,
   // we rely on muted tones. The previous palette painted half the
   // database red, which made every card look like an alarm.
   const ru = lang === "ru";
-  if (!d) return { text: ru ? "Без дедлайна" : "Rolling", cls: "text-foreground/40", urgent: false };
+  // No date present — disambiguate against deadline_type. The previous
+  // version hardcoded "Rolling" for every NULL date, but most NULL-date
+  // rows are actually annual programs whose next-cycle date hasn't been
+  // captured yet. Showing "Rolling" was misleading and led the user to
+  // think the catalog was full of rolling deadlines.
+  if (!d) {
+    const t = (deadlineType ?? "").toLowerCase();
+    if (t === "rolling") {
+      return { text: ru ? "Без дедлайна" : "Rolling", cls: "text-foreground/40", urgent: false };
+    }
+    if (t === "annual" || t === "reopens_annually") {
+      return { text: ru ? "Ежегодная программа" : "Annual cycle", cls: "text-foreground/55", urgent: false };
+    }
+    if (t === "one-time" || t === "one_time") {
+      return { text: ru ? "Разовая программа" : "One-time", cls: "text-foreground/55", urgent: false };
+    }
+    return { text: ru ? "Дата уточняется" : "Deadline TBD", cls: "text-foreground/40", urgent: false };
+  }
   const days = Math.ceil((new Date(d).getTime() - Date.now()) / 86400000);
   if (days <= 0)  return { text: ru ? "Закрыто" : "Closed", cls: "text-foreground/30 line-through", urgent: false };
   if (days <= 7)  return { text: ru ? `${days}д осталось` : `${days}d left`, cls: "text-destructive font-semibold", urgent: true };
@@ -1395,7 +1412,7 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
   lang?: Lang;
 }) => {
   const ru = lang === "ru";
-  const dl = deadlineDisplay(s.application_deadline, lang);
+  const dl = deadlineDisplay(s.application_deadline, lang, s.deadline_type);
   const hasRealScore = s.match > 0 && (s.reasons.length > 0 || s.warnings.length > 0);
   const isFullRide = s.coverage_type === "full_ride";
   const accent = accentForCountry(s.host_country);
@@ -1471,15 +1488,6 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
                   {countryLabel && p && <span className="text-muted-foreground/40 mx-1.5">·</span>}
                   {p}
                 </p>
-                {s.provider_trust_tier === "high" && (
-                  <span
-                    className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[9px] font-bold uppercase tracking-[0.06em] px-1.5 py-0.5 shrink-0"
-                    title="Verified funder — recognised authoritative source"
-                  >
-                    <ShieldCheck className="w-2.5 h-2.5" />
-                    Verified
-                  </span>
-                )}
               </div>
             );
           })()}
@@ -1628,7 +1636,7 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
 }) => {
   const ru = lang === "ru";
   const tier = TIER[s.priority];
-  const dl = deadlineDisplay(s.application_deadline, lang);
+  const dl = deadlineDisplay(s.application_deadline, lang, s.deadline_type);
   /* Why-it-fits text. Falls back to scoring reasons ONLY when at
    * least one of them is a meaty insight (not a generic "Matches X
    * level" auto-reason). Without this filter the card surfaces
@@ -1742,15 +1750,6 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
                 <p className="text-[11px] text-muted-foreground/85 line-clamp-1">
                   {p}
                 </p>
-                {s.provider_trust_tier === "high" && (
-                  <span
-                    className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[9px] font-bold uppercase tracking-[0.06em] px-1.5 py-0.5 shrink-0"
-                    title="Verified funder — recognised authoritative source"
-                  >
-                    <ShieldCheck className="w-2.5 h-2.5" />
-                    {ru ? "Проверен" : "Verified"}
-                  </span>
-                )}
               </div>
             );
           })()}
@@ -2068,7 +2067,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
   // dedup so re-renders don't inflate counts.
   useTrackView(s?.scholarship_id, "detail-sheet");
   if (!s) return null;
-  const dl = deadlineDisplay(s.application_deadline, lang);
+  const dl = deadlineDisplay(s.application_deadline, lang, s.deadline_type);
   const [dc1, dc2] = dialColors(s.priority);
   /* Why-it-fits text. Falls back to scoring reasons ONLY when at
    * least one of them is a meaty insight (not a generic "Matches X
@@ -2202,20 +2201,9 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             <SheetTitle className="text-foreground font-heading text-[26px] sm:text-[30px] leading-[1.1] tracking-[-0.02em] text-left">
               {cleanScholarshipName(s.scholarship_name)}
             </SheetTitle>
-            <div className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground -mt-1">
-              <p className="text-left">
-                {[cleanProvider(s.provider_name), s.host_country && shortCountry(s.host_country)].filter(Boolean).join(" · ")}
-              </p>
-              {s.provider_trust_tier === "high" && (
-                <span
-                  className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold uppercase tracking-[0.06em] px-1.5 py-0.5"
-                  title={t("Verified funder — recognised authoritative source", "Проверенный фонд — авторитетный источник")}
-                >
-                  <ShieldCheck className="w-2.5 h-2.5" />
-                  {t("Verified", "Проверен")}
-                </span>
-              )}
-            </div>
+            <p className="text-muted-foreground text-sm text-left -mt-1">
+              {[cleanProvider(s.provider_name), s.host_country && shortCountry(s.host_country)].filter(Boolean).join(" · ")}
+            </p>
 
             {/* Eligibility framing reworked in round 6 — earlier copy
                 ('You qualify on paper' / 'Near miss' / 'Doesn't fit')
@@ -3204,32 +3192,15 @@ const Discover = ({ language = "en" }: Props) => {
     setAnalysisStep(0); setPhase("analyzing");
   };
 
-  /* "Edit profile" handler. Was previously clearing the wizard to
-   * defaults, which threw away the user's existing answers — pretty
-   * hostile UX. Now we project the stored DiscoverProfile onto the
-   * wizard's local shape so the user lands in the wizard with their
-   * answers intact and can edit any field. */
+  /* "Edit profile" handler — routes to TopUni AI, the canonical
+   * onboarding/profile-builder. The Discover wizard used to be a
+   * second onboarding surface, but the product position is that
+   * TopUni AI IS the onboarding (the brief flow captures profile
+   * + intent in one experience, then feeds Discover via the same
+   * stored DiscoverProfile). Cuts the parallel wizard maintenance
+   * burden and keeps profile edits unified across surfaces. */
   const resetProfile = () => {
-    const stored = getStoredProfile();
-    if (!stored) {
-      setWiz(DEFAULT_WIZARD);
-    } else {
-      setWiz({
-        fullName: stored.fullName || "",
-        email: stored.email || "",
-        nationality: stored.nationality || "",
-        degrees: stored.targetDegree ? stored.targetDegree.split(",").map(s => s.trim()).filter(Boolean) : [],
-        field: stored.fieldOfInterest || "",
-        gpa: stored.gpa || "",
-        gpaScale: "4.0",
-        ielts: stored.ieltsScore || "",
-        toefl: stored.toeflScore || "",
-        sat: stored.satScore || "",
-        demographics: stored.demographics ?? [],
-      });
-    }
-    setWizardStep(0);
-    setPhase("wizard");
+    navigate(language === "ru" ? "/topuni-ai/ru" : "/topuni-ai");
   };
 
   /* Semantic-match hook — fires once per profile change against the
@@ -3631,7 +3602,7 @@ const Discover = ({ language = "en" }: Props) => {
                     <ArrowRight className="h-5 w-5" />
                   </Button>
                   <button
-                    onClick={() => setPhase("wizard")}
+                    onClick={() => setPhase("results")}
                     className="text-xs text-primary-foreground/45 hover:text-primary-foreground/80 underline-offset-4 hover:underline transition-colors"
                   >
                     {t("or skip ahead to the scholarship database", "или сразу к базе стипендий")}
@@ -4661,7 +4632,7 @@ const Discover = ({ language = "en" }: Props) => {
                   { label: "Award", render: s => s.award_amount_text ? s.award_amount_text : (compactAward(s) || COVERAGE_LABEL[s.coverage_type] || "—"), isEmpty: s => !s.award_amount_text && !COVERAGE_LABEL[s.coverage_type] },
                   { label: "Total value", render: s => s.estimated_total_value_usd ? <span className="text-gold-dark font-bold">{fmtValue(s.estimated_total_value_usd)}</span> : "—", isEmpty: s => !s.estimated_total_value_usd },
                   { label: "Deadline", render: s => {
-                      const dl = deadlineDisplay(s.application_deadline);
+                      const dl = deadlineDisplay(s.application_deadline, "en", s.deadline_type);
                       return <span className={dl.cls}>{dateOnly(s.application_deadline) || dl.text} {s.application_deadline && <span className="text-muted-foreground/70 text-xs ml-1">({dl.text})</span>}</span>;
                     }
                   },
@@ -4775,7 +4746,7 @@ const Discover = ({ language = "en" }: Props) => {
             <div className="mt-6 space-y-3">
               {ranked.filter(s => shortlist.has(s.scholarship_id)).map(s => {
                 const tier = TIER[s.priority];
-                const dl = deadlineDisplay(s.application_deadline);
+                const dl = deadlineDisplay(s.application_deadline, "en", s.deadline_type);
                 return (
                   <button key={s.scholarship_id}
                     onClick={() => { setOpenDetail(s); setShortlistOpen(false); }}

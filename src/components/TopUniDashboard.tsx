@@ -1079,7 +1079,7 @@ const StrategicPositioning = ({ markdown, isRu, onRegen, isRegenerating, onAskCo
       <div className="flex items-center gap-2 mb-3">
         <span className="h-px w-8 bg-gold-dark" />
         <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark">
-          {isRu ? "Стратегический брифинг" : "Strategic brief"}
+          {isRu ? "Стратегический отчёт" : "Strategy report"}
         </span>
         <SectionRegenButton sectionId="positioning" onRegen={onRegen} isRegenerating={isRegenerating} isRu={isRu} />
       </div>
@@ -1363,7 +1363,7 @@ const AnalysisProgress = ({ profile, isRu }: {
       ? t(`Cross-referencing universities in ${countryList}`, `Сопоставляем университеты в ${countryList}`)
       : t("Cross-referencing universities globally", "Сопоставляем университеты по всему миру"),
     t("Pulling matched scholarships from our database", "Подбираем стипендии из нашей базы"),
-    t("Drafting your strategic brief", "Готовим стратегический брифинг"),
+    t("Drafting your strategy report", "Готовим стратегический отчёт"),
   ], [countryList, isRu]);
 
   const [done, setDone] = useState(0);
@@ -1387,7 +1387,7 @@ const AnalysisProgress = ({ profile, isRu }: {
         </span>
       </div>
       <h3 className="font-heading text-xl font-bold text-foreground tracking-tight mb-1">
-        {t("Building your strategic brief", "Готовим ваш стратегический брифинг")}
+        {t("Building your strategy report", "Готовим ваш стратегический отчёт")}
       </h3>
       <p className="text-xs text-muted-foreground mb-6">
         {t("Usually takes 20–40 seconds. Stay on this page.",
@@ -2980,7 +2980,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
               <div className="flex flex-col gap-0.5">
                 <CardTitle className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-accent" />
-                  {t("Your strategic brief", "Ваш стратегический брифинг")}
+                  {t("Your strategy report", "Ваш стратегический отчёт")}
                 </CardTitle>
                 {pathwayGeneratedAt && !pathwayLoading && (() => {
                   const elapsed = Math.max(0, Date.now() - pathwayGeneratedAt);
@@ -3068,83 +3068,10 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                 <GenerationPipeline profile={profile} isRu={isRu} />
               )}
 
-              {/* Pro brief upgrade card — shown above the brief once it
-                  finishes streaming, ONLY for non-member visitors who
-                  haven't filled the depth fields yet. Clicking opens the
-                  3-question dialog; saving regenerates the brief at
-                  premium tier with the depth context. */}
-              {pathwayContent && !pathwayLoading && !isMember && !hasProDepth && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                  className="not-prose mb-8 rounded-xl border border-gold/40 bg-gradient-to-br from-gold/8 to-transparent p-5 sm:p-6 print:hidden"
-                >
-                  <div className="flex items-start gap-4 flex-wrap">
-                    <div className="min-w-0 flex-1">
-                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-[0.18em] uppercase bg-gradient-to-r from-gold-dark to-gold text-primary mb-2">
-                        <Crown className="w-3 h-3" />
-                        {t("Pro brief", "Pro-брифинг")}
-                      </div>
-                      <h3 className="font-heading text-lg sm:text-xl font-bold tracking-tight text-foreground mb-1.5">
-                        {t("Want this brief rewritten specifically about you?",
-                           "Хотите брифинг конкретно про вас?")}
-                      </h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {t("TopUni Membership unlocks the Pro brief — three depth questions about your story, then the AI rewrites the brief at premium tier. Strategic positioning, essay angles, shortlist — all anchored to what makes you specifically credible.",
-                           "Подписка TopUni открывает Pro-брифинг — три вопроса о вас, и AI переписывает брифинг на премиум-уровне. Позиционирование, ракурсы эссе и шорт-лист — со ссылками на вашу историю.")}
-                      </p>
-                    </div>
-                    <Button
-                      variant="gold"
-                      onClick={() => navigate(isRu ? "/pricing/ru" : "/pricing")}
-                      className="gap-1.5 shrink-0"
-                    >
-                      <Crown className="w-4 h-4" />
-                      {t("See membership", "Открыть подписку")}
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Member-only Pro brief unlock — paid users get the
-                  3-question depth dialog because the gate above is
-                  Stripe, not free. Surfaces only AFTER membership is
-                  active so non-members never see the path that used to
-                  let them self-grant a Pro brief without paying. */}
-              {pathwayContent && !pathwayLoading && isMember && !hasProDepth && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                  className="not-prose mb-8 rounded-xl border border-gold/40 bg-gradient-to-br from-gold/8 to-transparent p-5 sm:p-6 print:hidden"
-                >
-                  <div className="flex items-start gap-4 flex-wrap">
-                    <div className="min-w-0 flex-1">
-                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-[0.18em] uppercase bg-gradient-to-r from-gold-dark to-gold text-primary mb-2">
-                        <Crown className="w-3 h-3" />
-                        {t("Pro brief", "Pro-брифинг")}
-                      </div>
-                      <h3 className="font-heading text-lg sm:text-xl font-bold tracking-tight text-foreground mb-1.5">
-                        {t("Three quick questions to unlock your Pro brief.",
-                           "Три быстрых вопроса — и вы получите Pro-брифинг.")}
-                      </h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {t("Your activities, your story, your named target schools — the AI rewrites the brief at premium tier with these in context.",
-                           "Активности, история, конкретные университеты — AI перепишет брифинг с учётом этих данных.")}
-                      </p>
-                    </div>
-                    <Button
-                      variant="gold"
-                      onClick={() => setProUnlockOpen(true)}
-                      className="gap-1.5 shrink-0"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      {t("Answer & rewrite", "Ответить и переписать")}
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
+              {/* Pro brief CTA blocks moved to BELOW the report — it's
+                  bad business intelligence to paywall users before they
+                  consume value. Render once the report is read; see the
+                  "Pro upgrade — bottom of report" block below. */}
 
               {pathwayContent && (
                 <FocusScholarshipContext.Provider value={focusScholarship?.scholarshipId ?? null}>
@@ -3192,7 +3119,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                   )}
 
                   {/* Split the markdown into [positioning] and [rest] so the
-                      Strategic Brief leads (analysis first), then the live
+                      Strategy Report leads (analysis first), then the live
                       matches grid lights up urgency, then the rest of the
                       structured report unfolds. Falls back to the original
                       flow if the positioning section isn't found. */}
@@ -3388,6 +3315,83 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             which Pro section the user clicked. */}
                         {!pathwayLoading && reportGrade === "basic" && !isMember && (
                           <ProSectionsTeaser isRu={isRu} />
+                        )}
+
+                        {/* Pro brief upgrade card — moved from above the
+                            report to here (after the user has consumed
+                            the basic brief and presumably wants more).
+                            Showing this before the report is bad UX:
+                            paywall friction without value first. */}
+                        {pathwayContent && !pathwayLoading && !isMember && !hasProDepth && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.3 }}
+                            className="not-prose mt-12 rounded-xl border border-gold/40 bg-gradient-to-br from-gold/8 to-transparent p-5 sm:p-6 print:hidden"
+                          >
+                            <div className="flex items-start gap-4 flex-wrap">
+                              <div className="min-w-0 flex-1">
+                                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-[0.18em] uppercase bg-gradient-to-r from-gold-dark to-gold text-primary mb-2">
+                                  <Crown className="w-3 h-3" />
+                                  {t("Pro report", "Pro-отчёт")}
+                                </div>
+                                <h3 className="font-heading text-lg sm:text-xl font-bold tracking-tight text-foreground mb-1.5">
+                                  {t("Want this report rewritten specifically about you?",
+                                     "Хотите отчёт конкретно про вас?")}
+                                </h3>
+                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                  {t("Membership unlocks the Pro report — three depth questions about your story, then the AI rewrites it at premium tier. Strategic positioning, essay angles, shortlist — all anchored to what makes you specifically credible.",
+                                     "Подписка открывает Pro-отчёт — три вопроса о вас, и AI переписывает на премиум-уровне. Позиционирование, ракурсы эссе и шорт-лист — со ссылками на вашу историю.")}
+                                </p>
+                              </div>
+                              <Button
+                                variant="gold"
+                                onClick={() => navigate(isRu ? "/pricing/ru" : "/pricing")}
+                                className="gap-1.5 shrink-0"
+                              >
+                                <Crown className="w-4 h-4" />
+                                {t("See membership", "Открыть подписку")}
+                              </Button>
+                            </div>
+                          </motion.div>
+                        )}
+
+                        {/* Member-only Pro report unlock — paid users
+                            can still trigger the depth-question rewrite
+                            from here, again positioned AFTER the brief
+                            (consume value first). */}
+                        {pathwayContent && !pathwayLoading && isMember && !hasProDepth && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.3 }}
+                            className="not-prose mt-12 rounded-xl border border-gold/40 bg-gradient-to-br from-gold/8 to-transparent p-5 sm:p-6 print:hidden"
+                          >
+                            <div className="flex items-start gap-4 flex-wrap">
+                              <div className="min-w-0 flex-1">
+                                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-[0.18em] uppercase bg-gradient-to-r from-gold-dark to-gold text-primary mb-2">
+                                  <Crown className="w-3 h-3" />
+                                  {t("Pro report", "Pro-отчёт")}
+                                </div>
+                                <h3 className="font-heading text-lg sm:text-xl font-bold tracking-tight text-foreground mb-1.5">
+                                  {t("Three quick questions to unlock your Pro report.",
+                                     "Три быстрых вопроса — и вы получите Pro-отчёт.")}
+                                </h3>
+                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                  {t("Your activities, your story, your named target schools — the AI rewrites the report at premium tier with these in context.",
+                                     "Активности, история, конкретные университеты — AI перепишет отчёт с учётом этих данных.")}
+                                </p>
+                              </div>
+                              <Button
+                                variant="gold"
+                                onClick={() => setProUnlockOpen(true)}
+                                className="gap-1.5 shrink-0"
+                              >
+                                <Sparkles className="w-4 h-4" />
+                                {t("Answer & rewrite", "Ответить и переписать")}
+                              </Button>
+                            </div>
+                          </motion.div>
                         )}
                       </>
                     );
@@ -3687,9 +3691,9 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                               : referProfile
                               ? (pathwayContent && pathwayContent.length > 200
                                   ? t(`I have your profile and your strategy brief in front of me. Ask me anything — applications, essays, funding, tests, visa.`,
-                                      `У меня уже есть ваш профиль и стратегический брифинг. Задайте любой вопрос — заявки, эссе, финансирование, тесты, виза.`)
+                                      `У меня уже есть ваш профиль и стратегический отчёт. Задайте любой вопрос — заявки, эссе, финансирование, тесты, виза.`)
                                   : t(`I have your profile in front of me. Generate your strategy brief on the Strategy tab and I'll have full context.`,
-                                      `У меня уже есть ваш профиль. Сгенерируйте стратегический брифинг на вкладке Strategy — и я получу полный контекст.`))
+                                      `У меня уже есть ваш профиль. Сгенерируйте стратегический отчёт на вкладке Strategy — и я получу полный контекст.`))
                               : t("Ask me anything about applications, essays, scholarships, tests, or visas. Complete your profile for tailored answers.",
                                   "Спросите о заявках, эссе, стипендиях, тестах или визах. Заполните профиль для персональных ответов.")}
                           </p>
@@ -4038,7 +4042,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-heading text-xl tracking-tight">
-              {t("Share your strategic brief", "Поделиться стратегическим брифингом")}
+              {t("Share your strategy report", "Поделиться стратегическим отчётом")}
             </DialogTitle>
             <DialogDescription className="text-sm leading-relaxed">
               {t(

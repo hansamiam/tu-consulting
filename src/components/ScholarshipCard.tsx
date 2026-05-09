@@ -331,18 +331,7 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
             </h3>
           </Link>
           {cleanedProvider && (
-            <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-              <p className="text-[11px] text-muted-foreground truncate">{cleanedProvider}</p>
-              {r.provider_trust_tier === "high" && (
-                <span
-                  className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[9px] font-bold uppercase tracking-[0.06em] px-1.5 py-0.5 shrink-0"
-                  title="Verified funder — recognised authoritative source"
-                >
-                  <ShieldCheck className="w-2.5 h-2.5" />
-                  Verified
-                </span>
-              )}
-            </div>
+            <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{cleanedProvider}</p>
           )}
         </div>
         {onShare && (

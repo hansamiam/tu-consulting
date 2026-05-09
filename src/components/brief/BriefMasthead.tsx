@@ -174,7 +174,7 @@ export function BriefMasthead({
       <div className="px-6 sm:px-8 pt-6 pb-7">
         <div className="flex items-baseline justify-between gap-3 flex-wrap mb-3">
           <h1 className="font-heading text-3xl sm:text-4xl font-bold tracking-[-0.02em] leading-[1.1] text-foreground">
-            {studentName || t("Your strategy brief", "Ваш стратегический брифинг", isRu)}
+            {studentName || t("Your strategy report", "Ваш стратегический отчёт", isRu)}
           </h1>
           {targetLine && (
             <p className="text-xs sm:text-sm text-muted-foreground tracking-tight font-medium">
