@@ -49,6 +49,7 @@ const DiscoverApp          = lazy(() => import("./pages/DiscoverApp"));
 const SharedBrief          = lazy(() => import("./pages/SharedBrief"));
 const Pipeline             = lazy(() => import("./pages/Pipeline"));
 const ScholarshipsByFilter = lazy(() => import("./pages/ScholarshipsByFilter"));
+const ProviderHub          = lazy(() => import("./pages/ProviderHub"));
 const ScholarshipDetail    = lazy(() => import("./pages/ScholarshipDetail"));
 const EssayCritique        = lazy(() => import("./pages/EssayCritique"));
 const Refer                = lazy(() => import("./pages/Refer"));
@@ -163,6 +164,7 @@ const App = () => (
           <Route path="/scholarships/by-country/:country" element={<ScholarshipsByFilter mode="country" />} />
           <Route path="/scholarships/by-field/:field"     element={<ScholarshipsByFilter mode="field" />} />
           <Route path="/scholarships/theme/:theme"        element={<ScholarshipsByFilter mode="theme" />} />
+          <Route path="/scholarships/by-provider/:slug"   element={<ProviderHub />} />
           {/* Country × Field combinations — programmatic SEO catch-up
               for long-tail queries like "computer science scholarships
               in Germany". Renders as a single page with both filters

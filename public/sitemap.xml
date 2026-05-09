@@ -144,4 +144,37 @@
   <url><loc>https://topuni.org/scholarships/theme/underrepresented</loc>       <changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://topuni.org/scholarships/theme/lgbtq</loc>                  <changefreq>weekly</changefreq><priority>0.6</priority></url>
 
+  <!-- ─── Programmatic SEO: by-provider (top trust-tier funders) ───
+       One URL per major funder. ProviderHub renders rich metadata
+       (description, type, host country, funding volume, scholarship
+       count) plus active scholarships from the providers entity layer.
+       Slugs match providers.slug (seeded in 20260509020000). -->
+  <url><loc>https://topuni.org/scholarships/by-provider/chevening</loc>                         <changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-provider/fulbright-program</loc>                 <changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-provider/daad</loc>                              <changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-provider/mext</loc>                              <changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-provider/eiffel-excellence-scholarship-program</loc> <changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-provider/china-scholarship-council</loc>         <changefreq>weekly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-provider/korean-government-scholarship-program</loc> <changefreq>weekly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-provider/australia-awards</loc>                  <changefreq>weekly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-provider/vanier-canada-graduate-scholarships</loc> <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-provider/swedish-institute-scholarships</loc>    <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-provider/orange-knowledge-programme</loc>        <changefreq>weekly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-provider/inlaks-shivdasani-foundation</loc>      <changefreq>weekly</changefreq><priority>0.7</priority></url>
+
+  <url><loc>https://topuni.org/scholarships/by-provider/bill-melinda-gates-foundation</loc>     <changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-provider/gates-cambridge-scholarship</loc>       <changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-provider/schwarzman-scholars</loc>               <changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-provider/rhodes-trust</loc>                      <changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-provider/marshall-scholarships</loc>             <changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-provider/knight-hennessy-scholars</loc>          <changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-provider/mastercard-foundation-scholars-program</loc> <changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-provider/aga-khan-foundation</loc>               <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-provider/open-society-foundations</loc>          <changefreq>weekly</changefreq><priority>0.75</priority></url>
+
+  <url><loc>https://topuni.org/scholarships/by-provider/erasmus-mundus</loc>                    <changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-provider/unesco</loc>                            <changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-provider/commonwealth-scholarship-commission</loc> <changefreq>weekly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://topuni.org/scholarships/by-provider/world-bank</loc>                        <changefreq>weekly</changefreq><priority>0.7</priority></url>
+
 </urlset>

@@ -44,6 +44,10 @@ interface BreakdownRow {
    * from scholarship_stats; same defensive optional chaining. */
   engagement_boost?: number;
   engagement_reason?: string;
+  /* Provider-trust factor — added in 20260509030000. Tier-based boost
+   * (high/medium/low/unknown) keyed off the linked provider record. */
+  provider_trust_boost?: number;
+  provider_trust_reason?: string;
   composite_score: number;
 }
 
@@ -229,6 +233,12 @@ export const MatchScoreBreakdown = ({
       status: "good" as "good"|"warn"|"miss"|"info",
       reason: data!.engagement_reason ?? "",
       delta: fmtBoost(data!.engagement_boost),
+    }] : []),
+    ...(typeof data!.provider_trust_boost === "number" && data!.provider_trust_boost !== 0 ? [{
+      label: data!.provider_trust_boost > 0 ? "Verified funder" : "Provider signal",
+      status: (data!.provider_trust_boost > 0 ? "good" : "info") as "good"|"warn"|"miss"|"info",
+      reason: data!.provider_trust_reason ?? "",
+      delta: fmtBoost(data!.provider_trust_boost),
     }] : []),
   ] : fallbackRows;
 
