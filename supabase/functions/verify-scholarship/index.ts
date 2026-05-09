@@ -280,7 +280,37 @@ Deno.serve(async (req) => {
     if (typeof selfCleanUpdate.provider_name === "string") stored.provider_name = selfCleanUpdate.provider_name;
   }
 
-  const targetUrl = stored.source_url || stored.official_url;
+  // ─── Authoritative-source override ──────────────────────────────
+  // For rows linked to a registered famous funder (provider_id matches
+  // a row in provider_authoritative_facts), prefer the registry's
+  // canonical_url over the row's source_url. Rationale: source_url is
+  // wherever we first scraped the row from (often an aggregator, often
+  // partial). canonical_url is the funder's own authoritative page —
+  // verifying against it catches LLM hallucinations + aggregator drift
+  // that the original source_url verification would miss.
+  let authoritativeUrl: string | null = null;
+  try {
+    const { data: provLink } = await supa
+      .from("scholarships")
+      .select("provider_id")
+      .eq("scholarship_id", stored.scholarship_id)
+      .maybeSingle();
+    const providerId = (provLink as { provider_id?: string } | null)?.provider_id ?? null;
+    if (providerId) {
+      const { data: paf } = await supa
+        .from("provider_authoritative_facts")
+        .select("canonical_url, providers!inner(provider_id)")
+        .eq("providers.provider_id", providerId)
+        .maybeSingle();
+      if (paf && (paf as { canonical_url?: string }).canonical_url) {
+        authoritativeUrl = (paf as { canonical_url: string }).canonical_url;
+      }
+    }
+  } catch {
+    // Soft-fail; we'll fall back to source_url below.
+  }
+
+  const targetUrl = authoritativeUrl || stored.source_url || stored.official_url;
   if (!targetUrl) {
     // Nothing to verify against — leave status alone but stamp last_verified_at
     // to push this row to the back of the queue for next cron pass.
