@@ -467,6 +467,31 @@ Deno.serve(async (req) => {
         ...backfillUpdates,
       })
       .eq("scholarship_id", stored.scholarship_id);
+
+    // ─── Record evidence — re-verification keeps the source warm ───
+    // Bumps last_confirmed_at on the scholarship_evidence row so the
+    // consensus_score reflects continued source attestation. New URL?
+    // It lands as a fresh evidence row, growing the source diversity.
+    if (targetUrl) {
+      try {
+        const confirms: string[] = [];
+        if (fresh.application_deadline) confirms.push("application_deadline");
+        if (fresh.estimated_total_value_usd != null || fresh.award_amount_text) confirms.push("amount");
+        if (fresh.eligible_countries?.length || fresh.citizenship_requirements) confirms.push("eligibility");
+        if (fresh.target_degree_level?.length) confirms.push("degree");
+        if (fresh.target_fields?.length) confirms.push("fields");
+        await supa.rpc("record_scholarship_source", {
+          p_scholarship_id: stored.scholarship_id,
+          p_source_url: targetUrl,
+          p_source_hint: null,
+          p_confirms: confirms.length > 0 ? confirms : null,
+          p_confidence: typeof fresh.confidence === "number" ? fresh.confidence : null,
+        });
+      } catch (e) {
+        console.warn("[verify-scholarship] record_scholarship_source failed", (e as Error).message);
+      }
+    }
+
     return json(200, {
       ok: true,
       status: "verified_clean",

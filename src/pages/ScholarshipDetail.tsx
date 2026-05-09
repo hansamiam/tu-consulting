@@ -124,6 +124,10 @@ const ScholarshipDetail = () => {
   // when zero peers are returned.
   const [siblings, setSiblings] = useState<SimilarScholarship[]>([]);
   const [providerMeta, setProviderMeta] = useState<{ slug: string; canonical_name: string; trust_tier: "high"|"medium"|"low"|"unknown" } | null>(null);
+  // Multi-source evidence chain — added 20260509050000. Each row is
+  // one source URL (with authority + type). Rendered as a compact
+  // "Confirmed by N sources" footer block.
+  const [evidence, setEvidence] = useState<{ source_url: string; source_domain: string; source_type: string; authority: number; last_confirmed_at: string }[]>([]);
   const track = useScholarshipTracking();
 
   // Fire a 'viewed' event when the scholarship loads. The hook dedups
@@ -212,6 +216,29 @@ const ScholarshipDetail = () => {
     // id is unchanged) would burn rate limit. ESLint can't reason
     // through the optional chain, hence the suppress.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s?.scholarship_id]);
+
+  /* Multi-source evidence — pulls every source that has confirmed
+     this scholarship from public.scholarship_evidence (added
+     20260509050000). Powers the "Confirmed by N sources" footer
+     block. Soft-fails. */
+  useEffect(() => {
+    if (!s?.scholarship_id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("scholarship_evidence")
+          .select("source_url, source_domain, source_type, authority, last_confirmed_at")
+          .eq("scholarship_id", s.scholarship_id)
+          .order("authority", { ascending: false })
+          .order("last_confirmed_at", { ascending: false });
+        if (!cancelled && data) setEvidence(data as typeof evidence);
+      } catch (e) {
+        // Soft-fail; the block hides when the array is empty.
+      }
+    })();
+    return () => { cancelled = true; };
   }, [s?.scholarship_id]);
 
   /* Provider metadata + sibling-from-funder rail. Pulls from the
@@ -860,6 +887,48 @@ const ScholarshipDetail = () => {
                 />
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Source-evidence chain — multi-source provenance. Renders
+            when ≥1 evidence rows exist (always, after the 20260509050000
+            backfill seeded one row per existing source_url). Higher
+            authority sources sort first. Aggregator competitors can't
+            match this. */}
+        {evidence.length > 0 && (
+          <div className="pt-6 border-t border-border mb-6">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-3">
+              Confirmed by {evidence.length} {evidence.length === 1 ? "source" : "sources"}
+            </p>
+            <ul className="space-y-2">
+              {evidence.slice(0, 6).map((e) => {
+                const tone =
+                  e.authority >= 3 ? "text-emerald-700 dark:text-emerald-300 bg-emerald-500/10" :
+                  e.authority >= 2 ? "text-blue-700 dark:text-blue-300 bg-blue-500/10" :
+                  "text-muted-foreground bg-muted";
+                const label =
+                  e.source_type === "official_program_page" ? "Official program page" :
+                  e.source_type === "official_provider_site" ? "Official funder site" :
+                  e.source_type === "gov_doc" ? "Government source" :
+                  e.source_type === "university_listing" ? "University listing" :
+                  e.source_type === "aggregator" ? "Aggregator" :
+                  e.source_type === "news" ? "News article" :
+                  "Other";
+                return (
+                  <li key={e.source_url} className="flex items-center gap-2 text-[12px]">
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] ${tone}`}>
+                      {label}
+                    </span>
+                    <a href={e.source_url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground truncate">
+                      {e.source_domain}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+            {evidence.length > 6 && (
+              <p className="text-[11px] text-muted-foreground mt-2">+ {evidence.length - 6} more</p>
+            )}
           </div>
         )}
 

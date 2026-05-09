@@ -921,22 +921,54 @@ serve(async (req) => {
         embedded_at:                     null,
       };
 
+      let landedScholarshipId: string | null = null;
       if (existingId) {
         updatedCount++;
         await supa.from("scholarships").update(upsertPayload).eq("scholarship_id", existingId);
+        landedScholarshipId = existingId;
       } else {
         // The 20260505060000 migration added a UNIQUE index on canonical_key.
         // Use upsert with onConflict so concurrent scrapes that race past our
         // SELECT-then-INSERT don't blow up on the constraint. The trigger
         // computes canonical_key on insert, so we don't need to pass it.
-        const { error: insertErr } = await supa
+        const { data: inserted, error: insertErr } = await supa
           .from("scholarships")
-          .upsert(upsertPayload, { onConflict: "canonical_key", ignoreDuplicates: false });
+          .upsert(upsertPayload, { onConflict: "canonical_key", ignoreDuplicates: false })
+          .select("scholarship_id")
+          .maybeSingle();
         if (insertErr) {
           console.warn("[scrape-source] insert/upsert failed", insertErr.message, "name=", s.scholarship_name);
           continue;
         }
         newCount++;
+        landedScholarshipId = (inserted as { scholarship_id?: string } | null)?.scholarship_id ?? null;
+      }
+
+      // ─── Record evidence — multi-source provenance trail ───────────
+      // Each successful upsert leaves a fingerprint in scholarship_evidence
+      // (added 20260509050000). When the same row is later confirmed by
+      // a different source URL, the consensus_score climbs — that's the
+      // moat aggregator competitors can't match. Soft-fail: a missing
+      // evidence row never blocks the scholarship publish.
+      if (landedScholarshipId) {
+        try {
+          const confirms: string[] = [];
+          if (s.application_deadline) confirms.push("application_deadline");
+          if (s.estimated_total_value_usd != null || s.award_amount_text) confirms.push("amount");
+          if (s.eligible_countries?.length || s.citizenship_requirements) confirms.push("eligibility");
+          if (s.target_degree_level?.length) confirms.push("degree");
+          if (s.target_fields?.length) confirms.push("fields");
+          if (s.why_this_fits || s.ideal_candidate_profile) confirms.push("narrative");
+          await supa.rpc("record_scholarship_source", {
+            p_scholarship_id: landedScholarshipId,
+            p_source_url: src.url,
+            p_source_hint: src.category ?? null,
+            p_confirms: confirms.length > 0 ? confirms : null,
+            p_confidence: typeof s.confidence === "number" ? s.confidence : null,
+          });
+        } catch (e) {
+          console.warn("[scrape-source] record_scholarship_source failed", (e as Error).message);
+        }
       }
     } else {
       needsReview++;
