@@ -165,7 +165,8 @@ const App = () => (
           <Route path="/scholarships/by-country/:country" element={<ScholarshipsByFilter mode="country" />} />
           <Route path="/scholarships/by-field/:field"     element={<ScholarshipsByFilter mode="field" />} />
           <Route path="/scholarships/theme/:theme"        element={<ScholarshipsByFilter mode="theme" />} />
-          <Route path="/scholarships/by-provider/:slug"   element={<ProviderHub />} />
+          <Route path="/scholarships/by-provider/:slug"   element={<ProviderHub language="en" />} />
+          <Route path="/scholarships/by-provider/ru/:slug" element={<ProviderHub language="ru" />} />
           <Route path="/scholarships/funders"             element={<FundersIndex language="en" />} />
           <Route path="/scholarships/funders/ru"          element={<FundersIndex language="ru" />} />
           {/* Country × Field combinations — programmatic SEO catch-up

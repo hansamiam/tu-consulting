@@ -10,16 +10,18 @@ interface FooterProps {
 // nav; Pricing now also lives in footer-only since we trimmed it from
 // primary nav.
 const FOOTER_LINKS_EN = [
-  { to: "/team",      label: "Team" },
-  { to: "/pricing",   label: "Pricing" },
-  { to: "/blog",      label: "Blog" },
-  { to: "/submit",    label: "Partner with us" },
+  { to: "/team",                      label: "Team" },
+  { to: "/pricing",                   label: "Pricing" },
+  { to: "/scholarships/funders",      label: "All funders" },
+  { to: "/blog",                      label: "Blog" },
+  { to: "/submit",                    label: "Partner with us" },
 ];
 const FOOTER_LINKS_RU = [
-  { to: "/team/ru",      label: "Команда" },
-  { to: "/pricing/ru",   label: "Цены" },
-  { to: "/blog",         label: "Блог" },
-  { to: "/submit/ru",    label: "Сотрудничество" },
+  { to: "/team/ru",                   label: "Команда" },
+  { to: "/pricing/ru",                label: "Цены" },
+  { to: "/scholarships/funders/ru",   label: "Все фонды" },
+  { to: "/blog",                      label: "Блог" },
+  { to: "/submit/ru",                 label: "Сотрудничество" },
 ];
 
 /* Default to "light" because most pages render the footer directly on

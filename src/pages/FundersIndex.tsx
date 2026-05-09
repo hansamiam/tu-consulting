@@ -240,7 +240,7 @@ const FundersIndex = ({ language = "en" }: Props) => {
                 {list.map((p) => (
                   <Link
                     key={p.provider_id}
-                    to={`/scholarships/by-provider/${p.slug}`}
+                    to={ru ? `/scholarships/by-provider/ru/${p.slug}` : `/scholarships/by-provider/${p.slug}`}
                     className="group block rounded-xl border border-border bg-card hover:border-foreground/20 hover:shadow-md transition-all p-4"
                   >
                     <div className="flex items-start justify-between gap-2 mb-2">

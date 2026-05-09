@@ -59,14 +59,20 @@ interface ScholarshipRow extends ScholarshipCardData {
   data_source: string | null;
 }
 
-const TRUST_LABELS: Record<ProviderRow["trust_tier"], { label: string; tone: "good" | "neutral" }> = {
+const TRUST_LABELS_EN: Record<ProviderRow["trust_tier"], { label: string; tone: "good" | "neutral" }> = {
   high: { label: "Verified funder", tone: "good" },
   medium: { label: "Recognised funder", tone: "good" },
   low: { label: "Limited verification", tone: "neutral" },
   unknown: { label: "Not yet verified", tone: "neutral" },
 };
+const TRUST_LABELS_RU: Record<ProviderRow["trust_tier"], { label: string; tone: "good" | "neutral" }> = {
+  high: { label: "Проверенный фонд", tone: "good" },
+  medium: { label: "Известный фонд", tone: "good" },
+  low: { label: "Ограниченная проверка", tone: "neutral" },
+  unknown: { label: "Ещё не проверен", tone: "neutral" },
+};
 
-const PROVIDER_TYPE_LABEL: Record<string, string> = {
+const PROVIDER_TYPE_LABEL_EN: Record<string, string> = {
   government: "Government program",
   foundation: "Private foundation",
   university: "University-funded",
@@ -74,6 +80,15 @@ const PROVIDER_TYPE_LABEL: Record<string, string> = {
   ngo: "NGO / non-profit",
   consortium: "International consortium",
   other: "Funder",
+};
+const PROVIDER_TYPE_LABEL_RU: Record<string, string> = {
+  government: "Правительственная программа",
+  foundation: "Частный фонд",
+  university: "Университетская стипендия",
+  corporation: "Корпоративный спонсор",
+  ngo: "НКО / некоммерческая организация",
+  consortium: "Международный консорциум",
+  other: "Спонсор",
 };
 
 const formatCurrency = (n: number) => {
@@ -83,8 +98,16 @@ const formatCurrency = (n: number) => {
   return `$${n}`;
 };
 
-const ProviderHub = () => {
+interface Props {
+  language?: "en" | "ru";
+}
+
+const ProviderHub = ({ language = "en" }: Props) => {
   const { slug } = useParams<{ slug: string }>();
+  const ru = language === "ru";
+  const t = (en: string, ruText: string) => (ru ? ruText : en);
+  const TRUST_LABELS = ru ? TRUST_LABELS_RU : TRUST_LABELS_EN;
+  const PROVIDER_TYPE_LABEL = ru ? PROVIDER_TYPE_LABEL_RU : PROVIDER_TYPE_LABEL_EN;
   const navigate = useNavigate();
   const [provider, setProvider] = useState<ProviderRow | null>(null);
   const [rows, setRows] = useState<ScholarshipRow[]>([]);
@@ -141,13 +164,19 @@ const ProviderHub = () => {
 
   const meta = useMemo(() => {
     if (!provider) return null;
-    const title = `${provider.canonical_name} scholarships — TopUni`;
-    const desc = provider.description
-      ? `${provider.description} Browse every active ${provider.canonical_name} scholarship currently tracked by TopUni — verified amounts, deadlines, and eligibility.`
-      : `Every active ${provider.canonical_name} scholarship currently tracked by TopUni. Verified amounts, deadlines, and eligibility for international students.`;
-    const canonical = `${SITE}/scholarships/by-provider/${provider.slug}`;
+    const title = ru
+      ? `Стипендии ${provider.canonical_name} — TopUni`
+      : `${provider.canonical_name} scholarships — TopUni`;
+    const desc = ru
+      ? (provider.description
+          ? `${provider.description} Все активные стипендии ${provider.canonical_name}, отслеживаемые TopUni — подтверждённые суммы, дедлайны, требования.`
+          : `Все активные стипендии ${provider.canonical_name}, отслеживаемые TopUni. Подтверждённые суммы, дедлайны, требования для международных студентов.`)
+      : (provider.description
+          ? `${provider.description} Browse every active ${provider.canonical_name} scholarship currently tracked by TopUni — verified amounts, deadlines, and eligibility.`
+          : `Every active ${provider.canonical_name} scholarship currently tracked by TopUni. Verified amounts, deadlines, and eligibility for international students.`);
+    const canonical = `${SITE}/scholarships/by-provider${ru ? "/ru" : ""}/${provider.slug}`;
     return { title, desc, canonical };
-  }, [provider]);
+  }, [provider, ru]);
 
   // Hoist <title> + canonical + meta description + Article JSON-LD into <head>.
   useEffect(() => {
@@ -217,16 +246,19 @@ const ProviderHub = () => {
         <Navigation />
         <div className="container max-w-2xl px-6 py-24">
           <EmptyState
-            title="Provider not found"
-            description="We don't have a record for this funder yet. Browse all scholarships or pick a country instead."
+            title={t("Provider not found", "Фонд не найден")}
+            description={t(
+              "We don't have a record for this funder yet. Browse all scholarships or pick a country instead.",
+              "У нас пока нет записи об этом фонде. Посмотрите все стипендии или выберите страну.",
+            )}
             action={
-              <Button onClick={() => navigate("/discover")} className="gap-2">
-                Browse Discover <ArrowRight className="w-4 h-4" />
+              <Button onClick={() => navigate(ru ? "/discover/ru" : "/discover")} className="gap-2">
+                {t("Browse Discover", "К поиску")} <ArrowRight className="w-4 h-4" />
               </Button>
             }
           />
         </div>
-        <Footer />
+        <Footer language={language} />
       </main>
     );
   }
@@ -239,11 +271,11 @@ const ProviderHub = () => {
       <section className="border-b border-border bg-gradient-to-b from-card/40 to-background">
         <div className="container max-w-5xl px-6 py-12 lg:py-16">
           <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-4">
-            <Link to="/discover" className="hover:text-foreground transition-colors">Discover</Link>
+            <Link to={ru ? "/discover/ru" : "/discover"} className="hover:text-foreground transition-colors">{t("Discover", "Поиск")}</Link>
             <span>/</span>
-            <Link to="/scholarships/funders" className="hover:text-foreground transition-colors">Funders</Link>
+            <Link to={ru ? "/scholarships/funders/ru" : "/scholarships/funders"} className="hover:text-foreground transition-colors">{t("Funders", "Фонды")}</Link>
             <span>/</span>
-            <span>{provider?.canonical_name ? "Profile" : "Funder"}</span>
+            <span>{provider?.canonical_name ? t("Profile", "Профиль") : t("Funder", "Фонд")}</span>
           </div>
 
           {provider ? (
@@ -276,7 +308,7 @@ const ProviderHub = () => {
                 )}
                 {provider.established_year && (
                   <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold bg-muted text-muted-foreground">
-                    Est. {provider.established_year}
+                    {t("Est.", "Осн.")} {provider.established_year}
                   </span>
                 )}
               </div>
@@ -290,33 +322,33 @@ const ProviderHub = () => {
               {/* Stats strip */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-3xl">
                 <div className="rounded-xl border border-border bg-card/40 p-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Active</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Active", "Активных")}</p>
                   <p className="text-2xl font-bold text-foreground mt-1">{provider.active_scholarships_count ?? 0}</p>
                 </div>
                 <div className="rounded-xl border border-border bg-card/40 p-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Total tracked</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Total tracked", "Всего отслежено")}</p>
                   <p className="text-2xl font-bold text-foreground mt-1">{provider.scholarships_count ?? 0}</p>
                 </div>
                 <div className="rounded-xl border border-border bg-card/40 p-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Combined funding</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Combined funding", "Общий объём")}</p>
                   <p className="text-2xl font-bold text-foreground mt-1">{formatCurrency(provider.total_award_volume_usd)}</p>
                 </div>
                 <div className="rounded-xl border border-border bg-card/40 p-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Next deadline</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Next deadline", "Ближайший дедлайн")}</p>
                   <p className="text-2xl font-bold text-foreground mt-1">
-                    {provider.next_deadline ? new Date(provider.next_deadline).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "—"}
+                    {provider.next_deadline ? new Date(provider.next_deadline).toLocaleDateString(ru ? "ru-RU" : undefined, { month: "short", day: "numeric" }) : "—"}
                   </p>
                 </div>
               </div>
 
               <div className="mt-8 flex flex-wrap gap-3">
-                <Button onClick={() => navigate("/topuni-ai")} className="gap-2 bg-primary text-primary-foreground">
-                  <Sparkles className="w-4 h-4" /> Build my strategy
+                <Button onClick={() => navigate(ru ? "/topuni-ai/ru" : "/topuni-ai")} className="gap-2 bg-primary text-primary-foreground">
+                  <Sparkles className="w-4 h-4" /> {t("Build my strategy", "Построить стратегию")}
                 </Button>
                 {provider.official_website && (
                   <Button asChild variant="outline" className="gap-2">
                     <a href={provider.official_website} target="_blank" rel="noopener noreferrer">
-                      Official site <ExternalLink className="w-4 h-4" />
+                      {t("Official site", "Официальный сайт")} <ExternalLink className="w-4 h-4" />
                     </a>
                   </Button>
                 )}
@@ -336,10 +368,14 @@ const ProviderHub = () => {
       <section className="container max-w-5xl px-6 py-12">
         <div className="flex items-baseline justify-between mb-6">
           <h2 className="text-xl md:text-2xl font-bold text-foreground">
-            {provider ? `Active ${provider.canonical_name} scholarships` : "Scholarships"}
+            {provider
+              ? (ru
+                  ? `Активные стипендии ${provider.canonical_name}`
+                  : `Active ${provider.canonical_name} scholarships`)
+              : t("Scholarships", "Стипендии")}
           </h2>
-          <Link to="/discover" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            See all →
+          <Link to={ru ? "/discover/ru" : "/discover"} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            {t("See all →", "Все →")}
           </Link>
         </div>
 
@@ -351,8 +387,11 @@ const ProviderHub = () => {
           </div>
         ) : rows.length === 0 ? (
           <EmptyState
-            title="No active scholarships right now"
-            description="This funder has no open programs in our catalog at the moment. Check back soon — we re-verify daily."
+            title={t("No active scholarships right now", "Активных стипендий пока нет")}
+            description={t(
+              "This funder has no open programs in our catalog at the moment. Check back soon — we re-verify daily.",
+              "У этого фонда сейчас нет открытых программ в нашем каталоге. Загляните позже — мы перепроверяем каждый день.",
+            )}
           />
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
@@ -360,6 +399,7 @@ const ProviderHub = () => {
               <ScholarshipCard
                 key={row.scholarship_id}
                 row={row}
+                language={language}
                 index={idx}
                 onShare={(r) => setShareTarget(r)}
               />
@@ -376,7 +416,7 @@ const ProviderHub = () => {
         />
       )}
 
-      <Footer />
+      <Footer language={language} />
     </main>
   );
 };
