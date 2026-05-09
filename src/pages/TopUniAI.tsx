@@ -446,10 +446,10 @@ const TopUniAI = () => {
                           <SelectTrigger className="h-11 bg-card"><SelectValue placeholder="Select your stage" /></SelectTrigger>
                           <SelectContent>
                             {[
-                              "9th Grade", "10th Grade", "11th Grade", "12th Grade",
-                              "Gap Year", "University Transfer",
-                              "Bachelor's — current",  "Bachelor's — graduating",
-                              "Master's — current",    "Master's — graduating",
+                              "High School",
+                              "Gap Year",
+                              "Bachelor's",
+                              "Master's",
                               "PhD applicant",
                               "Working professional",
                             ].map(g => (
@@ -548,7 +548,6 @@ const TopUniAI = () => {
                                   onClick={() => toggleCountry(c.v)}
                                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all bg-card text-foreground/75 border-border hover:border-gold/40"
                                 >
-                                  <span>{c.f}</span>
                                   <span>{c.v}</span>
                                 </button>
                               );
@@ -566,7 +565,29 @@ const TopUniAI = () => {
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs uppercase tracking-wider font-medium">Intended major *</Label>
-                        <Input value={major} onChange={e => setMajor(e.target.value)} placeholder="e.g. Computer Science, Economics" className="h-11 bg-card" />
+                        <Input
+                          value={major}
+                          onChange={e => setMajor(e.target.value)}
+                          placeholder="Type or pick — e.g. Computer Science"
+                          className="h-11 bg-card"
+                          list="major-suggestions"
+                          autoComplete="off"
+                        />
+                        <datalist id="major-suggestions">
+                          {[
+                            "Computer Science", "Engineering", "Business", "Economics",
+                            "Mathematics", "Physics", "Chemistry", "Biology",
+                            "Medicine & Public Health", "Law", "International Relations",
+                            "Public Policy", "Political Science", "Psychology",
+                            "Sociology", "Anthropology", "History", "Philosophy",
+                            "Literature", "Linguistics", "Education", "Architecture",
+                            "Design", "Environmental Studies", "Sustainability",
+                            "Data Science", "Artificial Intelligence", "Statistics",
+                            "Finance", "Marketing", "Communications", "Journalism",
+                            "Music", "Visual Arts", "Performing Arts", "Film",
+                            "Cultural Studies", "Development Studies", "Social Work",
+                          ].map(m => <option key={m} value={m} />)}
+                        </datalist>
                       </div>
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">

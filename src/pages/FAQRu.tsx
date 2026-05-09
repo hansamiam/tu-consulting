@@ -124,7 +124,7 @@ const FAQRu = () => {
       {/* Footer */}
       <footer className="border-t border-border/30 bg-background/80 backdrop-blur-sm py-6 mt-12">
         <div className="container mx-auto px-4 text-center">
-          <Footer language="ru" variant="light" />
+          <Footer language="ru" />
         </div>
       </footer>
       </div>

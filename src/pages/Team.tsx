@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import aigulPhoto from "@/assets/aigul.jpeg";
 import joshPhoto from "@/assets/josh.jpg";
@@ -178,86 +178,83 @@ const Team = () => {
             </ScrollReveal>
           </div>
 
-          {/* Team Grid */}
-          <StaggerContainer className="grid md:grid-cols-2 gap-4 md:gap-8 animate-fade-in">
+          {/* Team Grid — compact tiles inspired by the home page format.
+              Bigger prestige credential (tagline) front-and-center, smaller
+              photo, and an explicit "Read profile" affordance so users
+              recognise the tile as clickable. */}
+          <StaggerContainer className="grid sm:grid-cols-2 gap-4 md:gap-6 animate-fade-in">
             {teamMembers.map((member, index) => (
               <StaggerItem key={index}>
                 <Dialog>
                 <DialogTrigger asChild>
-                  <Card 
-                    className="group p-4 md:p-8 hover:shadow-2xl transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm hover:border-gold/30 hover:scale-[1.02] cursor-pointer"
+                  <Card
+                    className="group relative p-5 md:p-7 hover:shadow-lg transition-all duration-300 border-border/60 bg-card/70 backdrop-blur-sm hover:border-gold/35 cursor-pointer text-center"
                   >
-                    <div className="flex flex-col items-center text-center space-y-3 md:space-y-6">
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-gold/20 rounded-full blur-xl group-hover:blur-2xl transition-all duration-300 opacity-0 group-hover:opacity-100"></div>
+                    <div className="flex flex-col items-center space-y-3.5">
+                      <div className="w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden bg-canvas ring-1 ring-border/60 ring-offset-4 ring-offset-card/70 shadow-sm">
                         <img
                           src={member.photo}
                           alt={member.name}
-                          className="relative w-32 h-32 md:w-48 md:h-48 rounded-full object-cover border-4 border-primary/40 group-hover:border-primary/70 transition-all duration-300 shadow-lg"
+                          className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-700"
+                          loading="lazy"
                         />
                       </div>
-                      <div className="space-y-2 md:space-y-3 w-full">
-                        <h2 className="text-lg md:text-2xl font-bold text-foreground group-hover:text-primary transition-colors">{member.name}</h2>
-                        <p className="text-sm md:text-base font-bold text-gold tracking-wide">{member.tagline}</p>
-                        <p className="text-xs md:text-sm font-medium bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent">{member.title}</p>
-                        <div className="space-y-1.5 md:space-y-2 text-xs md:text-sm">
-                          <p className="text-muted-foreground">
-                            <span className="font-semibold text-gold">Hometown:</span> {member.hometown}
-                          </p>
-                          <p className="text-muted-foreground">
-                            <span className="font-semibold text-gold">Education:</span> {member.education}
-                          </p>
-                          <p className="text-muted-foreground">
-                            <span className="font-semibold text-gold">Languages:</span> {member.languages}
-                          </p>
-                        </div>
+                      <div className="space-y-1">
+                        <p className="font-heading font-semibold text-foreground text-base md:text-lg leading-tight">
+                          {member.name}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {member.title}
+                        </p>
+                        <p className="text-xs md:text-sm text-gold-dark font-semibold tracking-[0.05em] pt-0.5">
+                          {member.tagline}
+                        </p>
                       </div>
+                      <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70 group-hover:text-gold-dark transition-colors pt-1">
+                        Read profile
+                        <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+                      </span>
                     </div>
                   </Card>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="max-w-xl max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
-                    <div className="flex flex-col items-center text-center space-y-4 mb-6">
+                    <div className="flex items-center gap-4 mb-2">
                       <img
                         src={member.photo}
                         alt={member.name}
-                        className="w-32 h-32 rounded-full object-cover border-4 border-primary/40 shadow-lg"
+                        className="w-16 h-16 rounded-full object-cover ring-1 ring-border/60 shadow-sm shrink-0"
                       />
-                      <div>
-                        <DialogTitle className="text-2xl font-bold text-primary">{member.name}</DialogTitle>
-                        <p className="text-base font-medium bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mt-1">{member.title}</p>
+                      <div className="min-w-0">
+                        <DialogTitle className="text-xl font-bold text-foreground tracking-tight">{member.name}</DialogTitle>
+                        <p className="text-sm text-muted-foreground">{member.title}</p>
+                        <p className="text-xs text-gold-dark font-semibold tracking-[0.05em] mt-0.5">{member.tagline}</p>
                       </div>
                     </div>
                   </DialogHeader>
-                  <div className="space-y-6 text-sm">
+                  <div className="space-y-5 text-sm pt-2">
+                    <dl className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-1.5 text-muted-foreground">
+                      <dt className="font-semibold text-foreground">Hometown</dt>
+                      <dd>{member.hometown}</dd>
+                      <dt className="font-semibold text-foreground">Education</dt>
+                      <dd>{member.education}</dd>
+                      <dt className="font-semibold text-foreground">Languages</dt>
+                      <dd>{member.languages}</dd>
+                    </dl>
                     <div>
-                      <h3 className="font-semibold text-gold text-base mb-2">Basic Info</h3>
-                      <div className="space-y-2">
-                        <p className="text-muted-foreground">
-                          <span className="font-semibold text-foreground">Hometown:</span> {member.hometown}
-                        </p>
-                        <p className="text-muted-foreground">
-                          <span className="font-semibold text-foreground">Education:</span> {member.education}
-                        </p>
-                        <p className="text-muted-foreground">
-                          <span className="font-semibold text-foreground">Languages:</span> {member.languages}
-                        </p>
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gold text-base mb-2">Key Accomplishments</h3>
+                      <p className="text-[10px] uppercase tracking-[0.22em] text-gold-dark font-bold mb-2">Highlights</p>
                       <ul className="space-y-1.5">
                         {member.accomplishments.map((accomplishment, idx) => (
                           <li key={idx} className="flex items-start gap-2 text-muted-foreground">
-                            <span className="text-gold mt-0.5">•</span>
-                            <span>{accomplishment}</span>
+                            <span className="text-gold-dark mt-1 shrink-0">·</span>
+                            <span className="leading-relaxed">{accomplishment}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gold text-base mb-2">Specialized in:</h3>
-                      <p className="text-muted-foreground">{member.strengths}</p>
+                      <p className="text-[10px] uppercase tracking-[0.22em] text-gold-dark font-bold mb-2">Specialises in</p>
+                      <p className="text-muted-foreground leading-relaxed">{member.strengths}</p>
                     </div>
                   </div>
                 </DialogContent>
@@ -275,7 +272,7 @@ const Team = () => {
           column to render center-aligned and broke the two-column
           layout. Now we render Footer directly so it uses its own
           layout. */}
-      <Footer language="en" variant="light" />
+      <Footer language="en" />
       </div>
     </div>
   );

@@ -8,18 +8,18 @@ interface FooterProps {
 // Footer surfaces only what's NOT in primary nav (or what doubles as a
 // conversion driver). Workspace was removed because it lives in primary
 // nav; Pricing now also lives in footer-only since we trimmed it from
-// primary nav.
+// primary nav. Partner-with-us hidden 2026-05-09 — kept the route + page
+// for direct visits but pulled the public link surface until the funnel
+// is ready to push.
 const FOOTER_LINKS_EN = [
   { to: "/team",      label: "Team" },
   { to: "/pricing",   label: "Pricing" },
   { to: "/blog",      label: "Blog" },
-  { to: "/submit",    label: "Partner with us" },
 ];
 const FOOTER_LINKS_RU = [
   { to: "/team/ru",      label: "Команда" },
   { to: "/pricing/ru",   label: "Цены" },
   { to: "/blog",         label: "Блог" },
-  { to: "/submit/ru",    label: "Сотрудничество" },
 ];
 
 // "All funders" link removed from public navigation per user direction
@@ -28,11 +28,12 @@ const FOOTER_LINKS_RU = [
 // sitemap.xml so SEO traffic still lands. Restore the link here when
 // the funders surface is ready to push to all visitors.
 
-/* Default to "light" because most pages render the footer directly on
- * the cream page background. Pages that want a navy slab (Index +
- * IndexRu) wrap the Footer in a `<footer className="bg-primary">` block
- * AND pass variant="dark" explicitly. */
-export const Footer = ({ language, variant = "light" }: FooterProps) => {
+/* Default = "dark". Every page now gets the navy slab the home page
+ * uses, so the surface feels uniform. The component renders its own
+ * bg-primary block when isDark, so callers don't need to wrap in a
+ * navy <footer>. Pass variant="light" only when the footer must read
+ * cream (e.g. modal/embed contexts). */
+export const Footer = ({ language, variant = "dark" }: FooterProps) => {
   const text = {
     en: {
       legal: "Legal",
@@ -69,7 +70,7 @@ export const Footer = ({ language, variant = "light" }: FooterProps) => {
   const sepColor = isDark ? "text-primary-foreground/25" : "text-muted-foreground/40";
 
   return (
-    <footer className={`${textColor} text-xs sm:text-sm px-4`}>
+    <footer className={`${isDark ? "bg-primary" : ""} ${textColor} text-xs sm:text-sm px-4`}>
       {/* Two-column section: tagline + single explore list. Down from
           three columns when we had Product + Company duplicating top-nav
           surfaces. */}

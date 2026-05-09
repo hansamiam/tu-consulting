@@ -3,14 +3,13 @@
  *
  * Dialog that appears after a TopUni AI strategy brief finishes
  * generating, prompting the (anonymous) student to save their work
- * by signing up via magic link. The wedge: "Save my brief — get
- * deadline reminders" is a much stronger ask than "Sign up for an
- * account."
+ * by signing up. The wedge: "Save my brief — get deadline reminders"
+ * is a much stronger ask than "Sign up for an account."
  *
  * Stashes the wizard's profile + the generated pathway into a
- * pending-account localStorage blob, then sends the magic-link email.
- * After the student clicks the link AuthCallback drains the blob into
- * their student_profiles + pathway_reports rows.
+ * pending-account localStorage blob, then signs the user up with email
+ * + password. AuthContext's post-sign-in drain picks up the blob and
+ * writes it into student_profiles + pathway_reports.
  *
  * Skipped when the student is already authed.
  */
@@ -27,7 +26,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   // Pre-filled email from the wizard if available
   defaultEmail?: string;
-  // The full payload to persist after magic-link verification
+  // The full payload to persist after sign-up completes
   payload: PendingAccountPayload;
   language?: "en" | "ru";
   /* Optional concrete user stats — when supplied, the dialog quantifies
@@ -251,12 +250,8 @@ export function SaveBriefPrompt({
             <span>{t("Deadline reminders before each scholarship closes.", "Напоминания за день до каждого дедлайна.")}</span>
           </div>
           <div className="flex items-start gap-1.5">
-            <Bot className="w-3 h-3 text-gold-dark shrink-0 mt-0.5" />
-            <span>{t("AI counselor with full memory of your profile + brief.", "AI-советник со всей вашей историей.")}</span>
-          </div>
-          <div className="flex items-start gap-1.5">
             <Sparkles className="w-3 h-3 text-gold-dark shrink-0 mt-0.5" />
-            <span>{t("Brief + saved scholarships sync across every device.", "Брифинг и сохранённые стипендии — синхронно на всех устройствах.")}</span>
+            <span>{t("Report + saved scholarships sync across every device.", "Отчёт и сохранённые стипендии — синхронно на всех устройствах.")}</span>
           </div>
         </div>
       </DialogContent>

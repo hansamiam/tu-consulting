@@ -23,24 +23,14 @@ type Mode = "signin" | "signup" | "reset";
 
 const MIN_PASSWORD = 8;
 
-/* AuthDialog — primary auth surface. Round 96 switched from magic-link
- * to email + password. Magic-link required users to leave the tab,
- * check their email, and click back — friction that bled conversion
- * (especially on Russian audiences with mailbox-app habits that buried
- * the message). Password auth is one-tap-and-you're-in.
+/* AuthDialog — primary auth surface. Two paths only: Google OAuth
+ * (top option, cleanest first-tap) or email + password.
  *
  * Three modes share the dialog:
  *   · signin → email + password
  *   · signup → email + password (with min-length hint)
  *   · reset  → email only, sends Supabase reset email
- *
- * Google OAuth stays as the top option — the cleanest first-tap.
- *
- * Existing magic-link-only users without a password go through:
- *   1. Try sign in → "Invalid login credentials"
- *   2. Click "Forgot password?"
- *   3. Get reset email → set password → done
- * (Standard Supabase password-reset flow, no migration needed.) */
+ */
 export const AuthDialog = ({
   open,
   onOpenChange,
@@ -115,12 +105,10 @@ export const AuthDialog = ({
     const { error } = await signInWithPassword(email.trim(), password);
     setLoading(false);
     if (error) {
-      // Friendlier toast for the common case: legacy magic-link user
-      // trying to sign in for the first time.
       if (/invalid (login|credentials)/i.test(error)) {
         toast.error(
-          t("Wrong email or password. New here? Switch to Sign up. Used a magic link before? Tap Forgot password.",
-            "Неверный email или пароль. Новый аккаунт? Переключитесь на Регистрацию. Раньше входили по ссылке? Нажмите «Забыли пароль»."),
+          t("Wrong email or password. New here? Switch to Sign up.",
+            "Неверный email или пароль. Новый аккаунт? Переключитесь на Регистрацию."),
         );
       } else {
         toast.error(error);

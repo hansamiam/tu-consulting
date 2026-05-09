@@ -502,7 +502,7 @@ const Offerings = () => {
 
         {/* Footer */}
         <section className="mt-12 pb-8">
-          <Footer language="en" variant="light" />
+          <Footer language="en" />
         </section>
       </main>
       </div>

@@ -108,12 +108,8 @@ type AuthContextType = {
    *  post-sign-in drain (pendingAccount + referral + redirect) runs
    *  before this resolves. */
   signUpWithPassword: (email: string, password: string) => Promise<{ error: string | null; needsConfirmation?: boolean }>;
-  /** Send a password-reset email. Used both for legacy magic-link users
-   *  who never set a password AND for genuine forgot-password cases. */
+  /** Send a password-reset email — used by the forgot-password flow. */
   sendPasswordReset: (email: string) => Promise<{ error: string | null }>;
-  /** Legacy — kept for the few call sites that still want a passwordless
-   *  flow (e.g. SaveBriefPrompt). New auth dialogs use password. */
-  signInWithMagicLink: (email: string) => Promise<{ error: string | null }>;
   signInWithGoogle: () => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 };
@@ -277,24 +273,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error: error?.message ?? null };
   }, []);
 
-  const signInWithMagicLink = useCallback(async (email: string) => {
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      // Route through /auth/callback so the post-auth drain runs:
-      // - persistPendingAccount (writes the wizard's profile + brief
-      //   to student_profiles + pathway_reports)
-      // - register-referral (links pending referral codes)
-      // - consumePostAuthRedirect (sends the user to wherever they
-      //   started: /pricing, /topuni-ai/ru, etc.)
-      // Previously this redirected to window.location.origin (the
-      // homepage) which skipped AuthCallback entirely — pendingAccount
-      // payloads silently rotted, referrals never registered, and
-      // post_auth_redirect targets were never honored.
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-    });
-    return { error: error?.message ?? null };
-  }, []);
-
   const signInWithGoogle = useCallback(async () => {
     // Supabase native Google OAuth — works on any host, no Lovable
     // runtime dependency. Requires Google provider to be enabled in
@@ -329,7 +307,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         signInWithPassword,
         signUpWithPassword,
         sendPasswordReset,
-        signInWithMagicLink,
         signInWithGoogle,
         signOut,
       }}

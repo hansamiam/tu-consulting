@@ -297,7 +297,7 @@ const OfferingsRu = () => {
 
         {/* Footer */}
         <section className="mt-12 pb-8">
-          <Footer language="ru" variant="light" />
+          <Footer language="ru" />
         </section>
       </main>
       </div>

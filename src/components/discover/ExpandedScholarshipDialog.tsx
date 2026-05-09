@@ -126,7 +126,7 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
             ) : (
               <CountryArt country={s.host_country} className="absolute inset-0 h-full w-full opacity-15 text-white" />
             )}
-            <span className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/15 to-black/55" aria-hidden />
+            <span className="absolute inset-0 bg-gradient-to-b from-black/15 via-black/5 to-black/40" aria-hidden />
             <button
               type="button"
               onClick={onClose}

@@ -855,36 +855,8 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                       <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    asChild
-                    className="w-full justify-between"
-                    onClick={() => {
-                      try {
-                        const cleanedName = cleanScholarshipName(openDetail.scholarship_name);
-                        sessionStorage.setItem(
-                          "topuni-counselor-prefill",
-                          JSON.stringify({
-                            scholarshipId: openDetail.scholarship_id,
-                            scholarshipName: cleanedName,
-                            question: isRu
-                              ? `Помогите с подачей на ${cleanedName} — стратегия, документы, тайминг.`
-                              : `Walk me through ${cleanedName} — strategy, documents, timing.`,
-                            ts: Date.now(),
-                          }),
-                        );
-                      } catch { /* ignore */ }
-                    }}
-                  >
-                    <Link to={isRu ? "/topuni-ai/ru" : "/topuni-ai"}>
-                      <span className="inline-flex items-center gap-1.5">
-                        <Bot className="w-3.5 h-3.5" />
-                        {t("Ask the AI counselor about this", "Спросить AI советника об этом")}
-                      </span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </Button>
+                  {/* AI Counselor entry hidden 2026-05-09 (token-cost / low usage).
+                      Code path retained for re-enable. */}
                 </div>
               </div>
             </>

@@ -190,10 +190,10 @@ const TopUniAIRu = () => {
                         <Label>Этап обучения *</Label>
                         <Select value={gradeLevel} onValueChange={setGradeLevel}><SelectTrigger><SelectValue placeholder="Выберите" /></SelectTrigger>
                           <SelectContent>{[
-                            "9 класс", "10 класс", "11 класс", "12 класс / Выпускник",
-                            "Gap Year", "Перевод из вуза",
-                            "Бакалавриат — учусь",   "Бакалавриат — выпускаюсь",
-                            "Магистратура — учусь",  "Магистратура — выпускаюсь",
+                            "Старшая школа",
+                            "Gap Year",
+                            "Бакалавриат",
+                            "Магистратура",
                             "PhD",
                             "Работаю",
                           ].map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>

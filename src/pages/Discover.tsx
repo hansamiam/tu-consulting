@@ -894,7 +894,19 @@ const deadlineDisplay = (d: string | null, lang: Lang = "en", deadlineType?: str
     return { text: ru ? "Дата уточняется" : "Deadline TBD", cls: "text-foreground/40", urgent: false };
   }
   const days = Math.ceil((new Date(d).getTime() - Date.now()) / 86400000);
-  if (days <= 0)  return { text: ru ? "Закрыто" : "Closed", cls: "text-foreground/30 line-through", urgent: false };
+  if (days <= 0) {
+    // Annual programs whose last cycle just closed are still relevant —
+    // they reopen next year. Show "Reopens annually" instead of a strikethrough
+    // "Closed" label so users don't think the program is dead.
+    const t = (deadlineType ?? "").toLowerCase();
+    if (t === "annual" || t === "reopens_annually") {
+      return { text: ru ? "Ежегодная программа" : "Reopens annually", cls: "text-foreground/55", urgent: false };
+    }
+    if (t === "rolling") {
+      return { text: ru ? "Без дедлайна" : "Rolling", cls: "text-foreground/55", urgent: false };
+    }
+    return { text: ru ? "Закрыто" : "Closed", cls: "text-foreground/30 line-through", urgent: false };
+  }
   if (days <= 7)  return { text: ru ? `${days}д осталось` : `${days}d left`, cls: "text-destructive font-semibold", urgent: true };
   if (days <= 30) return { text: ru ? `${days}д осталось` : `${days}d left`, cls: "text-amber-700 dark:text-amber-400 font-medium", urgent: true };
   if (days <= 90) return { text: ru ? `${days}д осталось` : `${days}d left`, cls: "text-foreground/60", urgent: false };
@@ -1674,13 +1686,12 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           travel poster strip rather than a database row. Text stays on
           the left where the silhouette opacity is lowest. */}
       <div className={`relative bg-gradient-to-r ${accent} px-4 h-14 flex items-center gap-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/95 overflow-hidden whitespace-nowrap`}>
-        {/* Country landmark icon, anchored right. Bounded width so it
-            never overlaps the chip strip on the left. The flag-pattern
-            texture that used to sit underneath was retired (round 22). */}
-        <CountryArt country={s.host_country} className="absolute right-2 inset-y-0 h-full max-w-[35%] opacity-35 pointer-events-none" />
-        {/* fade-from-left so silhouette + pattern don't compete with text */}
+        {/* Country landmark icon, anchored right. Smaller + softer than
+            before — the silhouette was crowding the country chip and
+            reading as a graphic feature rather than a subtle accent. */}
+        <CountryArt country={s.host_country} className="absolute right-2 inset-y-0 h-full max-w-[22%] opacity-25 pointer-events-none" />
         <span className={`absolute inset-0 bg-gradient-to-r from-black/30 via-black/5 to-transparent pointer-events-none`} />
-        <span className="relative flex items-center gap-2 min-w-0 flex-1 pr-[35%]">
+        <span className="relative flex items-center gap-2 min-w-0 flex-1 pr-[24%]">
           {s.host_country && (
             <span className="truncate drop-shadow-sm">{shortCountry(s.host_country, { tight: true })}</span>
           )}
@@ -3398,7 +3409,30 @@ const Discover = ({ language = "en" }: Props) => {
     if (filters.onlyEligible) list = list.filter(s => s.eligibility === "eligible" || s.eligibility === "likely");
     if (filters.closingSoon) list = list.filter(s => { const d = s.application_deadline ? Math.ceil((new Date(s.application_deadline).getTime() - Date.now()) / 86400000) : null; return d !== null && d > 0 && d <= 90; });
     if (!showHidden) list = list.filter(s => !hidden.has(s.scholarship_id));
-    if (sortBy === "deadline") return [...list].sort((a, b) => { if (!a.application_deadline) return 1; if (!b.application_deadline) return -1; return new Date(a.application_deadline).getTime() - new Date(b.application_deadline).getTime(); });
+    if (sortBy === "deadline") {
+      // Three-bucket sort: (1) upcoming live deadlines, ascending = closest
+      // first; (2) annual reopening rows whose last cycle passed (still
+      // relevant, no fixed next date yet); (3) genuinely closed one-time
+      // rows at the very bottom. Without this, the smallest-timestamp
+      // sort surfaced the most-recently-closed rows on top — looked like
+      // every top result was dead.
+      const now = Date.now();
+      const bucket = (s: Scored): number => {
+        const t = s.application_deadline ? new Date(s.application_deadline).getTime() : null;
+        const dt = (s.deadline_type ?? "").toLowerCase();
+        if (t !== null && t >= now) return 0;
+        if (dt === "annual" || dt === "reopens_annually" || dt === "rolling") return 1;
+        if (t === null) return 1;
+        return 2;
+      };
+      return [...list].sort((a, b) => {
+        const ba = bucket(a); const bb = bucket(b);
+        if (ba !== bb) return ba - bb;
+        const aT = a.application_deadline ? new Date(a.application_deadline).getTime() : Number.MAX_SAFE_INTEGER;
+        const bT = b.application_deadline ? new Date(b.application_deadline).getTime() : Number.MAX_SAFE_INTEGER;
+        return aT - bT;
+      });
+    }
     if (sortBy === "value") return [...list].sort((a, b) => (b.estimated_total_value_usd ?? 0) - (a.estimated_total_value_usd ?? 0));
     if (sortBy === "effort") { const o: Record<string, number> = { low: 0, medium: 1, high: 2 }; return [...list].sort((a, b) => (o[a.effort] ?? 1) - (o[b.effort] ?? 1)); }
     if (sortBy === "selectivity") { const o: Record<string, number> = { low: 0, medium: 1, high: 2, very_high: 3, unknown: 4 }; return [...list].sort((a, b) => (o[a.selectivity] ?? 4) - (o[b.selectivity] ?? 4)); }

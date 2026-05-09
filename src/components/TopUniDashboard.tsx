@@ -2099,7 +2099,12 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
      previous defaultValue logic: profile filled → strategy tab,
      otherwise → counselor (which is more useful for empty-profile
      visitors). */
-  const [activeTab, setActiveTab] = useState<string>(isProfileFilled ? "pathway" : "counselor");
+  // AI Counselor tab hidden 2026-05-09 — it was eating tokens with low
+  // user-uptake. Code path retained so the report's inline "Ask the
+  // counselor" CTAs still work for anyone who navigates directly, and
+  // so flipping back to true re-exposes it without rebuilds.
+  const SHOW_COUNSELOR_TAB = false;
+  const [activeTab, setActiveTab] = useState<string>("pathway");
 
   useEffect(() => {
     // Mount-only — intentional. Profile changes are handled by the
@@ -2967,9 +2972,11 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             <TabsTrigger value="pathway" className="data-[state=active]:text-foreground data-[state=active]:border-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent border-b-2 border-transparent text-muted-foreground hover:text-foreground rounded-none px-0 pb-3 pt-0 text-sm font-medium gap-1.5 bg-transparent">
               <GraduationCap className="w-4 h-4" /> {t("Strategy", "Стратегия")}
             </TabsTrigger>
-            <TabsTrigger value="counselor" className="data-[state=active]:text-foreground data-[state=active]:border-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent border-b-2 border-transparent text-muted-foreground hover:text-foreground rounded-none px-0 pb-3 pt-0 text-sm font-medium gap-1.5 bg-transparent">
-              <Bot className="w-4 h-4" /> {t("Counselor", "Советник")}
-            </TabsTrigger>
+            {SHOW_COUNSELOR_TAB && (
+              <TabsTrigger value="counselor" className="data-[state=active]:text-foreground data-[state=active]:border-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent border-b-2 border-transparent text-muted-foreground hover:text-foreground rounded-none px-0 pb-3 pt-0 text-sm font-medium gap-1.5 bg-transparent">
+                <Bot className="w-4 h-4" /> {t("Counselor", "Советник")}
+              </TabsTrigger>
+            )}
           </TabsList>
         </div>
 
@@ -3145,7 +3152,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             onRegenSection={reportGrade === "premium" ? regenerateSection : undefined}
                             regeneratingSectionId={regeneratingSectionId}
                             tier={reportGrade}
-                            onAskCounselor={askCounselorWithPrefill}
+                            onAskCounselor={SHOW_COUNSELOR_TAB ? askCounselorWithPrefill : undefined}
                           />
                         )}
                         {/* Live matches grid sits between the brief and the
@@ -3304,7 +3311,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             onRegenSection={reportGrade === "premium" ? regenerateSection : undefined}
                             regeneratingSectionId={regeneratingSectionId}
                             tier={reportGrade}
-                            onAskCounselor={askCounselorWithPrefill}
+                            onAskCounselor={SHOW_COUNSELOR_TAB ? askCounselorWithPrefill : undefined}
                           />
                         )}
                         {/* Pro-only sections teaser — basic-tier non-Pro
