@@ -2395,14 +2395,16 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                   {tab.label}
                 </TabsTrigger>
               ))}
-              {/* The strategy CTA lives in the tab strip so the
-                  affordance is right where users would have looked for
-                  the old Strategy tab. Distinct gold treatment makes it
-                  read as a primary action, not just another tab. */}
+              {/* Strategy CTA — lives in the tab strip so the affordance
+                  sits where users expect (the old Strategy tab slot).
+                  Refined gold treatment: gold-tinted background + dark
+                  gold text + subtle gold border. Replaces the prior
+                  bright gold gradient which read as too loud against
+                  the otherwise-restrained tab row. */}
               <button
                 type="button"
                 onClick={onExpand}
-                className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 mb-1.5 rounded-md text-xs font-semibold text-primary bg-gradient-to-r from-gold-dark to-gold hover:opacity-90 transition-opacity shadow-sm shrink-0"
+                className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 mb-1.5 rounded-md text-xs font-semibold text-gold-dark bg-gold/10 border border-gold/35 hover:bg-gold/15 hover:border-gold/55 transition-all shrink-0"
               >
                 <Sparkles className="h-3 w-3" />
                 {t("Strategy", "Стратегия")}
