@@ -10,7 +10,7 @@ import aigulPhoto from "@/assets/aigul.jpeg";
 import joshPhoto from "@/assets/josh.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
 import samuelPhoto from "@/assets/samuel.jpg";
-import heroImage from "@/assets/hero-campus.jpg";
+import { CampusBackdrop } from "@/components/CampusBackdrop";
 import usFlag from "@/assets/flags/us.svg";
 import caFlag from "@/assets/flags/ca.svg";
 import gbFlag from "@/assets/flags/gb.svg";
@@ -93,15 +93,9 @@ const TeamRu = () => {
   ];
 
   return (
-    <div 
-      className="min-h-screen relative"
-      style={{
-        backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url(${heroImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed'
-      }}
-    >
+    <div className="min-h-screen relative bg-background">
+      <CampusBackdrop />
+      <div className="relative z-10">
       <ScrollProgress />
       <Navigation language="ru" />
       {/* Header */}
@@ -268,6 +262,7 @@ const TeamRu = () => {
       {/* Footer — same layout-breaking wrapper retired here as in
           Team.tsx; Footer renders its own <footer> + grid layout. */}
       <Footer language="ru" variant="light" />
+      </div>
     </div>
   );
 };

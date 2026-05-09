@@ -5,6 +5,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { ArrowRight, Mail } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import { CampusBackdrop } from "@/components/CampusBackdrop";
 
 /* ─── FAQ data — single source for both render + JSON-LD schema ───
    Edit copy here; the schema below regenerates from this array
@@ -128,7 +129,9 @@ const FAQ = () => {
   const categoryOrder = ["Membership", "Product", "Team", "Trust"];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen relative bg-background">
+      <CampusBackdrop />
+      <div className="relative z-10">
       <Navigation language="en" />
 
       {/* Hero */}
@@ -200,6 +203,7 @@ const FAQ = () => {
       </main>
 
       <Footer language="en" />
+      </div>
     </div>
   );
 };

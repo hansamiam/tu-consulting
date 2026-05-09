@@ -1,10 +1,14 @@
-import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { blogArticles } from "@/data/blogArticles";
 import { countryGuides } from "@/data/countryGuides";
+import { CampusBackdrop } from "@/components/CampusBackdrop";
+
+// Country-guides section is hidden until the content set is fleshed out.
+// Mirrors Blog.tsx — flip back to true to re-expose without code work.
+const SHOW_COUNTRY_GUIDES = false;
 
 const BlogRu = () => {
   const navigate = useNavigate();
@@ -12,7 +16,9 @@ const BlogRu = () => {
   const rest = blogArticles.slice(1);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen relative bg-background">
+      <CampusBackdrop />
+      <div className="relative z-10">
       <Navigation language="ru" />
 
       <header className="border-b border-border">
@@ -70,32 +76,34 @@ const BlogRu = () => {
           </section>
         )}
 
-        <section>
-          <div className="mb-8">
-            <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-2">Гайды по странам</p>
-            <h2 className="font-heading text-2xl lg:text-3xl font-bold tracking-tight">
-              Куда подавать, сколько стоит, как выиграть.
-            </h2>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border border border-border rounded-lg overflow-hidden">
-            {countryGuides.map((g) => (
-              <button
-                key={g.slug}
-                onClick={() => navigate(`/blog/guide/${g.slug}/ru`)}
-                className="bg-background text-left p-6 hover:bg-muted/30 transition-colors group"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <span className="text-3xl">{g.flag}</span>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-accent group-hover:translate-x-0.5 transition-all" />
-                </div>
-                <h3 className="font-heading font-semibold text-base tracking-tight mb-1 group-hover:text-accent transition-colors">
-                  {g.countryRu}
-                </h3>
-                <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{g.taglineRu}</p>
-              </button>
-            ))}
-          </div>
-        </section>
+        {SHOW_COUNTRY_GUIDES && (
+          <section>
+            <div className="mb-8">
+              <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-2">Гайды по странам</p>
+              <h2 className="font-heading text-2xl lg:text-3xl font-bold tracking-tight">
+                Куда подавать, сколько стоит, как выиграть.
+              </h2>
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border border border-border rounded-lg overflow-hidden">
+              {countryGuides.map((g) => (
+                <button
+                  key={g.slug}
+                  onClick={() => navigate(`/blog/guide/${g.slug}/ru`)}
+                  className="bg-background text-left p-6 hover:bg-muted/30 transition-colors group"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <span className="text-3xl">{g.flag}</span>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-accent group-hover:translate-x-0.5 transition-all" />
+                  </div>
+                  <h3 className="font-heading font-semibold text-base tracking-tight mb-1 group-hover:text-accent transition-colors">
+                    {g.countryRu}
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{g.taglineRu}</p>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         {rest.length > 0 && (
           <section>
@@ -123,6 +131,7 @@ const BlogRu = () => {
       </main>
 
       <Footer language="ru" />
+      </div>
     </div>
   );
 };

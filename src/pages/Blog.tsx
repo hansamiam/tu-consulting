@@ -5,10 +5,13 @@ import { useNavigate } from "react-router-dom";
 import { useRef } from "react";
 import { blogArticles } from "@/data/blogArticles";
 import { countryGuides } from "@/data/countryGuides";
-import heroImage from "@/assets/hero-campus.jpg";
+import { CampusBackdrop } from "@/components/CampusBackdrop";
 
-// Compact magazine layout. Blurred campus backdrop (matches other pages),
-// sliding country-guide tiles, tight vertical rhythm.
+// Country-guides rail is hidden until the content set is fleshed out.
+// Data + route at /blog/guide/:slug remain wired so flipping back to true
+// re-exposes everything without code work.
+const SHOW_COUNTRY_GUIDES = false;
+
 const Blog = () => {
   const navigate = useNavigate();
   const featured = blogArticles[0];
@@ -20,15 +23,9 @@ const Blog = () => {
   };
 
   return (
-    <div
-      className="min-h-screen relative"
-      style={{
-        backgroundImage: `linear-gradient(rgba(255,255,255,0.92), rgba(255,255,255,0.92)), url(${heroImage})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundAttachment: "fixed",
-      }}
-    >
+    <div className="min-h-screen relative bg-background">
+      <CampusBackdrop />
+      <div className="relative z-10">
       <Navigation language="en" />
 
       {/* Compact masthead */}
@@ -42,51 +39,53 @@ const Blog = () => {
 
       <main className="max-w-6xl mx-auto px-6 lg:px-10 py-10 lg:py-14 space-y-12 lg:space-y-14">
 
-        {/* Country guides — sliding rail */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-heading text-xl lg:text-2xl font-bold tracking-tight">
-              Country guides
-            </h2>
-            <div className="flex gap-1.5">
-              <button
-                onClick={() => scrollRail("left")}
-                aria-label="Scroll left"
-                className="h-8 w-8 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => scrollRail("right")}
-                aria-label="Scroll right"
-                className="h-8 w-8 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
+        {/* Country guides — sliding rail (hidden until fleshed out) */}
+        {SHOW_COUNTRY_GUIDES && (
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-heading text-xl lg:text-2xl font-bold tracking-tight">
+                Country guides
+              </h2>
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => scrollRail("left")}
+                  aria-label="Scroll left"
+                  className="h-8 w-8 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => scrollRail("right")}
+                  aria-label="Scroll right"
+                  className="h-8 w-8 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
             </div>
-          </div>
-          <div
-            ref={railRef}
-            className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1 scrollbar-hide"
-            style={{ scrollbarWidth: "none" }}
-          >
-            {countryGuides.map((g) => (
-              <button
-                key={g.slug}
-                onClick={() => navigate(`/blog/guide/${g.slug}`)}
-                className="snap-start shrink-0 w-44 bg-card border border-border rounded-lg p-4 text-left hover:border-accent/40 hover:shadow-sm transition-all group"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-2xl">{g.flag}</span>
-                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-accent group-hover:translate-x-0.5 transition-all" />
-                </div>
-                <h3 className="font-heading font-semibold text-sm tracking-tight group-hover:text-accent transition-colors">
-                  {g.country}
-                </h3>
-              </button>
-            ))}
-          </div>
-        </section>
+            <div
+              ref={railRef}
+              className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1 scrollbar-hide"
+              style={{ scrollbarWidth: "none" }}
+            >
+              {countryGuides.map((g) => (
+                <button
+                  key={g.slug}
+                  onClick={() => navigate(`/blog/guide/${g.slug}`)}
+                  className="snap-start shrink-0 w-44 bg-card border border-border rounded-lg p-4 text-left hover:border-accent/40 hover:shadow-sm transition-all group"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-2xl">{g.flag}</span>
+                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-accent group-hover:translate-x-0.5 transition-all" />
+                  </div>
+                  <h3 className="font-heading font-semibold text-sm tracking-tight group-hover:text-accent transition-colors">
+                    {g.country}
+                  </h3>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Featured + essays — compact */}
         {featured && (
@@ -171,6 +170,7 @@ const Blog = () => {
       />
 
       <Footer language="en" />
+      </div>
     </div>
   );
 };

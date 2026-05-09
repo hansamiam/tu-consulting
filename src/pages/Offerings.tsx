@@ -14,6 +14,7 @@ import Navigation from "@/components/Navigation";
 import { useToast } from "@/hooks/use-toast";
 import { PaymentDialog } from "@/components/PaymentDialog";
 import { Footer } from "@/components/Footer";
+import { CampusBackdrop } from "@/components/CampusBackdrop";
 import heroImage from "@/assets/hero-campus.jpg";
 import heroLibrary from "@/assets/hero-library.jpg";
 import yaleCampus from "@/assets/yale-campus.jpg";
@@ -265,15 +266,9 @@ const Offerings = () => {
   ];
 
   return (
-    <div 
-      className="min-h-screen relative"
-      style={{
-        backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url(${heroImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed'
-      }}
-    >
+    <div className="min-h-screen relative bg-background">
+      <CampusBackdrop />
+      <div className="relative z-10">
       <Navigation language="en" />
       {/* Header */}
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 sticky top-16 z-40 shadow-sm">
@@ -510,6 +505,7 @@ const Offerings = () => {
           <Footer language="en" variant="light" />
         </section>
       </main>
+      </div>
     </div>
   );
 };

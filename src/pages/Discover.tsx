@@ -2933,26 +2933,24 @@ const Discover = ({ language = "en" }: Props) => {
   const [saveCounts, setSaveCounts] = useState<Map<string, number>>(new Map());
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile>({ country: "", degrees: [], gpa: "", gpaScale: "4.0", ielts: "", toefl: "", sat: "", field: "", demographics: [], targetCountries: [] });
-  const [phase, setPhase] = useState<Phase>(() => getStoredProfile()?.nationality ? "results" : "landing");
+  // Round-28 IA: /discover always lands you in the database. Previously
+  // we showed a big "answer 4 questions" landing wall that forked users
+  // out to /topuni-ai — TopUni AI and Discover felt like two products.
+  // Now the database is the front surface; the inline "Build my profile"
+  // CTA in the results header (seen pre-profile) is the funnel into
+  // TopUni AI. Wizard remains reachable as a quick-filter alternative.
+  const [phase, setPhase] = useState<Phase>("results");
 
-  /* Auth-driven phase + sort auto-transition. AuthContext pulls the
-   * user's student_profile from the DB into localStorage on sign-in
-   * (cross-device sync). When that completes after the page mounted
-   * with no profile, two state values were captured at mount via
-   * lazy initializers and never reacted:
-   *   · phase → stayed "landing" (showed onboarding to a profiled user)
-   *   · sortBy → stayed "deadline" (default for no-profile case, but
-   *              "match" is the right default once a profile exists)
-   * This effect catches both. 250ms debounce so we don't beat the
-   * AuthContext's pullProfileFromDb round-trip. Only flips toward
-   * the profiled values; doesn't reverse so users who intentionally
-   * went to wizard / analyzing or chose a different sort aren't yanked. */
+  /* Auth-driven sort auto-transition. AuthContext pulls the user's
+   * student_profile from the DB into localStorage on sign-in. Once
+   * that completes, "match" is the right default sort instead of the
+   * pre-profile "deadline". 250ms debounce so we don't beat
+   * AuthContext's pullProfileFromDb round-trip. */
   useEffect(() => {
     if (!user) return;
     const timer = setTimeout(() => {
       const stored = getStoredProfile();
       if (!stored?.nationality) return;
-      setPhase((cur) => (cur === "landing" ? "results" : cur));
       setSortBy((cur) => (cur === "deadline" ? "match" : cur));
     }, 250);
     return () => clearTimeout(timer);
@@ -3532,7 +3530,7 @@ const Discover = ({ language = "en" }: Props) => {
     "Ranking your best opportunities",
   ];
 
-  const dark = phase === "landing" || phase === "wizard" || phase === "analyzing";
+  const dark = phase === "wizard" || phase === "analyzing";
   const totalVerified = rows.length || 200;
 
   return (
@@ -3558,87 +3556,20 @@ const Discover = ({ language = "en" }: Props) => {
         {phase === "results" && <DiscoverAppBar language={language} />}
 
         <AnimatePresence mode="wait">
-          {/* ══ LANDING ══ */}
-          {phase === "landing" && (
-            // min-h-screen (not 100vh-64px) because the navigation here
-            // is overlay-mode (transparent, on top of the navy hero) —
-            // it doesn't take layout space, so subtracting 64px biased
-            // the vertical centering up by ~32px on mobile and the
-            // hero content sat above the optical centre.
-            <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className="relative min-h-screen flex flex-col items-center justify-center px-6 text-center overflow-hidden">
-
-              <motion.div style={{ opacity: heroOpacity, y: heroY }} className="max-w-4xl mx-auto relative z-10 space-y-9">
-                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.7 }}
-                  className="inline-flex items-center gap-2.5 bg-primary-foreground/[0.04] border border-primary-foreground/10 backdrop-blur-xl px-4 py-2 rounded-full">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-gold" />
-                  </span>
-                  <span className="text-primary-foreground/85 text-xs font-semibold tracking-wide">
-                    {t("Live scholarship database", "Живая база стипендий")}
-                  </span>
-                </motion.div>
-
-                <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-                  className="font-heading text-[clamp(2.75rem,7vw,5.5rem)] font-bold text-primary-foreground leading-[1.02] tracking-[-0.03em]">
-                  {ru ? (
-                    <>Стипендии,<br /><span className="text-gold">созданные для вас.</span></>
-                  ) : (
-                    <>The scholarships<br /><span className="text-gold">made for you.</span></>
-                  )}
-                </motion.h1>
-
-                <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32, duration: 0.7 }}
-                  className="text-primary-foreground/55 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed font-light">
-                  {t(
-                    "Answer four questions. We rank every scholarship in our database against your profile and show how each one aligns with you.",
-                    "Ответьте на четыре вопроса. Мы оценим каждую стипендию в нашей базе по вашему профилю и покажем, как каждая из них вам подходит."
-                  )}
-                </motion.p>
-
-                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 0.7 }}
-                  className="flex flex-col items-center gap-4 pt-2">
-                  {/* Round-27 IA: TopUni AI is the front door. The intake
-                      form there generates the personalized strategy AND
-                      seeds the Discover profile, so the user goes through
-                      a single onboarding rather than the same nationality/
-                      level/GPA questions twice. The wizard below is kept
-                      as a "skip strategy" path for users who want to
-                      browse the database immediately. */}
-                  <Button
-                    variant="gold"
-                    size="lg"
-                    className="text-base px-12 py-7 hover:scale-[1.02] transition-transform gap-2.5"
-                    onClick={() => navigate(language === "ru" ? "/topuni-ai/ru" : "/topuni-ai")}
-                  >
-                    {t("Get my personalized strategy", "Моя персональная стратегия")}
-                    <ArrowRight className="h-5 w-5" />
-                  </Button>
-                  <button
-                    onClick={() => setPhase("results")}
-                    className="text-xs text-primary-foreground/45 hover:text-primary-foreground/80 underline-offset-4 hover:underline transition-colors"
-                  >
-                    {t("or skip ahead to the scholarship database", "или сразу к базе стипендий")}
-                  </button>
-                  <div className="flex items-center justify-center gap-5 text-xs text-primary-foreground/35 font-medium tracking-wide pt-1">
-                    <span className="flex items-center gap-1.5"><Zap className="h-3 w-3 text-gold" /> {t("2 minutes", "2 минуты")}</span>
-                    <span className="opacity-50">·</span>
-                    <span>{t("No account needed", "Без регистрации")}</span>
-                    <span className="opacity-50">·</span>
-                    <span>{t("Free during beta", "Бесплатно во время беты")}</span>
-                  </div>
-                </motion.div>
-              </motion.div>
-            </motion.div>
-          )}
+          {/* Round-28 IA: landing phase removed. /discover lands users
+              directly in the database (results phase). The pre-profile
+              "Build my profile" CTA inside the results header is the
+              funnel into TopUni AI, so the AI flow and the database
+              are one seamless surface — not two products with a wall
+              between them. The inline wizard remains as a quick-filter
+              alternative when users open it explicitly. */}
 
           {/* ══ WIZARD ══ */}
           {phase === "wizard" && (
             <motion.div key="wizard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}
               className="relative min-h-[calc(100vh-64px)] flex flex-col">
               <div className="pt-7 px-6 flex items-center justify-between max-w-2xl mx-auto w-full relative z-10">
-                <button onClick={() => wizardStep === 0 ? setPhase("landing") : setWizardStep(s => s - 1)} className="text-primary-foreground/40 hover:text-primary-foreground transition-colors p-2 -ml-2">
+                <button onClick={() => wizardStep === 0 ? setPhase("results") : setWizardStep(s => s - 1)} className="text-primary-foreground/40 hover:text-primary-foreground transition-colors p-2 -ml-2">
                   <ChevronLeft className="h-5 w-5" />
                 </button>
                 <div className="flex gap-2">

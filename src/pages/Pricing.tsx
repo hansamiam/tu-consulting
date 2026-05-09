@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import { CampusBackdrop } from "@/components/CampusBackdrop";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
@@ -197,7 +198,9 @@ const Pricing = ({ language = "en" }: PricingProps) => {
     : t.cta.claim;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen relative bg-background">
+      <CampusBackdrop />
+      <div className="relative z-10">
       <Navigation language={language} />
 
       <main>
@@ -426,6 +429,7 @@ const Pricing = ({ language = "en" }: PricingProps) => {
 
       <Footer language={language} />
       <AuthDialog open={authOpen} onOpenChange={setAuthOpen} title={t.authTitle} description={t.authDesc} language={language} />
+      </div>
     </div>
   );
 };

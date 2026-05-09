@@ -705,7 +705,7 @@ const TopUniAI = () => {
               <TopUniDashboard
                 profile={profile}
                 language="en"
-                onBack={() => navigate("/")}
+                onBack={() => navigate("/discover")}
               />
             </motion.div>
           )}

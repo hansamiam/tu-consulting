@@ -5,7 +5,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { ArrowLeft } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import heroImage from "@/assets/hero-campus.jpg";
+import { CampusBackdrop } from "@/components/CampusBackdrop";
 
 const FAQRu = () => {
   const navigate = useNavigate();
@@ -38,15 +38,9 @@ const FAQRu = () => {
   ];
 
   return (
-    <div 
-      className="min-h-screen relative"
-      style={{
-        backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url(${heroImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed'
-      }}
-    >
+    <div className="min-h-screen relative bg-background">
+      <CampusBackdrop />
+      <div className="relative z-10">
       <Navigation language="ru" />
       {/* Header */}
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 sticky top-16 z-40 shadow-sm">
@@ -133,6 +127,7 @@ const FAQRu = () => {
           <Footer language="ru" variant="light" />
         </div>
       </footer>
+      </div>
     </div>
   );
 };

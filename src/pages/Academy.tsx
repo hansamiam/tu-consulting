@@ -4,6 +4,7 @@
 import { Link } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import { CampusBackdrop } from "@/components/CampusBackdrop";
 import { Button } from "@/components/ui/button";
 import { Sparkles, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
@@ -17,7 +18,9 @@ const FOUNDERS = [
 
 const Academy = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen relative bg-background">
+      <CampusBackdrop />
+      <div className="relative z-10">
       <Navigation />
 
       {/* HERO ───────────────────────────────────────────────────────── */}
@@ -102,6 +105,7 @@ const Academy = () => {
       />
 
       <Footer language="en" />
+      </div>
     </div>
   );
 };

@@ -310,7 +310,7 @@ const TopUniAIRu = () => {
 
           {screen === "dashboard" && (
             <motion.div key="dashboard" {...fadeIn}>
-              <TopUniDashboard profile={profile} language="ru" onBack={() => navigate("/ru")} />
+              <TopUniDashboard profile={profile} language="ru" onBack={() => navigate("/discover/ru")} />
             </motion.div>
           )}
         </AnimatePresence>

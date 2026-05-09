@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import { CampusBackdrop } from "@/components/CampusBackdrop";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -226,7 +227,9 @@ const Refer = ({ language = "en" }: ReferProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen relative bg-background">
+      <CampusBackdrop />
+      <div className="relative z-10">
       <Navigation language={language} />
 
       <section className="bg-gradient-to-br from-primary via-primary to-primary/95 py-12 sm:py-16">
@@ -362,6 +365,7 @@ const Refer = ({ language = "en" }: ReferProps) => {
         </div>
       </main>
       <Footer language={language} />
+      </div>
     </div>
   );
 };

@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PaymentDialog } from "@/components/PaymentDialog";
 import { Footer } from "@/components/Footer";
 import heroCampus from "@/assets/hero-campus.jpg";
+import { CampusBackdrop } from "@/components/CampusBackdrop";
 import heroLibrary from "@/assets/hero-library.jpg";
 import yaleCampus from "@/assets/yale-campus.jpg";
 
@@ -86,15 +87,9 @@ const OfferingsRu = () => {
   ];
 
   return (
-    <div 
-      className="min-h-screen relative"
-      style={{
-        backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url(${heroCampus})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed'
-      }}
-    >
+    <div className="min-h-screen relative bg-background">
+      <CampusBackdrop />
+      <div className="relative z-10">
       <Navigation language="ru" />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-12">
@@ -305,6 +300,7 @@ const OfferingsRu = () => {
           <Footer language="ru" variant="light" />
         </section>
       </main>
+      </div>
     </div>
   );
 };
