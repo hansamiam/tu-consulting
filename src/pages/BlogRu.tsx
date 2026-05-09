@@ -9,6 +9,8 @@ import { CampusBackdrop } from "@/components/CampusBackdrop";
 // Country-guides section is hidden until the content set is fleshed out.
 // Mirrors Blog.tsx — flip back to true to re-expose without code work.
 const SHOW_COUNTRY_GUIDES = false;
+// Articles also hidden behind a coming-soon gate. Data preserved.
+const SHOW_ARTICLES = false;
 
 const BlogRu = () => {
   const navigate = useNavigate();
@@ -43,7 +45,7 @@ const BlogRu = () => {
       </header>
 
       <main className="max-w-6xl mx-auto px-6 lg:px-10 py-16 lg:py-20 space-y-20 lg:space-y-24">
-        {featured && (
+        {SHOW_ARTICLES && featured && (
           <section>
             <div className="flex items-baseline justify-between mb-6">
               <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent">Главное</p>
@@ -105,7 +107,7 @@ const BlogRu = () => {
           </section>
         )}
 
-        {rest.length > 0 && (
+        {SHOW_ARTICLES && rest.length > 0 && (
           <section>
             <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-8">Ещё статьи</p>
             <div className="grid md:grid-cols-2 gap-x-10 gap-y-12">
@@ -125,6 +127,27 @@ const BlogRu = () => {
                   <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">{article.excerptRu}</p>
                 </article>
               ))}
+            </div>
+          </section>
+        )}
+
+        {!SHOW_ARTICLES && !SHOW_COUNTRY_GUIDES && (
+          <section className="py-10 lg:py-16">
+            <div className="max-w-2xl mx-auto text-center bg-card/60 border border-border rounded-2xl px-8 py-14 lg:px-12 lg:py-20 backdrop-blur-sm">
+              <p className="text-[10px] font-mono uppercase tracking-[0.28em] text-gold-dark mb-5">В разработке</p>
+              <h2 className="font-heading text-2xl lg:text-3xl font-bold tracking-tight leading-tight mb-4">
+                Long-form журнал в работе.
+              </h2>
+              <p className="text-sm lg:text-base text-muted-foreground leading-relaxed max-w-lg mx-auto mb-8">
+                Гайды по странам, эссе по стратегии стипендий, заметки по приёму — от выпускников, которые сами выиграли. Поднимаем планку перед публикацией.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70">
+                <span>Гайды по странам</span>
+                <span className="text-muted-foreground/30">·</span>
+                <span>Эссе по стратегии</span>
+                <span className="text-muted-foreground/30">·</span>
+                <span>Заметки</span>
+              </div>
             </div>
           </section>
         )}

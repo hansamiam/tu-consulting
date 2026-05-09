@@ -580,7 +580,7 @@ const COLLECTIONS: CollectionDef[] = [
     title: "Recommended for you",
     kicker: "Top picks",
     description: "Where your profile lines up best — strongest fits across academics, field, eligibility, and budget.",
-    icon: Sparkles,
+    icon: Award,
     accentClass: "text-gold-dark",
     filter: (s) => s.priority === "strong_match",
     sort: (a, b) => b.match - a.match,
@@ -1758,7 +1758,7 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
             return (
               <div className="flex items-center gap-1.5 min-w-0">
                 <ProviderAvatar url={s.official_url || s.source_url} providerName={p} size={16} />
-                <p className="text-[11px] text-muted-foreground/85 line-clamp-1">
+                <p className="text-[11px] text-muted-foreground/85 line-clamp-2 leading-snug">
                   {p}
                 </p>
               </div>
@@ -2130,15 +2130,18 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
     const fm = fieldMatches(profile.field, s.target_fields);
     reqs.push({ label: `Field of study`, status: fm === true ? "met" : fm === false ? "miss" : "unknown", detail: `Funds: ${s.target_fields.slice(0, 4).map(humanize).join(", ")}${s.target_fields.length > 4 ? "..." : ""}` });
   }
-  if (s.eligible_countries && profile.country) {
-    const list = s.eligible_countries.map(c => c.toLowerCase());
+  // Nationality / citizenship — show ONE row, not two. Prefer the
+  // structured eligible_countries check (alias-aware, computes met/miss
+  // against the user's country). Fall back to citizenship_requirements
+  // text only when no structured list exists. Previously both rendered
+  // and overlapped — same fact twice.
+  const hasStructuredCountries = !!(s.eligible_countries && s.eligible_countries.length > 0);
+  if (hasStructuredCountries && profile.country) {
+    const list = s.eligible_countries!.map(c => c.toLowerCase());
     const open = list.some(c => c.includes("all") || c.includes("any"));
-    // Same matchesNationality used by scoreScholarship — alias-aware
-    // country/adjectival pairing + word-boundary anchored.
-    const ok = open || matchesNationality(profile.country, s.eligible_countries);
+    const ok = open || matchesNationality(profile.country, s.eligible_countries!);
     reqs.push({ label: open ? "Open to all nationalities" : `Nationality eligibility`, status: ok ? "met" : "miss", detail: open ? "" : (ok ? `${profile.country} listed` : `${profile.country} not in eligible list`) });
-  }
-  if (s.citizenship_requirements && !isInclusive(s.citizenship_requirements)) {
+  } else if (s.citizenship_requirements && !isInclusive(s.citizenship_requirements)) {
     reqs.push({ label: "Citizenship rule", status: "info", detail: s.citizenship_requirements });
   }
   if (s.language_requirements) reqs.push({ label: "Language", status: "info", detail: s.language_requirements });
@@ -2406,20 +2409,21 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                   {tab.label}
                 </TabsTrigger>
               ))}
-              {/* Strategy CTA — lives in the tab strip so the affordance
-                  sits where users expect (the old Strategy tab slot).
-                  Refined gold treatment: gold-tinted background + dark
-                  gold text + subtle gold border. Replaces the prior
-                  bright gold gradient which read as too loud against
-                  the otherwise-restrained tab row. */}
+              {/* Strategy — matches the styling of Overview / Requirements.
+                  Members get the deep strategy panel via onExpand;
+                  non-members hit the membership wall through onUnlock. */}
               <button
                 type="button"
-                onClick={onExpand}
-                className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 mb-1.5 rounded-md text-xs font-semibold text-gold-dark bg-gold/10 border border-gold/35 hover:bg-gold/15 hover:border-gold/55 transition-all shrink-0"
+                onClick={() => (isMember ? onExpand() : onUnlock())}
+                className="data-[member=false]:after:content-['•'] data-[member=false]:after:text-gold data-[member=false]:after:ml-1.5 inline-flex items-center gap-1.5 border-b-2 border-transparent text-muted-foreground hover:text-foreground rounded-none px-0 pb-3 pt-0 text-sm font-medium bg-transparent transition-colors"
+                data-member={isMember ? "true" : "false"}
               >
-                <Sparkles className="h-3 w-3" />
                 {t("Strategy", "Стратегия")}
-                <ArrowRight className="h-3 w-3" />
+                {!isMember && (
+                  <span className="ml-1 inline-flex items-center text-[9px] font-bold uppercase tracking-[0.18em] text-gold-dark">
+                    {t("Pro", "Pro")}
+                  </span>
+                )}
               </button>
             </TabsList>
           </div>
@@ -2542,26 +2546,16 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               </div>
             )}
 
-            {/* Citizenship + language — moved from Overview, sit alongside
-                the program eligibility text where they belong. */}
-            {(s.citizenship_requirements || s.language_requirements) && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {s.citizenship_requirements && (
-                  <div className="rounded-xl border border-border/60 bg-card px-3.5 py-2.5 sm:col-span-2">
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
-                      {t("Citizenship / nationality", "Гражданство")}
-                    </p>
-                    <p className="text-sm text-foreground/85 leading-snug">{s.citizenship_requirements}</p>
-                  </div>
-                )}
-                {s.language_requirements && (
-                  <div className="rounded-xl border border-border/60 bg-card px-3.5 py-2.5 sm:col-span-2">
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
-                      {t("Language", "Язык")}
-                    </p>
-                    <p className="text-sm text-foreground/85 leading-snug">{s.language_requirements}</p>
-                  </div>
-                )}
+            {/* Language requirement — citizenship/nationality intentionally
+                NOT duplicated here; the reqs checklist below already shows
+                the structured nationality eligibility against the user's
+                country, so a separate text panel was overlap. */}
+            {s.language_requirements && (
+              <div className="rounded-xl border border-border/60 bg-card px-3.5 py-2.5">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
+                  {t("Language", "Язык")}
+                </p>
+                <p className="text-sm text-foreground/85 leading-snug">{s.language_requirements}</p>
               </div>
             )}
 
@@ -2571,21 +2565,10 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                 <div className="bg-muted/30 rounded-2xl px-4 py-1">
                   {reqs.map((r, i) => <ReqRow key={i} {...r} />)}
                 </div>
-                {/* Profile signals + watchouts (moved from Overview).
-                    Cohabit with the threshold checklist since they're all
-                    "where you stand vs. this row" signals. */}
-                {s.reasons.length > 0 && (
-                  <div className="mt-4">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">{t("Profile signals", "Сигналы профиля")}</p>
-                    <div className="space-y-1.5">
-                      {s.reasons.map((r, i) => (
-                        <div key={i} className="flex items-start gap-2 text-sm leading-relaxed text-success">
-                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-0.5" />{r}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {/* Profile signals (positive reasons) removed — overlap with
+                    the You-vs-Requirements checklist above. Watch-outs stay
+                    because they surface concrete misses the checklist
+                    doesn't always capture. */}
                 {s.warnings.length > 0 && (
                   <div className="mt-4">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">{t("Watch outs", "На что обратить внимание")}</p>
@@ -2651,9 +2634,11 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               </div>
             )}
             {(() => {
+              // "Cycle" row removed — deadline_type is already encoded in
+              // the dl.text suffix on the Deadline row ("(Reopens annually)",
+              // "(Rolling)", etc.), so listing it twice was overlap.
               const rows = [
-                ["Deadline", deadlineDate ? `${deadlineDate} (${dl.text})` : "Rolling"],
-                ["Cycle", s.deadline_type ? humanize(s.deadline_type) : null],
+                ["Deadline", deadlineDate ? `${deadlineDate} (${dl.text})` : (dl.text || "TBD")],
                 ["Platform", s.application_platform],
                 ["Application fee", s.application_fee_text],
               ].filter(([, v]) => v) as [string, string][];
@@ -3846,7 +3831,8 @@ const Discover = ({ language = "en" }: Props) => {
                       </div>
                     </div>
                     <Button variant="gold" size="lg" className="mt-10 px-12 gap-2 text-base" onClick={completeWizard}>
-                      <Sparkles className="h-5 w-5" /> {t("Reveal my matches", "Показать совпадения")}
+                      {t("Reveal my matches", "Показать совпадения")}
+                      <ArrowRight className="h-5 w-5" />
                     </Button>
                   </motion.div>
                 )}
@@ -3866,7 +3852,7 @@ const Discover = ({ language = "en" }: Props) => {
                     className="absolute inset-3 rounded-full border border-dashed border-gold/15" />
                   <motion.div animate={{ scale: [1, 1.06, 1] }} transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
                     className="h-20 w-20 rounded-3xl bg-gradient-gold backdrop-blur flex items-center justify-center">
-                    <Sparkles className="h-9 w-9 text-primary" />
+                    <Compass className="h-9 w-9 text-primary" />
                   </motion.div>
                 </div>
                 <div className="space-y-3">
@@ -4036,10 +4022,10 @@ const Discover = ({ language = "en" }: Props) => {
                                 onClick={resetProfile}
                                 className="inline-flex items-center gap-1.5 text-xs font-semibold text-gold-dark hover:text-foreground bg-card border border-border/70 hover:border-gold/40 px-3 py-2 rounded-lg transition-all whitespace-nowrap shrink-0"
                               >
-                                <Sparkles className="w-3.5 h-3.5" />
                                 {pct < 70
                                   ? t("Strengthen profile", "Улучшить профиль")
                                   : t("Edit profile", "Изменить профиль")}
+                                <ArrowRight className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           );
@@ -4713,7 +4699,7 @@ const Discover = ({ language = "en" }: Props) => {
                                 <h3 className="font-heading font-bold text-base text-foreground tracking-tight leading-tight line-clamp-2 mb-1">
                                   {cleanScholarshipName(s.scholarship_name)}
                                 </h3>
-                                <p className="text-xs text-muted-foreground truncate">{[cleanProvider(s.provider_name), s.host_country && shortCountry(s.host_country)].filter(Boolean).join(" · ")}</p>
+                                <p className="text-xs text-muted-foreground line-clamp-2 leading-snug">{[cleanProvider(s.provider_name), s.host_country && shortCountry(s.host_country)].filter(Boolean).join(" · ")}</p>
                                 <div className="flex gap-2 mt-3">
                                   <Button variant="gold" size="sm" className="text-xs h-7 px-3" onClick={() => { setOpenDetail(s); setCompareOpen(false); }}>
                                     Strategy
@@ -4777,7 +4763,7 @@ const Discover = ({ language = "en" }: Props) => {
                     <div className={`h-11 w-11 rounded-2xl bg-gradient-to-br ${tier.grad} flex items-center justify-center text-[13px] font-bold text-white shrink-0 tracking-tight`}>{initials(s.provider_name || s.scholarship_name)}</div>
                     <div className="min-w-0 flex-1">
                       <p className="font-heading font-bold text-sm text-foreground line-clamp-1">{s.scholarship_name}</p>
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2 leading-snug mt-0.5">{[s.provider_name, s.host_country].filter(Boolean).join(" · ")}</p>
                       <div className="flex items-center gap-2 mt-2">
                         <span className={`text-[11px] font-medium ${dl.cls}`}>{dl.text}</span>
                       </div>

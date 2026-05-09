@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import {
-  Award, Clock, Sparkles, GraduationCap, Globe, Cpu, Heart,
+  Award, Clock, GraduationCap, Globe, Cpu, Heart, Users, HandCoins,
 } from "lucide-react";
 
 /* CuratedCollections — curated entry tiles above the card grid. Each tile
@@ -64,22 +64,16 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
     id: "phd-funded",
     label: "PhD with funding",
     sub: "Stipend + tuition for doctorates",
-    Icon: Sparkles,
+    Icon: GraduationCap,
     accentCls: "from-primary/10 to-primary/[0.03] border-primary/25",
     predicate: s =>
       (s.target_degree_level || []).map(d => d.toLowerCase()).some(d => d.includes("phd") || d.includes("doctor"))
       && s.coverage_type === "full_ride",
     apply: set => set({ degree: "PhD", coverage: "full_ride" }),
   },
-  {
-    id: "masters-tracks",
-    label: "Master's tracks",
-    sub: "1–2 year graduate programs",
-    Icon: GraduationCap,
-    accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
-    predicate: s => (s.target_degree_level || []).map(d => d.toLowerCase()).some(d => d.includes("master")),
-    apply: set => set({ degree: "master's" }),
-  },
+  // "Master's tracks" tile retired 2026-05-09 — too generic; the host-country
+  // tiles + the degree dropdown cover the same intent more precisely, and
+  // the chip pulled most of the catalog without filtering anything useful.
   {
     id: "korea-route",
     label: "South Korea",
@@ -146,7 +140,7 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
     id: "women-stem",
     label: "Women in STEM",
     sub: "Programs designed for women in tech / engineering / science",
-    Icon: Sparkles,
+    Icon: Users,
     accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
     predicate: s => Array.isArray(s.target_demographics)
       && (s.target_demographics.includes("underrepresented-stem") || s.target_demographics.includes("women")),
@@ -156,7 +150,7 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
     id: "first-generation",
     label: "First-generation friendly",
     sub: "First in your family to go abroad",
-    Icon: Sparkles,
+    Icon: Users,
     accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
     predicate: s => Array.isArray(s.target_demographics) && s.target_demographics.includes("first-generation"),
     apply: set => set({ demographic: "first-generation" }),
@@ -165,7 +159,7 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
     id: "refugees",
     label: "For refugees + displaced students",
     sub: "Specifically supports refugee + displaced applicants",
-    Icon: Sparkles,
+    Icon: Users,
     accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
     predicate: s => Array.isArray(s.target_demographics)
       && (s.target_demographics.includes("refugee") || s.target_demographics.includes("displaced")),
@@ -175,12 +169,17 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
     id: "need-based",
     label: "Need-based",
     sub: "Means-tested + financial-need programs",
-    Icon: Sparkles,
+    Icon: HandCoins,
     accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
     predicate: s => Array.isArray(s.target_demographics) && s.target_demographics.includes("low-income"),
     apply: set => set({ demographic: "low-income" }),
   },
 ];
+
+// Chips with fewer than this many matching scholarships are hidden from
+// the rail. Pulls the bar above "shows up but barely useful" — the user
+// only wants chips that actually surface a solid batch.
+const MIN_CHIP_RESULTS = 4;
 
 export const CuratedCollections = ({
   rows, onApply,
@@ -194,7 +193,7 @@ export const CuratedCollections = ({
   const tilesWithCount = useMemo(() => {
     return COLLECTION_PRESETS
       .map(p => ({ preset: p, count: rows.filter(p.predicate).length }))
-      .filter(({ count }) => count > 0);
+      .filter(({ count }) => count >= MIN_CHIP_RESULTS);
   }, [rows]);
 
   if (tilesWithCount.length === 0) return null;

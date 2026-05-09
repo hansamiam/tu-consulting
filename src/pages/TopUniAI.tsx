@@ -139,18 +139,18 @@ const TopUniAI = () => {
   // "Full scholarship needed" — renamed to "Need full scholarship" when
   // the standalone scholarshipNeeded yes/no question was folded into
   // budget. Migrate-on-read so cached drafts don't show a blank Select.
-  const [budget, setBudget] = useState(
-    draft?.budget === "Full scholarship needed" ? "Need full scholarship" : (draft?.budget ?? ""),
-  );
-  // scholarshipNeeded is now derived from budget rather than asked
-  // separately — the standalone yes/no question was redundant since
-  // budget="Need full scholarship" already encodes the same intent.
-  // Kept in the persisted draft + downstream brief payload so the
-  // generator continues working unchanged.
-  const scholarshipNeeded = budget === "Need full scholarship" ? "yes" : budget ? "no" : (draft?.scholarshipNeeded ?? "");
   const [timeline, setTimeline] = useState(draft?.timeline ?? "");
   const [prestige, setPrestige] = useState<number[]>([typeof draft?.prestige === "number" ? draft.prestige : 3]);
   const [scholarship, setScholarship] = useState<number[]>([typeof draft?.scholarship === "number" ? draft.scholarship : 3]);
+
+  // Budget is now derived from the "Scholarship need" 1–5 slider rather
+  // than a separate select on step 2. Mapping:
+  //   5 → "Need full scholarship", 4 → "Under $5,000/year",
+  //   3 → "$5,000–$15,000/year",   2 → "$15,000–$30,000/year",
+  //   1 → "$30,000+/year"
+  const SLIDER_TO_BUDGET = ["", "$30,000+/year", "$15,000–$30,000/year", "$5,000–$15,000/year", "Under $5,000/year", "Need full scholarship"] as const;
+  const budget = SLIDER_TO_BUDGET[scholarship[0] ?? 3] || "$5,000–$15,000/year";
+  const scholarshipNeeded = scholarship[0] >= 4 ? "yes" : "no";
   const [careerRoi, setCareerRoi] = useState<number[]>([typeof draft?.careerRoi === "number" ? draft.careerRoi : 3]);
   const [visaAccess, setVisaAccess] = useState<number[]>([typeof draft?.visaAccess === "number" ? draft.visaAccess : 3]);
   const [locationPref, setLocationPref] = useState<number[]>([typeof draft?.locationPref === "number" ? draft.locationPref : 3]);
@@ -215,11 +215,11 @@ const TopUniAI = () => {
         if (payload.gradeLevel) setGradeLevel((prev) => prev || payload.gradeLevel!);
         setHubContext({ kind: "shared-brief", label: payload.label || "shared brief" });
       } else if (payload.kind === "theme" && payload.theme) {
-        // Theme-specific defaults: full-funding ⇒ "Need full scholarship"
-        // budget (which derives scholarshipNeeded=yes); closing-soon ⇒
-        // Fall 2026 timeline; high-value ⇒ scholarship-priority sloped up.
+        // Theme-specific defaults: full-funding ⇒ scholarship-need slider
+        // pinned to 5 (which derives budget="Need full scholarship");
+        // closing-soon ⇒ Fall 2026 timeline; high-value ⇒ scholarship
+        // priority sloped up.
         if (payload.theme === "full-funding") {
-          setBudget("Need full scholarship");
           setScholarship([5]);
         } else if (payload.theme === "closing-soon") {
           setTimeline("Fall 2026");
@@ -336,7 +336,7 @@ const TopUniAI = () => {
                   the X if they want to start fresh. */}
               {hubContext && (
                 <div className="mb-6 rounded-lg border border-gold/30 bg-gradient-to-br from-gold/[0.06] to-transparent px-4 py-2.5 flex items-center gap-3">
-                  <Sparkles className="w-4 h-4 text-gold-dark shrink-0" />
+                  <Target className="w-4 h-4 text-gold-dark shrink-0" />
                   <p className="text-sm text-foreground/85 flex-1 min-w-0 leading-snug">
                     {hubContext.kind === "scholarship" ? (
                       <>
@@ -589,37 +589,21 @@ const TopUniAI = () => {
                           ].map(m => <option key={m} value={m} />)}
                         </datalist>
                       </div>
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">What you can self-fund</Label>
-                          <Select value={budget} onValueChange={setBudget}>
-                            <SelectTrigger className="h-11 bg-card"><SelectValue placeholder="Select" /></SelectTrigger>
-                            <SelectContent>
-                              {[
-                                "Need full scholarship",
-                                "Under $5,000/year",
-                                "$5,000–$15,000/year",
-                                "$15,000–$30,000/year",
-                                "$30,000+/year",
-                              ].map(b => (
-                                <SelectItem key={b} value={b}>{b}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">When you'd start</Label>
-                          <Select value={timeline} onValueChange={setTimeline}>
-                            <SelectTrigger className="h-11 bg-card"><SelectValue placeholder="Select" /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Fall 2026">Fall 2026</SelectItem>
-                              <SelectItem value="Spring 2027">Spring 2027</SelectItem>
-                              <SelectItem value="Fall 2027">Fall 2027</SelectItem>
-                              <SelectItem value="Spring 2028">Spring 2028</SelectItem>
-                              <SelectItem value="Flexible">Flexible</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                      {/* Self-fund Select retired 2026-05-09 — overlapped
+                          with the "Scholarship need" 1–5 slider on step 3.
+                          Budget is now derived from that slider downstream. */}
+                      <div className="space-y-1.5">
+                        <Label className="text-xs uppercase tracking-wider font-medium">When you'd start</Label>
+                        <Select value={timeline} onValueChange={setTimeline}>
+                          <SelectTrigger className="h-11 bg-card"><SelectValue placeholder="Select" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Fall 2026">Fall 2026</SelectItem>
+                            <SelectItem value="Spring 2027">Spring 2027</SelectItem>
+                            <SelectItem value="Fall 2027">Fall 2027</SelectItem>
+                            <SelectItem value="Spring 2028">Spring 2028</SelectItem>
+                            <SelectItem value="Flexible">Flexible</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                     <div className="flex justify-between pt-4">
@@ -704,7 +688,8 @@ const TopUniAI = () => {
                           setScreen("dashboard");
                         }}
                       >
-                        <Sparkles className="mr-2 w-5 h-5" /> Generate my plan
+                        Generate my plan
+                        <ArrowRight className="ml-2 w-5 h-5" />
                       </Button>
                     </div>
                   </motion.div>

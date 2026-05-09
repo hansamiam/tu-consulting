@@ -162,13 +162,35 @@ export const cleanProvider = (raw: string | null | undefined): string | null => 
   // provider name proper.
   p = p.replace(/\s*\([^)]*\)\s*$/, "").trim();
 
+  // Strip ", funded by ..." / ", administered by ..." / ", in partnership with ..."
+  // descriptive tails. Frequent in aggregator data — they bleed the
+  // funder description into provider_name and produce truncated text
+  // like "Commonwealth Scholarship Commission in the UK (CSC), funde…".
+  p = p.replace(/,\s*(funded|administered|run|operated|managed|sponsored|supported|hosted)\s+by\b.*$/i, "").trim();
+  p = p.replace(/\s+(funded|administered|run|operated|managed|sponsored)\s+by\s+the\s+.*$/i, "").trim();
+  p = p.replace(/\s+in\s+partnership\s+with\b.*$/i, "").trim();
+  p = p.replace(/\s+together\s+with\b.*$/i, "").trim();
+
+  // Strip "in the UK" / "in the United Kingdom" / "in <Country>" tails —
+  // host country shows alongside the provider name in card headers, so
+  // duplicating "in the UK" inside the provider line is noise.
+  p = p.replace(/\s+in\s+the\s+(uk|united\s+kingdom|usa|united\s+states|us|eu|european\s+union)\s*$/i, "").trim();
+
+  // Drop the trailing " (CSC)" / " (DAAD)" parenthetical-acronym tails
+  // that survive earlier cleaning when no separator was present.
+  p = p.replace(/\s*\([A-Z]{2,8}\)\s*$/, "").trim();
+
   // After tail-stripping, re-check the junk gate. "Mastercard Foundation"
   // alone is fine, but if all that survived is "Various" or similar
   // we should null the whole thing.
   if (PROVIDER_JUNK.test(p)) return null;
 
   p = p.replace(/^(The\s+)?(Trustees|Board|Council|Office)\s+of\s+(the\s+)?/i, "");
-  if (p.length > 60) p = p.slice(0, 58).trimEnd() + "…";
+
+  // Soft length cap — push to 80 chars so legitimate longer names
+  // ("U.S. Department of State Bureau of Educational and Cultural
+  // Affairs") survive. CSS line-clamp-2 in callers handles wrap.
+  if (p.length > 80) p = p.slice(0, 78).trimEnd() + "…";
   return p;
 };
 

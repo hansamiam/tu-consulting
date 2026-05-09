@@ -2986,7 +2986,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
               <div className="flex flex-col gap-0.5">
                 <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-accent" />
+                  <GraduationCap className="w-5 h-5 text-accent" />
                   {t("Your strategy report", "Ваш стратегический отчёт")}
                 </CardTitle>
                 {pathwayGeneratedAt && !pathwayLoading && (() => {
@@ -3041,7 +3041,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                   <GraduationCap className="w-10 h-10 mx-auto text-muted-foreground/40" />
                   <p className="text-muted-foreground text-sm">{t("Complete your profile to generate a personalized pathway.", "Заполните профиль для персонального плана.")}</p>
                   <Button variant="gold" onClick={onBack}>
-                    <Sparkles className="w-4 h-4 mr-2" /> {t("Start Your Plan", "Начать план")}
+                    {t("Start Your Plan", "Начать план")}
+                    <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </div>
               )}
@@ -3052,7 +3053,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                   Renders during generation AND on completed briefs. */}
               {focusScholarship && (
                 <div className="not-prose mb-6 rounded-lg border border-gold/35 bg-gradient-to-br from-gold/[0.07] to-transparent px-4 py-3 flex items-start gap-3 print:hidden">
-                  <Sparkles className="w-4 h-4 text-gold-dark mt-0.5 shrink-0" />
+                  <Compass className="w-4 h-4 text-gold-dark mt-0.5 shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold-dark mb-1">
                       {t("Strategy focused around", "Стратегия выстроена вокруг")}
@@ -3394,7 +3395,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                                 onClick={() => setProUnlockOpen(true)}
                                 className="gap-1.5 shrink-0"
                               >
-                                <Sparkles className="w-4 h-4" />
+                                <Crown className="w-4 h-4" />
                                 {t("Answer & rewrite", "Ответить и переписать")}
                               </Button>
                             </div>
@@ -3706,7 +3707,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                           </p>
                           {!isProfileFilled && (
                             <Button variant="gold" size="sm" onClick={onBack} className="mt-4">
-                              <Sparkles className="w-4 h-4 mr-1" /> {t("Build my profile", "Заполнить профиль")}
+                              {t("Build my profile", "Заполнить профиль")}
+                              <ArrowRight className="w-4 h-4 ml-1" />
                             </Button>
                           )}
                         </div>

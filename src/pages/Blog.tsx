@@ -11,6 +11,9 @@ import { CampusBackdrop } from "@/components/CampusBackdrop";
 // Data + route at /blog/guide/:slug remain wired so flipping back to true
 // re-exposes everything without code work.
 const SHOW_COUNTRY_GUIDES = false;
+// Articles hidden behind a "coming soon" gate. Data file + /blog/:id route
+// preserved — flipping to true re-exposes the magazine layout.
+const SHOW_ARTICLES = false;
 
 const Blog = () => {
   const navigate = useNavigate();
@@ -87,8 +90,10 @@ const Blog = () => {
           </section>
         )}
 
-        {/* Featured + essays — compact */}
-        {featured && (
+        {/* Articles — hidden behind a coming-soon gate while content is
+            being commissioned. Switch SHOW_ARTICLES to true to surface
+            the magazine layout below. */}
+        {SHOW_ARTICLES && featured && (
           <section>
             <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-3">Featured</p>
             <article
@@ -120,7 +125,7 @@ const Blog = () => {
           </section>
         )}
 
-        {rest.length > 0 && (
+        {SHOW_ARTICLES && rest.length > 0 && (
           <section>
             <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-4">More essays</p>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -151,6 +156,29 @@ const Blog = () => {
                   </div>
                 </article>
               ))}
+            </div>
+          </section>
+        )}
+
+        {/* Coming-soon gate — appears whenever articles + guides are both
+            hidden, so the page never looks empty. */}
+        {!SHOW_ARTICLES && !SHOW_COUNTRY_GUIDES && (
+          <section className="py-10 lg:py-16">
+            <div className="max-w-2xl mx-auto text-center bg-card/60 border border-border rounded-2xl px-8 py-14 lg:px-12 lg:py-20 backdrop-blur-sm">
+              <p className="text-[10px] font-mono uppercase tracking-[0.28em] text-gold-dark mb-5">In progress</p>
+              <h2 className="font-heading text-2xl lg:text-3xl font-bold tracking-tight leading-tight mb-4">
+                A long-form journal is being commissioned.
+              </h2>
+              <p className="text-sm lg:text-base text-muted-foreground leading-relaxed max-w-lg mx-auto mb-8">
+                Country guides, scholarship strategy essays, admissions field notes — written by alumni who actually won the awards. We're holding the bar high before publishing.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70">
+                <span>Country guides</span>
+                <span className="text-muted-foreground/30">·</span>
+                <span>Strategy essays</span>
+                <span className="text-muted-foreground/30">·</span>
+                <span>Field notes</span>
+              </div>
             </div>
           </section>
         )}
