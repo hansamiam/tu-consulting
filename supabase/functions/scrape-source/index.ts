@@ -775,8 +775,40 @@ serve(async (req) => {
 
   // ─── Per-scholarship: dedup + diff + stage / publish ─────────────────────
   let newCount = 0, updatedCount = 0, autoPublished = 0, needsReview = 0;
+  let registryRejected = 0;
+
+  // Pull the discontinued-program slug list from the authoritative-facts
+  // registry (added 20260509120000) once per run so we can reject
+  // dead-program rows at ingest instead of catching them later via the
+  // anomaly cron. canonicalize_provider() + slug derivation must match
+  // the migration's seed slugs (lowercase + hyphens).
+  const { data: discontinuedRows } = await supa
+    .from("provider_authoritative_facts")
+    .select("provider_slug")
+    .eq("lifecycle_state", "discontinued");
+  const discontinuedSlugs = new Set<string>((discontinuedRows ?? []).map(r => (r as { provider_slug: string }).provider_slug));
+
+  // Slugify mirroring SQL provider_slug() — lowercase, drop apostrophes,
+  // collapse non-alphanumerics to hyphens.
+  const slugifyProvider = (raw: string): string =>
+    raw.toLowerCase().replace(/[''']/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
   for (const s of intraRunDedup) {
+    // ─── Authoritative-facts registry gate ───────────────────────
+    // If this row's provider canonicalizes to a known-discontinued
+    // slug, refuse to publish it. Saves cost (no embedding, no
+    // verify-cron cycle on dead rows) and prevents a known-bad row
+    // from ever entering the catalog.
+    const cleanedProvName = cleanProvider(s.provider_name) ?? s.provider_name;
+    if (cleanedProvName) {
+      const slug = slugifyProvider(cleanedProvName);
+      if (discontinuedSlugs.has(slug)) {
+        console.log(`[scrape-source] registry rejected DISCONTINUED program: ${s.scholarship_name} (slug=${slug})`);
+        registryRejected++;
+        continue;
+      }
+    }
+
     const fingerprint = await sha256Hex(
       `${s.scholarship_name.toLowerCase().trim()}|${s.provider_name.toLowerCase().trim()}|${s.host_country.toLowerCase().trim()}`
     );
@@ -1001,5 +1033,6 @@ serve(async (req) => {
     updated: updatedCount,
     auto_published: autoPublished,
     needs_review: needsReview,
+    registry_rejected: registryRejected,
   });
 });
