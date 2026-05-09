@@ -17,8 +17,8 @@ import nurzadaPhoto from "@/assets/nurzada.jpg";
 // emphasised below the founder pair so the page reads as
 // "two founders + a global expert network" rather than a static cohort.
 const FOUNDERS = [
-  { name: "Samuel Han",          credential: "Yale",                  photo: samuelPhoto, brings: "Personal statement strategy, US admissions" },
-  { name: "Nurzada Abdivalieva", credential: "Cambridge · Tsinghua",   photo: nurzadaPhoto, brings: "Schwarzman path, UK & China admissions" },
+  { name: "Samuel Han",          credential: "Yale",                  photo: samuelPhoto },
+  { name: "Nurzada Abdivalieva", credential: "Cambridge · Tsinghua",   photo: nurzadaPhoto },
 ];
 
 const Academy = () => {
@@ -47,11 +47,8 @@ const Academy = () => {
         <div className="text-center max-w-2xl mx-auto mb-10">
           <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">From the founders</p>
           <h2 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground leading-tight">
-            Two founders. One mission.
+            Built and run by the founders.
           </h2>
-          <p className="text-sm text-muted-foreground leading-relaxed mt-3 max-w-xl mx-auto">
-            Every cohort runs personally with the people who've been through the admissions and scholarship gauntlet themselves.
-          </p>
         </div>
         <div className="grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto">
           {FOUNDERS.map((f) => (
@@ -74,41 +71,27 @@ const Academy = () => {
               <p className="text-[11px] uppercase tracking-[0.18em] text-gold-dark font-semibold mt-2">
                 {f.credential}
               </p>
-              <p className="text-sm text-muted-foreground leading-snug mt-3">
-                {f.brings}
-              </p>
             </motion.div>
           ))}
         </div>
 
-        {/* Guest expert network — replaces the static 4-person faculty
-            grid. The promise: rotating cohort programming with topic-
-            specific specialists invited from around the world. Visual
-            treatment is intentionally airy + abstract (no fake names /
-            faces) so it doesn't read as vapor — and a soft gold-tinted
-            navy gradient block ties this section back to the rest of
-            the brand palette. */}
+        {/* Guest network — kept intentionally vague at this stage so we
+            don't over-promise specifics (admissions officers, essay
+            editors, etc) before they're locked in. */}
         <div className="mt-12 sm:mt-14">
           <div className="relative rounded-2xl border border-border bg-gradient-to-br from-primary/[0.04] via-card to-gold/[0.05] p-7 sm:p-9 overflow-hidden">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_hsl(var(--gold)/0.07),_transparent_55%)] pointer-events-none" />
             <div className="relative max-w-2xl">
               <div className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">
                 <Globe className="h-3 w-3" />
-                Plus a global expert network
+                Plus a global guest network
               </div>
               <h3 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground leading-tight mb-3">
-                Topic-specific specialists, invited from across the world.
+                Guest experts joining throughout the year.
               </h3>
               <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                Every cohort brings in subject-matter guests — from admissions officers, scholarship alumni, essay editors who've shaped winning applications, country-specific advisors who know which programs actually open doors. The roster rotates per cohort so you get the right voice for the room you're applying into.
+                Each cohort brings in additional voices to round out the workshops. Details closer to launch.
               </p>
-              <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-gold-dark" /> Admissions officers</span>
-                <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-gold-dark" /> Scholarship alumni</span>
-                <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-gold-dark" /> Essay editors</span>
-                <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-gold-dark" /> Country specialists</span>
-                <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-gold-dark" /> Topic experts</span>
-              </div>
             </div>
           </div>
         </div>
@@ -121,7 +104,7 @@ const Academy = () => {
             Doors open in June.
           </h3>
           <p className="text-sm text-muted-foreground mb-5 leading-relaxed max-w-md mx-auto">
-            Until then, the rest of TopUni — the AI brief and the scholarship Discover database — is live and free during beta.
+            Until then, the rest of TopUni — your personalized strategy from TopUni AI and the scholarship Discover database — is live and free during beta.
           </p>
           <div className="flex flex-col sm:flex-row gap-2.5 sm:justify-center">
             <Button asChild variant="gold" className="gap-1.5">

@@ -73,7 +73,7 @@ const COPY = {
     finalNoLeft: "Founding cohort filled. $39/mo standard with promo codes available.",
     finalGuarantee: "30-day money-back guarantee · Cancel anytime",
     notReady: "Not ready?",
-    notReadyMid: "still gets you the TopUni AI brief and your top 3 scholarship matches.",
+    notReadyMid: "still gets you a personalized strategy from TopUni AI and your top 3 scholarship matches.",
     needHelp: "Need 1:1 help?",
     seeConsulting: "See consulting →",
     authTitle: "Create your account",

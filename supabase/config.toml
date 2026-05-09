@@ -121,3 +121,6 @@ verify_jwt = false
 
 [functions.calendar-feed]
 verify_jwt = false
+
+[functions.funder-truth-probe]
+verify_jwt = true
