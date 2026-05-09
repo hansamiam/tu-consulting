@@ -21,7 +21,7 @@ import {
   Target, Flame, Users, FileText,
   AlertOctagon, UserCheck, ShieldAlert, MinusCircle, HelpCircle,
   LayoutGrid, List, EyeOff, Eye, Columns3, Circle, GitCompare,
-  Gem, DollarSign, Crown, Award, Compass, Layers, GraduationCap, Share2, Globe,
+  Gem, DollarSign, Crown, Award, Compass, Layers, GraduationCap, Share2, Globe, ShieldCheck,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
@@ -146,6 +146,13 @@ interface Scholarship {
    * matching but sparser rows) and could drive a UI "verified data"
    * badge later. */
   data_completeness_score?: number | null;
+  /* FK to the canonical providers table (added 20260509010000). NULL
+   * when the row's provider_name didn't resolve to a known funder. */
+  provider_id?: string | null;
+  /* Joined trust tier — high/medium/low/unknown. Populated when the
+   * fetch SELECTs providers(trust_tier) via the FK. Drives the
+   * "Verified funder" pill on cards + detail panels. */
+  provider_trust_tier?: "high" | "medium" | "low" | "unknown" | null;
 }
 
 interface Profile {
@@ -1464,6 +1471,15 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
                   {countryLabel && p && <span className="text-muted-foreground/40 mx-1.5">·</span>}
                   {p}
                 </p>
+                {s.provider_trust_tier === "high" && (
+                  <span
+                    className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[9px] font-bold uppercase tracking-[0.06em] px-1.5 py-0.5 shrink-0"
+                    title="Verified funder — recognised authoritative source"
+                  >
+                    <ShieldCheck className="w-2.5 h-2.5" />
+                    Verified
+                  </span>
+                )}
               </div>
             );
           })()}
@@ -1694,6 +1710,15 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
                 <p className="text-[11px] text-muted-foreground/85 line-clamp-1">
                   {p}
                 </p>
+                {s.provider_trust_tier === "high" && (
+                  <span
+                    className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[9px] font-bold uppercase tracking-[0.06em] px-1.5 py-0.5 shrink-0"
+                    title="Verified funder — recognised authoritative source"
+                  >
+                    <ShieldCheck className="w-2.5 h-2.5" />
+                    {ru ? "Проверен" : "Verified"}
+                  </span>
+                )}
               </div>
             );
           })()}
@@ -3000,7 +3025,7 @@ const Discover = ({ language = "en" }: Props) => {
       // It feeds scoreScholarship's engagement_boost, mirroring the
       // match_scholarships RPC's compounding moat. Cheap query; one
       // round-trip vs. the catalog fetch.
-      const [scholarshipsRes, statsRes] = await Promise.all([
+      const [scholarshipsRes, statsRes, providersRes] = await Promise.all([
         supabase
           .from("scholarships")
           .select("*")
@@ -3017,9 +3042,25 @@ const Discover = ({ language = "en" }: Props) => {
           .from("scholarship_stats")
           .select("scholarship_id, save_count_30d")
           .gt("save_count_30d", 0),
+        // Join the providers trust tier in a separate cheap query — far
+        // fewer providers than scholarships, so this is a small fetch
+        // we map back onto each row by provider_id. Drives the
+        // "Verified funder" pill on cards + the trust badge in detail.
+        supabase
+          .from("providers")
+          .select("provider_id, trust_tier")
+          .neq("trust_tier", "unknown"),
       ]);
       if (scholarshipsRes.data) {
-        const cleaned = dedupeAndQualityFilter(scholarshipsRes.data as unknown as Scholarship[]);
+        const trustMap = new Map<string, "high" | "medium" | "low" | "unknown">();
+        for (const p of (providersRes.data ?? []) as { provider_id: string; trust_tier: "high"|"medium"|"low"|"unknown" }[]) {
+          trustMap.set(p.provider_id, p.trust_tier);
+        }
+        const enriched = (scholarshipsRes.data as unknown as Scholarship[]).map(s => ({
+          ...s,
+          provider_trust_tier: s.provider_id ? trustMap.get(s.provider_id) ?? null : null,
+        }));
+        const cleaned = dedupeAndQualityFilter(enriched);
         setRows(cleaned);
       }
       if (statsRes.data) {

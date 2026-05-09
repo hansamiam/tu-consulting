@@ -18,7 +18,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, ExternalLink, Sparkles, Bookmark, BookmarkCheck,
   Calendar, Wallet, GraduationCap, Globe, CheckCircle2, AlertCircle,
-  Loader2, FileText, Users, ShieldAlert, Share2, Search,
+  Loader2, FileText, Users, ShieldAlert, Share2, Search, ShieldCheck,
 } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
@@ -94,6 +94,9 @@ interface Scholarship {
   data_source: string | null;
   url_check_status: string | null;
   url_consecutive_fails: number | null;
+  /* Canonical provider FK — added 20260509010000. NULL on legacy rows
+   * whose provider_name didn't resolve to a known funder slug. */
+  provider_id?: string | null;
 }
 
 type SimilarScholarship = ScholarshipCardData;
@@ -116,6 +119,11 @@ const ScholarshipDetail = () => {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  // More-from-funder rail — populated when this row is linked to a
+  // canonical provider (provider_id NULL on legacy rows). Rail hides
+  // when zero peers are returned.
+  const [siblings, setSiblings] = useState<SimilarScholarship[]>([]);
+  const [providerMeta, setProviderMeta] = useState<{ slug: string; canonical_name: string; trust_tier: "high"|"medium"|"low"|"unknown" } | null>(null);
   const track = useScholarshipTracking();
 
   // Fire a 'viewed' event when the scholarship loads. The hook dedups
@@ -205,6 +213,46 @@ const ScholarshipDetail = () => {
     // through the optional chain, hence the suppress.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s?.scholarship_id]);
+
+  /* Provider metadata + sibling-from-funder rail. Pulls from the
+     providers table (added 20260509010000) when this row is linked
+     via provider_id, then fetches up to 4 active sibling scholarships
+     from the same funder. Both queries soft-fail; legacy rows without
+     provider_id silently skip and the rail hides. */
+  useEffect(() => {
+    if (!s?.provider_id) {
+      setProviderMeta(null);
+      setSiblings([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: provider } = await supabase
+          .from("providers")
+          .select("slug, canonical_name, trust_tier")
+          .eq("provider_id", s.provider_id)
+          .maybeSingle<{ slug: string; canonical_name: string; trust_tier: "high"|"medium"|"low"|"unknown" }>();
+        if (cancelled) return;
+        if (provider) setProviderMeta(provider);
+
+        const { data: siblingRows } = await supabase
+          .from("scholarships")
+          .select("scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, application_deadline, target_degree_level, target_fields, is_featured, why_this_fits, official_url")
+          .eq("provider_id", s.provider_id)
+          .neq("scholarship_id", s.scholarship_id)
+          .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
+          .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null")
+          .order("estimated_total_value_usd", { ascending: false, nullsFirst: false })
+          .limit(4);
+        if (!cancelled) setSiblings((siblingRows as SimilarScholarship[]) ?? []);
+      } catch (e) {
+        console.warn("provider sibling fetch failed", e);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s?.provider_id, s?.scholarship_id]);
 
   /* SEO meta — unique per scholarship */
   useEffect(() => {
@@ -457,9 +505,28 @@ const ScholarshipDetail = () => {
           </h1>
           {(() => {
             const p = cleanProvider(s.provider_name);
-            return p ? (
-              <p className="text-primary-foreground/80 text-sm sm:text-base mb-5">{p}</p>
-            ) : null;
+            if (!p) return null;
+            const isVerified = providerMeta?.trust_tier === "high";
+            return (
+              <div className="flex flex-wrap items-center gap-2 mb-5">
+                {providerMeta?.slug ? (
+                  <Link
+                    to={`/scholarships/by-provider/${providerMeta.slug}`}
+                    className="text-primary-foreground/85 text-sm sm:text-base underline-offset-4 hover:underline"
+                  >
+                    {p}
+                  </Link>
+                ) : (
+                  <p className="text-primary-foreground/80 text-sm sm:text-base">{p}</p>
+                )}
+                {isVerified && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/20 text-emerald-100 text-[10px] font-bold uppercase tracking-[0.12em] px-2 py-0.5">
+                    <ShieldCheck className="w-3 h-3" />
+                    Verified funder
+                  </span>
+                )}
+              </div>
+            );
           })()}
           <div className="flex flex-wrap gap-2 mb-6">
             {s.coverage_type && (
@@ -719,6 +786,46 @@ const ScholarshipDetail = () => {
           </Button>
           <p className="text-[11px] text-muted-foreground/70 mt-4">60 seconds. Free.</p>
         </div>
+
+        {/* More from this funder — only renders when this row is linked
+            to a canonical provider AND the funder has other active
+            programs in the catalog. Compounds engagement: visiting "DAAD
+            STEM Fellowship" surfaces the other 6 DAAD programs, none of
+            which the user might have known existed. */}
+        {siblings.length > 0 && providerMeta && (
+          <div className="mb-12">
+            <div className="flex items-baseline justify-between gap-3 mb-4">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-1.5">
+                  More from this funder
+                </p>
+                <h3 className="font-heading text-lg font-bold tracking-tight text-foreground">
+                  {providerMeta.canonical_name}
+                </h3>
+              </div>
+              <Link
+                to={`/scholarships/by-provider/${providerMeta.slug}`}
+                className="text-xs text-muted-foreground hover:text-gold-dark transition-colors hidden sm:inline-flex items-center gap-1"
+              >
+                All scholarships <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {siblings.map((sib, i) => (
+                <ScholarshipCard
+                  key={sib.scholarship_id}
+                  row={sib}
+                  index={i}
+                  compact
+                  onShare={(row) => {
+                    const url = `${window.location.origin}/scholarships/${row.scholarship_id}`;
+                    navigator.clipboard?.writeText(url).then(() => toast.success("Link copied"));
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Similar scholarships */}
         {similar.length > 0 && (

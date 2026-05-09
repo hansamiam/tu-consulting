@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Award, Calendar, GraduationCap, MapPin, Crown, ArrowRight, Share2,
-  Users, Flame,
+  Users, Flame, ShieldCheck,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,11 @@ export interface ScholarshipCardData {
   // avatar. Optional so callers can opt into the favicon path; missing
   // URL just falls back to the colored monogram.
   official_url?: string | null;
+  // Provider trust tier — joined from public.providers via provider_id.
+  // When 'high', the card renders a small "Verified funder" pill next
+  // to the provider name. Optional so older callers / surfaces that
+  // don't fetch the join still work.
+  provider_trust_tier?: "high" | "medium" | "low" | "unknown" | null;
 }
 
 /** Activity stats — passed in by the parent if available. The card hides
@@ -326,7 +331,18 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
             </h3>
           </Link>
           {cleanedProvider && (
-            <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{cleanedProvider}</p>
+            <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+              <p className="text-[11px] text-muted-foreground truncate">{cleanedProvider}</p>
+              {r.provider_trust_tier === "high" && (
+                <span
+                  className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[9px] font-bold uppercase tracking-[0.06em] px-1.5 py-0.5 shrink-0"
+                  title="Verified funder — recognised authoritative source"
+                >
+                  <ShieldCheck className="w-2.5 h-2.5" />
+                  Verified
+                </span>
+              )}
+            </div>
           )}
         </div>
         {onShare && (
