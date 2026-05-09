@@ -2202,9 +2202,20 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             <SheetTitle className="text-foreground font-heading text-[26px] sm:text-[30px] leading-[1.1] tracking-[-0.02em] text-left">
               {cleanScholarshipName(s.scholarship_name)}
             </SheetTitle>
-            <p className="text-muted-foreground text-sm text-left -mt-1">
-              {[cleanProvider(s.provider_name), s.host_country && shortCountry(s.host_country)].filter(Boolean).join(" · ")}
-            </p>
+            <div className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground -mt-1">
+              <p className="text-left">
+                {[cleanProvider(s.provider_name), s.host_country && shortCountry(s.host_country)].filter(Boolean).join(" · ")}
+              </p>
+              {s.provider_trust_tier === "high" && (
+                <span
+                  className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold uppercase tracking-[0.06em] px-1.5 py-0.5"
+                  title={t("Verified funder — recognised authoritative source", "Проверенный фонд — авторитетный источник")}
+                >
+                  <ShieldCheck className="w-2.5 h-2.5" />
+                  {t("Verified", "Проверен")}
+                </span>
+              )}
+            </div>
 
             {/* Eligibility framing reworked in round 6 — earlier copy
                 ('You qualify on paper' / 'Near miss' / 'Doesn't fit')
