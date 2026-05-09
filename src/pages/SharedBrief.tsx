@@ -11,7 +11,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowRight, Loader2, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, Loader2, ShieldCheck, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
@@ -368,7 +368,7 @@ const SharedBriefPage = () => {
                 </h3>
                 <ul className="space-y-1.5 text-sm text-muted-foreground leading-relaxed mb-5">
                   <li className="flex items-start gap-2">
-                    <Sparkles className="w-3.5 h-3.5 text-gold-dark mt-1 shrink-0" />
+                    <Award className="w-3.5 h-3.5 text-gold-dark mt-1 shrink-0" />
                     <span>
                       {isRu
                         ? "Стратегическое позиционирование, шорт-лист 15+ университетов, путь финансирования, план на 90 дней."

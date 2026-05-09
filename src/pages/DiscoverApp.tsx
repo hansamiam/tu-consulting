@@ -11,9 +11,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
-  Sparkles, Calendar, ExternalLink, Lock, Target, TrendingUp, AlertTriangle,
-  CheckCircle2, XCircle, Clock, Award, Compass, Lightbulb, ArrowRight,
-  Pencil, LogOut,
+  Award,
+  Calendar,
+  ExternalLink,
+  Lock,
+  Target,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Compass,
+  Lightbulb,
+  ArrowRight,
+  Pencil,
+  LogOut,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link, Navigate } from "react-router-dom";
@@ -392,7 +404,7 @@ const DiscoverApp = ({ language = "en" }: Props) => {
                   className="w-full bg-foreground text-background hover:bg-foreground/90 rounded-full h-11 mt-1"
                   onClick={() => setSubmitted(true)}
                 >
-                  <Sparkles className="h-4 w-4 mr-2" />
+                  <Award className="h-4 w-4 mr-2" />
                   {isRu ? "Пересчитать матчи" : "Re-rank matches"}
                 </Button>
               </div>

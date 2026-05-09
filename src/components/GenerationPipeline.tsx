@@ -1,7 +1,15 @@
 import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Check, Loader2, Database, Sparkles, Target, FileText, Calendar, Brain, Zap,
+  Check,
+  Loader2,
+  Database,
+  Award,
+  Target,
+  FileText,
+  Calendar,
+  Brain,
+  Zap,
 } from "lucide-react";
 
 /**
@@ -89,7 +97,7 @@ export function GenerationPipeline({ profile, isRu = false }: Props) {
     },
     {
       id: "shortlist",
-      Icon: Sparkles,
+      Icon: Award,
       label: t("Building your shortlist", "Собираем шорт-лист"),
       detail: t("Strong fits → competitive matches → worth keeping on the radar", "Сильные совпадения → конкурентные → стоит держать в виду"),
       doneAt: 5000,

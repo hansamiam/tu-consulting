@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, ArrowRight, Sparkles } from "lucide-react";
+import { Loader2, ArrowRight, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -58,7 +58,7 @@ export default function PreCallIntake({ sessionId, email, onComplete }: PreCallI
       <div className="flex items-center gap-2 mb-2">
         <span className="bg-accent text-accent-foreground rounded-full h-7 w-7 inline-flex items-center justify-center text-sm font-bold">1</span>
         <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-accent" />
+          <Award className="h-5 w-5 text-accent" />
           Help us prep — 60 seconds
         </h2>
       </div>

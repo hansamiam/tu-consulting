@@ -29,7 +29,7 @@
  */
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles, X, ChevronRight, ListTree } from "lucide-react";
+import { Loader2, Award, X, ChevronRight, ListTree } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { getStoredProfile } from "@/components/discover/DiscoverProfileGate";
@@ -206,7 +206,7 @@ export const EssayOutlineCard = ({ scholarshipName, essayPrompt, essayTitle, wor
               onClick={insertFullScaffold}
               className="gap-1.5 h-8 text-[12px]"
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Award className="w-3.5 h-3.5" />
               {t("Insert full scaffold into draft", "Вставить всю структуру в черновик")}
             </Button>
             <button

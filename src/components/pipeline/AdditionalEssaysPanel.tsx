@@ -22,7 +22,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
-  Loader2, Sparkles, Wand2, X, Plus, Target, Trash2,
+  Loader2,
+  Award,
+  Wand2,
+  X,
+  Plus,
+  Target,
+  Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
@@ -440,7 +446,7 @@ const EssayCard = ({ essay, index, scholarshipName, language, onChange, onRemove
         {showCritique && (
           <aside className="rounded-xl border border-gold/25 bg-gold/[0.04] p-3.5 min-w-0 xl:max-h-[500px] xl:overflow-y-auto">
             <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] font-semibold text-gold-dark mb-2">
-              <Sparkles className="w-3 h-3" />
+              <Award className="w-3 h-3" />
               <span>{t("Reader's notes", "Заметки читателя")}</span>
               {critiquing && <Loader2 className="w-3 h-3 animate-spin ml-auto" />}
               {!critiquing && critique && (

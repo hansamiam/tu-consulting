@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Lock, Loader2, ShieldCheck, Sparkles, Clock, CheckCircle2, CreditCard } from "lucide-react";
+import { Lock, Loader2, ShieldCheck, Award, Clock, CheckCircle2, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { trackPaymentFunnel } from "@/utils/analytics";
 import { supabase } from "@/integrations/supabase/client";
@@ -395,7 +395,7 @@ export const PaymentDialog = ({
             {/* Trust block */}
             <div className="rounded-xl border border-accent/20 bg-accent/5 p-4 space-y-2">
               <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <Sparkles className="h-4 w-4 text-accent" />
+                <Award className="h-4 w-4 text-accent" />
                 {t.whyTrust}
               </div>
               <ul className="space-y-1.5 text-xs text-muted-foreground">

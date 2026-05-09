@@ -25,7 +25,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2, Send, Loader2, ArrowRight, AlertCircle, Sparkles } from "lucide-react";
+import { CheckCircle2, Send, Loader2, ArrowRight, AlertCircle, Award } from "lucide-react";
 
 interface SubmitProps { language?: "en" | "ru"; }
 
@@ -248,7 +248,7 @@ const SubmitScholarship = ({ language = "en" }: SubmitProps) => {
             <p className="text-muted-foreground leading-relaxed mb-8 max-w-lg mx-auto">{t.successDesc(success)}</p>
             <div className="flex items-center justify-center gap-2 flex-wrap">
               <Button variant="gold" onClick={reset} className="gap-2">
-                <Sparkles className="w-4 h-4" /> {t.successCtaPrimary}
+                <Award className="w-4 h-4" /> {t.successCtaPrimary}
               </Button>
               <Button variant="outline" onClick={() => navigate(discoverPath)} className="gap-2">
                 {t.successCtaSecondary} <ArrowRight className="w-4 h-4" />

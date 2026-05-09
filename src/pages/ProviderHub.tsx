@@ -21,7 +21,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowRight, Sparkles, Globe, ExternalLink, ShieldCheck } from "lucide-react";
+import { ArrowRight, Award, Globe, ExternalLink, ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
@@ -343,7 +343,7 @@ const ProviderHub = ({ language = "en" }: Props) => {
 
               <div className="mt-8 flex flex-wrap gap-3">
                 <Button onClick={() => navigate(ru ? "/topuni-ai/ru" : "/topuni-ai")} className="gap-2 bg-primary text-primary-foreground">
-                  <Sparkles className="w-4 h-4" /> {t("Build my strategy", "Построить стратегию")}
+                  <Award className="w-4 h-4" /> {t("Build my strategy", "Построить стратегию")}
                 </Button>
                 {provider.official_website && (
                   <Button asChild variant="outline" className="gap-2">

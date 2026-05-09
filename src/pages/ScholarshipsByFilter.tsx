@@ -14,7 +14,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, Search } from "lucide-react";
+import { ArrowRight, Award, Search } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ import { ShareScholarshipModal } from "@/components/ShareScholarshipModal";
 import { EmptyState } from "@/components/EmptyState";
 import { HubFactsBlock } from "@/components/discover/HubFactsBlock";
 import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
+import { scholarshipPageSeo } from "@/data/scholarshipPageSeo";
 
 interface ScholarshipRow extends ScholarshipCardData {
   official_url: string | null;
@@ -180,6 +181,27 @@ const THEMES: Record<string, { titlePart: string; predicate: (r: ScholarshipRow)
     predicate: (r) => (r.deadline_type ?? "").toLowerCase() === "rolling",
     introHint: "Scholarships that accept applications year-round on a rolling basis.",
   },
+  // Central Asia ICP themes — added 2026-05-09 from SEO dossier gap analysis.
+  // Predicates are permissive: blank citizenship_requirements counts as
+  // "open to all" since most globally-eligible programs leave it null.
+  "for-kazakhstan-students": {
+    titlePart: "For Kazakhstan students",
+    predicate: (r) => {
+      const c = (r.citizenship_requirements ?? "").toLowerCase();
+      if (!c) return true;
+      return /kazakhstan|central asia|cis|worldwide|all countries|all nationalities|international students/.test(c);
+    },
+    introHint: "Scholarships open to citizens of Kazakhstan — eligibility checked against citizenship rules.",
+  },
+  "for-kyrgyzstan-students": {
+    titlePart: "For Kyrgyzstan students",
+    predicate: (r) => {
+      const c = (r.citizenship_requirements ?? "").toLowerCase();
+      if (!c) return true;
+      return /kyrgyz|central asia|cis|worldwide|all countries|all nationalities|international students/.test(c);
+    },
+    introHint: "Scholarships open to citizens of Kyrgyzstan — eligibility checked against citizenship rules.",
+  },
 };
 
 interface Props {
@@ -200,34 +222,52 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
   const slug = (params.country || params.field || params.theme || "").toLowerCase();
   const fieldSlug = (params.field || "").toLowerCase();
   const resolved = useMemo<{ label: string; secondaryLabel?: string; valid: boolean; meta: PageMeta; theme?: keyof typeof THEMES }>(() => {
+    /* Apply hand-crafted SEO overrides from src/data/scholarshipPageSeo.ts on
+       top of the procedurally-generated meta. Override keys mirror the route
+       prefix: by-country/<slug>, by-field/<slug>, theme/<slug>. country-field
+       hubs aren't in the dossier yet so they always use the procedural copy. */
+    const applyOverride = (defaultMeta: PageMeta, overrideKey: string): PageMeta => {
+      const o = scholarshipPageSeo[overrideKey];
+      if (!o) return defaultMeta;
+      return {
+        ...defaultMeta,
+        h1: o.h1,
+        title: o.title,
+        intro: o.intro,
+        description: o.metaDescription,
+      };
+    };
+
     if (mode === "country") {
       const label = COUNTRY_SLUGS[slug];
       if (!label) return { label: slug, valid: false, meta: blankMeta() };
+      const defaultMeta: PageMeta = {
+        h1: `Scholarships in ${label}`,
+        title: `Scholarships in ${label} for international students — TopUni`,
+        intro: `Verified scholarship programs hosted in ${label}. Match scores, eligibility, deadlines, and award amounts — all in one place.`,
+        description: `Find scholarships in ${label} with full eligibility details, deadlines, and award amounts. Then build a personalised admissions strategy with TopUni AI.`,
+        canonical: `${SITE}/scholarships/by-country/${slug}`,
+      };
       return {
         label,
         valid: true,
-        meta: {
-          h1: `Scholarships in ${label}`,
-          title: `Scholarships in ${label} for international students — TopUni`,
-          intro: `Verified scholarship programs hosted in ${label}. Match scores, eligibility, deadlines, and award amounts — all in one place.`,
-          description: `Find scholarships in ${label} with full eligibility details, deadlines, and award amounts. Then build a personalised admissions strategy with TopUni AI.`,
-          canonical: `${SITE}/scholarships/by-country/${slug}`,
-        },
+        meta: applyOverride(defaultMeta, `by-country/${slug}`),
       };
     }
     if (mode === "field") {
       const label = FIELD_SLUGS[slug];
       if (!label) return { label: slug, valid: false, meta: blankMeta() };
+      const defaultMeta: PageMeta = {
+        h1: `${label} scholarships`,
+        title: `${label} scholarships for international students — TopUni`,
+        intro: `Programs that specifically fund ${label} studies abroad. Eligibility, award sizes, and deadlines from official sources.`,
+        description: `Discover scholarships for ${label} students from around the world. Eligibility, award sizes, deadlines, plus a free AI strategy planner.`,
+        canonical: `${SITE}/scholarships/by-field/${slug}`,
+      };
       return {
         label,
         valid: true,
-        meta: {
-          h1: `${label} scholarships`,
-          title: `${label} scholarships for international students — TopUni`,
-          intro: `Programs that specifically fund ${label} studies abroad. Eligibility, award sizes, and deadlines from official sources.`,
-          description: `Discover scholarships for ${label} students from around the world. Eligibility, award sizes, deadlines, plus a free AI strategy planner.`,
-          canonical: `${SITE}/scholarships/by-field/${slug}`,
-        },
+        meta: applyOverride(defaultMeta, `by-field/${slug}`),
       };
     }
     if (mode === "country-field") {
@@ -250,17 +290,18 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
     // theme
     const theme = THEMES[slug as keyof typeof THEMES];
     if (!theme) return { label: slug, valid: false, meta: blankMeta() };
+    const defaultMeta: PageMeta = {
+      h1: `${theme.titlePart} scholarships`,
+      title: `${theme.titlePart} scholarships for international students — TopUni`,
+      intro: theme.introHint,
+      description: `${theme.titlePart} scholarships for international students. ${theme.introHint} Build a personalised plan free.`,
+      canonical: `${SITE}/scholarships/theme/${slug}`,
+    };
     return {
       label: theme.titlePart,
       valid: true,
       theme: slug as keyof typeof THEMES,
-      meta: {
-        h1: `${theme.titlePart} scholarships`,
-        title: `${theme.titlePart} scholarships for international students — TopUni`,
-        intro: theme.introHint,
-        description: `${theme.titlePart} scholarships for international students. ${theme.introHint} Build a personalised plan free.`,
-        canonical: `${SITE}/scholarships/theme/${slug}`,
-      },
+      meta: applyOverride(defaultMeta, `theme/${slug}`),
     };
   }, [mode, slug, fieldSlug]);
 
@@ -529,7 +570,7 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
                   navigate("/topuni-ai");
                 }}
               >
-                <Sparkles className="w-4 h-4" />
+                <Award className="w-4 h-4" />
                 {mode === "country" ? `Build my ${resolved.label} strategy`
                   : mode === "field" ? `Build my ${resolved.label} strategy`
                   : mode === "country-field" ? `Build my ${resolved.secondaryLabel} in ${resolved.label} strategy`

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Check, Star, ArrowLeft, Info, ArrowRight, Clock, Users, TrendingUp, Zap, ChevronRight, GraduationCap, Target, Award, MessageCircle, Sparkles, Mail } from "lucide-react";
+import { Check, Star, ArrowLeft, Info, ArrowRight, Clock, Users, TrendingUp, Zap, ChevronRight, GraduationCap, Target, Award, MessageCircle, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -300,7 +300,7 @@ const Offerings = () => {
               className="text-base px-8 gap-2 hover:scale-105 transition-transform"
               onClick={() => document.getElementById('consultations')?.scrollIntoView({ behavior: 'smooth' })}
             >
-              <Sparkles className="w-5 h-5" /> Book a free call
+              <Award className="w-5 h-5" /> Book a free call
             </Button>
           </div>
         </div>

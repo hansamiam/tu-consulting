@@ -9,20 +9,43 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle2, Users, Filter, Globe, BarChart3, Sparkles } from "lucide-react";
+import { CheckCircle2, Users, Filter, Globe, BarChart3, Award } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const TopUniAIPartners = () => {
   const { toast } = useToast();
   const [institutionName, setInstitutionName] = useState("");
   const [region, setRegion] = useState("");
   const [contact, setContact] = useState("");
-  
+
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
+    const { error } = await supabase.functions.invoke("partner-inquiry-notify", {
+      body: {
+        institution_name: institutionName,
+        region,
+        contact_email: contact,
+        message,
+        language: "en",
+        source_path: typeof window !== "undefined" ? window.location.pathname : null,
+      },
+    });
+    setSubmitting(false);
+    if (error) {
+      toast({
+        title: "Submission failed",
+        description: "Please try again or email us directly.",
+        variant: "destructive",
+      });
+      return;
+    }
     setSubmitted(true);
     toast({ title: "Request submitted", description: "We'll be in touch within 48 hours." });
   };
@@ -40,7 +63,7 @@ const TopUniAIPartners = () => {
       <div className="relative z-10">
       <Navigation language="en" />
       <div className="bg-primary text-primary-foreground text-center py-2 text-sm font-medium tracking-wide">
-        <Sparkles className="inline-block w-4 h-4 mr-2 text-accent" />Launching Soon — Early Access Prototype<Sparkles className="inline-block w-4 h-4 ml-2 text-accent" />
+        <Award className="inline-block w-4 h-4 mr-2 text-accent" />Launching Soon — Early Access Prototype<Award className="inline-block w-4 h-4 ml-2 text-accent" />
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-16 space-y-16">
@@ -78,7 +101,7 @@ const TopUniAIPartners = () => {
                   <div className="space-y-2"><Label>Region *</Label><Input required value={region} onChange={e => setRegion(e.target.value)} placeholder="e.g. United Kingdom" /></div>
                   <div className="space-y-2"><Label>Admissions Contact Email *</Label><Input required type="email" value={contact} onChange={e => setContact(e.target.value)} placeholder="admissions@university.edu" /></div>
                   <div className="space-y-2"><Label>Message</Label><Textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Tell us about your institution and goals..." rows={4} /></div>
-                  <Button type="submit" variant="gold" size="lg" className="w-full">Request Partnership Discussion</Button>
+                  <Button type="submit" variant="gold" size="lg" className="w-full" disabled={submitting}>{submitting ? "Submitting…" : "Request Partnership Discussion"}</Button>
                 </form>
               )}
             </CardContent>

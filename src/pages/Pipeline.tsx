@@ -15,7 +15,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, ExternalLink, Calendar,
-  StickyNote, Loader2, Search, Inbox, ChevronDown, Bot, KanbanSquare, FileText,
+  StickyNote, Loader2, Search, Inbox, ChevronDown, Bot, KanbanSquare, FileText, PenLine,
 } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
@@ -38,12 +38,10 @@ import { EssayDraftPanel } from "@/components/pipeline/EssayDraftPanel";
 import { AdditionalEssaysPanel } from "@/components/pipeline/AdditionalEssaysPanel";
 import { RecommendersPanel } from "@/components/pipeline/RecommendersPanel";
 import { getStoredProfile } from "@/components/discover/DiscoverProfileGate";
-import { UpcomingDeadlines } from "@/components/pipeline/UpcomingDeadlines";
-import { EssaysTab } from "@/components/pipeline/EssaysTab";
-import { SavedAlertsSection } from "@/components/pipeline/SavedAlertsSection";
-import { ActivityFeedSection } from "@/components/pipeline/ActivityFeedSection";
-import { UpgradeChip } from "@/components/UpgradeChip";
-import { InstaFollowChip } from "@/components/InstaFollowChip";
+// Round-41: UpcomingDeadlines, EssaysTab, SavedAlertsSection,
+// ActivityFeedSection, UpgradeChip, InstaFollowChip imports retired
+// — Workspace stripped down to a focus-mode 2-pane (sorter + drafter).
+// Components still live in the codebase for re-use elsewhere.
 
 interface Scholarship {
   scholarship_id: string;
@@ -262,6 +260,28 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
   const [draftNote, setDraftNote] = useState<string>("");
   const [calendarOpen, setCalendarOpen] = useState(false);
 
+  /* Round-41: workspace pivot to a focus-mode writing surface. The page
+   * is now a 2-pane layout — a scholarship sorter on the left, an
+   * A4-feeling essay canvas on the right. selectedId tracks which
+   * scholarship's draft is open in the canvas. Defaults to the
+   * deadline-soonest tracked row so users land in working state, not
+   * an empty paper. */
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  useEffect(() => {
+    if (selectedId && rows.some(r => r.scholarship_id === selectedId)) return;
+    if (rows.length === 0) { setSelectedId(null); return; }
+    const sorted = [...rows].sort((a, b) => {
+      const ad = a.application_deadline ? new Date(a.application_deadline).getTime() : Number.POSITIVE_INFINITY;
+      const bd = b.application_deadline ? new Date(b.application_deadline).getTime() : Number.POSITIVE_INFINITY;
+      return ad - bd;
+    });
+    setSelectedId(sorted[0]?.scholarship_id ?? null);
+  }, [rows, selectedId]);
+  const selectedScholarship = useMemo(
+    () => rows.find(r => r.scholarship_id === selectedId) ?? null,
+    [rows, selectedId],
+  );
+
   /* Award-capture prompt — opens whenever a member flips a row's status
      to 'accepted'. We keep the scholarship_id the prompt is for so the
      dialog can render the name + write the captured amount back via
@@ -340,317 +360,227 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
     <div className="min-h-screen bg-background">
       <Navigation language={language} />
 
-      {/* ─── Header ────────────────────────────────────────────────── */}
-      <section className="bg-gradient-to-br from-primary via-primary to-primary/95 py-12 sm:py-16">
-        <div className="max-w-6xl mx-auto px-5 sm:px-8">
+      {/* ─── Slim header strip ─────────────────────────────────────────
+           Round-41: replaced the giant navy hero + 5-stat banner. The
+           Workspace surface should feel like a writing tool, not a
+           marketing page. A single low-key strip is enough to root the
+           user — back-link to Discover, page title, account/calendar
+           controls. The work itself happens below. */}
+      <section className="border-b border-border bg-card/30 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 py-3.5 flex items-center gap-3">
           <Link
             to={isRu ? "/discover/ru" : "/discover"}
-            className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.18em] text-primary-foreground/70 hover:text-gold-light transition-colors mb-4"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1.5 rounded-md hover:bg-foreground/[0.04]"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            {t("Back to Discover", "К Discover")}
+            <span className="hidden sm:inline">{t("Discover", "Discover")}</span>
           </Link>
-          <p className="text-[11px] uppercase tracking-[0.22em] text-gold font-semibold mb-3">
+          <span className="hidden sm:block self-stretch w-px bg-border/60 my-1" aria-hidden />
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark dark:text-gold-light">
+            {t("TopUni", "TopUni")}
+          </p>
+          <h1 className="font-heading text-base sm:text-lg font-bold text-foreground tracking-tight leading-none -ml-1.5">
             {t("Workspace", "Рабочая зона")}
-          </p>
-          <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold text-primary-foreground tracking-tight leading-tight mb-3">
-            {t("Your applications, in one place.", "Все ваши заявки в одном месте.")}
           </h1>
-          <p className="text-primary-foreground/75 text-sm sm:text-base max-w-xl leading-relaxed">
-            {t(
-              user
-                ? "Pipeline, deadline calendar, and essay drafts — one workspace, synced across devices."
-                : "Pipeline, deadline calendar, and essay drafts in one workspace. Sign up to sync across devices.",
-              user
-                ? "Воронка, календарь дедлайнов и черновики эссе — одна рабочая зона, синхронизация на устройствах."
-                : "Воронка, календарь дедлайнов и черновики эссе в одной рабочей зоне. Зарегистрируйтесь для синхронизации.",
-            )}
-          </p>
+          <div className="flex-1" />
           {user && (
-            <div className="mt-5 flex flex-wrap items-center gap-3">
+            <>
               <Button
-                variant="gold"
+                variant="ghost"
                 size="sm"
-                className="gap-2"
+                className="gap-1.5 h-8 text-xs hidden sm:inline-flex"
                 onClick={() => setCalendarOpen(true)}
               >
                 <Calendar className="h-3.5 w-3.5" />
-                {t("Sync deadlines to my calendar", "Дедлайны в календарь")}
+                {t("Calendar sync", "Календарь")}
               </Button>
               <Link
-                to={isRu ? "/refer/ru" : "/refer"}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-foreground/85 hover:text-gold-light transition-colors underline-offset-4 hover:underline"
-              >
-                {t("Refer a friend → free month", "Пригласить друга → бесплатный месяц")}
-                <ArrowRight className="h-3 w-3" />
-              </Link>
-              {/* Round-34: small Account link gives a clear path
-                  to the separate billing/settings page without
-                  bloating the Workspace body with that content. */}
-              <Link
                 to={isRu ? "/account/ru" : "/account"}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-foreground/65 hover:text-primary-foreground transition-colors ml-auto"
+                className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1.5"
               >
-                {t("Account · settings", "Аккаунт · настройки")}
+                {t("Account", "Аккаунт")}
               </Link>
-            </div>
+            </>
           )}
         </div>
       </section>
 
-      {/* ─── Stats banner ─────────────────────────────────────────── */}
-      <section className="border-b border-border bg-card/40">
-        <div className="max-w-6xl mx-auto px-5 sm:px-8 py-5">
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-            <Stat
-              label={t("Tracked", "Отслеживается")}
-              value={stats.totalTracked.toString()}
-              hint={loading ? t("loading…", "загрузка…") : undefined}
-            />
-            <Stat
-              label={t("Deadlines · 30 days", "Дедлайны · 30 дней")}
-              value={stats.urgentCount.toString()}
-              tone={stats.urgentCount > 0 ? "warn" : "neutral"}
-              hint={stats.urgentCount > 0 ? t("act this month", "действовать в этом месяце") : undefined}
-            />
-            <Stat
-              label={t("Submitted", "Подано")}
-              value={stats.submitted.toString()}
-            />
-            <Stat
-              label={t("Funding stack", "Стек финансирования")}
-              value={stats.stackText || "—"}
-              hint={t("est. potential", "потенциал")}
-            />
-            <Stat
-              label={t("Won", "Выиграно")}
-              value={stats.wonText || (stats.wonCount > 0 ? "$0" : "—")}
-              tone={stats.wonUsd > 0 ? "good" : "neutral"}
-              hint={stats.wonCount > 0 ? `${stats.wonCount} ${t("accepted", "принято")}` : undefined}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Scholarships section ───────────────────────────────────
-          Tabs retired (round 22). Workspace is now a single scrolling
-          page: scholarships → calendar → essays. The category-vs-list
-          toggle is local to this section and persists via ?view=list. */}
-      <section className="max-w-6xl mx-auto px-5 sm:px-8 py-8 sm:py-12">
-        {loading && trackedIds.length > 0 ? (
+      {/* Stats banner removed (round 41) — Workspace is a focus surface
+          for writing, not a dashboard. Counts that mattered (urgent
+          deadlines) surface inline in the sidebar list. */}
+      {/* ─── Workspace body — focus mode ─────────────────────────────
+           Round-41 redesign: 2-pane layout with the application sorter
+           on the left and an A4-feeling essay canvas on the right.
+           Strips out stats, calendar block, saved-alerts block, essays
+           grid, upgrade chip, and the kanban-as-main treatment. The
+           writing surface is the workspace; everything else is
+           reachable via the row's Open-details affordance. */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-7">
+        {trackedIds.length === 0 ? (
+          <EmptyState language={language} />
+        ) : loading ? (
           <div className="py-20 flex items-center justify-center text-muted-foreground gap-2">
             <Loader2 className="w-4 h-4 animate-spin" />
-            <span className="text-sm">{t("Loading your pipeline…", "Загружаем вашу воронку…")}</span>
+            <span className="text-sm">{t("Loading your applications…", "Загружаем заявки…")}</span>
           </div>
-        ) : trackedIds.length === 0 ? (
-          <EmptyState language={language} />
-        ) : null}
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-[320px,1fr] gap-5 lg:gap-6">
+            {/* Sidebar: scholarship sorter with view toggle. */}
+            <aside className="lg:sticky lg:top-4 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto rounded-2xl border border-border bg-card/60 backdrop-blur-sm p-3.5">
+              <div className="flex items-center justify-between mb-3 px-1">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  {t("Applications", "Заявки")}
+                </p>
+                <span className="text-[10px] tabular-nums text-muted-foreground/70">{rows.length}</span>
+              </div>
 
-        {/* Activity feed — bell-equivalent surface, integrated into
-            Workspace per user direction. Replaces the standalone
-            ActivityBell that used to live in the global nav. Auto-hides
-            when there's no activity. */}
-        <ActivityFeedSection language={language} />
+              <div className="inline-flex items-center w-full rounded-md border border-border bg-card overflow-hidden mb-3">
+                <button
+                  type="button"
+                  onClick={() => setBoardView("category")}
+                  className={`flex-1 h-7 text-[11px] font-medium transition-colors ${
+                    boardView === "category"
+                      ? "bg-foreground/[0.06] text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t("By stage", "По этапу")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBoardView("list")}
+                  className={`flex-1 h-7 text-[11px] font-medium transition-colors ${
+                    boardView === "list"
+                      ? "bg-foreground/[0.06] text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t("By deadline", "По дедлайну")}
+                </button>
+              </div>
 
-        {/* View toggle — by-category (kanban) vs flat list. Only shown
-            when there's actual tracked content; on the empty state the
-            toggle would just sit above an empty page. */}
-        {trackedIds.length > 0 && !loading && (
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <p className="text-[11px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
-              {t("Tracked scholarships", "Отслеживаемые стипендии")}
-            </p>
-            <div className="inline-flex items-center rounded-lg border border-border bg-card p-0.5">
-              <button
-                type="button"
-                onClick={() => setBoardView("category")}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                  boardView === "category"
-                    ? "bg-foreground/[0.06] text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <KanbanSquare className="h-3.5 w-3.5" />
-                <span>{t("By stage", "По этапу")}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setBoardView("list")}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                  boardView === "list"
-                    ? "bg-foreground/[0.06] text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <FileText className="h-3.5 w-3.5" />
-                <span>{t("List", "Список")}</span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {trackedIds.length > 0 && !loading && boardView === "category" && (
-          // Mobile: horizontal scroll-snap of 3 columns (one stage per swipe).
-          // Desktop (lg+): standard 3-col grid. Each column gets more room.
-          <div className="-mx-5 sm:-mx-8 lg:mx-0 px-5 sm:px-8 lg:px-0 overflow-x-auto lg:overflow-visible snap-x snap-mandatory lg:snap-none">
-            <div className="grid grid-flow-col auto-cols-[85vw] sm:auto-cols-[60vw] lg:grid-flow-row lg:grid-cols-3 lg:auto-cols-auto gap-5 pb-2 lg:pb-0">
-            {COLUMNS.map((col) => {
-              const items = buckets[col.key] || [];
-              return (
-                <div key={col.key} className="space-y-3 snap-start lg:snap-align-none">
-                  <div className="flex items-center justify-between gap-2 px-1">
-                    <div className="flex items-center gap-2">
-                      <span className={`h-1.5 w-6 rounded-full ${col.bar}`} />
-                      <p className={`text-[10px] uppercase tracking-[0.18em] font-semibold ${col.tone}`}>
-                        {col.label[isRu ? "ru" : "en"]}
-                      </p>
-                    </div>
-                    <span className="text-[11px] tabular-nums text-muted-foreground">{items.length}</span>
-                  </div>
-                  <div className="space-y-2 min-h-[80px]">
-                    {items.length === 0 ? (
-                      <div className="border border-dashed border-border rounded-xl px-3 py-5 text-center text-[11px] text-muted-foreground/60">
-                        {col.key === "shortlisted"
-                          ? t("Tap save on a scholarship to start", "Сохраните стипендию, чтобы начать")
-                          : t("None at this stage", "Пока ничего")}
+              {boardView === "category" ? (
+                <div className="space-y-3.5">
+                  {COLUMNS.map((col) => {
+                    const items = buckets[col.key] || [];
+                    if (items.length === 0) return null;
+                    return (
+                      <div key={col.key} className="space-y-1.5">
+                        <div className="flex items-center justify-between px-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`h-1 w-4 rounded-full ${col.bar}`} />
+                            <p className={`text-[9px] uppercase tracking-[0.18em] font-semibold ${col.tone}`}>
+                              {col.label[isRu ? "ru" : "en"]}
+                            </p>
+                          </div>
+                          <span className="text-[10px] tabular-nums text-muted-foreground/70">{items.length}</span>
+                        </div>
+                        <div className="space-y-1">
+                          {items.map((s) => (
+                            <SidebarRow
+                              key={s.scholarship_id}
+                              scholarship={s}
+                              isSelected={s.scholarship_id === selectedId}
+                              hasEssay={!!tracker.essayMap[s.scholarship_id]}
+                              onSelect={() => setSelectedId(s.scholarship_id)}
+                              isRu={isRu}
+                            />
+                          ))}
+                        </div>
                       </div>
-                    ) : (
-                      items.map((s) => (
-                        <PipelineCard
-                          key={s.scholarship_id}
-                          scholarship={s}
-                          status={tracker.statusMap[s.scholarship_id]}
-                          isShortlisted={tracker.shortlist.has(s.scholarship_id)}
-                          note={tracker.notesMap[s.scholarship_id]}
-                          recommenders={tracker.recommendersMap[s.scholarship_id]}
-                          hasEssay={!!tracker.essayMap[s.scholarship_id]}
-                          isRu={isRu}
-                          onOpen={() => setOpenDetail(s)}
-                          onStatusChange={(status) => handleStatusChange(s.scholarship_id, status)}
-                        />
-                      ))
-                    )}
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {[...rows]
+                    .sort((a, b) => {
+                      const ad = a.application_deadline ? new Date(a.application_deadline).getTime() : Number.POSITIVE_INFINITY;
+                      const bd = b.application_deadline ? new Date(b.application_deadline).getTime() : Number.POSITIVE_INFINITY;
+                      return ad - bd;
+                    })
+                    .map((s) => (
+                      <SidebarRow
+                        key={s.scholarship_id}
+                        scholarship={s}
+                        isSelected={s.scholarship_id === selectedId}
+                        hasEssay={!!tracker.essayMap[s.scholarship_id]}
+                        onSelect={() => setSelectedId(s.scholarship_id)}
+                        isRu={isRu}
+                      />
+                    ))}
+                </div>
+              )}
+            </aside>
+
+            {/* Main canvas: A4-feeling essay drafter for the selected row. */}
+            <main className="min-w-0">
+              {selectedScholarship ? (
+                <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+                  <header className="px-6 py-4 border-b border-border bg-muted/20 flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark dark:text-gold-light mb-0.5">
+                        {t("Drafting", "Черновик")}
+                      </p>
+                      <h2 className="font-heading text-lg sm:text-xl font-bold text-foreground tracking-tight leading-tight">
+                        {cleanScholarshipName(selectedScholarship.scholarship_name)}
+                      </h2>
+                      {(() => {
+                        const cp = cleanProvider(selectedScholarship.provider_name);
+                        return cp ? (
+                          <p className="text-xs text-muted-foreground leading-snug mt-0.5 line-clamp-2">{cp}</p>
+                        ) : null;
+                      })()}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-xs"
+                        onClick={() => setOpenDetail(selectedScholarship)}
+                      >
+                        {t("Details", "Детали")}
+                      </Button>
+                      {selectedScholarship.official_url && (
+                        <Button asChild variant="ghost" size="sm" className="h-8 text-xs">
+                          <a href={selectedScholarship.official_url} target="_blank" rel="noopener noreferrer">
+                            {t("Apply", "Подать")}
+                            <ExternalLink className="ml-1 h-3 w-3" />
+                          </a>
+                        </Button>
+                      )}
+                    </div>
+                  </header>
+                  <div className="px-4 sm:px-6 py-5 sm:py-6 max-w-[816px] mx-auto">
+                    <EssayDraftPanel
+                      scholarshipId={selectedScholarship.scholarship_id}
+                      scholarshipName={cleanScholarshipName(selectedScholarship.scholarship_name)}
+                      value={tracker.essayMap[selectedScholarship.scholarship_id] || ""}
+                      onChange={(next) => tracker.setEssayDraft(selectedScholarship.scholarship_id, next || null)}
+                      language={language}
+                    />
                   </div>
                 </div>
-              );
-            })}
-            </div>
-          </div>
-        )}
-
-        {/* Flat list view — every tracked scholarship sorted by deadline
-            (soonest first), regardless of stage. Use case: "what's
-            actually due next?" without flipping between three columns. */}
-        {trackedIds.length > 0 && !loading && boardView === "list" && (
-          <div className="space-y-2">
-            {[...rows]
-              .filter((r) => trackedIds.includes(r.scholarship_id))
-              .sort((a, b) => {
-                const ad = a.application_deadline ? new Date(a.application_deadline).getTime() : Number.POSITIVE_INFINITY;
-                const bd = b.application_deadline ? new Date(b.application_deadline).getTime() : Number.POSITIVE_INFINITY;
-                return ad - bd;
-              })
-              .map((s) => (
-                <PipelineCard
-                  key={s.scholarship_id}
-                  scholarship={s}
-                  status={tracker.statusMap[s.scholarship_id]}
-                  isShortlisted={tracker.shortlist.has(s.scholarship_id)}
-                  note={tracker.notesMap[s.scholarship_id]}
-                  recommenders={tracker.recommendersMap[s.scholarship_id]}
-                  hasEssay={!!tracker.essayMap[s.scholarship_id]}
-                  isRu={isRu}
-                  onOpen={() => setOpenDetail(s)}
-                  onStatusChange={(status) => handleStatusChange(s.scholarship_id, status)}
-                />
-              ))}
-          </div>
-        )}
-
-        {/* Subtle "come hang out" chip — placed below the kanban so it
-            only registers after the user has engaged with their data.
-            Auto-dismisses + 60-day cooldown via localStorage. */}
-        {trackedIds.length > 0 && !loading && (
-          <div className="mt-10 flex justify-center">
-            <InstaFollowChip surface="pipeline" language={language} />
+              ) : (
+                <div className="bg-card rounded-2xl border border-border shadow-sm p-10 sm:p-14 text-center">
+                  <PenLine className="h-9 w-9 text-muted-foreground/40 mx-auto mb-4" />
+                  <h2 className="font-heading text-lg font-semibold tracking-tight mb-2">
+                    {t("Pick a scholarship to draft", "Выберите стипендию для черновика")}
+                  </h2>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+                    {t(
+                      "Tap any saved scholarship in the sidebar to open its draft canvas.",
+                      "Нажмите на любую сохранённую стипендию в боковой панели, чтобы открыть холст для эссе.",
+                    )}
+                  </p>
+                </div>
+              )}
+            </main>
           </div>
         )}
       </section>
 
-      {/* ─── Inline calendar — was a separate tab; now lives below the
-            scholarships list on the same page so the user gets the
-            deadline picture without a tab swap. Only renders when
-            there are tracked items to plot — empty calendar above an
-            empty essays section reads as broken. */}
-      {trackedIds.length > 0 && (
-        <section className="max-w-6xl mx-auto px-5 sm:px-8 pb-8 sm:pb-12">
-          <h2 className="font-heading text-lg sm:text-xl font-bold text-foreground mb-4 tracking-tight">
-            {t("Upcoming deadlines", "Ближайшие дедлайны")}
-          </h2>
-          <UpcomingDeadlines
-            rows={rows.map(r => ({
-              scholarship_id: r.scholarship_id,
-              scholarship_name: r.scholarship_name,
-              host_country: r.host_country,
-              application_deadline: r.application_deadline,
-            }))}
-            hidden={tracker.hidden}
-            loading={loading}
-            language={language}
-            onSubscribe={user ? () => setCalendarOpen(true) : undefined}
-            onSelectScholarship={(id) => {
-              const found = rows.find(r => r.scholarship_id === id);
-              if (found) setOpenDetail(found);
-            }}
-          />
-        </section>
-      )}
 
-      {/* ─── Saved searches & alerts — folded into Workspace from Discover
-            so users manage their alert subscriptions in the same place
-            they manage tracked applications. SavedAlertsSection renders
-            nothing for anon users + an inline empty-state pointer back
-            to Discover when the user has no saved searches yet. */}
-      <SavedAlertsSection language={language} />
-
-      {/* ─── Inline essays — was a separate tab; now lives below the
-            calendar. EssaysTab self-renders an empty state when no row
-            has an essay started, so we let it show even at zero items
-            — that empty state is the discoverability surface. */}
-      {trackedIds.length > 0 && (
-        <section className="max-w-6xl mx-auto px-5 sm:px-8 pb-8 sm:pb-12">
-          <h2 className="font-heading text-lg sm:text-xl font-bold text-foreground mb-4 tracking-tight">
-            {t("Essay drafts", "Черновики эссе")}
-          </h2>
-          <EssaysTab
-            rows={rows}
-            essayMap={tracker.essayMap}
-            language={language}
-            onOpen={(s) => setOpenDetail(s)}
-          />
-        </section>
-      )}
-
-      {/* Round-34: Membership + Settings card removed from Workspace.
-          They live on /account now — Workspace stays focused on
-          application work (tracker, calendar, essays). The header
-          has a small "Account" link that takes the user there. */}
-
-      {/* Quiet upgrade chip — only renders for free-tier users with at
-          least one tracked scholarship. Anchored as a thin footer strip
-          so it's present without being in the work surface. Auto-hides
-          for Pro/Founding members. */}
-      {trackedIds.length > 0 && (
-        <UpgradeChip
-          surface="pipeline-footer"
-          variant="footer"
-          language={language}
-          message={t(
-            "Free preview of essay critique. Pro unlocks the full reader-perspective rewrite + your saved-search alerts.",
-            "Бесплатно — только превью эссе. Pro открывает полный разбор и алерты по сохранённым поискам.",
-          )}
-        />
-      )}
 
       {/* Detail sheet */}
       <Sheet open={!!openDetail} onOpenChange={(o) => !o && setOpenDetail(null)}>
@@ -1010,6 +940,77 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
 export default Pipeline;
 
 /* ─── Internals ─────────────────────────────────────────────────── */
+
+/* SidebarRow — compact list-row for the sorter pane. Selected state
+   is the high-signal cue (gold left border + tinted background); the
+   row also carries an in-line deadline urgency dot and an essay-started
+   marker so users can see writing progress at a glance. */
+const SidebarRow = ({
+  scholarship: s, isSelected, hasEssay, onSelect, isRu,
+}: {
+  scholarship: Scholarship;
+  isSelected: boolean;
+  hasEssay: boolean;
+  onSelect: () => void;
+  isRu: boolean;
+}) => {
+  const t = (en: string, ru: string) => (isRu ? ru : en);
+  const days = daysUntil(s.application_deadline);
+  const urgency =
+    days === null ? "neutral"
+    : days < 0 ? "closed"
+    : days <= 7 ? "red"
+    : days <= 30 ? "amber"
+    : "neutral";
+  const dotCls =
+    urgency === "red" ? "bg-destructive"
+    : urgency === "amber" ? "bg-amber-500"
+    : urgency === "closed" ? "bg-muted-foreground/40"
+    : "bg-emerald-500/60";
+  const daysLabel =
+    days === null
+      ? (s.application_deadline ? "Rolling" : t("Varies", "Варьируется"))
+      : days < 0 ? t("Closed", "Закрыто")
+      : days === 0 ? t("Today", "Сегодня")
+      : days === 1 ? t("1d", "1д")
+      : days <= 90 ? `${days}d`
+      : `${Math.ceil(days / 30)}mo`;
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`w-full text-left rounded-md px-2.5 py-2 transition-colors flex items-start gap-2 group ${
+        isSelected
+          ? "bg-gold/[0.12] border border-gold/45 shadow-sm"
+          : "border border-transparent hover:bg-foreground/[0.04]"
+      }`}
+    >
+      <span className={`mt-1.5 h-1.5 w-1.5 rounded-full shrink-0 ${dotCls}`} aria-hidden />
+      <div className="min-w-0 flex-1">
+        <p className={`text-[12px] leading-snug font-medium tracking-tight line-clamp-2 ${
+          isSelected ? "text-foreground" : "text-foreground/85"
+        }`}>
+          {cleanScholarshipName(s.scholarship_name)}
+        </p>
+        <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-muted-foreground">
+          <span className="tabular-nums">{daysLabel}</span>
+          {s.host_country && (
+            <>
+              <span className="opacity-50">·</span>
+              <span className="truncate">{s.host_country}</span>
+            </>
+          )}
+          {hasEssay && (
+            <>
+              <span className="opacity-50">·</span>
+              <PenLine className="h-2.5 w-2.5 text-gold-dark" aria-label="Draft started" />
+            </>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+};
 
 const Stat = ({ label, value, hint, tone = "neutral" }: { label: string; value: string; hint?: string; tone?: "neutral" | "warn" | "good" }) => {
   const valueClass =

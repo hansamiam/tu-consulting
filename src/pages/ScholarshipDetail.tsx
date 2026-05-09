@@ -16,9 +16,25 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  ArrowLeft, ArrowRight, ExternalLink, Sparkles, Bookmark, BookmarkCheck,
-  Calendar, Wallet, GraduationCap, Globe, CheckCircle2, AlertCircle,
-  Loader2, FileText, Users, ShieldAlert, Share2, Search, ShieldCheck,
+  ArrowLeft,
+  ArrowRight,
+  ExternalLink,
+  Award,
+  Bookmark,
+  BookmarkCheck,
+  Calendar,
+  Wallet,
+  GraduationCap,
+  Globe,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  FileText,
+  Users,
+  ShieldAlert,
+  Share2,
+  Search,
+  ShieldCheck,
 } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
@@ -602,7 +618,7 @@ const ScholarshipDetail = () => {
               className="gap-2"
               onClick={() => goBuildStrategy("hero")}
             >
-              <Sparkles className="w-4 h-4" />
+              <Award className="w-4 h-4" />
               Build my strategy around this
             </Button>
             {s.official_url && (() => {

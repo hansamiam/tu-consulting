@@ -12,8 +12,18 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  ArrowRight, ArrowLeft, Sparkles, GraduationCap, Target, Shield,
-  CheckCircle2, Search, BookOpen, ListChecks, Map, Zap,
+  ArrowRight,
+  ArrowLeft,
+  Award,
+  GraduationCap,
+  Target,
+  Shield,
+  CheckCircle2,
+  Search,
+  BookOpen,
+  ListChecks,
+  Map,
+  Zap,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { saveProfile } from "@/components/discover/DiscoverProfileGate";

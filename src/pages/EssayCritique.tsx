@@ -18,7 +18,13 @@ import { Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { motion } from "framer-motion";
 import {
-  ArrowLeft, ArrowRight, Crown, Loader2, PenLine, Sparkles, Eraser,
+  ArrowLeft,
+  ArrowRight,
+  Crown,
+  Loader2,
+  PenLine,
+  Award,
+  Eraser,
 } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
@@ -463,7 +469,7 @@ const EssayCritique = ({ language = "en" }: EssayCritiqueProps) => {
               </motion.div>
             ) : (
               <div className="bg-card border border-dashed border-border rounded-2xl p-8 text-center sticky top-6">
-                <Sparkles className="h-8 w-8 text-gold-dark/60 mx-auto mb-3" />
+                <Award className="h-8 w-8 text-gold-dark/60 mx-auto mb-3" />
                 <p className="font-heading font-semibold text-foreground mb-1.5">{t.emptyTitle}</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">{t.emptyBody(isPremium)}</p>
               </div>

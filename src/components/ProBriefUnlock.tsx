@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sparkles, Crown } from "lucide-react";
+import { Award, Crown } from "lucide-react";
 
 /**
  * <ProBriefUnlock /> — the gated dialog that captures the three depth
@@ -168,7 +168,7 @@ export function ProBriefUnlock({ open, onOpenChange, initial, language = "en", o
         <div className="flex items-center justify-between gap-2 pt-1">
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="text-muted-foreground">{t.skip}</Button>
           <Button variant="gold" onClick={submit} className="gap-1.5">
-            <Sparkles className="w-4 h-4" />
+            <Award className="w-4 h-4" />
             {t.submit}
           </Button>
         </div>

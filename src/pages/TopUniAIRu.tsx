@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRight, ArrowLeft, Sparkles, GraduationCap, Target, Shield, CheckCircle2, Bot, Search, PenTool, BookOpen } from "lucide-react";
+import { ArrowRight, ArrowLeft, Award, GraduationCap, Target, Shield, CheckCircle2, Bot, Search, PenTool, BookOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { saveProfile } from "@/components/discover/DiscoverProfileGate";
 import { projectToDiscoverProfile } from "@/lib/topuniIntakeProjection";
@@ -299,7 +299,7 @@ const TopUniAIRu = () => {
                           setScreen("dashboard");
                         }}
                       >
-                        <Sparkles className="mr-2 w-5 h-5" /> Создать мой путь
+                        <Award className="mr-2 w-5 h-5" /> Создать мой путь
                       </Button>
                     </div>
                   </motion.div>
