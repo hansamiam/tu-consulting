@@ -302,11 +302,8 @@ const Index = () => {
             <motion.h2 {...fadeUp(0.05)} className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.1] mb-5">
               The full toolkit, $39/month.
             </motion.h2>
-            <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-lg mb-4 max-w-xl mx-auto leading-relaxed">
+            <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-lg mb-9 max-w-xl mx-auto leading-relaxed">
               TopUni AI · Discover · Academy · monthly live workshops with admitted founders. Founding cohort discount available with promo codes at checkout.
-            </motion.p>
-            <motion.p {...fadeUp(0.14)} className="text-xs text-muted-foreground/70 mb-9 max-w-md mx-auto">
-              30-day money-back guarantee · Cancel anytime · Stripe secure
             </motion.p>
             <motion.div {...fadeUp(0.2)} className="flex flex-wrap items-center justify-center gap-3">
               <Button
@@ -316,14 +313,6 @@ const Index = () => {
                 onClick={() => navigate('/pricing')}
               >
                 Claim my founding spot <ArrowRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="lg"
-                className="text-base px-6 py-6 text-foreground hover:bg-secondary"
-                onClick={() => navigate('/topuni-ai')}
-              >
-                Try TopUni AI free
               </Button>
             </motion.div>
           </div>

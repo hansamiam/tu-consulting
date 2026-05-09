@@ -92,39 +92,27 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Workspace + activity bell — visually grouped so they read as
-            one unit (the Workspace is where every activity event lands;
-            the bell is the inline preview). Shared rounded surface, a
-            subtle vertical rule between them. Round-39 consolidation:
-            previously two separate floating buttons; users had to
-            mentally connect "deadline reminder" with "Workspace" on
-            their own. Now they're one cluster. */}
-        <div className="inline-flex items-center rounded-md border border-border/60 bg-background/40 overflow-hidden">
-          <button
-            onClick={() => navigate(isRussian ? "/pipeline/ru" : "/pipeline")}
-            className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-foreground/75 hover:text-foreground hover:bg-foreground/[0.04] px-2.5 h-8 transition-colors"
-          >
-            <KanbanSquare className="h-3.5 w-3.5" />
-            {isRussian ? "Рабочая зона" : "Workspace"}
-          </button>
-          <span className="hidden sm:block self-stretch w-px bg-border/60" aria-hidden />
-          <ActivityBell language={language} grouped />
-        </div>
+        {/* Workspace + activity bell only render for signed-in users.
+            Round-40: Workspace and Sign-in are mutually exclusive — anon
+            visitors don't need a Workspace button (nothing to manage), so
+            showing one alongside Sign-in created two competing entry
+            points. Order from left → right:
+              [Workspace + bell cluster (authed)] → [Sign-in (anon)] → [RU]
+            Language switcher always sits at the absolute right edge. */}
+        {user && (
+          <div className="inline-flex items-center rounded-md border border-border/60 bg-background/40 overflow-hidden">
+            <button
+              onClick={() => navigate(isRussian ? "/pipeline/ru" : "/pipeline")}
+              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-foreground/75 hover:text-foreground hover:bg-foreground/[0.04] px-2.5 h-8 transition-colors"
+            >
+              <KanbanSquare className="h-3.5 w-3.5" />
+              {isRussian ? "Рабочая зона" : "Workspace"}
+            </button>
+            <span className="hidden sm:block self-stretch w-px bg-border/60" aria-hidden />
+            <ActivityBell language={language} grouped />
+          </div>
+        )}
 
-        <LanguageSwitcher />
-
-        {/* Right-edge slot (round 33). Was three states with visual
-            duplication of the Workspace button next to it:
-              · authed-paid     → gold tier chip
-              · authed-free     → gold "Account" chip (visually identical)
-              · anonymous       → "Sign in" button
-            The free tier chip was the worst offender — it said "Account"
-            in a gold-bordered button-shaped span next to the Workspace
-            button, and the user read it as two duplicate entry points.
-            Now: paid members keep their tier badge as a status marker;
-            free / anon get nothing in this slot (Workspace button is
-            their entry point, sign-in still surfaces below for anon
-            via mobile menu / homepage). */}
         {user && (subscription.tier === "founding" || subscription.tier === "pro") && (
           <span
             className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-semibold text-gold-dark bg-gold/10 border border-gold/30"
@@ -145,6 +133,9 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
             <AuthDialog open={authOpen} onOpenChange={setAuthOpen} language={language} />
           </>
         )}
+
+        {/* RU language switcher sits at the absolute right edge. */}
+        <LanguageSwitcher />
       </div>
     </header>
   );

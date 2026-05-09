@@ -2455,14 +2455,63 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               </div>
             )}
 
-            {s.duration_text && (
-              <div className="rounded-xl border border-border/60 bg-card px-3.5 py-2.5">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
-                  {t("Duration", "Длительность")}
-                </p>
-                <p className="text-sm text-foreground/85 leading-snug">{s.duration_text}</p>
-              </div>
-            )}
+            {/* Combined tag rail — fields the program funds, best-for tags,
+                and duration as a labelled chip. No section headers; the
+                chips read on their own. Replaces three separate stacked
+                blocks (Funds / Best for / Duration in a white square),
+                each of which advertised a single fact behind a verbose
+                uppercase label. */}
+            {(() => {
+              const fieldChips: { kind: "field" | "tag" | "duration"; label: string }[] = [];
+
+              (s.target_fields ?? []).forEach(raw => {
+                if (!raw) return;
+                const splits = raw.split(/\s*[,/;]\s*/).filter(Boolean);
+                const items = splits.length > 1 ? splits : [raw];
+                items.forEach(item => {
+                  item = item.trim();
+                  if (!item || FIELD_JUNK.test(item) || item.length > 42) return;
+                  const titled = titleCaseField(item.replace(/[-_]+/g, " ").replace(/\s+/g, " "));
+                  if (!fieldChips.some(c => c.kind === "field" && c.label.toLowerCase() === titled.toLowerCase())) {
+                    fieldChips.push({ kind: "field", label: titled });
+                  }
+                });
+              });
+
+              (s.best_for_tags ?? []).forEach(tg => {
+                const labeled = humanize(tg);
+                if (!fieldChips.some(c => c.label.toLowerCase() === labeled.toLowerCase())) {
+                  fieldChips.push({ kind: "tag", label: labeled });
+                }
+              });
+
+              if (s.duration_text && s.duration_text.trim().length > 0) {
+                fieldChips.push({ kind: "duration", label: s.duration_text.trim() });
+              }
+
+              if (fieldChips.length === 0) return null;
+              return (
+                <div className="flex flex-wrap gap-1.5">
+                  {fieldChips.slice(0, 14).map((c, i) => (
+                    <span
+                      key={`${c.kind}-${i}-${c.label}`}
+                      className={
+                        c.kind === "tag"
+                          ? "text-xs bg-gold/10 text-gold-dark dark:text-gold border border-gold/20 px-2.5 py-1 rounded-full font-medium"
+                          : c.kind === "duration"
+                            ? "text-xs text-foreground/75 bg-muted/40 border border-border/70 px-2.5 py-1 rounded-md"
+                            : "text-xs text-foreground/75 bg-muted/60 border border-border px-2.5 py-1 rounded-md"
+                      }
+                    >
+                      {c.label}
+                    </span>
+                  ))}
+                  {fieldChips.length > 14 && (
+                    <span className="text-xs text-muted-foreground self-center">+{fieldChips.length - 14}</span>
+                  )}
+                </div>
+              );
+            })()}
 
             {Array.isArray(s.partner_universities) && s.partner_universities.length > 0 && (
               <div>
@@ -2479,132 +2528,74 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                 </div>
               </div>
             )}
-
-            {(() => {
-              // Apply the same cleanup as the Field filter dropdown so the
-              // chips render consistently — split comma-lists, drop junk,
-              // dedupe, title-case.
-              const seen = new Set<string>();
-              const cleaned: string[] = [];
-              (s.target_fields ?? []).forEach(raw => {
-                if (!raw) return;
-                const splits = raw.split(/\s*[,/;]\s*/).filter(Boolean);
-                const items = splits.length > 1 ? splits : [raw];
-                items.forEach(item => {
-                  item = item.trim();
-                  if (!item || FIELD_JUNK.test(item) || item.length > 42) return;
-                  const key = item.toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ").replace(/s$/, "").replace(/&/g, "and");
-                  if (seen.has(key)) return;
-                  seen.add(key);
-                  cleaned.push(titleCaseField(item.replace(/[-_]+/g, " ").replace(/\s+/g, " ")));
-                });
-              });
-              if (cleaned.length === 0) return null;
-              return (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Funds</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {cleaned.slice(0, 12).map((f, i) => (
-                      <span key={i} className="text-xs text-foreground/75 bg-muted/60 border border-border px-2.5 py-1 rounded-md">{f}</span>
-                    ))}
-                    {cleaned.length > 12 && (
-                      <span className="text-xs text-muted-foreground self-center">+{cleaned.length - 12} more</span>
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
-
-            {s.best_for_tags && s.best_for_tags.length > 0 && (
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Best for</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {s.best_for_tags.map((t, i) => (
-                    <span key={i} className="text-xs bg-gold/10 text-gold-dark dark:text-gold border border-gold/20 px-2.5 py-1 rounded-full font-medium">{humanize(t)}</span>
-                  ))}
-                </div>
-              </div>
-            )}
           </TabsContent>
 
           {/* REQUIREMENTS — eligibility, citizenship, profile-vs-thresholds,
               application demands. All things "what does this need from
               me" live here so Overview stays a clean program description. */}
-          <TabsContent value="requirements" className="px-5 sm:px-7 py-4 sm:py-6 space-y-4 sm:space-y-5 m-0 focus-visible:outline-none">
-            {/* Eligibility narrative from the program (moved from Overview).
-                Only renders when the LLM extracted a substantive paragraph. */}
-            {s.eligibility_requirements && s.eligibility_requirements.trim().length > 30 && (
-              <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-3.5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">
-                  {t("Eligibility (from program)", "Право на участие (от программы)")}
-                </p>
-                <p className="text-sm text-foreground/85 leading-relaxed">
-                  {s.eligibility_requirements.length > 600
-                    ? s.eligibility_requirements.slice(0, 580).trimEnd() + "…"
-                    : s.eligibility_requirements}
-                </p>
+          <TabsContent value="requirements" className="px-5 sm:px-7 py-4 sm:py-6 space-y-5 m-0 focus-visible:outline-none">
+            {/* Eligibility narrative + language as a single flowing paragraph.
+                Headers stripped — at this point in the panel, the user is
+                inside the "Requirements" tab, so labelling each paragraph
+                "Eligibility (from program)" / "Language" was redundant
+                signage. */}
+            {(s.eligibility_requirements && s.eligibility_requirements.trim().length > 30) || s.language_requirements ? (
+              <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-3.5 space-y-2">
+                {s.eligibility_requirements && s.eligibility_requirements.trim().length > 30 && (
+                  <p className="text-sm text-foreground/85 leading-relaxed">
+                    {s.eligibility_requirements.length > 600
+                      ? s.eligibility_requirements.slice(0, 580).trimEnd() + "…"
+                      : s.eligibility_requirements}
+                  </p>
+                )}
+                {s.language_requirements && (
+                  <p className="text-sm text-foreground/75 leading-relaxed">
+                    <span className="text-muted-foreground">Language: </span>
+                    {s.language_requirements}
+                  </p>
+                )}
               </div>
-            )}
+            ) : null}
 
-            {/* Language requirement — citizenship/nationality intentionally
-                NOT duplicated here; the reqs checklist below already shows
-                the structured nationality eligibility against the user's
-                country, so a separate text panel was overlap. */}
-            {s.language_requirements && (
-              <div className="rounded-xl border border-border/60 bg-card px-3.5 py-2.5">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
-                  {t("Language", "Язык")}
-                </p>
-                <p className="text-sm text-foreground/85 leading-snug">{s.language_requirements}</p>
+            {/* Application-demand chips — render inline at the top of
+                the reqs panel, no header. Same chip-rail pattern as
+                Overview so the visual language stays consistent. */}
+            {(s.essay_required || s.interview_required || (s.recommendation_letters_required ?? 0) > 0) && (
+              <div className="flex flex-wrap gap-2">
+                {s.essay_required && <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full"><FileText className="h-3 w-3" />{t("Essay required", "Требуется эссе")}</span>}
+                {s.interview_required && <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full"><Users className="h-3 w-3" />{t("Interview", "Интервью")}</span>}
+                {(s.recommendation_letters_required ?? 0) > 0 && (
+                  <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full">
+                    <FileText className="h-3 w-3" />{s.recommendation_letters_required} {t(`rec letter${(s.recommendation_letters_required ?? 0) > 1 ? "s" : ""}`, "реком. писем")}
+                  </span>
+                )}
               </div>
             )}
 
             {reqs.length > 0 ? (
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">{t("You vs. requirements", "Ваш профиль vs требования")}</p>
-                <div className="bg-muted/30 rounded-2xl px-4 py-1">
-                  {reqs.map((r, i) => <ReqRow key={i} {...r} />)}
-                </div>
-                {/* Profile signals (positive reasons) removed — overlap with
-                    the You-vs-Requirements checklist above. Watch-outs stay
-                    because they surface concrete misses the checklist
-                    doesn't always capture. */}
-                {s.warnings.length > 0 && (
-                  <div className="mt-4">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">{t("Watch outs", "На что обратить внимание")}</p>
-                    <div className="space-y-1.5">
-                      {s.warnings.map((w, i) => (
-                        <div key={i} className="flex items-start gap-2 text-sm leading-relaxed text-warning">
-                          <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />{w}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+              <div className="bg-muted/30 rounded-2xl px-4 py-1">
+                {reqs.map((r, i) => <ReqRow key={i} {...r} />)}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">{t("No specific requirements recorded for this scholarship.", "Конкретные требования по этой стипендии не записаны.")}</p>
+              !s.eligibility_requirements && (
+                <p className="text-sm text-muted-foreground">{t("No specific requirements recorded for this scholarship.", "Конкретные требования по этой стипендии не записаны.")}</p>
+              )
             )}
 
-            {(s.essay_required || s.interview_required || (s.recommendation_letters_required ?? 0) > 0) && (
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">{t("Application demands", "Что нужно для подачи")}</p>
-                <div className="flex flex-wrap gap-2">
-                  {s.essay_required && <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full"><FileText className="h-3 w-3" />{t("Essay required", "Требуется эссе")}</span>}
-                  {s.interview_required && <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full"><Users className="h-3 w-3" />{t("Interview", "Интервью")}</span>}
-                  {(s.recommendation_letters_required ?? 0) > 0 && (
-                    <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full">
-                      <FileText className="h-3 w-3" />{s.recommendation_letters_required} {t(`rec letter${(s.recommendation_letters_required ?? 0) > 1 ? "s" : ""}`, "реком. писем")}
-                    </span>
-                  )}
-                </div>
+            {s.warnings.length > 0 && (
+              <div className="rounded-2xl border border-warning/25 bg-warning/[0.04] px-4 py-3.5 space-y-1.5">
+                {s.warnings.map((w, i) => (
+                  <div key={i} className="flex items-start gap-2 text-sm leading-relaxed text-warning">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />{w}
+                  </div>
+                ))}
               </div>
             )}
 
             {s.required_documents && s.required_documents.length > 0 && (
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">{t("Documents needed", "Необходимые документы")}</p>
-                <div className="grid grid-cols-2 gap-1.5">
+              <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-3.5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">{t("Documents", "Документы")}</p>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                   {s.required_documents.map((d, i) => (
                     <div key={i} className="flex items-center gap-1.5 text-xs text-foreground/80">
                       <div className="h-1.5 w-1.5 rounded-full bg-gold shrink-0" />{d}
