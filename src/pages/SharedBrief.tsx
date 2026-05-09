@@ -363,7 +363,7 @@ const SharedBriefPage = () => {
                 </p>
                 <h3 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground mb-3 leading-tight">
                   {isRu
-                    ? `Получите свой брифинг — ${firstName ? "как у " + firstName : "на основе вашего профиля"}.`
+                    ? `Получите свой отчёт — ${firstName ? "как у " + firstName : "на основе вашего профиля"}.`
                     : `Get your own — ${firstName ? "the way " + firstName + " did" : "personalised to your profile"}.`}
                 </h3>
                 <ul className="space-y-1.5 text-sm text-muted-foreground leading-relaxed mb-5">
@@ -415,7 +415,7 @@ const SharedBriefPage = () => {
                   navigate(isRu ? "/topuni-ai/ru" : "/topuni-ai");
                 }}
               >
-                {isRu ? "Создать мой брифинг" : "Build my brief"}
+                {isRu ? "Создать мою стратегию" : "Build my strategy"}
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </div>

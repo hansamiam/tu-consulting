@@ -70,7 +70,7 @@ export const BriefHeroStats = ({
       tone: closestUrgent ? "urgent" : "neutral",
     },
     {
-      label: t("Brief depth", "Объём брифинга"),
+      label: t("Report depth", "Объём отчёта"),
       value: `${readMin} ${t("min", "мин")}`,
       sub: `${wordCount.toLocaleString(isRu ? "ru" : "en")} ${t("words", "слов")}`,
       icon: BookOpen,

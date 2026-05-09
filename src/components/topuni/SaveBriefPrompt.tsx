@@ -120,7 +120,7 @@ export function SaveBriefPrompt({
                   `${closestUrgent.name} closes in ${closestUrgent.days} day${closestUrgent.days === 1 ? "" : "s"} — don't lose it.`,
                   `${closestUrgent.name} закрывается через ${closestUrgent.days} дн. — не теряйте.`,
                 )
-              : t("Save your brief — and get deadline reminders.", "Сохраните брифинг — и получайте напоминания о дедлайнах.")}
+              : t("Save your strategy report — and get deadline reminders.", "Сохраните отчёт — и получайте напоминания о дедлайнах.")}
           </DialogTitle>
           <DialogDescription className="text-sm leading-relaxed">
             {t(
@@ -239,7 +239,7 @@ export function SaveBriefPrompt({
                   {t("Saving…", "Сохраняем…")}
                 </>
               ) : (
-                t("Save my brief", "Сохранить брифинг")
+                t("Save my report", "Сохранить отчёт")
               )}
             </Button>
           </DialogFooter>

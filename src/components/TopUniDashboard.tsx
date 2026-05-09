@@ -3008,7 +3008,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                   {isMember ? (
                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold uppercase tracking-[0.14em] bg-gold/10 text-gold-dark border border-gold/30">
                       <Crown className="w-3 h-3" />
-                      {t("Premium brief", "Премиум брифинг")}
+                      {t("Pro report", "Pro отчёт")}
                     </span>
                   ) : (
                     <Button
@@ -3018,7 +3018,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                       onClick={() => navigate(isRu ? "/pricing/ru" : "/pricing")}
                     >
                       <Crown className="w-4 h-4" />
-                      {t("Upgrade for Premium brief", "Премиум брифинг")}
+                      {t("Upgrade for Pro report", "Pro отчёт")}
                     </Button>
                   )}
                   <Button variant="outline" size="sm" onClick={generatePathway} disabled={pathwayLoading} className="gap-1.5">

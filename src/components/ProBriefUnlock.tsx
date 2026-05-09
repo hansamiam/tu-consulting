@@ -49,8 +49,8 @@ interface Props {
 
 const COPY = {
   en: {
-    title: "Unlock the Pro brief",
-    desc: "Three more questions. Each one is optional, but every answer makes your brief dramatically more specific to you. Your responses go straight into the AI's context — no signup, no extra wait.",
+    title: "Unlock the Pro report",
+    desc: "Three more questions. Each one is optional, but every answer makes your report dramatically more specific to you. Your responses go straight into the AI's context — no signup, no extra wait.",
     activityLabel: "Top activity or achievement",
     activityHelp: "One thing you've done that you're proud of. The role you held, what you built, who you led. Your Pro essay angles will be anchored to this.",
     activityPh: "e.g. Founded the school robotics club, grew it from 3 to 28 members, won regional finals.",
@@ -60,14 +60,14 @@ const COPY = {
     schoolsLabel: "Specific schools on your list",
     schoolsHelp: "Comma-separated. Your Pro shortlist will reference these by name.",
     schoolsPh: "e.g. Yale, Cambridge, NUS, ETH Zürich",
-    submit: "Generate my Pro brief",
+    submit: "Generate my Pro report",
     skip: "Maybe later",
-    badge: "Pro brief",
+    badge: "Pro report",
     blurb: "Same engine, deeper context. Strategic positioning, essay angles, and university shortlist will reference your story directly.",
   },
   ru: {
-    title: "Открыть Pro-брифинг",
-    desc: "Ещё три вопроса. Каждый необязателен, но каждый ответ делает брифинг намного более точным под вас. Ответы напрямую идут в контекст AI — без регистрации, без ожидания.",
+    title: "Открыть Pro-отчёт",
+    desc: "Ещё три вопроса. Каждый необязателен, но каждый ответ делает отчёт намного более точным под вас. Ответы напрямую идут в контекст AI — без регистрации, без ожидания.",
     activityLabel: "Главная активность или достижение",
     activityHelp: "Одно дело, которым вы гордитесь. Какую роль играли, что построили, кого вели. Ракурсы эссе в Pro будут привязаны к этому.",
     activityPh: "напр. Основал клуб робототехники, вырастил с 3 до 28 человек, выиграл региональный финал.",
@@ -77,9 +77,9 @@ const COPY = {
     schoolsLabel: "Конкретные университеты в списке",
     schoolsHelp: "Через запятую. Pro-шорт-лист будет ссылаться на них по имени.",
     schoolsPh: "напр. Yale, Cambridge, NUS, ETH Zürich",
-    submit: "Создать мой Pro-брифинг",
+    submit: "Создать мой Pro-отчёт",
     skip: "Может позже",
-    badge: "Pro-брифинг",
+    badge: "Pro отчёт",
     blurb: "Тот же движок, глубже контекст. Позиционирование, ракурсы эссе и шорт-лист университетов будут ссылаться на вашу историю напрямую.",
   },
 } as const;

@@ -210,8 +210,8 @@ export function BriefMasthead({
               disabled={isStreaming}
               className="gap-1.5 h-9"
               title={isStreaming
-                ? t("Wait for the brief to finish", "Дождитесь завершения брифинга", isRu)
-                : t("Share this brief with parents or counsellors", "Поделиться брифингом", isRu)}
+                ? t("Wait for the report to finish", "Дождитесь завершения отчёта", isRu)
+                : t("Share this report with parents or counsellors", "Поделиться отчётом", isRu)}
             >
               {isStreaming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Share2 className="w-3.5 h-3.5" />}
               {t("Share", "Поделиться", isRu)}
