@@ -2967,7 +2967,24 @@ const Discover = ({ language = "en" }: Props) => {
   const tracker = useApplicationTracker();
   const { shortlist, hidden, statusMap, notesMap, setStatus, setNote, toggleShortlist, toggleHidden } = tracker;
   const [analysisStep, setAnalysisStep] = useState(0);
-  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState<FilterState>(() => {
+    // When the user clicks a saved-search alert from Pipeline, that page
+    // stashes the filter blob in sessionStorage before navigating here.
+    // Hydrate from it on mount so we land directly on the matching set.
+    // Single-shot: clear after consuming so a regular page refresh
+    // doesn't re-apply stale filters.
+    try {
+      const raw = sessionStorage.getItem("topuni_apply_saved_filters");
+      if (raw) {
+        sessionStorage.removeItem("topuni_apply_saved_filters");
+        const parsed = JSON.parse(raw) as Partial<FilterState>;
+        return { ...DEFAULT_FILTERS, ...parsed };
+      }
+    } catch {
+      // Cross-origin / private mode / corrupt JSON — fall through.
+    }
+    return DEFAULT_FILTERS;
+  });
   // Default sort depends on whether the user has profile data. With a
   // profile, "best match" is meaningful (the score actually scores). Without
   // a profile, every row's match=0, so "best match" produces effectively

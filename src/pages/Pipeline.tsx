@@ -40,6 +40,7 @@ import { RecommendersPanel } from "@/components/pipeline/RecommendersPanel";
 import { getStoredProfile } from "@/components/discover/DiscoverProfileGate";
 import { UpcomingDeadlines } from "@/components/pipeline/UpcomingDeadlines";
 import { EssaysTab } from "@/components/pipeline/EssaysTab";
+import { SavedAlertsSection } from "@/components/pipeline/SavedAlertsSection";
 import { UpgradeChip } from "@/components/UpgradeChip";
 import { InstaFollowChip } from "@/components/InstaFollowChip";
 
@@ -596,6 +597,13 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
           />
         </section>
       )}
+
+      {/* ─── Saved searches & alerts — folded into Workspace from Discover
+            so users manage their alert subscriptions in the same place
+            they manage tracked applications. SavedAlertsSection renders
+            nothing for anon users + an inline empty-state pointer back
+            to Discover when the user has no saved searches yet. */}
+      <SavedAlertsSection language={language} />
 
       {/* ─── Inline essays — was a separate tab; now lives below the
             calendar. EssaysTab self-renders an empty state when no row
