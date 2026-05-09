@@ -149,6 +149,8 @@
        (description, type, host country, funding volume, scholarship
        count) plus active scholarships from the providers entity layer.
        Slugs match providers.slug (seeded in 20260509020000). -->
+  <url><loc>https://topuni.org/scholarships/funders</loc>                        <changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://topuni.org/scholarships/funders/ru</loc>                     <changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://topuni.org/scholarships/by-provider/chevening</loc>                         <changefreq>weekly</changefreq><priority>0.85</priority></url>
   <url><loc>https://topuni.org/scholarships/by-provider/fulbright-program</loc>                 <changefreq>weekly</changefreq><priority>0.85</priority></url>
   <url><loc>https://topuni.org/scholarships/by-provider/daad</loc>                              <changefreq>weekly</changefreq><priority>0.85</priority></url>

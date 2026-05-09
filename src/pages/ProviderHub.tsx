@@ -241,7 +241,9 @@ const ProviderHub = () => {
           <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-4">
             <Link to="/discover" className="hover:text-foreground transition-colors">Discover</Link>
             <span>/</span>
-            <span>Funder</span>
+            <Link to="/scholarships/funders" className="hover:text-foreground transition-colors">Funders</Link>
+            <span>/</span>
+            <span>{provider?.canonical_name ? "Profile" : "Funder"}</span>
           </div>
 
           {provider ? (
