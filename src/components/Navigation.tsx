@@ -6,7 +6,9 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthDialog } from "@/components/auth/AuthDialog";
-import { ActivityBell } from "@/components/ActivityBell";
+// ActivityBell removed from nav 2026-05-09 — it duplicated workspace
+// state. The bell-feed lives inside /pipeline as ActivityFeedSection
+// (same hooks, surfaced where users manage their commitments).
 
 interface NavigationProps {
   language?: "en" | "ru";
@@ -100,11 +102,6 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
                 {link.label}
               </button>
             ))}
-
-            {/* Activity bell — surfaces unread saved-search hits,
-                tracked deadlines, lifecycle reopens. Auto-hides for
-                anon users (nothing to surface). */}
-            <ActivityBell language={language} variant={isOverlay ? "overlay" : "default"} />
 
             {/* Right-edge personal slot — Workspace when signed in,
                 Sign-in when not. Same position, same visual weight,

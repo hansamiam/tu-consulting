@@ -1,21 +1,15 @@
 // Academy — public landing for the upcoming June launch.
-// The AcademyFounderHub (workshops + office hours + guides) is now an
-// admin-only surface at /admin/academy; the public /academy route
-// always shows the launch landing regardless of auth state, so signed-in
-// users don't get a different page than anon users.
+// Public /academy always shows the launch landing regardless of
+// auth state, so signed-in users don't see a different page.
 import { Link } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Globe, ArrowRight } from "lucide-react";
+import { Sparkles, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import samuelPhoto from "@/assets/samuel.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
 
-// Round-29: pruned the founder grid from 4 → 2 (Samuel + Nurzada). The
-// rest of the cohort experience comes through rotating guest experts —
-// emphasised below the founder pair so the page reads as
-// "two founders + a global expert network" rather than a static cohort.
 const FOUNDERS = [
   { name: "Samuel Han",          credential: "Yale",                  photo: samuelPhoto },
   { name: "Nurzada Abdivalieva", credential: "Cambridge · Tsinghua",   photo: nurzadaPhoto },
@@ -37,19 +31,13 @@ const Academy = () => {
             TopUni <span className="text-gold">Academy</span>
           </motion.h1>
           <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-primary-foreground/75 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
-            Workshops, country guides, and office hours from founders who went through Yale and Cambridge themselves — joined by guest experts from across the world.
+            Workshops and office hours, joined by guest experts from across the world.
           </motion.p>
         </div>
       </section>
 
       {/* FOUNDERS ──────────────────────────────────────────────────── */}
       <section className="max-w-5xl mx-auto px-4 pt-16 sm:pt-20 pb-10">
-        <div className="text-center max-w-2xl mx-auto mb-10">
-          <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">From the founders</p>
-          <h2 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground leading-tight">
-            Built and run by the founders.
-          </h2>
-        </div>
         <div className="grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto">
           {FOUNDERS.map((f) => (
             <motion.div
@@ -73,27 +61,6 @@ const Academy = () => {
               </p>
             </motion.div>
           ))}
-        </div>
-
-        {/* Guest network — kept intentionally vague at this stage so we
-            don't over-promise specifics (admissions officers, essay
-            editors, etc) before they're locked in. */}
-        <div className="mt-12 sm:mt-14">
-          <div className="relative rounded-2xl border border-border bg-gradient-to-br from-primary/[0.04] via-card to-gold/[0.05] p-7 sm:p-9 overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_hsl(var(--gold)/0.07),_transparent_55%)] pointer-events-none" />
-            <div className="relative max-w-2xl">
-              <div className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">
-                <Globe className="h-3 w-3" />
-                Plus a global guest network
-              </div>
-              <h3 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground leading-tight mb-3">
-                Guest experts joining throughout the year.
-              </h3>
-              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                Each cohort brings in additional voices to round out the workshops. Details closer to launch.
-              </p>
-            </div>
-          </div>
         </div>
       </section>
 

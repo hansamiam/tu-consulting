@@ -41,6 +41,7 @@ import { getStoredProfile } from "@/components/discover/DiscoverProfileGate";
 import { UpcomingDeadlines } from "@/components/pipeline/UpcomingDeadlines";
 import { EssaysTab } from "@/components/pipeline/EssaysTab";
 import { SavedAlertsSection } from "@/components/pipeline/SavedAlertsSection";
+import { ActivityFeedSection } from "@/components/pipeline/ActivityFeedSection";
 import { UpgradeChip } from "@/components/UpgradeChip";
 import { InstaFollowChip } from "@/components/InstaFollowChip";
 
@@ -444,6 +445,13 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
         ) : trackedIds.length === 0 ? (
           <EmptyState language={language} />
         ) : null}
+
+        {/* Activity feed — bell-equivalent surface, integrated into
+            Workspace per user direction. Replaces the standalone
+            ActivityBell that used to live in the global nav. Auto-hides
+            when there's no activity. */}
+        <ActivityFeedSection language={language} />
+
         {/* View toggle — by-category (kanban) vs flat list. Only shown
             when there's actual tracked content; on the empty state the
             toggle would just sit above an empty page. */}

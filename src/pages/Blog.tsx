@@ -1,14 +1,14 @@
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import { ArrowRight, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useRef } from "react";
-import { motion } from "framer-motion";
 import { blogArticles } from "@/data/blogArticles";
 import { countryGuides } from "@/data/countryGuides";
+import heroImage from "@/assets/hero-campus.jpg";
 
-// Compact magazine layout. Navy gradient hero matches Academy / Team for
-// brand consistency. Sliding country-guide tiles, tight vertical rhythm.
+// Compact magazine layout. Blurred campus backdrop (matches other pages),
+// sliding country-guide tiles, tight vertical rhythm.
 const Blog = () => {
   const navigate = useNavigate();
   const featured = blogArticles[0];
@@ -20,31 +20,32 @@ const Blog = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className="min-h-screen relative"
+      style={{
+        backgroundImage: `linear-gradient(rgba(255,255,255,0.92), rgba(255,255,255,0.92)), url(${heroImage})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed",
+      }}
+    >
       <Navigation language="en" />
 
-      {/* HERO — navy gradient, brand-consistent with Academy + Team */}
-      <section className="relative bg-gradient-to-br from-primary via-primary to-primary/90 py-16 sm:py-20 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(var(--gold)/0.1),_transparent_60%)]" />
-        <div className="relative max-w-6xl mx-auto px-6 lg:px-10 text-center">
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 bg-gold/15 border border-gold/40 px-3 py-1 rounded-full text-gold text-xs font-semibold mb-5">
-            <BookOpen className="h-3.5 w-3.5" /> Reading
-          </motion.div>
-          <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05] text-primary-foreground">
-            TopUni <span className="text-gold">Journal</span>
-          </motion.h1>
-          <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-primary-foreground/70 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed mt-4">
-            Essays, country guides, and admissions intel from the team that's been through it.
-          </motion.p>
+      {/* Compact masthead */}
+      <header className="border-b border-border/50 bg-background/60 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto px-6 lg:px-10 py-8 lg:py-10">
+          <h1 className="font-heading text-3xl lg:text-5xl font-bold tracking-tight leading-[1.05]">
+            <span className="text-primary">Top Uni</span> <span className="text-accent">Journal</span>
+          </h1>
         </div>
-      </section>
+      </header>
 
       <main className="max-w-6xl mx-auto px-6 lg:px-10 py-10 lg:py-14 space-y-12 lg:space-y-14">
 
         {/* Country guides — sliding rail */}
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-heading text-xl lg:text-2xl font-bold tracking-tight text-foreground">
+            <h2 className="font-heading text-xl lg:text-2xl font-bold tracking-tight">
               Country guides
             </h2>
             <div className="flex gap-1.5">
@@ -73,13 +74,13 @@ const Blog = () => {
               <button
                 key={g.slug}
                 onClick={() => navigate(`/blog/guide/${g.slug}`)}
-                className="snap-start shrink-0 w-44 bg-card border border-border rounded-lg p-4 text-left hover:border-gold/40 hover:shadow-sm transition-all group"
+                className="snap-start shrink-0 w-44 bg-card border border-border rounded-lg p-4 text-left hover:border-accent/40 hover:shadow-sm transition-all group"
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-2xl">{g.flag}</span>
-                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-gold-dark group-hover:translate-x-0.5 transition-all" />
+                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-accent group-hover:translate-x-0.5 transition-all" />
                 </div>
-                <h3 className="font-heading font-semibold text-sm tracking-tight text-foreground group-hover:text-gold-dark transition-colors">
+                <h3 className="font-heading font-semibold text-sm tracking-tight group-hover:text-accent transition-colors">
                   {g.country}
                 </h3>
               </button>
@@ -90,10 +91,10 @@ const Blog = () => {
         {/* Featured + essays — compact */}
         {featured && (
           <section>
-            <p className="text-xs font-mono uppercase tracking-[0.2em] text-gold-dark mb-3">Featured</p>
+            <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-3">Featured</p>
             <article
               onClick={() => navigate(`/blog/${featured.id}`)}
-              className="group cursor-pointer grid md:grid-cols-12 gap-5 md:gap-8 items-center bg-card border border-border rounded-lg p-4 md:p-5 hover:border-gold/40 transition-colors"
+              className="group cursor-pointer grid md:grid-cols-12 gap-5 md:gap-8 items-center bg-card border border-border rounded-lg p-4 md:p-5 hover:border-accent/40 transition-colors"
             >
               <div className="md:col-span-5 aspect-[16/10] overflow-hidden rounded-md bg-muted">
                 <img
@@ -105,11 +106,11 @@ const Blog = () => {
               </div>
               <div className="md:col-span-7">
                 <div className="flex items-center gap-2 mb-2 text-[11px]">
-                  <span className="font-mono uppercase tracking-wider text-gold-dark">{featured.category}</span>
+                  <span className="font-mono uppercase tracking-wider text-accent">{featured.category}</span>
                   <span className="text-muted-foreground/50">·</span>
                   <span className="text-muted-foreground">{featured.readTime}</span>
                 </div>
-                <h2 className="font-heading text-xl md:text-2xl font-bold tracking-tight leading-snug mb-2 group-hover:text-gold-dark transition-colors">
+                <h2 className="font-heading text-xl md:text-2xl font-bold tracking-tight leading-snug mb-2 group-hover:text-accent transition-colors">
                   {featured.title}
                 </h2>
                 <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2 md:line-clamp-3">
@@ -122,13 +123,13 @@ const Blog = () => {
 
         {rest.length > 0 && (
           <section>
-            <p className="text-xs font-mono uppercase tracking-[0.2em] text-gold-dark mb-4">More essays</p>
+            <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-4">More essays</p>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {rest.map((article) => (
                 <article
                   key={article.id}
                   onClick={() => navigate(`/blog/${article.id}`)}
-                  className="group cursor-pointer bg-card border border-border rounded-lg overflow-hidden hover:border-gold/40 transition-colors"
+                  className="group cursor-pointer bg-card border border-border rounded-lg overflow-hidden hover:border-accent/40 transition-colors"
                 >
                   <div className="aspect-[16/10] overflow-hidden bg-muted">
                     <img
@@ -140,11 +141,11 @@ const Blog = () => {
                   </div>
                   <div className="p-4">
                     <div className="flex items-center gap-2 mb-1.5 text-[11px]">
-                      <span className="font-mono uppercase tracking-wider text-gold-dark">{article.category}</span>
+                      <span className="font-mono uppercase tracking-wider text-accent">{article.category}</span>
                       <span className="text-muted-foreground/50">·</span>
                       <span className="text-muted-foreground">{article.readTime}</span>
                     </div>
-                    <h3 className="font-heading text-base font-bold tracking-tight leading-snug mb-1.5 group-hover:text-gold-dark transition-colors line-clamp-2">
+                    <h3 className="font-heading text-base font-bold tracking-tight leading-snug mb-1.5 group-hover:text-accent transition-colors line-clamp-2">
                       {article.title}
                     </h3>
                     <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{article.excerpt}</p>
