@@ -2413,80 +2413,37 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
 
           {/* OVERVIEW */}
           <TabsContent value="overview" className="px-5 sm:px-7 py-4 sm:py-6 space-y-4 sm:space-y-5 m-0 focus-visible:outline-none">
-            {/* Standardized scholarship blurb. Replaces the gold-bordered
-                "Why this fits you" callout — the framing was overclaim
-                (a thin profile can't generate confident "fits you"
-                language) and the gold treatment competed visually with
-                the apply CTA. Now: one neutral 1-2 sentence summary
-                that reads like a program description. Falls back to
-                buildScholarshipBlurb when no editorial line exists. */}
-            {(() => {
-              const blurb = s.why_this_fits || buildScholarshipBlurb({
-                name: cleanScholarshipName(s.scholarship_name),
-                provider: cleanProvider(s.provider_name),
-                country: s.host_country,
-                coverage: s.coverage_type,
-                levels: s.target_degree_level,
-                fields: s.target_fields,
-                demographic: s.target_demographics?.[0],
-                isFullRide: s.coverage_type === "full_ride",
-              });
-              if (!blurb) return null;
-              return (
-                <p className="text-[15px] leading-relaxed text-foreground/85">
-                  {blurb.replace(/\.+$/, "")}.
-                </p>
-              );
-            })()}
+            {/* Overview = ABOUT THE SCHOLARSHIP. Eligibility, citizenship,
+                language, profile-vs-requirements signals — all of that
+                lives in Requirements. The generic blurb fallback was
+                producing surface-level filler ("Funds need-based at the
+                master's level") so it's gone too — only render an
+                editorial line when the LLM actually wrote one. */}
+            {s.why_this_fits && s.why_this_fits.trim().length > 30 && (
+              <p className="text-[15px] leading-relaxed text-foreground/85">
+                {s.why_this_fits.replace(/\.+$/, "")}.
+              </p>
+            )}
 
-            {/* Page-derived facts — what the program ACTUALLY says about
-                itself, not interpretation. Surfaces fields the LLM
-                extracted from the source page so Overview stops feeling
-                like just "title regurgitate". User feedback (2026-05-07):
-                "right now the overview is pure regurgitate of title
-                worthless basic. needs to be actually interesting or
-                from their website etc." Each block renders only when the
-                underlying data is present so the tab degrades cleanly
-                for sparse rows. */}
-            {s.eligibility_requirements && s.eligibility_requirements.trim().length > 30 && (
+            {s.ideal_candidate_profile && s.ideal_candidate_profile.trim().length > 30 && (
               <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-3.5">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">
-                  {t("Eligibility (from program)", "Право на участие (от программы)")}
+                  {t("Ideal candidate", "Идеальный кандидат")}
                 </p>
                 <p className="text-sm text-foreground/85 leading-relaxed">
-                  {s.eligibility_requirements.length > 600
-                    ? s.eligibility_requirements.slice(0, 580).trimEnd() + "…"
-                    : s.eligibility_requirements}
+                  {s.ideal_candidate_profile.length > 500
+                    ? s.ideal_candidate_profile.slice(0, 480).trimEnd() + "…"
+                    : s.ideal_candidate_profile}
                 </p>
               </div>
             )}
 
-            {(s.duration_text || s.language_requirements || s.citizenship_requirements) && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {s.duration_text && (
-                  <div className="rounded-xl border border-border/60 bg-card px-3.5 py-2.5">
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
-                      {t("Duration", "Длительность")}
-                    </p>
-                    <p className="text-sm text-foreground/85 leading-snug">{s.duration_text}</p>
-                  </div>
-                )}
-                {s.language_requirements && (
-                  <div className="rounded-xl border border-border/60 bg-card px-3.5 py-2.5">
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
-                      {t("Language", "Язык")}
-                    </p>
-                    <p className="text-sm text-foreground/85 leading-snug">{s.language_requirements}</p>
-                  </div>
-                )}
-                {s.citizenship_requirements && (
-                  <div className="rounded-xl border border-border/60 bg-card px-3.5 py-2.5 sm:col-span-2">
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
-                      {t("Citizenship / nationality", "Гражданство")}
-                    </p>
-                    <p className="text-sm text-foreground/85 leading-snug">{s.citizenship_requirements}</p>
-                  </div>
-                )}
+            {s.duration_text && (
+              <div className="rounded-xl border border-border/60 bg-card px-3.5 py-2.5">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
+                  {t("Duration", "Длительность")}
+                </p>
+                <p className="text-sm text-foreground/85 leading-snug">{s.duration_text}</p>
               </div>
             )}
 
@@ -2502,32 +2459,6 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                   {s.partner_universities.length > 12 && (
                     <span className="text-xs text-muted-foreground self-center">+{s.partner_universities.length - 12} more</span>
                   )}
-                </div>
-              </div>
-            )}
-
-            {s.reasons.length > 0 && (
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">{t("Profile signals", "Сигналы профиля")}</p>
-                <div className="space-y-1.5">
-                  {s.reasons.map((r, i) => (
-                    <div key={i} className="flex items-start gap-2 text-sm leading-relaxed text-success">
-                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-0.5" />{r}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {s.warnings.length > 0 && (
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">{t("Watch outs", "На что обратить внимание")}</p>
-                <div className="space-y-1.5">
-                  {s.warnings.map((w, i) => (
-                    <div key={i} className="flex items-start gap-2 text-sm leading-relaxed text-warning">
-                      <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />{w}
-                    </div>
-                  ))}
                 </div>
               </div>
             )}
@@ -2579,17 +2510,81 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             )}
           </TabsContent>
 
-          {/* REQUIREMENTS */}
+          {/* REQUIREMENTS — eligibility, citizenship, profile-vs-thresholds,
+              application demands. All things "what does this need from
+              me" live here so Overview stays a clean program description. */}
           <TabsContent value="requirements" className="px-5 sm:px-7 py-4 sm:py-6 space-y-4 sm:space-y-5 m-0 focus-visible:outline-none">
+            {/* Eligibility narrative from the program (moved from Overview).
+                Only renders when the LLM extracted a substantive paragraph. */}
+            {s.eligibility_requirements && s.eligibility_requirements.trim().length > 30 && (
+              <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-3.5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">
+                  {t("Eligibility (from program)", "Право на участие (от программы)")}
+                </p>
+                <p className="text-sm text-foreground/85 leading-relaxed">
+                  {s.eligibility_requirements.length > 600
+                    ? s.eligibility_requirements.slice(0, 580).trimEnd() + "…"
+                    : s.eligibility_requirements}
+                </p>
+              </div>
+            )}
+
+            {/* Citizenship + language — moved from Overview, sit alongside
+                the program eligibility text where they belong. */}
+            {(s.citizenship_requirements || s.language_requirements) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {s.citizenship_requirements && (
+                  <div className="rounded-xl border border-border/60 bg-card px-3.5 py-2.5 sm:col-span-2">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
+                      {t("Citizenship / nationality", "Гражданство")}
+                    </p>
+                    <p className="text-sm text-foreground/85 leading-snug">{s.citizenship_requirements}</p>
+                  </div>
+                )}
+                {s.language_requirements && (
+                  <div className="rounded-xl border border-border/60 bg-card px-3.5 py-2.5 sm:col-span-2">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
+                      {t("Language", "Язык")}
+                    </p>
+                    <p className="text-sm text-foreground/85 leading-snug">{s.language_requirements}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {reqs.length > 0 ? (
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">{t("You vs. requirements", "Ваш профиль vs требования")}</p>
                 <div className="bg-muted/30 rounded-2xl px-4 py-1">
                   {reqs.map((r, i) => <ReqRow key={i} {...r} />)}
                 </div>
-                {/* Disclaimer here was a duplicate of the sheet-footer
-                    "verify before applying" line. Kept only the footer
-                    one so it doesn't read twice on a single panel. */}
+                {/* Profile signals + watchouts (moved from Overview).
+                    Cohabit with the threshold checklist since they're all
+                    "where you stand vs. this row" signals. */}
+                {s.reasons.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">{t("Profile signals", "Сигналы профиля")}</p>
+                    <div className="space-y-1.5">
+                      {s.reasons.map((r, i) => (
+                        <div key={i} className="flex items-start gap-2 text-sm leading-relaxed text-success">
+                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-0.5" />{r}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {s.warnings.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">{t("Watch outs", "На что обратить внимание")}</p>
+                    <div className="space-y-1.5">
+                      {s.warnings.map((w, i) => (
+                        <div key={i} className="flex items-start gap-2 text-sm leading-relaxed text-warning">
+                          <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />{w}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">{t("No specific requirements recorded for this scholarship.", "Конкретные требования по этой стипендии не записаны.")}</p>
@@ -3972,55 +3967,99 @@ const Discover = ({ language = "en" }: Props) => {
                 const targetCountryChips = (profile.targetCountries ?? []).slice(0, 3);
                 return (
                   <div className="relative bg-canvas-soft/60 border-b border-border/60 overflow-hidden">
-                    <div className="relative max-w-7xl mx-auto px-5 sm:px-8 py-3 sm:py-3.5">
+                    <div className="relative max-w-7xl mx-auto px-5 sm:px-8 py-4 sm:py-5">
                       {isProfileFilled ? (
-                        <div className="flex items-center gap-3 flex-wrap">
-                          {/* Identity lockup — eyebrow + chips. Reads as
-                              "Tailored to you · [country] · [level] ·
-                              [field] · [target countries]". The chips
-                              are the same shape the TopUni AI wizard
-                              collects, so the surface feels continuous
-                              with profile setup rather than a separate
-                              database. */}
-                          <span className="text-[10px] uppercase tracking-[0.18em] text-gold-dark dark:text-gold-light font-semibold whitespace-nowrap">
-                            {t("Tailored to you", "Подобрано под вас")}
-                          </span>
-                          <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                            {profile.country && (
-                              <span className={`inline-flex items-center gap-1 text-[11px] font-semibold text-white px-2 py-0.5 rounded-full bg-gradient-to-r ${countryAccent}`}>
-                                {countryFlag && <span className="text-[12px] leading-none">{countryFlag}</span>}
-                                {profile.country}
-                              </span>
-                            )}
-                            {profile.degrees && profile.degrees.length > 0 && (
-                              <span className="inline-flex items-center gap-1 text-[11px] text-foreground/80 bg-card border border-border/70 px-2 py-0.5 rounded-full font-medium">
-                                <GraduationCap className="h-3 w-3 text-gold-dark" />
-                                {profile.degrees.join(" / ")}
-                              </span>
-                            )}
-                            {profile.field && (
-                              <span className="inline-flex items-center gap-1 text-[11px] text-foreground/80 bg-card border border-border/70 px-2 py-0.5 rounded-full font-medium">
-                                {fieldEmoji && <span className="leading-none">{fieldEmoji}</span>}
-                                {profile.field}
-                              </span>
-                            )}
-                            {targetCountryChips.length > 0 && (
-                              <span className="inline-flex items-center gap-1 text-[11px] text-foreground/80 bg-card border border-border/70 px-2 py-0.5 rounded-full font-medium">
-                                <Globe className="h-3 w-3 text-gold-dark" />
-                                {targetCountryChips.join(" · ")}
-                                {(profile.targetCountries?.length ?? 0) > 3 && (
-                                  <span className="text-muted-foreground/70">+{profile.targetCountries.length - 3}</span>
-                                )}
-                              </span>
-                            )}
-                          </div>
-                          <button
-                            onClick={resetProfile}
-                            className="text-[11px] text-muted-foreground/85 hover:text-foreground transition-colors underline-offset-4 hover:underline ml-auto whitespace-nowrap"
-                          >
-                            {t("Edit profile", "Изменить профиль")}
-                          </button>
-                        </div>
+                        (() => {
+                          // First-name greeting when we have it; falls back
+                          // to a generic "your profile" framing when the
+                          // user signed in with email-only / Google.
+                          const stored = getStoredProfile();
+                          const firstName = stored?.fullName?.trim().split(/\s+/)[0] || "";
+                          // Profile completeness — number of meaty signals
+                          // populated. Used to drive the "Strengthen profile"
+                          // nudge so users with thin profiles see a clear
+                          // path to better matches.
+                          const filled = [
+                            !!profile.country,
+                            (profile.degrees?.length ?? 0) > 0,
+                            !!profile.field,
+                            (profile.targetCountries?.length ?? 0) > 0,
+                            !!profile.gpa,
+                            !!(profile.ielts || profile.toefl),
+                            (profile.demographics?.length ?? 0) > 0,
+                          ].filter(Boolean).length;
+                          const total = 7;
+                          const pct = Math.round((filled / total) * 100);
+                          return (
+                            <div className="flex items-start gap-4 flex-wrap">
+                              {/* Identity panel — bigger, warmer. Reads
+                                  "Hi {name} — your scholarship feed" so
+                                  the surface feels personal rather than
+                                  a generic filter strip. */}
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-baseline gap-2 flex-wrap">
+                                  <p className="text-[10px] uppercase tracking-[0.22em] text-gold-dark dark:text-gold-light font-bold">
+                                    {t("Built for you", "Подобрано для вас")}
+                                  </p>
+                                  <span className="text-[10px] text-muted-foreground tabular-nums">{pct}% {t("complete", "заполнено")}</span>
+                                </div>
+                                <h2 className="font-heading text-lg sm:text-xl font-bold text-foreground tracking-tight mt-0.5">
+                                  {firstName
+                                    ? t(`Hey ${firstName} — your scholarship feed`, `Привет, ${firstName} — ваша лента стипендий`)
+                                    : t("Your scholarship feed", "Ваша лента стипендий")}
+                                </h2>
+                                <div className="flex items-center gap-1.5 flex-wrap mt-2 min-w-0">
+                                  {profile.country && (
+                                    <span className={`inline-flex items-center gap-1 text-[11px] font-semibold text-white px-2.5 py-1 rounded-full bg-gradient-to-r ${countryAccent}`}>
+                                      {countryFlag && <span className="text-[12px] leading-none">{countryFlag}</span>}
+                                      {profile.country}
+                                    </span>
+                                  )}
+                                  {profile.degrees && profile.degrees.length > 0 && (
+                                    <span className="inline-flex items-center gap-1 text-[11px] text-foreground/85 bg-card border border-border/70 px-2.5 py-1 rounded-full font-medium">
+                                      <GraduationCap className="h-3 w-3 text-gold-dark" />
+                                      {profile.degrees.join(" / ")}
+                                    </span>
+                                  )}
+                                  {profile.field && (
+                                    <span className="inline-flex items-center gap-1 text-[11px] text-foreground/85 bg-card border border-border/70 px-2.5 py-1 rounded-full font-medium">
+                                      {fieldEmoji && <span className="leading-none">{fieldEmoji}</span>}
+                                      {profile.field}
+                                    </span>
+                                  )}
+                                  {targetCountryChips.length > 0 && (
+                                    <span className="inline-flex items-center gap-1 text-[11px] text-foreground/85 bg-card border border-border/70 px-2.5 py-1 rounded-full font-medium">
+                                      <Globe className="h-3 w-3 text-gold-dark" />
+                                      {targetCountryChips.join(" · ")}
+                                      {(profile.targetCountries?.length ?? 0) > 3 && (
+                                        <span className="text-muted-foreground/70">+{profile.targetCountries.length - 3}</span>
+                                      )}
+                                    </span>
+                                  )}
+                                  {profile.gpa && (
+                                    <span className="inline-flex items-center gap-1 text-[11px] text-foreground/70 bg-muted/60 border border-border/60 px-2.5 py-1 rounded-full font-medium">
+                                      GPA {profile.gpa}{profile.gpaScale && profile.gpaScale !== "4.0" ? `/${profile.gpaScale}` : ""}
+                                    </span>
+                                  )}
+                                  {(profile.ielts || profile.toefl) && (
+                                    <span className="inline-flex items-center gap-1 text-[11px] text-foreground/70 bg-muted/60 border border-border/60 px-2.5 py-1 rounded-full font-medium">
+                                      {profile.ielts ? `IELTS ${profile.ielts}` : `TOEFL ${profile.toefl}`}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <button
+                                onClick={resetProfile}
+                                className="inline-flex items-center gap-1.5 text-xs font-semibold text-gold-dark hover:text-foreground bg-card border border-border/70 hover:border-gold/40 px-3 py-2 rounded-lg transition-all whitespace-nowrap shrink-0"
+                              >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                {pct < 70
+                                  ? t("Strengthen profile", "Улучшить профиль")
+                                  : t("Edit profile", "Изменить профиль")}
+                              </button>
+                            </div>
+                          );
+                        })()
                       ) : (
                         // Pre-profile: a single CTA back to the wizard.
                         // Drop the counters — the toolbar below already
