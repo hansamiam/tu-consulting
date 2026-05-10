@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { cleanScholarshipName, cleanProvider, displayField } from "@/lib/scholarshipFields";
+import { cleanScholarshipName, cleanProvider, displayField, compactAward } from "@/lib/scholarshipFields";
 import { shortCountry } from "@/lib/countryAccent";
 
 /**
@@ -249,26 +249,35 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
     urgencyClass = "bg-muted/30 text-muted-foreground border-transparent";
   }
 
-  // Funding presentation rules:
-  //   - If we have a numeric USD value, prefer the formatted dollar amount
-  //     ($35K, $1.2M) as the BIG headline. Concise, scannable, premium.
-  //   - If we don't have a number but DO have short award_amount_text
-  //     (≤24 chars, e.g. "Full tuition + $35K"), use it as the headline.
-  //   - If award_amount_text is long-form prose ("Partial scholarships,
-  //     significant reduction in fees, $100M+ awarded to 80,000 students"),
-  //     never put it in the headline — fall back to the coverage label as
-  //     the headline ("Partial funding") and surface the prose as a single
-  //     muted line below.
+  // Funding presentation rules — UNIFIED through compactAward() so every
+  // surface (Discover row, brief funding card, scholarship detail chip)
+  // shows the same normalized format. The cap is single-axis:
+  //   - If we have a numeric USD value, render it as $K/$M ("$80K", "$1.2M")
+  //   - Else if coverage is full_ride: "Full ride"
+  //   - Else if award text contains a parseable $-figure: surface that
+  //   - Else if coverage is tuition_only / stipend / partial: localised label
+  //   - Else short-truncated prose, capped at ~28 chars with ellipsis
+  // No more long-prose "longAwardText" line below the chip — that was
+  // the source of the "blah blah" inconsistency the user flagged. Long
+  // prose lives only in the detail dialog (ExpandedScholarshipDialog)
+  // which has the room to render it cleanly.
   const fmtUsd = fmtValue(r.estimated_total_value_usd);
-  const shortAward = r.award_amount_text && r.award_amount_text.length <= 24
-    ? r.award_amount_text
-    : null;
-  const longAwardText = r.award_amount_text && r.award_amount_text.length > 24
-    ? r.award_amount_text
-    : null;
+  const awardLabel = compactAward({
+    coverage_type: r.coverage_type,
+    award_amount_text: r.award_amount_text,
+    estimated_total_value_usd: r.estimated_total_value_usd,
+  });
   const coverageLabel = (t.coverage as Record<string, string>)[r.coverage_type] ?? t.coverage.other;
-  const headlineValue: string | null = fmtUsd ?? shortAward ?? coverageLabel;
-  const showSubtitle = !!fmtUsd || !!shortAward; // when we have a real value, show "· coverage" beside it
+  // Headline: prefer compactAward (it already handles $K formatting +
+  // labels), then USD-only as a safety net (if compactAward returned
+  // null somehow), then coverage label.
+  const headlineValue: string | null = awardLabel ?? fmtUsd ?? coverageLabel;
+  // Subtitle: show coverage label beside the headline ONLY when the
+  // headline is a $-figure (so the user sees "$80K · Full ride"). When
+  // the headline IS the coverage label, suppress to avoid "Stipend ·
+  // Stipend" duplication.
+  const headlineIsDollar = !!awardLabel && /^\$/.test(awardLabel);
+  const showSubtitle = headlineIsDollar;
   const cleanedName = cleanScholarshipName(r.scholarship_name);
   const cleanedProvider = cleanProvider(r.provider_name);
   const hue = hueFromName(cleanedProvider || cleanedName);
@@ -363,11 +372,13 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
               <span className="text-xs text-muted-foreground truncate">· {coverageLabel}</span>
             )}
           </div>
-          {longAwardText && (
-            <p className="text-[11px] text-muted-foreground/80 leading-snug mt-1.5 line-clamp-2">
-              {longAwardText}
-            </p>
-          )}
+          {/* Long descriptive award text was rendered here previously
+              (line-clamp-2 muted line) but produced wildly inconsistent
+              output across rows — some had clean prose, others had
+              partial sentences cut mid-clause, others were stub fragments.
+              Card now shows ONE clean amount or label, consistent across
+              every row. Long prose lives in the expanded detail view
+              where it has room to render properly. */}
         </div>
       )}
 

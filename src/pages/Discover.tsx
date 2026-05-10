@@ -4310,9 +4310,14 @@ const Discover = ({ language = "en" }: Props) => {
                         <FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} fieldsAvailable={fieldsAvailable} lang={language} />
                       </div>
 
-                      {/* TopUni Pro membership card — visible to anyone not yet a member.
-                          Founding-cohort scarcity drives conversion via the "founding rate"
-                          callout; the membership identity itself is just "TopUni Pro". */}
+                      {/* Sidebar membership card — visible to anyone not yet
+                          a member. Quick-panel surface uses "Membership"
+                          (plainer, matches the footer + paywall row labels)
+                          rather than "TopUni Pro" — that name still belongs
+                          on the deeper paywall sheet headers where the user
+                          is being sold the product, not the sidebar nudge.
+                          Founding-cohort scarcity drives conversion via the
+                          "founding rate" callout below. */}
                       {!isMember && foundingLeft && foundingLeft.left > 0 && (
                         <button
                           onClick={() => navigate(ru ? "/pricing/ru" : "/pricing")}
@@ -4321,7 +4326,7 @@ const Discover = ({ language = "en" }: Props) => {
                           <div className="absolute -top-1/3 right-0 w-1/2 h-full rounded-full blur-[60px] opacity-20" style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 60%)" }} />
                           <div className="relative">
                             <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold-light mb-2">
-                              <Crown className="h-3 w-3" /> TopUni Pro
+                              <Crown className="h-3 w-3" /> {t("Membership", "Членство")}
                             </div>
                             <p className="font-heading font-bold text-sm leading-tight mb-1">
                               {t("Unlock the full database + workshops with our founders.", "Полная база + воркшопы с основателями.")}
@@ -4349,7 +4354,7 @@ const Discover = ({ language = "en" }: Props) => {
                           <span className="text-[11px] font-semibold text-gold-dark">
                             {subscription.tier === "founding"
                               ? t("Founding member", "Член-основатель")
-                              : t("TopUni Pro", "TopUni Pro")}
+                              : t("Member", "Участник")}
                           </span>
                         </div>
                       )}
