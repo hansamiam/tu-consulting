@@ -2772,6 +2772,14 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     const briefController = new AbortController();
     briefAbortRef.current = briefController;
 
+    // Snapshot the pre-regen brief so we can restore it on error.
+    // Pre-fix a regen failure wiped a previously-good brief AND set
+    // pathwayError, so a transient network blip cost the user their
+    // working report. Now: if regen fails AND we had prior content,
+    // we restore the snapshot (the error toast still surfaces so the
+    // failure is acknowledged).
+    const priorContent = pathwayContent;
+
     setPathwayLoading(true);
     setPathwayError(null);
     setPathwayContent("");
@@ -2968,7 +2976,15 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       // user has scrolled past the report block.
       (status, message) => {
         setPathwayLoading(false);
-        setPathwayContent("");
+        // Restore prior content on regen failure so the user keeps
+        // their working brief. Only surface the empty-state error
+        // block when there was no prior content (genuine first-time
+        // generation failure).
+        if (priorContent) {
+          setPathwayContent(priorContent);
+        } else {
+          setPathwayContent("");
+        }
         const isRateLimit = status === 429;
         const isAuth = status === 401 || status === 403;
         const userMessage = isRateLimit
@@ -2976,7 +2992,11 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           : isAuth
           ? (language === "ru" ? "Сессия истекла — войдите заново." : "Session expired — please sign in again.")
           : (language === "ru" ? `Не удалось сгенерировать стратегию: ${message}` : `Couldn't generate the strategy report: ${message}`);
-        setPathwayError(userMessage);
+        // Only set the error banner on first-time failures — when
+        // we restored prior content, the toast is enough; the user
+        // doesn't need a destructive-tinted banner sitting above
+        // their still-good brief.
+        if (!priorContent) setPathwayError(userMessage);
         toast.error(userMessage);
         void track("brief_generation_failed", { status, tier: reportGrade });
       },
