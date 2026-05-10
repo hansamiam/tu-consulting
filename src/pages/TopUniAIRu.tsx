@@ -14,6 +14,9 @@ import { ArrowRight, ArrowLeft, Award, GraduationCap, Target, Shield, CheckCircl
 import { useNavigate } from "react-router-dom";
 import { saveProfile } from "@/components/discover/DiscoverProfileGate";
 import { projectToDiscoverProfile } from "@/lib/topuniIntakeProjection";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { Shield } from "lucide-react";
 
 // 'landing' retired round 10 — page opens directly into intake.
 type Screen = "intake" | "dashboard" | "chat-only";
@@ -55,6 +58,11 @@ const COUNTRY_MAP_REVERSE: Record<string, string> = Object.fromEntries(
 
 const TopUniAIRu = () => {
   const navigate = useNavigate();
+  // Auth combined with intake — mirror EN. Step 1 invites password
+  // OR Google sign-up so the email field doubles as the account email.
+  const { user, signUpWithPassword, signInWithGoogle } = useAuth();
+  const [accountPassword, setAccountPassword] = useState("");
+  const [accountSubmitting, setAccountSubmitting] = useState(false);
   // Landing retired round 10 — opens directly into intake. Mirror EN.
   const [screen, setScreen] = useState<Screen>("intake");
   const [step, setStep] = useState(1);
@@ -303,11 +311,82 @@ const TopUniAIRu = () => {
                         <div className="space-y-2"><Label>SAT</Label><Input value={sat} onChange={e => setSat(e.target.value)} placeholder="Необязательно" /></div>
                       </div>
                     </div>
+                    {/* Account sign-up callout — mirror EN. Hidden when
+                        already signed in. The Continue button calls
+                        signUpWithPassword first if a password was set. */}
+                    {!user && (
+                      <div className="rounded-xl border border-border/70 bg-muted/15 px-5 py-4 space-y-3">
+                        <div className="flex items-start gap-2.5">
+                          <Shield className="w-4 h-4 text-gold-dark shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-foreground leading-tight">
+                              Сохраните свой стратегический отчёт
+                            </p>
+                            <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                              Установите пароль — отчёт будет с вами на любом устройстве. Пропустите, если хотите просто посмотреть один раз.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="grid sm:grid-cols-[1fr,auto] gap-2.5">
+                          <Input
+                            type="password"
+                            value={accountPassword}
+                            onChange={e => setAccountPassword(e.target.value)}
+                            placeholder="Пароль (необязательно · от 8 символов)"
+                            className="h-10 bg-card text-sm"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-10 gap-2"
+                            onClick={async () => {
+                              setAccountSubmitting(true);
+                              const { error } = await signInWithGoogle();
+                              setAccountSubmitting(false);
+                              if (error) toast.error(error);
+                            }}
+                            disabled={accountSubmitting}
+                          >
+                            <svg viewBox="0 0 24 24" className="w-4 h-4" aria-hidden>
+                              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                              <path fill="#FBBC05" d="M5.84 14.1A6.84 6.84 0 015.5 12c0-.73.13-1.43.34-2.1V7.07H2.18A11 11 0 001 12c0 1.78.43 3.46 1.18 4.93l3.66-2.83z"/>
+                              <path fill="#EA4335" d="M12 5.5c1.62 0 3.07.56 4.21 1.64l3.15-3.15C17.45 2.18 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.83C6.71 7.43 9.14 5.5 12 5.5z"/>
+                            </svg>
+                            Google
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex justify-end pt-4">
                       <Button
                         variant="gold"
-                        onClick={() => goToStep(2)}
-                        disabled={!fullName.trim() || !email.trim() || !nationality.trim() || !gradeLevel || !gpa.trim()}
+                        onClick={async () => {
+                          if (!user && accountPassword.trim().length > 0) {
+                            if (accountPassword.length < 8) {
+                              toast.error("Минимум 8 символов в пароле.");
+                              return;
+                            }
+                            setAccountSubmitting(true);
+                            const { error, needsConfirmation } = await signUpWithPassword(email.trim(), accountPassword);
+                            setAccountSubmitting(false);
+                            if (error) {
+                              toast.error(/already|exists|registered/i.test(error)
+                                ? "Этот email уже зарегистрирован — оставьте пароль пустым чтобы продолжить, или войдите через Аккаунт."
+                                : error);
+                              return;
+                            }
+                            if (needsConfirmation) {
+                              toast.success("Аккаунт создан — проверьте email для подтверждения. Отчёт сохраняется на этом устройстве.");
+                            } else {
+                              toast.success("Аккаунт создан — отчёт будет сохранён автоматически.");
+                            }
+                          }
+                          goToStep(2);
+                        }}
+                        disabled={accountSubmitting || !fullName.trim() || !email.trim() || !nationality.trim() || !gradeLevel || !gpa.trim()}
                       >
                         Далее <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
