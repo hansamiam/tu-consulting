@@ -43,6 +43,12 @@ interface IntakeFields {
   nationality: string;
   gradeLevel: string;
   gpa: string;
+  /** Optional — "4.0" | "5.0" | "10.0" | "100". When omitted, downstream
+   *  Discover scoring assumes 4.0 which is the right default for US-style
+   *  inputs but wrong for post-Soviet (5.0), Continental EU (10.0), or
+   *  percentage (100) inputs. The intake captures this explicitly so a
+   *  4.7/5.0 doesn't get scored as 4.7/4.0 (overflow). */
+  gpaScale?: string;
   ielts: string;
   toefl: string;
   sat: string;
@@ -63,6 +69,7 @@ export const projectToDiscoverProfile = (intake: IntakeFields): DiscoverProfile 
   educationLevel: intake.gradeLevel || undefined,
   targetDegree: mapGradeLevelToTargetDegree(intake.gradeLevel) || undefined,
   gpa: intake.gpa || undefined,
+  gpaScale: intake.gpaScale || undefined,
   ieltsScore: intake.ielts || undefined,
   toeflScore: intake.toefl || undefined,
   satScore: intake.sat || undefined,

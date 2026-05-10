@@ -78,6 +78,10 @@ interface WizardDraft {
   nationality: string;
   gradeLevel: string;
   gpa: string;
+  /** GPA scale: "4.0" | "5.0" | "10.0" | "100" — used by Discover
+   *  scoring to normalize to a 4.0 baseline. Defaults to "4.0" when
+   *  unset so legacy drafts still parse cleanly. */
+  gpaScale: string;
   ielts: string;
   toefl: string;
   sat: string;
@@ -151,6 +155,12 @@ const TopUniAI = () => {
   const [nationality, setNationality] = useState(draft?.nationality ?? "");
   const [gradeLevel, setGradeLevel] = useState(draft?.gradeLevel ?? "");
   const [gpa, setGpa] = useState(draft?.gpa ?? "");
+  // GPA scale picker — defaults to 4.0 (US standard, the most common
+  // baseline most students think in). The brief generator + Discover
+  // both normalize against 4.0 so picking a different scale at intake
+  // means we preserve the user's actual number rather than asking them
+  // to mentally convert.
+  const [gpaScale, setGpaScale] = useState<string>(draft?.gpaScale ?? "4.0");
   const [ielts, setIelts] = useState(draft?.ielts ?? "");
   const [toefl, setToefl] = useState(draft?.toefl ?? "");
   const [sat, setSat] = useState(draft?.sat ?? "");
@@ -282,7 +292,7 @@ const TopUniAI = () => {
     if (screen !== "intake") return;
     try {
       const draftPayload: WizardDraft = {
-        fullName, email, whatsapp, nationality, gradeLevel, gpa, ielts, toefl, sat,
+        fullName, email, whatsapp, nationality, gradeLevel, gpa, gpaScale, ielts, toefl, sat,
         targetCountries, major, budget, scholarshipNeeded, timeline,
         prestige: prestige[0], scholarship: scholarship[0],
         careerRoi: careerRoi[0], visaAccess: visaAccess[0], locationPref: locationPref[0],
@@ -292,7 +302,7 @@ const TopUniAI = () => {
     } catch { /* ignore quota / private-mode errors */ }
   }, [
     screen,
-    fullName, email, whatsapp, nationality, gradeLevel, gpa, ielts, toefl, sat,
+    fullName, email, whatsapp, nationality, gradeLevel, gpa, gpaScale, ielts, toefl, sat,
     targetCountries, major, budget, scholarshipNeeded, timeline,
     prestige, scholarship, careerRoi, visaAccess, locationPref,
   ]);
@@ -307,7 +317,7 @@ const TopUniAI = () => {
   }, [screen]);
 
   const profile = {
-    fullName, email, whatsapp, nationality, gradeLevel, gpa, ielts, toefl, sat,
+    fullName, email, whatsapp, nationality, gradeLevel, gpa, gpaScale, ielts, toefl, sat,
     targetCountries, major, budget, scholarshipNeeded, timeline,
     prestige: prestige[0], scholarship: scholarship[0],
     careerRoi: careerRoi[0], visaAccess: visaAccess[0], locationPref: locationPref[0],
@@ -494,7 +504,41 @@ const TopUniAI = () => {
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                           <Label className="text-xs uppercase tracking-wider font-medium">GPA *</Label>
-                          <Input value={gpa} onChange={e => setGpa(e.target.value)} placeholder="e.g. 3.7" className="h-11 bg-card" />
+                          {/* Paired input + scale picker — covers the four
+                              common bases (US 4.0, post-Soviet 5.0,
+                              Continental Europe 10.0, percentage 100) so
+                              users put in their actual number rather than
+                              mentally converting. Downstream scoring
+                              normalizes to 4.0. */}
+                          <div className="flex gap-2">
+                            <Input
+                              value={gpa}
+                              onChange={e => setGpa(e.target.value)}
+                              placeholder={
+                                gpaScale === "5.0" ? "e.g. 4.7"
+                                : gpaScale === "10.0" ? "e.g. 8.5"
+                                : gpaScale === "100" ? "e.g. 87"
+                                : "e.g. 3.7"
+                              }
+                              className="h-11 bg-card flex-1"
+                            />
+                            <div className="flex rounded-md overflow-hidden border border-border bg-card shrink-0">
+                              {["4.0", "5.0", "10.0", "100"].map(s => (
+                                <button
+                                  type="button"
+                                  key={s}
+                                  onClick={() => setGpaScale(s)}
+                                  className={`px-2.5 text-xs font-semibold transition-colors ${
+                                    gpaScale === s
+                                      ? "bg-gold-dark text-primary-foreground"
+                                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                  }`}
+                                >
+                                  /{s}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-xs uppercase tracking-wider font-medium">IELTS</Label>
@@ -726,7 +770,7 @@ const TopUniAI = () => {
                           try {
                             saveProfile(projectToDiscoverProfile({
                               fullName, email, nationality, gradeLevel,
-                              gpa, ielts, toefl, sat, major, budget,
+                              gpa, gpaScale, ielts, toefl, sat, major, budget,
                               targetCountries,
                             }));
                           } catch { /* localStorage may be unavailable; brief still renders */ }

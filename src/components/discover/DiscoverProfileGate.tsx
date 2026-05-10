@@ -15,6 +15,12 @@ export interface DiscoverProfile {
   educationLevel?: string;
   targetDegree?: string;
   gpa?: string;
+  /** Scale on which `gpa` is reported. "4.0" | "5.0" | "10.0" | "100".
+   *  Used by Discover scoring to normalize against scholarship min_gpa
+   *  thresholds correctly. Pre-fix this slot defaulted to "4.0" on
+   *  every read, so post-Soviet / Continental / percentage GPAs were
+   *  scored as if they were US 4.0 inputs (overflow + wrong matches). */
+  gpaScale?: string;
   // Test scores collected independently — many programs require
   // specifically TOEFL or specifically SAT, so a single "english test"
   // field would either lose information or break eligibility checks.

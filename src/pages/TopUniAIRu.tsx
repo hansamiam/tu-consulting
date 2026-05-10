@@ -76,6 +76,11 @@ const TopUniAIRu = () => {
   const [nationality, setNationality] = useState("");
   const [gradeLevel, setGradeLevel] = useState("");
   const [gpa, setGpa] = useState("");
+  // Russian schools commonly use the 5-point scale; default the picker
+  // to /5.0 here for the most natural Russian-speaking experience. The
+  // scale is normalized to 4.0 downstream by Discover scoring + the
+  // brief generator carries the chosen scale verbatim into the prompt.
+  const [gpaScale, setGpaScale] = useState<string>("5.0");
   const [ielts, setIelts] = useState("");
   const [toefl, setToefl] = useState("");
   const [sat, setSat] = useState("");
@@ -160,7 +165,7 @@ const TopUniAIRu = () => {
   const mappedCountries = targetCountries.map(c => COUNTRY_MAP[c] || c);
 
   const profile = {
-    fullName, email, whatsapp, nationality, gradeLevel, gpa, ielts, toefl, sat,
+    fullName, email, whatsapp, nationality, gradeLevel, gpa, gpaScale, ielts, toefl, sat,
     targetCountries: mappedCountries, major, budget, scholarshipNeeded, timeline,
     prestige: prestige[0], scholarship: scholarship[0],
     careerRoi: careerRoi[0], visaAccess: visaAccess[0], locationPref: locationPref[0],
@@ -253,7 +258,38 @@ const TopUniAIRu = () => {
                         </Select>
                       </div>
                       <div className="grid sm:grid-cols-2 gap-4">
-                        <div className="space-y-2"><Label>GPA *</Label><Input value={gpa} onChange={e => setGpa(e.target.value)} placeholder="напр. 3.7" /></div>
+                        <div className="space-y-2">
+                          <Label>GPA *</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              value={gpa}
+                              onChange={e => setGpa(e.target.value)}
+                              placeholder={
+                                gpaScale === "5.0" ? "напр. 4.7"
+                                : gpaScale === "10.0" ? "напр. 8.5"
+                                : gpaScale === "100" ? "напр. 87"
+                                : "напр. 3.7"
+                              }
+                              className="flex-1"
+                            />
+                            <div className="flex rounded-md overflow-hidden border border-border bg-card shrink-0">
+                              {["4.0", "5.0", "10.0", "100"].map(s => (
+                                <button
+                                  type="button"
+                                  key={s}
+                                  onClick={() => setGpaScale(s)}
+                                  className={`px-2.5 text-xs font-semibold transition-colors ${
+                                    gpaScale === s
+                                      ? "bg-gold-dark text-primary-foreground"
+                                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                  }`}
+                                >
+                                  /{s}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
                         <div className="space-y-2"><Label>IELTS</Label><Input value={ielts} onChange={e => setIelts(e.target.value)} placeholder="Необязательно" /></div>
                       </div>
                       <div className="grid sm:grid-cols-2 gap-4">
@@ -351,7 +387,7 @@ const TopUniAIRu = () => {
                           try {
                             saveProfile(projectToDiscoverProfile({
                               fullName, email, nationality, gradeLevel,
-                              gpa, ielts, toefl, sat,
+                              gpa, gpaScale, ielts, toefl, sat,
                               major: major.trim(),
                               budget,
                               targetCountries: mappedCountries,

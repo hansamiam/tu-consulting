@@ -3220,7 +3220,7 @@ const Discover = ({ language = "en" }: Props) => {
       setProfile({
         country: stored.nationality || "",
         degrees: rawLevels.length > 0 ? rawLevels.map(canonicalize) : [],
-        gpa: stored.gpa || "", gpaScale: "4.0",
+        gpa: stored.gpa || "", gpaScale: stored.gpaScale || "4.0",
         ielts: stored.ieltsScore || "",
         toefl: stored.toeflScore || "",
         sat: stored.satScore || "",
