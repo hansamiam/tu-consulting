@@ -52,6 +52,18 @@ const TopUniAIRu = () => {
   // Landing retired round 10 — opens directly into intake. Mirror EN.
   const [screen, setScreen] = useState<Screen>("intake");
   const [step, setStep] = useState(1);
+  // Direction-aware step transition — mirrors the EN page so going
+  // forward slides the next step in from the right and going back
+  // slides the previous step in from the left. Without this, "Back"
+  // felt jumpy because every step entered with the same animation
+  // regardless of direction.
+  const [stepDir, setStepDir] = useState<1 | -1>(1);
+  const goToStep = (next: number) => {
+    setStepDir(next > step ? 1 : -1);
+    setStep(next);
+  };
+  const stepEnter = { x: stepDir * 24, opacity: 0 };
+  const stepExit = { x: -stepDir * 24, opacity: 0 };
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -159,7 +171,14 @@ const TopUniAIRu = () => {
     topActivity, personalStory, namedSchools,
   };
 
+  // Step transitions are direction-aware (see stepEnter/stepExit
+   // above). The remaining fadeIn helper is for the chat-only and
+   // dashboard screen-level fades — those don't have a "previous"
+   // sibling to slide against, so a vertical drop-in still reads
+   // right. Step branches build their motion props from
+   // stepEnter / stepExit directly.
   const fadeIn = { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -20 }, transition: { duration: 0.4 } };
+  const stepFade = { initial: stepEnter, animate: { opacity: 1, x: 0 }, exit: stepExit, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const } };
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -193,7 +212,7 @@ const TopUniAIRu = () => {
               </div>
               <AnimatePresence mode="wait">
                 {step === 1 && (
-                  <motion.div key="s1" {...fadeIn} className="space-y-6">
+                  <motion.div key="s1" {...stepFade} className="space-y-6">
                     <div><h2 className="text-2xl font-heading font-bold text-foreground">Академический профиль</h2><p className="text-muted-foreground text-sm mt-1">Расскажите о вашей академической подготовке.</p></div>
                     <div className="grid gap-5">
                       <div className="grid sm:grid-cols-2 gap-4">
@@ -226,7 +245,7 @@ const TopUniAIRu = () => {
                     <div className="flex justify-end pt-4">
                       <Button
                         variant="gold"
-                        onClick={() => setStep(2)}
+                        onClick={() => goToStep(2)}
                         disabled={!fullName.trim() || !email.trim() || !nationality.trim() || !gradeLevel || !gpa.trim()}
                       >
                         Далее <ArrowRight className="ml-2 w-4 h-4" />
@@ -235,7 +254,7 @@ const TopUniAIRu = () => {
                   </motion.div>
                 )}
                 {step === 2 && (
-                  <motion.div key="s2" {...fadeIn} className="space-y-6">
+                  <motion.div key="s2" {...stepFade} className="space-y-6">
                     <div><h2 className="text-2xl font-heading font-bold text-foreground">Предпочтения</h2><p className="text-muted-foreground text-sm mt-1">Где и что вы хотите изучать?</p></div>
                     <div className="space-y-5">
                       <div className="space-y-2"><Label>Целевые страны *</Label>
@@ -261,10 +280,10 @@ const TopUniAIRu = () => {
                       </div>
                     </div>
                     <div className="flex justify-between pt-4">
-                      <Button variant="outline" onClick={() => setStep(1)}><ArrowLeft className="mr-2 w-4 h-4" /> Назад</Button>
+                      <Button variant="outline" onClick={() => goToStep(1)}><ArrowLeft className="mr-2 w-4 h-4" /> Назад</Button>
                       <Button
                         variant="gold"
-                        onClick={() => setStep(3)}
+                        onClick={() => goToStep(3)}
                         disabled={targetCountries.length === 0 || !major.trim()}
                       >
                         Далее <ArrowRight className="ml-2 w-4 h-4" />
@@ -273,7 +292,7 @@ const TopUniAIRu = () => {
                   </motion.div>
                 )}
                 {step === 3 && (
-                  <motion.div key="s3" {...fadeIn} className="space-y-6">
+                  <motion.div key="s3" {...stepFade} className="space-y-6">
                     <div><h2 className="text-2xl font-heading font-bold text-foreground">Ваши цели</h2><p className="text-muted-foreground text-sm mt-1">Оцените важность каждого фактора (1 = низкая, 5 = высокая).</p></div>
                     <div className="space-y-6">
                       {[
@@ -383,7 +402,7 @@ const TopUniAIRu = () => {
                     </div>
 
                     <div className="flex justify-between pt-4">
-                      <Button variant="outline" onClick={() => setStep(2)}><ArrowLeft className="mr-2 w-4 h-4" /> Назад</Button>
+                      <Button variant="outline" onClick={() => goToStep(2)}><ArrowLeft className="mr-2 w-4 h-4" /> Назад</Button>
                       <Button
                         variant="gold"
                         size="lg"

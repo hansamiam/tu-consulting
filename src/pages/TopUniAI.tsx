@@ -142,6 +142,18 @@ const TopUniAI = () => {
   // /topuni-ai itself is the tool.
   const [screen, setScreen] = useState<Screen>("intake");
   const [step, setStep] = useState(1);
+  // Step transitions are direction-aware — going forward, the next
+  // step slides in from the right; going back, the previous step
+  // slides in from the left. Without this, the "Back" click felt
+  // jumpy because every step entered with the same right-to-center
+  // animation regardless of intent.
+  const [stepDir, setStepDir] = useState<1 | -1>(1);
+  const goToStep = (next: number) => {
+    setStepDir(next > step ? 1 : -1);
+    setStep(next);
+  };
+  const stepEnter = { x: stepDir * 24, opacity: 0 };
+  const stepExit = { x: -stepDir * 24, opacity: 0 };
 
   useEffect(() => { trackPageView("/topuni-ai"); }, []);
 
@@ -425,10 +437,10 @@ const TopUniAI = () => {
                 {step === 1 && (
                   <motion.div
                     key="step1"
-                    initial={{ opacity: 0, x: 20 }}
+                    initial={stepEnter}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.35 }}
+                    exit={stepExit}
+                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                     className="space-y-7"
                   >
                     <div>
@@ -525,7 +537,7 @@ const TopUniAI = () => {
                       <Button variant="outline" onClick={() => navigate("/")}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
                       <Button
                         variant="gold"
-                        onClick={() => setStep(2)}
+                        onClick={() => goToStep(2)}
                         disabled={!fullName.trim() || !email.trim() || !nationality.trim() || !gradeLevel || !gpa.trim()}
                       >
                         Continue <ArrowRight className="ml-2 w-4 h-4" />
@@ -537,10 +549,10 @@ const TopUniAI = () => {
                 {step === 2 && (
                   <motion.div
                     key="step2"
-                    initial={{ opacity: 0, x: 20 }}
+                    initial={stepEnter}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.35 }}
+                    exit={stepExit}
+                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                     className="space-y-7"
                   >
                     <div>
@@ -651,10 +663,10 @@ const TopUniAI = () => {
                       </div>
                     </div>
                     <div className="flex justify-between pt-4">
-                      <Button variant="outline" onClick={() => setStep(1)}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
+                      <Button variant="outline" onClick={() => goToStep(1)}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
                       <Button
                         variant="gold"
-                        onClick={() => setStep(3)}
+                        onClick={() => goToStep(3)}
                         disabled={targetCountries.length === 0 || !major.trim()}
                       >
                         Continue <ArrowRight className="ml-2 w-4 h-4" />
@@ -666,10 +678,10 @@ const TopUniAI = () => {
                 {step === 3 && (
                   <motion.div
                     key="step3"
-                    initial={{ opacity: 0, x: 20 }}
+                    initial={stepEnter}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.35 }}
+                    exit={stepExit}
+                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                     className="space-y-7"
                   >
                     <div>
@@ -820,7 +832,7 @@ const TopUniAI = () => {
                     </div>
 
                     <div className="flex justify-between pt-4">
-                      <Button variant="outline" onClick={() => setStep(2)}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
+                      <Button variant="outline" onClick={() => goToStep(2)}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
                       <Button
                         variant="gold"
                         size="lg"
