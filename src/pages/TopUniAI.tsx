@@ -368,36 +368,28 @@ const TopUniAI = () => {
     // Footer is hidden during intake so there's no abrupt color shift
     // when crossing into the navy panel — it returns when the user
     // lands on the dashboard (strategy report).
-    // v3 (2026-05-10): the `dark` class approach was wrong — it made
-    // bg-background resolve to the dark-mode token (222 47% 7%, almost
-    // black) but user wants the ACADEMY navy (210 58% 22% = --primary
-    // in light mode). Plus the cream outer wrapper bled through above
-    // the intake panel, creating a "jarring blatant white" band at the
-    // top where Navigation + BetaBanner sit. Now: outer wrapper paints
-    // itself with the academy navy directly via inline style when on
-    // intake, no dark class anywhere.
-    <div
-      className="min-h-screen relative overflow-hidden transition-colors duration-700"
-      style={screen === "intake" ? { backgroundColor: "hsl(210 58% 22%)" } : { backgroundColor: "hsl(43 38% 94%)" }}
-    >
+    // 2026-05-10 v4 — RESET. After three rounds of navy-tuning attempts
+    // that the user kept finding "off", I'm dropping the dark/navy intake
+    // mode entirely and going premium-minimal CREAM throughout (per user
+    // direction: "completely scrap everything I said... full discretion").
+    //
+    // The new direction takes inspiration from Linear, Notion, Stripe
+    // Express onboardings: a single calm cream canvas, editorial display
+    // typography, generous whitespace, gold accents used SPARINGLY (the
+    // active step pill, focus rings, the "Generate" CTA), no mode flip,
+    // no theme overrides. The form element styling lives directly on the
+    // inputs/labels rather than relying on dark-mode tokens.
+    //
+    // Footer stays hidden during intake — keeps the page reading as a
+    // focused product surface, not a website page with a footer.
+    <div className="min-h-screen bg-background relative overflow-hidden">
       <TopUniAIEntrance language="en" />
       <div className="relative z-10">
-        <Navigation language="en" variant={screen === "intake" ? "overlay" : "default"} />
+        <Navigation language="en" />
         <BetaBanner />
 
         <AnimatePresence mode="wait">
-          {/* ═══ INTAKE — academy-navy focus mode ═══
-              The outer page wrapper paints itself academy navy via
-              inline style, so the intake motion.div is TRANSPARENT
-              and the navy bleeds through from edge to edge (no more
-              "blatant white" gap above the form). The `dark` class
-              gives form elements (text-foreground, bg-card,
-              border-border, etc.) dark-mode token resolution so they
-              read correctly on the navy. We override --background and
-              --card on this scope so they match the academy palette
-              specifically: --background uses the academy navy, --card
-              uses a slightly LIGHTER shade of the same hue (so cards
-              read as raised wells over the bg, not darker pits). */}
+          {/* ═══ INTAKE — premium cream canvas ═══ */}
           {screen === "intake" && (
             <motion.div
               key="intake"
@@ -405,14 +397,7 @@ const TopUniAI = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5 }}
-              className="dark relative bg-transparent"
-              style={{
-                ["--background" as string]: "210 58% 22%",
-                ["--card" as string]: "210 50% 27%",
-                ["--muted" as string]: "210 45% 30%",
-                ["--border" as string]: "210 40% 36%",
-                ["--input" as string]: "210 50% 27%",
-              } as React.CSSProperties}
+              className="relative"
             >
               <div className="max-w-2xl mx-auto px-5 sm:px-8 pt-12 pb-20">
               {/* Progress — three pills with named-step labels under

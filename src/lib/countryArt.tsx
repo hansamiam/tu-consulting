@@ -759,14 +759,178 @@ const silverFern = wrap(
 // would feel repetitive).
 // Unused now but reserved.
 
-// Generic globe with pin (default fallback)
+// Worldwide / Global — stylized concentric rings with cardinal markers,
+// reads as "global program" without using the basic-globe meridian look.
+// Pre-fix Worldwide and 4-5 other "Multi/Global" buckets all fell to a
+// generic globe-with-pin which made the international rows look like
+// "we don't have data" rather than "this is genuinely global."
 const globe = wrap(
   <>
-    <circle cx="80" cy="30" r="20" stroke="currentColor" strokeWidth="2" fill="none" />
-    <ellipse cx="80" cy="30" rx="20" ry="8" stroke="currentColor" strokeWidth="1" fill="none" />
-    <line x1="60" y1="30" x2="100" y2="30" stroke="currentColor" strokeWidth="1" />
-    <line x1="80" y1="10" x2="80" y2="50" stroke="currentColor" strokeWidth="1" />
-    <circle cx="86" cy="20" r="2.5" fill="currentColor" />
+    {/* Outer ring */}
+    <circle cx="80" cy="30" r="22" stroke="currentColor" strokeWidth="1.5" fill="none" />
+    {/* Inner ring */}
+    <circle cx="80" cy="30" r="14" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.7" />
+    {/* Innermost dot — center of the world */}
+    <circle cx="80" cy="30" r="3" fill="currentColor" />
+    {/* Four cardinal-direction tick marks — N, E, S, W — like a compass rose */}
+    <rect x="79" y="2" width="2" height="6" />
+    <rect x="79" y="52" width="2" height="6" />
+    <rect x="102" y="29" width="6" height="2" />
+    <rect x="52" y="29" width="6" height="2" />
+    {/* Diagonal ticks at NE/NW/SE/SW for richer detail */}
+    <circle cx="98" cy="12" r="1.2" opacity="0.6" />
+    <circle cx="62" cy="12" r="1.2" opacity="0.6" />
+    <circle cx="98" cy="48" r="1.2" opacity="0.6" />
+    <circle cx="62" cy="48" r="1.2" opacity="0.6" />
+  </>
+);
+
+// Stave church (Norway) — distinctive multi-tier wooden cathedral with
+// peaked dragon-prow gables and the central spire. The stacked-roof
+// silhouette is unmistakably Norwegian (Borgund Stave Church is the
+// canonical reference).
+const staveChurch = wrap(
+  <>
+    {/* Ground line */}
+    <rect x="50" y="52" width="60" height="2" opacity="0.6" />
+    {/* Three stacked pyramidal roofs — base/mid/top, each smaller */}
+    <path d="M 56 52 L 80 36 L 104 52 Z" />
+    <path d="M 60 36 L 80 22 L 100 36 Z" />
+    <path d="M 64 22 L 80 10 L 96 22 Z" />
+    {/* Top spire with cross */}
+    <rect x="79" y="3" width="2" height="9" />
+    <rect x="76" y="5" width="8" height="1.5" />
+    {/* Wall segment between base roof and ground */}
+    <rect x="68" y="52" width="24" height="0" />
+    {/* Subtle door */}
+    <rect x="76" y="44" width="8" height="8" fill="#fff" opacity="0.45" />
+    {/* Dragon-prow horizontal beams hint */}
+    <line x1="50" y1="52" x2="56" y2="52" stroke="currentColor" strokeWidth="0.6" />
+    <line x1="104" y1="52" x2="110" y2="52" stroke="currentColor" strokeWidth="0.6" />
+  </>
+);
+
+// Vasa ship (Sweden) — 17th-century warship, Sweden's iconic
+// maritime artifact + national museum centerpiece. Three-masted
+// galleon silhouette with characteristic ornate stern.
+const vasaShip = wrap(
+  <>
+    {/* Water line */}
+    <path d="M 36 50 Q 60 47 80 50 Q 100 47 124 50 L 124 56 L 36 56 Z" opacity="0.45" />
+    {/* Hull — stern at left, bow at right, characteristic curve */}
+    <path d="M 46 36 L 50 32 L 110 32 L 116 36 L 112 50 L 50 50 Z" />
+    {/* Three masts */}
+    <rect x="60" y="6" width="1.5" height="26" />
+    <rect x="79" y="2" width="1.5" height="30" />
+    <rect x="98" y="6" width="1.5" height="26" />
+    {/* Mainsail (centre) — billowing rectangle */}
+    <path d="M 66 10 L 94 10 L 94 26 Q 80 30 66 26 Z" opacity="0.85" />
+    {/* Foresail */}
+    <path d="M 50 14 L 60 14 L 60 24 Q 55 26 50 24 Z" opacity="0.7" />
+    {/* Mizzen sail */}
+    <path d="M 100 14 L 110 14 L 110 24 Q 105 26 100 24 Z" opacity="0.7" />
+    {/* Stern flag */}
+    <rect x="46" y="20" width="3" height="6" opacity="0.6" />
+    <rect x="49" y="20" width="0.5" height="14" />
+  </>
+);
+
+// Sauna cabin (Finland) — quintessentially Finnish: low log cabin with
+// smoking chimney + lakeside hint. Distinct from Norway's stave church
+// (no spire, single low roof) and Sweden's Vasa (no water+ship).
+const finnishSauna = wrap(
+  <>
+    {/* Ground / lakeside hint */}
+    <rect x="40" y="52" width="80" height="2" opacity="0.5" />
+    <path d="M 40 50 Q 56 49 70 50 L 70 52 L 40 52 Z" opacity="0.35" />
+    {/* Cabin walls */}
+    <rect x="68" y="36" width="36" height="16" />
+    {/* Pitched roof */}
+    <path d="M 64 36 L 86 22 L 108 36 Z" />
+    {/* Chimney — left of ridge */}
+    <rect x="74" y="14" width="4" height="14" />
+    {/* Smoke wisp curling up */}
+    <path d="M 76 14 Q 70 8 76 4 Q 80 8 76 0" stroke="currentColor" strokeWidth="0.8" fill="none" opacity="0.65" />
+    {/* Door */}
+    <rect x="82" y="42" width="8" height="10" fill="#fff" opacity="0.5" />
+    {/* Log courses — horizontal lines on the wall */}
+    <line x1="68" y1="40" x2="104" y2="40" stroke="#fff" strokeWidth="0.4" opacity="0.4" />
+    <line x1="68" y1="44" x2="104" y2="44" stroke="#fff" strokeWidth="0.4" opacity="0.4" />
+    <line x1="68" y1="48" x2="104" y2="48" stroke="#fff" strokeWidth="0.4" opacity="0.4" />
+    {/* Small lake-rock detail */}
+    <circle cx="48" cy="51" r="1.5" opacity="0.5" />
+  </>
+);
+
+// Prague astronomical clock + cathedral spire (Czechia) — the Old Town
+// Hall clock tower with St Vitus-style spire silhouette. Distinct from
+// Brandenburg (no quadriga, single tall tower).
+const pragueClock = wrap(
+  <>
+    {/* Ground line */}
+    <rect x="50" y="52" width="60" height="2" opacity="0.6" />
+    {/* Tower base */}
+    <rect x="72" y="20" width="16" height="32" />
+    {/* Wider clock-face section */}
+    <rect x="68" y="24" width="24" height="14" />
+    {/* Clock face — distinctive double-dial astronomical clock */}
+    <circle cx="80" cy="31" r="4.5" fill="currentColor" opacity="0.35" />
+    <circle cx="80" cy="31" r="3.5" fill="#fff" opacity="0.85" />
+    {/* Clock hands at 10:10 — instantly reads as a clock face */}
+    <line x1="80" y1="31" x2="78" y2="29" stroke="currentColor" strokeWidth="0.7" />
+    <line x1="80" y1="31" x2="82.5" y2="29" stroke="currentColor" strokeWidth="0.7" />
+    {/* Hour pips at 12, 3, 6, 9 */}
+    <circle cx="80" cy="28" r="0.4" fill="currentColor" />
+    <circle cx="83" cy="31" r="0.4" fill="currentColor" />
+    <circle cx="80" cy="34" r="0.4" fill="currentColor" />
+    <circle cx="77" cy="31" r="0.4" fill="currentColor" />
+    {/* Pyramidal Gothic spire */}
+    <path d="M 70 20 L 90 20 L 80 6 Z" />
+    {/* Top finial + pole */}
+    <rect x="79.3" y="0" width="1.4" height="8" />
+    <circle cx="80" cy="2" r="1.2" />
+    {/* Decorative gabled wing on the side (the Old Town Hall annex) */}
+    <rect x="58" y="38" width="14" height="14" opacity="0.9" />
+    <path d="M 56 38 L 65 30 L 74 38 Z" opacity="0.85" />
+  </>
+);
+
+// Atomium (Belgium) — the 1958 World's Fair sculpture: 9 stainless-steel
+// spheres connected as a unit cell of an iron crystal. The single
+// most-recognizable Belgian landmark. Distinct from Brandenburg
+// (no columns, 9-sphere cluster).
+const atomium = wrap(
+  <>
+    {/* Ground / pedestal line */}
+    <rect x="40" y="52" width="80" height="2" opacity="0.6" />
+    {/* Connecting bonds — drawn first so spheres render on top */}
+    <line x1="80" y1="10" x2="64" y2="22" stroke="currentColor" strokeWidth="1.2" />
+    <line x1="80" y1="10" x2="96" y2="22" stroke="currentColor" strokeWidth="1.2" />
+    <line x1="80" y1="10" x2="80" y2="30" stroke="currentColor" strokeWidth="1.2" />
+    <line x1="64" y1="22" x2="80" y2="30" stroke="currentColor" strokeWidth="1.2" />
+    <line x1="96" y1="22" x2="80" y2="30" stroke="currentColor" strokeWidth="1.2" />
+    <line x1="64" y1="22" x2="64" y2="42" stroke="currentColor" strokeWidth="1.2" />
+    <line x1="96" y1="22" x2="96" y2="42" stroke="currentColor" strokeWidth="1.2" />
+    <line x1="80" y1="30" x2="80" y2="48" stroke="currentColor" strokeWidth="1.2" />
+    <line x1="64" y1="42" x2="80" y2="48" stroke="currentColor" strokeWidth="1.2" />
+    <line x1="96" y1="42" x2="80" y2="48" stroke="currentColor" strokeWidth="1.2" />
+    <line x1="64" y1="42" x2="96" y2="42" stroke="currentColor" strokeWidth="1.2" />
+    {/* 9 spheres in the iron-crystal unit cell arrangement */}
+    {/* Top apex */}
+    <circle cx="80" cy="10" r="5" />
+    {/* Mid layer — three spheres */}
+    <circle cx="64" cy="22" r="5" />
+    <circle cx="96" cy="22" r="5" />
+    <circle cx="80" cy="30" r="5" />
+    {/* Lower layer — three spheres */}
+    <circle cx="64" cy="42" r="5" />
+    <circle cx="96" cy="42" r="5" />
+    <circle cx="80" cy="48" r="5" opacity="0.85" />
+    {/* Sphere highlights */}
+    <circle cx="78.5" cy="8.5" r="1.4" fill="#fff" opacity="0.5" />
+    <circle cx="62.5" cy="20.5" r="1.4" fill="#fff" opacity="0.45" />
+    <circle cx="94.5" cy="20.5" r="1.4" fill="#fff" opacity="0.45" />
+    <circle cx="78.5" cy="28.5" r="1.4" fill="#fff" opacity="0.45" />
   </>
 );
 
@@ -813,12 +977,17 @@ const COUNTRY_ART: Record<string, React.ReactNode> = {
 
   // Europe — Continental
   France: eiffel, Germany: brandenburg, Austria: brandenburg,
-  Switzerland: matterhorn, Netherlands: windmill, Belgium: brandenburg,
+  Switzerland: matterhorn, Netherlands: windmill, Belgium: atomium,
   Italy: colosseum, Spain: sagrada, Portugal: sagrada,
-  Sweden: matterhorn, Norway: matterhorn, Finland: matterhorn,
-  Denmark: windmill, Iceland: matterhorn,
+  // Nordic countries each get their distinct national landmark now
+  // (was: all four sharing Switzerland's matterhorn — wrong country).
+  Sweden: vasaShip, Norway: staveChurch, Finland: finnishSauna,
+  Denmark: windmill, Iceland: staveChurch, // Iceland nods to its
+  // Norse heritage; alternative would be a geyser.
   Russia: stBasils, Ukraine: saintSophiaKyiv, Poland: brandenburg,
-  Czechia: brandenburg, "Czech Republic": brandenburg,
+  // Czechia gets its own iconic Prague clock + Gothic spire —
+  // distinct from Germany's Brandenburg quadriga.
+  Czechia: pragueClock, "Czech Republic": pragueClock,
   Hungary: brandenburg, Romania: brandenburg, Greece: parthenon,
   Bulgaria: saintSophiaKyiv, Croatia: colosseum, Lithuania: brandenburg,
   Latvia: brandenburg, Slovakia: brandenburg, Estonia: brandenburg,

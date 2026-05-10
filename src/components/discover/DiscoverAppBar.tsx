@@ -58,12 +58,24 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
 
   return (
     <header
-      className={`sticky top-0 z-40 backdrop-blur-md transition-all duration-200 ${
+      className={`sticky top-0 z-40 backdrop-blur-md transition-all duration-300 ${
         scrolled
-          ? "bg-background/90 border-b border-primary/25 shadow-[0_2px_0_0_hsl(var(--primary)/0.12)]"
-          : "bg-background/75 border-b border-primary/15"
+          ? "bg-background/92 shadow-[0_8px_24px_-12px_hsl(var(--primary)/0.18)]"
+          : "bg-background/82"
       }`}
     >
+      {/* Top-edge gold accent stripe — the "channel marker" that
+          signals this is a premium product surface, not a website
+          page. Sits above the actual chrome content as a 2px gradient
+          line. Subtle on cream so it never competes with the grid;
+          visible enough to register as intentional. Pre-fix this slot
+          was a navy hairline at the BOTTOM (border-primary/25 +
+          shadow), which user flagged as "looks worse" — the bottom
+          line read as a dividing rule rather than a product mark. */}
+      <span
+        className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-gold/55 to-transparent pointer-events-none"
+        aria-hidden
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-3">
         {/* Explicit Home back button — primary affordance for getting
             out of the app shell. The wordmark also links home but
@@ -105,9 +117,15 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
             when the user crosses between Discover and other tabs. */}
         {user ? (
           <>
+            {/* Workspace gets a subtle border ONLY in DiscoverAppBar
+                (not in the regular global Navigation) — inside the
+                product surface the user wants the "your work entry"
+                affordance to read as a tangible button rather than a
+                plain nav link. Border + slight bg-tint, no gold so it
+                doesn't fight the gold accent stripe at top. */}
             <button
               onClick={() => navigate(isRussian ? "/pipeline/ru" : "/pipeline")}
-              className="ml-1 px-3 py-2 text-sm font-medium rounded-md transition-colors text-foreground hover:text-gold-dark"
+              className="ml-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors text-foreground hover:text-gold-dark border border-border/70 hover:border-foreground/30 bg-foreground/[0.02] hover:bg-foreground/[0.05]"
             >
               {isRussian ? "Рабочая зона" : "Workspace"}
             </button>
