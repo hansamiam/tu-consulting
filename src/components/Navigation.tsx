@@ -49,7 +49,7 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
   const navItems = [
     { label: "TopUni AI",                                     path: isRussian ? "/topuni-ai/ru" : "/topuni-ai" },
     { label: isRussian ? "Стипендии"   : "Discover",          path: isRussian ? "/discover/ru" : "/discover" },
-    { label: isRussian ? "Академия"    : "Academy",           path: "/academy" },
+    { label: isRussian ? "Академия"    : "Academy",           path: isRussian ? "/academy/ru" : "/academy" },
   ];
 
   const isActive = (path: string, exact?: boolean) =>
