@@ -338,7 +338,7 @@ const Pricing = ({ language = "en" }: PricingProps) => {
                 ))}
               </ul>
 
-              {/* Founding cohort progress bar — quiet scarcity, kept
+              {/* Early-access progress bar — quiet scarcity, kept
                   because it's real (capped) not fabricated. */}
               {foundingLeft != null && (
                 <div className="mb-5">
