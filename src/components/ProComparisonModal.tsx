@@ -77,7 +77,7 @@ const ROWS: Row[] = [
     id: "live-workshops",
     label: "Live workshops with founders",
     free: false,
-    pro: "Monthly with Yale · Schwarzman/Cambridge · Harvard alumni — recordings yours forever",
+    pro: "Monthly with Yale · Cambridge & Tsinghua · Harvard alumni — recordings yours forever",
   },
   {
     id: "essay-critique",

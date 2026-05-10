@@ -5091,8 +5091,8 @@ const Discover = ({ language = "en" }: Props) => {
                     `Полная база — все ${rows.length || 200}+ стипендий со стратегическими заметками, причинами отказов и подходами к победе.`,
                   ),
                   t(
-                    "Live monthly workshops with our founders — Yale, Schwarzman/Cambridge, Harvard.",
-                    "Ежемесячные воркшопы с основателями — Yale, Schwarzman/Cambridge, Harvard.",
+                    "Live monthly workshops with our founders — Yale, Cambridge & Tsinghua, Harvard.",
+                    "Ежемесячные воркшопы с основателями — Yale, Cambridge & Tsinghua, Harvard.",
                   ),
                   t("Recordings library — every workshop saved for you.", "Библиотека записей — каждый воркшоп сохранён."),
                   t("Unlimited shortlist + status tracking + notes.", "Без лимита: сохранения, статусы, заметки."),
