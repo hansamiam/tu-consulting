@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
+import { canonicalCountry } from "@/lib/countryAccent";
+import { normalizeFieldKey } from "@/pages/Discover";
 import {
   Award, Clock, GraduationCap, Globe, Cpu, Users, HandCoins,
 } from "lucide-react";
@@ -86,7 +88,12 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
     sub: "Korean Government Scholarship + KAIST track",
     Icon: Globe,
     accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
-    predicate: s => s.host_country === "South Korea" || s.host_country === "Korea",
+    // 2026-05-10 audit fix: predicate now uses canonicalCountry to
+    // match what the apply patch produces. Pre-fix the predicate
+    // counted raw "Korea" + "South Korea" string matches but the
+    // filter only matches canonical "South Korea", so the chip's
+    // count was higher than the filtered result count.
+    predicate: s => !!s.host_country && canonicalCountry(s.host_country) === "South Korea",
     apply: set => set({ hostCountry: "South Korea" }),
   },
   {
@@ -95,7 +102,7 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
     sub: "MEXT + university programs",
     Icon: Globe,
     accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
-    predicate: s => s.host_country === "Japan",
+    predicate: s => !!s.host_country && canonicalCountry(s.host_country) === "Japan",
     apply: set => set({ hostCountry: "Japan" }),
   },
   // "us-route" preset retired 2026-05-10 — generic "Top US programs" was
@@ -111,7 +118,8 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
     sub: "Russell Group + Oxbridge",
     Icon: Globe,
     accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
-    predicate: s => s.host_country === "United Kingdom" || s.host_country === "UK",
+    // 2026-05-10 audit fix: same canonicalCountry alignment as Korea.
+    predicate: s => !!s.host_country && canonicalCountry(s.host_country) === "United Kingdom",
     apply: set => set({ hostCountry: "United Kingdom" }),
   },
   {
@@ -120,12 +128,18 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
     sub: "Tech-focused funding",
     Icon: Cpu,
     accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
-    predicate: s => (s.target_fields || []).some(f => /comp|software|tech|data|engineer|ai|machine/i.test(f || "")),
-    // Match the dropdown's canonical key — Discover's normalizeFieldKey
-    // collapses "Computer Science & IT" → "computer science and it" and
-    // would return zero matches against rows whose target_fields are
-    // just "Computer Science". Using "Computer Science" lands on the
-    // canonical bucket the dropdown actually exposes.
+    // 2026-05-10 audit fix: predicate now mirrors the FILTER's
+    // normalizeFieldKey logic. Pre-fix the predicate caught a broad
+    // regex of tech-adjacent words (engineer, ai, machine) but the
+    // filter only matched rows whose target_fields normalized to
+    // "computer science". Chip count > filtered result count.
+    predicate: s => (s.target_fields || []).some(f => {
+      if (!f) return false;
+      return f.split(/\s*[,/;]\s*/).some(part => {
+        const k = normalizeFieldKey(part);
+        return k === "computer science" || k === "computer science and it";
+      });
+    }),
     apply: set => set({ field: "Computer Science" }),
   },
   // "public-health" preset retired 2026-05-10 — too narrow a field-axis
@@ -168,7 +182,11 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
     accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
     predicate: s => Array.isArray(s.target_demographics)
       && (s.target_demographics.includes("refugee") || s.target_demographics.includes("displaced")),
-    apply: set => set({ demographic: "refugee" }),
+    // 2026-05-10 audit fix: apply uses "refugee-any" virtual value so
+    // the filter pipeline OR-matches both refugee + displaced tags,
+    // mirroring the predicate. Pre-fix the chip counted both but the
+    // filter only matched "refugee", losing displaced-tagged rows.
+    apply: set => set({ demographic: "refugee-any" }),
   },
   {
     id: "need-based",

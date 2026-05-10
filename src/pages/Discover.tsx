@@ -3522,14 +3522,14 @@ const Discover = ({ language = "en" }: Props) => {
         : s.selectivity === filters.selectivity);
     }
     if (filters.demographic !== "all") {
-      // Match against the constrained target_demographics tag set.
-      // "women-any" is a virtual chip-level value used by the Women
-      // quick filter — expands into an OR-match across both women-only
-      // and underrepresented-stem tagged rows so the chip surfaces the
-      // full women cohort, not just the tech subset.
+      // Virtual chip-level values that expand to OR-matches:
+      // - "women-any" → women + underrepresented-stem (full women cohort)
+      // - "refugee-any" → refugee + displaced (full displaced cohort)
       const wanted = filters.demographic === "women-any"
         ? ["women", "underrepresented-stem"]
-        : [filters.demographic];
+        : filters.demographic === "refugee-any"
+          ? ["refugee", "displaced"]
+          : [filters.demographic];
       list = list.filter(s => Array.isArray(s.target_demographics)
         && wanted.some(d => s.target_demographics!.includes(d)));
     }
