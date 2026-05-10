@@ -3272,17 +3272,14 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                       {t("Upgrade for Pro report", "Pro отчёт")}
                     </Button>
                   )}
-                  {/* Print/PDF — the brief's print stylesheet (index.css
-                      "@media print" at line 281) hides all chrome and
-                      renders #printable-report as a clean PDF-ready
-                      document. Surfacing the button so users can save
-                      a copy / share with parents / bring to advising.
-                      Hidden in print preview itself via the same media
-                      query so the button doesn't show up in the PDF. */}
-                  <Button variant="outline" size="sm" onClick={() => window.print()} disabled={pathwayLoading || !pathwayContent} className="gap-1.5 print:hidden">
-                    <FileText className="w-4 h-4" />
-                    {t("Print", "Печать")}
-                  </Button>
+                  {/* Card-header Print button retired 2026-05-10 — the
+                      BriefMasthead already exposes Share / Print /
+                      Download PDF in its action row, which is the more
+                      contextual placement (right where the report
+                      actually starts). Two Print buttons in the same
+                      surface was chrome duplication. Regenerate stays
+                      here because it's a card-level action, not a
+                      report-cover action. */}
                   <Button
                     variant="outline"
                     size="sm"
