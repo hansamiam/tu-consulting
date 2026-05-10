@@ -14,7 +14,7 @@ interface FooterProps {
 const FOOTER_LINKS_EN = [
   { to: "/team",      label: "Team" },
   { to: "/pricing",   label: "Pricing" },
-  { to: "/blog",      label: "Blog" },
+  { to: "/blog",      label: "Journal" },
 ];
 const FOOTER_LINKS_RU = [
   { to: "/team/ru",      label: "Команда" },
@@ -42,7 +42,7 @@ export const Footer = ({ language, variant = "dark" }: FooterProps) => {
       publicOffer: "Public Offer",
       refundPolicy: "Refund Policy",
       paymentInfo: "Payment by Card",
-      tagline: "Top universities, fully funded. AI-driven, alumni-led.",
+      tagline: "AI-driven scholarship & admissions strategy.",
       copyright: `© ${new Date().getFullYear()} TopUni · All rights reserved`,
     },
     ru: {
@@ -52,7 +52,7 @@ export const Footer = ({ language, variant = "dark" }: FooterProps) => {
       publicOffer: "Публичная оферта",
       refundPolicy: "Правила возврата",
       paymentInfo: "Оплата банковской картой",
-      tagline: "Топ-университеты, полное финансирование. AI-стратегия от выпускников Yale, Cambridge, Harvard.",
+      tagline: "AI-стратегия для стипендий и поступлений.",
       copyright: `© ${new Date().getFullYear()} TopUni · Все права защищены`,
     },
   };

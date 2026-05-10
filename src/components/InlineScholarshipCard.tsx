@@ -6,7 +6,7 @@ import {
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
 import { toast } from "sonner";
 import { useFocusScholarship } from "@/components/EnrichedMarkdown";
-import { cleanScholarshipName } from "@/lib/scholarshipFields";
+import { cleanScholarshipName, compactAward } from "@/lib/scholarshipFields";
 import { shortCountry } from "@/lib/countryAccent";
 
 /**
@@ -127,12 +127,16 @@ export function InlineScholarshipCard({ scholarship: s, showMeta = true }: Props
             {showMeta && s.host_country && (
               <span className="text-[11px] text-muted-foreground whitespace-nowrap">· {shortCountry(s.host_country)}</span>
             )}
-            {s.award_amount_text && (
-              <span className="text-[11px] text-foreground/70 whitespace-nowrap">· {s.award_amount_text}</span>
-            )}
-            {!s.award_amount_text && coverage && (
-              <span className="text-[11px] text-foreground/70 whitespace-nowrap">· {coverage}</span>
-            )}
+            {(() => {
+              const award = compactAward({
+                coverage_type: s.coverage_type,
+                award_amount_text: s.award_amount_text,
+                estimated_total_value_usd: null,
+              }) || coverage;
+              return award ? (
+                <span className="text-[11px] text-foreground/70 whitespace-nowrap">· {award}</span>
+              ) : null;
+            })()}
             <span className={`text-[11px] tabular-nums whitespace-nowrap inline-flex items-center gap-0.5 ${dl.cls}`}>
               <Calendar className="w-2.5 h-2.5 inline-block" /> {dl.text}
             </span>

@@ -1720,12 +1720,16 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           travel poster strip rather than a database row. Text stays on
           the left where the silhouette opacity is lowest. */}
       <div className={`relative bg-gradient-to-r ${accent} px-4 h-14 flex items-center gap-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/95 overflow-hidden whitespace-nowrap`}>
-        {/* Country landmark icon, anchored right. Smaller + softer than
-            before — the silhouette was crowding the country chip and
-            reading as a graphic feature rather than a subtle accent. */}
-        <CountryArt country={s.host_country} className="absolute right-2 inset-y-0 h-full max-w-[22%] opacity-25 pointer-events-none" />
+        {/* Country landmark icon, anchored right. Fixed size so the SVG
+            (viewBox 120×60, 2:1) fits inside its box without overflowing
+            into the band's overflow-hidden region. Vertically centred via
+            top-1/2 -translate-y-1/2 instead of inset-y-0+h-full, which
+            previously stretched the SVG to band height (56px) and forced
+            its natural width to 112px — wider than the 22% cap, hence
+            the clipped silhouette regression. */}
+        <CountryArt country={s.host_country} className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-[72px] flex items-center justify-end opacity-25 pointer-events-none" />
         <span className={`absolute inset-0 bg-gradient-to-r from-black/30 via-black/5 to-transparent pointer-events-none`} />
-        <span className="relative flex items-center gap-2 min-w-0 flex-1 pr-[24%]">
+        <span className="relative flex items-center gap-2 min-w-0 flex-1 pr-[88px]">
           {s.host_country && (
             <span className="truncate drop-shadow-sm">{shortCountry(s.host_country, { tight: true })}</span>
           )}
@@ -2318,7 +2322,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             );
           })()}
           {s.award_amount_text && s.award_amount_text.length > 16 && (
-            <p className="text-[12px] text-muted-foreground/85 leading-snug line-clamp-2 mt-2">{s.award_amount_text}</p>
+            <p className="text-[12px] text-muted-foreground/85 leading-snug mt-2">{s.award_amount_text}</p>
           )}
 
           {/* Header CTAs — Apply (gold), Bookmark, and an escape hatch

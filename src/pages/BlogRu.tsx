@@ -23,28 +23,15 @@ const BlogRu = () => {
       <div className="relative z-10">
       <Navigation language="ru" />
 
-      <header className="border-b border-border">
-        <div className="max-w-6xl mx-auto px-6 lg:px-10 pt-20 pb-12 lg:pt-28 lg:pb-16">
-          <div className="grid lg:grid-cols-12 gap-8 items-end">
-            <div className="lg:col-span-8">
-              <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-5">
-                Журнал Top Uni
-              </p>
-              <h1 className="font-heading text-5xl lg:text-7xl font-bold tracking-tight leading-[1.02]">
-                Полевые заметки <span className="text-accent">международных</span> абитуриентов.
-              </h1>
-            </div>
-            <div className="lg:col-span-4">
-              <p className="text-base text-muted-foreground leading-relaxed">
-                Гайды по странам, стратегия стипендий и то, что хотелось бы узнать раньше.
-                Написано теми, кто это сделал.
-              </p>
-            </div>
-          </div>
+      <header className="border-b border-border/50 bg-background/60 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto px-6 lg:px-10 py-8 lg:py-10">
+          <h1 className="font-heading text-3xl lg:text-5xl font-bold tracking-tight leading-[1.05]">
+            <span className="text-primary">Top Uni</span> <span className="text-accent">Блог</span>
+          </h1>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 lg:px-10 py-16 lg:py-20 space-y-20 lg:space-y-24">
+      <main className="max-w-6xl mx-auto px-6 lg:px-10 py-10 lg:py-14 space-y-12 lg:space-y-14">
         {SHOW_ARTICLES && featured && (
           <section>
             <div className="flex items-baseline justify-between mb-6">
@@ -133,25 +120,27 @@ const BlogRu = () => {
 
         {!SHOW_ARTICLES && !SHOW_COUNTRY_GUIDES && (
           <section className="py-10 lg:py-16">
-            <div className="max-w-2xl mx-auto text-center bg-card/60 border border-border rounded-2xl px-8 py-14 lg:px-12 lg:py-20 backdrop-blur-sm">
-              <p className="text-[10px] font-mono uppercase tracking-[0.28em] text-gold-dark mb-5">В разработке</p>
-              <h2 className="font-heading text-2xl lg:text-3xl font-bold tracking-tight leading-tight mb-4">
-                Long-form журнал в работе.
+            <div className="max-w-xl mx-auto text-center bg-card/60 border border-border rounded-2xl px-8 py-12 lg:py-16 backdrop-blur-sm">
+              <p className="text-[10px] font-mono uppercase tracking-[0.28em] text-gold-dark mb-3">Скоро</p>
+              <h2 className="font-heading text-xl lg:text-2xl font-bold tracking-tight leading-tight">
+                Следите за обновлениями.
               </h2>
-              <p className="text-sm lg:text-base text-muted-foreground leading-relaxed max-w-lg mx-auto mb-8">
-                Гайды по странам, эссе по стратегии стипендий, заметки по приёму — от выпускников, которые сами выиграли. Поднимаем планку перед публикацией.
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70">
-                <span>Гайды по странам</span>
-                <span className="text-muted-foreground/30">·</span>
-                <span>Эссе по стратегии</span>
-                <span className="text-muted-foreground/30">·</span>
-                <span>Заметки</span>
-              </div>
             </div>
           </section>
         )}
       </main>
+
+      <div
+        className="h-32 sm:h-40"
+        style={{
+          backgroundImage: `linear-gradient(180deg,
+            transparent 0%,
+            hsl(var(--primary) / 0.06) 40%,
+            hsl(var(--primary) / 0.30) 75%,
+            hsl(var(--primary)) 100%)`,
+        }}
+        aria-hidden="true"
+      />
 
       <Footer language="ru" />
       </div>

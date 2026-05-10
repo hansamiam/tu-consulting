@@ -60,7 +60,7 @@ import { toast } from "sonner";
 import { useNavigate, Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
-import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
+import { cleanScholarshipName, cleanProvider, compactAward } from "@/lib/scholarshipFields";
 
 interface StudentProfile {
   fullName: string;
@@ -3321,7 +3321,11 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                                   {cleanScholarshipName(m.scholarship_name)}
                                 </h4>
                                 <p className="text-xs text-muted-foreground truncate mb-2">
-                                  {m.award_amount_text || (() => {
+                                  {compactAward({
+                                    coverage_type: m.coverage_type,
+                                    award_amount_text: m.award_amount_text,
+                                    estimated_total_value_usd: m.estimated_total_value_usd ?? null,
+                                  }) || (() => {
                                     const ct = m.coverage_type;
                                     if (ct === "full_ride") return t("Full ride", "Полное покрытие");
                                     if (ct === "tuition_only") return t("Tuition", "Обучение");

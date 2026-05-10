@@ -164,21 +164,11 @@ const Blog = () => {
             hidden, so the page never looks empty. */}
         {!SHOW_ARTICLES && !SHOW_COUNTRY_GUIDES && (
           <section className="py-10 lg:py-16">
-            <div className="max-w-2xl mx-auto text-center bg-card/60 border border-border rounded-2xl px-8 py-14 lg:px-12 lg:py-20 backdrop-blur-sm">
-              <p className="text-[10px] font-mono uppercase tracking-[0.28em] text-gold-dark mb-5">In progress</p>
-              <h2 className="font-heading text-2xl lg:text-3xl font-bold tracking-tight leading-tight mb-4">
-                A long-form journal is being commissioned.
+            <div className="max-w-xl mx-auto text-center bg-card/60 border border-border rounded-2xl px-8 py-12 lg:py-16 backdrop-blur-sm">
+              <p className="text-[10px] font-mono uppercase tracking-[0.28em] text-gold-dark mb-3">Coming soon</p>
+              <h2 className="font-heading text-xl lg:text-2xl font-bold tracking-tight leading-tight">
+                Stay tuned.
               </h2>
-              <p className="text-sm lg:text-base text-muted-foreground leading-relaxed max-w-lg mx-auto mb-8">
-                Country guides, scholarship strategy essays, admissions field notes — written by alumni who actually won the awards. We're holding the bar high before publishing.
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70">
-                <span>Country guides</span>
-                <span className="text-muted-foreground/30">·</span>
-                <span>Strategy essays</span>
-                <span className="text-muted-foreground/30">·</span>
-                <span>Field notes</span>
-              </div>
             </div>
           </section>
         )}
