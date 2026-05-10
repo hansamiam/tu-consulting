@@ -1817,41 +1817,29 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           travel poster strip rather than a database row. Text stays on
           the left where the silhouette opacity is lowest. */}
       <div className={`relative bg-gradient-to-r ${accent} px-4 h-14 flex items-center gap-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/95 overflow-hidden whitespace-nowrap`}>
-        {/* Country landmark icon, anchored right. Fixed size so the SVG
-            (viewBox 120×60, 2:1) fits inside its box without overflowing
-            into the band's overflow-hidden region. Vertically centred via
-            top-1/2 -translate-y-1/2 instead of inset-y-0+h-full, which
-            previously stretched the SVG to band height (56px) and forced
-            its natural width to 112px — wider than the 22% cap, hence
-            the clipped silhouette regression. */}
-        <CountryArt country={bannerCtry} className="absolute right-1.5 top-1/2 -translate-y-1/2 h-9 w-[60px] flex items-center justify-end opacity-25 pointer-events-none" />
+        {/* Country landmark — anchored at the right-third inset (was
+            squished against the right margin pre-2026-05-10, which
+            felt off-balance). Now sits ~16px from the right edge with
+            a larger 80px footprint so it visually anchors the band's
+            right-third rather than reading as a tucked-away
+            decoration. Vertically centred via top-1/2 -translate-y-1/2. */}
+        <CountryArt country={bannerCtry} className="absolute right-4 top-1/2 -translate-y-1/2 h-10 w-[80px] flex items-center justify-end opacity-30 pointer-events-none" />
         <span className={`absolute inset-0 bg-gradient-to-r from-black/30 via-black/5 to-transparent pointer-events-none`} />
-        {/* Reserved 70px on the right for the silhouette (60px width + 10px
-            breathing). The country span gets shrink-0 so it never gets
-            squeezed into "Switzerla…" — secondary chips truncate first
-            since they're optional flair while the country label is the
-            band's identity. */}
-        <span className="relative flex items-center gap-2 min-w-0 flex-1 pr-[70px]">
+        {/* Reserved 100px on the right for the silhouette (80px width
+            + 20px breathing) so the country label never collides with
+            the landmark. */}
+        <span className="relative flex items-center gap-2 min-w-0 flex-1 pr-[100px]">
           {bannerCtry && (
             <span className="shrink-0 drop-shadow-sm">{shortCountry(bannerCtry, { tight: true })}</span>
           )}
-          {/* Chip priority on the band: country (always) > full-ride badge >
-              one demographic. The "Prestigious" chip was retired —
-              selectivity already shapes scoring + bucket placement, and
-              the chip read as marketing-y self-congratulation that
-              didn't help users decide to apply. Cap to ONE secondary
-              chip total — the detail sheet carries the rest. */}
+          {/* Chip priority on the band — full-ride moved OUT 2026-05-10
+              (now lives as a ticker tag in the card's action row so the
+              band stays visually clean and the silhouette has room to
+              breathe). One demographic chip allowed inline if there's
+              no full-ride; otherwise the band is just country. */}
           {(() => {
             const secondary: React.ReactNode[] = [];
-            if (isFullRide) {
-              secondary.push(
-                <span key="fr" className="inline-flex items-center gap-1 text-gold-light drop-shadow-sm shrink-0">
-                  <Award className="h-2.5 w-2.5" />
-                  {ru ? "Полное" : "Full ride"}
-                </span>,
-              );
-            }
-            if (secondary.length === 0 && s.target_demographics && s.target_demographics.length > 0) {
+            if (s.target_demographics && s.target_demographics.length > 0) {
               secondary.push(
                 // Drop the max-w-[40%] cap: with the tight country
                 // alias above ("UK" instead of "United Kingdom") there's
@@ -2000,8 +1988,23 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
             modal earns its keep). Save shrunk from a full-width labelled
             pill to a clean icon-button matching the share button — the
             big labelled "Saved/Save" was overpowering the card and the
-            bookmark icon alone reads correctly. */}
-        <div className="flex items-center justify-end gap-1 mt-auto pt-2.5 border-t border-border/50" onClick={(e) => e.stopPropagation()}>
+            bookmark icon alone reads correctly.
+
+            2026-05-10: full-ride moved out of the country band into a
+            ticker tag here (left side) — gold pill that reads as a
+            "premium dispatch" without crowding the band. */}
+        <div className="flex items-center justify-end gap-2 mt-auto pt-2.5 border-t border-border/50" onClick={(e) => e.stopPropagation()}>
+          {/* Full-ride ticker tag — grid bottom-right alongside the
+              action icons. Gold pill, uppercase mono-spaced label,
+              reads like a "premium dispatch" stamp. The animated
+              pulse dot mimics live ticker tape so the eye snags it
+              without it having to be loud. */}
+          {isFullRide && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gold-dark bg-gold/10 ring-1 ring-gold/30 px-1.5 py-0.5 rounded">
+              <span className="h-1.5 w-1.5 rounded-full bg-gold-dark animate-pulse" />
+              {ru ? "Полное" : "Full ride"}
+            </span>
+          )}
           <button
             onClick={onBookmark}
             aria-label={isBookmarked ? (ru ? "Удалить из сохранённых" : "Remove from saved") : (ru ? "Сохранить" : "Save")}
