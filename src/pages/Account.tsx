@@ -143,7 +143,7 @@ const Account = ({ language = "en" }: AccountProps) => {
             {t("Account", "Аккаунт")}
           </p>
           <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-            {t("Membership & settings", "Подписка и настройки")}
+            {t("Settings", "Настройки")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {t(
