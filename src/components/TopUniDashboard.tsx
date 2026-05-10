@@ -1068,7 +1068,7 @@ const HonestGaps = ({ markdown, isRu, onAskCounselor }: { markdown: string; isRu
    back to plain markdown if the call marker isn't present (e.g. legacy
    reports generated before the prompt update). */
 const StrategicPositioning = ({ markdown, isRu, onRegen, isRegenerating, onAskCounselor }: { markdown: string; isRu: boolean; onRegen?: (id: string) => void; isRegenerating?: boolean; onAskCounselor?: (question: string) => void }) => {
-  const { title, body, call } = useMemo(() => {
+  const { title, pullQuote, body, call } = useMemo(() => {
     const lines = markdown.split("\n");
     let title = "";
     const bodyLines: string[] = [];
@@ -1091,10 +1091,48 @@ const StrategicPositioning = ({ markdown, isRu, onRegen, isRegenerating, onAskCo
     }
     // Trim trailing blanks
     while (bodyLines.length && bodyLines[bodyLines.length - 1] === "") bodyLines.pop();
-    return { title, body: bodyLines.join("\n").trim(), call };
+    let body = bodyLines.join("\n").trim();
+    // Pull-quote extraction — the consolidated 2026-05-10 prompt asks
+    // the LLM to OPEN the section with a single ≤30-word thesis
+    // sentence as the report's editorial pull-quote, then 1-2 paragraphs
+    // of analysis. Render the opener as a stand-alone editorial line
+    // above the body so it lands like a magazine deck rather than
+    // dissolving into the first paragraph. Heuristic: take the first
+    // sentence (up to a period that's followed by a space + capital
+    // letter or end of line/paragraph) IF it's reasonably short. If
+    // the LLM didn't produce a pull-quote-shaped opener, leave body
+    // as-is and skip the callout.
+    let pullQuote = "";
+    if (body) {
+      // Strip leading bold/italic markers from the first line so the
+      // pull-quote regex picks up a clean sentence.
+      const firstParaEnd = body.indexOf("\n\n");
+      const firstPara = firstParaEnd === -1 ? body : body.slice(0, firstParaEnd);
+      const stripped = firstPara.replace(/^\*+\s*|\s*\*+$/g, "").trim();
+      const sentenceMatch = stripped.match(/^([^.!?]{8,180}[.!?])(?:\s+|$)/);
+      if (sentenceMatch) {
+        const candidate = sentenceMatch[1].trim();
+        const wordCount = candidate.split(/\s+/).filter(Boolean).length;
+        // Pull-quote shape: 8-35 words, ends with strong punctuation,
+        // not just a decorative one-liner. Stricter than the prompt's
+        // 30-word cap so close-to-the-line LLM outputs still extract.
+        if (wordCount >= 8 && wordCount <= 35) {
+          pullQuote = candidate;
+          // Remove the pull-quote sentence from body so it doesn't
+          // duplicate. Use the original (un-stripped) match length so
+          // we don't accidentally cut into the second sentence.
+          const idx = body.indexOf(candidate);
+          if (idx !== -1) {
+            body = body.slice(0, idx) + body.slice(idx + candidate.length).trimStart();
+            body = body.trim();
+          }
+        }
+      }
+    }
+    return { title, pullQuote, body, call };
   }, [markdown]);
 
-  if (!body && !call) return null;
+  if (!body && !call && !pullQuote) return null;
 
   return (
     <div className="not-prose my-10">
@@ -1108,6 +1146,15 @@ const StrategicPositioning = ({ markdown, isRu, onRegen, isRegenerating, onAskCo
       <h2 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground mb-4 leading-tight">
         {title || (isRu ? "Стратегическое позиционирование" : "Strategic positioning")}
       </h2>
+      {pullQuote && (
+        // Editorial deck — the pull-quote thesis sentence the prompt
+        // asks for, lifted into its own typographic moment. Heavier
+        // weight than the body, italicised slightly for editorial feel,
+        // a thin gold underscore tying it to the section accent.
+        <p className="font-heading text-xl sm:text-2xl italic font-semibold text-foreground/95 leading-snug tracking-[-0.01em] mb-5 pb-5 border-b border-gold/30">
+          {pullQuote}
+        </p>
+      )}
       {body && (
         <div className="prose prose-sm sm:prose-base max-w-none text-foreground/90 [&_p]:leading-relaxed [&_p]:mb-3">
           <ReactMarkdown>{body}</ReactMarkdown>
