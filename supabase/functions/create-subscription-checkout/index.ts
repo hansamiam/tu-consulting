@@ -1,6 +1,10 @@
-// Creates a Stripe Checkout Session for the Founding Membership.
-// Single tier ('founding'), two intervals ('month' | 'year'). Capped at 100 spots.
-// Atomically reserves a founding slot before checkout — no overselling.
+// Creates a Stripe Checkout Session for the Early-Access Membership.
+// Single SKU tier ('founding' — kept as the internal identifier so
+// active subscriptions don't break), two intervals ('month' | 'year').
+// Capped at 50 spots in production (founding_member_counter.cap),
+// down from 100 — the cohort moved smaller for stronger scarcity.
+// Atomically reserves an early-access slot before checkout — no
+// overselling.
 
 import Stripe from "https://esm.sh/stripe@18.5.0?target=deno";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
