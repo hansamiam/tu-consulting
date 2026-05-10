@@ -4283,7 +4283,9 @@ const Discover = ({ language = "en" }: Props) => {
                         <FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} fieldsAvailable={fieldsAvailable} lang={language} />
                       </div>
 
-                      {/* Founding membership card — visible always (until user is a member) */}
+                      {/* TopUni Pro membership card — visible to anyone not yet a member.
+                          Founding-cohort scarcity drives conversion via the "founding rate"
+                          callout; the membership identity itself is just "TopUni Pro". */}
                       {!isMember && foundingLeft && foundingLeft.left > 0 && (
                         <button
                           onClick={() => navigate("/pricing")}
