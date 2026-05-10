@@ -11,9 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRight, ArrowLeft, Award, GraduationCap, Target, Shield, CheckCircle2, Bot, Search, PenTool, BookOpen, Crown, Lock, ChevronDown, ChevronUp } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
-import { useAuth } from "@/contexts/AuthContext";
+import { ArrowRight, ArrowLeft, Award, GraduationCap, Target, Shield, CheckCircle2, Bot, Search, PenTool, BookOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { saveProfile } from "@/components/discover/DiscoverProfileGate";
 import { projectToDiscoverProfile } from "@/lib/topuniIntakeProjection";
@@ -30,6 +28,15 @@ const COUNTRIES_RU = [
   "Чехия", "Венгрия", "Польша", "Эстония",
   "Турция", "Малайзия",
 ];
+const COUNTRY_FLAGS: Record<string, string> = {
+  "США": "🇺🇸", "Великобритания": "🇬🇧", "Канада": "🇨🇦", "Австралия": "🇦🇺",
+  "Германия": "🇩🇪", "Франция": "🇫🇷", "Нидерланды": "🇳🇱", "Швейцария": "🇨🇭", "Ирландия": "🇮🇪",
+  "Швеция": "🇸🇪", "Норвегия": "🇳🇴", "Дания": "🇩🇰", "Италия": "🇮🇹", "Испания": "🇪🇸", "Бельгия": "🇧🇪",
+  "Сингапур": "🇸🇬", "Южная Корея": "🇰🇷", "Япония": "🇯🇵", "Гонконг": "🇭🇰", "Китай": "🇨🇳",
+  "Новая Зеландия": "🇳🇿", "ОАЭ": "🇦🇪",
+  "Чехия": "🇨🇿", "Венгрия": "🇭🇺", "Польша": "🇵🇱", "Эстония": "🇪🇪",
+  "Турция": "🇹🇷", "Малайзия": "🇲🇾",
+};
 const COUNTRY_MAP: Record<string, string> = {
   "США": "United States", "Великобритания": "United Kingdom", "Канада": "Canada", "Австралия": "Australia",
   "Германия": "Germany", "Франция": "France", "Нидерланды": "Netherlands", "Швейцария": "Switzerland", "Ирландия": "Ireland",
@@ -84,16 +91,8 @@ const TopUniAIRu = () => {
   const [visaAccess, setVisaAccess] = useState([3]);
   const [locationPref, setLocationPref] = useState([3]);
 
-  // Pro depth fields — mirror the EN page's upsell axis. Free flow
-  // stays a quick 3-step wizard; Pro members open the disclosure on
-  // step 3 and add three richer prompts that the brief weaves into
-  // positioning + at least one essay angle's anchor.
-  const [topActivity, setTopActivity] = useState("");
-  const [personalStory, setPersonalStory] = useState("");
-  const [namedSchools, setNamedSchools] = useState("");
-  const [depthOpen, setDepthOpen] = useState(false);
-  const { subscription } = useAuth();
-  const isPro = subscription.is_active || subscription.is_founding_member;
+  // Pro-depth questions live in the after-brief unlock dialog now —
+  // intake stays a fast 3-step flow.
 
   const toggleCountry = (country: string) => {
     setTargetCountries(prev => prev.includes(country) ? prev.filter(c => c !== country) : [...prev, country]);
@@ -166,9 +165,6 @@ const TopUniAIRu = () => {
     targetCountries: mappedCountries, major, budget, scholarshipNeeded, timeline,
     prestige: prestige[0], scholarship: scholarship[0],
     careerRoi: careerRoi[0], visaAccess: visaAccess[0], locationPref: locationPref[0],
-    // Pro depth fields — empty for free users; populated when a Pro
-    // member opens the depth disclosure on step 3.
-    topActivity, personalStory, namedSchools,
   };
 
   // Step transitions are direction-aware (see stepEnter/stepExit
@@ -281,9 +277,18 @@ const TopUniAIRu = () => {
                     <div><h2 className="text-2xl font-heading font-bold text-foreground">Предпочтения</h2><p className="text-muted-foreground text-sm mt-1">Где и что вы хотите изучать?</p></div>
                     <div className="space-y-5">
                       <div className="space-y-2"><Label>Целевые страны *</Label>
-                        <div className="flex flex-wrap gap-2">{COUNTRIES_RU.map(c => <button key={c} onClick={() => toggleCountry(c)} className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${targetCountries.includes(c) ? "bg-accent text-accent-foreground border-accent" : "bg-background text-muted-foreground border-border hover:border-accent/50"}`}>{c}</button>)}</div>
+                        <div className="flex flex-wrap gap-2">{COUNTRIES_RU.map(c => <button key={c} onClick={() => toggleCountry(c)} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${targetCountries.includes(c) ? "bg-accent text-accent-foreground border-accent" : "bg-background text-muted-foreground border-border hover:border-accent/50"}`}><span className="text-base leading-none">{COUNTRY_FLAGS[c]}</span><span>{c}</span></button>)}</div>
                       </div>
-                      <div className="space-y-2"><Label>Специальность *</Label><Input value={major} onChange={e => setMajor(e.target.value)} placeholder="напр. Информатика, Экономика" /></div>
+                      <div className="space-y-2">
+                        <Label>Специальность *</Label>
+                        <Input value={major} onChange={e => setMajor(e.target.value)} placeholder="напр. Информатика, Экономика" list="major-suggestions-ru" />
+                        <datalist id="major-suggestions-ru">
+                          {["Не определился", "Информатика", "Экономика", "Бизнес и менеджмент", "Инженерия", "Медицина", "Право", "Психология", "Международные отношения", "Журналистика", "Дизайн", "Архитектура", "Математика", "Физика", "Биология", "Химия"].map(m => <option key={m} value={m} />)}
+                        </datalist>
+                        <button type="button" onClick={() => setMajor("Не определился")} className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline">
+                          Ещё не определились? Выбрать «Не определился»
+                        </button>
+                      </div>
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-2"><Label>Бюджет</Label>
                           <Select value={budget} onValueChange={setBudget}><SelectTrigger><SelectValue placeholder="Выберите" /></SelectTrigger>
@@ -330,100 +335,6 @@ const TopUniAIRu = () => {
                       ))}
                     </div>
 
-                    {/* ─── Pro depth disclosure (RU mirror of EN) ──
-                        Free flow stays a 3-step wizard. Pro members
-                        open the disclosure and add three richer
-                        prompts — top achievement, personal story,
-                        named schools — that the brief weaves into
-                        positioning + at least one essay angle. */}
-                    <div className="bg-card border border-border/70 rounded-xl overflow-hidden">
-                      <button
-                        type="button"
-                        onClick={() => { if (isPro) setDepthOpen(o => !o); }}
-                        className={`w-full flex items-center justify-between gap-3 px-5 py-3.5 text-left transition-colors ${
-                          isPro ? "hover:bg-muted/30" : "cursor-default"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          {isPro
-                            ? <Crown className="w-4 h-4 text-gold-dark shrink-0" />
-                            : <Lock className="w-4 h-4 text-muted-foreground shrink-0" />}
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-foreground leading-tight">
-                              {isPro ? "Углубить" : "Углубить · Pro"}
-                            </p>
-                            <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
-                              {isPro
-                                ? "Три развёрнутых вопроса — отчёт впишет ответы в позиционирование и эссе-ракурсы."
-                                : "Pro-члены добавляют три развёрнутых ответа — отчёт читается как написанный лично."}
-                            </p>
-                          </div>
-                        </div>
-                        {isPro ? (
-                          depthOpen
-                            ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
-                            : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
-                        ) : (
-                          <span
-                            role="button"
-                            tabIndex={0}
-                            onClick={(e) => { e.stopPropagation(); navigate("/pricing/ru"); }}
-                            onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); navigate("/pricing/ru"); } }}
-                            className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold-dark hover:text-foreground transition-colors shrink-0 inline-flex items-center gap-1 cursor-pointer"
-                          >
-                            Открыть <ArrowRight className="w-3 h-3" />
-                          </span>
-                        )}
-                      </button>
-                      {isPro && depthOpen && (
-                        <div className="px-5 pb-5 pt-1 space-y-4 border-t border-border/60 bg-muted/10">
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/80">
-                              Главное достижение
-                            </Label>
-                            <Input
-                              value={topActivity}
-                              onChange={(e) => setTopActivity(e.target.value)}
-                              placeholder="напр. Создал клуб робототехники, 1-е место на национальных"
-                              className="h-11"
-                            />
-                            <p className="text-[10px] text-muted-foreground">
-                              Имя активности. Отчёт привяжет к ней хотя бы один эссе-ракурс.
-                            </p>
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/80">
-                              Ваша история
-                            </Label>
-                            <Textarea
-                              value={personalStory}
-                              onChange={(e) => setPersonalStory(e.target.value)}
-                              placeholder="2-4 предложения вашими словами. Что вас сюда привело? Откуда вы? Какой момент стал переломным?"
-                              rows={4}
-                              className="resize-none"
-                            />
-                            <p className="text-[10px] text-muted-foreground">
-                              Используется дословно в позиционировании когда ложится чисто. Пропустите если хотите чтобы AI выводил сам.
-                            </p>
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/80">
-                              Конкретные университеты в вашем списке
-                            </Label>
-                            <Input
-                              value={namedSchools}
-                              onChange={(e) => setNamedSchools(e.target.value)}
-                              placeholder="напр. Stanford, ETH Zurich, NUS"
-                              className="h-11"
-                            />
-                            <p className="text-[10px] text-muted-foreground">
-                              Через запятую. Шорт-лист явно покажет их если они есть в базе.
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
                     <div className="flex justify-between pt-4">
                       <Button variant="outline" onClick={() => goToStep(2)}><ArrowLeft className="mr-2 w-4 h-4" /> Назад</Button>
                       <Button
@@ -446,22 +357,6 @@ const TopUniAIRu = () => {
                               targetCountries: mappedCountries,
                             }));
                           } catch { /* localStorage may be unavailable; brief still renders */ }
-                          // Mirror EN: hand off Pro-depth answers from
-                          // the Step 3 disclosure to the dashboard's
-                          // proDepth store so the brief generator
-                          // actually reads them.
-                          if (isPro && (topActivity.trim() || personalStory.trim() || namedSchools.trim())) {
-                            try {
-                              localStorage.setItem(
-                                "topuni-pro-depth-v1",
-                                JSON.stringify({
-                                  topActivity: topActivity.trim(),
-                                  personalStory: personalStory.trim(),
-                                  namedSchools: namedSchools.trim(),
-                                }),
-                              );
-                            } catch { /* ignore */ }
-                          }
                           setScreen("dashboard");
                         }}
                       >

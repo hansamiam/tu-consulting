@@ -25,16 +25,10 @@ import {
   ListChecks,
   Map,
   Zap,
-  Crown,
-  Lock,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Textarea } from "@/components/ui/textarea";
 import { saveProfile } from "@/components/discover/DiscoverProfileGate";
 import { projectToDiscoverProfile } from "@/lib/topuniIntakeProjection";
-import { useAuth } from "@/contexts/AuthContext";
 
 // 'landing' retired round 10 — TopUni AI opens directly in intake.
 type Screen = "intake" | "dashboard";
@@ -98,12 +92,6 @@ interface WizardDraft {
   careerRoi: number;
   visaAccess: number;
   locationPref: number;
-  /* Pro-tier depth fields — only filled for Pro members. Free users
-   * leave these blank; the brief prompt already handles missing depth
-   * fields cleanly. */
-  topActivity?: string;
-  personalStory?: string;
-  namedSchools?: string;
   /** Wall-clock ms — drafts older than 14 days are dropped on read. */
   ts?: number;
 }
@@ -130,12 +118,6 @@ const loadDraft = (): Partial<WizardDraft> | null => {
 
 const TopUniAI = () => {
   const navigate = useNavigate();
-  // Pro-tier gate for the depth disclosure. Founding members count as
-  // Pro for product access. is_active covers paid pro/founding subs;
-  // is_founding_member is the lifetime perk (true regardless of
-  // current billing status).
-  const { subscription } = useAuth();
-  const isPro = subscription.is_active || subscription.is_founding_member;
   // Landing screen retired round 10 — TopUni AI now opens directly into
   // the intake wizard. The pre-landing felt like an extra click before
   // the actual product. Sales / context lives on the home landing page;
@@ -196,22 +178,11 @@ const TopUniAI = () => {
   const [visaAccess, setVisaAccess] = useState<number[]>([typeof draft?.visaAccess === "number" ? draft.visaAccess : 3]);
   const [locationPref, setLocationPref] = useState<number[]>([typeof draft?.locationPref === "number" ? draft.locationPref : 3]);
 
-  /* Pro-tier depth fields — the user explicitly framed this as the
-   * upsell axis: free brief stays a 3-step questionnaire (in-and-out
-   * fast); Pro members get a 4th "Add depth" panel where they answer
-   * 3 richer prompts (top achievement, personal story, named schools)
-   * that the brief generator weaves directly into positioning + essay
-   * angles. Non-Pro users see the panel locked behind an upgrade
-   * gate so they understand the depth axis exists.
-   *
-   * Storage: same WIZARD_DRAFT_KEY blob picks these up on revisit so
-   * a Pro member who pauses mid-fill doesn't lose their personal
-   * story. Empty strings are the default for non-Pro users — the
-   * basic prompt already handles missing depth fields cleanly. */
-  const [topActivity, setTopActivity] = useState(typeof draft?.topActivity === "string" ? draft.topActivity : "");
-  const [personalStory, setPersonalStory] = useState(typeof draft?.personalStory === "string" ? draft.personalStory : "");
-  const [namedSchools, setNamedSchools] = useState(typeof draft?.namedSchools === "string" ? draft.namedSchools : "");
-  const [depthOpen, setDepthOpen] = useState(false);
+  // Pro-depth questions (top achievement, personal story, named
+  // schools) live entirely in the after-brief ProBriefUnlock dialog
+  // now — keeping the intake to a fast 3-step flow and putting the
+  // depth ask AFTER the user has seen what the free brief delivers,
+  // which converts better than asking up-front.
 
   // Draft-restore auto-jump retired round 10 alongside the landing
   // screen — the page now always opens directly in 'intake' so there's
@@ -316,7 +287,6 @@ const TopUniAI = () => {
         targetCountries, major, budget, scholarshipNeeded, timeline,
         prestige: prestige[0], scholarship: scholarship[0],
         careerRoi: careerRoi[0], visaAccess: visaAccess[0], locationPref: locationPref[0],
-        topActivity, personalStory, namedSchools,
         ts: Date.now(),
       };
       localStorage.setItem(WIZARD_DRAFT_KEY, JSON.stringify(draftPayload));
@@ -326,7 +296,6 @@ const TopUniAI = () => {
     fullName, email, whatsapp, nationality, gradeLevel, gpa, ielts, toefl, sat,
     targetCountries, major, budget, scholarshipNeeded, timeline,
     prestige, scholarship, careerRoi, visaAccess, locationPref,
-    topActivity, personalStory, namedSchools,
   ]);
 
   /* Once the user transitions to the dashboard the wizard answers are
@@ -343,14 +312,6 @@ const TopUniAI = () => {
     targetCountries, major, budget, scholarshipNeeded, timeline,
     prestige: prestige[0], scholarship: scholarship[0],
     careerRoi: careerRoi[0], visaAccess: visaAccess[0], locationPref: locationPref[0],
-    // Depth fields — captured optionally on Step 3 via the "Add depth"
-    // disclosure (gated for Pro members; non-Pro see an upgrade prompt
-    // and skip with empty values). When provided, the brief generator
-    // weaves these into the positioning section + at least one essay
-    // angle's anchor — that's what tier="premium" buys the user.
-    topActivity,
-    personalStory,
-    namedSchools,
   };
 
   return (
@@ -593,16 +554,20 @@ const TopUniAI = () => {
                         />
                         {targetCountries.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 pt-1">
-                            {targetCountries.map(c => (
-                              <button
-                                key={`sel-${c}`}
-                                onClick={() => toggleCountry(c)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gold-dark text-primary-foreground border border-gold-dark"
-                              >
-                                {c}
-                                <span className="text-primary-foreground/70 hover:text-primary-foreground">×</span>
-                              </button>
-                            ))}
+                            {targetCountries.map(c => {
+                              const flag = ALL_COUNTRIES.find(x => x.v === c)?.f;
+                              return (
+                                <button
+                                  key={`sel-${c}`}
+                                  onClick={() => toggleCountry(c)}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gold-dark text-primary-foreground border border-gold-dark"
+                                >
+                                  {flag && <span className="text-sm leading-none">{flag}</span>}
+                                  <span>{c}</span>
+                                  <span className="text-primary-foreground/70 hover:text-primary-foreground">×</span>
+                                </button>
+                              );
+                            })}
                           </div>
                         )}
                         <div className="flex flex-wrap gap-2 pt-1">
@@ -620,6 +585,7 @@ const TopUniAI = () => {
                                   onClick={() => toggleCountry(c.v)}
                                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all bg-card text-foreground/75 border-border hover:border-gold/40"
                                 >
+                                  <span className="text-base leading-none">{c.f}</span>
                                   <span>{c.v}</span>
                                 </button>
                               );
@@ -647,6 +613,7 @@ const TopUniAI = () => {
                         />
                         <datalist id="major-suggestions">
                           {[
+                            "Undecided",
                             "Computer Science", "Engineering", "Business", "Economics",
                             "Mathematics", "Physics", "Chemistry", "Biology",
                             "Medicine & Public Health", "Law", "International Relations",
@@ -742,111 +709,6 @@ const TopUniAI = () => {
                       ))}
                     </div>
 
-                    {/* ─── Pro depth disclosure ──────────────────────
-                        The free brief is a fast 3-step questionnaire.
-                        Pro members get a 4th optional disclosure that
-                        captures three richer prompts (top achievement,
-                        personal story, named schools) — those answers
-                        flow directly into the brief's positioning
-                        section + at least one essay angle's anchor.
-
-                        Non-Pro users see the same disclosure header
-                        but with a Lock icon and a CTA to upgrade. The
-                        "Generate my plan" button below still works for
-                        them — depth fields stay empty and the basic
-                        prompt handles their absence cleanly. */}
-                    <div className="bg-card border border-border/70 rounded-xl overflow-hidden">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (isPro) setDepthOpen(o => !o);
-                        }}
-                        className={`w-full flex items-center justify-between gap-3 px-5 py-3.5 text-left transition-colors ${
-                          isPro ? "hover:bg-muted/30" : "cursor-default"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          {isPro ? (
-                            <Crown className="w-4 h-4 text-gold-dark shrink-0" />
-                          ) : (
-                            <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
-                          )}
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-foreground leading-tight">
-                              {isPro ? "Add depth" : "Add depth · Pro"}
-                            </p>
-                            <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
-                              {isPro
-                                ? "Three richer prompts the brief weaves into your positioning + essay angles."
-                                : "Pro members add three richer prompts that make the brief feel hand-written."}
-                            </p>
-                          </div>
-                        </div>
-                        {isPro ? (
-                          depthOpen
-                            ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
-                            : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
-                        ) : (
-                          <span
-                            role="button"
-                            tabIndex={0}
-                            onClick={(e) => { e.stopPropagation(); navigate("/pricing"); }}
-                            onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); navigate("/pricing"); } }}
-                            className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold-dark hover:text-foreground transition-colors shrink-0 inline-flex items-center gap-1 cursor-pointer"
-                          >
-                            Upgrade <ArrowRight className="w-3 h-3" />
-                          </span>
-                        )}
-                      </button>
-                      {isPro && depthOpen && (
-                        <div className="px-5 pb-5 pt-1 space-y-4 border-t border-border/60 bg-muted/10">
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/80">
-                              Top achievement
-                            </Label>
-                            <Input
-                              value={topActivity}
-                              onChange={(e) => setTopActivity(e.target.value)}
-                              placeholder="e.g. Built a robotics club at my school, took 1st in nationals"
-                              className="h-11"
-                            />
-                            <p className="text-[10px] text-muted-foreground">
-                              Names the activity. The brief weaves it into at least one essay angle's anchor.
-                            </p>
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/80">
-                              Your story
-                            </Label>
-                            <Textarea
-                              value={personalStory}
-                              onChange={(e) => setPersonalStory(e.target.value)}
-                              placeholder="2-4 sentences in your own words. What's driving this? Where are you coming from? What's the moment that sent you here?"
-                              rows={4}
-                              className="resize-none"
-                            />
-                            <p className="text-[10px] text-muted-foreground">
-                              Used verbatim in positioning when it lands cleanly. Skip if you'd rather the AI infer.
-                            </p>
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/80">
-                              Specific schools on your list
-                            </Label>
-                            <Input
-                              value={namedSchools}
-                              onChange={(e) => setNamedSchools(e.target.value)}
-                              placeholder="e.g. Stanford, ETH Zurich, NUS"
-                              className="h-11"
-                            />
-                            <p className="text-[10px] text-muted-foreground">
-                              Comma-separated. The shortlist surfaces these explicitly when they're in the database.
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
                     <div className="flex justify-between pt-4">
                       <Button variant="outline" onClick={() => goToStep(2)}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
                       <Button
@@ -868,29 +730,6 @@ const TopUniAI = () => {
                               targetCountries,
                             }));
                           } catch { /* localStorage may be unavailable; brief still renders */ }
-                          // Hand off any Pro-depth answers the user filled
-                          // on the Step-3 disclosure to the dashboard's
-                          // proDepth store. Without this the wizard's
-                          // depth fields were being captured but never
-                          // read by the brief generator (which only
-                          // looks at the topuni-pro-depth-v1 key). Pro
-                          // members would still see the "Three quick
-                          // questions to unlock your Pro report" CTA
-                          // after generation even though they JUST
-                          // answered them. Now the dashboard reads the
-                          // wizard's depth answers and skips that CTA.
-                          if (isPro && (topActivity.trim() || personalStory.trim() || namedSchools.trim())) {
-                            try {
-                              localStorage.setItem(
-                                "topuni-pro-depth-v1",
-                                JSON.stringify({
-                                  topActivity: topActivity.trim(),
-                                  personalStory: personalStory.trim(),
-                                  namedSchools: namedSchools.trim(),
-                                }),
-                              );
-                            } catch { /* ignore */ }
-                          }
                           setScreen("dashboard");
                         }}
                       >
