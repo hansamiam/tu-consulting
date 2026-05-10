@@ -4278,7 +4278,7 @@ const Discover = ({ language = "en" }: Props) => {
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                     <Input ref={searchInputRef} value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} placeholder={t("Search names, providers, fields, tags…   (/ to focus)", "Поиск по названию, организации, направлению, тегам…   (/ — фокус)")}
                       className="pl-10 h-10 text-sm rounded-lg" />
-                    {filters.search && <button onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>}
+                    {filters.search && <button onClick={() => setFilters(f => ({ ...f, search: "" }))} aria-label={t("Clear search", "Очистить поиск")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>}
                   </div>
 
                   <Button variant="outline" size="default" className="lg:hidden gap-1.5 h-10 rounded-lg" onClick={() => setFiltersOpen(true)}>
@@ -4979,7 +4979,7 @@ const Discover = ({ language = "en" }: Props) => {
                         <span className={`text-[11px] font-medium ${dl.cls}`}>{dl.text}</span>
                       </div>
                     </div>
-                    <button onClick={e => { e.stopPropagation(); toggleBookmark(s.scholarship_id); }} className="text-muted-foreground hover:text-destructive p-1 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                    <button onClick={e => { e.stopPropagation(); toggleBookmark(s.scholarship_id); }} aria-label={t("Remove from shortlist", "Убрать из шортлиста")} className="text-muted-foreground hover:text-destructive p-1 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </button>
