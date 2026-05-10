@@ -200,6 +200,7 @@ const Admin = () => {
             <Button variant="outline" size="sm" onClick={() => nav("/admin/sources")} className="gap-1.5"><Database className="h-4 w-4" />Sources pipeline</Button>
             <Button variant="outline" size="sm" onClick={() => nav("/admin/queue")} className="gap-1.5"><ListChecks className="h-4 w-4" />AI scrape queue</Button>
             <Button variant="outline" size="sm" onClick={() => nav("/admin/submissions")} className="gap-1.5"><Inbox className="h-4 w-4" />User submissions</Button>
+            <Button variant="outline" size="sm" onClick={() => nav("/admin/partner-inquiries")} className="gap-1.5"><Inbox className="h-4 w-4" />Partner inquiries</Button>
             <Button variant="outline" size="sm" onClick={() => nav("/admin/insights")} className="gap-1.5"><BarChart3 className="h-4 w-4" />Insights</Button>
             <Button variant="outline" size="sm" onClick={() => supabase.auth.signOut()}>Sign out</Button>
           </div>
