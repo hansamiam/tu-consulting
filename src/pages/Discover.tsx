@@ -810,6 +810,36 @@ const bannerCountry = (s: { host_country: string | null; eligible_countries: str
   return host || null;
 };
 
+/* Regions for the host-country quick filter — multi-country selection
+ * users have asked for. The host_country dropdown stays single-select
+ * (a country is the most precise filter) but a row of region chips
+ * above it lets users pick "Europe" or "Asia-Pacific" in one tap and
+ * the filter pipeline OR-matches across the region's countries.
+ *
+ * The hostCountry FilterState slot encodes a region selection as
+ * "region:Europe" — virtual prefix mirrors the women-any demographic
+ * pattern used elsewhere. The filter pipeline expands to a country
+ * list at evaluation time. Country names use the same canonicalCountry
+ * forms the dropdown uses so the predicate matches. */
+const REGIONS: Record<string, string[]> = {
+  "Europe": [
+    "United Kingdom", "Germany", "France", "Netherlands", "Switzerland",
+    "Sweden", "Norway", "Denmark", "Finland", "Ireland", "Italy",
+    "Spain", "Portugal", "Belgium", "Austria", "Poland", "Czech Republic",
+    "Hungary", "Greece", "Iceland", "Estonia", "Latvia", "Lithuania",
+  ],
+  "Asia-Pacific": [
+    "Japan", "South Korea", "Singapore", "Hong Kong", "Australia",
+    "New Zealand", "Taiwan", "China", "Malaysia", "Thailand", "Vietnam",
+    "Indonesia", "Philippines",
+  ],
+  "North America": ["United States", "Canada", "Mexico"],
+  "MENA": [
+    "United Arab Emirates", "Saudi Arabia", "Qatar", "Israel", "Turkey",
+    "Egypt", "Jordan", "Morocco",
+  ],
+};
+
 const dateOnly = (d: string | null) => {
   if (!d) return null;
   const t = new Date(d).getTime();
@@ -2094,7 +2124,32 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
         {hostCountries.length > 0 && (
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">{t("Host country", "Страна обучения")}</p>
-            <Select value={filters.hostCountry} onValueChange={v => setFilters(f => ({ ...f, hostCountry: v }))}>
+            {/* Region chips — one-tap multi-country selection. Active
+                state shows the gold pill; clicking again clears.
+                Single-country selections via the Select below clear
+                the region pill (the hostCountry slot can hold either
+                a region:X virtual or a single country, not both). */}
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {Object.keys(REGIONS).map(r => {
+                const v = `region:${r}`;
+                const active = filters.hostCountry === v;
+                return (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setFilters(f => ({ ...f, hostCountry: active ? "all" : v }))}
+                    className={`px-2 py-0.5 rounded-full text-[11px] font-medium transition-colors ${
+                      active
+                        ? "bg-gold/15 text-gold-dark border border-gold/30"
+                        : "bg-muted/40 text-muted-foreground hover:bg-muted/60 border border-transparent"
+                    }`}
+                  >
+                    {t(r, r === "Europe" ? "Европа" : r === "Asia-Pacific" ? "Азия-ТО" : r === "North America" ? "Сев. Америка" : r)}
+                  </button>
+                );
+              })}
+            </div>
+            <Select value={filters.hostCountry.startsWith("region:") ? "all" : filters.hostCountry} onValueChange={v => setFilters(f => ({ ...f, hostCountry: v }))}>
               <SelectTrigger className="h-8 text-[13px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("All countries", "Все страны")}</SelectItem>
@@ -3495,7 +3550,20 @@ const Discover = ({ language = "en" }: Props) => {
         }),
       );
     }
-    if (filters.hostCountry !== "all") list = list.filter(s => s.host_country && canonicalCountry(s.host_country) === filters.hostCountry);
+    if (filters.hostCountry !== "all") {
+      // Region selections encode as "region:Europe" etc. Expand to the
+      // OR-list of countries before filtering. Single-country values
+      // pass through unchanged.
+      if (filters.hostCountry.startsWith("region:")) {
+        const regionName = filters.hostCountry.slice(7);
+        const countries = REGIONS[regionName] || [];
+        if (countries.length > 0) {
+          list = list.filter(s => s.host_country && countries.includes(canonicalCountry(s.host_country)));
+        }
+      } else {
+        list = list.filter(s => s.host_country && canonicalCountry(s.host_country) === filters.hostCountry);
+      }
+    }
     if (filters.onlyEligible) list = list.filter(s => s.eligibility === "eligible" || s.eligibility === "likely");
     if (filters.closingSoon) list = list.filter(s => { const d = s.application_deadline ? Math.ceil((new Date(s.application_deadline).getTime() - Date.now()) / 86400000) : null; return d !== null && d > 0 && d <= 90; });
     if (!showHidden) list = list.filter(s => !hidden.has(s.scholarship_id));
