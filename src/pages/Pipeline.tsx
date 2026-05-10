@@ -75,15 +75,19 @@ const COLUMNS: { key: AppStatus | "shortlisted" | "active"; label: { en: string;
   { key: "decision",    label: { en: "Submitted · awaiting",ru: "Подал · жду ответа" },  tone: "text-primary",                                     bar: "bg-primary" },
 ];
 
-const STATUS_OPTIONS: { value: AppStatus | null | "shortlisted"; label: { en: string; ru: string } }[] = [
-  { value: "shortlisted", label: { en: "Saved only",         ru: "Только сохранённые" } },
-  { value: "researching", label: { en: "Researching",       ru: "Изучаю" } },
-  { value: "drafting",    label: { en: "Drafting",          ru: "Готовлю" } },
-  { value: "submitted",   label: { en: "Submitted",         ru: "Подал" } },
-  { value: "decision",    label: { en: "Awaiting decision", ru: "Жду ответа" } },
-  { value: "rejected",    label: { en: "Rejected",          ru: "Отклонено" } },
-  { value: "accepted",    label: { en: "Accepted",          ru: "Принят" } },
-  { value: null,          label: { en: "Remove status",     ru: "Снять статус" } },
+// Three working statuses + null. The user explicitly capped the
+// active set at these three (researching / drafting / submitted)
+// — decision/rejected/accepted are reserved for a future post-
+// outcome phase. Pre-fix the dropdown advertised 7 options which
+// felt overwhelming for a workflow that's really just "I'm looking
+// → I'm writing → I sent it." Removed the "Saved only" virtual
+// option (saving lives on the Discover bookmark, not as a status
+// here).
+const STATUS_OPTIONS: { value: AppStatus | null; label: { en: string; ru: string } }[] = [
+  { value: "researching", label: { en: "Researching", ru: "Изучаю" } },
+  { value: "drafting",    label: { en: "Drafting",    ru: "Готовлю" } },
+  { value: "submitted",   label: { en: "Submitted",   ru: "Подал" } },
+  { value: null,          label: { en: "Remove status", ru: "Снять статус" } },
 ];
 
 const fmtMoney = (v: number | null | undefined): string | null => {
@@ -261,11 +265,13 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
    * untouched on Stage / Deadline. */
   const [searchParams, setSearchParams] = useSearchParams();
   const viewParam = searchParams.get("view");
-  const boardView: "category" | "list" | "calendar" =
-    viewParam === "list" ? "list" :
-    viewParam === "calendar" ? "calendar" :
+  // Calendar mode retired 2026-05-10 — replaced by always-visible
+  // mini calendar in the sidebar. Legacy ?view=calendar URLs map to
+  // "list" so a deep-link doesn't 404 the user out of the workspace.
+  const boardView: "category" | "list" =
+    viewParam === "list" || viewParam === "calendar" ? "list" :
     "category";
-  const setBoardView = (next: "category" | "list" | "calendar") => {
+  const setBoardView = (next: "category" | "list") => {
     const params = new URLSearchParams(searchParams);
     if (next === "category") params.delete("view"); else params.set("view", next);
     setSearchParams(params, { replace: true });
@@ -406,15 +412,13 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
           <div className="flex-1" />
           {user && (
             <>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1.5 h-8 text-xs hidden sm:inline-flex"
-                onClick={() => setCalendarOpen(true)}
-              >
-                <Calendar className="h-3.5 w-3.5" />
-                {t("Calendar sync", "Календарь")}
-              </Button>
+              {/* Calendar sync button moved to the MiniDeadlineCalendar
+                  header in the sidebar — that's where calendar context
+                  lives now, so the sync action goes with it. Pre-fix
+                  the button sat tucked on the right side of the page
+                  header next to Account, where users read it as a
+                  secondary admin action rather than the deadline-sync
+                  affordance it actually is. */}
               <Link
                 to={isRu ? "/account/ru" : "/account"}
                 className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1.5"
@@ -461,6 +465,10 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                 <span className="text-[10px] tabular-nums text-muted-foreground/70">{rows.length}</span>
               </div>
 
+              {/* Two-mode toggle now — Calendar mode retired in favor
+                  of the always-visible MiniDeadlineCalendar below the
+                  list. Stage groups by status; Deadline is a flat list
+                  sorted by date. */}
               <div className="inline-flex items-center w-full rounded-md border border-border bg-card overflow-hidden mb-3">
                 <button
                   type="button"
@@ -483,17 +491,6 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                   }`}
                 >
                   {t("Deadline", "Дедлайн")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBoardView("calendar")}
-                  className={`flex-1 h-7 text-[11px] font-medium transition-colors ${
-                    boardView === "calendar"
-                      ? "bg-foreground/[0.06] text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {t("Calendar", "Календарь")}
                 </button>
               </div>
 
@@ -553,30 +550,38 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                         hasEssay={!!tracker.essayMap[s.scholarship_id]}
                         isRu={isRu}
                         onOpen={() => setSelectedId(s.scholarship_id)}
-                              onEditDetails={() => setOpenDetail(s)}
+                        onEditDetails={() => setOpenDetail(s)}
                         onStatusChange={(next) => tracker.setStatus(s.scholarship_id, next)}
                       />
                     ))}
                 </div>
               )}
-            </aside>
 
-            {/* Main canvas: A4 essay drafter, OR a deadline calendar
-                when the calendar view is active. The calendar replaces
-                the writing surface so it has room to breathe — minimal
-                addition, sleek treatment, returns to drafting on click. */}
-            <main className="min-w-0">
-              {boardView === "calendar" ? (
-                <DeadlineCalendar
+              {/* Mini deadline calendar tucked in the sidebar's bottom
+                  empty space — always visible alongside whichever board
+                  view is active, so the user can glance at the month
+                  grid without losing the essay editor on the right.
+                  Only renders if there are tracked rows (no data, no
+                  calendar). */}
+              {rows.length > 0 && (
+                <MiniDeadlineCalendar
                   rows={rows}
                   language={language}
-                  selectedId={selectedId}
-                  onSelect={(id) => {
-                    setSelectedId(id);
-                    setBoardView("list");
-                  }}
+                  onSelect={setSelectedId}
+                  onSync={user ? () => setCalendarOpen(true) : undefined}
                 />
-              ) : selectedScholarship ? (
+              )}
+            </aside>
+
+            {/* Main canvas: always the A4 essay drafter now. Calendar
+                moved to a mini widget below the sidebar list (see
+                MiniDeadlineCalendar) — pre-fix the calendar view
+                replaced the essay editor entirely, so users had to
+                toggle out to see the month grid then back in to keep
+                writing. The mini view stays visible alongside the
+                editor at all times. */}
+            <main className="min-w-0">
+              {selectedScholarship ? (
                 <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
                   <header className="px-6 py-4 border-b border-border bg-muted/20 flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -1005,11 +1010,174 @@ export default Pipeline;
 
 /* ─── Internals ─────────────────────────────────────────────────── */
 
+/* MiniDeadlineCalendar — compact version of DeadlineCalendar tucked
+   into the sidebar's bottom space. Same data shape, but cells are
+   ~28px squares with just a colored dot indicating deadline density
+   (no chip labels). Hovering a dotted day reveals a tooltip listing
+   the deadlines; clicking selects the first scholarship for that day
+   into the essay canvas. Single-month, narrow header, no Today
+   button (just <- -> arrows) since horizontal space is tight in a
+   380px sidebar. The full DeadlineCalendar below is retired from
+   the active toggle but kept defined for potential future use. */
+const MiniDeadlineCalendar = ({
+  rows, language, onSelect, onSync,
+}: {
+  rows: { scholarship_id: string; scholarship_name: string; application_deadline: string | null }[];
+  language: "en" | "ru";
+  onSelect: (scholarshipId: string) => void;
+  /** Optional — when provided, surfaces a "Sync" link in the header.
+   *  Wired to open the CalendarSubscribeDialog (Apple/Google/Outlook
+   *  ICS subscription). Pre-fix this lived on the page-header strip
+   *  but read as an admin action; living next to the calendar widget
+   *  makes the relationship explicit. */
+  onSync?: () => void;
+}) => {
+  const isRu = language === "ru";
+  const [cursor, setCursor] = useState<{ year: number; month: number }>(() => {
+    const today = new Date();
+    return { year: today.getFullYear(), month: today.getMonth() };
+  });
+
+  const byDay = useMemo(() => {
+    const map = new Map<string, typeof rows>();
+    for (const r of rows) {
+      if (!r.application_deadline) continue;
+      const key = r.application_deadline.slice(0, 10);
+      const arr = map.get(key) ?? [];
+      arr.push(r);
+      map.set(key, arr);
+    }
+    return map;
+  }, [rows]);
+
+  const monthLabel = new Date(cursor.year, cursor.month, 1).toLocaleString(
+    isRu ? "ru-RU" : "en-US",
+    { month: "long", year: "numeric" },
+  );
+
+  const firstOfMonth = new Date(cursor.year, cursor.month, 1);
+  const gridStart = new Date(firstOfMonth);
+  gridStart.setDate(gridStart.getDate() - firstOfMonth.getDay());
+  const cells: Date[] = [];
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(gridStart);
+    d.setDate(gridStart.getDate() + i);
+    cells.push(d);
+  }
+
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const dayKey = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+  const dayHeaders = isRu
+    ? ["В", "П", "В", "С", "Ч", "П", "С"]
+    : ["S", "M", "T", "W", "T", "F", "S"];
+
+  const goPrev = () => setCursor(c => {
+    const m = c.month - 1;
+    return m < 0 ? { year: c.year - 1, month: 11 } : { year: c.year, month: m };
+  });
+  const goNext = () => setCursor(c => {
+    const m = c.month + 1;
+    return m > 11 ? { year: c.year + 1, month: 0 } : { year: c.year, month: m };
+  });
+
+  return (
+    <div className="mt-4 pt-4 border-t border-border/50">
+      <div className="flex items-center justify-between mb-2 px-1">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground capitalize">
+          {monthLabel}
+        </p>
+        <div className="flex items-center gap-1">
+          {onSync && (
+            <button
+              type="button"
+              onClick={onSync}
+              className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gold-dark hover:text-foreground transition-colors px-1.5 py-0.5"
+              aria-label={isRu ? "Синхронизация с календарём" : "Sync with calendar app"}
+            >
+              {isRu ? "Синхр." : "Sync"}
+            </button>
+          )}
+          <button
+            onClick={goPrev}
+            aria-label={isRu ? "Предыдущий месяц" : "Previous month"}
+            className="p-1 rounded hover:bg-foreground/[0.05] text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronLeft className="h-3 w-3" />
+          </button>
+          <button
+            onClick={goNext}
+            aria-label={isRu ? "Следующий месяц" : "Next month"}
+            className="p-1 rounded hover:bg-foreground/[0.05] text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronRight className="h-3 w-3" />
+          </button>
+        </div>
+      </div>
+      <div className="grid grid-cols-7 gap-px text-center">
+        {dayHeaders.map((d, i) => (
+          <div key={i} className="text-[9px] font-semibold uppercase text-muted-foreground/60 py-1">{d}</div>
+        ))}
+        {cells.map((d, i) => {
+          const key = dayKey(d);
+          const inMonth = d.getMonth() === cursor.month;
+          const isToday = key === todayKey;
+          const dayRows = byDay.get(key) ?? [];
+          const hasDeadline = dayRows.length > 0;
+          // Tone: closing in 7d = destructive, 30d = amber, else gold.
+          const daysUntil = Math.ceil((d.getTime() - Date.now()) / 86400_000);
+          const dotTone =
+            !hasDeadline ? "" :
+            daysUntil < 0 ? "bg-muted-foreground/40" :
+            daysUntil <= 7 ? "bg-destructive" :
+            daysUntil <= 30 ? "bg-amber-500" :
+            "bg-gold-dark";
+          const tooltip = hasDeadline
+            ? dayRows.map(r => cleanScholarshipName(r.scholarship_name)).join("\n")
+            : undefined;
+          return (
+            <button
+              key={i}
+              type="button"
+              disabled={!hasDeadline}
+              onClick={() => hasDeadline && onSelect(dayRows[0].scholarship_id)}
+              title={tooltip}
+              className={`relative aspect-square text-[10px] tabular-nums rounded transition-colors ${
+                hasDeadline
+                  ? "hover:bg-foreground/[0.06] cursor-pointer"
+                  : "cursor-default"
+              } ${
+                isToday
+                  ? "ring-1 ring-gold-dark text-gold-dark font-semibold"
+                  : inMonth
+                    ? "text-foreground/80"
+                    : "text-muted-foreground/30"
+              }`}
+            >
+              {d.getDate()}
+              {hasDeadline && (
+                <span className={`absolute bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full ${dotTone}`} />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 /* DeadlineCalendar — month-grid view of tracked scholarship deadlines.
    Each day with one or more deadlines renders a small chip per deadline
    showing the program's first 2 letters. Clicking the chip jumps to
    that scholarship's draft canvas. Lightweight (no calendar lib) so
    bundle stays clean and the visual matches the rest of the workspace.
+
+   Retired 2026-05-10 from the active boardView toggle in favor of
+   the MiniDeadlineCalendar above (always visible in the sidebar).
+   Kept defined in case we re-introduce a full-page calendar mode.
+   The void at the bottom of the file silences the unused-symbol
+   warning.
 
    Design choice: month-paged (← previous / → next / Today). One month
    on screen at a time keeps the chips readable. Cap each cell to 3
@@ -1222,6 +1390,7 @@ const DeadlineCalendar = ({
     </div>
   );
 };
+void DeadlineCalendar;
 
 /* SidebarRow — RETIRED 2026-05-10 in favor of the richer PipelineCard
    (lifecycle banners + recommender progress + inline status quick-cycle
@@ -1455,16 +1624,35 @@ const PipelineCard = ({
           opens the detail Sheet for recommender/notes/additional-essay
           editing — without it the Sheet was unreachable after the
           Details button retired and editing those fields had no path. */}
+      {/* Status dropdown trigger now reflects the CURRENT status —
+          pre-fix it always said "Set status" regardless, so users
+          had no idea what they'd already set. When a status is
+          active, the trigger shows the label tinted gold; when
+          unset it shows "Set status" muted. Edit link kept for
+          recommender/notes/additional-essay editing. */}
       <div className="flex items-center justify-between gap-1 mt-2 pt-2 border-t border-border/60" onClick={(e) => e.stopPropagation()}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="text-[10px] uppercase tracking-[0.14em] font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-              {t("Set status", "Статус")} <ChevronDown className="w-2.5 h-2.5" />
+            <button
+              className={`text-[10px] uppercase tracking-[0.14em] font-semibold transition-colors flex items-center gap-1 ${
+                status
+                  ? "text-gold-dark hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {status
+                ? (STATUS_OPTIONS.find(o => o.value === status)?.label[isRu ? "ru" : "en"] ?? t("Set status", "Статус"))
+                : t("Set status", "Статус")}
+              <ChevronDown className="w-2.5 h-2.5" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
-            {STATUS_OPTIONS.filter((o) => o.value !== "shortlisted").map((opt) => (
-              <DropdownMenuItem key={String(opt.value)} onClick={() => onStatusChange(opt.value as AppStatus | null)}>
+            {STATUS_OPTIONS.map((opt) => (
+              <DropdownMenuItem
+                key={String(opt.value)}
+                onClick={() => onStatusChange(opt.value)}
+                className={status === opt.value ? "font-semibold text-gold-dark" : ""}
+              >
                 {opt.label[isRu ? "ru" : "en"]}
               </DropdownMenuItem>
             ))}

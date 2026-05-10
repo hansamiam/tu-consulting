@@ -18,11 +18,10 @@
  * scrolled cards underneath read clearly. */
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { ArrowLeft, Crown, User as UserIcon, KanbanSquare } from "lucide-react";
+import { ArrowLeft, Crown, User as UserIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthDialog } from "@/components/auth/AuthDialog";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { ActivityBell } from "@/components/ActivityBell";
 
 interface Props {
   language?: "en" | "ru";
@@ -45,8 +44,17 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const tierLabel = subscription.tier === "founding" ? "Founding" : subscription.tier === "pro" ? "Pro" : "Account";
-  const TierIcon = subscription.tier === "founding" ? Crown : UserIcon;
+  // 2026-05-10: right-cluster (Workspace + Account) styling locked to
+  // exactly match the global Navigation component so the user doesn't
+  // experience a shift in button size/placement when crossing between
+  // /discover (results phase) and /pipeline, /topuni-ai, etc. The slim
+  // product-shell feel is preserved on the LEFT (Home + Discover
+  // wordmark + flat h-16 background) — only the right cluster snaps to
+  // global-nav parity. ActivityBell + tier badge dropped: bell
+  // duplicated workspace state (same reason it was pulled from global
+  // nav 2026-05-09); tier badge was a one-off that read as inconsistent
+  // chrome — the Crown icon in the Account button already conveys
+  // founding tier.
 
   return (
     <header
@@ -56,7 +64,7 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
           : "bg-background/70 border-b border-transparent"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-5 sm:px-8 h-14 flex items-center gap-3">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-3">
         {/* Explicit Home back button — primary affordance for getting
             out of the app shell. The wordmark also links home but
             users don't always realise that; an actual button labelled
@@ -92,41 +100,31 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Workspace + activity bell only render for signed-in users.
-            Round-40: Workspace and Sign-in are mutually exclusive — anon
-            visitors don't need a Workspace button (nothing to manage), so
-            showing one alongside Sign-in created two competing entry
-            points. Order from left → right:
-              [Workspace + bell cluster (authed)] → [Sign-in (anon)] → [RU]
-            Language switcher always sits at the absolute right edge. */}
-        {user && (
-          <div className="inline-flex items-center rounded-md border border-border/60 bg-background/40 overflow-hidden">
+        {/* Right cluster — locked to global Navigation parity so the
+            Workspace button and Account icon don't shift size/position
+            when the user crosses between Discover and other tabs. */}
+        {user ? (
+          <>
             <button
               onClick={() => navigate(isRussian ? "/pipeline/ru" : "/pipeline")}
-              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-foreground/75 hover:text-foreground hover:bg-foreground/[0.04] px-2.5 h-8 transition-colors"
+              className="ml-1 px-3 py-1.5 text-sm font-semibold rounded-md transition-colors text-gold-dark hover:text-foreground border border-gold/35 hover:border-gold/55 bg-gold/5 hover:bg-gold/10"
             >
-              <KanbanSquare className="h-3.5 w-3.5" />
               {isRussian ? "Рабочая зона" : "Workspace"}
             </button>
-            <span className="hidden sm:block self-stretch w-px bg-border/60" aria-hidden />
-            <ActivityBell language={language} grouped />
-          </div>
-        )}
-
-        {user && (subscription.tier === "founding" || subscription.tier === "pro") && (
-          <span
-            className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-semibold text-gold-dark bg-gold/10 border border-gold/30"
-            title={tierLabel}
-          >
-            <TierIcon className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">{tierLabel}</span>
-          </span>
-        )}
-        {!user && (
+            <button
+              onClick={() => navigate(isRussian ? "/account/ru" : "/account")}
+              aria-label={isRussian ? "Аккаунт" : "Account"}
+              title={isRussian ? "Аккаунт и подписка" : "Account & billing"}
+              className="ml-1 inline-flex items-center justify-center h-8 w-8 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+            >
+              {subscription.tier === "founding" ? <Crown className="w-3.5 h-3.5" /> : <UserIcon className="w-3.5 h-3.5" />}
+            </button>
+          </>
+        ) : (
           <>
             <button
               onClick={() => setAuthOpen(true)}
-              className="inline-flex items-center h-8 px-3 rounded-md text-xs font-semibold text-foreground hover:bg-foreground/[0.05] transition-colors"
+              className="ml-1 px-3 py-1.5 text-sm font-medium transition text-muted-foreground hover:text-primary"
             >
               {isRussian ? "Войти" : "Sign in"}
             </button>
@@ -134,8 +132,9 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
           </>
         )}
 
-        {/* RU language switcher sits at the absolute right edge. */}
-        <LanguageSwitcher />
+        <div className="ml-1">
+          <LanguageSwitcher />
+        </div>
       </div>
     </header>
   );
