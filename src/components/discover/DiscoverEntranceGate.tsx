@@ -1,44 +1,35 @@
 /**
  * DiscoverEntranceGate
  *
- * One-shot entrance animation that plays when the user lands on
- * /discover for the first time in a session.
+ * One-shot entrance animation that plays once per day per device
+ * when the user lands on /discover.
  *
- * 2026-05-10 simplification — the previous version had the wordmark
- * fading in during the gold-bloom peak, so the text washed out
- * against its own glow and viewers reported "uhh what just flashed?".
- * Three fixes:
- *   1. Sequence stretched to 3.0s so the eye has time to register
- *      what's on screen (the previous 2.6s went by too fast).
- *   2. Wordmark is now WHITE-on-navy with a gold accent stroke under
- *      it — high-contrast typography that stays readable through any
- *      bloom or background motion. Gold-light-on-gold-bloom was the
- *      root cause of the visibility complaint.
- *   3. Single outer bloom only (the inner+outer twin-bloom over-
- *      complicated the moment). The bloom now PEAKS BEFORE the
- *      wordmark hits its hold plateau, then dims, so the text never
- *      competes with peak brightness.
+ * 2026-05-10 reworked again — the gates-parting-on-navy reveal felt
+ * theatrical but redundant against the new dark TopUni AI intake
+ * (a user crossing from intake → discover would see two consecutive
+ * full-navy moments). Replaced with a float-up-from-nothing reveal:
+ * transparent overlay → wordmark glows in from below, scaling up
+ * from 0.92 → 1.0, with a soft gold halo that lifts behind it.
+ * No solid backdrop — just a faint cream wash that lets the
+ * Discover content underneath be partly visible from the start, so
+ * the gate reads like the surface settling INTO place rather than
+ * being unveiled from a curtain.
  *
  * Suppression rules unchanged:
- *   · sessionStorage gate to prevent re-trigger in the same tab
- *   · prefers-reduced-motion: reduce skips the animation entirely
+ *   · localStorage 24h cooldown (one play per device per day)
+ *   · prefers-reduced-motion: reduce skips entirely
  */
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const STORAGE_KEY = "topuni-discover-entrance-played-at";
-// 24h TTL on the entrance — pre-fix the gate replayed every new
-// tab (sessionStorage scope), so a power user opening Discover in
-// 5 tabs throughout the day saw the 3-second flash 5 times. The
-// gate is now persisted in localStorage with a 24h freshness check:
-// plays once a day max per device, regardless of tab count.
 const COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
-// 3.0s total. The earlier 2.6s left the wordmark on screen for
-// ~900ms which felt brief; 3.0s gives the wordmark a full 1.3s
-// readable plateau, which is what the eye needs to register
-// "Discover" + the sub-line without rushing.
-const SEQUENCE_MS = 3000;
+// 2.4s total — shorter than the gates version (3.0s) because the
+// motion is simpler. The wordmark holds for ~1.0s plateau, then
+// dissolves while the halo glow continues rising for another 0.4s
+// behind nothing — a quiet outro that lets the page settle.
+const SEQUENCE_MS = 2400;
 
 const prefersReducedMotion = (): boolean => {
   if (typeof window === "undefined") return false;
@@ -76,94 +67,68 @@ export const DiscoverEntranceGate = () => {
         key="discover-gate"
         initial={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="fixed inset-0 z-[60] pointer-events-none overflow-hidden"
+        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        className="fixed inset-0 z-[60] pointer-events-none overflow-hidden flex items-center justify-center"
         aria-hidden
       >
-        {/* Solid navy backdrop — high contrast bed for white wordmark.
-            Pre-fix the gates split into two halves immediately, putting
-            the wordmark over a moving cream pane during its hold; the
-            fixed navy bed below means the text is always against the
-            same dark surface for its full readable lifespan. The
-            gates ABOVE this still part theatrically, but the text
-            never has to fight a moving background. */}
-        <div className="absolute inset-0 bg-primary" />
-
-        {/* Single gold bloom — peaks early (35% of sequence = 1.05s)
-            then dims to 0 by 65% (1.95s). The wordmark hits its hold
-            plateau at ~1.0s, so the bloom is already on its way down
-            when the text needs to be readable. */}
+        {/* Faint cream wash — translucent so the Discover surface
+            underneath bleeds through from the start. The reveal isn't
+            a curtain pulling open; it's the room itself catching
+            light. */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.55 }}
-          animate={{ opacity: [0, 0.5, 0.15, 0], scale: [0.55, 1.2, 1.6, 2.0] }}
-          transition={{ duration: 2.4, ease: [0.22, 1, 0.36, 1], times: [0, 0.35, 0.65, 1], delay: 0.2 }}
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[55vw] h-[55vw] max-w-[640px] max-h-[640px] rounded-full"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0, 0.5, 0.3, 0] }}
+          transition={{ duration: 2.2, ease: [0.16, 1, 0.3, 1], times: [0, 0.4, 0.7, 1] }}
+          className="absolute inset-0 bg-background"
+        />
+
+        {/* Soft gold halo — rises from below the wordmark, expanding
+            outward as if a warm light source just lifted into the
+            frame. Peaks behind the wordmark, then continues drifting
+            up after the wordmark has dissolved (the outro shimmer). */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.5, y: 60 }}
+          animate={{ opacity: [0, 0.45, 0.25, 0], scale: [0.5, 1.1, 1.5, 1.8], y: [60, 0, -20, -50] }}
+          transition={{ duration: 2.4, ease: [0.22, 1, 0.36, 1], times: [0, 0.4, 0.75, 1] }}
+          className="absolute w-[60vw] h-[60vw] max-w-[720px] max-h-[720px] rounded-full"
           style={{
-            backgroundImage: "radial-gradient(circle, hsl(var(--gold) / 0.55) 0%, hsl(var(--gold) / 0.18) 40%, transparent 70%)",
-            filter: "blur(14px)",
+            backgroundImage: "radial-gradient(circle, hsl(var(--gold) / 0.45) 0%, hsl(var(--gold) / 0.14) 40%, transparent 70%)",
+            filter: "blur(18px)",
           }}
         />
 
-        {/* Wordmark — white on navy. Enters at delay 0.5s (after the
-            bloom has started establishing the warmth), holds steady
-            from 30%-78% of the 2.5s wordmark duration so users get a
-            full 1.2s to read "Discover". White > gold-light here
-            because gold-on-gold was the visibility problem. */}
+        {/* Wordmark — lifts up from y=24 into place, scales 0.92→1.0,
+            holds steady for ~1.0s, then dissolves upward. The
+            "from nothing" feel: opacity starts at 0, no element bg,
+            just text materialising in the air with a strong drop-
+            shadow keeping it readable through the halo bloom. */}
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: [0, 1, 1, 0], y: [12, 0, 0, -8] }}
-          transition={{ duration: 2.5, ease: [0.16, 1, 0.3, 1], times: [0, 0.3, 0.78, 1], delay: 0.4 }}
-          className="absolute inset-0 flex flex-col items-center justify-center text-center px-6"
+          initial={{ opacity: 0, y: 24, scale: 0.92 }}
+          animate={{ opacity: [0, 1, 1, 0], y: [24, 0, 0, -12], scale: [0.92, 1, 1, 1.02] }}
+          transition={{ duration: 2.0, ease: [0.16, 1, 0.3, 1], times: [0, 0.28, 0.72, 1], delay: 0.3 }}
+          className="relative flex flex-col items-center text-center px-6"
         >
-          <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.36em] text-gold-light mb-3">
+          <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.36em] text-gold-dark mb-3">
             TopUni
           </p>
-          <p className="font-heading text-4xl sm:text-6xl font-bold tracking-[-0.025em] text-primary-foreground drop-shadow-[0_2px_30px_hsl(var(--primary)/0.9)]">
+          <p className="font-heading text-4xl sm:text-6xl font-bold tracking-[-0.025em] text-foreground drop-shadow-[0_4px_30px_hsl(var(--gold)/0.35)]">
             Discover
           </p>
-          {/* Gold accent line under the wordmark — quiet, premium. */}
           <motion.span
             initial={{ scaleX: 0 }}
             animate={{ scaleX: [0, 1, 1, 0] }}
-            transition={{ duration: 2.0, ease: [0.16, 1, 0.3, 1], times: [0, 0.4, 0.78, 1], delay: 0.65 }}
-            className="block h-px w-32 sm:w-44 bg-gradient-to-r from-transparent via-gold-light to-transparent mt-5 origin-center"
+            transition={{ duration: 1.7, ease: [0.16, 1, 0.3, 1], times: [0, 0.4, 0.78, 1], delay: 0.55 }}
+            className="block h-px w-32 sm:w-44 bg-gradient-to-r from-transparent via-gold-dark to-transparent mt-5 origin-center"
           />
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: [0, 0.85, 0] }}
-            transition={{ duration: 1.8, ease: [0.16, 1, 0.3, 1], times: [0, 0.5, 1], delay: 0.85 }}
-            className="text-[10px] sm:text-xs font-medium tracking-[0.24em] uppercase text-primary-foreground/65 mt-4"
+            transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1], times: [0, 0.5, 1], delay: 0.7 }}
+            className="text-[10px] sm:text-xs font-medium tracking-[0.24em] uppercase text-muted-foreground/85 mt-4"
           >
             Verified scholarships · ranked for you
           </motion.p>
         </motion.div>
-
-        {/* Gates — start parting AFTER the wordmark hold plateau ends
-            (delay 1.5s, runs 1.5s = ends at 3.0s). The wordmark has
-            already faded by then, so the gates parting reveals the
-            calm content beneath rather than fighting for attention. */}
-        <motion.div
-          initial={{ x: 0 }}
-          animate={{ x: "-104%" }}
-          transition={{ duration: 1.5, ease: [0.65, 0, 0.18, 1], delay: 1.5 }}
-          className="absolute left-0 top-0 h-full w-1/2 origin-right"
-          style={{
-            backgroundImage:
-              "linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 88%, hsl(var(--gold) / 0.42) 100%)",
-            boxShadow: "10px 0 48px -6px hsl(var(--gold) / 0.45)",
-          }}
-        />
-        <motion.div
-          initial={{ x: 0 }}
-          animate={{ x: "104%" }}
-          transition={{ duration: 1.5, ease: [0.65, 0, 0.18, 1], delay: 1.5 }}
-          className="absolute right-0 top-0 h-full w-1/2 origin-left"
-          style={{
-            backgroundImage:
-              "linear-gradient(270deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 88%, hsl(var(--gold) / 0.42) 100%)",
-            boxShadow: "-10px 0 48px -6px hsl(var(--gold) / 0.45)",
-          }}
-        />
       </motion.div>
     </AnimatePresence>
   );
