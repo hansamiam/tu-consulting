@@ -1254,8 +1254,18 @@ function buildScholarshipBlurb(input: {
   fields: string[] | null;
   demographic: string | undefined;
   isFullRide: boolean;
+  /** New 2026-05-10 — let prestige signals sharpen the auto-blurb so
+   *  cards aren't all reading "Funds study in X". When a row has high
+   *  selectivity OR partner universities, that gets folded into the
+   *  lead clause: "Highly selective master's in X" instead of
+   *  "Master's program in X". */
+  selectivity?: string | null;
+  partnerUniCount?: number;
 }): string | null {
-  const { coverage, levels, fields, demographic, isFullRide } = input;
+  const { coverage, levels, fields, demographic, isFullRide, selectivity, partnerUniCount } = input;
+  const isHighlySelective =
+    selectivity === "very_high" || selectivity === "high" || (partnerUniCount && partnerUniCount >= 5);
+  const prestigeAdj = isHighlySelective ? "Highly selective " : "";
 
   // Funding shape — short, sentence-ready phrase. Drop the indefinite
   // article; we'll prefix it where appropriate so phrases like "Funds"
@@ -1309,26 +1319,30 @@ function buildScholarshipBlurb(input: {
   //   5. Degree + field: "Master's program in physics."
   //   6. Field only: "Funds graduate study in computer science."
   if (demo && degree) {
-    return `Funds ${demo.toLowerCase()} at the ${degree} level${field ? ` in ${field.toLowerCase()}` : ""}.`;
+    return `${prestigeAdj}${prestigeAdj ? "" : "Funds "}${demo.toLowerCase()} at the ${degree} level${field ? ` in ${field.toLowerCase()}` : ""}.`;
   }
   if (demo) {
-    return `Funds ${demo.toLowerCase()} applicants${field ? ` in ${field.toLowerCase()}` : ""}.`;
+    return `${prestigeAdj}${prestigeAdj ? "" : "Funds "}${demo.toLowerCase()} applicants${field ? ` in ${field.toLowerCase()}` : ""}.`;
   }
   if (funding === "Full ride" && degree) {
-    return `Full ride for a ${degree}${field ? ` in ${field.toLowerCase()}` : ""}.`;
+    return `${prestigeAdj}full-ride ${degree}${field ? ` in ${field.toLowerCase()}` : ""}.`.replace(/^h/, "H");
   }
   if (funding && degree) {
-    return `${funding} for a ${degree}${field ? ` in ${field.toLowerCase()}` : ""}.`;
+    return `${prestigeAdj}${funding.toLowerCase()} for a ${degree}${field ? ` in ${field.toLowerCase()}` : ""}.`.replace(/^./, c => c.toUpperCase());
   }
   if (funding && field) {
-    return `${funding} program in ${field.toLowerCase()}.`;
+    return `${prestigeAdj}${funding.toLowerCase()} program in ${field.toLowerCase()}.`.replace(/^./, c => c.toUpperCase());
   }
   if (degree && field) {
-    return `${degree.charAt(0).toUpperCase()}${degree.slice(1)} program in ${field.toLowerCase()}.`;
+    return `${prestigeAdj}${degree} program in ${field.toLowerCase()}.`.replace(/^./, c => c.toUpperCase());
   }
-  if (field) {
-    return `Funds study in ${field.toLowerCase()}.`;
-  }
+  // The lone-field bottom of the funnel — return null when the only
+  // thing we can say is the most-generic "Funds study in X" template.
+  // Better to render no blurb than another card that reads identical
+  // to the dozen above it. Pre-fix every sparse row produced "Funds
+  // study in [field]" and the database read like a wall of identical
+  // Mad Libs. The QuickFactsStrip + facts grid carry the load when
+  // there's no editorial line worth showing.
   return null;
 }
 
@@ -1811,27 +1825,31 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
       onClick={onSelect}
       className={`group relative rounded-xl bg-card border hover:shadow-lg transition-all cursor-pointer h-full flex flex-col overflow-hidden ${isComparing ? "border-gold ring-2 ring-gold/20" : isFullRide ? "border-gold/35 hover:border-gold/55" : "border-border hover:border-foreground/20"} ${isHidden ? "opacity-50" : ""}`}
     >
-      {/* Hero gradient band — region-coloured per host country with a
-          subtle landmark silhouette watermarked on the right (Eiffel for
-          France, Mt Fuji for Japan, etc.). The band reads as a stylised
-          travel poster strip rather than a database row. Text stays on
-          the left where the silhouette opacity is lowest. */}
-      <div className={`relative bg-gradient-to-r ${accent} px-4 h-14 flex items-center gap-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/95 overflow-hidden whitespace-nowrap`}>
-        {/* Country landmark — anchored at the right-third inset (was
-            squished against the right margin pre-2026-05-10, which
-            felt off-balance). Now sits ~16px from the right edge with
-            a larger 80px footprint so it visually anchors the band's
-            right-third rather than reading as a tucked-away
-            decoration. Vertically centred via top-1/2 -translate-y-1/2. */}
-        <CountryArt country={bannerCtry} className="absolute right-4 top-1/2 -translate-y-1/2 h-10 w-[80px] flex items-center justify-end opacity-30 pointer-events-none" />
-        <span className={`absolute inset-0 bg-gradient-to-r from-black/30 via-black/5 to-transparent pointer-events-none`} />
-        {/* Reserved 100px on the right for the silhouette (80px width
-            + 20px breathing) so the country label never collides with
-            the landmark. */}
-        <span className="relative flex items-center gap-2 min-w-0 flex-1 pr-[100px]">
-          {bannerCtry && (
-            <span className="shrink-0 drop-shadow-sm">{shortCountry(bannerCtry, { tight: true })}</span>
-          )}
+      {/* Country band — 2026-05-10 reworked from a region-coloured
+          gradient strip to a premium minimal treatment per user
+          direction ("strip the color gradient, play with country name +
+          silhouette + flag, Steve-Jobs-mind 2026 minimal"). Now: cream
+          surface, country flag emoji, country name in editorial
+          uppercase, silhouette as a faint engraving anchored right.
+          A thin gold hairline at the bottom marks the band's edge.
+          The card surface still has personality — silhouette + flag
+          carry country identity — without the color overhead that was
+          fighting the rest of the UI. */}
+      <div className="relative bg-canvas-soft px-4 h-12 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/85 overflow-hidden whitespace-nowrap border-b border-gold/15">
+        {/* Silhouette as a faint engraving — anchored at right-third,
+            lower opacity (0.18) since it no longer needs to fight a
+            color gradient. Reads as letterhead-style watermarking. */}
+        <CountryArt country={bannerCtry} className="absolute right-4 top-1/2 -translate-y-1/2 h-9 w-[72px] flex items-center justify-end opacity-[0.18] text-foreground pointer-events-none" />
+        <span className="relative flex items-center gap-2 min-w-0 flex-1 pr-[88px]">
+          {bannerCtry && (() => {
+            const flag = ALL_COUNTRIES.find(c => c.v.toLowerCase() === bannerCtry.toLowerCase())?.f;
+            return (
+              <>
+                {flag && <span className="text-[13px] leading-none shrink-0" aria-hidden>{flag}</span>}
+                <span className="shrink-0 text-foreground">{shortCountry(bannerCtry, { tight: true })}</span>
+              </>
+            );
+          })()}
           {/* Chip priority on the band — full-ride moved OUT 2026-05-10
               (now lives as a ticker tag in the card's action row so the
               band stays visually clean and the silhouette has room to
@@ -1847,14 +1865,14 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
                 // was producing chopped chips ("Need-bas…").
                 // whitespace-nowrap keeps the chip on one line; the
                 // outer min-w-0 + flex-1 still prevents overflow.
-                <span key="dm" className="inline-flex items-center gap-1 text-gold-light/95 drop-shadow-sm shrink-0 whitespace-nowrap">
+                <span key="dm" className="inline-flex items-center gap-1 text-gold-dark shrink-0 whitespace-nowrap">
                   {humanizeDemographic(s.target_demographics[0])}
                 </span>,
               );
             }
             return secondary.length > 0 ? (
               <>
-                <span className="text-white/40 shrink-0">·</span>
+                <span className="text-muted-foreground/50 shrink-0">·</span>
                 {secondary[0]}
               </>
             ) : null;
@@ -1919,6 +1937,8 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
             fields: s.target_fields,
             demographic: s.target_demographics?.[0],
             isFullRide,
+            selectivity: s.selectivity_level,
+            partnerUniCount: s.partner_universities?.length,
           });
           if (!blurb) return <div className="flex-1" aria-hidden />;
           return (
