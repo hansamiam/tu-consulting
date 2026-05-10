@@ -36,6 +36,7 @@ import {
   BookmarkCheck,
   RefreshCw,
   ChevronDown,
+  Layers,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
@@ -489,9 +490,10 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combine
   onSaveScholarship?: (id: string, name: string) => void;
   savedSet?: Set<string>;
 }) => {
-  const { title, items } = useMemo(() => {
+  const { title, items, stack } = useMemo(() => {
     const lines = markdown.split("\n");
     let title = "";
+    let stack = "";
     type Item = { name: string; headline: string; details: string[] };
     const items: Item[] = [];
     let curItem: Item | null = null;
@@ -515,6 +517,14 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combine
       items.push(curItem);
     };
 
+    // Stack callout — the consolidated 2026-05-10 prompt asks the LLM
+    // to end the funding section with a single one-line "Stack:" /
+    // "**Stack:**" / "Стек:" callout naming a plausible 2-scholarship
+    // combination that fully funds the student. Detect it before the
+    // bulleted-item parser so it doesn't get captured as a sub-detail
+    // of the last item.
+    const stackRegex = /^\s*\**\s*(stack|стек)\s*\**\s*[:.]?\s*\**\s*(.+?)\s*\**\s*$/i;
+
     /* Each scholarship in the prompt is one `**Name**` bullet plus 1-2
      * plain sub-bullets (why-fits, deadline). Pre-fix the parser
      * flushed on every bullet, so a single scholarship became 2-3
@@ -525,7 +535,22 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combine
       if (!line) { flushPendingIntoCurItem(); continue; }
       if (line.startsWith("## ")) {
         title = line.slice(3).trim();
-      } else if (/^([-*]|\d+\.)\s+/.test(line)) {
+        continue;
+      }
+      // Pull the stack callout out of the flow — only when it's NOT a
+      // bulleted line (the LLM may emit it as a plain paragraph or
+      // bold paragraph at the section's tail). The match needs the
+      // value capture to look like a real stack ("Chevening + Aga
+      // Khan = ~$80K"), not just an item starting with "stack" by
+      // coincidence.
+      if (!/^([-*]|\d+\.)\s+/.test(line)) {
+        const m = line.match(stackRegex);
+        if (m && !stack && m[2].length >= 8) {
+          stack = m[2].trim().replace(/\*+/g, "");
+          continue;
+        }
+      }
+      if (/^([-*]|\d+\.)\s+/.test(line)) {
         const bulletText = line.replace(/^([-*]|\d+\.)\s+/, "").trim();
         if (/^\*\*[^*]+\*\*/.test(bulletText)) {
           startNewItem(bulletText);
@@ -546,6 +571,7 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combine
     // the new sub-bullet UI consumes details[].
     return {
       title,
+      stack,
       items: items.map(it => ({
         ...it,
         detail: [it.headline, ...it.details].filter(Boolean).join(" · "),
@@ -754,6 +780,26 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combine
           </>
         );
       })()}
+
+      {/* Stack callout — the consolidated 2026-05-10 funding-section
+          prompt asks the LLM to end the section with a single one-line
+          "Stack:" combination. Lift it into a distinct editorial moment
+          so it doesn't dissolve into the last item's details. Same
+          visual register as the 30-day call in positioning — gold
+          left-rail callout with a chip eyebrow. */}
+      {stack && (
+        <div className="mt-6 relative bg-gradient-to-br from-gold-light/10 to-card border-l-[3px] border-gold-dark rounded-r-xl rounded-l-sm p-5">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Layers className="w-4 h-4 text-gold-dark" />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold-dark">
+              {isRu ? "Стек финансирования" : "Funding stack"}
+            </span>
+          </div>
+          <p className="font-heading text-base sm:text-lg leading-snug text-foreground tracking-tight">
+            {renderInline(stack)}
+          </p>
+        </div>
+      )}
     </div>
   );
 };
