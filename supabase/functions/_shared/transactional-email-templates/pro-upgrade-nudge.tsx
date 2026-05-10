@@ -46,7 +46,7 @@ const COPY = {
     diff4Desc: 'Anchored to your specific profile + activities. Each angle is matched to which 2–3 target universities it plays best to and why.',
     diff5Label: 'Monthly budget breakdown',
     diff5Desc: 'For your top 3 cities: rent, food, transport, insurance — realistic ranges. Part-time work options. How scholarship coverage maps onto total cost.',
-    ctaWithDiscount: 'Upgrade — see founding cohort discount',
+    ctaWithDiscount: 'Upgrade — see early-access discount',
     ctaPlain: 'Upgrade to Pro',
     rereadCta: 'Reread your basic brief →',
     mathTitle: 'The math',
@@ -60,8 +60,8 @@ const COPY = {
     subjectFn: (n: string, founding: boolean) =>
       founding
         ? n
-          ? `${n}, your Pro brief upgrade is waiting (founding cohort discount)`
-          : `Your Pro brief upgrade is waiting (founding cohort discount)`
+          ? `${n}, your Pro brief upgrade is waiting (early-access discount)`
+          : `Your Pro brief upgrade is waiting (early-access discount)`
         : n
           ? `${n}, ready for the Pro version of your brief?`
           : `Ready for the Pro version of your brief?`,
@@ -89,7 +89,7 @@ const COPY = {
     diff4Desc: 'Привязаны к вашему профилю и активностям. Каждый угол сопоставлен с 2–3 университетами, где он сработает лучше всего.',
     diff5Label: 'Месячный бюджет',
     diff5Desc: 'Для топ-3 городов: аренда, еда, транспорт, страховка — реальные диапазоны. Варианты подработки. Как покрытие стипендии ложится на общую стоимость.',
-    ctaWithDiscount: 'Апгрейд — со скидкой founding cohort',
+    ctaWithDiscount: 'Апгрейд — со скидкой раннего доступа',
     ctaPlain: 'Перейти на Pro',
     rereadCta: 'Перечитать базовый брифинг →',
     mathTitle: 'Математика',
@@ -103,8 +103,8 @@ const COPY = {
     subjectFn: (n: string, founding: boolean) =>
       founding
         ? n
-          ? `${n}, апгрейд на Pro ждёт (скидка founding cohort)`
-          : `Апгрейд на Pro ждёт (скидка founding cohort)`
+          ? `${n}, апгрейд на Pro ждёт (скидка раннего доступа)`
+          : `Апгрейд на Pro ждёт (скидка раннего доступа)`
         : n
           ? `${n}, готовы к Pro-версии брифинга?`
           : `Готовы к Pro-версии брифинга?`,

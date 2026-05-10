@@ -55,12 +55,16 @@ Deno.serve(async (req) => {
     const { data: claimData, error: claimErr } = await admin.rpc("claim_founding_member_slot");
     if (claimErr) {
       console.error("claim error", claimErr);
-      return new Response(JSON.stringify({ error: "Couldn't reserve founding spot" }), {
+      return new Response(JSON.stringify({ error: "Couldn't reserve early-access spot" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     if (claimData == null) {
-      return new Response(JSON.stringify({ error: "Founding membership is sold out (100/100). Join the waitlist for the public launch." }), {
+      // Hardcoded denominator removed (was "100/100") — the cap moved
+      // to 50 and any future shift would re-stale this string. The
+      // claim_founding_spot RPC returns null when the cohort is full
+      // regardless of cap.
+      return new Response(JSON.stringify({ error: "Early-access cohort is sold out. Join the waitlist for the launch-discount tier (50% off year one for the next 200 members)." }), {
         status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
