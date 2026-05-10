@@ -94,6 +94,26 @@ const BACKFILL_NULL_FIELDS = [
   "partner_universities",
 ] as const;
 
+/* Prose fields where NULL/empty → substantive value is silently
+ * backfilled too. The Discover Overview tab has been showing thin
+ * "funds X..." stubs because legacy rows landed without the prose
+ * eligibility / citizenship / award text and the verify pass was
+ * staging the additive backfill instead of writing it. Treating
+ * NULL→value as additive (not a contradiction) heals the catalog
+ * without admin review, while NULL→short or value→different still
+ * goes through the staging flow. Min length 40 weeds out noise like
+ * "Apply now" / "Funded" / "TBA" stubs that are technically
+ * non-empty but aren't real overview content. */
+const BACKFILL_NULL_PROSE_FIELDS = [
+  "eligibility_requirements",
+  "citizenship_requirements",
+  "award_amount_text",
+  "host_country",
+  "language_requirements",
+  "duration_text",
+] as const;
+const PROSE_BACKFILL_MIN_LEN = 40;
+
 type DiffField = typeof DIFF_FIELDS[number];
 
 interface ExtractedFields {
@@ -114,6 +134,12 @@ interface ExtractedFields {
   interview_required?: boolean | null;
   citizenship_requirements?: string | null;
   eligibility_requirements?: string | null;
+  // Prose fields used by the Overview tab. Were previously left out of
+  // the extract schema, so legacy rows landed without them and the
+  // overview rendered as thin chips. Now requested explicitly so verify
+  // can backfill substantive content.
+  language_requirements?: string | null;
+  duration_text?: string | null;
   // Structured matching inputs — used by the eligibility predicate.
   // Often missing on legacy rows; verify pass progressively backfills.
   target_fields?: string[] | null;
@@ -141,7 +167,7 @@ Re-extract from the page content below. Fields to populate (or leave null):
   "application_deadline": "YYYY-MM-DD or null",
   "deadline_type": "rolling | annual | one-time | unknown",
   "coverage_type": "full_ride | partial | tuition_only | stipend | other",
-  "award_amount_text": "...",
+  "award_amount_text": "Concrete prose listing every funding component. EXAMPLE: 'Full tuition fees plus a monthly living stipend of approximately £1,400, return economy airfare from home country, visa fee reimbursement, and a one-time arrival allowance of £700.' Aim for 2-3 sentences. NEVER write 'Funded' / 'Funding amount varies' / 'Apply now' — those are useless. If the page only says 'covers tuition', write the literal phrase the page uses.",
   "estimated_total_value_usd": 50000,
   "min_gpa": 3.5,
   "min_ielts": 7.0,
@@ -150,14 +176,22 @@ Re-extract from the page content below. Fields to populate (or leave null):
   "essay_required": true,
   "recommendation_letters_required": 2,
   "interview_required": true,
-  "citizenship_requirements": "...",
-  "eligibility_requirements": "...",
+  "citizenship_requirements": "Concrete sentence naming who can apply by citizenship/residency. Example: 'Open to citizens of any Commonwealth or former Commonwealth country who are currently resident in their home country at the time of application.' Avoid stubs like 'See website' or 'Various'.",
+  "eligibility_requirements": "RICH 2-4 sentence prose summary of all eligibility criteria the page lists: degree level, GPA / language tests if any, work experience, age limits, fields of study, demographic constraints, OTHER conditions. Synthesize across the page; don't copy a single sentence verbatim if the page has more. If the page is genuinely thin, write what's there in proper prose. Never just 'Funds X...' — that's not enough.",
+  "language_requirements": "e.g. 'IELTS 7.0 with no band below 6.5' or 'Native or near-native English'",
+  "duration_text": "e.g. '1 year (taught master's)' or '2-4 years depending on degree'",
   "target_fields": ["Computer Science"],
   "target_degree_level": ["master","phd"],
   "target_demographics": ["women","first-generation"],
   "eligible_countries": ["India","Pakistan"],
+  "partner_universities": ["Harvard University","MIT"],
   "confidence": 0.92
 }
+
+QUALITY BAR for the prose fields (award_amount_text, eligibility_requirements, citizenship_requirements):
+- Write FULL sentences, not labels.
+- Synthesize across the whole page; don't truncate to one clause.
+- If the page is genuinely silent on a field, leave it null. NEVER write "varies" / "TBA" / "see website" / "apply for details" — those are useless to the reader.
 
 Page content (markdown, may be truncated):
 ---
@@ -179,6 +213,15 @@ function diffMaterial(stored: Record<string, unknown>, fresh: ExtractedFields): 
     const a = stored[f];
     const b = (fresh as Record<string, unknown>)[f];
     if (b === undefined || b === null) continue;
+    // NULL/empty stored → fresh value is additive, not a contradiction.
+    // Backfill set already silently writes prose-field NULL→value; we
+    // mirror that here for the diff path so award_amount_text (which
+    // is in BOTH lists) doesn't double-report as a diff to be staged.
+    const storedEmpty =
+      a === null ||
+      a === undefined ||
+      (typeof a === "string" && a.trim().length === 0);
+    if (storedEmpty) continue;
     if (typeof a === "string" && typeof b === "string") {
       if (a.trim().toLowerCase() !== b.trim().toLowerCase()) diffs.push({ field: f, was: a, now: b });
     } else if (JSON.stringify(a) !== JSON.stringify(b)) {
@@ -214,6 +257,7 @@ Deno.serve(async (req) => {
       "estimated_total_value_usd, min_gpa, min_ielts, min_toefl, min_sat, " +
       "essay_required, recommendation_letters_required, interview_required, " +
       "citizenship_requirements, eligibility_requirements, " +
+      "language_requirements, duration_text, " +
       "target_fields, target_degree_level, eligible_countries, target_demographics, partner_universities, " +
       "why_this_fits, how_to_win, ideal_candidate_profile, " +
       "what_to_prepare_first, strategy_notes, weak_candidate_warning, " +
@@ -462,15 +506,33 @@ Deno.serve(async (req) => {
     const freshNonEmpty = Array.isArray(b) && b.length > 0;
     if (storedEmpty && freshNonEmpty) backfillUpdates[f] = b;
   }
+  // Prose fields — NULL or stub → substantive value is silently
+  // applied. "Stub" = anything below PROSE_BACKFILL_MIN_LEN, since
+  // those rows render as "funds X..." filler on Overview. We only
+  // upgrade the shorter→longer direction; no overwrites of real
+  // existing prose.
+  for (const f of BACKFILL_NULL_PROSE_FIELDS) {
+    const a = (stored as Record<string, unknown>)[f];
+    const b = (fresh as Record<string, unknown>)[f];
+    if (typeof b !== "string") continue;
+    const trimmed = b.trim();
+    if (trimmed.length < PROSE_BACKFILL_MIN_LEN) continue;
+    const storedThin =
+      a === null ||
+      a === undefined ||
+      (typeof a === "string" && a.trim().length < PROSE_BACKFILL_MIN_LEN);
+    if (storedThin) backfillUpdates[f] = trimmed;
+  }
 
-  // If we're backfilling target_fields or target_degree_level, the
-  // embedding's source_text changes — clear embedding so the
-  // embed-scholarships worker re-embeds on the next pass. Per the
-  // scholarships_needing_embedding view, embedding IS NULL is
-  // sufficient to enqueue. eligible_countries doesn't go into the
-  // embedding source_text so doesn't trigger re-embedding.
+  // Re-embed when any field that feeds the embedding's source_text
+  // changes. eligible_countries doesn't flow into source_text so doesn't
+  // trigger; eligibility_requirements does. Per the
+  // scholarships_needing_embedding view, embedding IS NULL is sufficient
+  // to enqueue.
   const embeddingFieldsBackfilled =
-    "target_fields" in backfillUpdates || "target_degree_level" in backfillUpdates;
+    "target_fields" in backfillUpdates ||
+    "target_degree_level" in backfillUpdates ||
+    "eligibility_requirements" in backfillUpdates;
   if (embeddingFieldsBackfilled) {
     backfillUpdates.embedding = null;
     backfillUpdates.embedded_at = null;
