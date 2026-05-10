@@ -3592,7 +3592,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                         </span>
                       </button>
                       <button
-                        onClick={() => navigate("/academy")}
+                        onClick={() => navigate(isRu ? "/academy/ru" : "/academy")}
                         className="group text-left bg-card border border-border rounded-2xl p-6 hover:border-gold/40 hover:shadow-md transition-all"
                       >
                         <div className="flex items-start justify-between mb-4">
