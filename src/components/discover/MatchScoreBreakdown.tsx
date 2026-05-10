@@ -81,6 +81,10 @@ interface Props {
   fallback: FallbackInputs;
   /** Compact mode trims spacing — for use inline in lists. */
   compact?: boolean;
+  /** Locale for static labels. The dynamic `reason` strings from the
+   *  SQL function stay English for now — translating those means
+   *  localizing the match_score_breakdown function itself. */
+  lang?: "en" | "ru";
 }
 
 const fmtBoost = (n: number): string => {
@@ -97,8 +101,10 @@ const StatusIcon = ({ status }: { status: "good" | "warn" | "miss" | "info" }) =
 };
 
 export const MatchScoreBreakdown = ({
-  scholarshipId, queryEmbedding, fallback, compact,
+  scholarshipId, queryEmbedding, fallback, compact, lang = "en",
 }: Props) => {
+  const ru = lang === "ru";
+  const t = (en: string, r: string) => (ru ? r : en);
   const [data, setData] = useState<BreakdownRow | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -141,12 +147,12 @@ export const MatchScoreBreakdown = ({
     // them. Cap each at 3 so the popover stays readable.
     if (Array.isArray(fallback.reasons)) {
       for (const r of fallback.reasons.slice(0, 3)) {
-        rows.push({ label: "Profile fit", status: "good", reason: r });
+        rows.push({ label: t("Profile fit", "Совпадение профиля"), status: "good", reason: r });
       }
     }
     if (Array.isArray(fallback.warnings)) {
       for (const w of fallback.warnings.slice(0, 2)) {
-        rows.push({ label: "Watch out", status: "warn", reason: w });
+        rows.push({ label: t("Watch out", "Обратите внимание"), status: "warn", reason: w });
       }
     }
 
@@ -163,27 +169,27 @@ export const MatchScoreBreakdown = ({
       else if (days <= 30) { status = "warn"; reason = `Deadline in ${days} days — prime apply window.`; delta = "+4.0%"; }
       else if (days <= 90) { status = "good"; reason = `Deadline in ${days} days — slight urgency boost.`; delta = "+2.5%"; }
       else if (days <= 180) { status = "good"; reason = `Deadline within 6 months — minor boost.`; delta = "+1.0%"; }
-      rows.push({ label: "Deadline urgency", status, reason, delta });
+      rows.push({ label: t("Deadline urgency", "Срочность дедлайна"), status, reason, delta });
     }
 
     if (typeof fallback.estimated_total_value_usd === "number" && fallback.estimated_total_value_usd > 0) {
       const v = fallback.estimated_total_value_usd;
       const boost = Math.min(0.040, Math.log(v + 1) / 200);
-      let reason = "Lower funding tier — minimal boost.";
-      if (v >= 100000) reason = "High-value award — gets a small boost.";
-      else if (v >= 30000) reason = "Solid funding amount — modest boost.";
-      rows.push({ label: "Funding magnitude", status: "good", reason, delta: fmtBoost(boost) });
+      let reason = t("Lower funding tier — minimal boost.", "Небольшое финансирование — минимальный буст.");
+      if (v >= 100000) reason = t("High-value award — gets a small boost.", "Крупная сумма — небольшой буст.");
+      else if (v >= 30000) reason = t("Solid funding amount — modest boost.", "Хорошая сумма — умеренный буст.");
+      rows.push({ label: t("Funding magnitude", "Размер финансирования"), status: "good", reason, delta: fmtBoost(boost) });
     }
 
     if (fallback.last_verified_at) {
       const days = Math.floor((Date.now() - new Date(fallback.last_verified_at).getTime()) / 86400_000);
       let status: "good" | "warn" | "miss" | "info" = "info";
-      let reason = "Verified within the past year — neutral.";
+      let reason = t("Verified within the past year — neutral.", "Проверено в течение года — нейтрально.");
       let delta = "0";
-      if (days <= 30) { status = "good"; reason = "Verified in the last 30 days — full freshness boost."; delta = "+2.0%"; }
-      else if (days <= 90) { status = "good"; reason = "Verified within 90 days — small freshness boost."; delta = "+1.0%"; }
-      else if (days > 365) { status = "warn"; reason = "Last verified over a year ago — small recency penalty."; delta = "−2.0%"; }
-      rows.push({ label: "Data freshness", status, reason, delta });
+      if (days <= 30) { status = "good"; reason = t("Verified in the last 30 days — full freshness boost.", "Проверено за последние 30 дней — полный буст за свежесть."); delta = "+2.0%"; }
+      else if (days <= 90) { status = "good"; reason = t("Verified within 90 days — small freshness boost.", "Проверено за 90 дней — небольшой буст."); delta = "+1.0%"; }
+      else if (days > 365) { status = "warn"; reason = t("Last verified over a year ago — small recency penalty.", "Последняя проверка более года назад — небольшой штраф."); delta = "−2.0%"; }
+      rows.push({ label: t("Data freshness", "Свежесть данных"), status, reason, delta });
     }
 
     return rows;
@@ -193,60 +199,60 @@ export const MatchScoreBreakdown = ({
   const useRpc = !!data;
   const rows = useRpc ? [
     {
-      label: "Semantic match",
+      label: t("Semantic match", "Семантическое совпадение"),
       status: (data!.similarity >= 0.7 ? "good" : data!.similarity >= 0.55 ? "info" : "warn") as "good"|"warn"|"miss"|"info",
       reason: data!.similarity_reason,
       delta: `${(data!.similarity * 100).toFixed(0)}/100`,
     },
     {
-      label: "Eligibility",
+      label: t("Eligibility", "Право на участие"),
       status: (data!.passes_eligibility ? "good" : "warn") as "good"|"warn"|"miss"|"info",
       reason: data!.eligibility_reason,
     },
     {
-      label: "Deadline urgency",
+      label: t("Deadline urgency", "Срочность дедлайна"),
       status: (data!.deadline_boost > 0.02 ? "good" : "info") as "good"|"warn"|"miss"|"info",
       reason: data!.deadline_reason,
       delta: fmtBoost(data!.deadline_boost),
     },
     {
-      label: "Funding magnitude",
+      label: t("Funding magnitude", "Размер финансирования"),
       status: (data!.value_boost > 0.02 ? "good" : "info") as "good"|"warn"|"miss"|"info",
       reason: data!.value_reason,
       delta: fmtBoost(data!.value_boost),
     },
     {
-      label: "Data freshness",
+      label: t("Data freshness", "Свежесть данных"),
       status: (data!.recency_boost > 0 ? "good" : data!.recency_boost < 0 ? "warn" : "info") as "good"|"warn"|"miss"|"info",
       reason: data!.recency_reason,
       delta: fmtBoost(data!.recency_boost),
     },
     ...(typeof data!.confidence_adj === "number" && data!.confidence_adj < 0 ? [{
-      label: "Extraction confidence",
+      label: t("Extraction confidence", "Уверенность извлечения"),
       status: (data!.confidence_adj <= -0.025 ? "warn" : "info") as "good"|"warn"|"miss"|"info",
       reason: data!.confidence_reason ?? "",
       delta: fmtBoost(data!.confidence_adj),
     }] : []),
     ...(typeof data!.completeness_boost === "number" && data!.completeness_boost > 0 ? [{
-      label: "Catalog completeness",
+      label: t("Catalog completeness", "Полнота данных"),
       status: "good" as "good"|"warn"|"miss"|"info",
       reason: data!.completeness_reason ?? "",
       delta: fmtBoost(data!.completeness_boost),
     }] : []),
     ...(typeof data!.engagement_boost === "number" && data!.engagement_boost > 0 ? [{
-      label: "Student interest",
+      label: t("Student interest", "Интерес студентов"),
       status: "good" as "good"|"warn"|"miss"|"info",
       reason: data!.engagement_reason ?? "",
       delta: fmtBoost(data!.engagement_boost),
     }] : []),
     ...(typeof data!.provider_trust_boost === "number" && data!.provider_trust_boost !== 0 ? [{
-      label: data!.provider_trust_boost > 0 ? "Verified funder" : "Provider signal",
+      label: data!.provider_trust_boost > 0 ? t("Verified funder", "Проверенный фонд") : t("Provider signal", "Сигнал провайдера"),
       status: (data!.provider_trust_boost > 0 ? "good" : "info") as "good"|"warn"|"miss"|"info",
       reason: data!.provider_trust_reason ?? "",
       delta: fmtBoost(data!.provider_trust_boost),
     }] : []),
     ...(typeof data!.consensus_boost === "number" && data!.consensus_boost > 0 ? [{
-      label: "Source consensus",
+      label: t("Source consensus", "Согласованность источников"),
       status: "good" as "good"|"warn"|"miss"|"info",
       reason: data!.consensus_reason ?? "",
       delta: fmtBoost(data!.consensus_boost),
@@ -264,7 +270,7 @@ export const MatchScoreBreakdown = ({
       >
         <div className="flex items-baseline justify-between gap-3 mb-3">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            Why we surfaced this
+            {t("Why we surfaced this", "Почему мы это показали")}
           </p>
           {loading && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
         </div>
@@ -286,7 +292,7 @@ export const MatchScoreBreakdown = ({
         </ul>
         <p className="text-[9px] text-muted-foreground/60 mt-2 pt-2 border-t border-border/40 leading-snug flex items-start gap-1.5">
           <Info className="w-2.5 h-2.5 mt-0.5 shrink-0" />
-          Same math as our ranking. Hover any score for the breakdown.
+          {t("Same math as our ranking. Hover any score for the breakdown.", "Та же математика, что и в ранжировании. Наведите на любой балл для разбора.")}
         </p>
       </motion.div>
     </AnimatePresence>
