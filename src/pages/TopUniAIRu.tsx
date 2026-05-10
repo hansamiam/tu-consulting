@@ -280,7 +280,13 @@ const TopUniAIRu = () => {
                           <div className="flex gap-2">
                             <Input
                               value={gpa}
-                              onChange={e => setGpa(e.target.value)}
+                              onChange={e => {
+                                const v = e.target.value.replace(/[^0-9.]/g, "");
+                                const parts = v.split(".");
+                                const cleaned = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join("")}` : v;
+                                setGpa(cleaned);
+                              }}
+                              inputMode="decimal"
                               placeholder={
                                 gpaScale === "5.0" ? "напр. 4.7"
                                 : gpaScale === "10.0" ? "напр. 8.5"
@@ -400,9 +406,7 @@ const TopUniAIRu = () => {
                   <motion.div key="s2" {...stepFade} className="space-y-6">
                     <div><h2 className="text-2xl font-heading font-bold text-foreground">Предпочтения</h2><p className="text-muted-foreground text-sm mt-1">Где и что вы хотите изучать?</p></div>
                     <div className="space-y-5">
-                      <div className="space-y-2"><Label>Целевые страны *</Label>
-                        <div className="flex flex-wrap gap-2">{COUNTRIES_RU.map(c => <button key={c} onClick={() => toggleCountry(c)} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${targetCountries.includes(c) ? "bg-accent text-accent-foreground border-accent" : "bg-background text-muted-foreground border-border hover:border-accent/50"}`}><span className="text-base leading-none">{COUNTRY_FLAGS[c]}</span><span>{c}</span></button>)}</div>
-                      </div>
+                      {/* Целевые страны убраны 2026-05-10 — см. EN-страницу. */}
                       <div className="space-y-2">
                         <Label>Специальность *</Label>
                         <Input value={major} onChange={e => setMajor(e.target.value)} placeholder="напр. Информатика, Экономика" list="major-suggestions-ru" />
@@ -436,7 +440,7 @@ const TopUniAIRu = () => {
                       <Button
                         variant="gold"
                         onClick={() => goToStep(3)}
-                        disabled={targetCountries.length === 0 || !major.trim()}
+                        disabled={!major.trim()}
                       >
                         Далее <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>

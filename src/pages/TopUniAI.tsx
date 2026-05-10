@@ -62,7 +62,7 @@ type Screen = "intake" | "dashboard";
  *
  * Heuristic + RU patterns now live in src/lib/topuniIntakeProjection.ts. */
 
-import { POPULAR_DESTINATIONS, ALL_COUNTRIES } from "@/data/countries";
+import { ALL_COUNTRIES } from "@/data/countries";
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 22 },
@@ -183,7 +183,8 @@ const TopUniAI = () => {
   const [toefl, setToefl] = useState(draft?.toefl ?? "");
   const [sat, setSat] = useState(draft?.sat ?? "");
   const [targetCountries, setTargetCountries] = useState<string[]>(Array.isArray(draft?.targetCountries) ? draft!.targetCountries! : []);
-  const [countrySearch, setCountrySearch] = useState("");
+  // countrySearch state retired with the target-countries section.
+  // ALL_COUNTRIES still imported for the nationality typeahead.
   const [major, setMajor] = useState(draft?.major ?? "");
   // Normalize legacy drafts: the budget option used to be labeled
   // "Full scholarship needed" — renamed to "Need full scholarship" when
@@ -293,9 +294,10 @@ const TopUniAI = () => {
     } catch { /* ignore */ }
   }, []);
 
-  const toggleCountry = (country: string) => {
-    setTargetCountries(prev => prev.includes(country) ? prev.filter(c => c !== country) : [...prev, country]);
-  };
+  // toggleCountry removed with the target-countries UI. setTargetCountries
+  // still used by hub-context pre-selection (e.g. user lands here from a
+  // specific scholarship — the country gets added to the saved profile
+  // even though there's no UI affordance for it).
 
   /* Auto-save the wizard draft to localStorage whenever any field
      changes. This way the user can close the tab mid-wizard and come
@@ -555,7 +557,21 @@ const TopUniAI = () => {
                           <div className="flex gap-2">
                             <Input
                               value={gpa}
-                              onChange={e => setGpa(e.target.value)}
+                              onChange={e => {
+                                // Numeric-only — accept digits + a single
+                                // decimal point. Pre-fix the field accepted
+                                // arbitrary text including letters which
+                                // broke downstream score normalisation
+                                // (NaN paths) and looked unprofessional in
+                                // a "premium" wizard.
+                                const v = e.target.value.replace(/[^0-9.]/g, "");
+                                const parts = v.split(".");
+                                const cleaned = parts.length > 2
+                                  ? `${parts[0]}.${parts.slice(1).join("")}`
+                                  : v;
+                                setGpa(cleaned);
+                              }}
+                              inputMode="decimal"
                               placeholder={
                                 gpaScale === "5.0" ? "e.g. 4.7"
                                 : gpaScale === "10.0" ? "e.g. 8.5"
@@ -717,82 +733,17 @@ const TopUniAI = () => {
                       <p className="text-muted-foreground mt-2 text-sm">Pick countries you have in mind, or skip — we'll surface what fits your profile across geographies.</p>
                     </div>
                     <div className="space-y-6">
-                      <div className="space-y-2">
-                        {/* Target countries — now OPTIONAL. The user's
-                            point: "with all these filters and country
-                            stuff, asking the question 'where do you
-                            want to go' is kinda completely redundant".
-                            Made it skippable so users with no strong
-                            geography preference don't feel forced into
-                            a choice that prematurely narrows the brief.
-                            Empty targetCountries → brief generator
-                            renders "Target countries: Open" and the
-                            shortlist samples across geographies. */}
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs uppercase tracking-wider font-medium">Target countries</Label>
-                          {targetCountries.length === 0 && (
-                            <span className="text-[10px] text-muted-foreground italic">Optional · skip to see programs across all regions</span>
-                          )}
-                        </div>
-                        {/* Type-to-search across the full ALL_COUNTRIES list;
-                            popular destinations show by default. Selected
-                            chips bubble up at the top regardless of search
-                            so the user always sees what they've picked. */}
-                        <Input
-                          value={countrySearch}
-                          onChange={(e) => setCountrySearch(e.target.value)}
-                          placeholder="Type any country to search… (Mexico, Czech Republic, etc.)"
-                          className="h-10 bg-card"
-                        />
-                        {targetCountries.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 pt-1">
-                            {targetCountries.map(c => {
-                              const flag = ALL_COUNTRIES.find(x => x.v === c)?.f;
-                              return (
-                                <button
-                                  key={`sel-${c}`}
-                                  onClick={() => toggleCountry(c)}
-                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gold-dark text-primary-foreground border border-gold-dark"
-                                >
-                                  {flag && <span className="text-sm leading-none">{flag}</span>}
-                                  <span>{c}</span>
-                                  <span className="text-primary-foreground/70 hover:text-primary-foreground">×</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                        <div className="flex flex-wrap gap-2 pt-1">
-                          {(() => {
-                            const q = countrySearch.trim().toLowerCase();
-                            const list = q
-                              ? ALL_COUNTRIES.filter(c => c.v.toLowerCase().includes(q)).slice(0, 24)
-                              : POPULAR_DESTINATIONS;
-                            return list.map(c => {
-                              const selected = targetCountries.includes(c.v);
-                              if (selected) return null; // already shown in selected row
-                              return (
-                                <button
-                                  key={c.v}
-                                  onClick={() => toggleCountry(c.v)}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all bg-card text-foreground/75 border-border hover:border-gold/40"
-                                >
-                                  <span className="text-base leading-none">{c.f}</span>
-                                  <span>{c.v}</span>
-                                </button>
-                              );
-                            });
-                          })()}
-                          {countrySearch.trim() && !ALL_COUNTRIES.some(c => c.v.toLowerCase() === countrySearch.trim().toLowerCase()) && (
-                            <button
-                              onClick={() => { toggleCountry(countrySearch.trim()); setCountrySearch(""); }}
-                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium border border-dashed border-gold/50 text-gold-dark hover:bg-gold/10"
-                            >
-                              + Add "{countrySearch.trim()}"
-                            </button>
-                          )}
-                        </div>
-                      </div>
+                      {/* Target countries removed entirely 2026-05-10.
+                          Earlier the field was OPTIONAL but the typeahead
+                          (which suggested Mexico/Czech Republic etc. that
+                          weren't on the popular dropdown) created
+                          confusion AND the broader filter geography
+                          already disambiguates location downstream.
+                          Brief generator now always treats geography
+                          as Open and the shortlist samples across all
+                          regions — what the optional path delivered
+                          anyway. The major/field below is the real
+                          locking variable for direction. */}
                       <div className="space-y-1.5">
                         <Label className="text-xs uppercase tracking-wider font-medium">Intended major *</Label>
                         <Input
