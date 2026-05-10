@@ -54,7 +54,8 @@ import { BriefChapterNav } from "@/components/brief/BriefChapterNav";
 import { BriefMasthead } from "@/components/brief/BriefMasthead";
 import { ProSectionsTeaser } from "@/components/brief/ProSectionsTeaser";
 import { SavedDeadlineBanner } from "@/components/SavedDeadlineBanner";
-import { PremiumSection } from "@/components/brief/PremiumSection";
+// PremiumSection import retired 2026-05-10 — Career ROI / Visa pathway
+// custom renderers were dropped alongside the brief consolidation.
 import { CombinedFundingChart } from "@/components/brief/CombinedFundingChart";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
 import { track } from "@/lib/analytics";
@@ -1264,46 +1265,11 @@ const StrategicPositioning = ({ markdown, isRu, onRegen, isRegenerating, onAskCo
   );
 };
 
-/* ─── Final word → editorial closing block ─────────────────────────────
-   The AI's "## Final word" is one paragraph of personalised
-   encouragement closing the report. Rendering it as a flat markdown
-   paragraph after all the cards looks abrupt; this gives it a quiet
-   editorial framing — gold rule, kicker, italic body — so it lands
-   like a signature block. */
-const FinalWord = ({ markdown, isRu }: { markdown: string; isRu: boolean }) => {
-  const { title, body } = useMemo(() => {
-    const lines = markdown.split("\n");
-    let title = "";
-    const bodyLines: string[] = [];
-    for (const raw of lines) {
-      const line = raw.trim();
-      if (!line) { bodyLines.push(""); continue; }
-      if (line.startsWith("## ")) {
-        title = line.slice(3).trim();
-        continue;
-      }
-      bodyLines.push(line);
-    }
-    while (bodyLines.length && bodyLines[bodyLines.length - 1] === "") bodyLines.pop();
-    return { title, body: bodyLines.join("\n").trim() };
-  }, [markdown]);
-
-  if (!body) return null;
-
-  return (
-    <div className="not-prose my-12 pt-8 border-t border-border">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="h-px w-8 bg-gold-dark" />
-        <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark">
-          {title || (isRu ? "Заключительное слово" : "Final word")}
-        </span>
-      </div>
-      <div className="prose prose-sm sm:prose-base max-w-none text-foreground/90 [&_p]:leading-relaxed [&_p]:italic [&_p]:text-[15px] sm:[&_p]:text-base">
-        <ReactMarkdown>{body}</ReactMarkdown>
-      </div>
-    </div>
-  );
-};
+/* FinalWord component retired 2026-05-10 — the "## Final word" section
+   was dropped from PREMIUM_SECTIONS in the brief consolidation, so the
+   editorial closing block had no markdown to render. Stale cached
+   briefs that still contain a Final word section fall through to the
+   generic EnrichedMarkdown renderer. */
 
 const PATHWAY_POS_SECTION_REGEX = /^##\s+.*?(strategic positioning|positioning|стратегическое позиционирование|позиционирование)/i;
 const PATHWAY_PLAN_SECTION_REGEX = /^##\s+.*?(action plan|90.day|план действий)/i;
@@ -1311,7 +1277,8 @@ const PATHWAY_UNIS_SECTION_REGEX = /^##\s+.*?(university shortlist|your universi
 const PATHWAY_FUND_SECTION_REGEX = /^##\s+.*?(funding pathway|funding deep|финансирование|стипендии)/i;
 const PATHWAY_ESSAYS_SECTION_REGEX = /^##\s+.*?(essay angle|essay angles|углов? для эссе|эссе)/i;
 const PATHWAY_GAPS_SECTION_REGEX = /^##\s+.*?(honest gap|gaps to close|пробел|недотяг|слабые)/i;
-const PATHWAY_FINAL_SECTION_REGEX = /^##\s+.*?(final word|closing|in closing|заключительное слово|заключение)/i;
+// PATHWAY_FINAL_SECTION_REGEX retired 2026-05-10 — Final-word section
+// dropped from PREMIUM_SECTIONS, so the matcher had nothing to match.
 
 /* Tiny shared affordance — surfaces a "regenerate this section" action in
    the section header when the host passes onRegen. Hidden in print, mute
@@ -1340,8 +1307,8 @@ const SectionRegenButton = ({
     </button>
   );
 };
-const PATHWAY_CAREER_SECTION_REGEX = /^##\s+.*?(career roi|carreer roi|карьерн|career return)/i;
-const PATHWAY_VISA_SECTION_REGEX = /^##\s+.*?(visa.*pathway|visa.*post|post.*graduation|виза.*пути|виза|после выпуска)/i;
+// PATHWAY_CAREER_SECTION_REGEX + PATHWAY_VISA_SECTION_REGEX retired
+// 2026-05-10 along with the corresponding LLM sections.
 
 export const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, isRu, onOpenDiscover, liveMatches, onSaveScholarship, savedSet, structured, onRegenSection, regeneratingSectionId, tier = "premium", onAskCounselor }: {
   markdown: string;
@@ -1439,24 +1406,14 @@ export const ReportRenderer = ({ markdown, completedTasks, onToggle, taskKey, is
             return <div key={i} {...anchorProps}><HonestGaps markdown={section} isRu={isRu} onAskCounselor={onAskCounselor} /></div>;
           }
         }
-        if (PATHWAY_FINAL_SECTION_REGEX.test(section)) {
-          const hasBody = section.split("\n").slice(1).join("\n").trim().length > 30;
-          if (hasBody) {
-            return <div key={i} {...anchorProps}><FinalWord markdown={section} isRu={isRu} /></div>;
-          }
-        }
-        if (PATHWAY_CAREER_SECTION_REGEX.test(section)) {
-          const hasBody = section.split("\n").slice(1).join("\n").trim().length > 60;
-          if (hasBody) {
-            return <div key={i} {...anchorProps}><PremiumSection kind="career" markdown={section} isRu={isRu} scholarships={scholarshipsForCards} careerRoiData={structured?.careerRoi ?? null} onRegen={onRegenSection} isRegenerating={regeneratingSectionId === "career_roi"} /></div>;
-          }
-        }
-        if (PATHWAY_VISA_SECTION_REGEX.test(section)) {
-          const hasBody = section.split("\n").slice(1).join("\n").trim().length > 60;
-          if (hasBody) {
-            return <div key={i} {...anchorProps}><PremiumSection kind="visa" markdown={section} isRu={isRu} scholarships={scholarshipsForCards} visaPathwayData={structured?.visaPathway ?? null} onRegen={onRegenSection} isRegenerating={regeneratingSectionId === "visa"} /></div>;
-          }
-        }
+        // Career ROI / Visa pathway / Final word custom renderers retired
+        // 2026-05-10 alongside the brief consolidation (PREMIUM_SECTIONS
+        // dropped from 9 → 5). The LLM no longer emits those H2 sections,
+        // so the regex matchers were dead branches keeping
+        // PremiumSection / FinalWord on the import graph for nothing.
+        // If a stale cached brief still contains those headers, the
+        // generic EnrichedMarkdown fallback below renders them cleanly
+        // — no special chrome, no chart placeholders.
         return <div key={i} {...anchorProps}><EnrichedMarkdown scholarships={scholarshipsForCards}>{section}</EnrichedMarkdown></div>;
       })}
     </>
