@@ -1011,17 +1011,21 @@ const deadlineDisplay = (d: string | null, lang: Lang = "en", deadlineType?: str
   // captured yet. Showing "Rolling" was misleading and led the user to
   // think the catalog was full of rolling deadlines.
   if (!d) {
+    // 2026-05-10: shortened labels so they fit narrow pill containers
+    // without "..." truncation (user flagged "Annual ..." as ugly).
+    // Full prose ("Annual cycle" / "Rolling deadline") still appears
+    // in wider contexts via deadline_type elsewhere.
     const t = (deadlineType ?? "").toLowerCase();
     if (t === "rolling") {
-      return { text: ru ? "Без дедлайна" : "Rolling", cls: "text-foreground/40", urgent: false };
+      return { text: ru ? "Без даты" : "Rolling", cls: "text-foreground/40", urgent: false };
     }
     if (t === "annual" || t === "reopens_annually") {
-      return { text: ru ? "Ежегодная программа" : "Annual cycle", cls: "text-foreground/55", urgent: false };
+      return { text: ru ? "Ежегодно" : "Annual", cls: "text-foreground/55", urgent: false };
     }
     if (t === "one-time" || t === "one_time") {
-      return { text: ru ? "Разовая программа" : "One-time", cls: "text-foreground/55", urgent: false };
+      return { text: ru ? "Разовая" : "One-time", cls: "text-foreground/55", urgent: false };
     }
-    return { text: ru ? "Дата уточняется" : "Deadline TBD", cls: "text-foreground/40", urgent: false };
+    return { text: ru ? "TBD" : "TBD", cls: "text-foreground/40", urgent: false };
   }
   const days = Math.ceil((new Date(d).getTime() - Date.now()) / 86400000);
   if (days <= 0) {

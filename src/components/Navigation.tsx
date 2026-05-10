@@ -70,9 +70,14 @@ const Navigation = ({ language = "en", variant = "default", overlayThreshold = 8
                                        (isRussian ? "Мой аккаунт"   : "Free");
 
   const linkBase = "px-3 py-2 text-sm font-medium rounded-md transition-colors";
+  // 2026-05-10: bumped non-overlay link colour from text-muted-foreground
+  // to text-foreground/85 — user flagged Academy nav links as
+  // "barely visible" on the cream surface. Muted-foreground at 60%
+  // alpha was washing out against a cream/canvas-soft nav bg. The
+  // active state still uses gold-dark for clear hierarchy.
   const linkIdle = isOverlay
-    ? "text-primary-foreground/80 hover:text-primary-foreground"
-    : "text-muted-foreground hover:text-primary";
+    ? "text-primary-foreground/85 hover:text-primary-foreground"
+    : "text-foreground/85 hover:text-gold-dark";
   const linkActive = isOverlay ? "text-gold-light" : "text-gold-dark";
 
   return (

@@ -75,17 +75,16 @@ interface Scholarship {
   canonical_requirements: Record<string, unknown> | null;
 }
 
-// Pipeline workspace simplified (round 9): collapsed from 5 columns
-// to 3. Researching / Drafting / Submitted merged into a single
-// "Working on it" column — the granular status is still tracked per
-// row (and shown as a chip) but doesn't fragment the visual workspace.
-// 'decision' rows continue under "Awaiting decision". Five vertical
-// columns was visual overload for what's practically a "saved /
-// active / decided" workflow.
-const COLUMNS: { key: AppStatus | "shortlisted" | "active"; label: { en: string; ru: string }; tone: string; bar: string }[] = [
-  { key: "shortlisted", label: { en: "Saved",              ru: "Сохранено" },           tone: "text-muted-foreground",                            bar: "bg-muted-foreground/40" },
-  { key: "active",      label: { en: "Working on it",      ru: "В работе" },             tone: "text-amber-700 dark:text-amber-400",               bar: "bg-amber-500" },
-  { key: "decision",    label: { en: "Submitted · awaiting",ru: "Подал · жду ответа" },  tone: "text-primary",                                     bar: "bg-primary" },
+// 2026-05-10: drafting + submitted split back into separate columns
+// per user direction "submitted should be different category than
+// drafting not both being 'working on it'". A user actively writing
+// vs. a user waiting on a decision are different mental modes — the
+// merged "Working on it" column was lumping them. Three working
+// columns: Saved / Drafting / Submitted.
+const COLUMNS: { key: AppStatus | "shortlisted"; label: { en: string; ru: string }; tone: string; bar: string }[] = [
+  { key: "shortlisted", label: { en: "Saved",     ru: "Сохранено" }, tone: "text-muted-foreground",            bar: "bg-muted-foreground/40" },
+  { key: "drafting",    label: { en: "Drafting",  ru: "Готовлю" },   tone: "text-amber-700 dark:text-amber-400", bar: "bg-amber-500" },
+  { key: "submitted",   label: { en: "Submitted", ru: "Подал" },     tone: "text-primary",                       bar: "bg-primary" },
 ];
 
 // Three working statuses + null. The user explicitly capped the
@@ -215,18 +214,20 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
      Rejected / accepted are excluded from the kanban view but counted
      in the stats banner. */
   const buckets = useMemo(() => {
-    // Three columns: saved (no status) / active (researching/drafting/
-    // submitted) / decision (awaiting). Rejected + accepted drop off the
+    // Three columns now (2026-05-10 split): saved (no status) /
+    // drafting / submitted. "Researching" still lands in drafting
+    // for legacy rows (the picker only offers drafting + submitted
+    // since 2026-05-10). Decision/rejected/accepted drop off the
     // workspace — they're outcomes, not active work.
     const map: Record<string, Scholarship[]> = {
-      shortlisted: [], active: [], decision: [],
+      shortlisted: [], drafting: [], submitted: [],
     };
     for (const r of rows) {
       const status = tracker.statusMap[r.scholarship_id] as AppStatus | undefined;
-      if (status === "researching" || status === "drafting" || status === "submitted") {
-        map.active.push(r);
-      } else if (status === "decision") {
-        map.decision.push(r);
+      if (status === "researching" || status === "drafting") {
+        map.drafting.push(r);
+      } else if (status === "submitted") {
+        map.submitted.push(r);
       } else if (!status && tracker.shortlist.has(r.scholarship_id)) {
         map.shortlisted.push(r);
       }

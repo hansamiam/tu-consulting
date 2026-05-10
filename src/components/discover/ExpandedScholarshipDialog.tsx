@@ -115,54 +115,46 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
     <Dialog open={!!s} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-4xl max-h-[92vh] p-0 overflow-hidden gap-0 [&>button]:hidden">
         <div className="flex flex-col max-h-[92vh]">
-          {/* Hero strip — country gradient, name, provider, headline facts.
-              When cover_image_url is enriched in we use it as the hero
-              backdrop (program-specific poster / campus photo) and keep
-              the country gradient as a fallback when the image fails
-              to load. */}
-          <div className={`relative bg-gradient-to-br ${accent} text-white overflow-hidden`}>
-            {s.cover_image_url ? (
-              <img
-                src={s.cover_image_url}
-                alt=""
-                loading="lazy"
-                className="absolute inset-0 w-full h-full object-cover"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-              />
-            ) : (
-              <CountryArt country={s.host_country} className="absolute inset-0 h-full w-full opacity-15 text-white" />
-            )}
-            <span className="absolute inset-0 bg-gradient-to-b from-black/15 via-black/5 to-black/40" aria-hidden />
+          {/* Hero strip — 2026-05-10 cleaned up per user direction
+              "really really clean up this section". Pre-fix the hero
+              was a heavy region-coloured gradient with white text +
+              dark overlays, which combined with the cover image made
+              for a loud magenta/purple/cyan band. Now: cream canvas-
+              soft surface, faint silhouette engraving on the right,
+              foreground typography, gold-dark eyebrow + foreground H.
+              Matches the minimal cream treatment we landed on for
+              Discover cards. Cover images still surface inside the
+              detail Sheet (which is the better place for them). */}
+          <div className="relative bg-canvas-soft border-b border-gold/15 overflow-hidden">
+            <CountryArt country={s.host_country} className="absolute right-6 top-1/2 -translate-y-1/2 h-16 w-32 opacity-[0.10] text-foreground pointer-events-none" />
             <button
               type="button"
               onClick={onClose}
-              className="absolute right-4 top-4 z-10 inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur transition-colors"
+              className="absolute right-4 top-4 z-10 inline-flex items-center justify-center h-8 w-8 rounded-full bg-foreground/[0.06] hover:bg-foreground/[0.12] text-foreground/70 hover:text-foreground transition-colors"
               aria-label={t("Close", "Закрыть")}
             >
               <X className="h-4 w-4" />
             </button>
-            <div className="relative px-6 sm:px-9 py-7 sm:py-9">
-              <div className="flex items-center gap-2 mb-2.5">
+            <div className="relative px-6 sm:px-9 py-6 sm:py-7 pr-14 sm:pr-16">
+              <div className="flex items-center gap-2 mb-2">
                 {country && (
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/85">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark">
                     {t("Scholarship", "Стипендия")} · {country}
                   </p>
                 )}
-                {/* NEW pill — consistent across cards / sheet header /
-                    dialog so the freshness signal travels with the row. */}
                 {s.created_at && Date.now() - new Date(s.created_at).getTime() < 7 * 86_400_000 && (
-                  <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.18em] text-emerald-100 bg-emerald-500/25 ring-1 ring-emerald-300/40 px-1.5 py-0.5 rounded">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 animate-pulse" />
+                  <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 ring-1 ring-emerald-500/30 px-1.5 py-0.5 rounded">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     {ru ? "Новое" : "New"}
                   </span>
                 )}
               </div>
-              <h2 className="font-heading text-2xl sm:text-3xl font-bold tracking-[-0.02em] leading-tight mb-2 max-w-3xl">
+              <h2 className="font-heading text-2xl sm:text-3xl font-bold tracking-[-0.02em] leading-tight mb-1.5 max-w-3xl text-foreground">
                 {cleanedName}
               </h2>
               {cleanedProv && (
                 <p
-                  className="text-sm sm:text-base text-white/90 mb-5 leading-snug"
+                  className="text-sm text-muted-foreground mb-4 leading-snug"
                   style={{ display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2, overflow: "hidden" } as React.CSSProperties}
                 >
                   {cleanedProv}
@@ -176,7 +168,7 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
                 <Button
                   variant="outline" size="sm"
                   onClick={onSave}
-                  className="gap-1.5 bg-white/10 hover:bg-white/20 text-white border-white/30"
+                  className="gap-1.5"
                 >
                   {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
                   {isBookmarked ? t("Saved", "Сохранено") : t("Save", "Сохранить")}
@@ -213,13 +205,14 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
               wear a Award icon, but the round-24 audit retired it —
               "Personalized for you" carries enough meaning on its own
               and the deep-dive content below has its own AI affordances. */}
-          <div className="overflow-y-auto flex-1 px-6 sm:px-9 py-6 sm:py-8 space-y-6">
+          <div className="overflow-y-auto flex-1 px-6 sm:px-9 py-5 sm:py-6 space-y-5">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-2">
-                {t("Personalized for you", "Персонально для вас")}
-              </p>
-              <h3 className="font-heading text-xl font-bold tracking-tight text-foreground mb-4">
-                {t("Your fit, your odds, your move", "Ваше совпадение, ваши шансы, ваш следующий шаг")}
+              {/* Doubled-up heading retired 2026-05-10 — "PERSONALIZED FOR
+                  YOU" eyebrow + "Your fit, your odds, your move" was
+                  reading as marketing chrome. Single editorial line
+                  carries the section instead. */}
+              <h3 className="font-heading text-lg font-bold tracking-tight text-foreground mb-4">
+                {t("Personalised for you", "Персонально для вас")}
               </h3>
               <ScholarshipDeepDive
                 scholarshipId={s.scholarship_id}

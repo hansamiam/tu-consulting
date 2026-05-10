@@ -467,156 +467,43 @@ const TopUniAIRu = () => {
                   </motion.div>
                 )}
                 {step === 3 && (
-                  <motion.div key="s3" {...stepFade} className="space-y-7">
+                  <motion.div key="s3" {...stepFade} className="space-y-6">
                     <div>
                       <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Шаг 03 · Приоритеты</p>
                       <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight">
-                        О чём мечтаете?
+                        Что важнее всего?
                       </h2>
-                      <p className="text-muted-foreground mt-2 text-sm">Три быстрых решения. Мы взвесим шортлист и брифинг по ним.</p>
+                      <p className="text-muted-foreground mt-2 text-sm">Оцените каждый фактор от 1 до 5.</p>
                     </div>
                     <div className="space-y-5">
-                      {/* Prestige tier picker */}
-                      {(() => {
-                        const tiers = [
-                          { value: 1, label: "Любая программа", caption: "Открыты ко всем",      crowns: 1 },
-                          { value: 2, label: "Топ-500",         caption: "Достойный уровень",     crowns: 2 },
-                          { value: 4, label: "Топ-100",         caption: "Высокая селективность", crowns: 3 },
-                          { value: 5, label: "Только топ-25",   caption: "Целюсь высоко",         crowns: 4 },
-                        ];
-                        const active = prestige[0];
-                        const closest = tiers.reduce((p, c) => Math.abs(c.value - active) < Math.abs(p.value - active) ? c : p);
-                        return (
-                          <div className="bg-card border border-border/70 rounded-xl p-5">
-                            <div className="flex items-center justify-between mb-3.5">
-                              <div className="flex items-center gap-2.5">
-                                <GraduationCap className="w-4 h-4 text-gold-dark" />
-                                <span className="text-sm font-semibold text-foreground">К какому уровню стремитесь</span>
-                              </div>
-                              <span className="text-[11px] text-muted-foreground italic">Выберите</span>
+                      {/* Reverted to simple 1-5 sliders 2026-05-10 (RU
+                          parity with EN). Three sliders that shape the
+                          brief: prestige / scholarship need / visa. */}
+                      {[
+                        { label: "Престиж", value: prestige, set: setPrestige, icon: GraduationCap, low: "Любой вуз", high: "Только топ-50" },
+                        { label: "Нужна стипендия", value: scholarship, set: setScholarship, icon: Shield, low: "Сам оплачу", high: "Только бесплатно" },
+                        { label: "Доступ по визе", value: visaAccess, set: setVisaAccess, icon: CheckCircle2, low: "Не важно", high: "Простая виза" },
+                      ].map(item => (
+                        <div key={item.label} className="bg-card border border-border/70 rounded-xl p-5">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2.5">
+                              <item.icon className="w-4 h-4 text-gold-dark" />
+                              <span className="text-sm font-semibold text-foreground">{item.label}</span>
                             </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                              {tiers.map(tier => {
-                                const isActive = tier.value === closest.value;
-                                return (
-                                  <button
-                                    key={tier.value}
-                                    type="button"
-                                    onClick={() => setPrestige([tier.value])}
-                                    className={`group relative rounded-lg border px-2.5 py-3 text-left transition-all ${
-                                      isActive
-                                        ? "border-gold-dark bg-gold/[0.08] ring-1 ring-gold-dark/30"
-                                        : "border-border/60 bg-background hover:border-foreground/30 hover:bg-foreground/[0.02]"
-                                    }`}
-                                  >
-                                    <div className="flex items-center gap-0.5 mb-1.5">
-                                      {Array.from({ length: 4 }).map((_, i) => (
-                                        <Crown
-                                          key={i}
-                                          className={`h-3 w-3 transition-colors ${
-                                            i < tier.crowns
-                                              ? isActive ? "text-gold-dark" : "text-muted-foreground/55"
-                                              : "text-muted-foreground/15"
-                                          }`}
-                                          fill={i < tier.crowns && isActive ? "currentColor" : "transparent"}
-                                        />
-                                      ))}
-                                    </div>
-                                    <p className={`text-xs font-bold leading-tight ${isActive ? "text-foreground" : "text-foreground/85"}`}>
-                                      {tier.label}
-                                    </p>
-                                    <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">
-                                      {tier.caption}
-                                    </p>
-                                  </button>
-                                );
-                              })}
+                            <div className="flex items-center gap-1.5">
+                              {[1, 2, 3, 4, 5].map(n => (
+                                <span key={n} className={`h-1.5 w-1.5 rounded-full transition-colors ${n <= item.value[0] ? "bg-gold-dark" : "bg-border"}`} />
+                              ))}
+                              <span className="text-xs font-bold text-gold-dark tabular-nums ml-1.5">{item.value[0]}/5</span>
                             </div>
                           </div>
-                        );
-                      })()}
-
-                      {/* Scholarship slider with $ signal */}
-                      {(() => {
-                        const v = scholarship[0];
-                        const moneyLabel =
-                          v <= 1 ? "Сам оплачу"
-                          : v === 2 ? "Хотел бы $5–15K/год"
-                          : v === 3 ? "Нужно $15–40K/год"
-                          : v === 4 ? "Нужно $40K+/год"
-                          : "Нужна полная стипендия";
-                        const moneyTone =
-                          v <= 1 ? "text-foreground/65"
-                          : v <= 3 ? "text-amber-700 dark:text-amber-400"
-                          : "text-gold-dark";
-                        return (
-                          <div className="bg-card border border-border/70 rounded-xl p-5">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-2.5">
-                                <Shield className="w-4 h-4 text-gold-dark" />
-                                <span className="text-sm font-semibold text-foreground">Сколько финансирования нужно</span>
-                              </div>
-                              <span className={`text-xs font-bold tabular-nums ${moneyTone}`}>
-                                {moneyLabel}
-                              </span>
-                            </div>
-                            <Slider min={1} max={5} step={1} value={scholarship} onValueChange={setScholarship} className="w-full" />
-                            <div className="flex justify-between mt-2.5 text-[11px] text-muted-foreground font-medium">
-                              <span>Сам оплачу</span>
-                              <span>Полное покрытие</span>
-                            </div>
+                          <Slider min={1} max={5} step={1} value={item.value} onValueChange={item.set} className="w-full" />
+                          <div className="flex justify-between mt-2 text-[11px] text-muted-foreground font-medium">
+                            <span>{item.low}</span>
+                            <span>{item.high}</span>
                           </div>
-                        );
-                      })()}
-
-                      {/* Visa accessibility 3-tile picker */}
-                      {(() => {
-                        const choices = [
-                          { value: 2, label: "Без сильных предпочтений",  caption: "Открыт к любому пути визы",     icon: "🌍" },
-                          { value: 4, label: "Предпочитаю простую визу",   caption: "Не люблю много бумаг",            icon: "🛂" },
-                          { value: 5, label: "Виза — критично",            caption: "Только программы с чистой визой", icon: "✋" },
-                        ];
-                        const active = visaAccess[0];
-                        const closest = choices.reduce((p, c) => Math.abs(c.value - active) < Math.abs(p.value - active) ? c : p);
-                        return (
-                          <div className="bg-card border border-border/70 rounded-xl p-5">
-                            <div className="flex items-center justify-between mb-3.5">
-                              <div className="flex items-center gap-2.5">
-                                <CheckCircle2 className="w-4 h-4 text-gold-dark" />
-                                <span className="text-sm font-semibold text-foreground">Подход к визе</span>
-                              </div>
-                              <span className="text-[11px] text-muted-foreground italic">Выберите</span>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                              {choices.map(c => {
-                                const isActive = c.value === closest.value;
-                                return (
-                                  <button
-                                    key={c.value}
-                                    type="button"
-                                    onClick={() => setVisaAccess([c.value])}
-                                    className={`relative rounded-lg border px-3 py-3 text-left transition-all ${
-                                      isActive
-                                        ? "border-gold-dark bg-gold/[0.08] ring-1 ring-gold-dark/30"
-                                        : "border-border/60 bg-background hover:border-foreground/30 hover:bg-foreground/[0.02]"
-                                    }`}
-                                  >
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className="text-base leading-none" aria-hidden>{c.icon}</span>
-                                      <p className={`text-xs font-bold leading-tight ${isActive ? "text-foreground" : "text-foreground/85"}`}>
-                                        {c.label}
-                                      </p>
-                                    </div>
-                                    <p className="text-[10px] text-muted-foreground leading-snug">
-                                      {c.caption}
-                                    </p>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })()}
+                        </div>
+                      ))}
                     </div>
 
                     <div className="flex justify-between pt-4">
