@@ -43,7 +43,6 @@ export const Footer = ({ language, variant = "dark" }: FooterProps) => {
       refundPolicy: "Refund Policy",
       paymentInfo: "Payment by Card",
       tagline: "AI-driven scholarship & admissions strategy",
-      mission: "On a mission to disrupt old-school admissions gatekeeping",
       copyright: `© ${new Date().getFullYear()} TopUni · All rights reserved`,
     },
     ru: {
@@ -54,7 +53,6 @@ export const Footer = ({ language, variant = "dark" }: FooterProps) => {
       refundPolicy: "Правила возврата",
       paymentInfo: "Оплата банковской картой",
       tagline: "AI-стратегия для стипендий и поступлений",
-      mission: "Наша миссия — разрушить устаревшее посредничество в поступлении",
       copyright: `© ${new Date().getFullYear()} TopUni · Все права защищены`,
     },
   };
@@ -72,59 +70,51 @@ export const Footer = ({ language, variant = "dark" }: FooterProps) => {
   const sepColor = isDark ? "text-primary-foreground/25" : "text-muted-foreground/40";
 
   return (
+    // Centered single-column layout — mirrors the home page footer's
+    // restraint. Pre-fix the footer was a 2-column grid (left cluster
+    // + right "Explore" list) which read fine on home where it was
+    // wrapped by the Instagram-icon hero block, but on every other
+    // page it stacked left-aligned and felt off-balance vs the
+    // centered home version. One layout, centered, used everywhere.
+    // Mission line cut 2026-05-10 — was added in the prior pass but
+    // user opted to remove it for restraint.
     <footer className={`${isDark ? "bg-primary" : ""} ${textColor} text-xs sm:text-sm px-4`}>
-      {/* Two-column section: tagline + single explore list. Down from
-          three columns when we had Product + Company duplicating top-nav
-          surfaces. */}
-      <div className="max-w-5xl mx-auto py-8 sm:py-10">
-        <div className="grid grid-cols-1 sm:grid-cols-[2fr,1fr] gap-8">
-          <div className="space-y-3">
-            <p className={`${isDark ? "text-primary-foreground" : "text-foreground"} font-heading text-base font-bold tracking-tight`}>
-              TopUni
-            </p>
-            <p className={`${textColor} leading-relaxed text-xs sm:text-sm max-w-md`}>
-              {t.tagline}
-            </p>
-            {/* Mission line — emotional resonance counterweight to the
-                product tagline above. The product line names what we
-                are; the mission line names what we're against. The two
-                together do the "we're the good guys vs old-school
-                gatekeepers" framing without overplaying it. */}
-            <p className={`${textColor} leading-relaxed text-xs sm:text-sm max-w-md italic opacity-90`}>
-              {t.mission}
-            </p>
-            <p>
-              <a
-                href="mailto:team@topuniconsulting.com"
-                className={`${accentLink} transition-colors text-xs break-all`}
-              >
-                team@topuniconsulting.com
-              </a>
-            </p>
-          </div>
-
-          <div>
-            <h4 className={`${headingColor} font-semibold text-[11px] uppercase tracking-[0.18em] mb-3`}>
-              {t.explore}
-            </h4>
-            <ul className="space-y-1.5 text-xs">
-              {links.map((l) => (
-                <li key={l.to}>
-                  <Link to={l.to} className={`${linkColor} transition-colors`}>
-                    {l.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
+      <div className="max-w-3xl mx-auto py-8 sm:py-10 text-center space-y-4">
+        <p className={`${isDark ? "text-primary-foreground" : "text-foreground"} font-heading text-base font-bold tracking-tight`}>
+          TopUni
+        </p>
+        {/* Tagline — bumped from text-xs/sm to text-sm/base + a touch
+            more weight so the line reads cleanly in the navy band.
+            Pre-fix the muted/55 opacity at xs sat low against the
+            navy bg and felt squinty. */}
+        <p className={`${isDark ? "text-primary-foreground/80" : "text-foreground/75"} leading-relaxed text-sm sm:text-[15px] font-medium max-w-md mx-auto`}>
+          {t.tagline}
+        </p>
+        <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs">
+          {links.map((l) => (
+            <li key={l.to}>
+              <Link to={l.to} className={`${linkColor} transition-colors`}>
+                {l.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <p>
+          <a
+            href="mailto:team@topuniconsulting.com"
+            className={`${accentLink} transition-colors text-xs break-all`}
+          >
+            team@topuniconsulting.com
+          </a>
+        </p>
       </div>
 
-      {/* Legal strip + copyright */}
-      <div className={`max-w-5xl mx-auto border-t ${borderColor} pt-4 pb-6`}>
-        <div className="flex flex-wrap items-center justify-between gap-3 text-[11px]">
+      {/* Legal strip + copyright — also centered. */}
+      <div className={`max-w-3xl mx-auto border-t ${borderColor} pt-4 pb-6`}>
+        <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[11px]">
           <p className={textColor}>{t.copyright}</p>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <span className={`${sepColor} hidden sm:inline`}>·</span>
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5">
             <Link to={`/privacy-policy${langSuffix}`} className={`${accentLink} transition-colors`}>
               {t.privacyPolicy}
             </Link>
