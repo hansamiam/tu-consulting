@@ -101,14 +101,19 @@ const Academy = ({ language = "en" }: AcademyProps) => {
         </div>
       </section>
 
-      {/* Bottom bookend — gradient ramp into the navy footer */}
+      {/* Bottom bookend — short gradient ramp into the navy footer.
+          Pre-fix this was h-32/40 (128-160px) which felt like dead air
+          between the last content section and the footer. The home
+          landing page bridges into the footer via a CONTENT section
+          with built-in gradient (Membership), not an empty 160px
+          gradient block. Trimmed to h-12/16 so the visual ramp lands
+          quickly. */}
       <div
-        className="h-32 sm:h-40"
+        className="h-12 sm:h-16"
         style={{
           backgroundImage: `linear-gradient(180deg,
             transparent 0%,
-            hsl(var(--primary) / 0.06) 40%,
-            hsl(var(--primary) / 0.30) 75%,
+            hsl(var(--primary) / 0.10) 50%,
             hsl(var(--primary)) 100%)`,
         }}
         aria-hidden="true"

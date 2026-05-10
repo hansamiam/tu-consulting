@@ -364,7 +364,12 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    // flex flex-col + flex-1 main pins the Footer to the bottom of the
+    // viewport when content is short (empty workspace, narrow boards).
+    // Pre-fix the bare min-h-screen left a tall white gap between the
+    // last row and the footer because both stacked at the top of the
+    // div with min-h-screen guaranteeing dead space below.
+    <div className="min-h-screen bg-background flex flex-col">
       <Navigation language={language} />
 
       {/* ─── Slim header strip ─────────────────────────────────────────
@@ -422,7 +427,7 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
            grid, upgrade chip, and the kanban-as-main treatment. The
            writing surface is the workspace; everything else is
            reachable via the row's Open-details affordance. */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-7">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-7 w-full flex-1">
         {trackedIds.length === 0 ? (
           <EmptyState language={language} />
         ) : loading ? (
@@ -431,8 +436,14 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
             <span className="text-sm">{t("Loading your applications…", "Загружаем заявки…")}</span>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-[320px,1fr] gap-5 lg:gap-6">
-            {/* Sidebar: scholarship sorter with view toggle. */}
+          {/* Sidebar widened from 320px → 380px so the Todoist-style
+              PipelineCard rows fit comfortably with the country gradient
+              stripe + days pill on the band. The card carries lifecycle
+              banners, recommender progress, essay status, notes preview,
+              and inline status quick-cycle inline so the user never has
+              to "open details" to see what's actually blocking the
+              application. */}
+          <div className="grid grid-cols-1 lg:grid-cols-[380px,1fr] gap-5 lg:gap-6">
             <aside className="lg:sticky lg:top-4 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto rounded-2xl border border-border bg-card/60 backdrop-blur-sm p-3.5">
               <div className="flex items-center justify-between mb-3 px-1">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -493,15 +504,19 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                           </div>
                           <span className="text-[10px] tabular-nums text-muted-foreground/70">{items.length}</span>
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                           {items.map((s) => (
-                            <SidebarRow
+                            <PipelineCard
                               key={s.scholarship_id}
                               scholarship={s}
-                              isSelected={s.scholarship_id === selectedId}
+                              status={tracker.statusMap[s.scholarship_id] as AppStatus | undefined}
+                              isShortlisted={tracker.shortlist.has(s.scholarship_id)}
+                              note={tracker.notesMap[s.scholarship_id]}
+                              recommenders={tracker.recommendersMap[s.scholarship_id]}
                               hasEssay={!!tracker.essayMap[s.scholarship_id]}
-                              onSelect={() => setSelectedId(s.scholarship_id)}
                               isRu={isRu}
+                              onOpen={() => setSelectedId(s.scholarship_id)}
+                              onStatusChange={(next) => tracker.setStatus(s.scholarship_id, next)}
                             />
                           ))}
                         </div>
@@ -510,7 +525,7 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                   })}
                 </div>
               ) : (
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {[...rows]
                     .sort((a, b) => {
                       const ad = a.application_deadline ? new Date(a.application_deadline).getTime() : Number.POSITIVE_INFINITY;
@@ -518,13 +533,17 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                       return ad - bd;
                     })
                     .map((s) => (
-                      <SidebarRow
+                      <PipelineCard
                         key={s.scholarship_id}
                         scholarship={s}
-                        isSelected={s.scholarship_id === selectedId}
+                        status={tracker.statusMap[s.scholarship_id] as AppStatus | undefined}
+                        isShortlisted={tracker.shortlist.has(s.scholarship_id)}
+                        note={tracker.notesMap[s.scholarship_id]}
+                        recommenders={tracker.recommendersMap[s.scholarship_id]}
                         hasEssay={!!tracker.essayMap[s.scholarship_id]}
-                        onSelect={() => setSelectedId(s.scholarship_id)}
                         isRu={isRu}
+                        onOpen={() => setSelectedId(s.scholarship_id)}
+                        onStatusChange={(next) => tracker.setStatus(s.scholarship_id, next)}
                       />
                     ))}
                 </div>
@@ -563,15 +582,18 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                         ) : null;
                       })()}
                     </div>
+                    {/* Details button retired 2026-05-10 — every detail
+                        the button used to surface (status, deadline,
+                        recommender progress, notes, essay status) now
+                        renders inline on the rich Todoist-style row in
+                        the sidebar, so the button + right-pulled Sheet
+                        were duplicating what's already visible. The
+                        Sheet code below stays in place but is unreachable
+                        from the canvas header — kept defined so we can
+                        re-wire it from the sidebar row's "..." overflow
+                        menu in a future pass if recommender editing
+                        needs richer UI than inline status quick-cycle. */}
                     <div className="flex items-center gap-1 shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 text-xs"
-                        onClick={() => setOpenDetail(selectedScholarship)}
-                      >
-                        {t("Details", "Детали")}
-                      </Button>
                       {selectedScholarship.official_url && (
                         <Button asChild variant="ghost" size="sm" className="h-8 text-xs">
                           <a href={selectedScholarship.official_url} target="_blank" rel="noopener noreferrer">
@@ -1190,10 +1212,11 @@ const DeadlineCalendar = ({
   );
 };
 
-/* SidebarRow — compact list-row for the sorter pane. Selected state
-   is the high-signal cue (gold left border + tinted background); the
-   row also carries an in-line deadline urgency dot and an essay-started
-   marker so users can see writing progress at a glance. */
+/* SidebarRow — RETIRED 2026-05-10 in favor of the richer PipelineCard
+   (lifecycle banners + recommender progress + inline status quick-cycle
+   + country gradient stripe). Kept defined as a fallback in case we
+   want to surface a compact mode again. The void at the end of the
+   render layer silences the unused-symbol warning. */
 const SidebarRow = ({
   scholarship: s, isSelected, hasEssay, onSelect, isRu,
 }: {
@@ -1260,6 +1283,7 @@ const SidebarRow = ({
     </button>
   );
 };
+void SidebarRow;
 
 const Stat = ({ label, value, hint, tone = "neutral" }: { label: string; value: string; hint?: string; tone?: "neutral" | "warn" | "good" }) => {
   const valueClass =

@@ -42,7 +42,8 @@ export const Footer = ({ language, variant = "dark" }: FooterProps) => {
       publicOffer: "Public Offer",
       refundPolicy: "Refund Policy",
       paymentInfo: "Payment by Card",
-      tagline: "AI-driven scholarship & admissions strategy.",
+      tagline: "AI-driven scholarship & admissions strategy",
+      mission: "On a mission to disrupt old-school admissions gatekeeping",
       copyright: `© ${new Date().getFullYear()} TopUni · All rights reserved`,
     },
     ru: {
@@ -52,7 +53,8 @@ export const Footer = ({ language, variant = "dark" }: FooterProps) => {
       publicOffer: "Публичная оферта",
       refundPolicy: "Правила возврата",
       paymentInfo: "Оплата банковской картой",
-      tagline: "AI-стратегия для стипендий и поступлений.",
+      tagline: "AI-стратегия для стипендий и поступлений",
+      mission: "Наша миссия — разрушить устаревшее посредничество в поступлении",
       copyright: `© ${new Date().getFullYear()} TopUni · Все права защищены`,
     },
   };
@@ -82,6 +84,14 @@ export const Footer = ({ language, variant = "dark" }: FooterProps) => {
             </p>
             <p className={`${textColor} leading-relaxed text-xs sm:text-sm max-w-md`}>
               {t.tagline}
+            </p>
+            {/* Mission line — emotional resonance counterweight to the
+                product tagline above. The product line names what we
+                are; the mission line names what we're against. The two
+                together do the "we're the good guys vs old-school
+                gatekeepers" framing without overplaying it. */}
+            <p className={`${textColor} leading-relaxed text-xs sm:text-sm max-w-md italic opacity-90`}>
+              {t.mission}
             </p>
             <p>
               <a

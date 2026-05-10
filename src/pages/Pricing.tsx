@@ -38,7 +38,7 @@ interface PricingProps { language?: "en" | "ru"; }
 // includes" sheet, not an offer-stack.
 const COPY = {
   en: {
-    badge: (cap: number) => `Founding cohort · first ${cap} get the launch price`,
+    badge: (cap: number) => `Early access · first ${cap} members lock in this price for life`,
     h1a: "Plan your education, your funding, and your career",
     h1b: "with the alumni who got in.",
     sub: "Yale, Cambridge, and Harvard alumni × AI. Admissions strategy that fits, at a price traditional consulting prices students out of.",
@@ -87,7 +87,7 @@ const COPY = {
     free: "Free",
   },
   ru: {
-    badge: (cap: number) => `Когорта основателей · цена запуска для первых ${cap}`,
+    badge: (cap: number) => `Ранний доступ · первые ${cap} закрепляют эту цену навсегда`,
     h1a: "Образование, финансирование, карьера —",
     h1b: "с выпускниками, которые поступили.",
     sub: "Выпускники Yale, Cambridge и Harvard × AI. Стратегия, которая реально подходит — без цен традиционного консалтинга.",
@@ -140,7 +140,13 @@ const Pricing = ({ language = "en" }: PricingProps) => {
   const [authOpen, setAuthOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [foundingLeft, setFoundingLeft] = useState<number | null>(null);
-  const [foundingCap, setFoundingCap] = useState<number>(100);
+  // Cohort cap default — 50 for the early-access tier (was 100 pre
+  // 2026-05-10). 50 gives ~6-8 weeks of organic signup runway at this
+  // stage of the business, scarcity reads as "almost full" by week 3,
+  // and the next tier (launch discount) takes over without a gap. The
+  // production value still comes from `founding_member_counter.cap` in
+  // Supabase — this is just the fallback when the table is empty.
+  const [foundingCap, setFoundingCap] = useState<number>(50);
   // Billing interval — annual saves ~23% vs month-to-month. Default
   // monthly (lower commitment threshold, easier conversion).
   const [billingInterval, setBillingInterval] = useState<"month" | "year">("month");
