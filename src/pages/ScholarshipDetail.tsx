@@ -307,20 +307,31 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
     const cleanName = cleanScholarshipName(s.scholarship_name);
     const cleanProv = cleanProvider(s.provider_name);
     const cleanCountry = s.host_country ? shortCountry(s.host_country) : null;
-    const title = `${cleanName} — eligibility, deadline, application | TopUni`;
-    const country = cleanCountry ? ` Hosted in ${cleanCountry}.` : "";
+    const title = ru
+      ? `${cleanName} — требования, дедлайн, как подать | TopUni`
+      : `${cleanName} — eligibility, deadline, application | TopUni`;
+    const country = cleanCountry
+      ? (ru ? ` Принимающая страна: ${cleanCountry}.` : ` Hosted in ${cleanCountry}.`)
+      : "";
     const coverage =
-      s.coverage_type === "full_ride" ? "Full ride covering tuition + living."
-      : s.coverage_type === "tuition_only" ? "Covers tuition."
-      : "Stipend.";
-    const deadline = s.application_deadline ? ` Deadline: ${s.application_deadline}.` : "";
-    const desc = `${cleanName}.${country} ${coverage}${deadline} Build a personalised strategy with TopUni AI free.`;
+      s.coverage_type === "full_ride" ? (ru ? "Полное покрытие — обучение и проживание." : "Full ride covering tuition + living.")
+      : s.coverage_type === "tuition_only" ? (ru ? "Покрывает обучение." : "Covers tuition.")
+      : (ru ? "Стипендия." : "Stipend.");
+    const deadline = s.application_deadline
+      ? (ru ? ` Дедлайн: ${s.application_deadline}.` : ` Deadline: ${s.application_deadline}.`)
+      : "";
+    const desc = ru
+      ? `${cleanName}.${country} ${coverage}${deadline} Постройте персональную стратегию с TopUni AI бесплатно.`
+      : `${cleanName}.${country} ${coverage}${deadline} Build a personalised strategy with TopUni AI free.`;
+    const pathSuffix = ru ? "/ru" : "";
+    const pageUrlAbs = `https://topuni.org/scholarships/${s.scholarship_id}${pathSuffix}`;
     document.title = title;
     setMeta("description", desc);
     setMeta("og:title", title, true);
     setMeta("og:description", desc, true);
     setMeta("og:type", "article", true);
-    setMeta("og:url", `https://topuni.org/scholarships/${s.scholarship_id}`, true);
+    setMeta("og:url", pageUrlAbs, true);
+    setMeta("og:locale", ru ? "ru_RU" : "en_US", true);
     // Per-scholarship OG image — generated dynamically by the og-scholarship
     // edge function. Every WhatsApp / X / LinkedIn / iMessage share now
     // unfurls into a beautiful gold-accented preview card with the
@@ -334,7 +345,12 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
     setMeta("twitter:card", "summary_large_image");
     setMeta("twitter:title", title);
     setMeta("twitter:description", desc);
-    setLink("canonical", `https://topuni.org/scholarships/${s.scholarship_id}`);
+    setLink("canonical", pageUrlAbs);
+    // hreflang alternates — tell Google these two URLs are translations of
+    // each other, not duplicate content. Lowercase tags per RFC 5646.
+    setLink("alternate", `https://topuni.org/scholarships/${s.scholarship_id}`, "en");
+    setLink("alternate", `https://topuni.org/scholarships/${s.scholarship_id}/ru`, "ru");
+    setLink("alternate", `https://topuni.org/scholarships/${s.scholarship_id}`, "x-default");
 
     // ── JSON-LD payload(s) ─────────────────────────────────────────────
     // Four structured-data graphs (each its own @id-able node):
@@ -1125,11 +1141,18 @@ function setMeta(name: string, content: string, isProperty = false) {
   }
   el.setAttribute("content", content);
 }
-function setLink(rel: string, href: string) {
-  let el = document.querySelector(`link[rel="${rel}"]`);
+function setLink(rel: string, href: string, hreflang?: string) {
+  // For hreflang alternates we need a per-language tag, not a single
+  // shared tag. Query selector includes [hreflang="..."] so each call
+  // upserts its own <link> instead of overwriting siblings.
+  const selector = hreflang
+    ? `link[rel="${rel}"][hreflang="${hreflang}"]`
+    : `link[rel="${rel}"]:not([hreflang])`;
+  let el = document.querySelector(selector);
   if (!el) {
     el = document.createElement("link");
     el.setAttribute("rel", rel);
+    if (hreflang) el.setAttribute("hreflang", hreflang);
     document.head.appendChild(el);
   }
   el.setAttribute("href", href);
