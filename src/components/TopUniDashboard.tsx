@@ -52,7 +52,8 @@ import { PremiumGate } from "@/components/PremiumGate";
 import { BriefHeroStats } from "@/components/brief/BriefHeroStats";
 import { BriefChapterNav } from "@/components/brief/BriefChapterNav";
 import { BriefMasthead } from "@/components/brief/BriefMasthead";
-import { ProSectionsTeaser } from "@/components/brief/ProSectionsTeaser";
+// ProSectionsTeaser import retired 2026-05-10 — paywall chrome
+// consolidated to the single Pro brief upgrade card below the brief.
 import { SavedDeadlineBanner } from "@/components/SavedDeadlineBanner";
 // PremiumSection import retired 2026-05-10 — Career ROI / Visa pathway
 // custom renderers were dropped alongside the brief consolidation.
@@ -3631,16 +3632,18 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             onAskCounselor={SHOW_COUNSELOR_TAB ? askCounselorWithPrefill : undefined}
                           />
                         )}
-                        {/* Pro upgrade teaser — basic-tier non-Pro users
-                            get a final block previewing what Pro upgrades
-                            (deeper shortlist, per-section regen, structured
-                            funding chart). Each card opens the comparison
-                            modal with the matching gateId so funnel
-                            telemetry attributes which upgrade the user
-                            clicked. */}
-                        {!pathwayLoading && reportGrade === "basic" && !isMember && (
-                          <ProSectionsTeaser isRu={isRu} />
-                        )}
+                        {/* ProSectionsTeaser retired 2026-05-10 — the
+                            3-card "Pro adds: wider shortlist · per-section
+                            regen · funding stack" teaser was followed
+                            immediately by the "Want this rewritten
+                            specifically about you?" Pro brief card below.
+                            Two paywall surfaces back-to-back at the end
+                            of the brief was the "300 grids" feel —
+                            consolidated to a single pitch (the brief
+                            card below is more story-driven and ties to
+                            depth questions, the teaser was structural
+                            chrome). /pricing carries the full feature
+                            comparison for users who click through. */}
 
                         {/* Pro brief upgrade card — moved from above the
                             report to here (after the user has consumed
