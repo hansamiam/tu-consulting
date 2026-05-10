@@ -30,30 +30,36 @@ interface Row {
   pro: string;
 }
 
+// Comparison rows reworked 2026-05-10. Cut the Career ROI / Visa /
+// Monthly-Budget rows — those sections were retired from the brief
+// (they diluted the report rather than adding decision-grade value).
+// Pro now differentiates on DEPTH and BREADTH of the surviving five
+// sections (positioning, shortlist, funding, essays, gaps), plus the
+// regen + structured-data + workshops moats.
 const ROWS: Row[] = [
   {
+    id: "brief-shortlist-depth",
+    label: "University shortlist",
+    free: "6-8 universities, tight one-line fit notes",
+    pro: "15-20 universities with admission thresholds, named programs, and a real career anchor per top fit",
+  },
+  {
     id: "brief-funding-extra-matches",
-    label: "Funding shortlist",
-    free: "Top 3 matches",
-    pro: "All ranked matches with per-factor match-score breakdown",
+    label: "Funding pathway",
+    free: "Top 3-4 scholarships + a 'Stack:' callout",
+    pro: "All ranked matches with per-factor match-score breakdown + multi-pass funding scenarios",
   },
   {
-    id: "brief-pro-section-career-roi",
-    label: "Career ROI breakdown",
+    id: "brief-pro-regen",
+    label: "Regenerate any section",
     free: false,
-    pro: "Salary ranges, employment rates, notable employers, 5–10 year alumni trajectories per top-3 university",
+    pro: "Re-run any section if the analysis missed something — positioning, essays, gaps, all of it",
   },
   {
-    id: "brief-pro-section-visa",
-    label: "Visa & post-graduation pathway",
+    id: "brief-pro-structured-charts",
+    label: "Funding scenario chart",
     free: false,
-    pro: "Per-country student-visa difficulty for your nationality, post-study work, PR pathway",
-  },
-  {
-    id: "brief-pro-section-monthly-budget",
-    label: "Monthly budget breakdown",
-    free: false,
-    pro: "Realistic rent, food, transport, insurance per top-3 city — with scholarship coverage map",
+    pro: "Visual stack of plausible scholarship combinations and total funding per scenario",
   },
   {
     id: "counselor-free-limit",

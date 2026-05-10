@@ -683,40 +683,46 @@ ${universityContext || "(none in database for the student's target countries)"}`
 
     const lang = language === "ru" ? "Russian" : "English";
     
-    const basicSections = `Generate the student's pathway report. The output is rendered both on screen AND as a printable PDF the student can email to parents and bring to advising sessions. Use clean markdown — ## for major sections, ### for sub-sections, bullet lists for items.
+    // Basic-tier prompt consolidated 2026-05-10. Was 6 sections (ending
+    // with a "Final word" encouragement paragraph that risked platitudes).
+    // Now 5 focused sections — each one earns its place. Quality over
+    // coverage. Mirror of the premium consolidation in brief-sections.ts.
+    const basicSections = `Generate the student's pathway report. The output is rendered both on screen AND as a printable PDF the student can email to parents and bring to advising sessions. Use clean markdown — ## for major sections, ### for sub-sections, bullet lists for items. Quality > coverage. No filler sections, no encouragement-only paragraphs, no generic by-country info that's a Google search.
 
 Required sections, in this exact order:
 
 ## Strategic positioning
-One paragraph (4-6 sentences). Where this student stands among international applicants this cycle, what their strongest signals are, what their biggest gap is. Be specific and quantitative — cite GPA in context, IELTS band relative to thresholds at the targets they listed, country competitiveness if relevant.
+OPEN with a single thesis sentence (≤30 words) that names this student's strongest signal AND biggest competitive reality in one breath — this is the report's pull-quote. Then 1-2 paragraphs of competitive positioning analysis: GPA percentile context, IELTS band relative to thresholds at the targets they listed, country competitiveness if relevant. Cite numbers.
 
-After the paragraph, on its own line, output exactly:
+After the paragraphs, on its own line, output exactly:
 
 **Your 30-day call:** [one specific, single-sentence strategic action this student should take in the next 30 days]
 
 ## Your university shortlist
-Pull 6-9 real universities from the database section above. Organize into three buckets, in this exact order, using exactly these labels:
+Pull 6-8 real universities from the database section — the SHARPEST cut, not the broadest list. Organize into three buckets, in this exact order, using exactly these labels:
 
 ### Strong fits — apply with confidence
 3-4 universities where the student's profile aligns well. For each:
-- **University name** — one-line "why it fits you specifically"
-- Specific program from the database
-- Acceptance rate or selectivity context
+- **University name** — one tight sentence on why THIS student fits THIS program (cite a real profile signal)
+- Specific program + admission threshold (IELTS, GPA cutoff) when known
+- One concrete career anchor: typical starting salary band in the student's field, ONE notable employer, OR one alumni outcome — pick the strongest single fact, not all of them
 
 ### Aligned options — competitive but achievable
-2-3 universities where it's selective but realistic with a focused application. Same format.
+2-3 universities. Same format.
 
 ### Worth keeping on the radar
-1-2 universities to track for next cycle or with stronger prep. Same format.
+1-2 universities. Same format.
 
 Do NOT invent universities. Pull only from the database section above.
 
-## Your funding pathway
-3-5 specific scholarships from the database that match this profile. For each:
-- **Scholarship name** — award amount and coverage type
-- Why this student is a real candidate
-- Application timing and deadline if known
-Be honest about probability. Mark each as a primary target, a secondary option, or an aspirational pick worth exploring with strategy.
+## Funding pathway
+Pick 3-4 specific scholarships from the database — the ones THIS student should actually apply to first. For each:
+- **Scholarship name** — award amount + coverage type
+- One sentence on how the student's profile maps to the program's stated audience (cite a real signal). Do NOT predict odds in percentages or label as 'reach' / 'safety' / 'long shot' / 'within reach'.
+- Application timing — deadline + WHEN the student should start drafting
+- The first concrete document or task to start now
+
+End with a single one-line "Stack:" callout naming a plausible combination of 2 scholarships from the list above that together would fully fund the student.
 
 ## Three essay angles
 Three distinct narrative angles this student could lead with. For each, use this exact structure (do not deviate):
@@ -733,6 +739,8 @@ Three distinct narrative angles this student could lead with. For each, use this
 **Why it works for you:** ...
 **Anchor it with:** ...
 
+If the student supplied a "Top activity" or "Personal story" in the profile, at LEAST one angle's "Anchor it with" line MUST pull from that directly.
+
 ## Honest gaps to close
 1-3 specific weaknesses in the profile. No softening — the parent reading this should see exactly what to work on. For each gap, use this exact structure (do not deviate):
 
@@ -745,9 +753,6 @@ Three distinct narrative angles this student could lead with. For each, use this
 **Priority:** ...
 **Why it matters:** ...
 **Action this month:** ...
-
-## Final word
-One short paragraph (3-4 sentences) of specific encouragement based on this student's strongest signal — what they should believe about their candidacy as they go execute. Do not give generic motivation. Do not say "good luck." Cite something concrete from their profile and tell them why it matters.
 
 ${EDITORIAL_RULES}`;
 

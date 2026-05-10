@@ -3385,12 +3385,13 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             onAskCounselor={SHOW_COUNSELOR_TAB ? askCounselorWithPrefill : undefined}
                           />
                         )}
-                        {/* Pro-only sections teaser — basic-tier non-Pro
-                            users get a final block previewing the three
-                            sections Pro adds (Career ROI, Visa, Budget).
-                            Each card opens the comparison modal with the
-                            matching gateId so funnel telemetry attributes
-                            which Pro section the user clicked. */}
+                        {/* Pro upgrade teaser — basic-tier non-Pro users
+                            get a final block previewing what Pro upgrades
+                            (deeper shortlist, per-section regen, structured
+                            funding chart). Each card opens the comparison
+                            modal with the matching gateId so funnel
+                            telemetry attributes which upgrade the user
+                            clicked. */}
                         {!pathwayLoading && reportGrade === "basic" && !isMember && (
                           <ProSectionsTeaser isRu={isRu} />
                         )}

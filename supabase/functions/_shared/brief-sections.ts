@@ -154,22 +154,21 @@ const shortlist: SectionSpec = {
   reasoning: { effort: "high" },
   buildPrompt: (ctx) => `Output: just the "## Your university shortlist" section, in ${ctx.lang}.
 
-Pull 15-20 real universities from the DATABASE CONTEXT below. Organize into three buckets, in this exact order, using exactly these labels:
+Pull 6-10 real universities from the DATABASE CONTEXT below — chosen to be the SHARPEST cut, not the broadest list. Organize into three buckets, in this exact order, using exactly these labels:
 
 ### Strong fits — apply with confidence
-6-8 universities. For each:
-- **University name** — fit score (0-100%) with one-line justification specific to this student
-- Specific program(s) with admission requirements (IELTS, GPA cutoff)
-- Historical acceptance rate context
-- One unique selling point specific to this student
+3-5 universities. For each:
+- **University name** — one tight sentence on why THIS student fits THIS program (cite a real profile signal — GPA, field, country alignment, named activity).
+- Specific program(s) + admission threshold (IELTS, GPA cutoff) when known.
+- One concrete career anchor: typical starting salary band in the student's field, ONE notable employer, OR one alumni outcome — pick the strongest single fact, not all of them.
 
 ### Aligned options — competitive but achievable
-5-7 universities. Same format.
+2-3 universities. Same format.
 
 ### Worth keeping on the radar
-3-5 universities. Same format.
+1-2 universities. Same format.
 
-Do NOT invent universities. Pull only from the database section.
+Do NOT invent universities. Pull only from the database section. NO long uni lists with thin justifications — the report's value is curation, not coverage.
 
 ${SHARED_RULES}
 
@@ -185,7 +184,7 @@ Begin your response with: ## Your university shortlist`,
     const buckets = [/strong fits/i, /aligned options/i, /worth keeping/i];
     const missing = buckets.filter(rx => !rx.test(md));
     if (missing.length > 0) return { ok: false, reason: `${missing.length} bucket(s) missing` };
-    if (md.length < 800) return { ok: false, reason: `too short (${md.length} chars)` };
+    if (md.length < 600) return { ok: false, reason: `too short (${md.length} chars)` };
     return { ok: true };
   },
 };
@@ -221,20 +220,17 @@ Begin your response with: ## Career ROI breakdown`,
 
 const fundingPathway: SectionSpec = {
   id: "funding",
-  heading: "## Funding deep-dive",
+  heading: "## Funding pathway",
   reasoning: { effort: "high" },
-  buildPrompt: (ctx) => `Output: just the "## Funding deep-dive" section, in ${ctx.lang}.
+  buildPrompt: (ctx) => `Output: just the "## Funding pathway" section, in ${ctx.lang}.
 
-For 4-6 specific scholarships from the DATABASE CONTEXT that match this profile:
-- **Scholarship name** with award amount
-- WHO this is for + how the student's profile maps to it (concrete: "Your 3.7 GPA + civic-engagement track lands above the typical admit profile here"). Do NOT predict odds in percentages or label as 'reach' / 'safety' / 'long shot' / 'within reach'. Describe alignment with the program's stated audience instead.
-- Specific application strategy and timeline
-- Key documents this student needs to start gathering now
+Pick 3-5 specific scholarships from the DATABASE CONTEXT — the ones THIS student should actually apply to first. Cut speculative options; quality > quantity. For each:
+- **Scholarship name** — award amount + coverage type (full ride / tuition / stipend / partial).
+- One sentence on how the student's profile maps to the program's stated audience. Cite a real signal ("3.7 GPA in CS from Kazakhstan + the robotics activity lands you in their typical admit profile"). Do NOT predict odds in percentages or label as 'reach' / 'safety' / 'long shot' / 'within reach'.
+- Application timing — deadline + WHEN the student should start drafting.
+- The first concrete document or task to start now (essay prompt, recommender, transcript pull).
 
-Then add a sub-section:
-
-### Combined funding scenarios
-2-3 plausible combinations of scholarships, partial aid, and country-specific need-based programs that could fully fund this student. Estimate total funding for each scenario.
+End with a single one-line "Stack:" callout naming a plausible combination of 2 scholarships from the list above that together would fully fund the student. ONE line, not a sub-section.
 
 ${SHARED_RULES}
 
@@ -244,10 +240,9 @@ ${profileBlock(ctx)}
 DATABASE CONTEXT:
 ${dbBlock(ctx)}
 
-Begin your response with: ## Funding deep-dive`,
+Begin your response with: ## Funding pathway`,
   validate: (md) => {
-    if (md.length < 600) return { ok: false, reason: `too short (${md.length} chars)` };
-    if (!/combined\s+funding|scenarios|сценари/i.test(md)) return { ok: false, reason: "missing combined funding sub-section" };
+    if (md.length < 500) return { ok: false, reason: `too short (${md.length} chars)` };
     return { ok: true };
   },
 };
@@ -421,23 +416,31 @@ Begin your response with: ## Final word`,
 };
 
 /** Premium tier section list, in render order. Sections are produced in
- *  parallel; the edge function streams them to the client in this order. */
-// 90-day action-plan section retired — slapping a generic
-// week-by-week plan on every brief was bloat without enough
-// student-specific signal to be honest. Will return when we
-// have richer profile inputs (essay drafts, transcripts, etc.)
-// to make the plan actually personalised.
+ *  parallel; the edge function streams them to the client in this order.
+ *
+ *  Consolidated 2026-05-10: cut careerRoi / visa / monthlyBudget /
+ *  finalWord because 9 sections diluted the report. Generic by-country
+ *  visa info, generic city cost-of-living tables, salary-band lookups,
+ *  and end-of-report encouragement paragraphs were not what made the
+ *  brief decision-grade — they padded length and competed with the
+ *  sections that actually move the student. The 5 surviving sections
+ *  carry the full strategic value: positioning + 30-day call, the
+ *  curated shortlist (now with ONE career anchor folded in per uni so
+ *  ROI doesn't disappear entirely), funding, the essay angles
+ *  (highest differentiator), and honest gaps (decision-protection).
+ *  The retired sections stay defined below in case we re-enable them
+ *  for a deeper "premium-plus" tier. */
 export const PREMIUM_SECTIONS: SectionSpec[] = [
   positioning,
   shortlist,
-  careerRoi,
   fundingPathway,
-  visa,
   essays,
-  monthlyBudget,
   honestGaps,
-  finalWord,
 ];
+
+// Retired (kept for reference / potential premium-plus reinstatement):
+// careerRoi, visa, monthlyBudget, finalWord, actionPlan
+void careerRoi; void visa; void monthlyBudget; void finalWord; void actionPlan;
 
 /** Stricter regen prompt addendum applied on validator failure. */
 export function buildRegenPrompt(spec: SectionSpec, ctx: BriefContext, reason: string): string {

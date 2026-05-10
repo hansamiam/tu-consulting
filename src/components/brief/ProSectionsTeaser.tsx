@@ -1,21 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Briefcase, Plane, Wallet, Lock, ArrowRight, Crown } from "lucide-react";
+import { Layers, RotateCcw, BarChart3, Lock, ArrowRight, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProComparisonModal } from "@/components/ProComparisonModal";
 import { track } from "@/lib/analytics";
 
 /* ProSectionsTeaser — final block of the BASIC-tier brief. Three cards
- * showing the sections that Pro adds (Career ROI, Visa pathway, Monthly
- * budget), each with a structural preview and a Pro upgrade hook.
+ * showing what Pro upgrades — DEPTH and INTERACTIVITY across the same
+ * five-section frame, not extra padding sections.
  *
- * Why this exists: before, basic-tier users finished the brief at "Final
- * word" with no visibility into what Pro would add. They didn't know
- * Career ROI, Visa, or Budget sections existed — so we couldn't even
- * fire gate_seen on those features. Pure conversion miss.
- *
- * Each card has its own gateId so the funnel can split which Pro section
- * the user clicked. Click opens the ProComparisonModal in-place.
+ * 2026-05-10 rebuild: previously advertised Career ROI / Visa / Monthly
+ * Budget as Pro-only sections. Those sections were retired (they
+ * diluted the report) so this teaser had to swap to the actual Pro
+ * differentiators: deeper shortlist, section regen, structured funding
+ * chart. Each card opens the ProComparisonModal with its gateId so
+ * funnel attribution still maps cleanly.
  */
 
 interface Props {
@@ -27,63 +26,63 @@ const t = (en: string, ru: string, isRu: boolean) => (isRu ? ru : en);
 
 const SECTIONS = [
   {
-    gateId: "brief-pro-section-career-roi",
-    icon: Briefcase,
-    titleEn: "Career ROI breakdown",
-    titleRu: "Карьерный ROI",
-    descEn: "Salary ranges, employment rates, notable employers, and 5–10 year alumni trajectories — for your top 3 universities.",
-    descRu: "Диапазон зарплат, процент трудоустройства, заметные работодатели и траектория выпускников — для топ-3 университетов.",
+    gateId: "brief-shortlist-depth",
+    icon: Layers,
+    titleEn: "Wider, deeper shortlist",
+    titleRu: "Шире и глубже шорт-лист",
+    descEn: "Pro brief expands the curated shortlist from 6-8 universities to 15-20, each with admission thresholds, named programs, and a real career anchor — not generic salary tables.",
+    descRu: "В Pro шорт-лист расширяется с 6-8 до 15-20 университетов — с порогами поступления, конкретными программами и реальным карьерным якорем для каждого.",
     rowsEn: [
-      "Starting salary range · field-specific",
-      "6-month employment rate",
-      "Notable employer pipeline",
-      "5–10 yr trajectory",
+      "15-20 universities · 3 buckets",
+      "Admission thresholds per program",
+      "One concrete career anchor per top fit",
+      "Specific reason this student fits",
     ],
     rowsRu: [
-      "Стартовая зарплата · по направлению",
-      "Трудоустройство за 6 мес",
-      "Топ-работодатели",
-      "Траектория 5–10 лет",
+      "15-20 университетов · 3 группы",
+      "Пороги поступления по программам",
+      "Карьерный якорь для топ-совпадений",
+      "Конкретная причина, почему подходит",
     ],
   },
   {
-    gateId: "brief-pro-section-visa",
-    icon: Plane,
-    titleEn: "Visa & post-graduation pathway",
-    titleRu: "Виза и после выпуска",
-    descEn: "Per-country student-visa difficulty for your nationality, post-study work timelines, and PR pathway.",
-    descRu: "Сложность студенческой визы для вашей национальности, пост-учебная виза и путь к PR.",
+    gateId: "brief-pro-regen",
+    icon: RotateCcw,
+    titleEn: "Regenerate any section",
+    titleRu: "Перегенерировать любую секцию",
+    descEn: "Don't like the essay angles? Re-run that section. Want a sharper read on positioning? Re-run that one. Pro lets you iterate per-section instead of regenerating the whole brief.",
+    descRu: "Не нравятся эссе-ракурсы? Перегенерируйте только эту секцию. Хотите острее позиционирование? Только её. Pro позволяет итерировать по секциям, а не весь отчёт целиком.",
     rowsEn: [
-      "Student visa · difficulty for your nationality",
-      "Post-study work · duration",
-      "Path to permanent residency",
-      "Realistic challenges",
+      "Re-run positioning",
+      "Re-run shortlist",
+      "Re-run essay angles",
+      "Re-run honest gaps",
     ],
     rowsRu: [
-      "Студенческая виза · сложность",
-      "Пост-учебная виза · срок",
-      "Путь к ВНЖ",
-      "Реальные сложности",
+      "Перегенерировать позиционирование",
+      "Перегенерировать шорт-лист",
+      "Перегенерировать эссе-ракурсы",
+      "Перегенерировать пробелы",
     ],
   },
   {
-    gateId: "brief-pro-section-monthly-budget",
-    icon: Wallet,
-    titleEn: "Monthly budget breakdown",
-    titleRu: "Месячный бюджет",
-    descEn: "Realistic rent, food, transport, and insurance estimates for your top 3 cities — and how scholarship coverage maps onto them.",
-    descRu: "Реальные оценки аренды, еды, транспорта и страховки для топ-3 городов — как стипендия покрывает расходы.",
+    gateId: "brief-pro-structured-charts",
+    icon: BarChart3,
+    titleEn: "Funding scenario stack",
+    titleRu: "Стек сценариев финансирования",
+    descEn: "Pro extracts the funding pathway into a visual stack — plausible scholarship combinations, total funding per scenario, and how each one closes the gap to your target program cost.",
+    descRu: "Pro превращает финансирование в визуальный стек — комбинации стипендий, общая сумма для каждого сценария и как каждый закрывает разрыв до стоимости программы.",
     rowsEn: [
-      "Rent · transport · food",
-      "Insurance · books · leisure",
-      "Part-time work options",
-      "Coverage map vs total cost",
+      "2-3 plausible stacks",
+      "Total funding per scenario",
+      "Component scholarships",
+      "Coverage map vs program cost",
     ],
     rowsRu: [
-      "Аренда · транспорт · еда",
-      "Страховка · книги · досуг",
-      "Подработка",
-      "Покрытие vs общая стоимость",
+      "2-3 правдоподобных стека",
+      "Общая сумма по каждому",
+      "Компоненты стека",
+      "Покрытие vs стоимость",
     ],
   },
 ];
@@ -129,12 +128,12 @@ export function ProSectionsTeaser({ isRu }: Props) {
             {t("Pro adds", "Pro даёт", isRu)}
           </div>
           <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground leading-tight">
-            {t("Three sections you don't have yet", "Три раздела, которых у вас ещё нет", isRu)}
+            {t("What Pro upgrades", "Что улучшает Pro", isRu)}
           </h2>
           <p className="text-sm text-muted-foreground mt-1.5 max-w-xl">
             {t(
-              "Career ROI, visa pathway, and monthly budget — sections that turn a strategy report into a financial decision document. Pro members see all three written specifically for them.",
-              "Карьерный ROI, виза и месячный бюджет — разделы, которые превращают стратегию в документ для финансового решения. У Pro-членов все три написаны лично под них.",
+              "Same five sections. Three real upgrades: a wider shortlist, per-section regen if a read misses, and the funding pathway as a visual scenario stack instead of prose.",
+              "Те же пять секций. Три реальных апгрейда: шире шорт-лист, перегенерация по секциям если читается мимо, и финансирование в виде визуального стека сценариев вместо текста.",
               isRu,
             )}
           </p>
