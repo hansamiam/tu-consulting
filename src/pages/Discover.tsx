@@ -157,6 +157,19 @@ interface Scholarship {
   url_check_status: "ok" | "redirect" | "fail" | "no_url" | null;
   url_consecutive_fails: number | null;
   url_resolved_to: string | null;
+  /* Canonical fields — populated by the canonical-extract edge function
+   * pipeline (migration 20260510110000_canonical_scholarship_fields).
+   * The frontend reads `canonical_overview ?? why_this_fits ?? blurb`,
+   * `canonical_deadline_iso ?? application_deadline`, etc., so existing
+   * unmigrated rows keep working while migrated rows show the verified
+   * canonical content. canonical_quality_score (0-100) is recomputed by
+   * a DB trigger when canonical_* fields change. */
+  canonical_overview: string | null;
+  canonical_deadline_iso: string | null;
+  canonical_funding_text: string | null;
+  canonical_funding_usd: number | null;
+  canonical_official_url: string | null;
+  canonical_quality_score: number | null;
   /* Stable scholarship identity that survives URL changes. The same
    * scholarship listed on two aggregator hubs (or a program page +
    * scholarship page) collapses to one row when canonical_key matches.
@@ -1928,7 +1941,13 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
             duplicates country / provider chrome that already sits in
             the card surround, so a single line carries it. */}
         {(() => {
-          const blurb = why || buildScholarshipBlurb({
+          // Canonical hierarchy 2026-05-10: prefer the institution-
+          // verified canonical_overview, then the per-user why_this_fits,
+          // then the auto-generated fallback blurb. The canonical
+          // pipeline (migration 20260510110000 + canonical-extract
+          // edge function) populates canonical_overview from the
+          // official program page so it's the most authoritative line.
+          const blurb = s.canonical_overview || why || buildScholarshipBlurb({
             name: cleanScholarshipName(s.scholarship_name),
             provider: cleanProvider(s.provider_name),
             country: s.host_country,
