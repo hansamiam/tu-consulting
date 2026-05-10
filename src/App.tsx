@@ -196,7 +196,8 @@ const App = () => (
           <Route path="/admin/scholarships-verification" element={<AdminScholarshipVerification />} />
           <Route path="/admin/analytics" element={<AdminAnalyticsFunnel />} />
           <Route path="/admin/academy" element={<AdminAcademy />} />
-          <Route path="/academy" element={<Academy />} />
+          <Route path="/academy" element={<Academy language="en" />} />
+          <Route path="/academy/ru" element={<Academy language="ru" />} />
           <Route path="/blog/guide/:slug" element={<CountryGuide language="en" />} />
           <Route path="/blog/guide/:slug/ru" element={<CountryGuide language="ru" />} />
           {/* /prep/* routes removed — Prep is spinning off as its own product */}

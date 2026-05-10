@@ -16,25 +16,32 @@ const FOUNDERS = [
   { name: "Nurzada Abdivalieva", credential: "Cambridge · Tsinghua",   photo: nurzadaPhoto },
 ];
 
-const Academy = () => {
+interface AcademyProps { language?: "en" | "ru"; }
+
+const Academy = ({ language = "en" }: AcademyProps) => {
+  const ru = language === "ru";
+  const t = (en: string, rText: string) => (ru ? rText : en);
   return (
     <div className="min-h-screen relative bg-background">
       <CampusBackdrop />
       <div className="relative z-10">
-      <Navigation />
+      <Navigation language={language} />
 
       {/* HERO ───────────────────────────────────────────────────────── */}
       <section className="relative bg-gradient-to-br from-primary via-primary to-primary/90 py-20 sm:py-28 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(var(--gold)/0.1),_transparent_60%)]" />
         <div className="relative max-w-3xl mx-auto px-4 text-center">
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 bg-gold/15 border border-gold/40 px-3 py-1 rounded-full text-gold text-xs font-semibold mb-6">
-            <Award className="h-3.5 w-3.5" /> Launching in June
+            <Award className="h-3.5 w-3.5" /> {t("Launching in June", "Запуск в июне")}
           </motion.div>
           <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="text-4xl sm:text-6xl font-heading font-bold text-primary-foreground mb-5 leading-tight tracking-tight">
             TopUni <span className="text-gold">Academy</span>
           </motion.h1>
           <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-primary-foreground/75 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
-            Workshops and office hours, joined by guest experts from across the world.
+            {t(
+              "Workshops and office hours, joined by guest experts from across the world.",
+              "Воркшопы и office-hours с приглашёнными экспертами со всего мира.",
+            )}
           </motion.p>
         </div>
       </section>
@@ -71,20 +78,23 @@ const Academy = () => {
       <section className="max-w-2xl mx-auto px-4 pb-20">
         <div className="rounded-2xl border border-gold/30 bg-card p-7 text-center">
           <h3 className="font-heading text-lg sm:text-xl font-bold text-foreground mb-2 tracking-tight">
-            Doors open in June.
+            {t("Doors open in June.", "Двери откроются в июне.")}
           </h3>
           <p className="text-sm text-muted-foreground mb-5 leading-relaxed max-w-md mx-auto">
-            Until then, the rest of TopUni — your personalized strategy from TopUni AI and the scholarship Discover database — is live and free during beta.
+            {t(
+              "Until then, the rest of TopUni — your personalized strategy from TopUni AI and the scholarship Discover database — is live and free during beta.",
+              "А пока остальной TopUni — ваша персональная стратегия от TopUni AI и база стипендий Discover — доступен бесплатно во время беты.",
+            )}
           </p>
           <div className="flex flex-col sm:flex-row gap-2.5 sm:justify-center">
             <Button asChild variant="gold" className="gap-1.5">
-              <Link to="/topuni-ai">
-                Build my strategy <ArrowRight className="h-4 w-4" />
+              <Link to={ru ? "/topuni-ai/ru" : "/topuni-ai"}>
+                {t("Build my strategy", "Построить стратегию")} <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
             <Button asChild variant="outline" className="gap-1.5">
-              <Link to="/discover">
-                Open Discover
+              <Link to={ru ? "/discover/ru" : "/discover"}>
+                {t("Open Discover", "Открыть Discover")}
               </Link>
             </Button>
           </div>
@@ -104,7 +114,7 @@ const Academy = () => {
         aria-hidden="true"
       />
 
-      <Footer language="en" />
+      <Footer language={language} />
       </div>
     </div>
   );
