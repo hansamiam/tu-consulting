@@ -4288,7 +4288,7 @@ const Discover = ({ language = "en" }: Props) => {
                           callout; the membership identity itself is just "TopUni Pro". */}
                       {!isMember && foundingLeft && foundingLeft.left > 0 && (
                         <button
-                          onClick={() => navigate("/pricing")}
+                          onClick={() => navigate(ru ? "/pricing/ru" : "/pricing")}
                           className="block w-full text-left rounded-2xl bg-primary text-primary-foreground p-4 hover:shadow-md transition-shadow relative overflow-hidden group"
                         >
                           <div className="absolute -top-1/3 right-0 w-1/2 h-full rounded-full blur-[60px] opacity-20" style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 60%)" }} />
@@ -4296,14 +4296,21 @@ const Discover = ({ language = "en" }: Props) => {
                             <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold-light mb-2">
                               <Crown className="h-3 w-3" /> TopUni Pro
                             </div>
-                            <p className="font-heading font-bold text-sm leading-tight mb-1">Unlock the full database + workshops with our founders.</p>
-                            <p className="text-[11px] text-primary-foreground/65 mb-3">Founding rate — lifetime price lock. Capped at {foundingLeft.cap} members.</p>
+                            <p className="font-heading font-bold text-sm leading-tight mb-1">
+                              {t("Unlock the full database + workshops with our founders.", "Полная база + воркшопы с основателями.")}
+                            </p>
+                            <p className="text-[11px] text-primary-foreground/65 mb-3">
+                              {t(
+                                `Founding rate — lifetime price lock. Capped at ${foundingLeft.cap} members.`,
+                                `Цена для основателей — закреплена пожизненно. Лимит: ${foundingLeft.cap} мест.`,
+                              )}
+                            </p>
                             <div className="h-1.5 rounded-full bg-primary-foreground/15 overflow-hidden mb-2">
                               <div className="h-full bg-gold-light" style={{ width: `${((foundingLeft.cap - foundingLeft.left) / foundingLeft.cap) * 100}%` }} />
                             </div>
                             <p className="text-[11px] text-primary-foreground/80 tabular-nums flex items-center justify-between">
-                              <span><span className="font-semibold text-gold-light">{foundingLeft.left}</span> spots left</span>
-                              <span className="text-gold-light font-medium">See pricing →</span>
+                              <span><span className="font-semibold text-gold-light">{foundingLeft.left}</span> {t("spots left", "мест осталось")}</span>
+                              <span className="text-gold-light font-medium">{t("See pricing →", "Цены →")}</span>
                             </p>
                           </div>
                         </button>
@@ -4882,14 +4889,26 @@ const Discover = ({ language = "en" }: Props) => {
                 </div>
                 <SheetHeader>
                   <SheetTitle className="font-heading text-2xl text-primary-foreground tracking-tight leading-tight text-left">
-                    {paywallOpen === "shortlist" && `Save more than ${SHORTLIST_FREE_LIMIT} scholarships.`}
-                    {paywallOpen === "strategy" && "Unlock the full strategy."}
-                    {paywallOpen === "compare" && "Compare more than 2 scholarships."}
+                    {paywallOpen === "shortlist" && t(
+                      `Save more than ${SHORTLIST_FREE_LIMIT} scholarships.`,
+                      `Сохраняйте больше ${SHORTLIST_FREE_LIMIT} стипендий.`,
+                    )}
+                    {paywallOpen === "strategy" && t("Unlock the full strategy.", "Откройте полную стратегию.")}
+                    {paywallOpen === "compare" && t("Compare more than 2 scholarships.", "Сравнивайте больше 2 стипендий.")}
                   </SheetTitle>
                   <p className="text-primary-foreground/65 text-sm leading-relaxed pt-1 text-left">
-                    {paywallOpen === "shortlist" && `You've saved your free ${SHORTLIST_FREE_LIMIT}. Pro members get unlimited saves plus per-scholarship status tracking and notes.`}
-                    {paywallOpen === "strategy" && "Strategy notes — ideal-candidate profile, how-to-win approach, common rejection reasons, weak-candidate warnings — are part of TopUni Pro."}
-                    {paywallOpen === "compare" && "Compare up to three scholarships side-by-side with TopUni Pro."}
+                    {paywallOpen === "shortlist" && t(
+                      `You've saved your free ${SHORTLIST_FREE_LIMIT}. Pro members get unlimited saves plus per-scholarship status tracking and notes.`,
+                      `Вы использовали бесплатные ${SHORTLIST_FREE_LIMIT} сохранений. Pro-членство — без лимита, плюс статусы и заметки по каждой стипендии.`,
+                    )}
+                    {paywallOpen === "strategy" && t(
+                      "Strategy notes — ideal-candidate profile, how-to-win approach, common rejection reasons, weak-candidate warnings — are part of TopUni Pro.",
+                      "Стратегические заметки — портрет идеального кандидата, как выиграть, типичные причины отказа и кому не стоит подавать — входят в TopUni Pro.",
+                    )}
+                    {paywallOpen === "compare" && t(
+                      "Compare up to three scholarships side-by-side with TopUni Pro.",
+                      "Сравнивайте до трёх стипендий рядом — с TopUni Pro.",
+                    )}
                   </p>
                 </SheetHeader>
               </div>
@@ -4897,10 +4916,16 @@ const Discover = ({ language = "en" }: Props) => {
             <div className="px-7 py-6 space-y-5">
               <div className="space-y-2.5 text-sm text-foreground/85">
                 {[
-                  `Full database — all ${rows.length || 200}+ scholarships with strategy notes, rejection patterns, and how-to-win approaches.`,
-                  "Live monthly workshops with our founders — Yale, Schwarzman/Cambridge, Harvard.",
-                  "Recordings library — every workshop saved for you.",
-                  "Unlimited shortlist + status tracking + notes.",
+                  t(
+                    `Full database — all ${rows.length || 200}+ scholarships with strategy notes, rejection patterns, and how-to-win approaches.`,
+                    `Полная база — все ${rows.length || 200}+ стипендий со стратегическими заметками, причинами отказов и подходами к победе.`,
+                  ),
+                  t(
+                    "Live monthly workshops with our founders — Yale, Schwarzman/Cambridge, Harvard.",
+                    "Ежемесячные воркшопы с основателями — Yale, Schwarzman/Cambridge, Harvard.",
+                  ),
+                  t("Recordings library — every workshop saved for you.", "Библиотека записей — каждый воркшоп сохранён."),
+                  t("Unlimited shortlist + status tracking + notes.", "Без лимита: сохранения, статусы, заметки."),
                 ].map((b, i) => (
                   <div key={i} className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-gold-dark shrink-0 mt-0.5" />
@@ -4910,15 +4935,16 @@ const Discover = ({ language = "en" }: Props) => {
               </div>
               {foundingLeft && foundingLeft.left > 0 && (
                 <div className="rounded-xl bg-gold/10 border border-gold/25 p-3 text-xs text-gold-dark text-center">
-                  <span className="font-semibold tabular-nums">{foundingLeft.left}</span> founding spots left · price locked for life
+                  <span className="font-semibold tabular-nums">{foundingLeft.left}</span>{" "}
+                  {t("founding spots left · price locked for life", "мест в когорте основателей · цена закреплена пожизненно")}
                 </div>
               )}
               <div className="flex flex-col gap-2 pt-2">
-                <Button variant="gold" size="lg" className="w-full gap-2" onClick={() => { setPaywallOpen(null); navigate("/pricing"); }}>
-                  See TopUni Pro <ArrowRight className="h-4 w-4" />
+                <Button variant="gold" size="lg" className="w-full gap-2" onClick={() => { setPaywallOpen(null); navigate(ru ? "/pricing/ru" : "/pricing"); }}>
+                  {t("See TopUni Pro", "Смотреть TopUni Pro")} <ArrowRight className="h-4 w-4" />
                 </Button>
                 <button onClick={() => setPaywallOpen(null)} className="text-xs text-muted-foreground hover:text-foreground transition-colors py-2">
-                  Not now
+                  {t("Not now", "Не сейчас")}
                 </button>
               </div>
             </div>
