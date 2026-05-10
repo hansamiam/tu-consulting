@@ -31,6 +31,8 @@
   <url><loc>https://topuni.org/pipeline/ru</loc>            <changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://topuni.org/pricing/ru</loc>             <changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://topuni.org/team/ru</loc>                <changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://topuni.org/academy/ru</loc>             <changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://topuni.org/offerings/ru</loc>           <changefreq>monthly</changefreq><priority>0.5</priority></url>
   <url><loc>https://topuni.org/blog/ru</loc>                <changefreq>weekly</changefreq><priority>0.6</priority></url>
   <url><loc>https://topuni.org/faq/ru</loc>                 <changefreq>monthly</changefreq><priority>0.5</priority></url>
   <url><loc>https://topuni.org/blog/admissions-consultant-checklist/ru</loc>   <changefreq>monthly</changefreq><priority>0.6</priority></url>
