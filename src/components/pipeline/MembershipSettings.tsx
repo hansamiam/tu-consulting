@@ -132,7 +132,11 @@ export const MembershipSettings = ({ language = "en", variant = "embedded" }: Pr
                 </Badge>
                 {subscription.is_founding_member && subscription.founding_member_number && (
                   <span className="text-[11px] text-muted-foreground">
-                    #{subscription.founding_member_number} / 100
+                    {/* Drop the "/ 100" denominator — the cap moved to 50
+                       for the early-access cohort and the hardcoded 100
+                       was misleading. The number alone reads cleaner
+                       and ages well if the cap shifts again. */}
+                    {t(`Member #${subscription.founding_member_number} · early access`, `Член #${subscription.founding_member_number} · ранний доступ`)}
                   </span>
                 )}
               </div>

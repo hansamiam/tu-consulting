@@ -297,13 +297,13 @@ const Index = () => {
         >
           <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
             <motion.div {...fadeUp()} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gold/30 bg-gold/10 text-gold-dark text-[11px] font-medium tracking-[0.18em] uppercase mb-7">
-              <Crown className="h-3.5 w-3.5" /> Founding cohort · launch pricing
+              <Crown className="h-3.5 w-3.5" /> Early access · first 50 lock for life
             </motion.div>
             <motion.h2 {...fadeUp(0.05)} className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.1] mb-5">
               The full toolkit, $39/month.
             </motion.h2>
             <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-lg mb-9 max-w-xl mx-auto leading-relaxed">
-              TopUni AI · Discover · Academy · monthly live workshops with admitted founders. Founding cohort discount available with promo codes at checkout.
+              TopUni AI · Discover · Academy · monthly live workshops with the alumni team. Early-access discount applies automatically; promo codes accepted at checkout.
             </motion.p>
             <motion.div {...fadeUp(0.2)} className="flex flex-wrap items-center justify-center gap-3">
               <Button
