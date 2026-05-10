@@ -482,18 +482,55 @@ const yurt = wrap(
   </>
 );
 
-// Khan Shatyr (Astana, Kazakhstan) — modern conical tent.
-const khanShatyr = wrap(
+// Baiterek Tower (Astana, Kazakhstan) — the symbol of modern Kazakhstan,
+// a tall stem with a golden orb cradled in latticed branches. The orb
+// at the top is the distinctive mark; pre-fix this slot was a plain
+// triangle (Khan Shatyr's cone) which read as "random tent" rather
+// than "Kazakhstan".
+const baiterek = wrap(
   <>
-    <path d="M80 4 L58 50 L102 50 Z" />
-    {/* Spiral cable lines */}
-    <path d="M68 40 L92 40" stroke="#fff" strokeWidth="0.5" opacity="0.45" />
-    <path d="M64 46 L96 46" stroke="#fff" strokeWidth="0.5" opacity="0.45" />
-    <path d="M72 32 L88 32" stroke="#fff" strokeWidth="0.5" opacity="0.45" />
+    {/* Base platform */}
+    <rect x="68" y="52" width="24" height="2" opacity="0.7" />
+    {/* Tall central stem — slight taper toward the top */}
+    <path d="M77 52 L78 24 L82 24 L83 52 Z" />
+    {/* Lattice branches that cradle the orb — three pairs of curved arms */}
+    <path d="M76 26 Q70 22 68 18" stroke="currentColor" strokeWidth="1" fill="none" />
+    <path d="M84 26 Q90 22 92 18" stroke="currentColor" strokeWidth="1" fill="none" />
+    <path d="M76 24 Q72 20 70 14" stroke="currentColor" strokeWidth="1" fill="none" />
+    <path d="M84 24 Q88 20 90 14" stroke="currentColor" strokeWidth="1" fill="none" />
+    <path d="M77 22 Q76 18 76 12" stroke="currentColor" strokeWidth="1" fill="none" />
+    <path d="M83 22 Q84 18 84 12" stroke="currentColor" strokeWidth="1" fill="none" />
+    {/* The golden orb — Baiterek's iconic sphere */}
+    <circle cx="80" cy="16" r="6.5" />
+    {/* Subtle highlight on the orb */}
+    <circle cx="78" cy="14" r="1.8" fill="#fff" opacity="0.45" />
     {/* Apex spire */}
-    <rect x="79.5" y="0" width="1" height="4" />
-    {/* Base */}
-    <rect x="56" y="50" width="48" height="2" opacity="0.7" />
+    <rect x="79.5" y="6" width="1" height="4" />
+  </>
+);
+
+// Merlion (Singapore) — the country's mythological mascot: lion's head
+// on a fish body, perched on a wave base, water arcing from the mouth.
+// Pre-fix Singapore was Marina Bay Sands which is iconic but the user
+// flagged it should be the Merlion as the more "this is Singapore" signal.
+const merlion = wrap(
+  <>
+    {/* Wave base */}
+    <path d="M40 52 Q60 48 80 52 Q100 48 120 52 L120 56 L40 56 Z" opacity="0.45" />
+    {/* Pedestal */}
+    <rect x="76" y="46" width="10" height="6" opacity="0.7" />
+    {/* Fish-body curve flowing into base */}
+    <path d="M74 46 Q72 38 76 32 L84 32 Q88 38 86 46 Z" />
+    {/* Lion head — rounded with mane */}
+    <circle cx="80" cy="26" r="8" />
+    {/* Mane outline — irregular ring */}
+    <path d="M72 24 Q70 18 74 14 Q72 12 76 12 Q78 8 80 12 Q82 8 84 12 Q88 12 86 14 Q90 18 88 24" fill="currentColor" opacity="0.85" />
+    {/* Eye / face highlight */}
+    <circle cx="78" cy="25" r="1" fill="#fff" opacity="0.45" />
+    {/* Water arc spouting from the mouth */}
+    <path d="M86 28 Q96 24 108 30 Q104 26 100 24" stroke="currentColor" strokeWidth="1.5" fill="none" />
+    <circle cx="108" cy="30" r="1.2" opacity="0.7" />
+    <circle cx="103" cy="26" r="0.9" opacity="0.55" />
   </>
 );
 
@@ -612,13 +649,13 @@ const COUNTRY_ART: Record<string, React.ReactNode> = {
   // Asia-Pacific
   Japan: fuji, China: pagoda, "Hong Kong": hkSkyline, Taiwan: pagoda,
   Korea: hanok, "South Korea": hanok, "North Korea": hanok,
-  Singapore: marinaBay, Malaysia: mosque, Indonesia: mosque,
-  Thailand: pagoda, Vietnam: pagoda, Philippines: marinaBay,
-  Australia: southernCross, "New Zealand": silverFern, Brunei: marinaBay,
+  Singapore: merlion, Malaysia: mosque, Indonesia: mosque,
+  Thailand: pagoda, Vietnam: pagoda, Philippines: pagoda,
+  Australia: opera, "New Zealand": silverFern, Brunei: mosque,
   India: taj, "Sri Lanka": taj, Pakistan: mosque, Bangladesh: mosque, Nepal: caucasus,
 
   // Central Asia
-  Kazakhstan: khanShatyr, Kyrgyzstan: yurt, Uzbekistan: mosque,
+  Kazakhstan: baiterek, Kyrgyzstan: yurt, Uzbekistan: mosque,
   Tajikistan: caucasus, Turkmenistan: yurt, Mongolia: yurt,
   Azerbaijan: caucasus, Armenia: caucasus, Georgia: caucasus,
 
@@ -661,6 +698,12 @@ const COUNTRY_ART: Record<string, React.ReactNode> = {
   Global: globe, Multiple: globe, "Multiple countries": globe,
   International: globe, Worldwide: globe,
 };
+
+// Retired silhouettes — kept defined in case we revisit the mapping
+// (e.g. add Marina Bay Sands as a secondary Singapore variant or bring
+// the Southern Cross back if the Opera House feels overused). The void
+// references silence "declared but never used" warnings.
+void marinaBay; void southernCross;
 
 import { canonicalCountry } from "@/lib/countryAccent";
 

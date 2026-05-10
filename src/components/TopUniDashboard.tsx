@@ -350,6 +350,19 @@ const UniversityShortlist = ({ markdown, isRu, onOpenDiscover, onRegen, isRegene
       cur.items.push(curItem);
     };
 
+    /* 2026-05-10 pivot: scholarship-first format is FLAT — no ###
+     * sub-headings, just 3 `**Name**` bullets. Pre-pivot the parser
+     * required at least one ### heading or buckets stayed empty and
+     * the section rendered as null. The implicit bucket below is
+     * lazily created when we see a bullet without an active bucket
+     * so the new format renders cleanly while old cached briefs
+     * (with three explicit ### buckets) still parse identically. */
+    const ensureBucket = () => {
+      if (cur) return;
+      cur = { heading: "", items: [] };
+      buckets.push(cur);
+    };
+
     for (const raw of lines) {
       const line = raw.trim();
       if (!line) { flushPendingIntoCurItem(); continue; }
@@ -360,7 +373,8 @@ const UniversityShortlist = ({ markdown, isRu, onOpenDiscover, onRegen, isRegene
         curItem = null;
         cur = { heading: line.slice(4).trim(), items: [] };
         buckets.push(cur);
-      } else if (cur && /^([-*]|\d+\.)\s+/.test(line)) {
+      } else if (/^([-*]|\d+\.)\s+/.test(line)) {
+        ensureBucket();
         const bulletText = line.replace(/^([-*]|\d+\.)\s+/, "").trim();
         // A bullet starting with `**Name**` is a new university; a
         // bullet without it is a sub-detail under the current item.
@@ -384,8 +398,15 @@ const UniversityShortlist = ({ markdown, isRu, onOpenDiscover, onRegen, isRegene
 
   if (buckets.length === 0) return null;
 
-  // Map bucket index → tier accent. Strong fits = gold, Aligned = navy, last = muted.
+  // Map bucket index → tier accent. With the 2026-05-10 scholarship-
+  // first flat format (single implicit bucket) every school is gold-
+  // tier since all three are illustrative landings of the funding
+  // pathway, not ranked tiers. With the legacy bucketed format
+  // (3 ### sub-headings: Strong fits / Aligned / Worth keeping) we
+  // keep the gold→navy→muted ladder so old cached briefs render the
+  // same as before.
   const tierFor = (i: number, total: number) => {
+    if (total === 1) return { kicker: "text-gold-dark", strip: "from-gold-light via-gold-dark to-gold-light" };
     if (i === 0) return { kicker: "text-gold-dark", strip: "from-gold-light via-gold-dark to-gold-light" };
     if (i === total - 1) return { kicker: "text-muted-foreground", strip: "from-muted-foreground/30 to-muted-foreground/50" };
     return { kicker: "text-primary", strip: "from-primary/60 via-primary to-primary/60" };
@@ -395,7 +416,7 @@ const UniversityShortlist = ({ markdown, isRu, onOpenDiscover, onRegen, isRegene
     <div className="not-prose my-10">
       <div className="flex items-baseline justify-between gap-3 mb-6">
         <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-          {title || (isRu ? "Ваш шорт-лист университетов" : "Your university shortlist")}
+          {title || (isRu ? "Куда ведут ваши стипендии" : "Schools where these scholarships land you")}
         </h2>
         <div className="flex items-center gap-3">
           <SectionRegenButton sectionId="shortlist" onRegen={onRegen} isRegenerating={isRegenerating} isRu={isRu} />
@@ -1285,7 +1306,7 @@ const FinalWord = ({ markdown, isRu }: { markdown: string; isRu: boolean }) => {
 
 const PATHWAY_POS_SECTION_REGEX = /^##\s+.*?(strategic positioning|positioning|стратегическое позиционирование|позиционирование)/i;
 const PATHWAY_PLAN_SECTION_REGEX = /^##\s+.*?(action plan|90.day|план действий)/i;
-const PATHWAY_UNIS_SECTION_REGEX = /^##\s+.*?(university shortlist|your university|шорт.лист университетов)/i;
+const PATHWAY_UNIS_SECTION_REGEX = /^##\s+.*?(university shortlist|your university|schools where|куда ведут|шорт.лист университетов)/i;
 const PATHWAY_FUND_SECTION_REGEX = /^##\s+.*?(funding pathway|funding deep|финансирование|стипендии)/i;
 const PATHWAY_ESSAYS_SECTION_REGEX = /^##\s+.*?(essay angle|essay angles|углов? для эссе|эссе)/i;
 const PATHWAY_GAPS_SECTION_REGEX = /^##\s+.*?(honest gap|gaps to close|пробел|недотяг|слабые)/i;

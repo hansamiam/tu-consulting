@@ -46,7 +46,6 @@ import {
   Eye,
   Columns3,
   Circle,
-  GitCompare,
   Gem,
   DollarSign,
   Crown,
@@ -787,6 +786,30 @@ const isInclusive = (v: string | null | undefined) =>
  * everything downstream gets NaN day-counts → the row renders as
  * "NaN days left" or breaks sort order. Both helpers now return
  * null on bad input so callers fall back to "Rolling" / hide. */
+/* Country-specific scholarships (Bolashak / Chevening-when-restricted-
+ * to-Commonwealth / etc) should surface their FUNDING country on the
+ * card band, not a generic "Worldwide" host_country. The user's
+ * complaint: "for scholarships that are specific to certain countries
+ * put THAT in the country banner like Bolashak for KAZAKHSTAN not
+ * some random ass global."
+ *
+ * Heuristic: if eligible_countries narrows to a single specific
+ * country AND host_country is generic (Worldwide / Multiple / null),
+ * the eligible country IS the scholarship's identity country. Use it
+ * for the banner label, accent color, and silhouette. When host
+ * country is itself specific (a US university scholarship), keep
+ * host_country since location-of-study is the primary signal. */
+const GENERIC_HOSTS = /^(worldwide|global|various|international|multiple|any)/i;
+const bannerCountry = (s: { host_country: string | null; eligible_countries: string[] | null }): string | null => {
+  const elig = (s.eligible_countries || [])
+    .map(c => (c || "").trim())
+    .filter(c => c.length > 0 && !GENERIC_HOSTS.test(c));
+  const host = (s.host_country || "").trim();
+  const hostIsGeneric = !host || GENERIC_HOSTS.test(host);
+  if (elig.length === 1 && hostIsGeneric) return elig[0];
+  return host || null;
+};
+
 const dateOnly = (d: string | null) => {
   if (!d) return null;
   const t = new Date(d).getTime();
@@ -1488,7 +1511,8 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
   const dl = deadlineDisplay(s.application_deadline, lang, s.deadline_type);
   const hasRealScore = s.match > 0 && (s.reasons.length > 0 || s.warnings.length > 0);
   const isFullRide = s.coverage_type === "full_ride";
-  const accent = accentForCountry(s.host_country);
+  const bannerCtry = bannerCountry(s);
+  const accent = accentForCountry(bannerCtry);
   const award = compactAward(s);
 
   return (
@@ -1551,7 +1575,7 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
               still look uniform. */}
           {(() => {
             const p = cleanProvider(s.provider_name);
-            const countryLabel = s.host_country ? shortCountry(s.host_country) : null;
+            const countryLabel = bannerCtry ? shortCountry(bannerCtry) : null;
             if (!p && !countryLabel) return null;
             return (
               <div className="flex items-center gap-1.5 mt-1 min-w-0 text-xs text-muted-foreground">
@@ -1729,7 +1753,11 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
   // card shows "WORTH EXPLORING" (the default for priority=low_priority
   // when match=0) which differentiates nothing.
 
-  const accent = accentForCountry(s.host_country);
+  // Banner country: prefer the funding/origin country when the
+  // scholarship is restricted to a single nationality and host_country
+  // is generic (Worldwide/Multiple). See bannerCountry() definition.
+  const bannerCtry = bannerCountry(s);
+  const accent = accentForCountry(bannerCtry);
 
   return (
     <motion.article
@@ -1754,11 +1782,16 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
             previously stretched the SVG to band height (56px) and forced
             its natural width to 112px — wider than the 22% cap, hence
             the clipped silhouette regression. */}
-        <CountryArt country={s.host_country} className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-[72px] flex items-center justify-end opacity-25 pointer-events-none" />
+        <CountryArt country={bannerCtry} className="absolute right-1.5 top-1/2 -translate-y-1/2 h-9 w-[60px] flex items-center justify-end opacity-25 pointer-events-none" />
         <span className={`absolute inset-0 bg-gradient-to-r from-black/30 via-black/5 to-transparent pointer-events-none`} />
-        <span className="relative flex items-center gap-2 min-w-0 flex-1 pr-[88px]">
-          {s.host_country && (
-            <span className="truncate drop-shadow-sm">{shortCountry(s.host_country, { tight: true })}</span>
+        {/* Reserved 70px on the right for the silhouette (60px width + 10px
+            breathing). The country span gets shrink-0 so it never gets
+            squeezed into "Switzerla…" — secondary chips truncate first
+            since they're optional flair while the country label is the
+            band's identity. */}
+        <span className="relative flex items-center gap-2 min-w-0 flex-1 pr-[70px]">
+          {bannerCtry && (
+            <span className="shrink-0 drop-shadow-sm">{shortCountry(bannerCtry, { tight: true })}</span>
           )}
           {/* Chip priority on the band: country (always) > full-ride badge >
               one demographic. The "Prestigious" chip was retired —
@@ -1904,43 +1937,36 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           </div>
         )}
 
-        {/* Action row. Round 38 changes per user feedback ("shortlist
-            button is too not obvious", "compare/share only on hover —
-            unnecessary effect, just keep them there"):
-            • Save is a prominent labeled button now, gold when saved.
-            • Compare + Share always visible (no opacity-0 hover gate). */}
-        <div className="flex items-center justify-between gap-1.5 mt-auto pt-2.5 border-t border-border/50" onClick={(e) => e.stopPropagation()}>
+        {/* Action row. Compare button removed from grid view 2026-05-10
+            (planned re-enable as a future update once the comparison
+            modal earns its keep). Save shrunk from a full-width labelled
+            pill to a clean icon-button matching the share button — the
+            big labelled "Saved/Save" was overpowering the card and the
+            bookmark icon alone reads correctly. */}
+        <div className="flex items-center justify-end gap-1 mt-auto pt-2.5 border-t border-border/50" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={onBookmark}
             aria-label={isBookmarked ? (ru ? "Удалить из сохранённых" : "Remove from saved") : (ru ? "Сохранить" : "Save")}
-            className={`flex-1 inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-md text-[12px] font-semibold transition-all ${
+            title={isBookmarked ? (ru ? "В шортлисте" : "Saved") : (ru ? "Сохранить" : "Save")}
+            className={`p-1.5 rounded-md transition-all ${
               isBookmarked
-                ? "bg-gold/15 text-gold-dark hover:bg-gold/20 ring-1 ring-gold/30"
-                : "bg-foreground/[0.04] text-foreground hover:bg-foreground/[0.08] ring-1 ring-border/60 hover:ring-foreground/30"
+                ? "text-gold-dark bg-gold/10 hover:bg-gold/15"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
             }`}
           >
-            {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
-            {isBookmarked ? (ru ? "Сохранено" : "Saved") : (ru ? "Сохранить" : "Save")}
+            {isBookmarked
+              ? <BookmarkCheck className="h-4 w-4" />
+              : <Bookmark className="h-4 w-4" />}
           </button>
-          <div className="flex items-center gap-0.5">
-            <button
-              onClick={onToggleCompare}
-              aria-label={isComparing ? "Remove from compare" : "Add to compare"}
-              title={isComparing ? "Remove from compare" : "Add to compare"}
-              className={`p-1.5 rounded-md transition-all ${isComparing ? "text-gold-dark bg-gold/10" : "text-muted-foreground hover:text-foreground hover:bg-muted/60"}`}
-            >
-              <GitCompare className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); shareScholarship(s, lang); }}
-              aria-label={ru ? "Поделиться стипендией" : "Share this scholarship"}
-              title={ru ? "Поделиться" : "Share"}
-              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
-            >
-              <Share2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); shareScholarship(s, lang); }}
+            aria-label={ru ? "Поделиться стипендией" : "Share this scholarship"}
+            title={ru ? "Поделиться" : "Share"}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+          >
+            <Share2 className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </motion.article>
@@ -3426,8 +3452,15 @@ const Discover = ({ language = "en" }: Props) => {
     }
     if (filters.demographic !== "all") {
       // Match against the constrained target_demographics tag set.
+      // "women-any" is a virtual chip-level value used by the Women
+      // quick filter — expands into an OR-match across both women-only
+      // and underrepresented-stem tagged rows so the chip surfaces the
+      // full women cohort, not just the tech subset.
+      const wanted = filters.demographic === "women-any"
+        ? ["women", "underrepresented-stem"]
+        : [filters.demographic];
       list = list.filter(s => Array.isArray(s.target_demographics)
-        && s.target_demographics.includes(filters.demographic));
+        && wanted.some(d => s.target_demographics!.includes(d)));
     }
     if (filters.field !== "all") {
       // Use the SAME normalizeFieldKey() the dropdown builder uses so
@@ -4253,8 +4286,8 @@ const Discover = ({ language = "en" }: Props) => {
                           // combos) and the rail entry was visual
                           // duplication. Pipeline removed earlier;
                           // tracking lives on /pipeline.
-                          { id: "browse" as AppSection,      label: "Browse",       icon: Layers,        count: 0 },
-                          { id: "shortlist" as AppSection,   label: "Saved",        icon: BookmarkCheck, count: shortlist.size,  accent: shortlist.size > 0 },
+                          { id: "browse" as AppSection,      label: t("Browse", "Каталог"),       icon: Layers,        count: 0 },
+                          { id: "shortlist" as AppSection,   label: t("Shortlist", "Шортлист"),   icon: BookmarkCheck, count: shortlist.size,  accent: shortlist.size > 0 },
                         ]).map(item => {
                           const Icon = item.icon;
                           const active = appSection === item.id;
@@ -4671,26 +4704,9 @@ const Discover = ({ language = "en" }: Props) => {
           )}
         </AnimatePresence>
 
-        {/* Sticky shortlist FAB */}
-        <AnimatePresence>
-          {phase === "results" && shortlist.size > 0 && (
-            <motion.button
-              initial={{ opacity: 0, y: 30, scale: 0.85 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 30, scale: 0.85 }}
-              transition={{ type: "spring", stiffness: 280, damping: 22 }}
-              onClick={() => setShortlistOpen(true)}
-              className="fixed bottom-6 right-6 z-40 bg-gold text-primary font-bold pl-5 pr-4 py-3.5 rounded-2xl shadow-lg hover:scale-[1.03] transition-transform flex items-center gap-3"
-            >
-              <BookmarkCheck className="h-5 w-5" />
-              <div className="text-left">
-                <div className="text-sm font-bold leading-none">My shortlist</div>
-                <div className="text-[11px] font-medium opacity-70 mt-0.5">{shortlist.size} saved</div>
-              </div>
-              <ArrowRight className="h-4 w-4" />
-            </motion.button>
-          )}
-        </AnimatePresence>
+        {/* Floating shortlist FAB retired — the right-rail Shortlist tab
+            already surfaces this in a more discoverable place, and the
+            FAB was duplicating the entry point. */}
 
         {/* ── COMPARE DRAWER — side-by-side comparison of up to 3 scholarships ── */}
         <Sheet open={compareOpen} onOpenChange={setCompareOpen}>
@@ -4707,7 +4723,7 @@ const Discover = ({ language = "en" }: Props) => {
             <div className="p-5">
               {compareSet.size === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-12">
-                  Click the <GitCompare className="h-3.5 w-3.5 inline mx-0.5" /> icon on any card to add it here.
+                  {t("Compare returns soon as a list-view feature.", "Сравнение скоро вернётся в виде списка.")}
                 </p>
               ) : (() => {
                 const items = ranked.filter(s => compareSet.has(s.scholarship_id));

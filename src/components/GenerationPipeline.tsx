@@ -98,8 +98,8 @@ export function GenerationPipeline({ profile, isRu = false }: Props) {
     {
       id: "shortlist",
       Icon: Award,
-      label: t("Building your shortlist", "Собираем шорт-лист"),
-      detail: t("Strong fits → competitive matches → worth keeping on the radar", "Сильные совпадения → конкурентные → стоит держать в виду"),
+      label: t("Mapping schools to your funding", "Привязываем школы к вашему финансированию"),
+      detail: t("3 schools where your scholarships actually land you", "3 школы, куда вас приведут эти стипендии"),
       doneAt: 5000,
     },
     {

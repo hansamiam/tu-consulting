@@ -371,8 +371,8 @@ const SharedBriefPage = () => {
                     <Award className="w-3.5 h-3.5 text-gold-dark mt-1 shrink-0" />
                     <span>
                       {isRu
-                        ? "Стратегическое позиционирование, шорт-лист 15+ университетов, путь финансирования, план на 90 дней."
-                        : "Strategic positioning, 15+ university shortlist, funding pathway, 90-day action plan."}
+                        ? "Стратегическое позиционирование, путь финансирования, 3 школы куда вас приведут стипендии, эссе-ракурсы, честные пробелы."
+                        : "Strategic positioning, funding pathway, 3 schools where your scholarships land you, essay angles, honest gaps."}
                     </span>
                   </li>
                   <li className="flex items-start gap-2">

@@ -326,7 +326,11 @@ serve(async (req) => {
     // throughout, banned clinical phrasing ("the student", "the
     // candidate"), opening framing line per section so the brief reads
     // like a trusted older peer speaking directly to them.
-    const PROMPT_VERSION = "v3-2026-05-10";
+    // 2026-05-10: v4 — scholarship-first pivot. School shortlist cut
+    // from 6-10 → 3 illustrative schools (no buckets), reframed as
+    // "where the funding pathway lands you" since TopUni's value prop
+    // is scholarships, not school-picking.
+    const PROMPT_VERSION = "v4-2026-05-10";
 
     // ─── Cache hit check ────────────────────────────────────────────────
     // Skip for regenSection (the user is explicitly asking us to redo
@@ -714,22 +718,17 @@ After the paragraphs, on its own line, output exactly:
 
 **Your 30-day call:** [one specific, single-sentence action — direct, addressed to "you"]
 
-## Your university shortlist
-Pull 6-8 real universities from the database section — the SHARPEST cut, not the broadest list. Open with one short framing sentence in second person — "Here's where I'd actually point you:" — then organize into three buckets, in this exact order, using exactly these labels:
+## Schools where these scholarships land you
+TopUni is scholarship-first, not school-first. This section is NOT a traditional university shortlist — it's a 3-school illustrative slice showing where the scholarships in your funding pathway actually land you. Three is the cap.
 
-### Strong fits — apply with confidence
-3-4 universities where YOU fit. For each:
-- **University name** — one tight sentence on why YOU fit THIS program (cite a real profile signal — your GPA, field, country alignment, named activity). Address them as "you", not "the student".
+Open with one short framing sentence in second person — "Here's where these scholarships actually take you:" — then list 3 universities in a flat list (no buckets, no "Strong fits / Aligned / Worth keeping" labels). For each:
+- **University name** — one tight sentence on why YOU fit THIS program AND which scholarship from your funding pathway covers it (cite the scholarship by name + a real signal from your profile — your GPA, field, country alignment, named activity). Address them as "you", not "the student".
 - Specific program + admission threshold (IELTS, GPA cutoff) when known
 - One concrete career anchor: typical starting salary band in your field, ONE notable employer, OR one alumni outcome — pick the strongest single fact, not all of them
 
-### Aligned options — competitive but achievable
-2-3 universities. Same format.
+End with one short coda sentence framing this as illustrative — "These three are where the funding pathway lands you cleanly. Other schools fit too — your scholarships are the engine, the school is the vehicle."
 
-### Worth keeping on the radar
-1-2 universities. Same format.
-
-Do NOT invent universities. Pull only from the database section above.
+Do NOT invent universities. Pull only from the database section above. Do NOT include 6+ schools — three is the cap.
 
 ## Funding pathway
 Open with one short sentence in second person — "Here's how I'd stack your funding:" — then pick 3-4 specific scholarships from the database that YOU should actually apply to first. For each:

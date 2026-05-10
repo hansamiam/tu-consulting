@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import {
-  Award, Clock, GraduationCap, Globe, Cpu, Heart, Users, HandCoins,
+  Award, Clock, GraduationCap, Globe, Cpu, Users, HandCoins,
 } from "lucide-react";
 
 /* CuratedCollections — curated entry tiles above the card grid. Each tile
@@ -49,14 +49,20 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
   },
   {
     id: "closing-soon",
-    label: "Closing in 30 days",
-    sub: "Apply this month",
+    // Label aligned with the underlying filter — `closingSoon: true`
+    // narrows to <=90 day deadlines (Discover.tsx). Pre-fix the chip
+    // claimed "30 days" but clicking it surfaced the 90-day cohort, so
+    // the count next to the chip didn't match the result count after
+    // clicking. Either rename or change the filter — renaming is less
+    // invasive and 90 days is the operationally useful "apply now" range.
+    label: "Closing soon",
+    sub: "Deadlines in the next 90 days",
     Icon: Clock,
     accentCls: "from-destructive/10 to-destructive/[0.03] border-destructive/25",
     predicate: s => {
       if (!s.application_deadline) return false;
       const d = Math.ceil((new Date(s.application_deadline).getTime() - Date.now()) / 86400_000);
-      return d > 0 && d <= 30;
+      return d > 0 && d <= 90;
     },
     apply: set => set({ closingSoon: true }),
   },
@@ -92,15 +98,13 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
     predicate: s => s.host_country === "Japan",
     apply: set => set({ hostCountry: "Japan" }),
   },
-  {
-    id: "us-route",
-    label: "United States",
-    sub: "Top US programs",
-    Icon: Globe,
-    accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
-    predicate: s => s.host_country === "United States" || s.host_country === "USA",
-    apply: set => set({ hostCountry: "United States" }),
-  },
+  // "us-route" preset retired 2026-05-10 — generic "Top US programs" was
+  // too broad to function as a discovery shortcut. Users wanting the US
+  // pick it from the host-country filter directly. Quick filters now
+  // earn their slot by either (a) acting as a strategy shortcut
+  // ("fully funded", "closing soon", "PhD with funding") or (b)
+  // surfacing a less-obvious cohort ("women in STEM", "first-gen",
+  // "refugees", "need-based"). A flat country preset doesn't qualify.
   {
     id: "uk-route",
     label: "United Kingdom",
@@ -124,27 +128,28 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
     // canonical bucket the dropdown actually exposes.
     apply: set => set({ field: "Computer Science" }),
   },
-  {
-    id: "public-health",
-    label: "Public Health & Development",
-    sub: "Health, policy, dev studies",
-    Icon: Heart,
-    accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
-    predicate: s => (s.target_fields || []).some(f => /public[\s_]?health|develop|policy|epidemic|nutrition|medic/i.test(f || "")),
-    apply: set => set({ field: "Public Health" }),
-  },
+  // "public-health" preset retired 2026-05-10 — too narrow a field-axis
+  // to earn the slot; users in those fields find their programs through
+  // the field filter directly. Field-shortcut quick filters reserved
+  // for the few categories with clear demand pull.
   // Demographic-eligibility collections — surface programs designed for
   // specific groups. Each tile pre-applies the demographic filter so
   // clicking lands directly in the curated subset.
   {
-    id: "women-stem",
-    label: "Women in STEM",
-    sub: "Programs designed for women in tech / engineering / science",
+    id: "women",
+    // Renamed 2026-05-10 from "Women in STEM" to plain "Women" — was too
+    // narrow and missed women-only programs outside tech (e.g. business,
+    // medicine, leadership). The apply key "women-any" is a virtual
+    // demographic value that the Discover filter pipeline expands into
+    // an OR-match across both "women" and "underrepresented-stem" tags
+    // so this chip surfaces ALL women-cohort programs, not just STEM.
+    label: "Women",
+    sub: "Programs designed for women — STEM, business, leadership, more",
     Icon: Users,
     accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
     predicate: s => Array.isArray(s.target_demographics)
       && (s.target_demographics.includes("underrepresented-stem") || s.target_demographics.includes("women")),
-    apply: set => set({ demographic: "underrepresented-stem" }),
+    apply: set => set({ demographic: "women-any" }),
   },
   {
     id: "first-generation",

@@ -154,27 +154,28 @@ Begin your response with: ## Strategic positioning`,
 
 const shortlist: SectionSpec = {
   id: "shortlist",
-  heading: "## Your university shortlist",
+  // 2026-05-10 pivot: scholarship-first means the brief is about funding,
+  // and the school list is a 3-row illustration of where the funding
+  // takes them — not a 6-10 row shortlist users have to pick from. The
+  // section heading reframes this from "your shortlist" (which implies
+  // school selection is the decision) to "where these scholarships
+  // land you" (where the scholarship IS the decision and the school is
+  // the consequence).
+  heading: "## Schools where these scholarships land you",
   reasoning: { effort: "high" },
-  buildPrompt: (ctx) => `Output: just the "## Your university shortlist" section, in ${ctx.lang}.
+  buildPrompt: (ctx) => `Output: just the "## Schools where these scholarships land you" section, in ${ctx.lang}.
 
-You're sitting across from this person. They've asked: "where should I actually apply?" Pull 6-10 real universities from the DATABASE CONTEXT below — the SHARPEST cut, not the broadest list. Curation is the value here, not coverage.
+CONTEXT: TopUni is scholarship-first, not school-first. The reader is hunting funding, not picking from 6,000 universities the way a US-college applicant would. So this section is NOT a school shortlist in the traditional sense — it's a **3-school illustrative slice** showing where the scholarships in their funding pathway actually land them. Quality and concreteness over breadth. Three is the cap.
 
-Open with one short framing sentence that addresses them as "you" — something like "Here's where I'd actually point you:" — to make it feel like a person speaking, not a search result. Then organize into three buckets, in this exact order, using exactly these labels:
+Open with one short framing sentence in second person — something like "Here's where these scholarships actually take you:" — so it reads like a person speaking, not a search result. Then list 3 universities (no buckets, no "strong fits" / "aligned options" / "worth keeping" labels). For each:
 
-### Strong fits — apply with confidence
-3-5 universities. For each:
-- **University name** — one tight sentence on why YOU fit THIS program (cite a real signal from the profile — your GPA, field, country alignment, named activity). Address them as "you", not "the student".
+- **University name** — one tight sentence on why YOU fit THIS program AND which scholarship from your funding pathway covers it (cite the scholarship by name and a real signal from your profile — GPA, field, country alignment, named activity). Address them as "you", not "the student".
 - Specific program(s) + admission threshold (IELTS, GPA cutoff) when known.
 - One concrete career anchor: typical starting salary band in your field, ONE notable employer, OR one alumni outcome — pick the strongest single fact, not all of them.
 
-### Aligned options — competitive but achievable
-2-3 universities. Same format.
+After the three schools, output one short coda sentence that frames this as illustrative — something like "These three are where the funding pathway lands you cleanly. Other schools fit too — your scholarships are the engine, the school is the vehicle."
 
-### Worth keeping on the radar
-1-2 universities. Same format.
-
-Do NOT invent universities. Pull only from the database section.
+Do NOT invent universities. Pull only from the database section. Do NOT include 6+ schools — three is the cap.
 
 ${SHARED_RULES}
 
@@ -184,13 +185,11 @@ ${profileBlock(ctx)}
 DATABASE CONTEXT:
 ${dbBlock(ctx)}
 
-Begin your response with: ## Your university shortlist`,
+Begin your response with: ## Schools where these scholarships land you`,
   validate: (md) => {
-    // Each bucket should be present.
-    const buckets = [/strong fits/i, /aligned options/i, /worth keeping/i];
-    const missing = buckets.filter(rx => !rx.test(md));
-    if (missing.length > 0) return { ok: false, reason: `${missing.length} bucket(s) missing` };
-    if (md.length < 600) return { ok: false, reason: `too short (${md.length} chars)` };
+    // Bucket validators retired with the 2026-05-10 scholarship-first
+    // pivot — the new format is a flat 3-school list, no buckets.
+    if (md.length < 350) return { ok: false, reason: `too short (${md.length} chars)` };
     return { ok: true };
   },
 };
