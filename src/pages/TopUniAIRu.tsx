@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Navigation from "@/components/Navigation";
-import { BetaBanner } from "@/components/BetaBanner";
+// BetaBanner retired site-wide 2026-05-10.
 import { TopUniAIEntrance } from "@/components/topuni/TopUniAIEntrance";
 import { Footer } from "@/components/Footer";
 import TopUniDashboard from "@/components/TopUniDashboard";
@@ -203,7 +203,6 @@ const TopUniAIRu = () => {
       <TopUniAIEntrance language="ru" />
       <div className="relative z-10">
         <Navigation language="ru" />
-        <BetaBanner language="ru" />
 
         <AnimatePresence mode="wait">
 
