@@ -197,7 +197,7 @@ const TopUniAIRu = () => {
   return (
     // Background dropped 2026-05-10 — see EN page comment. Cream-clean
     // for focus on form + brief.
-    <div className="min-h-screen bg-background relative">
+    <div className={`${screen === "intake" ? "dark" : ""} min-h-screen bg-background relative transition-colors duration-500`}>
       <TopUniAIEntrance language="ru" />
       <div className="relative z-10">
         <Navigation language="ru" />

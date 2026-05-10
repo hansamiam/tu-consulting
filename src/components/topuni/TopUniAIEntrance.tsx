@@ -81,7 +81,7 @@ export const TopUniAIEntrance = ({ language = "en" }: Props) => {
         initial={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="fixed inset-0 z-[60] pointer-events-none flex items-center justify-center bg-background/85 backdrop-blur-md"
+        className="fixed inset-0 z-[60] pointer-events-none flex items-center justify-center bg-primary/95 backdrop-blur-md"
         aria-hidden
       >
         {/* Soft gold halo. Re-timed so the bloom PEAKS at 35% (~840ms)
@@ -113,11 +113,15 @@ export const TopUniAIEntrance = ({ language = "en" }: Props) => {
           transition={{ duration: 2.0, ease: [0.16, 1, 0.3, 1], times: [0, 0.25, 0.78, 1], delay: 0.55 }}
           className="relative flex flex-col items-center text-center"
         >
-          <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.36em] text-gold-dark mb-3">
+          {/* Backdrop is now navy (matches the dark intake wizard
+              underneath) — wordmark flipped to gold-light/white for
+              contrast. Pre-fix the text-foreground color was dark on
+              the previous cream backdrop and disappeared on navy. */}
+          <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.36em] text-gold-light mb-3">
             TopUni
           </p>
-          <p className="font-heading text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-foreground drop-shadow-[0_2px_24px_hsl(var(--background)/0.85)]">
-            {ru ? "TopUni " : "TopUni "}<span className="text-gold-dark drop-shadow-[0_1px_8px_hsl(var(--background)/0.65)]">AI</span>
+          <p className="font-heading text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-primary-foreground drop-shadow-[0_2px_24px_hsl(var(--primary)/0.9)]">
+            {ru ? "TopUni " : "TopUni "}<span className="text-gold-light drop-shadow-[0_1px_8px_hsl(var(--primary)/0.65)]">AI</span>
           </p>
 
           {/* Underscore grows from center during the held beat. */}
@@ -125,14 +129,14 @@ export const TopUniAIEntrance = ({ language = "en" }: Props) => {
             initial={{ scaleX: 0 }}
             animate={{ scaleX: [0, 1, 1, 0] }}
             transition={{ duration: 1.7, ease: [0.16, 1, 0.3, 1], times: [0, 0.4, 0.78, 1], delay: 0.7 }}
-            className="block h-px w-32 sm:w-44 bg-gradient-to-r from-transparent via-gold-dark to-transparent mt-5 origin-center"
+            className="block h-px w-32 sm:w-44 bg-gradient-to-r from-transparent via-gold-light to-transparent mt-5 origin-center"
           />
 
           <motion.p
             initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.85, 0] }}
+            animate={{ opacity: [0, 0.75, 0] }}
             transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1], times: [0, 0.5, 1], delay: 0.85 }}
-            className="text-[11px] sm:text-xs font-medium tracking-[0.22em] uppercase text-muted-foreground/85 mt-4"
+            className="text-[11px] sm:text-xs font-medium tracking-[0.22em] uppercase text-primary-foreground/65 mt-4"
           >
             {ru ? "Стратегия за минуты" : "Strategy in minutes"}
           </motion.p>

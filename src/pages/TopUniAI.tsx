@@ -342,28 +342,45 @@ const TopUniAI = () => {
   };
 
   return (
-    // Background philosophy 2026-05-10: TopUni AI is a focus surface
-    // (intake form + dense personal brief). The campus backdrop blur
-    // that lived here was visual noise competing with the form fields
-    // and the brief prose. Cream-clean lets the typography and gold
-    // accents do the premium work. Campus + parallax stays on the
-    // home landing only where emotional/aspirational visuals do work
-    // that words can't.
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    // Background philosophy 2026-05-10 (revised): two distinct visual
+    // zones for the two distinct mental modes the user is in.
+    //   · INTAKE = focus mode → DARK navy. Like a writing app or a
+    //     creative tool, the wizard is where the user pours their
+    //     profile in. Dark canvas reduces visual noise, centers
+    //     attention on the form fields, signals "we're working here".
+    //   · DASHBOARD = reading mode → CREAM. The brief is dense
+    //     personal prose — needs the calm canvas you'd want for
+    //     reading a letter. Cream + gold accents + editorial type.
+    // Transition between the two is the AnimatePresence crossfade —
+    // dark fades out, cream fades in, the visual mode-shift IS the
+    // ritual moment when the brief opens.
+    //
+    // Implementation: `dark` class on the intake wrapper activates
+    // Tailwind's class-based dark mode locally. Dashboard renders
+    // outside that wrapper in the standard cream theme. Navigation
+    // + BetaBanner stay in their own theming since they're chrome.
+    // Outer wrapper carries the `dark` class while screen=intake so
+    // every Tailwind token (bg-background, bg-card, text-foreground,
+    // border-border, etc.) inside the wizard resolves to its dark-mode
+    // value — full-viewport navy with no per-element theming work.
+    // When screen flips to dashboard the class drops and the cream
+    // theme returns. Navigation inherits cleanly because it reads the
+    // same tokens.
+    <div className={`${screen === "intake" ? "dark" : ""} min-h-screen bg-background relative overflow-hidden transition-colors duration-500`}>
       <TopUniAIEntrance language="en" />
       <div className="relative z-10">
         <Navigation language="en" />
         <BetaBanner />
 
         <AnimatePresence mode="wait">
-          {/* ═══ INTAKE ═══ */}
+          {/* ═══ INTAKE — dark navy focus mode ═══ */}
           {screen === "intake" && (
             <motion.div
               key="intake"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.4 }}
+              transition={{ duration: 0.5 }}
               className="max-w-2xl mx-auto px-5 sm:px-8 pt-12 pb-20"
             >
               {/* Progress — three pills with named-step labels under
