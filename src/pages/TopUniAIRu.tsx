@@ -10,13 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRight, ArrowLeft, Award, GraduationCap, Target, Shield, CheckCircle2, Bot, Search, PenTool, BookOpen } from "lucide-react";
+import { ArrowRight, ArrowLeft, Award, GraduationCap, Target, Shield, CheckCircle2, Bot, Search, PenTool, BookOpen, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { saveProfile } from "@/components/discover/DiscoverProfileGate";
 import { projectToDiscoverProfile } from "@/lib/topuniIntakeProjection";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Shield } from "lucide-react";
+// Shield already imported above with the rest of lucide icons.
 
 // 'landing' retired round 10 — page opens directly into intake.
 type Screen = "intake" | "dashboard" | "chat-only";
@@ -257,7 +257,13 @@ const TopUniAIRu = () => {
               <AnimatePresence mode="wait">
                 {step === 1 && (
                   <motion.div key="s1" {...stepFade} className="space-y-6">
-                    <div><h2 className="text-2xl font-heading font-bold text-foreground">Академический профиль</h2><p className="text-muted-foreground text-sm mt-1">Расскажите о вашей академической подготовке.</p></div>
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Шаг 01 · О вас</p>
+                      <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight">
+                        Начнём с вас.
+                      </h2>
+                      <p className="text-muted-foreground mt-2 text-sm">Базовая академическая информация — около минуты.</p>
+                    </div>
                     <div className="grid gap-5">
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-2"><Label>ФИО *</Label><Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Ваше полное имя" /></div>
@@ -327,24 +333,28 @@ const TopUniAIRu = () => {
                         already signed in. The Continue button calls
                         signUpWithPassword first if a password was set. */}
                     {!user && (
-                      <div className="rounded-xl border border-border/70 bg-muted/15 px-5 py-4 space-y-3">
-                        <div className="flex items-start gap-2.5">
+                      <div className="rounded-xl border border-gold/35 bg-gold/[0.06] px-5 py-4 space-y-3 relative overflow-hidden">
+                        <div
+                          className="pointer-events-none absolute -top-12 -right-12 h-32 w-32 rounded-full bg-gold/15 blur-2xl"
+                          aria-hidden
+                        />
+                        <div className="relative flex items-start gap-2.5">
                           <Shield className="w-4 h-4 text-gold-dark shrink-0 mt-0.5" />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-foreground leading-tight">
-                              Сохраните свой стратегический отчёт
+                              Сохраните отчёт (рекомендуется)
                             </p>
-                            <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
-                              Установите пароль — отчёт будет с вами на любом устройстве. Пропустите, если хотите просто посмотреть один раз.
+                            <p className="text-[11px] text-foreground/70 leading-snug mt-0.5">
+                              Установите пароль — стратегия синхронизируется на телефоне и ноутбуке. Пропустите, чтобы посмотреть один раз.
                             </p>
                           </div>
                         </div>
-                        <div className="grid sm:grid-cols-[1fr,auto] gap-2.5">
+                        <div className="relative grid sm:grid-cols-[1fr,auto] gap-2.5">
                           <Input
                             type="password"
                             value={accountPassword}
                             onChange={e => setAccountPassword(e.target.value)}
-                            placeholder="Пароль (необязательно · от 8 символов)"
+                            placeholder="Придумайте пароль (8+ символов · необязательно)"
                             className="h-10 bg-card text-sm"
                           />
                           <Button
@@ -407,7 +417,13 @@ const TopUniAIRu = () => {
                 )}
                 {step === 2 && (
                   <motion.div key="s2" {...stepFade} className="space-y-6">
-                    <div><h2 className="text-2xl font-heading font-bold text-foreground">Предпочтения</h2><p className="text-muted-foreground text-sm mt-1">Где и что вы хотите изучать?</p></div>
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Шаг 02 · Направление</p>
+                      <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight">
+                        Что вы будете изучать?
+                      </h2>
+                      <p className="text-muted-foreground mt-2 text-sm">Расскажите о направлении и сроках — мы подберём программы по всему миру под ваш профиль.</p>
+                    </div>
                     <div className="space-y-5">
                       {/* Целевые страны убраны 2026-05-10 — см. EN-страницу. */}
                       <div className="space-y-2">
@@ -451,19 +467,156 @@ const TopUniAIRu = () => {
                   </motion.div>
                 )}
                 {step === 3 && (
-                  <motion.div key="s3" {...stepFade} className="space-y-6">
-                    <div><h2 className="text-2xl font-heading font-bold text-foreground">Ваши цели</h2><p className="text-muted-foreground text-sm mt-1">Оцените важность каждого фактора (1 = низкая, 5 = высокая).</p></div>
-                    <div className="space-y-6">
-                      {[
-                        { label: "Престиж", value: prestige, set: setPrestige, icon: <GraduationCap className="w-4 h-4" /> },
-                        { label: "Стипендия", value: scholarship, set: setScholarship, icon: <Shield className="w-4 h-4" /> },
-                        { label: "Доступность визы", value: visaAccess, set: setVisaAccess, icon: <CheckCircle2 className="w-4 h-4" /> },
-                      ].map(item => (
-                        <div key={item.label} className="space-y-2">
-                          <div className="flex items-center justify-between"><Label className="flex items-center gap-2">{item.icon} {item.label}</Label><span className="text-sm font-semibold text-accent">{item.value[0]}/5</span></div>
-                          <Slider min={1} max={5} step={1} value={item.value} onValueChange={item.set} className="w-full" />
-                        </div>
-                      ))}
+                  <motion.div key="s3" {...stepFade} className="space-y-7">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Шаг 03 · Приоритеты</p>
+                      <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight">
+                        О чём мечтаете?
+                      </h2>
+                      <p className="text-muted-foreground mt-2 text-sm">Три быстрых решения. Мы взвесим шортлист и брифинг по ним.</p>
+                    </div>
+                    <div className="space-y-5">
+                      {/* Prestige tier picker */}
+                      {(() => {
+                        const tiers = [
+                          { value: 1, label: "Любая программа", caption: "Открыты ко всем",      crowns: 1 },
+                          { value: 2, label: "Топ-500",         caption: "Достойный уровень",     crowns: 2 },
+                          { value: 4, label: "Топ-100",         caption: "Высокая селективность", crowns: 3 },
+                          { value: 5, label: "Только топ-25",   caption: "Целюсь высоко",         crowns: 4 },
+                        ];
+                        const active = prestige[0];
+                        const closest = tiers.reduce((p, c) => Math.abs(c.value - active) < Math.abs(p.value - active) ? c : p);
+                        return (
+                          <div className="bg-card border border-border/70 rounded-xl p-5">
+                            <div className="flex items-center justify-between mb-3.5">
+                              <div className="flex items-center gap-2.5">
+                                <GraduationCap className="w-4 h-4 text-gold-dark" />
+                                <span className="text-sm font-semibold text-foreground">К какому уровню стремитесь</span>
+                              </div>
+                              <span className="text-[11px] text-muted-foreground italic">Выберите</span>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                              {tiers.map(tier => {
+                                const isActive = tier.value === closest.value;
+                                return (
+                                  <button
+                                    key={tier.value}
+                                    type="button"
+                                    onClick={() => setPrestige([tier.value])}
+                                    className={`group relative rounded-lg border px-2.5 py-3 text-left transition-all ${
+                                      isActive
+                                        ? "border-gold-dark bg-gold/[0.08] ring-1 ring-gold-dark/30"
+                                        : "border-border/60 bg-background hover:border-foreground/30 hover:bg-foreground/[0.02]"
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-0.5 mb-1.5">
+                                      {Array.from({ length: 4 }).map((_, i) => (
+                                        <Crown
+                                          key={i}
+                                          className={`h-3 w-3 transition-colors ${
+                                            i < tier.crowns
+                                              ? isActive ? "text-gold-dark" : "text-muted-foreground/55"
+                                              : "text-muted-foreground/15"
+                                          }`}
+                                          fill={i < tier.crowns && isActive ? "currentColor" : "transparent"}
+                                        />
+                                      ))}
+                                    </div>
+                                    <p className={`text-xs font-bold leading-tight ${isActive ? "text-foreground" : "text-foreground/85"}`}>
+                                      {tier.label}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">
+                                      {tier.caption}
+                                    </p>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Scholarship slider with $ signal */}
+                      {(() => {
+                        const v = scholarship[0];
+                        const moneyLabel =
+                          v <= 1 ? "Сам оплачу"
+                          : v === 2 ? "Хотел бы $5–15K/год"
+                          : v === 3 ? "Нужно $15–40K/год"
+                          : v === 4 ? "Нужно $40K+/год"
+                          : "Нужна полная стипендия";
+                        const moneyTone =
+                          v <= 1 ? "text-foreground/65"
+                          : v <= 3 ? "text-amber-700 dark:text-amber-400"
+                          : "text-gold-dark";
+                        return (
+                          <div className="bg-card border border-border/70 rounded-xl p-5">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2.5">
+                                <Shield className="w-4 h-4 text-gold-dark" />
+                                <span className="text-sm font-semibold text-foreground">Сколько финансирования нужно</span>
+                              </div>
+                              <span className={`text-xs font-bold tabular-nums ${moneyTone}`}>
+                                {moneyLabel}
+                              </span>
+                            </div>
+                            <Slider min={1} max={5} step={1} value={scholarship} onValueChange={setScholarship} className="w-full" />
+                            <div className="flex justify-between mt-2.5 text-[11px] text-muted-foreground font-medium">
+                              <span>Сам оплачу</span>
+                              <span>Полное покрытие</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Visa accessibility 3-tile picker */}
+                      {(() => {
+                        const choices = [
+                          { value: 2, label: "Без сильных предпочтений",  caption: "Открыт к любому пути визы",     icon: "🌍" },
+                          { value: 4, label: "Предпочитаю простую визу",   caption: "Не люблю много бумаг",            icon: "🛂" },
+                          { value: 5, label: "Виза — критично",            caption: "Только программы с чистой визой", icon: "✋" },
+                        ];
+                        const active = visaAccess[0];
+                        const closest = choices.reduce((p, c) => Math.abs(c.value - active) < Math.abs(p.value - active) ? c : p);
+                        return (
+                          <div className="bg-card border border-border/70 rounded-xl p-5">
+                            <div className="flex items-center justify-between mb-3.5">
+                              <div className="flex items-center gap-2.5">
+                                <CheckCircle2 className="w-4 h-4 text-gold-dark" />
+                                <span className="text-sm font-semibold text-foreground">Подход к визе</span>
+                              </div>
+                              <span className="text-[11px] text-muted-foreground italic">Выберите</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              {choices.map(c => {
+                                const isActive = c.value === closest.value;
+                                return (
+                                  <button
+                                    key={c.value}
+                                    type="button"
+                                    onClick={() => setVisaAccess([c.value])}
+                                    className={`relative rounded-lg border px-3 py-3 text-left transition-all ${
+                                      isActive
+                                        ? "border-gold-dark bg-gold/[0.08] ring-1 ring-gold-dark/30"
+                                        : "border-border/60 bg-background hover:border-foreground/30 hover:bg-foreground/[0.02]"
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-base leading-none" aria-hidden>{c.icon}</span>
+                                      <p className={`text-xs font-bold leading-tight ${isActive ? "text-foreground" : "text-foreground/85"}`}>
+                                        {c.label}
+                                      </p>
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground leading-snug">
+                                      {c.caption}
+                                    </p>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div className="flex justify-between pt-4">
