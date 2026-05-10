@@ -317,6 +317,14 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
   const [openDetail, setOpenDetail] = useState<Scholarship | null>(null);
   const [draftNote, setDraftNote] = useState<string>("");
   const [calendarOpen, setCalendarOpen] = useState(false);
+  // Per-bucket pagination — when a stage has more than BUCKET_PAGE_SIZE
+  // items, the sidebar collapses to that many with a "Show all (N)"
+  // toggle so a user with 20+ tracked rows doesn't get a wall of cards
+  // before they reach the calendar widget at the bottom of the sidebar.
+  // Tracked per-bucket so expanding "Working on it" doesn't expand the
+  // saved-only column too.
+  const [expandedBuckets, setExpandedBuckets] = useState<Record<string, boolean>>({});
+  const [listExpanded, setListExpanded] = useState(false);
 
   /* Round-41: workspace pivot to a focus-mode writing surface. The page
    * is now a 2-pane layout — a scholarship sorter on the left, an
@@ -530,68 +538,106 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                 </button>
               </div>
 
-              {boardView === "category" ? (
-                <div className="space-y-3.5">
-                  {COLUMNS.map((col) => {
-                    const items = buckets[col.key] || [];
-                    if (items.length === 0) return null;
-                    return (
-                      <div key={col.key} className="space-y-1.5">
-                        <div className="flex items-center justify-between px-1">
-                          <div className="flex items-center gap-1.5">
-                            <span className={`h-1 w-4 rounded-full ${col.bar}`} />
-                            <p className={`text-[9px] uppercase tracking-[0.18em] font-semibold ${col.tone}`}>
-                              {col.label[isRu ? "ru" : "en"]}
-                            </p>
+              {(() => {
+                // Collapse threshold — a bucket showing more than this
+                // many cards gets a "Show all" toggle. 8 fits nicely
+                // before the calendar widget at the sidebar bottom
+                // becomes invisible without scrolling.
+                const BUCKET_PAGE_SIZE = 8;
+                const LIST_PAGE_SIZE = 12;
+                return boardView === "category" ? (
+                  <div className="space-y-3.5">
+                    {COLUMNS.map((col) => {
+                      const items = buckets[col.key] || [];
+                      if (items.length === 0) return null;
+                      const isExpanded = !!expandedBuckets[col.key as string];
+                      const visibleItems = items.length > BUCKET_PAGE_SIZE && !isExpanded
+                        ? items.slice(0, BUCKET_PAGE_SIZE)
+                        : items;
+                      const hidden = items.length - visibleItems.length;
+                      return (
+                        <div key={col.key} className="space-y-1.5">
+                          <div className="flex items-center justify-between px-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className={`h-1 w-4 rounded-full ${col.bar}`} />
+                              <p className={`text-[9px] uppercase tracking-[0.18em] font-semibold ${col.tone}`}>
+                                {col.label[isRu ? "ru" : "en"]}
+                              </p>
+                            </div>
+                            <span className="text-[10px] tabular-nums text-muted-foreground/70">{items.length}</span>
                           </div>
-                          <span className="text-[10px] tabular-nums text-muted-foreground/70">{items.length}</span>
+                          <div className="space-y-2">
+                            {visibleItems.map((s) => (
+                              <PipelineCard
+                                key={s.scholarship_id}
+                                scholarship={s}
+                                status={tracker.statusMap[s.scholarship_id] as AppStatus | undefined}
+                                isShortlisted={tracker.shortlist.has(s.scholarship_id)}
+                                note={tracker.notesMap[s.scholarship_id]}
+                                recommenders={tracker.recommendersMap[s.scholarship_id]}
+                                hasEssay={!!tracker.essayMap[s.scholarship_id]}
+                                isRu={isRu}
+                                onOpen={() => setSelectedId(s.scholarship_id)}
+                                onEditDetails={() => setOpenDetail(s)}
+                                onStatusChange={(next) => tracker.setStatus(s.scholarship_id, next)}
+                              />
+                            ))}
+                          </div>
+                          {(hidden > 0 || isExpanded) && items.length > BUCKET_PAGE_SIZE && (
+                            <button
+                              type="button"
+                              onClick={() => setExpandedBuckets((prev) => ({ ...prev, [col.key as string]: !prev[col.key as string] }))}
+                              className="w-full text-[10px] uppercase tracking-[0.14em] font-semibold text-muted-foreground hover:text-gold-dark transition-colors py-1.5 rounded-md border border-dashed border-border/60 hover:border-gold/40"
+                            >
+                              {isExpanded
+                                ? t("Show less", "Свернуть")
+                                : t(`Show all (+${hidden})`, `Все (+${hidden})`)}
+                            </button>
+                          )}
                         </div>
-                        <div className="space-y-2">
-                          {items.map((s) => (
-                            <PipelineCard
-                              key={s.scholarship_id}
-                              scholarship={s}
-                              status={tracker.statusMap[s.scholarship_id] as AppStatus | undefined}
-                              isShortlisted={tracker.shortlist.has(s.scholarship_id)}
-                              note={tracker.notesMap[s.scholarship_id]}
-                              recommenders={tracker.recommendersMap[s.scholarship_id]}
-                              hasEssay={!!tracker.essayMap[s.scholarship_id]}
-                              isRu={isRu}
-                              onOpen={() => setSelectedId(s.scholarship_id)}
-                              onEditDetails={() => setOpenDetail(s)}
-                              onStatusChange={(next) => tracker.setStatus(s.scholarship_id, next)}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {[...rows]
-                    .sort((a, b) => {
-                      const ad = a.application_deadline ? new Date(a.application_deadline).getTime() : Number.POSITIVE_INFINITY;
-                      const bd = b.application_deadline ? new Date(b.application_deadline).getTime() : Number.POSITIVE_INFINITY;
-                      return ad - bd;
-                    })
-                    .map((s) => (
-                      <PipelineCard
-                        key={s.scholarship_id}
-                        scholarship={s}
-                        status={tracker.statusMap[s.scholarship_id] as AppStatus | undefined}
-                        isShortlisted={tracker.shortlist.has(s.scholarship_id)}
-                        note={tracker.notesMap[s.scholarship_id]}
-                        recommenders={tracker.recommendersMap[s.scholarship_id]}
-                        hasEssay={!!tracker.essayMap[s.scholarship_id]}
-                        isRu={isRu}
-                        onOpen={() => setSelectedId(s.scholarship_id)}
-                        onEditDetails={() => setOpenDetail(s)}
-                        onStatusChange={(next) => tracker.setStatus(s.scholarship_id, next)}
-                      />
-                    ))}
-                </div>
-              )}
+                      );
+                    })}
+                  </div>
+                ) : (() => {
+                  const sorted = [...rows].sort((a, b) => {
+                    const ad = a.application_deadline ? new Date(a.application_deadline).getTime() : Number.POSITIVE_INFINITY;
+                    const bd = b.application_deadline ? new Date(b.application_deadline).getTime() : Number.POSITIVE_INFINITY;
+                    return ad - bd;
+                  });
+                  const visible = sorted.length > LIST_PAGE_SIZE && !listExpanded ? sorted.slice(0, LIST_PAGE_SIZE) : sorted;
+                  const hidden = sorted.length - visible.length;
+                  return (
+                    <div className="space-y-2">
+                      {visible.map((s) => (
+                        <PipelineCard
+                          key={s.scholarship_id}
+                          scholarship={s}
+                          status={tracker.statusMap[s.scholarship_id] as AppStatus | undefined}
+                          isShortlisted={tracker.shortlist.has(s.scholarship_id)}
+                          note={tracker.notesMap[s.scholarship_id]}
+                          recommenders={tracker.recommendersMap[s.scholarship_id]}
+                          hasEssay={!!tracker.essayMap[s.scholarship_id]}
+                          isRu={isRu}
+                          onOpen={() => setSelectedId(s.scholarship_id)}
+                          onEditDetails={() => setOpenDetail(s)}
+                          onStatusChange={(next) => tracker.setStatus(s.scholarship_id, next)}
+                        />
+                      ))}
+                      {sorted.length > LIST_PAGE_SIZE && (
+                        <button
+                          type="button"
+                          onClick={() => setListExpanded((v) => !v)}
+                          className="w-full text-[10px] uppercase tracking-[0.14em] font-semibold text-muted-foreground hover:text-gold-dark transition-colors py-1.5 rounded-md border border-dashed border-border/60 hover:border-gold/40"
+                        >
+                          {listExpanded
+                            ? t("Show less", "Свернуть")
+                            : t(`Show all (+${hidden})`, `Все (+${hidden})`)}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })();
+              })()}
 
               {/* Mini deadline calendar tucked in the sidebar's bottom
                   empty space — always visible alongside whichever board
