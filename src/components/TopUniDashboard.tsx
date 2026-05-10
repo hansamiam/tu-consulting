@@ -2246,7 +2246,13 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   };
 
   // Only generate pathway if profile is actually filled
-  const isProfileFilled = profile.fullName && profile.fullName !== "Student" && profile.gpa && profile.targetCountries.length > 0;
+  // Target countries became optional 2026-05-10 (the wizard's "where
+  // do you want to go" was redundant with the in-app country filter,
+  // and forcing a choice prematurely narrowed the brief). Drop it
+  // from the gate — the brief generator handles empty targetCountries
+  // by sampling across geographies and labelling "Target countries:
+  // Open" in the prompt.
+  const isProfileFilled = !!(profile.fullName && profile.fullName !== "Student" && profile.gpa);
 
   /* Tabs state — promoted to a useState so other surfaces (Pipeline's
      "Ask the AI counselor about this" button) can switch us to the

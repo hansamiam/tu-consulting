@@ -673,11 +673,26 @@ const TopUniAI = () => {
                       <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight">
                         Where, and what?
                       </h2>
-                      <p className="text-muted-foreground mt-2 text-sm">Your target geographies and field.</p>
+                      <p className="text-muted-foreground mt-2 text-sm">Pick countries you have in mind, or skip — we'll surface what fits your profile across geographies.</p>
                     </div>
                     <div className="space-y-6">
                       <div className="space-y-2">
-                        <Label className="text-xs uppercase tracking-wider font-medium">Target countries *</Label>
+                        {/* Target countries — now OPTIONAL. The user's
+                            point: "with all these filters and country
+                            stuff, asking the question 'where do you
+                            want to go' is kinda completely redundant".
+                            Made it skippable so users with no strong
+                            geography preference don't feel forced into
+                            a choice that prematurely narrows the brief.
+                            Empty targetCountries → brief generator
+                            renders "Target countries: Open" and the
+                            shortlist samples across geographies. */}
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs uppercase tracking-wider font-medium">Target countries</Label>
+                          {targetCountries.length === 0 && (
+                            <span className="text-[10px] text-muted-foreground italic">Optional · skip to see programs across all regions</span>
+                          )}
+                        </div>
                         {/* Type-to-search across the full ALL_COUNTRIES list;
                             popular destinations show by default. Selected
                             chips bubble up at the top regardless of search
@@ -786,7 +801,7 @@ const TopUniAI = () => {
                       <Button
                         variant="gold"
                         onClick={() => goToStep(3)}
-                        disabled={targetCountries.length === 0 || !major.trim()}
+                        disabled={!major.trim()}
                       >
                         Continue <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
