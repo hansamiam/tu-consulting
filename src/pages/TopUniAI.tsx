@@ -351,29 +351,35 @@ const TopUniAI = () => {
     //   · DASHBOARD = reading mode → CREAM. The brief is dense
     //     personal prose — needs the calm canvas you'd want for
     //     reading a letter. Cream + gold accents + editorial type.
-    // Transition between the two is the AnimatePresence crossfade —
-    // dark fades out, cream fades in, the visual mode-shift IS the
-    // ritual moment when the brief opens.
     //
-    // Implementation: `dark` class on the intake wrapper activates
-    // Tailwind's class-based dark mode locally. Dashboard renders
-    // outside that wrapper in the standard cream theme. Navigation
-    // + BetaBanner stay in their own theming since they're chrome.
-    // Outer wrapper carries the `dark` class while screen=intake so
-    // every Tailwind token (bg-background, bg-card, text-foreground,
-    // border-border, etc.) inside the wizard resolves to its dark-mode
-    // value — full-viewport navy with no per-element theming work.
-    // When screen flips to dashboard the class drops and the cream
-    // theme returns. Navigation inherits cleanly because it reads the
-    // same tokens.
-    <div className={`${screen === "intake" ? "dark" : ""} min-h-screen bg-background relative overflow-hidden transition-colors duration-500`}>
+    // 2026-05-10 rework: pre-fix the `dark` class lived on the OUTER
+    // wrapper which made the entire page (footer included) flip to a
+    // dark-mode color theme. The user flagged this hard — the footer
+    // should not abruptly change colors, and the navy we want is the
+    // navy from our existing palette, not a wholesale dark-mode flip.
+    //
+    // Fix: the `dark` class is now scoped to the intake motion.div
+    // ITSELF, treating the wizard as a navy island rather than the
+    // page going dark mode. Outer wrapper stays cream. Navigation
+    // gets `variant="overlay"` while on intake so it reads correctly
+    // against the navy band (mirrors the Discover dark-phase pattern).
+    // Footer is hidden during intake so there's no abrupt color shift
+    // when crossing into the navy panel — it returns when the user
+    // lands on the dashboard (strategy report).
+    <div className="min-h-screen bg-background relative overflow-hidden">
       <TopUniAIEntrance language="en" />
       <div className="relative z-10">
-        <Navigation language="en" />
+        <Navigation language="en" variant={screen === "intake" ? "overlay" : "default"} />
         <BetaBanner />
 
         <AnimatePresence mode="wait">
-          {/* ═══ INTAKE — dark navy focus mode ═══ */}
+          {/* ═══ INTAKE — dark navy focus mode ═══
+              `dark` class scoped here (not on outer page wrapper) so
+              the intake panel resolves to dark navy via theme tokens
+              while the rest of the page (footer, dashboard) stays
+              cream. `bg-background` painted on the intake's own
+              full-bleed wash so it covers the viewport beneath the
+              max-w-2xl form column. */}
           {screen === "intake" && (
             <motion.div
               key="intake"
@@ -381,8 +387,9 @@ const TopUniAI = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5 }}
-              className="max-w-2xl mx-auto px-5 sm:px-8 pt-12 pb-20"
+              className="dark relative bg-background"
             >
+              <div className="max-w-2xl mx-auto px-5 sm:px-8 pt-12 pb-20">
               {/* Progress — three pills with named-step labels under
                   each, so users see WHAT they're answering at each
                   stage instead of three abstract bars. Active step's
@@ -926,6 +933,7 @@ const TopUniAI = () => {
                 )}
 
               </AnimatePresence>
+              </div>
             </motion.div>
           )}
 
@@ -947,7 +955,11 @@ const TopUniAI = () => {
           )}
         </AnimatePresence>
 
-        {screen !== "dashboard" && <Footer language="en" />}
+        {/* Footer hidden during intake (steps 1-3) so the navy island
+            isn't broken up by a colour shift; returns on dashboard
+            where the user is in reading-mode for the strategy report
+            and the cream canvas calls for site chrome. */}
+        {screen === "dashboard" && <Footer language="en" />}
       </div>
     </div>
   );

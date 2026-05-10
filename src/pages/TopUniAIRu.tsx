@@ -195,12 +195,14 @@ const TopUniAIRu = () => {
   const stepFade = { initial: stepEnter, animate: { opacity: 1, x: 0 }, exit: stepExit, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const } };
 
   return (
-    // Background dropped 2026-05-10 — see EN page comment. Cream-clean
-    // for focus on form + brief.
-    <div className={`${screen === "intake" ? "dark" : ""} min-h-screen bg-background relative transition-colors duration-500`}>
+    // 2026-05-10: dark class scoped to intake panel only (was on the
+    // whole wrapper) so the footer doesn't get pulled into a dark-mode
+    // colour flip. Footer hidden during intake, returns on dashboard.
+    // EN/RU parity — see TopUniAI.tsx for the rationale.
+    <div className="min-h-screen bg-background relative">
       <TopUniAIEntrance language="ru" />
       <div className="relative z-10">
-        <Navigation language="ru" />
+        <Navigation language="ru" variant={screen === "intake" ? "overlay" : "default"} />
         <BetaBanner language="ru" />
 
         <AnimatePresence mode="wait">
@@ -216,7 +218,8 @@ const TopUniAIRu = () => {
           )}
 
           {screen === "intake" && (
-            <motion.div key="intake" {...fadeIn} className="max-w-2xl mx-auto px-4 py-12">
+            <motion.div key="intake" {...fadeIn} className="dark relative bg-background">
+              <div className="max-w-2xl mx-auto px-4 py-12">
               {/* Progress — three pills with named-step labels (Russian).
                   Mirror of the EN layout (numeric dots replaced with
                   the same labelled-pill pattern so the two pages feel
@@ -487,6 +490,7 @@ const TopUniAIRu = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
+              </div>
             </motion.div>
           )}
 
@@ -497,7 +501,8 @@ const TopUniAIRu = () => {
           )}
         </AnimatePresence>
 
-        {screen !== "dashboard" && screen !== "chat-only" && <Footer language="ru" />}
+        {/* Footer hidden during intake — see EN page rationale. */}
+        {screen === "dashboard" && <Footer language="ru" />}
       </div>
     </div>
   );
