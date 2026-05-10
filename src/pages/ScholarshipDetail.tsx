@@ -124,9 +124,13 @@ interface ScholarshipStats {
   trending_score: number | null;
 }
 
-const ScholarshipDetail = () => {
+interface ScholarshipDetailProps { language?: "en" | "ru"; }
+
+const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const ru = language === "ru";
+  const t = (en: string, rText: string) => (ru ? rText : en);
   const { user } = useAuth();
   const tracker = useApplicationTracker();
   const [s, setS] = useState<Scholarship | null>(null);
@@ -499,11 +503,11 @@ const ScholarshipDetail = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
+        <Navigation language={language} />
         <div className="flex items-center justify-center py-32">
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
-        <Footer language="en" />
+        <Footer language={language} />
       </div>
     );
   }
@@ -511,37 +515,42 @@ const ScholarshipDetail = () => {
   if (notFound || !s) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
+        <Navigation language={language} />
         <div className="max-w-xl mx-auto px-6 pt-12">
           <EmptyState
             icon={<Search />}
-            title="Scholarship not found"
-            description="This scholarship doesn't exist or has been removed. Browse the full database in Discover."
-            cta={{ label: "Open Discover", to: "/discover" }}
-            secondaryCta={{ label: "Submit a scholarship", to: "/submit" }}
+            title={t("Scholarship not found", "Стипендия не найдена")}
+            description={t(
+              "This scholarship doesn't exist or has been removed. Browse the full database in Discover.",
+              "Этой стипендии нет или её удалили. Откройте полную базу в Discover.",
+            )}
+            cta={{ label: t("Open Discover", "Открыть Discover"), to: ru ? "/discover/ru" : "/discover" }}
+            secondaryCta={{ label: t("Submit a scholarship", "Предложить стипендию"), to: ru ? "/submit/ru" : "/submit" }}
           />
         </div>
-        <Footer language="en" />
+        <Footer language={language} />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <Navigation language={language} />
 
       {/* HERO ─────────────────────────────────────────────────────── */}
       <section className="bg-gradient-to-br from-primary via-primary to-primary/95 py-12 sm:py-16">
         <div className="max-w-4xl mx-auto px-5 sm:px-8">
           <Link
-            to="/discover"
+            to={ru ? "/discover/ru" : "/discover"}
             className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.18em] text-primary-foreground/70 hover:text-gold-light transition-colors mb-4"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            Back to Discover
+            {t("Back to Discover", "Назад в Discover")}
           </Link>
           <p className="text-[11px] uppercase tracking-[0.22em] text-gold font-semibold mb-3">
-            {s.host_country ? `Scholarship · ${shortCountry(s.host_country)}` : "Scholarship"}
+            {s.host_country
+              ? `${t("Scholarship", "Стипендия")} · ${shortCountry(s.host_country)}`
+              : t("Scholarship", "Стипендия")}
           </p>
           <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold text-primary-foreground tracking-tight leading-tight mb-3">
             {cleanScholarshipName(s.scholarship_name)}
@@ -563,9 +572,9 @@ const ScholarshipDetail = () => {
           <div className="flex flex-wrap gap-2 mb-6">
             {s.coverage_type && (
               <Chip>
-                {s.coverage_type === "full_ride" ? "Full ride"
-                  : s.coverage_type === "tuition_only" ? "Tuition only"
-                  : "Stipend"}
+                {s.coverage_type === "full_ride" ? t("Full ride", "Полное")
+                  : s.coverage_type === "tuition_only" ? t("Tuition only", "Только обучение")
+                  : t("Stipend", "Стипендия")}
               </Chip>
             )}
             {(s.target_degree_level ?? []).slice(0, 3).map((d) => <Chip key={d}>{humanizeDegreeLabel(d)}</Chip>)}
@@ -575,7 +584,13 @@ const ScholarshipDetail = () => {
             })()}
             {s.application_deadline && days !== null && (
               <Chip tone={days <= 7 ? "danger" : days <= 30 ? "warn" : "neutral"}>
-                {days <= 0 ? "Closed" : days === 1 ? "1 day" : days <= 30 ? `${days} days left` : `${Math.round(days / 30)} months`}
+                {days <= 0
+                  ? t("Closed", "Закрыто")
+                  : days === 1
+                    ? t("1 day", "1 дн.")
+                    : days <= 30
+                      ? `${days} ${t("days left", "дн. осталось")}`
+                      : `${Math.round(days / 30)} ${t("months", "мес.")}`}
               </Chip>
             )}
           </div>
@@ -590,9 +605,9 @@ const ScholarshipDetail = () => {
             const recentViews = stats?.view_count_7d ?? 0;
             if (totalSaves < 5 && recentViews < 25) return null;
             const parts: string[] = [];
-            if (totalSaves >= 5) parts.push(`${totalSaves.toLocaleString()} students tracking this`);
-            if (recentSaves >= 3) parts.push(`+${recentSaves} this week`);
-            else if (recentViews >= 25) parts.push(`${recentViews.toLocaleString()} viewed in the past 7 days`);
+            if (totalSaves >= 5) parts.push(`${totalSaves.toLocaleString()} ${t("students tracking this", "студентов отслеживают")}`);
+            if (recentSaves >= 3) parts.push(`+${recentSaves} ${t("this week", "за неделю")}`);
+            else if (recentViews >= 25) parts.push(`${recentViews.toLocaleString()} ${t("viewed in the past 7 days", "просмотров за 7 дней")}`);
             return (
               <p className="text-[12px] text-primary-foreground/60 mb-5 tracking-wide">
                 {parts.join(" · ")}
@@ -619,7 +634,7 @@ const ScholarshipDetail = () => {
               onClick={() => goBuildStrategy("hero")}
             >
               <Award className="w-4 h-4" />
-              Build my strategy around this
+              {t("Build my strategy around this", "Построить стратегию вокруг этой стипендии")}
             </Button>
             {s.official_url && (() => {
               const aggregator = isAggregatorUrl(s.official_url);
@@ -636,7 +651,9 @@ const ScholarshipDetail = () => {
                     rel="noopener noreferrer"
                     onClick={() => track(s.scholarship_id, "clicked", aggregator ? "detail-apply-aggregator" : "detail-apply-official")}
                   >
-                    {aggregator ? "Open listing (third-party)" : "Apply on official site"}
+                    {aggregator
+                      ? t("Open listing (third-party)", "Открыть на стороннем сайте")
+                      : t("Apply on official site", "Подать на официальном сайте")}
                     <ExternalLink className="w-4 h-4" />
                   </a>
                 </Button>
@@ -647,21 +664,23 @@ const ScholarshipDetail = () => {
               size="lg"
               onClick={() => {
                 tracker.toggleShortlist(s.scholarship_id);
-                toast.success(isShortlisted ? "Removed from your pipeline" : "Saved to your pipeline");
+                toast.success(isShortlisted
+                  ? t("Removed from your pipeline", "Убрано из воронки")
+                  : t("Saved to your pipeline", "Сохранено в воронку"));
               }}
               className="gap-2 bg-transparent text-primary-foreground border-primary-foreground/30 hover:bg-primary-foreground/10"
             >
               {isShortlisted ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
-              {isShortlisted ? "Saved" : "Save to pipeline"}
+              {isShortlisted ? t("Saved", "Сохранено") : t("Save to pipeline", "В воронку")}
             </Button>
             <Button
               variant="outline"
               size="lg"
               onClick={() => { setShareOpen(true); track(s.scholarship_id, "shared", "detail"); }}
               className="gap-2 bg-transparent text-primary-foreground border-primary-foreground/30 hover:bg-primary-foreground/10"
-              aria-label="Share this scholarship"
+              aria-label={t("Share this scholarship", "Поделиться")}
             >
-              <Share2 className="w-4 h-4" /> Share
+              <Share2 className="w-4 h-4" /> {t("Share", "Поделиться")}
             </Button>
           </div>
         </div>
@@ -691,8 +710,10 @@ const ScholarshipDetail = () => {
           <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-500 leading-relaxed flex items-start gap-2">
             <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0" />
             <span>
-              Our weekly link-checker has failed to reach the official URL {s.url_consecutive_fails}+ times.
-              Verify the link still works before applying.
+              {t(
+                `Our weekly link-checker has failed to reach the official URL ${s.url_consecutive_fails}+ times. Verify the link still works before applying.`,
+                `Еженедельная проверка не смогла открыть официальную ссылку ${s.url_consecutive_fails}+ раз. Проверьте ссылку перед подачей.`,
+              )}
             </span>
           </div>
         </div>
@@ -709,10 +730,10 @@ const ScholarshipDetail = () => {
       <section className="max-w-4xl mx-auto px-5 sm:px-8 py-10 sm:py-14 space-y-10">
         {/* Key facts row */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <Fact icon={<Wallet />} label="Award" value={s.award_amount_text || compactAward(s) || (s.estimated_total_value_usd ? `~$${Math.round(s.estimated_total_value_usd / 1000)}K total` : "—")} />
-          <Fact icon={<Calendar />} label="Deadline" value={s.application_deadline ?? (s.deadline_type ?? "varies")} />
-          <Fact icon={<GraduationCap />} label="Levels" value={(s.target_degree_level ?? []).map(humanizeDegreeLabel).join(", ") || "any"} />
-          <Fact icon={<Globe />} label="Citizenship" value={s.citizenship_requirements ? truncate(s.citizenship_requirements, 60) : "any"} />
+          <Fact icon={<Wallet />} label={t("Award", "Финансирование")} value={s.award_amount_text || compactAward(s) || (s.estimated_total_value_usd ? `~$${Math.round(s.estimated_total_value_usd / 1000)}K total` : "—")} />
+          <Fact icon={<Calendar />} label={t("Deadline", "Дедлайн")} value={s.application_deadline ?? (s.deadline_type ?? t("varies", "разные"))} />
+          <Fact icon={<GraduationCap />} label={t("Levels", "Уровни")} value={(s.target_degree_level ?? []).map(humanizeDegreeLabel).join(", ") || t("any", "любой")} />
+          <Fact icon={<Globe />} label={t("Citizenship", "Гражданство")} value={s.citizenship_requirements ? truncate(s.citizenship_requirements, 60) : t("any", "любое")} />
         </div>
 
         {/* Personalized deep dive — calls scholarship-deep-dive edge fn with
@@ -749,30 +770,30 @@ const ScholarshipDetail = () => {
         })()}
 
         {/* Sections */}
-        {s.why_this_fits && <Section title="Why this could fit" body={s.why_this_fits} />}
-        {s.eligibility_requirements && <Section title="Eligibility" body={s.eligibility_requirements} />}
-        {s.ideal_candidate_profile && <Section title="Ideal candidate" body={s.ideal_candidate_profile} />}
+        {s.why_this_fits && <Section title={t("Why this could fit", "Почему это может подойти")} body={s.why_this_fits} />}
+        {s.eligibility_requirements && <Section title={t("Eligibility", "Кто может подавать")} body={s.eligibility_requirements} />}
+        {s.ideal_candidate_profile && <Section title={t("Ideal candidate", "Идеальный кандидат")} body={s.ideal_candidate_profile} />}
         {(s.min_gpa || s.min_ielts || s.min_toefl || s.min_sat) && (
-          <Section title="Hard thresholds">
+          <Section title={t("Hard thresholds", "Жёсткие пороги")}>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {s.min_gpa && <Fact label="GPA min" value={`${s.min_gpa}/${s.gpa_scale ?? 4.0}`} />}
-              {s.min_ielts && <Fact label="IELTS min" value={String(s.min_ielts)} />}
-              {s.min_toefl && <Fact label="TOEFL min" value={String(s.min_toefl)} />}
-              {s.min_sat && <Fact label="SAT min" value={String(s.min_sat)} />}
+              {s.min_gpa && <Fact label={t("GPA min", "GPA мин.")} value={`${s.min_gpa}/${s.gpa_scale ?? 4.0}`} />}
+              {s.min_ielts && <Fact label={t("IELTS min", "IELTS мин.")} value={String(s.min_ielts)} />}
+              {s.min_toefl && <Fact label={t("TOEFL min", "TOEFL мин.")} value={String(s.min_toefl)} />}
+              {s.min_sat && <Fact label={t("SAT min", "SAT мин.")} value={String(s.min_sat)} />}
             </div>
           </Section>
         )}
-        {s.how_to_win && <Section title="How to win it" body={s.how_to_win} />}
+        {s.how_to_win && <Section title={t("How to win it", "Как выиграть")} body={s.how_to_win} />}
         {s.common_rejection_reasons && (
-          <Section title="Why people get rejected" body={s.common_rejection_reasons} tone="warn" />
+          <Section title={t("Why people get rejected", "Почему отказывают")} body={s.common_rejection_reasons} tone="warn" />
         )}
         {s.weak_candidate_warning && (
-          <Section title="Don't apply if…" body={s.weak_candidate_warning} tone="warn" />
+          <Section title={t("Don't apply if…", "Не подавайте, если…")} body={s.weak_candidate_warning} tone="warn" />
         )}
-        {s.what_to_prepare_first && <Section title="Start with this" body={s.what_to_prepare_first} />}
-        {s.strategy_notes && <Section title="Strategy notes" body={s.strategy_notes} />}
+        {s.what_to_prepare_first && <Section title={t("Start with this", "Начните с этого")} body={s.what_to_prepare_first} />}
+        {s.strategy_notes && <Section title={t("Strategy notes", "Заметки по стратегии")} body={s.strategy_notes} />}
         {s.required_documents && s.required_documents.length > 0 && (
-          <Section title="Required documents">
+          <Section title={t("Required documents", "Обязательные документы")}>
             <ul className="space-y-1.5 text-sm text-foreground/90">
               {s.required_documents.map((d, i) => (
                 <li key={i} className="flex items-start gap-2">
@@ -784,7 +805,7 @@ const ScholarshipDetail = () => {
           </Section>
         )}
         {s.partner_universities && s.partner_universities.length > 0 && (
-          <Section title="Partner universities">
+          <Section title={t("Partner universities", "Партнёрские университеты")}>
             <div className="flex flex-wrap gap-2">
               {s.partner_universities.map((u, i) => (
                 <span key={i} className="text-sm bg-muted/40 border border-border px-3 py-1 rounded-full">{u}</span>
@@ -799,14 +820,19 @@ const ScholarshipDetail = () => {
             from the hero's so we can compare conversion. */}
         <div className="bg-card border border-border rounded-2xl p-6 sm:p-8 text-center">
           <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">
-            Don't just read — strategise
+            {t("Don't just read — strategise", "Не только читайте — стройте стратегию")}
           </p>
           <h3 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground mb-3 leading-tight">
-            Build a personal strategy that includes the {cleanScholarshipName(s.scholarship_name)}.
+            {t(
+              `Build a personal strategy that includes the ${cleanScholarshipName(s.scholarship_name)}.`,
+              `Постройте персональную стратегию, включающую ${cleanScholarshipName(s.scholarship_name)}.`,
+            )}
           </h3>
           <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto mb-6">
-            TopUni AI takes your profile, ranks every scholarship in the database against you,
-            and tells you specifically how to win this one — what to lead with, how to prep.
+            {t(
+              "TopUni AI takes your profile, ranks every scholarship in the database against you, and tells you specifically how to win this one — what to lead with, how to prep.",
+              "TopUni AI берёт ваш профиль, ранжирует каждую стипендию в базе под вас и подсказывает, как выиграть именно эту — с чего начать, как готовиться.",
+            )}
           </p>
           <Button
             variant="gold"
@@ -814,9 +840,9 @@ const ScholarshipDetail = () => {
             className="gap-2"
             onClick={() => goBuildStrategy("footer")}
           >
-            Build my strategy around this <ArrowRight className="w-4 h-4" />
+            {t("Build my strategy around this", "Построить стратегию вокруг этой стипендии")} <ArrowRight className="w-4 h-4" />
           </Button>
-          <p className="text-[11px] text-muted-foreground/70 mt-4">60 seconds. Free.</p>
+          <p className="text-[11px] text-muted-foreground/70 mt-4">{t("60 seconds. Free.", "60 секунд. Бесплатно.")}</p>
         </div>
 
         {/* More from this funder — only renders when this row is linked
@@ -829,7 +855,7 @@ const ScholarshipDetail = () => {
             <div className="flex items-baseline justify-between gap-3 mb-4">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-1.5">
-                  More from this funder
+                  {t("More from this funder", "Ещё от этого фонда")}
                 </p>
                 <h3 className="font-heading text-lg font-bold tracking-tight text-foreground">
                   {providerMeta.canonical_name}
@@ -839,7 +865,7 @@ const ScholarshipDetail = () => {
                 to={`/scholarships/by-provider/${providerMeta.slug}`}
                 className="text-xs text-muted-foreground hover:text-gold-dark transition-colors hidden sm:inline-flex items-center gap-1"
               >
-                All scholarships <ArrowRight className="w-3 h-3" />
+                {t("All scholarships", "Все стипендии")} <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
@@ -865,14 +891,14 @@ const ScholarshipDetail = () => {
             <div className="flex items-baseline justify-between gap-3 mb-4">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-1.5">
-                  Similar scholarships
+                  {t("Similar scholarships", "Похожие стипендии")}
                 </p>
                 <h3 className="font-heading text-lg font-bold tracking-tight text-foreground">
-                  Students who tracked this also tracked
+                  {t("Students who tracked this also tracked", "Студенты, которые отслеживали это, также отслеживали")}
                 </h3>
               </div>
-              <Link to="/discover" className="text-xs text-muted-foreground hover:text-gold-dark transition-colors hidden sm:inline-flex items-center gap-1">
-                Browse all <ArrowRight className="w-3 h-3" />
+              <Link to={ru ? "/discover/ru" : "/discover"} className="text-xs text-muted-foreground hover:text-gold-dark transition-colors hidden sm:inline-flex items-center gap-1">
+                {t("Browse all", "Смотреть все")} <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
@@ -903,7 +929,9 @@ const ScholarshipDetail = () => {
         {evidence.length > 0 && (
           <div className="pt-6 border-t border-border mb-6">
             <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-3">
-              Confirmed by {evidence.length} {evidence.length === 1 ? "source" : "sources"}
+              {ru
+                ? `Подтверждено: ${evidence.length} ${evidence.length === 1 ? "источник" : evidence.length < 5 ? "источника" : "источников"}`
+                : `Confirmed by ${evidence.length} ${evidence.length === 1 ? "source" : "sources"}`}
             </p>
             <ul className="space-y-2">
               {evidence.slice(0, 6).map((e) => {
@@ -912,13 +940,13 @@ const ScholarshipDetail = () => {
                   e.authority >= 2 ? "text-blue-700 dark:text-blue-300 bg-blue-500/10" :
                   "text-muted-foreground bg-muted";
                 const label =
-                  e.source_type === "official_program_page" ? "Official program page" :
-                  e.source_type === "official_provider_site" ? "Official funder site" :
-                  e.source_type === "gov_doc" ? "Government source" :
-                  e.source_type === "university_listing" ? "University listing" :
-                  e.source_type === "aggregator" ? "Aggregator" :
-                  e.source_type === "news" ? "News article" :
-                  "Other";
+                  e.source_type === "official_program_page" ? t("Official program page", "Официальная страница программы") :
+                  e.source_type === "official_provider_site" ? t("Official funder site", "Официальный сайт фонда") :
+                  e.source_type === "gov_doc" ? t("Government source", "Государственный источник") :
+                  e.source_type === "university_listing" ? t("University listing", "Страница университета") :
+                  e.source_type === "aggregator" ? t("Aggregator", "Агрегатор") :
+                  e.source_type === "news" ? t("News article", "Новостная статья") :
+                  t("Other", "Другое");
                 return (
                   <li key={e.source_url} className="flex items-center gap-2 text-[12px]">
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] ${tone}`}>
@@ -932,7 +960,7 @@ const ScholarshipDetail = () => {
               })}
             </ul>
             {evidence.length > 6 && (
-              <p className="text-[11px] text-muted-foreground mt-2">+ {evidence.length - 6} more</p>
+              <p className="text-[11px] text-muted-foreground mt-2">+ {evidence.length - 6} {t("more", "ещё")}</p>
             )}
           </div>
         )}
@@ -943,19 +971,21 @@ const ScholarshipDetail = () => {
             <span className={`inline-block h-2 w-2 rounded-full ${
               s.data_source === "hand_curated" ? "bg-emerald-500" : "bg-amber-500"
             }`} />
-            Source: {s.data_source === "hand_curated" ? "Curated" : "External research"}
+            {t("Source", "Источник")}: {s.data_source === "hand_curated"
+              ? t("Curated", "Курировано")
+              : t("External research", "Внешний поиск")}
           </span>
-          {s.last_verified_date && <span>· Verified {s.last_verified_date}</span>}
+          {s.last_verified_date && <span>· {t("Verified", "Проверено")} {s.last_verified_date}</span>}
           <a
             href={`mailto:hello@topuni.com?subject=${encodeURIComponent("Inaccurate scholarship data: " + cleanScholarshipName(s.scholarship_name))}`}
             className="ml-auto underline hover:text-foreground"
           >
-            Report inaccuracy
+            {t("Report inaccuracy", "Сообщить об ошибке")}
           </a>
         </div>
       </section>
 
-      <Footer language="en" />
+      <Footer language={language} />
     </div>
   );
 };

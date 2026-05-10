@@ -175,7 +175,8 @@ const App = () => (
               applied. */}
           <Route path="/scholarships/in/:country/:field"  element={<ScholarshipsByFilter mode="country-field" />} />
           {/* Per-scholarship detail page — also indexable, 200+ SEO surfaces */}
-          <Route path="/scholarships/:id"                 element={<ScholarshipDetail />} />
+          <Route path="/scholarships/:id"                 element={<ScholarshipDetail language="en" />} />
+          <Route path="/scholarships/:id/ru"              element={<ScholarshipDetail language="ru" />} />
           {/* Essay critique — premium-gated reader-perspective AI feedback */}
           <Route path="/essay"                            element={<EssayCritique language="en" />} />
           <Route path="/essay/ru"                         element={<EssayCritique language="ru" />} />
