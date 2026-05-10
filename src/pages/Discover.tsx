@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import { DiscoverAppBar } from "@/components/discover/DiscoverAppBar";
@@ -1795,6 +1795,22 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
   );
 };
 
+// See MemoScholarCard's comparator note — same rationale for the
+// list-view row. ScholarRow renders dense rows with tracker hooks,
+// hover transitions, and per-row IntersectionObserver via framer-
+// motion; without memoization a single status change on row N
+// re-rendered every visible row.
+const MemoScholarRow = memo(ScholarRow, (prev, next) => (
+  prev.s === next.s
+  && prev.isBookmarked === next.isBookmarked
+  && prev.status === next.status
+  && prev.isHidden === next.isHidden
+  && prev.isComparing === next.isComparing
+  && prev.outcomes === next.outcomes
+  && prev.lang === next.lang
+  && prev.index === next.index
+));
+
 /* ─── Scholarship card — dense, product-grade, scannable in a 3-col grid ── */
 const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0, outcomes, lang = "en" }: {
   s: Scored; onSelect: () => void;
@@ -2066,6 +2082,28 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
     </motion.article>
   );
 };
+
+/* ScholarCard is React.memo'd with a custom comparator. Without it,
+ * every parent re-render (filter change, hover, status update on a
+ * different card) cascades a full re-render across every visible
+ * card — framer-motion in each card re-evaluates whileInView
+ * intersection state, the markdown helpers re-run, and the grid
+ * stutters on scroll. The cardProps factory creates NEW closures
+ * for onSelect/onBookmark/onToggleHide/onToggleCompare every
+ * render, so the default shallow memo wouldn't skip anything;
+ * here we explicitly compare only the data props and ignore the
+ * function refs (the closures still reach the live state via
+ * React's setter API, so calling a stale ref is safe). */
+const MemoScholarCard = memo(ScholarCard, (prev, next) => (
+  prev.s === next.s
+  && prev.isBookmarked === next.isBookmarked
+  && prev.status === next.status
+  && prev.isHidden === next.isHidden
+  && prev.isComparing === next.isComparing
+  && prev.outcomes === next.outcomes
+  && prev.lang === next.lang
+  && prev.index === next.index
+));
 
 /* ─── Filters Panel ──────────────────────────────────────────────────── */
 const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsAvailable, lang = "en" }: {
@@ -4792,7 +4830,7 @@ const Discover = ({ language = "en" }: Props) => {
                                 <span className="text-right">{t("Award · Deadline", "Сумма · Дедлайн")}</span>
                                 <span className="text-right pr-1">{t("Actions", "Действия")}</span>
                               </div>
-                              {items.map((s, i) => <ScholarRow {...cp(s, i)} />)}
+                              {items.map((s, i) => <MemoScholarRow {...cp(s, i)} />)}
                             </div>
                           );
                         })()}
@@ -4872,7 +4910,7 @@ const Discover = ({ language = "en" }: Props) => {
                                   <span className="text-right">Award · Deadline</span>
                                   <span className="text-right pr-1">Actions</span>
                                 </div>
-                                {filtered.map((s, i) => <ScholarRow {...cardProps(s, i)} />)}
+                                {filtered.map((s, i) => <MemoScholarRow {...cardProps(s, i)} />)}
                                 {lockedCount > 0 && <PaywallRow lockedCount={lockedCount} lang={language} />}
                               </div>
                             );
@@ -4899,7 +4937,7 @@ const Discover = ({ language = "en" }: Props) => {
                                   accentClass="text-foreground/60"
                                 />
                                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
-                                  {sections.stretch.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
+                                  {sections.stretch.map((s, i) => <MemoScholarCard {...cardProps(s, i)} />)}
                                 </div>
                                 {lockedCount > 0 && <PaywallCard lockedCount={lockedCount} className="mt-4" lang={language} />}
                               </section>
@@ -4922,7 +4960,7 @@ const Discover = ({ language = "en" }: Props) => {
                                     subtitle={t("Your stated nationality, level, and field overlap with the program's audience.", "Ваши гражданство, уровень и направление совпадают с целевой аудиторией программы.")}
                                     count={sections.strong.length} accentClass="text-gold-dark" />
                                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
-                                    {sections.strong.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
+                                    {sections.strong.map((s, i) => <MemoScholarCard {...cardProps(s, i)} />)}
                                   </div>
                                 </section>
                               )}
@@ -4935,7 +4973,7 @@ const Discover = ({ language = "en" }: Props) => {
                                     subtitle={t("Some thresholds are tight — read the requirements before drafting.", "Некоторые пороги жёсткие — прочитайте требования до подачи.")}
                                     count={sections.competitive.length} accentClass="text-primary dark:text-primary-bright" />
                                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
-                                    {sections.competitive.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
+                                    {sections.competitive.map((s, i) => <MemoScholarCard {...cardProps(s, i)} />)}
                                   </div>
                                 </section>
                               )}
@@ -4948,7 +4986,7 @@ const Discover = ({ language = "en" }: Props) => {
                                     subtitle={t("Highly selective on paper. People do win these every year.", "Очень селективные на бумаге. Каждый год кто-то их выигрывает.")}
                                     count={sections.stretch.length} accentClass="text-muted-foreground" />
                                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
-                                    {sections.stretch.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
+                                    {sections.stretch.map((s, i) => <MemoScholarCard {...cardProps(s, i)} />)}
                                   </div>
                                 </section>
                               )}
@@ -5195,7 +5233,7 @@ const Discover = ({ language = "en" }: Props) => {
 
                   <div className="flex-1 bg-card">
                     {activeCollection.items.map((s, i) => (
-                      <ScholarRow
+                      <MemoScholarRow
                         key={s.scholarship_id}
                         s={s}
                         index={i}
