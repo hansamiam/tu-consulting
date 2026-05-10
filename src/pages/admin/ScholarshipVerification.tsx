@@ -430,6 +430,41 @@ export default function AdminScholarshipVerification() {
                 await promote([r.scholarship_id], "broken");
                 setBusyId(null);
               }}
+              onCanonicalExtract={async () => {
+                setBusyId(r.scholarship_id);
+                try {
+                  const { data, error } = await supabase.functions.invoke<{
+                    ok: boolean;
+                    reason?: string;
+                    changed?: string[];
+                    confidence?: number;
+                  }>("canonical-extract", { body: { scholarship_id: r.scholarship_id } });
+                  if (error) throw new Error(error.message);
+                  if (data?.ok) {
+                    toast({
+                      title: `Canonical extracted · ${r.scholarship_name}`,
+                      description: `${data.changed?.length ?? 0} field(s) updated · confidence ${(data.confidence ?? 0).toFixed(2)}`,
+                    });
+                  } else {
+                    const reason = data?.reason ?? "unknown";
+                    toast({
+                      title: `Canonical skipped · ${r.scholarship_name}`,
+                      description:
+                        reason === "no_clean_url" ? "All URLs point to aggregator domains."
+                        : reason === "thin_content" ? "Page returned too little content."
+                        : reason === "low_confidence" ? "LLM not confident enough — try again later."
+                        : reason === "scrape_failed" ? "Page fetch failed — URL may be down."
+                        : reason === "nothing_validated" ? "Extracted fields didn't pass validation."
+                        : `Reason: ${reason}`,
+                      variant: "destructive",
+                    });
+                  }
+                  await fetchAll();
+                } catch (e) {
+                  toast({ title: "Canonical extract failed", description: (e as Error).message, variant: "destructive" });
+                }
+                setBusyId(null);
+              }}
               onFillContent={async () => {
                 setBusyId(r.scholarship_id);
                 try {
@@ -507,10 +542,12 @@ const Stat = ({ label, value, sub, tone = "neutral" }: { label: string; value: s
 };
 
 const RowCard = ({
-  row, checked, onCheck, busy, onPromote, onBreak, onReVerify, onFillContent, index,
+  row, checked, onCheck, busy, onPromote, onBreak, onReVerify, onFillContent, onCanonicalExtract, index,
 }: {
   row: Row; checked: boolean; onCheck: (v: boolean) => void;
-  busy: boolean; onPromote: () => void; onBreak: () => void; onReVerify: () => void; onFillContent: () => void; index: number;
+  busy: boolean; onPromote: () => void; onBreak: () => void; onReVerify: () => void; onFillContent: () => void;
+  onCanonicalExtract: () => void;
+  index: number;
 }) => {
   const status = row.verification_status ?? "pending";
   const missingSoftCount =
@@ -584,6 +621,17 @@ const RowCard = ({
                   Fill content
                 </Button>
               )}
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={busy}
+                onClick={onCanonicalExtract}
+                className="gap-1.5 h-8"
+                title="Run canonical-extract: re-fetch the official URL, LLM-extract canonical_overview / canonical_deadline_iso / canonical_funding_text+usd / canonical_official_url / canonical_requirements, validate, and persist."
+              >
+                <Award className="w-3.5 h-3.5" />
+                Canonical
+              </Button>
               {status !== "broken" && (
                 <Button size="sm" variant="ghost" disabled={busy} onClick={onBreak} className="gap-1.5 h-8 text-destructive hover:bg-destructive/10">
                   <AlertTriangle className="w-3.5 h-3.5" />
