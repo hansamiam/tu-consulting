@@ -16,6 +16,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, ExternalLink, Calendar,
   StickyNote, Loader2, Search, Inbox, ChevronDown, Bot, KanbanSquare, FileText, PenLine,
+  ChevronLeft, ChevronRight,
 } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
@@ -243,13 +244,19 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
    * deadline-sorted view. Calendar + essays render as inline
    * sections below.
    *
-   * `?view=list` is supported as a deep-link hint — the URL is no
-   * longer the source of truth for tabs (those are gone), but the
-   * boardView preference does deserve to survive a refresh. */
+   * `?view=list|calendar` is supported as a deep-link hint — the URL is
+   * no longer the source of truth for tabs (those are gone), but the
+   * boardView preference does deserve to survive a refresh. Adds a
+   * calendar option 2026-05-10 — minimal addition, expands the main
+   * canvas into a month grid when active so the writing surface stays
+   * untouched on Stage / Deadline. */
   const [searchParams, setSearchParams] = useSearchParams();
   const viewParam = searchParams.get("view");
-  const boardView: "category" | "list" = viewParam === "list" ? "list" : "category";
-  const setBoardView = (next: "category" | "list") => {
+  const boardView: "category" | "list" | "calendar" =
+    viewParam === "list" ? "list" :
+    viewParam === "calendar" ? "calendar" :
+    "category";
+  const setBoardView = (next: "category" | "list" | "calendar") => {
     const params = new URLSearchParams(searchParams);
     if (next === "category") params.delete("view"); else params.set("view", next);
     setSearchParams(params, { replace: true });
@@ -444,7 +451,7 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {t("By stage", "По этапу")}
+                  {t("Stage", "Этап")}
                 </button>
                 <button
                   type="button"
@@ -455,7 +462,18 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {t("By deadline", "По дедлайну")}
+                  {t("Deadline", "Дедлайн")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBoardView("calendar")}
+                  className={`flex-1 h-7 text-[11px] font-medium transition-colors ${
+                    boardView === "calendar"
+                      ? "bg-foreground/[0.06] text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t("Calendar", "Календарь")}
                 </button>
               </div>
 
@@ -513,9 +531,22 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
               )}
             </aside>
 
-            {/* Main canvas: A4-feeling essay drafter for the selected row. */}
+            {/* Main canvas: A4 essay drafter, OR a deadline calendar
+                when the calendar view is active. The calendar replaces
+                the writing surface so it has room to breathe — minimal
+                addition, sleek treatment, returns to drafting on click. */}
             <main className="min-w-0">
-              {selectedScholarship ? (
+              {boardView === "calendar" ? (
+                <DeadlineCalendar
+                  rows={rows}
+                  language={language}
+                  selectedId={selectedId}
+                  onSelect={(id) => {
+                    setSelectedId(id);
+                    setBoardView("list");
+                  }}
+                />
+              ) : selectedScholarship ? (
                 <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
                   <header className="px-6 py-4 border-b border-border bg-muted/20 flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -940,6 +971,224 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
 export default Pipeline;
 
 /* ─── Internals ─────────────────────────────────────────────────── */
+
+/* DeadlineCalendar — month-grid view of tracked scholarship deadlines.
+   Each day with one or more deadlines renders a small chip per deadline
+   showing the program's first 2 letters. Clicking the chip jumps to
+   that scholarship's draft canvas. Lightweight (no calendar lib) so
+   bundle stays clean and the visual matches the rest of the workspace.
+
+   Design choice: month-paged (← previous / → next / Today). One month
+   on screen at a time keeps the chips readable. Cap each cell to 3
+   visible chips with a "+N" overflow so a deadline-heavy day doesn't
+   blow up the row height. */
+const DeadlineCalendar = ({
+  rows, language, selectedId, onSelect,
+}: {
+  rows: { scholarship_id: string; scholarship_name: string; provider_name: string | null; application_deadline: string | null; deadline_type: string | null }[];
+  language: "en" | "ru";
+  selectedId: string | null;
+  onSelect: (scholarshipId: string) => void;
+}) => {
+  const isRu = language === "ru";
+  const t = (en: string, r: string) => (isRu ? r : en);
+  const [cursor, setCursor] = useState<{ year: number; month: number }>(() => {
+    const today = new Date();
+    return { year: today.getFullYear(), month: today.getMonth() };
+  });
+
+  // Group dated rows by ISO date (YYYY-MM-DD) for quick day-cell lookup.
+  // Rows with no application_deadline are ignored — they belong in the
+  // "Undated" list below the grid so the user can still see them.
+  const byDay = useMemo(() => {
+    const map = new Map<string, typeof rows>();
+    for (const r of rows) {
+      if (!r.application_deadline) continue;
+      const key = r.application_deadline.slice(0, 10);
+      const arr = map.get(key) ?? [];
+      arr.push(r);
+      map.set(key, arr);
+    }
+    return map;
+  }, [rows]);
+
+  const undated = useMemo(() => rows.filter(r => !r.application_deadline), [rows]);
+
+  const monthLabel = new Date(cursor.year, cursor.month, 1).toLocaleString(
+    isRu ? "ru-RU" : "en-US",
+    { month: "long", year: "numeric" },
+  );
+
+  // First day of week for the rendered month (0 = Sunday). We render a
+  // 6-row × 7-col grid starting from the Sunday on or before day 1, so
+  // months always span 42 cells regardless of how they line up.
+  const firstOfMonth = new Date(cursor.year, cursor.month, 1);
+  const gridStart = new Date(firstOfMonth);
+  gridStart.setDate(gridStart.getDate() - firstOfMonth.getDay());
+
+  const cells: Date[] = [];
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(gridStart);
+    d.setDate(gridStart.getDate() + i);
+    cells.push(d);
+  }
+
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const dayKey = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+  const initials = (name: string) => {
+    const cleaned = name.replace(/^(the\s+)/i, "").trim();
+    const parts = cleaned.split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + (parts[1]?.[0] ?? "")).toUpperCase();
+  };
+
+  const dayHeaders = isRu
+    ? ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
+    : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  const goPrev = () => {
+    setCursor(c => {
+      const m = c.month - 1;
+      return m < 0 ? { year: c.year - 1, month: 11 } : { year: c.year, month: m };
+    });
+  };
+  const goNext = () => {
+    setCursor(c => {
+      const m = c.month + 1;
+      return m > 11 ? { year: c.year + 1, month: 0 } : { year: c.year, month: m };
+    });
+  };
+  const goToday = () => {
+    const today = new Date();
+    setCursor({ year: today.getFullYear(), month: today.getMonth() });
+  };
+
+  return (
+    <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+      <header className="px-5 py-4 border-b border-border bg-muted/20 flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark dark:text-gold-light mb-0.5">
+            {t("Deadlines", "Дедлайны")}
+          </p>
+          <h2 className="font-heading text-lg sm:text-xl font-bold text-foreground tracking-tight leading-tight capitalize">
+            {monthLabel}
+          </h2>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" className="h-8 px-2" onClick={goPrev} aria-label={t("Previous month", "Предыдущий месяц")}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={goToday}>
+            {t("Today", "Сегодня")}
+          </Button>
+          <Button variant="ghost" size="sm" className="h-8 px-2" onClick={goNext} aria-label={t("Next month", "Следующий месяц")}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </header>
+
+      <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-3">
+        {/* Day-of-week header row */}
+        <div className="grid grid-cols-7 gap-px mb-1">
+          {dayHeaders.map((d) => (
+            <div key={d} className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/70 text-center py-1">
+              {d}
+            </div>
+          ))}
+        </div>
+
+        {/* 6×7 month grid */}
+        <div className="grid grid-cols-7 gap-px bg-border/60 rounded-lg overflow-hidden border border-border/60">
+          {cells.map((d, i) => {
+            const inMonth = d.getMonth() === cursor.month;
+            const key = dayKey(d);
+            const isToday = key === todayKey;
+            const items = byDay.get(key) ?? [];
+            return (
+              <div
+                key={i}
+                className={`min-h-[78px] sm:min-h-[92px] bg-card p-1.5 flex flex-col gap-1 ${
+                  inMonth ? "" : "opacity-40"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className={`text-[11px] tabular-nums font-semibold ${
+                    isToday
+                      ? "text-gold-dark"
+                      : inMonth ? "text-foreground/80" : "text-muted-foreground"
+                  }`}>
+                    {d.getDate()}
+                  </span>
+                  {isToday && <span className="h-1 w-1 rounded-full bg-gold-dark" />}
+                </div>
+                {items.slice(0, 3).map((r) => {
+                  const isSel = r.scholarship_id === selectedId;
+                  const daysLeft = daysUntil(r.application_deadline);
+                  const tone = daysLeft === null
+                    ? "bg-muted text-foreground/70"
+                    : daysLeft <= 0
+                      ? "bg-muted/50 text-muted-foreground/60 line-through"
+                      : daysLeft <= 7
+                        ? "bg-destructive/15 text-destructive"
+                        : daysLeft <= 30
+                          ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                          : "bg-gold/10 text-gold-dark dark:text-gold-light";
+                  return (
+                    <button
+                      key={r.scholarship_id}
+                      type="button"
+                      onClick={() => onSelect(r.scholarship_id)}
+                      title={cleanScholarshipName(r.scholarship_name)}
+                      className={`w-full text-left text-[10px] font-semibold rounded px-1.5 py-0.5 leading-tight tracking-tight truncate transition-colors hover:brightness-110 ${tone} ${
+                        isSel ? "ring-1 ring-gold-dark" : ""
+                      }`}
+                    >
+                      {initials(r.scholarship_name)} · {cleanScholarshipName(r.scholarship_name).slice(0, 14)}
+                    </button>
+                  );
+                })}
+                {items.length > 3 && (
+                  <span className="text-[9px] text-muted-foreground/70 px-1">
+                    +{items.length - 3} {t("more", "ещё")}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Undated list — surfaces tracked rows without an application_deadline
+            so they don't disappear when the user is in calendar mode.
+            Compact, single-line per row. */}
+        {undated.length > 0 && (
+          <div className="mt-4 rounded-lg border border-dashed border-border/70 bg-muted/10 p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">
+              {t("Undated · varies / rolling", "Без даты · варьируется / rolling")}
+              <span className="ml-1.5 text-muted-foreground/60 tabular-nums">({undated.length})</span>
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {undated.map((r) => (
+                <button
+                  key={r.scholarship_id}
+                  type="button"
+                  onClick={() => onSelect(r.scholarship_id)}
+                  className={`text-[11px] px-2 py-1 rounded-md border bg-card hover:border-gold/40 transition-colors ${
+                    r.scholarship_id === selectedId ? "border-gold-dark text-gold-dark" : "border-border text-foreground/80"
+                  }`}
+                >
+                  {cleanScholarshipName(r.scholarship_name).slice(0, 28)}
+                  {cleanScholarshipName(r.scholarship_name).length > 28 && "…"}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 /* SidebarRow — compact list-row for the sorter pane. Selected state
    is the high-signal cue (gold left border + tinted background); the
