@@ -3824,7 +3824,7 @@ const Discover = ({ language = "en" }: Props) => {
                       <div className="space-y-2">
                         <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">GPA</label>
                         <div className="flex gap-2">
-                          <Input value={wiz.gpa} onChange={e => setWiz(w => ({ ...w, gpa: e.target.value }))} placeholder="e.g. 3.8"
+                          <Input value={wiz.gpa} onChange={e => setWiz(w => ({ ...w, gpa: e.target.value }))} placeholder={t("e.g. 3.8", "напр. 3.8")}
                             className="bg-primary-foreground/[0.04] border-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/25 h-12 flex-1 backdrop-blur-md focus-visible:border-gold/50" />
                           <div className="flex rounded-xl overflow-hidden border border-primary-foreground/15 backdrop-blur-md">
                             {["/4.0", "/5.0", "/100"].map(s => (
@@ -3839,18 +3839,18 @@ const Discover = ({ language = "en" }: Props) => {
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-2">
                           <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">IELTS</label>
-                          <Input value={wiz.ielts} onChange={e => setWiz(w => ({ ...w, ielts: e.target.value }))} placeholder="e.g. 7.0"
+                          <Input value={wiz.ielts} onChange={e => setWiz(w => ({ ...w, ielts: e.target.value }))} placeholder={t("e.g. 7.0", "напр. 7.0")}
                             className="bg-primary-foreground/[0.04] border-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/25 h-12 backdrop-blur-md focus-visible:border-gold/50" />
                         </div>
                         <div className="space-y-2">
                           <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">TOEFL</label>
-                          <Input value={wiz.toefl} onChange={e => setWiz(w => ({ ...w, toefl: e.target.value }))} placeholder="e.g. 100"
+                          <Input value={wiz.toefl} onChange={e => setWiz(w => ({ ...w, toefl: e.target.value }))} placeholder={t("e.g. 100", "напр. 100")}
                             className="bg-primary-foreground/[0.04] border-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/25 h-12 backdrop-blur-md focus-visible:border-gold/50" />
                         </div>
                       </div>
                       <div className="space-y-2">
                         <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">{t("SAT (undergrad applicants)", "SAT (для бакалавриата)")}</label>
-                        <Input value={wiz.sat} onChange={e => setWiz(w => ({ ...w, sat: e.target.value }))} placeholder="e.g. 1450"
+                        <Input value={wiz.sat} onChange={e => setWiz(w => ({ ...w, sat: e.target.value }))} placeholder={t("e.g. 1450", "напр. 1450")}
                           className="bg-primary-foreground/[0.04] border-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/25 h-12 backdrop-blur-md focus-visible:border-gold/50" />
                       </div>
                       {/* Optional self-identification — surfaces extra match
