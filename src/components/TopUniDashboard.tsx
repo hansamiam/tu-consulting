@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -3231,9 +3231,25 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                 </div>
               )}
 
-              {pathwayLoading && !pathwayContent && (
-                <GenerationPipeline profile={profile} isRu={isRu} />
-              )}
+              <AnimatePresence>
+                {pathwayLoading && !pathwayContent && (
+                  // Wrap in AnimatePresence so the pipeline gracefully fades
+                  // out at the moment the first SSE chunk arrives — without
+                  // this the pipeline JSX would just unmount and the brief
+                  // masthead would pop in mid-frame, which read as a hard
+                  // jump cut in the streaming experience. The inner motion
+                  // div handles the fade; AnimatePresence holds the unmount
+                  // until the exit animation finishes.
+                  <motion.div
+                    key="generation-pipeline"
+                    initial={{ opacity: 1 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                  >
+                    <GenerationPipeline profile={profile} isRu={isRu} />
+                  </motion.div>
+                )}
+              </AnimatePresence>{" "}
 
               {/* Pro brief CTA blocks moved to BELOW the report — it's
                   bad business intelligence to paywall users before they
