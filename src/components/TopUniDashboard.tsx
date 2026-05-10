@@ -3280,7 +3280,26 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                     <FileText className="w-4 h-4" />
                     {t("Print", "Печать")}
                   </Button>
-                  <Button variant="outline" size="sm" onClick={generatePathway} disabled={pathwayLoading} className="gap-1.5">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    // Confirm before wiping a non-empty brief — pre-fix
+                    // a misclick on Regenerate restarted the entire
+                    // generation and the user lost the brief they were
+                    // reading. Per-section regen still goes through
+                    // its own focused flow (no confirm), since the user
+                    // explicitly clicks a section's regen icon and is
+                    // only replacing one bucket.
+                    onClick={() => {
+                      if (pathwayContent && !window.confirm(t(
+                        "Regenerate the full brief? Your current report will be replaced.",
+                        "Сгенерировать отчёт заново? Текущий отчёт будет заменён.",
+                      ))) return;
+                      generatePathway();
+                    }}
+                    disabled={pathwayLoading}
+                    className="gap-1.5"
+                  >
                     {pathwayLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                     {t("Regenerate", "Обновить")}
                   </Button>
