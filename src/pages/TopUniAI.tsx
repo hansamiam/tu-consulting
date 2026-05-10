@@ -3,6 +3,7 @@ import { trackPageView } from "@/utils/analytics";
 import { motion, AnimatePresence } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import { BetaBanner } from "@/components/BetaBanner";
+import { TopUniAIEntrance } from "@/components/topuni/TopUniAIEntrance";
 import { Footer } from "@/components/Footer";
 import topuniBg from "@/assets/topuni-bg.jpg";
 import TopUniDashboard from "@/components/TopUniDashboard";
@@ -309,6 +310,7 @@ const TopUniAI = () => {
         style={{ backgroundImage: `url(${topuniBg})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(3px)' }}
       />
 
+      <TopUniAIEntrance language="en" />
       <div className="relative z-10">
         <Navigation language="en" />
         <BetaBanner />
