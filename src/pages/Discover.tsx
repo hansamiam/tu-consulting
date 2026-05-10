@@ -1915,6 +1915,22 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
               </>
             );
           })()}
+          {/* Thin-data hint — when the row was extracted from a sparse
+              provider page (low completeness score), surface a quiet
+              "verify on official site" note so users don't trust the
+              card as fully fleshed-out. Better than presenting a
+              barely-populated row as if it were complete. The badge
+              is intentionally muted so it doesn't deter clicks — the
+              row is still useful, just needs verification. */}
+          {(typeof s.data_completeness_score === "number" && s.data_completeness_score > 0 && s.data_completeness_score < 6) && (
+            <span
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground/80 text-[10px] font-medium ml-auto"
+              title={ru ? "Данные неполные — уточните на сайте провайдера" : "Sparse data — verify on the provider's official site"}
+            >
+              <Circle className="h-2 w-2 opacity-50" />
+              {ru ? "уточнить" : "verify"}
+            </span>
+          )}
           {outcomes && outcomes.applied >= 3 && (
             <span
               className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 text-[10px] font-semibold tracking-wide tabular-nums ml-auto"
