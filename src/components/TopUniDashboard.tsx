@@ -3439,21 +3439,23 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                     />
                   )}
 
-                  {/* Split the markdown into [positioning] and [rest] so the
-                      Strategy Report leads (analysis first), then the live
-                      matches grid lights up urgency, then the rest of the
-                      structured report unfolds. Falls back to the original
-                      flow if the positioning section isn't found. */}
+                  {/* 2026-05-10: brief renders as a single continuous
+                      ReportRenderer pass instead of being split into
+                      [positioning] | Live matches grid | [rest]. The
+                      injected Live matches grid (6 scholarship cards
+                      between positioning and the rest) was breaking
+                      the brief's narrative flow with content that
+                      duplicated the curated 3-4 picks the brief's
+                      Funding pathway section already surfaces. The
+                      Live matches grid still renders — just below the
+                      brief, where it reads as an action shelf rather
+                      than a mid-document interruption. */}
                   {(() => {
-                    const all = pathwayContent.split(/(?=^##\s+)/m).filter(s => s.trim());
-                    const posIdx = all.findIndex(s => PATHWAY_POS_SECTION_REGEX.test(s));
-                    const before = posIdx >= 0 ? all.slice(0, posIdx + 1).join("") : "";
-                    const after = posIdx >= 0 ? all.slice(posIdx + 1).join("") : pathwayContent;
                     return (
                       <>
-                        {before && (
+                        {pathwayContent && (
                           <ReportRenderer
-                            markdown={before}
+                            markdown={pathwayContent}
                             completedTasks={completedTasks}
                             onToggle={toggleTask}
                             taskKey={taskKey}
@@ -3614,24 +3616,9 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                     );
                   })()}
 
-                        {after && (
-                          <ReportRenderer
-                            markdown={after}
-                            completedTasks={completedTasks}
-                            onToggle={toggleTask}
-                            taskKey={taskKey}
-                            isRu={isRu}
-                            onOpenDiscover={() => navigate(isRu ? "/discover/ru" : "/discover")}
-                            liveMatches={allMatches}
-                            onSaveScholarship={handleSaveScholarship}
-                            savedSet={tracker.shortlist}
-                            structured={structuredBrief}
-                            onRegenSection={reportGrade === "premium" ? regenerateSection : undefined}
-                            regeneratingSectionId={regeneratingSectionId}
-                            tier={reportGrade}
-                            onAskCounselor={SHOW_COUNSELOR_TAB ? askCounselorWithPrefill : undefined}
-                          />
-                        )}
+                        {/* Second ReportRenderer (the [after] split)
+                            retired 2026-05-10 — the brief now renders
+                            once, continuously, above this point. */}
                         {/* ProSectionsTeaser retired 2026-05-10 — the
                             3-card "Pro adds: wider shortlist · per-section
                             regen · funding stack" teaser was followed
