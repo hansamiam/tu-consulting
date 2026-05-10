@@ -525,6 +525,7 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                               hasEssay={!!tracker.essayMap[s.scholarship_id]}
                               isRu={isRu}
                               onOpen={() => setSelectedId(s.scholarship_id)}
+                              onEditDetails={() => setOpenDetail(s)}
                               onStatusChange={(next) => tracker.setStatus(s.scholarship_id, next)}
                             />
                           ))}
@@ -552,6 +553,7 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                         hasEssay={!!tracker.essayMap[s.scholarship_id]}
                         isRu={isRu}
                         onOpen={() => setSelectedId(s.scholarship_id)}
+                              onEditDetails={() => setOpenDetail(s)}
                         onStatusChange={(next) => tracker.setStatus(s.scholarship_id, next)}
                       />
                     ))}
@@ -1318,7 +1320,7 @@ const Fact = ({ label, value, tone = "neutral" }: { label: string; value: string
 };
 
 const PipelineCard = ({
-  scholarship: s, status, isShortlisted, note, recommenders, hasEssay, isRu, onOpen, onStatusChange,
+  scholarship: s, status, isShortlisted, note, recommenders, hasEssay, isRu, onOpen, onEditDetails, onStatusChange,
 }: {
   scholarship: Scholarship;
   status: AppStatus | undefined;
@@ -1327,7 +1329,12 @@ const PipelineCard = ({
   recommenders: import("@/hooks/useApplicationTracker").Recommender[] | undefined;
   hasEssay: boolean;
   isRu: boolean;
+  /** Card click — selects this scholarship for the essay-drafting canvas. */
   onOpen: () => void;
+  /** Optional richer-edit affordance — opens the detail Sheet for
+   *  recommender/notes/additional-essay editing. The "Edit" button
+   *  surfaces only when this is wired. */
+  onEditDetails?: () => void;
   onStatusChange: (s: AppStatus | null) => void;
 }) => {
   const t = (en: string, ru: string) => (isRu ? ru : en);
@@ -1444,8 +1451,11 @@ const PipelineCard = ({
           )}
         </div>
       )}
-      {/* Inline status quick-cycle (skip for shortlisted-only column) */}
-      <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border/60" onClick={(e) => e.stopPropagation()}>
+      {/* Inline status quick-cycle + edit affordance. The Edit link
+          opens the detail Sheet for recommender/notes/additional-essay
+          editing — without it the Sheet was unreachable after the
+          Details button retired and editing those fields had no path. */}
+      <div className="flex items-center justify-between gap-1 mt-2 pt-2 border-t border-border/60" onClick={(e) => e.stopPropagation()}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="text-[10px] uppercase tracking-[0.14em] font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
@@ -1460,6 +1470,15 @@ const PipelineCard = ({
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+        {onEditDetails && (
+          <button
+            type="button"
+            onClick={onEditDetails}
+            className="text-[10px] uppercase tracking-[0.14em] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {t("Edit", "Изменить")}
+          </button>
+        )}
       </div>
       </div>
     </motion.div>
