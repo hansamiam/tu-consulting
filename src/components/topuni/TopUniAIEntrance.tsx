@@ -26,7 +26,9 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const STORAGE_KEY = "topuni-ai-entrance-played";
+const STORAGE_KEY = "topuni-ai-entrance-played-at";
+// 24h TTL — gate plays once per day per device, not per tab.
+const COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 // 2026-05-10 fix: pre-fix the wordmark faded in on top of a still-
 // brightening gold halo, so during the bloom peak the text washed
@@ -54,14 +56,18 @@ export const TopUniAIEntrance = ({ language = "en" }: Props) => {
     if (typeof window === "undefined") return false;
     if (prefersReducedMotion()) return false;
     try {
-      if (sessionStorage.getItem(STORAGE_KEY)) return false;
+      const playedAtRaw = localStorage.getItem(STORAGE_KEY);
+      if (playedAtRaw) {
+        const playedAt = parseInt(playedAtRaw, 10);
+        if (!Number.isNaN(playedAt) && Date.now() - playedAt < COOLDOWN_MS) return false;
+      }
     } catch { /* ignore */ }
     return true;
   });
 
   useEffect(() => {
     if (!active) return;
-    try { sessionStorage.setItem(STORAGE_KEY, "1"); } catch { /* ignore */ }
+    try { localStorage.setItem(STORAGE_KEY, String(Date.now())); } catch { /* ignore */ }
     const timer = window.setTimeout(() => setActive(false), SEQUENCE_MS);
     return () => window.clearTimeout(timer);
   }, [active]);

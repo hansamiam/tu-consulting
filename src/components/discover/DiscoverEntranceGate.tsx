@@ -26,7 +26,13 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const STORAGE_KEY = "topuni-discover-entrance-played";
+const STORAGE_KEY = "topuni-discover-entrance-played-at";
+// 24h TTL on the entrance — pre-fix the gate replayed every new
+// tab (sessionStorage scope), so a power user opening Discover in
+// 5 tabs throughout the day saw the 3-second flash 5 times. The
+// gate is now persisted in localStorage with a 24h freshness check:
+// plays once a day max per device, regardless of tab count.
+const COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 // 3.0s total. The earlier 2.6s left the wordmark on screen for
 // ~900ms which felt brief; 3.0s gives the wordmark a full 1.3s
@@ -46,14 +52,18 @@ export const DiscoverEntranceGate = () => {
     if (typeof window === "undefined") return false;
     if (prefersReducedMotion()) return false;
     try {
-      if (sessionStorage.getItem(STORAGE_KEY)) return false;
+      const playedAtRaw = localStorage.getItem(STORAGE_KEY);
+      if (playedAtRaw) {
+        const playedAt = parseInt(playedAtRaw, 10);
+        if (!Number.isNaN(playedAt) && Date.now() - playedAt < COOLDOWN_MS) return false;
+      }
     } catch { /* ignore */ }
     return true;
   });
 
   useEffect(() => {
     if (!active) return;
-    try { sessionStorage.setItem(STORAGE_KEY, "1"); } catch { /* ignore */ }
+    try { localStorage.setItem(STORAGE_KEY, String(Date.now())); } catch { /* ignore */ }
     const timer = window.setTimeout(() => setActive(false), SEQUENCE_MS);
     return () => window.clearTimeout(timer);
   }, [active]);

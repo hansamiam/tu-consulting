@@ -1615,6 +1615,18 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
                   {countryLabel && p && <span className="text-muted-foreground/40 mx-1.5">·</span>}
                   {p}
                 </p>
+                {/* Sparse-data hint mirrors the card variant — surfaces
+                    when the row was extracted from a thin provider page
+                    so users gut-check on the official site rather than
+                    trusting near-empty data. */}
+                {(typeof s.data_completeness_score === "number" && s.data_completeness_score > 0 && s.data_completeness_score < 6) && (
+                  <span
+                    className="ml-auto inline-flex items-center px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground/80 text-[10px] font-medium shrink-0"
+                    title={ru ? "Данные неполные — уточните на сайте провайдера" : "Sparse data — verify on the provider's official site"}
+                  >
+                    {ru ? "уточнить" : "verify"}
+                  </span>
+                )}
               </div>
             );
           })()}
