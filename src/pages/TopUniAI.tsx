@@ -639,7 +639,7 @@ const TopUniAI = () => {
                               return;
                             }
                             setAccountSubmitting(true);
-                            const { error } = await signUpWithPassword(email.trim(), accountPassword);
+                            const { error, needsConfirmation } = await signUpWithPassword(email.trim(), accountPassword);
                             setAccountSubmitting(false);
                             if (error) {
                               toast.error(/already|exists|registered/i.test(error)
@@ -647,7 +647,19 @@ const TopUniAI = () => {
                                 : error);
                               return;
                             }
-                            toast.success("Account created — your report will save automatically.");
+                            // When Supabase email-confirmation is on the
+                            // session isn't created until the user clicks
+                            // the verification link, so we can't sync the
+                            // brief to their account yet. Surface the
+                            // confirm-email case explicitly + still let
+                            // them advance — the brief generates on
+                            // localStorage and will adopt the account
+                            // once they verify and come back.
+                            if (needsConfirmation) {
+                              toast.success("Account created — check your email to confirm. Your report saves to this device meanwhile.");
+                            } else {
+                              toast.success("Account created — your report will save automatically.");
+                            }
                           }
                           goToStep(2);
                         }}
