@@ -1390,6 +1390,27 @@ const rowQualityScore = (s: Scholarship): number => {
   if (s.how_to_win) n += 1;
   if (s.verification_status === "verified") n += 4;
   else if (s.verification_status === "stale") n += 2;
+  // Canonical-pipeline signals — a row that's been verified against the
+  // institution's own page beats one that hasn't, period. Without these
+  // weights, dedup could prefer a thin scrape over a canonically-verified
+  // record on the same canonical_key. Each canonical_* field present is
+  // worth a clear tie-break point; canonical_quality_score (0-100, set
+  // by the canonical-extract trigger) maps to up to +5 so a 100-quality
+  // canonical row beats every signal except a genuine "verified" status.
+  if (s.canonical_overview) n += 2;
+  if (s.canonical_deadline_iso) n += 1;
+  if (s.canonical_funding_text || s.canonical_funding_usd) n += 1;
+  if (s.canonical_official_url) n += 1;
+  if (typeof s.canonical_quality_score === "number" && s.canonical_quality_score > 0) {
+    n += Math.min(5, Math.round(s.canonical_quality_score / 20));
+  }
+  // data_completeness_score is the broader 0-18 fingerprint kept fresh
+  // by the scholarships_completeness_score trigger. Worth up to +4 so
+  // it nudges dedup toward the more-fleshed-out variant when canonical
+  // signals are absent on both sides.
+  if (typeof s.data_completeness_score === "number" && s.data_completeness_score > 0) {
+    n += Math.min(4, Math.round(s.data_completeness_score / 4));
+  }
   return n;
 };
 
