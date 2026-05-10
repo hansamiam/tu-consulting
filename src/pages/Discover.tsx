@@ -4368,13 +4368,18 @@ const Discover = ({ language = "en" }: Props) => {
                     ) : filtered.length === 0 ? (
                       <div className="border border-dashed border-border rounded-3xl p-12 sm:p-16 text-center bg-muted/10">
                         <Search className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />
-                        <h3 className="font-heading font-semibold text-lg text-foreground mb-1.5">Nothing matches these filters</h3>
+                        <h3 className="font-heading font-semibold text-lg text-foreground mb-1.5">
+                          {t("Nothing matches these filters", "Ничего не подходит под эти фильтры")}
+                        </h3>
                         <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto leading-relaxed">
-                          Loosen a filter, or — if you know a scholarship that fits but we're missing it — submit it. Approved submissions land in the database within 72 hours.
+                          {t(
+                            "Loosen a filter, or — if you know a scholarship that fits but we're missing it — submit it. Approved submissions land in the database within 72 hours.",
+                            "Ослабьте фильтр или — если знаете стипендию, которой у нас нет — предложите её. Одобренные попадают в базу в течение 72 часов.",
+                          )}
                         </p>
                         <div className="flex flex-wrap items-center justify-center gap-3">
                           <Button variant="outline" size="sm" onClick={() => setFilters(DEFAULT_FILTERS)}>
-                            Clear filters
+                            {t("Clear filters", "Сбросить фильтры")}
                           </Button>
                           <Button asChild variant="gold" size="sm" className="gap-1.5">
                             <Link to={language === "ru" ? "/submit/ru" : "/submit"}>
@@ -4390,18 +4395,24 @@ const Discover = ({ language = "en" }: Props) => {
                           <div className="flex items-baseline justify-between pb-5 border-b border-border/60">
                             <div>
                               <p className="text-gold-dark text-[11px] font-semibold uppercase tracking-[0.22em] mb-1">
-                                {appSection === "shortlist" ? "Saved" : "Collections"}
+                                {appSection === "shortlist"
+                                  ? t("Saved", "Сохранено")
+                                  : t("Collections", "Коллекции")}
                               </p>
                               <h2 className="font-heading text-2xl font-bold tracking-tight text-foreground">
-                                {appSection === "shortlist" ? "Saved scholarships" : "Collections"}
+                                {appSection === "shortlist"
+                                  ? t("Saved scholarships", "Сохранённые стипендии")
+                                  : t("Collections", "Коллекции")}
                               </h2>
                               <p className="text-sm text-muted-foreground mt-1">
                                 {appSection === "shortlist"
-                                  ? "Scholarships you've bookmarked. Save more from any view."
-                                  : "Pre-built lists organized by application strategy."}
+                                  ? t("Scholarships you've bookmarked. Save more from any view.", "Стипендии, которые вы сохранили. Можно добавлять из любого вида.")
+                                  : t("Pre-built lists organized by application strategy.", "Готовые подборки по стратегии подачи.")}
                               </p>
                             </div>
-                            <button onClick={() => setAppSection("browse")} className="text-xs text-muted-foreground hover:text-gold-dark transition-colors">← Back to browse</button>
+                            <button onClick={() => setAppSection("browse")} className="text-xs text-muted-foreground hover:text-gold-dark transition-colors">
+                              {t("← Back to browse", "← К каталогу")}
+                            </button>
                           </div>
                         )}
 
@@ -4413,12 +4424,14 @@ const Discover = ({ language = "en" }: Props) => {
                               <div className="border border-dashed border-border rounded-3xl p-14 text-center bg-canvas-soft/40">
                                 <BookmarkCheck className="h-10 w-10 text-muted-foreground/20 mx-auto mb-4" />
                                 <h3 className="font-heading font-semibold text-lg text-foreground mb-1.5">
-                                  No saved scholarships yet
+                                  {t("No saved scholarships yet", "Пока нет сохранённых стипендий")}
                                 </h3>
                                 <p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">
-                                  Bookmark any scholarship and it'll appear here.
+                                  {t("Bookmark any scholarship and it'll appear here.", "Сохраните любую стипендию — она появится здесь.")}
                                 </p>
-                                <Button variant="outline" size="sm" onClick={() => setAppSection("browse")}>Back to browse</Button>
+                                <Button variant="outline" size="sm" onClick={() => setAppSection("browse")}>
+                                  {t("Back to browse", "К каталогу")}
+                                </Button>
                               </div>
                             );
                           }
@@ -4443,9 +4456,9 @@ const Discover = ({ language = "en" }: Props) => {
                           return (
                             <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
                               <div className="hidden sm:grid grid-cols-[minmax(0,1fr),170px,128px] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                                <span>Scholarship</span>
-                                <span className="text-right">Award · Deadline</span>
-                                <span className="text-right pr-1">Actions</span>
+                                <span>{t("Scholarship", "Стипендия")}</span>
+                                <span className="text-right">{t("Award · Deadline", "Сумма · Дедлайн")}</span>
+                                <span className="text-right pr-1">{t("Actions", "Действия")}</span>
                               </div>
                               {items.map((s, i) => <ScholarRow {...cp(s, i)} />)}
                             </div>
