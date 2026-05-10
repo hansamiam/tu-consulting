@@ -195,11 +195,14 @@ const TopUniAIRu = () => {
   const stepFade = { initial: stepEnter, animate: { opacity: 1, x: 0 }, exit: stepExit, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const } };
 
   return (
-    // 2026-05-10: dark class scoped to intake panel only (was on the
-    // whole wrapper) so the footer doesn't get pulled into a dark-mode
-    // colour flip. Footer hidden during intake, returns on dashboard.
-    // EN/RU parity — see TopUniAI.tsx for the rationale.
-    <div className="min-h-screen bg-background relative">
+    // 2026-05-10 v3 — outer wrapper paints academy navy when on intake
+    // (matches the Academy hero gradient, not the dark-mode token).
+    // Inner intake panel transparent so navy fills edge-to-edge.
+    // EN/RU parity — see TopUniAI.tsx for full rationale.
+    <div
+      className="min-h-screen relative transition-colors duration-700"
+      style={screen === "intake" ? { backgroundColor: "hsl(210 58% 22%)" } : { backgroundColor: "hsl(43 38% 94%)" }}
+    >
       <TopUniAIEntrance language="ru" />
       <div className="relative z-10">
         <Navigation language="ru" variant={screen === "intake" ? "overlay" : "default"} />
@@ -218,7 +221,18 @@ const TopUniAIRu = () => {
           )}
 
           {screen === "intake" && (
-            <motion.div key="intake" {...fadeIn} className="dark relative bg-background">
+            <motion.div
+              key="intake"
+              {...fadeIn}
+              className="dark relative bg-transparent"
+              style={{
+                ["--background" as string]: "210 58% 22%",
+                ["--card" as string]: "210 50% 27%",
+                ["--muted" as string]: "210 45% 30%",
+                ["--border" as string]: "210 40% 36%",
+                ["--input" as string]: "210 50% 27%",
+              } as React.CSSProperties}
+            >
               <div className="max-w-2xl mx-auto px-4 py-12">
               {/* Progress — three pills with named-step labels (Russian).
                   Mirror of the EN layout (numeric dots replaced with

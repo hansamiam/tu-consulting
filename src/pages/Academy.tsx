@@ -31,7 +31,7 @@ const Academy = ({ language = "en" }: AcademyProps) => {
   return (
     <div className="min-h-screen relative bg-background">
       <div className="relative z-10">
-      <Navigation language={language} />
+      <Navigation language={language} variant="overlay" />
 
       {/* HERO ───────────────────────────────────────────────────────── */}
       <section className="relative bg-gradient-to-br from-primary via-primary to-primary/90 py-20 sm:py-28 overflow-hidden">

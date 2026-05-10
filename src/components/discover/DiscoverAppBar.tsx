@@ -60,8 +60,8 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
     <header
       className={`sticky top-0 z-40 backdrop-blur-md transition-all duration-200 ${
         scrolled
-          ? "bg-background/85 border-b border-border shadow-[0_1px_0_0_hsl(var(--border)/0.4)]"
-          : "bg-background/70 border-b border-transparent"
+          ? "bg-background/90 border-b border-primary/25 shadow-[0_2px_0_0_hsl(var(--primary)/0.12)]"
+          : "bg-background/75 border-b border-primary/15"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-3">
@@ -107,7 +107,7 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
           <>
             <button
               onClick={() => navigate(isRussian ? "/pipeline/ru" : "/pipeline")}
-              className="ml-1 px-3 py-1.5 text-sm font-semibold rounded-md transition-colors text-gold-dark hover:text-foreground border border-gold/35 hover:border-gold/55 bg-gold/5 hover:bg-gold/10"
+              className="ml-1 px-3 py-2 text-sm font-medium rounded-md transition-colors text-foreground hover:text-gold-dark"
             >
               {isRussian ? "Рабочая зона" : "Workspace"}
             </button>

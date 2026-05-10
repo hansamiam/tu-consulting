@@ -74,73 +74,77 @@ export const Footer = ({ language, variant = "dark" }: FooterProps) => {
   const sepColor = isDark ? "text-primary-foreground/25" : "text-muted-foreground/40";
 
   return (
-    // Centered single-column layout — mirrors the home page footer's
-    // restraint. Pre-fix the footer was a 2-column grid (left cluster
-    // + right "Explore" list) which read fine on home where it was
-    // wrapped by the Instagram-icon hero block, but on every other
-    // page it stacked left-aligned and felt off-balance vs the
-    // centered home version. One layout, centered, used everywhere.
-    // Mission line cut 2026-05-10 — was added in the prior pass but
-    // user opted to remove it for restraint.
+    // Two-section split layout (reverted 2026-05-10 from the brief
+    // centered-single-column experiment per user preference). Left
+    // cluster: brand wordmark + tagline + Instagram follow chip +
+    // contact email. Right cluster: "Explore" link list. Below: full-
+    // width legal strip + copyright. Reads like a proper site footer
+    // with weight on both ends rather than a centered "thank you for
+    // visiting" plate.
     <footer className={`${isDark ? "bg-primary" : ""} ${textColor} text-xs sm:text-sm px-4`}>
-      <div className="max-w-3xl mx-auto py-8 sm:py-10 text-center space-y-4">
-        <p className={`${isDark ? "text-primary-foreground" : "text-foreground"} font-heading text-base font-bold tracking-tight`}>
-          TopUni
-        </p>
-        {/* Tagline — bumped from text-xs/sm to text-sm/base + a touch
-            more weight so the line reads cleanly in the navy band.
-            Pre-fix the muted/55 opacity at xs sat low against the
-            navy bg and felt squinty. */}
-        <p className={`${isDark ? "text-primary-foreground/80" : "text-foreground/75"} leading-relaxed text-sm sm:text-[15px] font-medium max-w-md mx-auto`}>
-          {t.tagline}
-        </p>
-        {/* Instagram follow chip — surfaced site-wide 2026-05-10. Pre-fix
-            this lived only on the home page wrapped around the Footer
-            component, so every other page lost the social signal entirely.
-            Placed between tagline and links so it reads as a personal
-            "follow us" affordance rather than tucked away in legal chrome.
-            Gold pill on dark backgrounds, gold-on-cream on light. Hover
-            adds a subtle lift via brighter gold + Instagram icon translate. */}
-        <div className="flex items-center justify-center pt-1">
-          <a
-            href={INSTAGRAM_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Follow us on Instagram"
-            className={`group inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all duration-300 ${
-              isDark
-                ? "border-gold/30 bg-gold/[0.06] text-gold hover:border-gold/55 hover:bg-gold/[0.10] hover:text-gold-light"
-                : "border-gold/40 bg-gold/[0.04] text-gold-dark hover:border-gold/60 hover:bg-gold/[0.10] hover:text-foreground"
-            }`}
-          >
-            <Instagram className="h-3.5 w-3.5 transition-transform duration-300 group-hover:scale-110" strokeWidth={1.8} />
-            <span className="tracking-wide">{INSTAGRAM_HANDLE}</span>
-          </a>
+      <div className="max-w-5xl mx-auto py-10 sm:py-12">
+        <div className="grid sm:grid-cols-[1fr,auto] gap-8 sm:gap-12 items-start">
+          {/* Left cluster — brand identity + voice + social/contact */}
+          <div className="space-y-4">
+            <p className={`${isDark ? "text-primary-foreground" : "text-foreground"} font-heading text-base font-bold tracking-tight`}>
+              TopUni
+            </p>
+            <p className={`${isDark ? "text-primary-foreground/80" : "text-foreground/75"} leading-relaxed text-sm sm:text-[15px] font-medium max-w-md`}>
+              {t.tagline}
+            </p>
+            {/* Instagram follow chip — bolder treatment 2026-05-10 per
+                user direction "instagram icon is too hard to see make
+                it bolder or tad bigger". Pill is now gold-filled
+                instead of gold-tinted-bg + thin border, the icon is
+                4px bigger, and the handle text uses a touch more weight. */}
+            <div className="pt-0.5">
+              <a
+                href={INSTAGRAM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Follow us on Instagram"
+                className={`group inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold tracking-wide transition-all duration-300 ${
+                  isDark
+                    ? "bg-gold text-primary hover:bg-gold-light shadow-[0_2px_12px_-2px_hsl(var(--gold)/0.5)]"
+                    : "bg-gold-dark text-primary-foreground hover:bg-gold shadow-[0_2px_12px_-2px_hsl(var(--gold-dark)/0.4)]"
+                }`}
+              >
+                <Instagram className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" strokeWidth={2.2} />
+                <span>{INSTAGRAM_HANDLE}</span>
+              </a>
+            </div>
+            <p>
+              <a
+                href="mailto:team@topuniconsulting.com"
+                className={`${accentLink} transition-colors text-xs break-all`}
+              >
+                team@topuniconsulting.com
+              </a>
+            </p>
+          </div>
+
+          {/* Right cluster — Explore list */}
+          <div className="space-y-3">
+            <p className={`${headingColor} text-[10px] uppercase tracking-[0.22em] font-bold`}>
+              {t.explore}
+            </p>
+            <ul className="flex flex-col gap-2 text-xs">
+              {links.map((l) => (
+                <li key={l.to}>
+                  <Link to={l.to} className={`${linkColor} transition-colors`}>
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-        <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs">
-          {links.map((l) => (
-            <li key={l.to}>
-              <Link to={l.to} className={`${linkColor} transition-colors`}>
-                {l.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-        <p>
-          <a
-            href="mailto:team@topuniconsulting.com"
-            className={`${accentLink} transition-colors text-xs break-all`}
-          >
-            team@topuniconsulting.com
-          </a>
-        </p>
       </div>
 
-      {/* Legal strip + copyright — also centered. */}
-      <div className={`max-w-3xl mx-auto border-t ${borderColor} pt-4 pb-6`}>
-        <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[11px]">
+      {/* Legal strip + copyright */}
+      <div className={`max-w-5xl mx-auto border-t ${borderColor} pt-4 pb-6`}>
+        <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center sm:justify-between gap-x-3 gap-y-2 text-[11px]">
           <p className={textColor}>{t.copyright}</p>
-          <span className={`${sepColor} hidden sm:inline`}>·</span>
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5">
             <Link to={`/privacy-policy${langSuffix}`} className={`${accentLink} transition-colors`}>
               {t.privacyPolicy}

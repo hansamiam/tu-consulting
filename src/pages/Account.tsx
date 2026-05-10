@@ -148,12 +148,6 @@ const Account = ({ language = "en" }: AccountProps) => {
           <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
             {t("Settings", "Настройки")}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {t(
-              "Your application work lives in Workspace. This page is just for billing and settings.",
-              "Работа над заявками — в Рабочей зоне. Здесь только подписка и настройки.",
-            )}
-          </p>
         </header>
 
         <ProfileSettingsCard language={language} />

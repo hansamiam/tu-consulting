@@ -1996,35 +1996,27 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
               the per-criteria why. */}
         </div>
 
-        {/* Status (only when set — otherwise we skip the row entirely) */}
-        {status && (
-          <div onClick={(e) => e.stopPropagation()}>
-            <StatusBadge status={status} onChange={onStatusChange} />
+        {/* Status + Full-ride row — combined 2026-05-10 so the two
+            chips never stack as separate rows competing for attention.
+            Full-ride is now a STATIC tag (no pulse dot — user feedback:
+            "static, not glowing blinking"); the gold pill alone reads
+            as the premium signal. When status is set the two chips
+            sit side by side; when neither is set, the row is skipped. */}
+        {(status || isFullRide) && (
+          <div className="flex items-center gap-1.5 flex-wrap" onClick={(e) => e.stopPropagation()}>
+            {status && <StatusBadge status={status} onChange={onStatusChange} />}
+            {isFullRide && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gold-dark bg-gold/10 ring-1 ring-gold/30 px-1.5 py-0.5 rounded">
+                <Award className="h-2.5 w-2.5" />
+                {ru ? "Полное" : "Full ride"}
+              </span>
+            )}
           </div>
         )}
 
-        {/* Action row. Compare button removed from grid view 2026-05-10
-            (planned re-enable as a future update once the comparison
-            modal earns its keep). Save shrunk from a full-width labelled
-            pill to a clean icon-button matching the share button — the
-            big labelled "Saved/Save" was overpowering the card and the
-            bookmark icon alone reads correctly.
-
-            2026-05-10: full-ride moved out of the country band into a
-            ticker tag here (left side) — gold pill that reads as a
-            "premium dispatch" without crowding the band. */}
-        <div className="flex items-center justify-end gap-2 mt-auto pt-2.5 border-t border-border/50" onClick={(e) => e.stopPropagation()}>
-          {/* Full-ride ticker tag — grid bottom-right alongside the
-              action icons. Gold pill, uppercase mono-spaced label,
-              reads like a "premium dispatch" stamp. The animated
-              pulse dot mimics live ticker tape so the eye snags it
-              without it having to be loud. */}
-          {isFullRide && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gold-dark bg-gold/10 ring-1 ring-gold/30 px-1.5 py-0.5 rounded">
-              <span className="h-1.5 w-1.5 rounded-full bg-gold-dark animate-pulse" />
-              {ru ? "Полное" : "Full ride"}
-            </span>
-          )}
+        {/* Action row — clean now: just bookmark + share. The full-ride
+            pill moved up to share the row with the status chip. */}
+        <div className="flex items-center justify-end gap-1 mt-auto pt-2.5 border-t border-border/50" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={onBookmark}
             aria-label={isBookmarked ? (ru ? "Удалить из сохранённых" : "Remove from saved") : (ru ? "Сохранить" : "Save")}

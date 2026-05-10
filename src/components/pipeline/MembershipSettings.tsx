@@ -180,7 +180,7 @@ export const MembershipSettings = ({ language = "en", variant = "embedded" }: Pr
         <Card className="p-5 space-y-5">
           <div>
             <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-1.5">
-              {t("Settings", "Настройки")}
+              {t("Notifications", "Уведомления")}
             </p>
             <div className="flex items-start justify-between gap-3 mt-3">
               <div className="min-w-0 flex-1">

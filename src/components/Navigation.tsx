@@ -109,14 +109,16 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
                 point regardless of auth state. */}
             {user ? (
               <>
+                {/* Workspace button — 2026-05-10: dropped the gold
+                    border + gold tint that made it stand out from the
+                    rest of the nav (user feedback: "shouldn't be gold-
+                    bold in top nav"). Now matches the regular nav-link
+                    treatment in weight and tone; just slightly clearer
+                    to read because it's the user's "go to my work"
+                    affordance. */}
                 <button
                   onClick={() => navigate(isRussian ? "/pipeline/ru" : "/pipeline")}
-                  className={cn(
-                    "ml-1 px-3 py-1.5 text-sm font-semibold rounded-md transition-colors",
-                    isOverlay
-                      ? "text-gold-light hover:text-gold border border-gold/30 hover:border-gold/50 bg-primary-foreground/[0.04]"
-                      : "text-gold-dark hover:text-foreground border border-gold/35 hover:border-gold/55 bg-gold/5 hover:bg-gold/10"
-                  )}
+                  className={cn(linkBase, isOverlay ? "text-primary-foreground/85 hover:text-primary-foreground" : "text-foreground hover:text-gold-dark")}
                 >
                   {isRussian ? "Рабочая зона" : "Workspace"}
                 </button>
