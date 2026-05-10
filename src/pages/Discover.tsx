@@ -230,6 +230,12 @@ interface Scored extends Scholarship {
   fieldMatch: boolean | null;  // null = scholarship doesn't restrict by field
   reasons: string[];
   warnings: string[];
+  /* Engagement signal carried through the score so cards can render a
+   * "saved by N students this month" social-proof chip without each
+   * card looking up the saveCounts map separately. The scorer already
+   * receives the value as engagement_boost input — surfacing it on
+   * the row makes the moat visible to users. */
+  saveCount30d?: number;
 }
 
 interface WizardData {
@@ -601,7 +607,7 @@ const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: numbe
     eligibility === "not_eligible" ? "low_priority" :
     match >= 75 ? "strong_match" : match >= 55 ? "competitive" : "low_priority";
 
-  return { ...s, match, eligibility, priority, reward, effort, selectivity, fieldMatch: fm, reasons, warnings };
+  return { ...s, match, eligibility, priority, reward, effort, selectivity, fieldMatch: fm, reasons, warnings, saveCount30d: saveCount30d };
 };
 
 /* ─── Curated Collections — recommendation rule-set ──────────────────────
@@ -2023,12 +2029,29 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
               {ru ? "уточнить" : "verify"}
             </span>
           )}
-          {outcomes && outcomes.applied >= 3 && (
+          {outcomes && outcomes.applied >= 3 ? (
             <span
               className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 text-[10px] font-semibold tracking-wide tabular-nums ml-auto"
               title={outcomes.accepted > 0 ? `${outcomes.applied} TopUni members applied · ${outcomes.accepted} received offers` : `${outcomes.applied} TopUni members have applied`}
             >
               {outcomes.applied}{outcomes.accepted > 0 ? `·${outcomes.accepted}w` : ""}
+            </span>
+          ) : (s.saveCount30d ?? 0) >= 5 && (
+            // Saved-this-month engagement signal — compounding social-
+            // proof. Surfaces only when applied count is missing or
+            // low so the two signals don't fight for the same slot.
+            // Threshold of 5 keeps it above noise for a small but
+            // active catalogue (most rows will have 0); the bookmark
+            // glyph differentiates it from the "applied" emerald
+            // chip above so the reader doesn't confuse the two.
+            <span
+              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-gold/10 text-gold-dark ring-1 ring-gold/25 text-[10px] font-semibold tracking-wide tabular-nums ml-auto"
+              title={ru
+                ? `${s.saveCount30d} студентов сохранили в этом месяце`
+                : `${s.saveCount30d} students saved this month`}
+            >
+              <Bookmark className="h-2.5 w-2.5" />
+              {s.saveCount30d}
             </span>
           )}
           {/* Score chip + visible /100 retired — match score still
