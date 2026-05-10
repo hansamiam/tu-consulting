@@ -12,9 +12,15 @@ import samuelPhoto from "@/assets/samuel.jpg";
 import { CampusBackdrop } from "@/components/CampusBackdrop";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { StaggerContainer, StaggerItem } from "@/hooks/use-stagger-animation";
+import { useEffect } from "react";
 
 const Team = () => {
   const navigate = useNavigate();
+  useEffect(() => {
+    const prev = document.title;
+    document.title = "The team — TopUni";
+    return () => { document.title = prev; };
+  }, []);
 
   const teamMembers = [
     {

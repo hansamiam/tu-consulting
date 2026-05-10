@@ -153,7 +153,12 @@ const TopUniAI = () => {
   const stepEnter = { x: stepDir * 24, opacity: 0 };
   const stepExit = { x: -stepDir * 24, opacity: 0 };
 
-  useEffect(() => { trackPageView("/topuni-ai"); }, []);
+  useEffect(() => {
+    trackPageView("/topuni-ai");
+    const prev = document.title;
+    document.title = "TopUni AI — Your personalized scholarship strategy";
+    return () => { document.title = prev; };
+  }, []);
 
   // Load any in-progress draft on first render. The hub-context handoff
   // effect runs separately and may overwrite specific fields (country

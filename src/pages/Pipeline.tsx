@@ -123,6 +123,15 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
   // tripped exhaustive-deps because the array literal expression
   // wasn't statically checkable.
   const trackedKey = trackedIds.join(",");
+
+  useEffect(() => {
+    const prev = document.title;
+    document.title = language === "ru"
+      ? "Workspace — Эссе и заявки · TopUni"
+      : "Workspace — Essays + applications · TopUni";
+    return () => { document.title = prev; };
+  }, [language]);
+
   useEffect(() => {
     if (trackedIds.length === 0) {
       setRows([]);

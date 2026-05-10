@@ -112,6 +112,12 @@ const TopUniAIRu = () => {
    * reverse-map them to the RU display label ("Германия") so the
    * button-row selection actually highlights what the user expects. */
   useEffect(() => {
+    const prev = document.title;
+    document.title = "TopUni AI — Персональная стратегия стипендии";
+    return () => { document.title = prev; };
+  }, []);
+
+  useEffect(() => {
     try {
       const raw = sessionStorage.getItem("topuni-hub-context");
       if (!raw) return;

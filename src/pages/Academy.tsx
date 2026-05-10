@@ -2,6 +2,7 @@
 // Public /academy always shows the launch landing regardless of
 // auth state, so signed-in users don't see a different page.
 import { Link } from "react-router-dom";
+import { useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { CampusBackdrop } from "@/components/CampusBackdrop";
@@ -21,6 +22,13 @@ interface AcademyProps { language?: "en" | "ru"; }
 const Academy = ({ language = "en" }: AcademyProps) => {
   const ru = language === "ru";
   const t = (en: string, rText: string) => (ru ? rText : en);
+  useEffect(() => {
+    const prev = document.title;
+    document.title = ru
+      ? "Академия — Прямые сессии с выпускниками · TopUni"
+      : "Academy — Live sessions with the alumni team · TopUni";
+    return () => { document.title = prev; };
+  }, [ru]);
   return (
     <div className="min-h-screen relative bg-background">
       <CampusBackdrop />

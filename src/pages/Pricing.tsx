@@ -153,6 +153,10 @@ const Pricing = ({ language = "en" }: PricingProps) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const prev = document.title;
+    document.title = language === "ru"
+      ? "Цены — TopUni Pro · Стратегия поступления и стипендий"
+      : "Pricing — TopUni Pro · Admissions + scholarship strategy";
     supabase.from("founding_member_counter")
       .select("claimed_count, cap")
       .eq("id", 1)
@@ -163,7 +167,8 @@ const Pricing = ({ language = "en" }: PricingProps) => {
           setFoundingCap(data.cap);
         }
       });
-  }, []);
+    return () => { document.title = prev; };
+  }, [language]);
 
   const startCheckout = async () => {
     if (!user) {
