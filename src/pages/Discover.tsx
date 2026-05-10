@@ -597,8 +597,11 @@ const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: numbe
 interface CollectionDef {
   id: string;
   title: string;
+  titleRu: string;
   kicker: string;
+  kickerRu: string;
   description: string | ((p: Profile) => string);
+  descriptionRu: string | ((p: Profile) => string);
   icon: typeof Trophy;
   accentClass: string;
   filter: (s: Scored, p: Profile) => boolean;
@@ -612,8 +615,11 @@ const COLLECTIONS: CollectionDef[] = [
   {
     id: "recommended",
     title: "Recommended for you",
+    titleRu: "Рекомендуем вам",
     kicker: "Top picks",
+    kickerRu: "Лучшие совпадения",
     description: "Where your profile lines up best — strongest fits across academics, field, eligibility, and budget.",
+    descriptionRu: "Где ваш профиль попадает точнее всего — сильные совпадения по академике, направлению, праву на участие и бюджету.",
     icon: Award,
     accentClass: "text-gold-dark",
     filter: (s) => s.priority === "strong_match",
@@ -623,8 +629,11 @@ const COLLECTIONS: CollectionDef[] = [
   {
     id: "sleepers",
     title: "Sleeper picks",
+    titleRu: "Скрытые жемчужины",
     kicker: "Hidden gems",
+    kickerRu: "Менее очевидные",
     description: "Solid value, accessible competitiveness — strong odds with a focused application.",
+    descriptionRu: "Хорошая сумма, реалистичный конкурс — сильные шансы при сфокусированной заявке.",
     icon: Gem,
     accentClass: "text-primary",
     filter: (s) => s.match >= 60 && (s.selectivity === "low" || s.selectivity === "medium") && (s.estimated_total_value_usd ?? 0) >= 25000,
@@ -634,8 +643,11 @@ const COLLECTIONS: CollectionDef[] = [
   {
     id: "prestigious",
     title: "Household names",
+    titleRu: "Имена, которые знают все",
     kicker: "Prestigious",
+    kickerRu: "Престижные",
     description: "Globally recognized scholarships that signal heavily on a CV.",
+    descriptionRu: "Глобально известные стипендии — сильно работают в CV.",
     icon: Crown,
     accentClass: "text-gold-dark",
     filter: (s) => PRESTIGIOUS_NAMES.test(s.scholarship_name),
@@ -645,8 +657,11 @@ const COLLECTIONS: CollectionDef[] = [
   {
     id: "underrated",
     title: "Underrated full-rides",
+    titleRu: "Недооценённые полные стипендии",
     kicker: "Big award, lower bar",
+    kickerRu: "Крупные суммы, реалистичный конкурс",
     description: "Full-funding scholarships outside the household name list — quieter but generous.",
+    descriptionRu: "Полное финансирование вне списка известных имён — тише, но щедрее.",
     icon: Award,
     accentClass: "text-primary",
     filter: (s) =>
@@ -659,8 +674,11 @@ const COLLECTIONS: CollectionDef[] = [
   {
     id: "closing_soon",
     title: "Closing this month",
+    titleRu: "Закрываются в этом месяце",
     kicker: "Act now",
+    kickerRu: "Действовать сейчас",
     description: "Deadlines within 31 days. Decide and execute or skip cleanly.",
+    descriptionRu: "Дедлайны в течение 31 дня. Решайте и подавайте — или пропускайте честно.",
     icon: Flame,
     accentClass: "text-destructive",
     filter: (s) => {
@@ -678,8 +696,11 @@ const COLLECTIONS: CollectionDef[] = [
   {
     id: "biggest_checks",
     title: "Biggest checks",
+    titleRu: "Самые крупные суммы",
     kicker: "Highest value",
+    kickerRu: "Наивысшая ценность",
     description: "Awards over $100K in total funding — life-changing money.",
+    descriptionRu: "Стипендии свыше $100K — деньги, которые меняют жизнь.",
     icon: DollarSign,
     accentClass: "text-gold-dark",
     filter: (s) => (s.estimated_total_value_usd ?? 0) >= 100000,
@@ -689,8 +710,11 @@ const COLLECTIONS: CollectionDef[] = [
   {
     id: "for_your_field",
     title: "For your field",
+    titleRu: "Для вашего направления",
     kicker: "Field-specific",
+    kickerRu: "По направлению",
     description: (p) => `Scholarships explicitly funding ${p.field || "your area of study"}.`,
+    descriptionRu: (p) => `Стипендии, явно финансирующие ${p.field || "ваше направление"}.`,
     icon: Target,
     accentClass: "text-primary",
     filter: (s, p) => fieldMatches(p.field, s.target_fields) === true,
@@ -700,8 +724,11 @@ const COLLECTIONS: CollectionDef[] = [
   {
     id: "for_your_country",
     title: "Built for your nationality",
+    titleRu: "Под ваше гражданство",
     kicker: "Country-specific",
+    kickerRu: "По стране",
     description: (p) => `Programs that explicitly include ${p.country || "your country"} in their eligible list.`,
+    descriptionRu: (p) => `Программы, в списке которых явно есть ${p.country || "ваша страна"}.`,
     icon: Compass,
     accentClass: "text-primary",
     filter: (s, p) => {
@@ -4470,7 +4497,10 @@ const Discover = ({ language = "en" }: Props) => {
                           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {liveCollections.map((c, i) => {
                               const Icon = c.def.icon;
-                              const description = typeof c.def.description === "function" ? c.def.description(profile) : c.def.description;
+                              const descRaw = ru ? c.def.descriptionRu : c.def.description;
+                              const description = typeof descRaw === "function" ? descRaw(profile) : descRaw;
+                              const title = ru ? c.def.titleRu : c.def.title;
+                              const kicker = ru ? c.def.kickerRu : c.def.kicker;
                               return (
                                 <motion.button
                                   key={c.def.id}
@@ -4487,11 +4517,11 @@ const Discover = ({ language = "en" }: Props) => {
                                     </div>
                                     <span className="text-2xl font-bold tabular-nums text-foreground/40">{c.items.length.toString().padStart(2, "0")}</span>
                                   </div>
-                                  <p className={`text-[10px] font-semibold uppercase tracking-[0.2em] mb-1 ${c.def.accentClass}`}>{c.def.kicker}</p>
-                                  <h3 className="font-heading font-bold text-lg text-foreground tracking-tight mb-2 leading-tight">{c.def.title}</h3>
+                                  <p className={`text-[10px] font-semibold uppercase tracking-[0.2em] mb-1 ${c.def.accentClass}`}>{kicker}</p>
+                                  <h3 className="font-heading font-bold text-lg text-foreground tracking-tight mb-2 leading-tight">{title}</h3>
                                   <p className="text-sm text-muted-foreground leading-[1.6] mb-5">{description}</p>
                                   <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground group-hover:text-gold-dark transition-colors">
-                                    View {c.items.length} <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                                    {t(`View ${c.items.length}`, `Смотреть ${c.items.length}`)} <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                                   </span>
                                 </motion.button>
                               );
@@ -4853,7 +4883,10 @@ const Discover = ({ language = "en" }: Props) => {
           <SheetContent side="right" className="w-full sm:max-w-[700px] overflow-y-auto p-0 flex flex-col">
             {activeCollection && (() => {
               const Icon = activeCollection.def.icon;
-              const description = typeof activeCollection.def.description === "function" ? activeCollection.def.description(profile) : activeCollection.def.description;
+              const descRaw = ru ? activeCollection.def.descriptionRu : activeCollection.def.description;
+              const description = typeof descRaw === "function" ? descRaw(profile) : descRaw;
+              const title = ru ? activeCollection.def.titleRu : activeCollection.def.title;
+              const kicker = ru ? activeCollection.def.kickerRu : activeCollection.def.kicker;
               return (
                 <>
                   <div className="px-7 py-7 border-b border-border bg-canvas-soft sticky top-0 z-10 backdrop-blur">
@@ -4863,8 +4896,8 @@ const Discover = ({ language = "en" }: Props) => {
                       </div>
                       <div className="min-w-0 flex-1">
                         <SheetHeader>
-                          <p className={`text-[10px] font-semibold uppercase tracking-[0.22em] ${activeCollection.def.accentClass} mb-1`}>{activeCollection.def.kicker}</p>
-                          <SheetTitle className="font-heading text-2xl tracking-tight leading-tight text-foreground text-left">{activeCollection.def.title}</SheetTitle>
+                          <p className={`text-[10px] font-semibold uppercase tracking-[0.22em] ${activeCollection.def.accentClass} mb-1`}>{kicker}</p>
+                          <SheetTitle className="font-heading text-2xl tracking-tight leading-tight text-foreground text-left">{title}</SheetTitle>
                           <p className="text-sm text-muted-foreground leading-relaxed text-left">{description}</p>
                         </SheetHeader>
                       </div>
