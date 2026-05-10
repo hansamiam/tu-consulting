@@ -3141,24 +3141,32 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           };
           const countriesPhrase = fmtCountries(profile.targetCountries);
           const hasMajor = profile.major && profile.major !== "Undecided" && profile.major !== "Не определился";
+          const hasCountries = countriesPhrase.length > 0;
           const hasGpa = !!profile.gpa;
           const hasScores = !!(profile.ielts || profile.toefl || profile.sat);
+          // The "Aiming" prefix only makes sense when there's a target —
+          // major OR countries. With both absent (open-target user
+          // dropping in just a GPA) the prefix orphaned itself, reading
+          // "Aiming · 3.8 GPA" which is grammatical garbage. Suppress
+          // the prefix in that case and let the GPA stand alone.
+          const showAimingPrefix = hasMajor || hasCountries;
           return (
             <div className="mt-3 space-y-1">
               <p className="text-base md:text-[17px] italic text-muted-foreground leading-relaxed">
-                {isRu ? "Цель — " : "Aiming "}
+                {showAimingPrefix && (isRu ? "Цель — " : "Aiming ")}
                 {hasMajor && (
                   <>
                     <span className="not-italic font-semibold text-foreground">{profile.major}</span>
-                    {countriesPhrase && (isRu ? " в " : " in ")}
+                    {hasCountries && (isRu ? " в " : " in ")}
                   </>
                 )}
-                {countriesPhrase && (
+                {hasCountries && !hasMajor && (isRu ? "" : "for ")}
+                {hasCountries && (
                   <span className="not-italic font-semibold text-foreground">{countriesPhrase}</span>
                 )}
                 {hasGpa && (
                   <>
-                    <span className="text-muted-foreground/60"> · </span>
+                    {showAimingPrefix && <span className="text-muted-foreground/60"> · </span>}
                     <span className="not-italic font-medium text-foreground/85">
                       {profile.gpa} {t("GPA", "GPA")}
                     </span>
