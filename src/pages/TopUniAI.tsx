@@ -5,7 +5,6 @@ import Navigation from "@/components/Navigation";
 import { BetaBanner } from "@/components/BetaBanner";
 import { TopUniAIEntrance } from "@/components/topuni/TopUniAIEntrance";
 import { Footer } from "@/components/Footer";
-import topuniBg from "@/assets/topuni-bg.jpg";
 import TopUniDashboard from "@/components/TopUniDashboard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -315,13 +314,14 @@ const TopUniAI = () => {
   };
 
   return (
+    // Background philosophy 2026-05-10: TopUni AI is a focus surface
+    // (intake form + dense personal brief). The campus backdrop blur
+    // that lived here was visual noise competing with the form fields
+    // and the brief prose. Cream-clean lets the typography and gold
+    // accents do the premium work. Campus + parallax stays on the
+    // home landing only where emotional/aspirational visuals do work
+    // that words can't.
     <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Faint blurred backdrop — TopUniAI's existing visual signature */}
-      <div
-        className="fixed inset-0 z-0 opacity-[0.12] pointer-events-none"
-        style={{ backgroundImage: `url(${topuniBg})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(3px)' }}
-      />
-
       <TopUniAIEntrance language="en" />
       <div className="relative z-10">
         <Navigation language="en" />

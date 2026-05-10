@@ -67,7 +67,7 @@ const Team = () => {
     {
       name: "Aigul Abdoubaetova",
       title: "Senior Advisor",
-      tagline: "Oregon",
+      tagline: "Oregon & OSCE Academy",
       photo: aigulPhoto,
       hometown: "Bishkek, Kyrgyzstan",
       education: "University of Oregon",

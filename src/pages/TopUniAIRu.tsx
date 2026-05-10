@@ -4,7 +4,6 @@ import Navigation from "@/components/Navigation";
 import { BetaBanner } from "@/components/BetaBanner";
 import { TopUniAIEntrance } from "@/components/topuni/TopUniAIEntrance";
 import { Footer } from "@/components/Footer";
-import topuniBg from "@/assets/topuni-bg.jpg";
 import TopUniDashboard from "@/components/TopUniDashboard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -177,8 +176,9 @@ const TopUniAIRu = () => {
   const stepFade = { initial: stepEnter, animate: { opacity: 1, x: 0 }, exit: stepExit, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const } };
 
   return (
+    // Background dropped 2026-05-10 — see EN page comment. Cream-clean
+    // for focus on form + brief.
     <div className="min-h-screen bg-background relative">
-      <div className="fixed inset-0 z-0 opacity-20" style={{ backgroundImage: `url(${topuniBg})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(2px)' }} />
       <TopUniAIEntrance language="ru" />
       <div className="relative z-10">
         <Navigation language="ru" />
