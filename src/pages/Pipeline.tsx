@@ -445,13 +445,13 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
             <span className="text-sm">{t("Loading your applications…", "Загружаем заявки…")}</span>
           </div>
         ) : (
-          {/* Sidebar widened from 320px → 380px so the Todoist-style
-              PipelineCard rows fit comfortably with the country gradient
-              stripe + days pill on the band. The card carries lifecycle
-              banners, recommender progress, essay status, notes preview,
-              and inline status quick-cycle inline so the user never has
-              to "open details" to see what's actually blocking the
-              application. */}
+          // Sidebar widened from 320px → 380px so the Todoist-style
+          // PipelineCard rows fit comfortably with the country gradient
+          // stripe + days pill on the band. The card carries lifecycle
+          // banners, recommender progress, essay status, notes preview,
+          // and inline status quick-cycle inline so the user never has
+          // to "open details" to see what's actually blocking the
+          // application.
           <div className="grid grid-cols-1 lg:grid-cols-[380px,1fr] gap-5 lg:gap-6">
             <aside className="lg:sticky lg:top-4 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto rounded-2xl border border-border bg-card/60 backdrop-blur-sm p-3.5">
               <div className="flex items-center justify-between mb-3 px-1">
