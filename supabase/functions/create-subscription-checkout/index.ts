@@ -16,7 +16,8 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// Founding Pro — $19/mo. Single tier, monthly only for now.
+// Early-Access tier — $19/mo. Single tier, monthly only for now.
+// Internal SKU identifier 'founding' preserved (DB rows reference it).
 const FOUNDING_PRICES: { month: string; year: string } = {
   month: "price_1TQTyAQVirFUxpBg4YtW8JFo",
   year: "price_1TQTyAQVirFUxpBg4YtW8JFo", // alias to monthly for now

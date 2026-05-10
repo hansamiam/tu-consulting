@@ -312,7 +312,7 @@ const Index = () => {
                 className="text-base px-8 py-6 gap-2"
                 onClick={() => navigate('/pricing')}
               >
-                Claim my founding spot <ArrowRight className="h-4 w-4" />
+                Claim my early-access spot <ArrowRight className="h-4 w-4" />
               </Button>
             </motion.div>
           </div>

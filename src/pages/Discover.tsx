@@ -3956,9 +3956,13 @@ const Discover = ({ language = "en" }: Props) => {
                           <Input value={wiz.gpa} onChange={e => setWiz(w => ({ ...w, gpa: e.target.value }))} placeholder={t("e.g. 3.8", "напр. 3.8")}
                             className="bg-primary-foreground/[0.04] border-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/25 h-12 flex-1 backdrop-blur-md focus-visible:border-gold/50" />
                           <div className="flex rounded-xl overflow-hidden border border-primary-foreground/15 backdrop-blur-md">
-                            {["/4.0", "/5.0", "/100"].map(s => (
+                            {/* Parity with TopUni AI wizard 2026-05-10 — 10.0
+                                added so Continental EU students (Netherlands,
+                                Italy, Spain) put in their actual number rather
+                                than mentally converting. */}
+                            {["/4.0", "/5.0", "/10.0", "/100"].map(s => (
                               <button key={s} onClick={() => setWiz(w => ({ ...w, gpaScale: s.slice(1) }))}
-                                className={`px-4 text-xs font-semibold transition-colors ${wiz.gpaScale === s.slice(1) ? "bg-gold text-primary" : "bg-primary-foreground/[0.04] text-primary-foreground/60 hover:bg-primary-foreground/[0.08]"}`}>
+                                className={`px-3 text-xs font-semibold transition-colors ${wiz.gpaScale === s.slice(1) ? "bg-gold text-primary" : "bg-primary-foreground/[0.04] text-primary-foreground/60 hover:bg-primary-foreground/[0.08]"}`}>
                                 {s}
                               </button>
                             ))}
@@ -5106,7 +5110,7 @@ const Discover = ({ language = "en" }: Props) => {
               {foundingLeft && foundingLeft.left > 0 && (
                 <div className="rounded-xl bg-gold/10 border border-gold/25 p-3 text-xs text-gold-dark text-center">
                   <span className="font-semibold tabular-nums">{foundingLeft.left}</span>{" "}
-                  {t("founding spots left · price locked for life", "мест в когорте основателей · цена закреплена пожизненно")}
+                  {t("early-access spots left · price locked for life", "мест раннего доступа · цена закреплена пожизненно")}
                 </div>
               )}
               <div className="flex flex-col gap-2 pt-2">
