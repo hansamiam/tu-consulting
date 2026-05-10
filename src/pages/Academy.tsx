@@ -31,7 +31,7 @@ const Academy = ({ language = "en" }: AcademyProps) => {
   return (
     <div className="min-h-screen relative bg-background">
       <div className="relative z-10">
-      <Navigation language={language} variant="overlay" overlayThreshold={320} />
+      <Navigation language={language} variant="overlay" overlaySentinelId="academy-hero-end" />
 
       {/* HERO ───────────────────────────────────────────────────────── */}
       <section className="relative bg-gradient-to-br from-primary via-primary to-primary/90 py-20 sm:py-28 overflow-hidden">
@@ -50,6 +50,13 @@ const Academy = ({ language = "en" }: AcademyProps) => {
             )}
           </motion.p>
         </div>
+        {/* Sentinel at the very bottom of the navy hero. Navigation
+            uses this (via overlaySentinelId) to flip from transparent-
+            overlay to opaque-cream the moment the navy band scrolls
+            past the nav strip — adapts automatically to mobile vs
+            desktop hero heights instead of relying on a fixed
+            scrollY pixel threshold that misfires on one or the other. */}
+        <div id="academy-hero-end" aria-hidden className="h-px w-full" />
       </section>
 
       {/* FOUNDERS ──────────────────────────────────────────────────── */}

@@ -17,14 +17,22 @@ interface NavigationProps {
    *  so the navy gradient at the top of the hero extends through the nav strip. */
   variant?: "default" | "overlay";
   /** Pixels of scroll before the overlay transitions to opaque. Default 80
-   *  works for short heroes; longer heroes (Academy: ~360-440px) should
-   *  pass a larger value so the transparent-overlay state spans the full
-   *  navy hero region instead of flipping to cream-opaque mid-hero
-   *  (which produced a clashing cream slab over the navy band). */
+   *  works for short heroes. Used as a fallback when overlaySentinelId is
+   *  not provided (or the sentinel can't be found). The sentinel-based
+   *  approach below is preferred — heroes vary widely in height between
+   *  mobile and desktop, and a fixed scrollY threshold either flips too
+   *  early (light nav text on cream content) or too late (cream nav over
+   *  the navy hero band). */
   overlayThreshold?: number;
+  /** DOM id of a sentinel element placed at the bottom of the hero
+   *  region. When provided, Navigation uses IntersectionObserver to
+   *  switch to opaque mode the moment the sentinel scrolls above the
+   *  nav. Adapts automatically to viewport-driven hero height changes,
+   *  which the scrollY threshold can't do. */
+  overlaySentinelId?: string;
 }
 
-const Navigation = ({ language = "en", variant = "default", overlayThreshold = 80 }: NavigationProps) => {
+const Navigation = ({ language = "en", variant = "default", overlayThreshold = 80, overlaySentinelId }: NavigationProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
@@ -34,11 +42,43 @@ const Navigation = ({ language = "en", variant = "default", overlayThreshold = 8
 
   useEffect(() => {
     if (variant !== "overlay") return;
+
+    // Sentinel-based path: watch a DOM element placed at the bottom
+    // of the hero region. Switch to opaque the moment the sentinel
+    // crosses above the nav (rootMargin shifted by the nav height
+    // so the transition lines up with the visible boundary, not the
+    // viewport top). This is viewport-shape-agnostic: a hero that's
+    // 280px tall on mobile and 440px on desktop transitions at the
+    // right moment on both, no per-page threshold tuning needed.
+    if (overlaySentinelId) {
+      const el = document.getElementById(overlaySentinelId);
+      if (el && typeof IntersectionObserver !== "undefined") {
+        // Nav is h-16 (64px). The "above-the-nav" line is exactly
+        // where the cream nav slab ends visually, so the transition
+        // hits when the sentinel slides under that line.
+        const obs = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              // boundingClientRect.top < 64 means the sentinel has
+              // scrolled above the bottom of the nav — flip to
+              // opaque cream. Going back up: sentinel re-enters
+              // below the nav line, flip back to overlay.
+              setScrolled(entry.boundingClientRect.top < 64);
+            }
+          },
+          { rootMargin: "-64px 0px 0px 0px", threshold: 0 },
+        );
+        obs.observe(el);
+        return () => obs.disconnect();
+      }
+    }
+
+    // ScrollY-threshold fallback for pages without a sentinel.
     const onScroll = () => setScrolled(window.scrollY > overlayThreshold);
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
-  }, [variant, overlayThreshold]);
+  }, [variant, overlayThreshold, overlaySentinelId]);
 
   const isOverlay = variant === "overlay" && !scrolled;
   const isRussian = language === "ru";

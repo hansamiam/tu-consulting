@@ -1855,7 +1855,7 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           The card surface still has personality — silhouette + flag
           carry country identity — without the color overhead that was
           fighting the rest of the UI. */}
-      <div className="relative bg-canvas-soft px-4 h-12 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/85 overflow-hidden whitespace-nowrap border-b border-gold/15">
+      <div className="relative bg-canvas-soft px-4 min-h-12 py-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/85 overflow-hidden border-b border-gold/15">
         {/* Silhouette as a faint engraving — anchored at right-third,
             lower opacity (0.18) since it no longer needs to fight a
             color gradient. Reads as letterhead-style watermarking. */}
@@ -1915,7 +1915,7 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
               {ru ? "Новое" : "New"}
             </span>
           )}
-          <h3 className="font-heading text-[15px] font-semibold leading-[1.2] tracking-[-0.01em] text-foreground line-clamp-3 group-hover:text-gold-dark transition-colors mb-1">
+          <h3 className="font-heading text-[15px] font-semibold leading-[1.2] tracking-[-0.01em] text-foreground group-hover:text-gold-dark transition-colors mb-1 break-words">
             {cleanScholarshipName(s.scholarship_name)}
           </h3>
           {(() => {
@@ -1979,15 +1979,15 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
             decision facts. The "Pro insight" pill renders here when
             the row has Pro-tier strategy fields populated and the
             user is on free — quiet, no animation, always inline. */}
-        <div className="flex items-center gap-2 text-[11px]">
-          <span className={`tabular-nums font-medium ${dl.cls}`}>{dl.text}</span>
+        <div className="flex items-center gap-2 text-[11px] min-w-0">
+          <span className={`tabular-nums font-medium shrink-0 ${dl.cls}`}>{dl.text}</span>
           {(() => {
             const fld = displayField(s.target_fields);
             if (!fld) return null;
             return (
               <>
-                <span className="text-muted-foreground/30">·</span>
-                <span className="text-muted-foreground truncate">{fld}</span>
+                <span className="text-muted-foreground/30 shrink-0">·</span>
+                <span className="text-muted-foreground truncate min-w-0">{fld}</span>
               </>
             );
           })()}
