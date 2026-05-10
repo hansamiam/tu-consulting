@@ -256,7 +256,7 @@ Deno.serve(async (req) => {
     await sendMessage(
       TOKEN,
       msg.chat.id,
-      "Ask me about:\n• Pricing & founding-cohort discount\n• What's included (TopUni AI, Discover, Academy)\n• Refunds & guarantees\n• Eligibility / who it's for\n• How matching works\n\nFor specific account issues or partnerships, email hello@topuni.com.",
+      "Ask me about:\n• Pricing & early-access discount\n• What's included (TopUni AI, Discover, Academy)\n• Refunds & guarantees\n• Eligibility / who it's for\n• How matching works\n\nFor specific account issues or partnerships, email hello@topuni.com.",
     );
     return json(200, { ok: true });
   }
