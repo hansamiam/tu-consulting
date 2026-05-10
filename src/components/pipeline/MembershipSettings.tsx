@@ -74,7 +74,7 @@ export const MembershipSettings = ({ language = "en", variant = "embedded" }: Pr
 
   const tier = subscription.tier;
   const tierLabel =
-    tier === "founding" ? t("Founding member", "Основатель")
+    tier === "founding" ? t("Early access", "Ранний доступ")
     : tier === "pro"    ? t("Pro member", "Pro участник")
     : t("Free", "Бесплатно");
   const tierBadgeCls =

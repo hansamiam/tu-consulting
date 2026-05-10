@@ -4482,7 +4482,7 @@ const Discover = ({ language = "en" }: Props) => {
                           <Crown className="h-3.5 w-3.5 text-gold-dark" />
                           <span className="text-[11px] font-semibold text-gold-dark">
                             {subscription.tier === "founding"
-                              ? t("Founding member", "Член-основатель")
+                              ? t("Early access", "Ранний доступ")
                               : t("Member", "Участник")}
                           </span>
                         </div>
