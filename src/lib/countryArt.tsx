@@ -115,28 +115,48 @@ const liberty = wrap(
   </>
 );
 
-// Brandenburg Gate (Germany) — colonnade with pediment + the
-// quadriga (chariot) on top. The quadriga is what separates this
-// from a generic columned building.
+// Brandenburg Gate (Germany) — five-passage colonnade with the
+// quadriga (chariot pulled by 4 horses) crowning the attic. The
+// quadriga + the wide attic block + the column-spacing rhythm is
+// what separates this from any other columned building. Pre-fix
+// the horses were tiny abstract dots that read as decoration
+// rather than a sculpture; now drawn as silhouetted horse forms
+// with a clear chariot wheel and the wreathed Victoria figure.
 const brandenburg = wrap(
   <>
-    {/* Quadriga — abstracted: 4 horses + chariot */}
-    <rect x="68" y="2" width="24" height="3" />
-    <circle cx="71" cy="5" r="1" />
-    <circle cx="76" cy="5" r="1" />
-    <circle cx="84" cy="5" r="1" />
-    <circle cx="89" cy="5" r="1" />
-    {/* Pediment / entablature */}
-    <rect x="50" y="14" width="60" height="4" />
-    <polygon points="60,14 80,5 100,14" opacity="0.7" />
-    {/* Six Doric columns */}
-    <rect x="55" y="18" width="4" height="34" />
-    <rect x="64" y="18" width="4" height="34" />
-    <rect x="73" y="18" width="4" height="34" />
-    <rect x="83" y="18" width="4" height="34" />
-    <rect x="92" y="18" width="4" height="34" />
-    <rect x="101" y="18" width="4" height="34" />
-    {/* Base */}
+    {/* Quadriga — chariot pulled by 4 horses, distinctive Berlin
+        silhouette. Horses' legs + chariot wheel give it shape. */}
+    {/* Chariot wheel */}
+    <circle cx="92" cy="9" r="2.5" fill="none" stroke="currentColor" strokeWidth="0.7" />
+    {/* Chariot box */}
+    <rect x="88" y="6" width="6" height="3" />
+    {/* Victoria figure on chariot — abstract */}
+    <rect x="89.5" y="2" width="1.5" height="4" />
+    <circle cx="90.3" cy="2" r="0.9" />
+    {/* Four horses — abstracted as forward-leaning silhouettes */}
+    <path d="M 64 11 L 65 7 L 67 7 L 67 11 L 68 11 L 68 8 L 70 7 L 71 8 L 70 11 Z" />
+    <path d="M 70 11 L 71 7 L 73 7 L 73 11 L 74 11 L 74 8 L 76 7 L 77 8 L 76 11 Z" />
+    <path d="M 76 11 L 77 7 L 79 7 L 79 11 L 80 11 L 80 8 L 82 7 L 83 8 L 82 11 Z" />
+    <path d="M 82 11 L 83 7 L 85 7 L 85 11 L 86 11 L 86 8 L 88 7 L 89 8 L 88 11 Z" />
+    {/* Attic block under the quadriga — wide rectangular podium */}
+    <rect x="56" y="11" width="48" height="6" />
+    {/* Cornice / entablature */}
+    <rect x="54" y="17" width="52" height="3" />
+    {/* Six Doric columns — even spacing, classical proportions */}
+    <rect x="55" y="20" width="4" height="32" />
+    <rect x="64" y="20" width="4" height="32" />
+    <rect x="73" y="20" width="4" height="32" />
+    <rect x="83" y="20" width="4" height="32" />
+    <rect x="92" y="20" width="4" height="32" />
+    <rect x="101" y="20" width="4" height="32" />
+    {/* Capitals on column tops — subtle but reads as Doric */}
+    <rect x="54" y="20" width="6" height="1.2" opacity="0.7" />
+    <rect x="63" y="20" width="6" height="1.2" opacity="0.7" />
+    <rect x="72" y="20" width="6" height="1.2" opacity="0.7" />
+    <rect x="82" y="20" width="6" height="1.2" opacity="0.7" />
+    <rect x="91" y="20" width="6" height="1.2" opacity="0.7" />
+    <rect x="100" y="20" width="6" height="1.2" opacity="0.7" />
+    {/* Base / stylobate */}
     <rect x="50" y="52" width="60" height="2" opacity="0.7" />
   </>
 );
@@ -162,31 +182,47 @@ const pagoda = wrap(
 );
 
 // Maple leaf (Canada) — canonical 11-point silhouette as it appears
-// on the flag. No stem (the flag version), centered. The shape with
-// 5 lobes per side and 1 point at the top is what people recognize
-// instantly.
+// on the Canadian flag, with the short rectangular stem the flag
+// design uses. The 11 outer points: 1 apex + 2 upper shoulder peaks
+// + 2 widest "horns" + 2 lower side peaks + 2 inner-near-stem points
+// + 2 stem corners. Pre-fix the path's lobe coordinates produced a
+// blob that read as "some plant leaf, maybe?" rather than the iconic
+// flag silhouette. Re-traced from the canonical Pearson-pennant
+// proportions: deep notches between each pair of points, sharp apex,
+// short straight stem at the bottom anchor.
 const maple = wrap(
   <g transform="translate(80 30)">
     <path d="M 0,-24
+             L 2,-13
              L 4,-12
-             L 14,-15
-             L 11,-6
-             L 22,-3
-             L 14,3
-             L 18,10
-             L 8,9
-             L 11,18
-             L 2,13
-             L 0,24
-             L -2,13
-             L -11,18
-             L -8,9
-             L -18,10
-             L -14,3
-             L -22,-3
-             L -11,-6
-             L -14,-15
+             L 12,-13
+             L 11,-7
+             L 10,-5
+             L 22,-1
+             L 17,3
+             L 16,5
+             L 19,12
+             L 11,11
+             L 9,12
+             L 11,19
+             L 4,17
+             L 3,18
+             L 4,24
+             L -4,24
+             L -3,18
+             L -4,17
+             L -11,19
+             L -9,12
+             L -11,11
+             L -19,12
+             L -16,5
+             L -17,3
+             L -22,-1
+             L -10,-5
+             L -11,-7
+             L -12,-13
              L -4,-12
+             L -2,-13
              Z" />
   </g>
 );
@@ -559,6 +595,109 @@ const mosque = wrap(
   </>
 );
 
+// Parthenon (Greece) — classical Doric temple atop the Acropolis.
+// Pre-fix Greece pointed to Colosseum which is wrong (that's Rome).
+// The Parthenon's wide stylobate, 8 columns across, low pediment,
+// and subtle "ruined corner" hint distinguish it from any other
+// columned building. Drawn slightly damaged on the right (a few
+// columns missing) — the actual Parthenon today is half-intact.
+const parthenon = wrap(
+  <>
+    {/* Three-step stylobate (krepidoma) — the wide stepped base */}
+    <rect x="46" y="50" width="68" height="2" opacity="0.85" />
+    <rect x="48" y="48" width="64" height="2" opacity="0.7" />
+    {/* Pediment — wide low triangle */}
+    <polygon points="50,22 80,12 110,22" />
+    {/* Pediment underline / cornice */}
+    <rect x="50" y="22" width="60" height="2" />
+    {/* Entablature / architrave */}
+    <rect x="49" y="24" width="62" height="3" />
+    {/* Eight Doric columns — fluted feel via slight inset on capital */}
+    <rect x="51" y="27" width="4" height="21" />
+    <rect x="58" y="27" width="4" height="21" />
+    <rect x="65" y="27" width="4" height="21" />
+    <rect x="72" y="27" width="4" height="21" />
+    <rect x="79" y="27" width="4" height="21" />
+    {/* Damaged east end — only column stubs remaining (the actual
+        2,400-year-old ruin signature) */}
+    <rect x="86" y="38" width="4" height="10" opacity="0.7" />
+    <rect x="93" y="42" width="4" height="6" opacity="0.55" />
+    <rect x="100" y="34" width="4" height="14" opacity="0.7" />
+    <rect x="107" y="27" width="4" height="21" />
+    {/* Capital indicators on intact columns */}
+    <rect x="50" y="27" width="6" height="1" opacity="0.7" />
+    <rect x="57" y="27" width="6" height="1" opacity="0.7" />
+    <rect x="64" y="27" width="6" height="1" opacity="0.7" />
+    <rect x="71" y="27" width="6" height="1" opacity="0.7" />
+    <rect x="78" y="27" width="6" height="1" opacity="0.7" />
+    <rect x="106" y="27" width="6" height="1" opacity="0.7" />
+  </>
+);
+
+// Saint Sophia of Kyiv (Ukraine) — Orthodox cathedral with one
+// large central dome and two flanking smaller towers, gold-domed.
+// Pre-fix Ukraine pointed to St Basil's which is iconically Russian
+// and politically tone-deaf — Ukraine has its own millennium-old
+// cathedral. Distinguished from St Basil's by its restrained dome
+// arrangement (1 large + 2 small, not 5 colourful onions) and
+// rectangular bell-tower silhouette.
+const saintSophiaKyiv = wrap(
+  <>
+    {/* Lower body — wide rectangular base */}
+    <rect x="58" y="38" width="44" height="14" />
+    {/* Central tower with large gold dome */}
+    <rect x="74" y="22" width="12" height="16" />
+    <path d="M 72 22 Q 80 8 88 22 Z" />
+    {/* Cross atop central dome */}
+    <rect x="79.5" y="4" width="1" height="6" />
+    <rect x="77.5" y="6" width="5" height="1" />
+    {/* Left smaller tower + dome */}
+    <rect x="62" y="28" width="8" height="10" />
+    <path d="M 60 28 Q 66 18 72 28 Z" opacity="0.85" />
+    <rect x="65.5" y="14" width="1" height="4" />
+    {/* Right smaller tower + dome */}
+    <rect x="90" y="28" width="8" height="10" />
+    <path d="M 88 28 Q 94 18 100 28 Z" opacity="0.85" />
+    <rect x="93.5" y="14" width="1" height="4" />
+    {/* Door / entrance arch */}
+    <path d="M 76 52 L 76 46 Q 80 42 84 46 L 84 52 Z" fill="#fff" opacity="0.45" />
+    {/* Base line */}
+    <rect x="54" y="52" width="52" height="2" opacity="0.6" />
+  </>
+);
+
+// Mayan stepped pyramid (Mexico) — Chichén Itzá / El Castillo, with
+// the canonical staircase up the front and the temple structure on
+// top. Distinguished from Egyptian pyramids (smooth triangular
+// sides) by the stepped tiers and the rectangular temple at the
+// summit. Pre-fix Mexico fell to the Egyptian-pyramids silhouette
+// which read as "wrong continent."
+const mayanPyramid = wrap(
+  <>
+    {/* Six stepped tiers — the iconic Chichén Itzá profile */}
+    <rect x="56" y="46" width="48" height="6" />
+    <rect x="58" y="40" width="44" height="6" />
+    <rect x="60" y="34" width="40" height="6" />
+    <rect x="62" y="28" width="36" height="6" />
+    <rect x="64" y="22" width="32" height="6" />
+    <rect x="66" y="16" width="28" height="6" />
+    {/* Temple structure on top */}
+    <rect x="72" y="8" width="16" height="8" />
+    {/* Temple roof — flat with corner ornaments */}
+    <rect x="70" y="6" width="20" height="2" />
+    {/* Central staircase running up the front */}
+    <rect x="76" y="14" width="8" height="38" opacity="0.55" />
+    {/* Step lines on the staircase */}
+    <line x1="76" y1="20" x2="84" y2="20" stroke="#fff" strokeWidth="0.4" opacity="0.6" />
+    <line x1="76" y1="26" x2="84" y2="26" stroke="#fff" strokeWidth="0.4" opacity="0.6" />
+    <line x1="76" y1="32" x2="84" y2="32" stroke="#fff" strokeWidth="0.4" opacity="0.6" />
+    <line x1="76" y1="38" x2="84" y2="38" stroke="#fff" strokeWidth="0.4" opacity="0.6" />
+    <line x1="76" y1="44" x2="84" y2="44" stroke="#fff" strokeWidth="0.4" opacity="0.6" />
+    {/* Ground line */}
+    <rect x="50" y="52" width="60" height="2" opacity="0.6" />
+  </>
+);
+
 // Caucasus mountains — sharper twin peaks with a small cross atop.
 const caucasus = wrap(
   <>
@@ -678,21 +817,26 @@ const COUNTRY_ART: Record<string, React.ReactNode> = {
   Italy: colosseum, Spain: sagrada, Portugal: sagrada,
   Sweden: matterhorn, Norway: matterhorn, Finland: matterhorn,
   Denmark: windmill, Iceland: matterhorn,
-  Russia: stBasils, Ukraine: stBasils, Poland: brandenburg,
+  Russia: stBasils, Ukraine: saintSophiaKyiv, Poland: brandenburg,
   Czechia: brandenburg, "Czech Republic": brandenburg,
-  Hungary: brandenburg, Romania: brandenburg, Greece: colosseum,
-  Bulgaria: stBasils, Croatia: colosseum, Lithuania: brandenburg,
+  Hungary: brandenburg, Romania: brandenburg, Greece: parthenon,
+  Bulgaria: saintSophiaKyiv, Croatia: colosseum, Lithuania: brandenburg,
   Latvia: brandenburg, Slovakia: brandenburg, Estonia: brandenburg,
   EU: eiffel, "European Union": eiffel,
 
-  // North America
+  // North America — Mexico now uses a Mayan stepped pyramid (was
+  // falling to the Egyptian-pyramid silhouette which read as
+  // "wrong continent" entirely).
   "United States": liberty, USA: liberty, US: liberty,
-  Canada: maple, Mexico: pyramids,
+  Canada: maple, Mexico: mayanPyramid,
 
-  // Latin America
-  Brazil: redeemer, Argentina: redeemer, Chile: redeemer,
-  Colombia: redeemer, Peru: pyramids, Cuba: redeemer,
-  Uruguay: redeemer, Ecuador: redeemer, Venezuela: redeemer,
+  // Latin America — Christ the Redeemer is iconically Brazilian, so
+  // it stays for Brazil only. Other LatAm countries fall to a Mayan
+  // pyramid (Mexico/Peru) where culturally appropriate, otherwise
+  // Sagrada Família as a shared Iberian-heritage proxy.
+  Brazil: redeemer, Argentina: sagrada, Chile: sagrada,
+  Colombia: sagrada, Peru: mayanPyramid, Cuba: sagrada,
+  Uruguay: sagrada, Ecuador: mayanPyramid, Venezuela: sagrada,
 
   // Default / multi-country
   Global: globe, Multiple: globe, "Multiple countries": globe,
