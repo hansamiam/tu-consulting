@@ -2298,34 +2298,36 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
   const meatyReasons = s.reasons.filter(r => !/^Matches \w+( level)?$/i.test(r) && !/^Open to /.test(r) && !/^Touches your field/i.test(r));
   const why = s.why_this_fits || (meatyReasons.length > 0 ? meatyReasons.slice(0, 2).join(". ") : null);
 
-  // Build profile-vs-requirement checklist
+  // Build profile-vs-requirement checklist. Labels + details run through
+  // t() so the Russian sheet doesn't half-render in English (round 97
+  // translation pass — user flagged "more info in discover" still EN).
   const reqs: { label: string; status: "met"|"miss"|"near"|"unknown"|"info"; detail: string }[] = [];
   if (s.min_gpa != null) {
     if (profile.gpa) {
       const ug = normalizeGpa(parseFloat(profile.gpa), parseFloat(profile.gpaScale));
       const rg = normalizeGpa(s.min_gpa, s.gpa_scale ?? 4.0);
       const status = ug >= rg ? "met" : ug >= rg - 0.3 ? "near" : "miss";
-      reqs.push({ label: `GPA ≥ ${s.min_gpa}/${s.gpa_scale ?? 4.0}`, status, detail: `Yours: ${profile.gpa}/${profile.gpaScale} (≈ ${ug.toFixed(2)}/4.0)` });
-    } else { reqs.push({ label: `GPA ≥ ${s.min_gpa}/${s.gpa_scale ?? 4.0}`, status: "unknown", detail: "Add your GPA to check" }); }
+      reqs.push({ label: `GPA ≥ ${s.min_gpa}/${s.gpa_scale ?? 4.0}`, status, detail: `${t("Yours", "Ваш")}: ${profile.gpa}/${profile.gpaScale} (≈ ${ug.toFixed(2)}/4.0)` });
+    } else { reqs.push({ label: `GPA ≥ ${s.min_gpa}/${s.gpa_scale ?? 4.0}`, status: "unknown", detail: t("Add your GPA to check", "Добавьте GPA, чтобы проверить") }); }
   }
   if (s.min_ielts != null) {
     if (profile.ielts) {
       const u = parseFloat(profile.ielts);
-      reqs.push({ label: `IELTS ≥ ${s.min_ielts}`, status: u >= s.min_ielts ? "met" : "miss", detail: `Yours: ${u}` });
-    } else { reqs.push({ label: `IELTS ≥ ${s.min_ielts}`, status: "unknown", detail: "Add your IELTS to check" }); }
+      reqs.push({ label: `IELTS ≥ ${s.min_ielts}`, status: u >= s.min_ielts ? "met" : "miss", detail: `${t("Yours", "Ваш")}: ${u}` });
+    } else { reqs.push({ label: `IELTS ≥ ${s.min_ielts}`, status: "unknown", detail: t("Add your IELTS to check", "Добавьте IELTS, чтобы проверить") }); }
   }
   if (s.min_toefl != null) {
     if (profile.toefl) {
       const u = parseFloat(profile.toefl);
-      reqs.push({ label: `TOEFL ≥ ${s.min_toefl}`, status: u >= s.min_toefl ? "met" : "miss", detail: `Yours: ${u}` });
-    } else { reqs.push({ label: `TOEFL ≥ ${s.min_toefl}`, status: "unknown", detail: "Add your TOEFL to check" }); }
+      reqs.push({ label: `TOEFL ≥ ${s.min_toefl}`, status: u >= s.min_toefl ? "met" : "miss", detail: `${t("Yours", "Ваш")}: ${u}` });
+    } else { reqs.push({ label: `TOEFL ≥ ${s.min_toefl}`, status: "unknown", detail: t("Add your TOEFL to check", "Добавьте TOEFL, чтобы проверить") }); }
   }
   if (s.min_sat != null) {
     if (profile.sat) {
       const u = parseFloat(profile.sat);
       const status = u >= s.min_sat ? "met" : u >= s.min_sat - 80 ? "near" : "miss";
-      reqs.push({ label: `SAT ≥ ${s.min_sat}`, status, detail: `Yours: ${u}` });
-    } else { reqs.push({ label: `SAT ≥ ${s.min_sat}`, status: "unknown", detail: "Add your SAT to check" }); }
+      reqs.push({ label: `SAT ≥ ${s.min_sat}`, status, detail: `${t("Yours", "Ваш")}: ${u}` });
+    } else { reqs.push({ label: `SAT ≥ ${s.min_sat}`, status: "unknown", detail: t("Add your SAT to check", "Добавьте SAT, чтобы проверить") }); }
   }
   if (s.target_degree_level && profile.degrees && profile.degrees.length > 0) {
     // Bucket-tolerant match — see degreeBucket comment in the scoring
@@ -2334,11 +2336,11 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
     const targetBuckets = s.target_degree_level.map(d => degreeBucket(d)).filter(Boolean);
     const ok = profile.degrees.some(pd => targetBuckets.includes(degreeBucket(pd)));
     const status = targetBuckets.length === 0 ? "unknown" : ok ? "met" : "miss";
-    reqs.push({ label: `Degree level: ${s.target_degree_level.map(humanizeDegree).join(", ")}`, status, detail: `Your level: ${profile.degrees.map(humanizeDegree).join(" / ")}` });
+    reqs.push({ label: `${t("Degree level", "Уровень")}: ${s.target_degree_level.map(humanizeDegree).join(", ")}`, status, detail: `${t("Your level", "Ваш уровень")}: ${profile.degrees.map(humanizeDegree).join(" / ")}` });
   }
   if (s.target_fields && s.target_fields.length > 0 && profile.field) {
     const fm = fieldMatches(profile.field, s.target_fields);
-    reqs.push({ label: `Field of study`, status: fm === true ? "met" : fm === false ? "miss" : "unknown", detail: `Funds: ${s.target_fields.slice(0, 4).map(humanize).join(", ")}${s.target_fields.length > 4 ? "..." : ""}` });
+    reqs.push({ label: t("Field of study", "Направление"), status: fm === true ? "met" : fm === false ? "miss" : "unknown", detail: `${t("Funds", "Финансирует")}: ${s.target_fields.slice(0, 4).map(humanize).join(", ")}${s.target_fields.length > 4 ? "..." : ""}` });
   }
   // Nationality / citizenship — show ONE row, not two. Prefer the
   // structured eligible_countries check (alias-aware, computes met/miss
@@ -2350,11 +2352,15 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
     const list = s.eligible_countries!.map(c => c.toLowerCase());
     const open = list.some(c => c.includes("all") || c.includes("any"));
     const ok = open || matchesNationality(profile.country, s.eligible_countries!);
-    reqs.push({ label: open ? "Open to all nationalities" : `Nationality eligibility`, status: ok ? "met" : "miss", detail: open ? "" : (ok ? `${profile.country} listed` : `${profile.country} not in eligible list`) });
+    reqs.push({
+      label: open ? t("Open to all nationalities", "Открыто всем странам") : t("Nationality eligibility", "Гражданство"),
+      status: ok ? "met" : "miss",
+      detail: open ? "" : (ok ? t(`${profile.country} listed`, `${profile.country} в списке`) : t(`${profile.country} not in eligible list`, `${profile.country} нет в списке`)),
+    });
   } else if (s.citizenship_requirements && !isInclusive(s.citizenship_requirements)) {
-    reqs.push({ label: "Citizenship rule", status: "info", detail: s.citizenship_requirements });
+    reqs.push({ label: t("Citizenship rule", "Правило гражданства"), status: "info", detail: s.citizenship_requirements });
   }
-  if (s.language_requirements) reqs.push({ label: "Language", status: "info", detail: s.language_requirements });
+  if (s.language_requirements) reqs.push({ label: t("Language", "Язык"), status: "info", detail: s.language_requirements });
 
   const days = daysUntil(s.application_deadline);
   const deadlineDate = dateOnly(s.application_deadline);
@@ -2441,7 +2447,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                 say nothing. */}
             {s.eligibility === "missing" && s.warnings.length > 0 && (
               <p className="text-muted-foreground text-xs">
-                Watch: {s.warnings.slice(0, 1)[0]}
+                {t("Watch", "Обратите внимание")}: {s.warnings.slice(0, 1)[0]}
               </p>
             )}
             {s.eligibility === "not_eligible" && s.warnings.length > 0 && (
@@ -2579,14 +2585,16 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
             <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-500 leading-relaxed flex items-start gap-2">
               <ShieldAlert className="w-3.5 h-3.5 mt-0.5 shrink-0" />
               <span>
-                Our weekly link-checker has failed to reach this URL {s.url_consecutive_fails}+ times.
-                The provider may have moved the page — verify before applying.
+                {t(
+                  `Our weekly link-checker has failed to reach this URL ${s.url_consecutive_fails}+ times. The provider may have moved the page — verify before applying.`,
+                  `Наш еженедельный чекер не смог открыть эту ссылку ${s.url_consecutive_fails}+ раз. Возможно, провайдер перенёс страницу — проверьте перед подачей.`,
+                )}
               </span>
             </div>
           )}
           {s.url_check_status === "redirect" && s.url_resolved_to && s.url_resolved_to !== s.official_url && (
             <div className="mt-3 rounded-lg border border-border bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground leading-relaxed">
-              Note: this URL now redirects to <code className="font-mono text-foreground/80">{s.url_resolved_to.slice(0, 80)}</code>
+              {t("Note: this URL now redirects to", "Примечание: ссылка теперь ведёт на")} <code className="font-mono text-foreground/80">{s.url_resolved_to.slice(0, 80)}</code>
             </div>
           )}
 
@@ -2735,7 +2743,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                     <span key={i} className="text-xs text-foreground/80 bg-muted/50 border border-border/70 px-2.5 py-1 rounded-md font-medium">{u}</span>
                   ))}
                   {s.partner_universities.length > 12 && (
-                    <span className="text-xs text-muted-foreground self-center">+{s.partner_universities.length - 12} more</span>
+                    <span className="text-xs text-muted-foreground self-center">+{s.partner_universities.length - 12} {t("more", "ещё")}</span>
                   )}
                 </div>
               </div>
@@ -2762,7 +2770,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                 )}
                 {s.language_requirements && (
                   <p className="text-sm text-foreground/75 leading-relaxed">
-                    <span className="text-muted-foreground">Language: </span>
+                    <span className="text-muted-foreground">{t("Language", "Язык")}: </span>
                     {s.language_requirements}
                   </p>
                 )}
@@ -2844,7 +2852,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                 {s.interview_required && <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full"><Users className="h-3 w-3" />{t("Interview", "Интервью")}</span>}
                 {(s.recommendation_letters_required ?? 0) > 0 && (
                   <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full">
-                    <FileText className="h-3 w-3" />{s.recommendation_letters_required} {t(`rec letter${(s.recommendation_letters_required ?? 0) > 1 ? "s" : ""}`, "реком. писем")}
+                    <FileText className="h-3 w-3" />{s.recommendation_letters_required} {ru ? "реком. писем" : `rec letter${(s.recommendation_letters_required ?? 0) > 1 ? "s" : ""}`}
                   </span>
                 )}
               </div>
@@ -2896,7 +2904,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                 <div className="flex items-center gap-2.5">
                   <Flame className={`h-5 w-5 ${days <= 30 ? "text-destructive" : "text-warning"}`} />
                   <div>
-                    <p className={`font-semibold text-sm ${days <= 30 ? "text-destructive" : "text-warning"}`}>{days} days until deadline</p>
+                    <p className={`font-semibold text-sm ${days <= 30 ? "text-destructive" : "text-warning"}`}>{days} {t("days until deadline", "дней до дедлайна")}</p>
                     <p className="text-xs text-muted-foreground">{deadlineDate}</p>
                   </div>
                 </div>
@@ -2907,9 +2915,9 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               // the dl.text suffix on the Deadline row ("(Reopens annually)",
               // "(Rolling)", etc.), so listing it twice was overlap.
               const rows = [
-                ["Deadline", deadlineDate ? `${deadlineDate} (${dl.text})` : (dl.text || "TBD")],
-                ["Platform", s.application_platform],
-                ["Application fee", s.application_fee_text],
+                [t("Deadline", "Дедлайн"), deadlineDate ? `${deadlineDate} (${dl.text})` : (dl.text || "TBD")],
+                [t("Platform", "Платформа"), s.application_platform],
+                [t("Application fee", "Стоимость подачи"), s.application_fee_text],
               ].filter(([, v]) => v) as [string, string][];
               if (rows.length === 0) return null;
               return (
@@ -2927,22 +2935,27 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               <div className="bg-warning/5 border border-warning/20 rounded-2xl p-4 flex items-start gap-2.5">
                 <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-semibold text-warning">Separate application required</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">You're not auto-considered when admitted — you must apply separately.</p>
+                  <p className="text-sm font-semibold text-warning">{t("Separate application required", "Нужна отдельная заявка")}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {t(
+                      "You're not auto-considered when admitted — you must apply separately.",
+                      "При поступлении вас не рассмотрят автоматически — нужно подать отдельную заявку.",
+                    )}
+                  </p>
                 </div>
               </div>
             )}
             {s.partner_universities && s.partner_universities.length > 0 && (
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2 flex items-center gap-2">
-                  <Users className="h-3 w-3" /> Partner universities · {s.partner_universities.length}
+                  <Users className="h-3 w-3" /> {t("Partner universities", "Университеты-партнёры")} · {s.partner_universities.length}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {s.partner_universities.slice(0, 18).map((u, i) => (
                     <span key={i} className="text-xs bg-muted/60 border border-border px-2.5 py-1 rounded-md text-foreground/80">{u}</span>
                   ))}
                   {s.partner_universities.length > 18 && (
-                    <span className="text-xs text-muted-foreground self-center">+{s.partner_universities.length - 18} more</span>
+                    <span className="text-xs text-muted-foreground self-center">+{s.partner_universities.length - 18} {t("more", "ещё")}</span>
                   )}
                 </div>
               </div>
@@ -2962,7 +2975,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
         {/* ── SIMILAR SCHOLARSHIPS — Crunchbase/IMDB pattern: keep users moving ── */}
         {similar.length > 0 && (
           <div className="px-7 py-6 border-t border-border bg-canvas-soft/50">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-3">If you like this, also look at</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-3">{t("If you like this, also look at", "Если нравится это, посмотрите ещё")}</p>
             <div className="space-y-1.5">
               {similar.map(sim => {
                 const simAccent = accentForCountry(sim.host_country);
@@ -4387,6 +4400,7 @@ const Discover = ({ language = "en" }: Props) => {
                 <CuratedCollections
                   rows={ranked}
                   onApply={(patch) => setFilters(f => ({ ...f, ...patch as Partial<FilterState> }))}
+                  lang={language}
                 />
               )}
 

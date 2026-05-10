@@ -29,6 +29,10 @@ interface Row {
 export interface CollectionPreset {
   id: string;
   label: string;
+  /** Russian label — falls back to `label` when missing. Added 2026-05-10
+   *  after user flagged Discover quick-filter chips reading EN on the RU
+   *  route ("alot of some of texts are still not translated properly"). */
+  labelRu?: string;
   sub: string;
   /** Lucide icon component. */
   Icon: typeof Award;
@@ -43,6 +47,7 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
   {
     id: "fully-funded",
     label: "Fully funded",
+    labelRu: "Полное финансирование",
     sub: "Tuition + living covered",
     Icon: Award,
     accentCls: "from-gold/15 to-gold/5 border-gold/30",
@@ -58,6 +63,7 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
     // clicking. Either rename or change the filter — renaming is less
     // invasive and 90 days is the operationally useful "apply now" range.
     label: "Closing soon",
+    labelRu: "Скоро закрываются",
     sub: "Deadlines in the next 90 days",
     Icon: Clock,
     accentCls: "from-destructive/10 to-destructive/[0.03] border-destructive/25",
@@ -71,6 +77,7 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
   {
     id: "phd-funded",
     label: "PhD with funding",
+    labelRu: "PhD с финансированием",
     sub: "Stipend + tuition for doctorates",
     Icon: GraduationCap,
     accentCls: "from-primary/10 to-primary/[0.03] border-primary/25",
@@ -85,6 +92,7 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
   {
     id: "korea-route",
     label: "South Korea",
+    labelRu: "Южная Корея",
     sub: "Korean Government Scholarship + KAIST track",
     Icon: Globe,
     accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
@@ -99,6 +107,7 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
   {
     id: "japan-route",
     label: "Japan",
+    labelRu: "Япония",
     sub: "MEXT + university programs",
     Icon: Globe,
     accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
@@ -115,6 +124,7 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
   {
     id: "uk-route",
     label: "United Kingdom",
+    labelRu: "Великобритания",
     sub: "Russell Group + Oxbridge",
     Icon: Globe,
     accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
@@ -125,6 +135,7 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
   {
     id: "computer-science",
     label: "Computer Science & AI",
+    labelRu: "Computer Science и AI",
     sub: "Tech-focused funding",
     Icon: Cpu,
     accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
@@ -158,6 +169,7 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
     // an OR-match across both "women" and "underrepresented-stem" tags
     // so this chip surfaces ALL women-cohort programs, not just STEM.
     label: "Women",
+    labelRu: "Для женщин",
     sub: "Programs designed for women — STEM, business, leadership, more",
     Icon: Users,
     accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
@@ -168,6 +180,7 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
   {
     id: "first-generation",
     label: "First-generation friendly",
+    labelRu: "Первое поколение",
     sub: "First in your family to go abroad",
     Icon: Users,
     accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
@@ -177,6 +190,7 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
   {
     id: "refugees",
     label: "For refugees + displaced students",
+    labelRu: "Беженцы и вынужденные переселенцы",
     sub: "Specifically supports refugee + displaced applicants",
     Icon: Users,
     accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
@@ -191,6 +205,7 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
   {
     id: "need-based",
     label: "Need-based",
+    labelRu: "По нуждаемости",
     sub: "Means-tested + financial-need programs",
     Icon: HandCoins,
     accentCls: "from-foreground/[0.06] to-foreground/[0.02] border-border",
@@ -205,11 +220,13 @@ export const COLLECTION_PRESETS: CollectionPreset[] = [
 const MIN_CHIP_RESULTS = 4;
 
 export const CuratedCollections = ({
-  rows, onApply,
+  rows, onApply, lang = "en",
 }: {
   rows: Row[];
   /** Patch the filter state with the preset's payload. */
   onApply: (patch: Record<string, unknown>) => void;
+  /** Language for chip labels — RU users see Russian translations. */
+  lang?: "en" | "ru";
 }) => {
   // Compute per-tile count once. A tile with 0 matches is hidden so the
   // strip never advertises an empty drawer.
@@ -245,7 +262,7 @@ export const CuratedCollections = ({
             >
               <preset.Icon className="h-3 w-3 text-foreground/55 group-hover:text-gold-dark transition-colors" />
               <span className="text-[12px] font-medium text-foreground/85 group-hover:text-foreground transition-colors">
-                {preset.label}
+                {lang === "ru" && preset.labelRu ? preset.labelRu : preset.label}
               </span>
             </motion.button>
           ))}
