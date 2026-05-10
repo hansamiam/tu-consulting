@@ -3,8 +3,8 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import { ArrowLeft, ArrowRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
+// useNavigate dropped — Back-to-Home sub-nav retired.
 import aigulPhoto from "@/assets/aigul.jpeg";
 import joshPhoto from "@/assets/josh.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
@@ -22,7 +22,6 @@ import { motion } from "framer-motion";
 import { useEffect } from "react";
 
 const Team = () => {
-  const navigate = useNavigate();
   useEffect(() => {
     const prev = document.title;
     document.title = "The team — TopUni";
@@ -100,20 +99,10 @@ const Team = () => {
       <div className="relative z-10">
       <ScrollProgress />
       <Navigation language="en" />
-      {/* Header */}
-      <header className="border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 sticky top-16 z-40 shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/")}
-            className="gap-2 hover:text-primary transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Home
-          </Button>
-        </div>
-      </header>
+      {/* Sticky "Back to Home" sub-nav retired 2026-05-10 — global
+          Navigation already routes users home via the wordmark + Home
+          link, so this duplicated affordance read as visual chrome
+          ("hairpin everywhere"). Same retirement on TeamRu.tsx. */}
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 md:py-16">

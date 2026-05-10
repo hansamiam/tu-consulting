@@ -3,8 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import { ArrowLeft, ArrowRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
 import aigulPhoto from "@/assets/aigul.jpeg";
 import joshPhoto from "@/assets/josh.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
@@ -21,7 +20,6 @@ import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { motion } from "framer-motion";
 
 const TeamRu = () => {
-  const navigate = useNavigate();
 
   const teamMembers = [
     {
@@ -95,20 +93,7 @@ const TeamRu = () => {
       <div className="relative z-10">
       <ScrollProgress />
       <Navigation language="ru" />
-      {/* Header */}
-      <header className="border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 sticky top-16 z-40 shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/ru")}
-            className="gap-2 hover:text-primary transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Назад на главную
-          </Button>
-        </div>
-      </header>
+      {/* Back-to-home sub-nav retired — see Team.tsx for rationale. */}
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 md:py-16">

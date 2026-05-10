@@ -24,6 +24,7 @@ import {
   ListChecks,
   Map,
   Zap,
+  Crown,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { saveProfile } from "@/components/discover/DiscoverProfileGate";
@@ -483,11 +484,11 @@ const TopUniAI = () => {
                     className="space-y-7"
                   >
                     <div>
-                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Step 01 · Profile</p>
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Step 01 · Who you are</p>
                       <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight">
-                        Tell us about you.
+                        Let's start with you.
                       </h2>
-                      <p className="text-muted-foreground mt-2 text-sm">Your academic foundation. About a minute.</p>
+                      <p className="text-muted-foreground mt-2 text-sm">The basics that shape every program match — about a minute.</p>
                     </div>
                     <div className="grid gap-5">
                       <div className="grid sm:grid-cols-2 gap-4">
@@ -630,31 +631,38 @@ const TopUniAI = () => {
                         weak password) keep the user on Step 1 with
                         an inline toast — they can fix or skip. */}
                     {!user && (
-                      <div className="rounded-xl border border-border/70 bg-muted/15 px-5 py-4 space-y-3">
-                        <div className="flex items-start gap-2.5">
+                      <div className="rounded-xl border border-gold/35 bg-gold/[0.06] px-5 py-4 space-y-3 relative overflow-hidden">
+                        {/* Subtle gold-flare accent — soft inner glow that
+                            signals "this is the value-saving moment" without
+                            dominating. */}
+                        <div
+                          className="pointer-events-none absolute -top-12 -right-12 h-32 w-32 rounded-full bg-gold/15 blur-2xl"
+                          aria-hidden
+                        />
+                        <div className="relative flex items-start gap-2.5">
                           <Shield className="w-4 h-4 text-gold-dark shrink-0 mt-0.5" />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-foreground leading-tight">
-                              Save your strategy report
+                              Keep your report (recommended)
                             </p>
-                            <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
-                              Set a password — your report stays with you across devices. Skip if you'd rather just see it once.
+                            <p className="text-[11px] text-foreground/70 leading-snug mt-0.5">
+                              Set a password and your strategy syncs across your phone + laptop. Skip if you'd rather see it once and move on.
                             </p>
                           </div>
                         </div>
-                        <div className="grid sm:grid-cols-[1fr,auto] gap-2.5">
+                        <div className="relative grid sm:grid-cols-[1fr,auto] gap-2.5">
                           <Input
                             type="password"
                             value={accountPassword}
                             onChange={e => setAccountPassword(e.target.value)}
-                            placeholder="Set password (optional · 8+ chars)"
+                            placeholder="Pick a password (8+ chars · optional)"
                             className="h-10 bg-card text-sm"
                           />
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="h-10 gap-2"
+                            className="h-10 gap-2 bg-card border-border/80 hover:border-foreground/40"
                             onClick={async () => {
                               setAccountSubmitting(true);
                               const { error } = await signInWithGoogle();
@@ -736,9 +744,9 @@ const TopUniAI = () => {
                     <div>
                       <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Step 02 · Direction</p>
                       <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight">
-                        Where, and what?
+                        What are you studying?
                       </h2>
-                      <p className="text-muted-foreground mt-2 text-sm">Pick countries you have in mind, or skip — we'll surface what fits your profile across geographies.</p>
+                      <p className="text-muted-foreground mt-2 text-sm">Tell us your field and when you'd start — we'll match programs across every geography that fits your profile.</p>
                     </div>
                     <div className="space-y-6">
                       {/* Target countries removed entirely 2026-05-10.
@@ -821,43 +829,164 @@ const TopUniAI = () => {
                     <div>
                       <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Step 03 · Priorities</p>
                       <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight">
-                        What matters most?
+                        What's the dream?
                       </h2>
-                      <p className="text-muted-foreground mt-2 text-sm">Weight each on a 1-5 scale.</p>
+                      <p className="text-muted-foreground mt-2 text-sm">Three quick calls. We'll weight your shortlist + brief around them.</p>
                     </div>
                     <div className="space-y-5">
-                      {/* Round-42: 5 sliders → 3. "Career ROI" was vague
-                          and the brief generator gets the same signal
-                          from major + grade level. "Location preference"
-                          duplicated the targetCountries selection on
-                          step 2. Cuts the page from 5 sliders to the
-                          three that actually shape the report:
-                          prestige, scholarship need, visa accessibility. */}
-                      {[
-                        { label: "Prestige", value: prestige, set: setPrestige, icon: GraduationCap, low: "Any school", high: "Top 50 only" },
-                        { label: "Scholarship need", value: scholarship, set: setScholarship, icon: Shield, low: "Self-fund OK", high: "Must be free" },
-                        { label: "Visa accessibility", value: visaAccess, set: setVisaAccess, icon: CheckCircle2, low: "Don't mind", high: "Easy access" },
-                      ].map(item => (
-                        <div key={item.label} className="bg-card border border-border/70 rounded-xl p-5">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2.5">
-                              <item.icon className="w-4 h-4 text-gold-dark" />
-                              <span className="text-sm font-semibold text-foreground">{item.label}</span>
+                      {/* 2026-05-10 redesign: replace 3 generic 1-5
+                          sliders with three more interactive form types
+                          that read as "deliberate choices" rather than
+                          arbitrary slider drags. Each block is its own
+                          micro-interaction:
+                          1. Prestige — 4-tier tile picker with crown
+                             icons that scale with selection.
+                          2. Scholarship need — visual money slider that
+                             surfaces an annual-budget range as you move.
+                          3. Visa preference — 3-tile picker.
+                          Snappier, less form-fatigue, more memorable. */}
+
+                      {/* ── Prestige tier picker ── */}
+                      {(() => {
+                        const tiers = [
+                          { value: 1, label: "Any program",  caption: "Open across rankings",  crowns: 1 },
+                          { value: 2, label: "Top 500",       caption: "Solid global standing",  crowns: 2 },
+                          { value: 4, label: "Top 100",       caption: "Strong selectivity",     crowns: 3 },
+                          { value: 5, label: "Top 25 only",   caption: "Reach for the moon",     crowns: 4 },
+                        ];
+                        const active = prestige[0];
+                        const closest = tiers.reduce((p, c) => Math.abs(c.value - active) < Math.abs(p.value - active) ? c : p);
+                        return (
+                          <div className="bg-card border border-border/70 rounded-xl p-5">
+                            <div className="flex items-center justify-between mb-3.5">
+                              <div className="flex items-center gap-2.5">
+                                <GraduationCap className="w-4 h-4 text-gold-dark" />
+                                <span className="text-sm font-semibold text-foreground">School tier you're aiming for</span>
+                              </div>
+                              <span className="text-[11px] text-muted-foreground italic">Tap to choose</span>
                             </div>
-                            <div className="flex items-center gap-1.5">
-                              {[1, 2, 3, 4, 5].map(n => (
-                                <span key={n} className={`h-1.5 w-1.5 rounded-full transition-colors ${n <= item.value[0] ? "bg-gold-dark" : "bg-border"}`} />
-                              ))}
-                              <span className="text-xs font-bold text-gold-dark tabular-nums ml-1.5">{item.value[0]}/5</span>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                              {tiers.map(tier => {
+                                const isActive = tier.value === closest.value;
+                                return (
+                                  <button
+                                    key={tier.value}
+                                    type="button"
+                                    onClick={() => setPrestige([tier.value])}
+                                    className={`group relative rounded-lg border px-2.5 py-3 text-left transition-all ${
+                                      isActive
+                                        ? "border-gold-dark bg-gold/[0.08] ring-1 ring-gold-dark/30"
+                                        : "border-border/60 bg-background hover:border-foreground/30 hover:bg-foreground/[0.02]"
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-0.5 mb-1.5">
+                                      {Array.from({ length: 4 }).map((_, i) => (
+                                        <Crown
+                                          key={i}
+                                          className={`h-3 w-3 transition-colors ${
+                                            i < tier.crowns
+                                              ? isActive ? "text-gold-dark" : "text-muted-foreground/55"
+                                              : "text-muted-foreground/15"
+                                          }`}
+                                          fill={i < tier.crowns && isActive ? "currentColor" : "transparent"}
+                                        />
+                                      ))}
+                                    </div>
+                                    <p className={`text-xs font-bold leading-tight ${isActive ? "text-foreground" : "text-foreground/85"}`}>
+                                      {tier.label}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">
+                                      {tier.caption}
+                                    </p>
+                                  </button>
+                                );
+                              })}
                             </div>
                           </div>
-                          <Slider min={1} max={5} step={1} value={item.value} onValueChange={item.set} className="w-full" />
-                          <div className="flex justify-between mt-2 text-[11px] text-muted-foreground font-medium">
-                            <span>{item.low}</span>
-                            <span>{item.high}</span>
+                        );
+                      })()}
+
+                      {/* ── Scholarship need slider with visual money signal ── */}
+                      {(() => {
+                        const v = scholarship[0];
+                        const moneyLabel =
+                          v <= 1 ? "I can self-fund"
+                          : v === 2 ? "I'd appreciate $5–15K/yr"
+                          : v === 3 ? "I need $15–40K/yr"
+                          : v === 4 ? "I need $40K+/yr"
+                          : "I need a full ride";
+                        const moneyTone =
+                          v <= 1 ? "text-foreground/65"
+                          : v <= 3 ? "text-amber-700 dark:text-amber-400"
+                          : "text-gold-dark";
+                        return (
+                          <div className="bg-card border border-border/70 rounded-xl p-5">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2.5">
+                                <Shield className="w-4 h-4 text-gold-dark" />
+                                <span className="text-sm font-semibold text-foreground">Funding I'll need</span>
+                              </div>
+                              <span className={`text-xs font-bold tabular-nums ${moneyTone}`}>
+                                {moneyLabel}
+                              </span>
+                            </div>
+                            <Slider min={1} max={5} step={1} value={scholarship} onValueChange={setScholarship} className="w-full" />
+                            <div className="flex justify-between mt-2.5 text-[11px] text-muted-foreground font-medium">
+                              <span>Self-fund</span>
+                              <span>Full ride only</span>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })()}
+
+                      {/* ── Visa accessibility 3-tile picker ── */}
+                      {(() => {
+                        const choices = [
+                          { value: 2, label: "No strong preference", caption: "Open to any visa path",      icon: "🌍" },
+                          { value: 4, label: "Easy visa preferred",  caption: "Avoid heavy paperwork",       icon: "🛂" },
+                          { value: 5, label: "Visa is dealbreaker",  caption: "Only programs with clean visa", icon: "✋" },
+                        ];
+                        const active = visaAccess[0];
+                        const closest = choices.reduce((p, c) => Math.abs(c.value - active) < Math.abs(p.value - active) ? c : p);
+                        return (
+                          <div className="bg-card border border-border/70 rounded-xl p-5">
+                            <div className="flex items-center justify-between mb-3.5">
+                              <div className="flex items-center gap-2.5">
+                                <CheckCircle2 className="w-4 h-4 text-gold-dark" />
+                                <span className="text-sm font-semibold text-foreground">Visa stance</span>
+                              </div>
+                              <span className="text-[11px] text-muted-foreground italic">Tap to choose</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              {choices.map(c => {
+                                const isActive = c.value === closest.value;
+                                return (
+                                  <button
+                                    key={c.value}
+                                    type="button"
+                                    onClick={() => setVisaAccess([c.value])}
+                                    className={`relative rounded-lg border px-3 py-3 text-left transition-all ${
+                                      isActive
+                                        ? "border-gold-dark bg-gold/[0.08] ring-1 ring-gold-dark/30"
+                                        : "border-border/60 bg-background hover:border-foreground/30 hover:bg-foreground/[0.02]"
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-base leading-none" aria-hidden>{c.icon}</span>
+                                      <p className={`text-xs font-bold leading-tight ${isActive ? "text-foreground" : "text-foreground/85"}`}>
+                                        {c.label}
+                                      </p>
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground leading-snug">
+                                      {c.caption}
+                                    </p>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div className="flex justify-between pt-4">
