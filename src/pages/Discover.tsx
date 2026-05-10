@@ -4887,8 +4887,40 @@ const Discover = ({ language = "en" }: Props) => {
 
                   <main className="flex-1 min-w-0">
                     {loading ? (
+                      // Card-shaped skeletons that mirror the real card
+                      // geometry — country band, title stub, blurb lines,
+                      // footer chips, action row — so the layout doesn't
+                      // shift when actual cards land. Stagger animation
+                      // delays so the pulse feels like a wave, not a flash.
                       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                        {[1,2,3,4,5,6].map(i => <div key={i} className="h-80 bg-card border border-border rounded-3xl animate-pulse" />)}
+                        {[0,1,2,3,4,5,6,7,8].map(i => (
+                          <div
+                            key={i}
+                            className="rounded-xl bg-card border border-border overflow-hidden animate-pulse"
+                            style={{ animationDelay: `${i * 70}ms`, animationDuration: "1.4s" }}
+                          >
+                            <div className="bg-canvas-soft h-12 border-b border-gold/15 flex items-center px-4 gap-2">
+                              <div className="h-2 w-16 rounded-full bg-foreground/10" />
+                            </div>
+                            <div className="p-4 flex flex-col gap-3">
+                              <div className="space-y-2">
+                                <div className="h-3 rounded-full bg-foreground/10 w-[88%]" />
+                                <div className="h-3 rounded-full bg-foreground/10 w-[60%]" />
+                                <div className="h-2 rounded-full bg-foreground/[0.06] w-[40%] mt-2" />
+                              </div>
+                              <div className="h-5 w-20 rounded-md bg-foreground/[0.08]" />
+                              <div className="space-y-1.5">
+                                <div className="h-2 rounded-full bg-foreground/[0.06] w-full" />
+                                <div className="h-2 rounded-full bg-foreground/[0.06] w-[78%]" />
+                              </div>
+                              <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                                <div className="h-2 w-12 rounded-full bg-foreground/[0.06]" />
+                                <div className="h-2 w-1 rounded-full bg-foreground/[0.04]" />
+                                <div className="h-2 w-20 rounded-full bg-foreground/[0.06]" />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     ) : filtered.length === 0 ? (
                       <div className="border border-dashed border-border rounded-3xl p-12 sm:p-16 text-center bg-muted/10">
