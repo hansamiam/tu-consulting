@@ -3369,6 +3369,23 @@ const Discover = ({ language = "en" }: Props) => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [showHidden, setShowHidden] = useState(false);
   const [compareSet, setCompareSet] = useState<Set<string>>(new Set());
+
+  /* Section pagination — initial render caps each priority section at
+   * SECTION_PAGE_SIZE cards. Members with deep matches (hundreds of
+   * strong/competitive/stretch rows) used to pay the full render cost
+   * on first paint, blocking interactivity for 1-2s on mid-range
+   * mobile. The Set tracks which section keys the user has expanded
+   * via "Show more"; expanded sections render their full content. */
+  const SECTION_PAGE_SIZE = 24;
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const toggleSectionExpanded = (key: string) => {
+    setExpandedSections(prev => {
+      const n = new Set(prev);
+      if (n.has(key)) n.delete(key);
+      else n.add(key);
+      return n;
+    });
+  };
   const [compareOpen, setCompareOpen] = useState(false);
 
   // statusMap / notesMap / hidden / shortlist are now driven by the
@@ -4947,6 +4964,13 @@ const Discover = ({ language = "en" }: Props) => {
                           if (viewMode === "list") {
                             // Header is label-only — sort is driven by the
                             // dropdown above the grid (one source of truth).
+                            // Same pagination model as the grid view —
+                            // SECTION_PAGE_SIZE rows initial, "Show more"
+                            // toggles expansion. List view shares the
+                            // expandedSections map under the "list" key.
+                            const expanded = expandedSections.has("list");
+                            const visible = expanded ? filtered : filtered.slice(0, SECTION_PAGE_SIZE);
+                            const hiddenCount = filtered.length - visible.length;
                             return (
                               <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
                                 <div className="hidden sm:grid grid-cols-[minmax(0,1fr),170px,128px] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -4954,7 +4978,18 @@ const Discover = ({ language = "en" }: Props) => {
                                   <span className="text-right">Award · Deadline</span>
                                   <span className="text-right pr-1">Actions</span>
                                 </div>
-                                {filtered.map((s, i) => <MemoScholarRow {...cardProps(s, i)} />)}
+                                {visible.map((s, i) => <MemoScholarRow {...cardProps(s, i)} />)}
+                                {(hiddenCount > 0 || expanded) && filtered.length > SECTION_PAGE_SIZE && (
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleSectionExpanded("list")}
+                                    className="w-full px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground hover:text-gold-dark transition-colors border-t border-border bg-canvas-soft/30 hover:bg-gold/5"
+                                  >
+                                    {expanded
+                                      ? t("Show less", "Свернуть")
+                                      : t(`Show all (+${hiddenCount})`, `Все (+${hiddenCount})`)}
+                                  </button>
+                                )}
                                 {lockedCount > 0 && <PaywallRow lockedCount={lockedCount} lang={language} />}
                               </div>
                             );
@@ -4971,6 +5006,35 @@ const Discover = ({ language = "en" }: Props) => {
                           // the cards as one undifferentiated grid with a
                           // neutral "All scholarships" header instead.
                           const hasProfileBucketing = sections.strong.length > 0 || sections.competitive.length > 0;
+                          // Per-section pagination helper. Renders the first
+                          // SECTION_PAGE_SIZE cards by default; "Show more"
+                          // expands the section to show the rest. Section
+                          // identity is keyed (strong/competitive/stretch/
+                          // "all") so user-expanded state survives re-ranking.
+                          const renderSectionGrid = (key: string, items: typeof sections.strong) => {
+                            const expanded = expandedSections.has(key);
+                            const visible = expanded ? items : items.slice(0, SECTION_PAGE_SIZE);
+                            const hidden = items.length - visible.length;
+                            return (
+                              <>
+                                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
+                                  {visible.map((s, i) => <MemoScholarCard {...cardProps(s, i)} />)}
+                                </div>
+                                {(hidden > 0 || expanded) && items.length > SECTION_PAGE_SIZE && (
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleSectionExpanded(key)}
+                                    className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground hover:text-gold-dark transition-colors px-3 py-2 rounded-md border border-dashed border-border/60 hover:border-gold/40"
+                                  >
+                                    {expanded
+                                      ? t("Show less", "Свернуть")
+                                      : t(`Show all (+${hidden})`, `Все (+${hidden})`)}
+                                  </button>
+                                )}
+                              </>
+                            );
+                          };
+
                           if (!hasProfileBucketing && sections.stretch.length > 0) {
                             return (
                               <section>
@@ -4980,9 +5044,7 @@ const Discover = ({ language = "en" }: Props) => {
                                   subtitle={t("Build your profile (top right) to see which ones fit you best.", "Заполните профиль (вверху справа), чтобы увидеть, какие подходят лучше.")}
                                   accentClass="text-foreground/60"
                                 />
-                                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
-                                  {sections.stretch.map((s, i) => <MemoScholarCard {...cardProps(s, i)} />)}
-                                </div>
+                                {renderSectionGrid("all", sections.stretch)}
                                 {lockedCount > 0 && <PaywallCard lockedCount={lockedCount} className="mt-4" lang={language} />}
                               </section>
                             );
@@ -5003,9 +5065,7 @@ const Discover = ({ language = "en" }: Props) => {
                                     title={t("These align with your profile", "Эти подходят вашему профилю")}
                                     subtitle={t("Your stated nationality, level, and field overlap with the program's audience.", "Ваши гражданство, уровень и направление совпадают с целевой аудиторией программы.")}
                                     count={sections.strong.length} accentClass="text-gold-dark" />
-                                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
-                                    {sections.strong.map((s, i) => <MemoScholarCard {...cardProps(s, i)} />)}
-                                  </div>
+                                  {renderSectionGrid("strong", sections.strong)}
                                 </section>
                               )}
 
@@ -5016,9 +5076,7 @@ const Discover = ({ language = "en" }: Props) => {
                                     title={t("Selective programs that match your direction", "Селективные программы по вашему направлению")}
                                     subtitle={t("Some thresholds are tight — read the requirements before drafting.", "Некоторые пороги жёсткие — прочитайте требования до подачи.")}
                                     count={sections.competitive.length} accentClass="text-primary dark:text-primary-bright" />
-                                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
-                                    {sections.competitive.map((s, i) => <MemoScholarCard {...cardProps(s, i)} />)}
-                                  </div>
+                                  {renderSectionGrid("competitive", sections.competitive)}
                                 </section>
                               )}
 
@@ -5029,9 +5087,7 @@ const Discover = ({ language = "en" }: Props) => {
                                     title={t("The rest of the catalog", "Остальной каталог")}
                                     subtitle={t("Highly selective on paper. People do win these every year.", "Очень селективные на бумаге. Каждый год кто-то их выигрывает.")}
                                     count={sections.stretch.length} accentClass="text-muted-foreground" />
-                                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
-                                    {sections.stretch.map((s, i) => <MemoScholarCard {...cardProps(s, i)} />)}
-                                  </div>
+                                  {renderSectionGrid("stretch", sections.stretch)}
                                 </section>
                               )}
 
