@@ -326,11 +326,14 @@ serve(async (req) => {
     // throughout, banned clinical phrasing ("the student", "the
     // candidate"), opening framing line per section so the brief reads
     // like a trusted older peer speaking directly to them.
-    // 2026-05-10: v4 — scholarship-first pivot. School shortlist cut
-    // from 6-10 → 3 illustrative schools (no buckets), reframed as
-    // "where the funding pathway lands you" since TopUni's value prop
-    // is scholarships, not school-picking.
-    const PROMPT_VERSION = "v4-2026-05-10";
+    // 2026-05-10 v5 — bumped to invalidate stale 9-section cached
+    // briefs from the pre-consolidation era. User flagged the dashboard
+    // TOC was showing the old Career ROI / Visa / Monthly Budget /
+    // Final Word sections that were retired in 2026-05. Bumping the
+    // version forces regeneration with the consolidated 5-section
+    // PREMIUM_SECTIONS list (or the basicSections 5-section prompt for
+    // non-premium tier).
+    const PROMPT_VERSION = "v5-2026-05-10";
 
     // ─── Cache hit check ────────────────────────────────────────────────
     // Skip for regenSection (the user is explicitly asking us to redo
@@ -771,101 +774,14 @@ Open with one short sentence in second person — something like "Here's what I'
 
 ${EDITORIAL_RULES}`;
 
-    const premiumSections = `Generate an EXHAUSTIVE, DEEPLY PERSONALIZED report. This is the premium tier — go significantly deeper than a basic report. The output is rendered both on screen AND as a printable PDF the student keeps as a reference document. Use clean markdown.
-
-Required sections, in this exact order:
-
-## Strategic positioning
-2-3 paragraphs. Quantitative competitive analysis: GPA percentile context, IELTS band relative to thresholds at target countries, where this profile is strongest, where it is weakest.
-
-After the paragraphs, on its own line, output exactly:
-
-**Your 30-day call:** [one specific, single-sentence strategic action this student should take in the next 30 days]
-
-## Your university shortlist (15-20 universities)
-Pull 15-20 real universities from the database. Organize into three buckets:
-
-### Strong fits — apply with confidence
-6-8 universities. For each:
-- **University name** — fit score (0-100%) with one-line justification
-- Specific program(s) with admission requirements (IELTS, GPA cutoff)
-- Historical acceptance rate context
-- One unique selling point specific to this student
-
-### Aligned options — competitive but achievable
-5-7 universities. Same format.
-
-### Worth keeping on the radar
-3-5 universities. Same format.
-
-Do NOT invent universities. Pull from the database section only.
-
-## Career ROI breakdown
-For each top-3 recommended university (the strongest 3 fits):
-- Typical starting salary range in this student's target field
-- Employment rate within 6 months of graduation
-- Notable employers from each program
-- Long-term trajectory (where alumni are 5-10 years later)
-
-## Funding deep-dive
-For each shortlist of 4-6 scholarships:
-- **Scholarship name** with award amount
-- Probability assessment: primary target, secondary, or aspirational pick worth exploring with strategy
-- Specific application strategy and timeline
-- Key documents this student needs to start gathering now
-
-Then add a sub-section:
-
-### Combined funding scenarios
-2-3 plausible combinations of scholarships, partial aid, and country-specific need-based programs that could fully fund this student. Estimate total funding for each scenario.
-
-## Visa and post-graduation pathway
-For each of the student's top 3 target countries:
-- Student visa difficulty (specific to this student's nationality)
-- Post-study work visa details and duration
-- Path to permanent residency timeline
-- Realistic challenges this student should plan for
-
-## Three personalized essay angles
-For each, use this exact structure (do not deviate):
-
-### Angle 1: [one-sentence concept]
-**Why it works for you:** [2-3 sentences citing specific details from this student's profile]
-**Anchor it with:** [a specific story, detail, or experience]
-**Plays best to:** [which 2-3 target universities this angle plays best to and why]
-
-### Angle 2: [one-sentence concept]
-**Why it works for you:** ...
-**Anchor it with:** ...
-**Plays best to:** ...
-
-### Angle 3: [one-sentence concept]
-**Why it works for you:** ...
-**Anchor it with:** ...
-**Plays best to:** ...
-
-## Monthly budget breakdown
-For the top 3 recommended cities:
-- Rent, food, transport, insurance, books, leisure (realistic ranges)
-- Part-time work options and typical earnings if visa allows
-- Total monthly cost and how scholarship coverage maps onto it
-
-## Honest gaps to close
-2-3 specific weaknesses in the profile. For each, use this exact structure (do not deviate):
-
-### Gap 1: [short headline of the gap]
-**Priority:** [high | medium | low]
-**Why it matters:** [2-3 sentences citing specific thresholds or context]
-**Action this month:** [one specific action they can start now]
-
-## Final word
-One short paragraph (3-4 sentences) of specific encouragement based on this student's strongest signal — what they should believe about their candidacy as they go execute. Do not give generic motivation. Do not say "good luck." Cite something concrete from their profile and tell them why it matters.
-
-Throughout:
-- Be exceptionally specific. This is the premium tier — every paragraph should feel hand-written for this student.
-- Use real data from the database — name universities, programs, scholarships, deadlines.
-
-${EDITORIAL_RULES}`;
+    // Legacy 9-section premiumSections prompt retired 2026-05-10.
+    // Premium tier now runs through the multi-pass pipeline at
+    // PREMIUM_SECTIONS (brief-sections.ts) with 5 consolidated
+    // sections. Non-premium tier uses basicSections above (also 5).
+    // This empty fallback is unreachable in practice (the line-880
+    // branch returns first when grade==="premium") but kept as a
+    // safety net so the code below doesn't reference an undefined.
+    const premiumSections = basicSections;
 
     const studentNationality = (profile.nationality || "").trim();
     const audienceLine = studentNationality
