@@ -11,7 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRight, ArrowLeft, Award, GraduationCap, Target, Shield, CheckCircle2, Bot, Search, PenTool, BookOpen } from "lucide-react";
+import { ArrowRight, ArrowLeft, Award, GraduationCap, Target, Shield, CheckCircle2, Bot, Search, PenTool, BookOpen, Crown, Lock, ChevronDown, ChevronUp } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { saveProfile } from "@/components/discover/DiscoverProfileGate";
 import { projectToDiscoverProfile } from "@/lib/topuniIntakeProjection";
@@ -69,6 +71,17 @@ const TopUniAIRu = () => {
   const [careerRoi, setCareerRoi] = useState([3]);
   const [visaAccess, setVisaAccess] = useState([3]);
   const [locationPref, setLocationPref] = useState([3]);
+
+  // Pro depth fields — mirror the EN page's upsell axis. Free flow
+  // stays a quick 3-step wizard; Pro members open the disclosure on
+  // step 3 and add three richer prompts that the brief weaves into
+  // positioning + at least one essay angle's anchor.
+  const [topActivity, setTopActivity] = useState("");
+  const [personalStory, setPersonalStory] = useState("");
+  const [namedSchools, setNamedSchools] = useState("");
+  const [depthOpen, setDepthOpen] = useState(false);
+  const { subscription } = useAuth();
+  const isPro = subscription.is_active || subscription.is_founding_member;
 
   const toggleCountry = (country: string) => {
     setTargetCountries(prev => prev.includes(country) ? prev.filter(c => c !== country) : [...prev, country]);
@@ -141,6 +154,9 @@ const TopUniAIRu = () => {
     targetCountries: mappedCountries, major, budget, scholarshipNeeded, timeline,
     prestige: prestige[0], scholarship: scholarship[0],
     careerRoi: careerRoi[0], visaAccess: visaAccess[0], locationPref: locationPref[0],
+    // Pro depth fields — empty for free users; populated when a Pro
+    // member opens the depth disclosure on step 3.
+    topActivity, personalStory, namedSchools,
   };
 
   const fadeIn = { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -20 }, transition: { duration: 0.4 } };
@@ -271,6 +287,101 @@ const TopUniAIRu = () => {
                         </div>
                       ))}
                     </div>
+
+                    {/* ─── Pro depth disclosure (RU mirror of EN) ──
+                        Free flow stays a 3-step wizard. Pro members
+                        open the disclosure and add three richer
+                        prompts — top achievement, personal story,
+                        named schools — that the brief weaves into
+                        positioning + at least one essay angle. */}
+                    <div className="bg-card border border-border/70 rounded-xl overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => { if (isPro) setDepthOpen(o => !o); }}
+                        className={`w-full flex items-center justify-between gap-3 px-5 py-3.5 text-left transition-colors ${
+                          isPro ? "hover:bg-muted/30" : "cursor-default"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {isPro
+                            ? <Crown className="w-4 h-4 text-gold-dark shrink-0" />
+                            : <Lock className="w-4 h-4 text-muted-foreground shrink-0" />}
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-foreground leading-tight">
+                              {isPro ? "Углубить" : "Углубить · Pro"}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                              {isPro
+                                ? "Три развёрнутых вопроса — отчёт впишет ответы в позиционирование и эссе-ракурсы."
+                                : "Pro-члены добавляют три развёрнутых ответа — отчёт читается как написанный лично."}
+                            </p>
+                          </div>
+                        </div>
+                        {isPro ? (
+                          depthOpen
+                            ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
+                            : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+                        ) : (
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => { e.stopPropagation(); navigate("/pricing/ru"); }}
+                            onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); navigate("/pricing/ru"); } }}
+                            className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold-dark hover:text-foreground transition-colors shrink-0 inline-flex items-center gap-1 cursor-pointer"
+                          >
+                            Открыть <ArrowRight className="w-3 h-3" />
+                          </span>
+                        )}
+                      </button>
+                      {isPro && depthOpen && (
+                        <div className="px-5 pb-5 pt-1 space-y-4 border-t border-border/60 bg-muted/10">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/80">
+                              Главное достижение
+                            </Label>
+                            <Input
+                              value={topActivity}
+                              onChange={(e) => setTopActivity(e.target.value)}
+                              placeholder="напр. Создал клуб робототехники, 1-е место на национальных"
+                              className="h-11"
+                            />
+                            <p className="text-[10px] text-muted-foreground">
+                              Имя активности. Отчёт привяжет к ней хотя бы один эссе-ракурс.
+                            </p>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/80">
+                              Ваша история
+                            </Label>
+                            <Textarea
+                              value={personalStory}
+                              onChange={(e) => setPersonalStory(e.target.value)}
+                              placeholder="2-4 предложения вашими словами. Что вас сюда привело? Откуда вы? Какой момент стал переломным?"
+                              rows={4}
+                              className="resize-none"
+                            />
+                            <p className="text-[10px] text-muted-foreground">
+                              Используется дословно в позиционировании когда ложится чисто. Пропустите если хотите чтобы AI выводил сам.
+                            </p>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/80">
+                              Конкретные университеты в вашем списке
+                            </Label>
+                            <Input
+                              value={namedSchools}
+                              onChange={(e) => setNamedSchools(e.target.value)}
+                              placeholder="напр. Stanford, ETH Zurich, NUS"
+                              className="h-11"
+                            />
+                            <p className="text-[10px] text-muted-foreground">
+                              Через запятую. Шорт-лист явно покажет их если они есть в базе.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="flex justify-between pt-4">
                       <Button variant="outline" onClick={() => setStep(2)}><ArrowLeft className="mr-2 w-4 h-4" /> Назад</Button>
                       <Button
