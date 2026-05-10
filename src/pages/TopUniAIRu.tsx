@@ -202,13 +202,36 @@ const TopUniAIRu = () => {
 
           {screen === "intake" && (
             <motion.div key="intake" {...fadeIn} className="max-w-2xl mx-auto px-4 py-12">
-              <div className="flex items-center justify-center gap-2 mb-10">
-                {[1, 2, 3].map(s => (
-                  <div key={s} className="flex items-center gap-2">
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${s <= step ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"}`}>{s}</div>
-                    {s < 3 && <div className={`w-12 h-0.5 ${s < step ? "bg-accent" : "bg-muted"}`} />}
-                  </div>
-                ))}
+              {/* Progress — three pills with named-step labels (Russian).
+                  Mirror of the EN layout (numeric dots replaced with
+                  the same labelled-pill pattern so the two pages feel
+                  the same shape). */}
+              <div className="flex items-start justify-center gap-3 mb-10">
+                {[
+                  { n: 1, label: "Профиль" },
+                  { n: 2, label: "Цели" },
+                  { n: 3, label: "Приоритеты" },
+                ].map(s => {
+                  const isActive = s.n === step;
+                  const isDone = s.n < step;
+                  return (
+                    <div key={s.n} className="flex flex-col items-center gap-1.5 min-w-0">
+                      <div className="h-1.5 w-14 sm:w-16 rounded-full overflow-hidden bg-border/60">
+                        <motion.div
+                          className="h-full bg-gold-dark"
+                          initial={false}
+                          animate={{ width: isDone ? "100%" : isActive ? "60%" : "0%" }}
+                          transition={{ duration: 0.4, ease: "easeOut" }}
+                        />
+                      </div>
+                      <span className={`text-[10px] uppercase tracking-[0.18em] font-semibold transition-colors ${
+                        isActive ? "text-gold-dark" : isDone ? "text-foreground/70" : "text-muted-foreground/60"
+                      }`}>
+                        {s.label}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
               <AnimatePresence mode="wait">
                 {step === 1 && (

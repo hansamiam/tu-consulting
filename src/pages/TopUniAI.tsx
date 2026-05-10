@@ -377,21 +377,37 @@ const TopUniAI = () => {
               transition={{ duration: 0.4 }}
               className="max-w-2xl mx-auto px-5 sm:px-8 pt-12 pb-20"
             >
-              {/* Progress */}
-              <div className="flex items-center justify-center gap-2 mb-12">
-                {[1, 2, 3].map(s => (
-                  <div key={s} className="flex items-center gap-2">
-                    <div className={`h-1.5 w-12 rounded-full overflow-hidden bg-border/60`}>
-                      <motion.div
-                        className="h-full bg-gold-dark"
-                        initial={false}
-                        animate={{ width: s < step ? "100%" : s === step ? "60%" : "0%" }}
-                        transition={{ duration: 0.4, ease: "easeOut" }}
-                      />
+              {/* Progress — three pills with named-step labels under
+                  each, so users see WHAT they're answering at each
+                  stage instead of three abstract bars. Active step's
+                  label gets a subtle gold tint; completed steps get
+                  the canvas-foreground colour; upcoming stay muted. */}
+              <div className="flex items-start justify-center gap-3 mb-10">
+                {[
+                  { n: 1, label: "Profile" },
+                  { n: 2, label: "Goals" },
+                  { n: 3, label: "Priorities" },
+                ].map(s => {
+                  const isActive = s.n === step;
+                  const isDone = s.n < step;
+                  return (
+                    <div key={s.n} className="flex flex-col items-center gap-1.5 min-w-0">
+                      <div className="h-1.5 w-14 sm:w-16 rounded-full overflow-hidden bg-border/60">
+                        <motion.div
+                          className="h-full bg-gold-dark"
+                          initial={false}
+                          animate={{ width: isDone ? "100%" : isActive ? "60%" : "0%" }}
+                          transition={{ duration: 0.4, ease: "easeOut" }}
+                        />
+                      </div>
+                      <span className={`text-[10px] uppercase tracking-[0.18em] font-semibold transition-colors ${
+                        isActive ? "text-gold-dark" : isDone ? "text-foreground/70" : "text-muted-foreground/60"
+                      }`}>
+                        {s.label}
+                      </span>
                     </div>
-                  </div>
-                ))}
-                <span className="text-xs text-muted-foreground tabular-nums tracking-wider font-medium ml-3">{step} / 3</span>
+                  );
+                })}
               </div>
 
               {/* Hub-context indicator — confirms to the user why a field
