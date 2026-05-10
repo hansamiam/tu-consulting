@@ -199,6 +199,22 @@ ${markdown}
 ---
 `;
 
+/** Roll a past annual-cycle date forward by whole years until >= today.
+ *  Returns the original string for null / unparseable / already-future
+ *  inputs. Mirrors public.next_annual_occurrence (migration 20260510090000)
+ *  so the write-time path matches what the scheduled SQL function does. */
+function rollForwardAnnualDeadline(iso: string): string {
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) return iso;
+  const date = new Date(ms);
+  const today = new Date();
+  const todayUTC = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  while (Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) < todayUTC) {
+    date.setUTCFullYear(date.getUTCFullYear() + 1);
+  }
+  return date.toISOString().slice(0, 10);
+}
+
 function extractJson(s: string): unknown {
   let t = s.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
   const first = t.indexOf("{");
@@ -435,6 +451,18 @@ Deno.serve(async (req) => {
       )) {
         fresh.deadline_type = "annual";
       }
+    }
+    // Annual roll-forward — if the LLM re-extracted an old date because
+    // the program page hadn't refreshed for the new cycle yet, push it
+    // to the next future occurrence. The diff path then sees the rolled-
+    // forward date as the canonical fresh value, so a 2024-11-05 stored
+    // row + 2025-11-05 LLM extract + 2026-current calendar collapses
+    // into 2026-11-05 silently instead of staging a stale-vs-stale diff.
+    if (
+      typeof fresh.application_deadline === "string" &&
+      (fresh.deadline_type === "annual" || fresh.deadline_type === undefined || fresh.deadline_type === null)
+    ) {
+      fresh.application_deadline = rollForwardAnnualDeadline(fresh.application_deadline);
     }
     // Financial floor — same fallback as scrape-source. If the
     // re-extract returned NULL/0 for estimated_total_value_usd but

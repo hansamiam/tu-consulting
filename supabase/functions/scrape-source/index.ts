@@ -344,6 +344,36 @@ function clampNumeric(o: Record<string, unknown>): void {
       if (ageYears > 5) o.application_deadline = null;
     }
   }
+  // Annual roll-forward — if the LLM extracted a date in the past
+  // (because the program page hadn't refreshed for the new cycle yet),
+  // and the program is on an annual cycle, push the date forward by
+  // whole years until it's in the future. The program WILL run again
+  // on roughly that month/day; surfacing a past date misleads students
+  // into skipping live opportunities. Mirror of the SQL helper
+  // public.next_annual_occurrence so write-time + cron paths converge.
+  if (
+    typeof o.application_deadline === "string" &&
+    (o.deadline_type === "annual" || o.deadline_type === undefined || o.deadline_type === null)
+  ) {
+    o.application_deadline = rollForwardAnnualDeadline(o.application_deadline);
+  }
+}
+
+/** Roll a past annual-cycle date forward by whole years until >= today.
+ *  Returns the original string for null / unparseable / already-future
+ *  inputs. Mirrors public.next_annual_occurrence. */
+function rollForwardAnnualDeadline(iso: string): string {
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) return iso;
+  const date = new Date(ms);
+  const today = new Date();
+  // Strip time-of-day from "today" so a deadline that's literally today
+  // doesn't roll to next year just because the page loads at 23:00.
+  const todayUTC = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  while (Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) < todayUTC) {
+    date.setUTCFullYear(date.getUTCFullYear() + 1);
+  }
+  return date.toISOString().slice(0, 10);
 }
 
 function validateExtracted(x: unknown): ExtractedScholarship | null {
