@@ -42,7 +42,7 @@ const COPY = {
     h1a: "Plan your education, your funding, and your career",
     h1b: "with the alumni who got in.",
     sub: "Yale, Cambridge, and Harvard alumni × AI. Admissions strategy that fits, at a price traditional consulting prices students out of.",
-    spotsLeft: (left: number, cap: number) => `Only ${left} of ${cap} founding spots left`,
+    spotsLeft: (left: number, cap: number) => `Only ${left} of ${cap} early-access spots left`,
     tier: "TopUni Membership",
     tierTagline: "Everything you need to plan, apply, and win.",
     /** Membership inclusions — short, scannable, no individual
@@ -58,13 +58,13 @@ const COPY = {
     ],
     foundingPriceLabel: "Launch price",
     perMonth: "/month",
-    publicNote: "Founding cohort discount available with code at checkout.",
+    publicNote: "Early-access discount applies automatically. Promo codes accepted at checkout.",
     publicNoteRest: "Cancel anytime — no long-term lock-in.",
     capacityClaimed: (claimed: number, cap: number) => `${claimed} / ${cap} claimed`,
     capacityLeft: (left: number) => `${left} left`,
     cta: {
       loading: "",
-      isFounding: "You're a founding member",
+      isFounding: "You're an early-access member · price locked",
       isMember: "You're a member · Manage in Account",
       soldOut: "Sold out — join waitlist",
       claim: "Become a member",
@@ -91,7 +91,7 @@ const COPY = {
     h1a: "Образование, финансирование, карьера —",
     h1b: "с выпускниками, которые поступили.",
     sub: "Выпускники Yale, Cambridge и Harvard × AI. Стратегия, которая реально подходит — без цен традиционного консалтинга.",
-    spotsLeft: (left: number, cap: number) => `Осталось ${left} из ${cap} мест по цене запуска`,
+    spotsLeft: (left: number, cap: number) => `Осталось ${left} из ${cap} мест раннего доступа`,
     tier: "Членство TopUni",
     tierTagline: "Всё необходимое чтобы спланировать, подать и выиграть.",
     includes: [
@@ -110,7 +110,7 @@ const COPY = {
     capacityLeft: (left: number) => `${left} осталось`,
     cta: {
       loading: "",
-      isFounding: "Вы — член-основатель",
+      isFounding: "Вы — член раннего доступа · цена закреплена",
       isMember: "Вы участник · Управление в Аккаунте",
       soldOut: "Распродано — в лист ожидания",
       claim: "Стать членом",
