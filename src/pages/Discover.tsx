@@ -2765,6 +2765,72 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               </div>
             ) : null}
 
+            {/* Canonical structured requirements — only renders when
+                the canonical-extract pipeline has populated this row.
+                Reads as a clean checklist of citizenship / level /
+                field / GPA / language / age constraints, distinct
+                from the freeform eligibility prose above. */}
+            {(() => {
+              const cr = (s as { canonical_requirements?: {
+                citizenship?: string[]; levels?: string[]; fields?: string[];
+                min_gpa?: number | null; min_ielts?: number | null;
+                min_toefl?: number | null; min_sat?: number | null;
+                age_max?: number | null; other?: string[];
+              } | null }).canonical_requirements;
+              if (!cr || typeof cr !== "object") return null;
+              const rows: { label: string; value: string }[] = [];
+              if (Array.isArray(cr.citizenship) && cr.citizenship.length > 0) {
+                rows.push({ label: t("Citizenship", "Гражданство"), value: cr.citizenship.slice(0, 6).join(", ") + (cr.citizenship.length > 6 ? ` +${cr.citizenship.length - 6}` : "") });
+              }
+              if (Array.isArray(cr.levels) && cr.levels.length > 0) {
+                rows.push({ label: t("Levels", "Уровни"), value: cr.levels.join(", ") });
+              }
+              if (Array.isArray(cr.fields) && cr.fields.length > 0 && cr.fields.length <= 8) {
+                rows.push({ label: t("Fields", "Направления"), value: cr.fields.join(", ") });
+              }
+              if (cr.min_gpa != null && cr.min_gpa > 0) {
+                rows.push({ label: t("Min GPA", "Мин. GPA"), value: String(cr.min_gpa) });
+              }
+              if (cr.min_ielts != null && cr.min_ielts > 0) {
+                rows.push({ label: "IELTS", value: String(cr.min_ielts) });
+              }
+              if (cr.min_toefl != null && cr.min_toefl > 0) {
+                rows.push({ label: "TOEFL", value: String(cr.min_toefl) });
+              }
+              if (cr.min_sat != null && cr.min_sat > 0) {
+                rows.push({ label: "SAT", value: String(cr.min_sat) });
+              }
+              if (cr.age_max != null && cr.age_max > 0) {
+                rows.push({ label: t("Max age", "Макс. возраст"), value: String(cr.age_max) });
+              }
+              if (rows.length === 0 && (!cr.other || cr.other.length === 0)) return null;
+              return (
+                <div className="rounded-2xl border border-gold/25 bg-gold/[0.04] px-4 py-3.5 space-y-2">
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-gold-dark font-bold">
+                    {t("Verified requirements", "Подтверждённые требования")}
+                  </p>
+                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+                    {rows.map((r) => (
+                      <div key={r.label} className="flex items-baseline gap-2 text-sm">
+                        <dt className="text-muted-foreground shrink-0 text-[11px] uppercase tracking-wide">{r.label}</dt>
+                        <dd className="text-foreground/85 font-medium truncate">{r.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  {Array.isArray(cr.other) && cr.other.length > 0 && (
+                    <ul className="pt-1 space-y-1 text-sm text-foreground/80">
+                      {cr.other.slice(0, 4).map((o, i) => (
+                        <li key={i} className="flex items-start gap-2 leading-relaxed">
+                          <span className="text-gold-dark mt-1.5 shrink-0">·</span>
+                          <span>{o}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Application-demand chips — render inline at the top of
                 the reqs panel, no header. Same chip-rail pattern as
                 Overview so the visual language stays consistent. */}
