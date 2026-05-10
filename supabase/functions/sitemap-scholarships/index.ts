@@ -53,10 +53,19 @@ Deno.serve(async () => {
     });
   }
 
-  const urls = (rows ?? []).map((r) => {
+  // Each scholarship gets two indexable URLs — EN at /scholarships/:id,
+  // RU at /scholarships/:id/ru. The pages share data + structure but
+  // render Russian section titles + chrome when language="ru". Include
+  // both so search engines crawl the Russian variants and we double our
+  // SEO surface for Russian-language admissions queries.
+  const urls = (rows ?? []).flatMap((r) => {
     const lastmod = r.last_verified_at ?? r.created_at ?? null;
     const lastmodTag = lastmod ? `<lastmod>${escape(new Date(lastmod).toISOString().slice(0, 10))}</lastmod>` : "";
-    return `  <url><loc>${SITE}/scholarships/${escape(r.scholarship_id)}</loc>${lastmodTag}<changefreq>weekly</changefreq><priority>0.7</priority></url>`;
+    const id = escape(r.scholarship_id);
+    return [
+      `  <url><loc>${SITE}/scholarships/${id}</loc>${lastmodTag}<changefreq>weekly</changefreq><priority>0.7</priority></url>`,
+      `  <url><loc>${SITE}/scholarships/${id}/ru</loc>${lastmodTag}<changefreq>weekly</changefreq><priority>0.6</priority></url>`,
+    ];
   });
 
   const body =
