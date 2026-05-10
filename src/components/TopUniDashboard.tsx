@@ -32,6 +32,7 @@ import {
   Copy,
   Mail,
   Crown,
+  Shield,
   Bookmark,
   BookmarkCheck,
   RefreshCw,
@@ -3156,6 +3157,38 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             </div>
           );
         })()}
+
+        {/* Trust indicator — concrete payoff for the wizard's "Save your
+            strategy report" promise. Signed-in users see a quiet
+            "Synced to your account" line; anonymous users see a soft
+            nudge to sign in so they don't lose the brief. The line
+            sits below the intake summary header where it doesn't
+            compete with the brief content but shows up at the moment
+            the user is reading their plan, the right context to
+            decide "yes, I want this saved". */}
+        {pathwayGenerated && (
+          <p className="mt-3 text-[11px] text-muted-foreground/75 flex items-center gap-1.5">
+            {user ? (
+              <>
+                <Shield className="w-3 h-3 text-gold-dark/70" />
+                {t("Synced to your account · accessible from any device", "Сохранено в аккаунт · доступно с любого устройства")}
+              </>
+            ) : (
+              <>
+                <span>
+                  {t("Saved on this device. ", "Сохранено на устройстве. ")}
+                  <button
+                    type="button"
+                    onClick={() => navigate(isRu ? "/account/ru" : "/account")}
+                    className="text-gold-dark hover:text-foreground underline-offset-2 hover:underline"
+                  >
+                    {t("Sign in to keep it", "Войти чтобы сохранить навсегда")}
+                  </button>
+                </span>
+              </>
+            )}
+          </p>
+        )}
       </motion.div>
 
       {/* Saved-deadline urgency banner — surfaces if the user has a saved
