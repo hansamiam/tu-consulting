@@ -18,6 +18,14 @@ dist-ssr
 # Local Claude Code per-project state
 .claude/
 
+# Operational docs — kept locally on the founder's machine but not
+# committed (CRM setup, outreach prospects + templates, internal
+# data-correction tracking). Adding the folder here so a stray
+# `git add -A` doesn't leak prospect emails / contact lists into
+# the public repo. Selectively commit individual docs with
+# `git add -f docs/<file>.md` if any specific doc should be tracked.
+docs/
+
 # Supabase CLI scratch
 supabase/.temp/
 
