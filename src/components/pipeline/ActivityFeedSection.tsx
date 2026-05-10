@@ -13,7 +13,7 @@
  */
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, ChevronDown, ChevronRight, Sparkles } from "lucide-react";
+import { Bell, ChevronDown, ChevronRight, Award } from "lucide-react";
 import { useActivityFeed } from "@/hooks/useActivityFeed";
 
 interface Props {
@@ -83,7 +83,7 @@ export const ActivityFeedSection = ({ language = "en" }: Props) => {
               >
                 <span className="shrink-0 mt-0.5">
                   {e.kind === "saved_search_alert" ? (
-                    <Sparkles className="h-3.5 w-3.5 text-gold-dark" />
+                    <Award className="h-3.5 w-3.5 text-gold-dark" />
                   ) : (
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-foreground/40 mt-1.5" />
                   )}

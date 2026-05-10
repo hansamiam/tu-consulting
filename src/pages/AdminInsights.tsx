@@ -19,8 +19,19 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  ArrowLeft, ArrowRight, Loader2, Users, Inbox, FileText, Sparkles, Bot,
-  Mail, Crown, Activity, RefreshCw, ShieldAlert,
+  ArrowLeft,
+  ArrowRight,
+  Loader2,
+  Users,
+  Inbox,
+  FileText,
+  Award,
+  Bot,
+  Mail,
+  Crown,
+  Activity,
+  RefreshCw,
+  ShieldAlert,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -274,7 +285,7 @@ const AdminInsights = () => {
             </Section>
 
             {/* GROWTH LOOPS */}
-            <Section title="Growth loops" icon={<Sparkles className="w-3.5 h-3.5" />}>
+            <Section title="Growth loops" icon={<Award className="w-3.5 h-3.5" />}>
               <Tile label="Referral codes"          value={counts.referralCodes} />
               <Tile label="Referral signups"        value={counts.referralSignups} />
               <Tile label="Premium conversions"     value={counts.referralPremium} tone="gold" />

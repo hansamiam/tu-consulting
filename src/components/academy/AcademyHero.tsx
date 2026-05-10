@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, BookOpen, Users, Trophy, ArrowRight } from "lucide-react";
+import { Award, BookOpen, Users, Trophy, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface AcademyHeroProps {
@@ -27,7 +27,7 @@ export const AcademyHero = ({ onExplore }: AcademyHeroProps) => {
             className="space-y-6"
           >
             <Badge className="bg-gold/15 text-gold border-gold/30 text-xs font-medium">
-              <Sparkles className="w-3 h-3 mr-1" /> TopUni Academy — Coming Soon
+              <Award className="w-3 h-3 mr-1" /> TopUni Academy — Coming Soon
             </Badge>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-primary-foreground leading-tight">

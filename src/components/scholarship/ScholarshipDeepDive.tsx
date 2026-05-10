@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Sparkles, Lightbulb, AlertCircle, CheckCircle2,
-  MinusCircle, HelpCircle, Crown, ArrowRight, Loader2,
+  Award,
+  Lightbulb,
+  AlertCircle,
+  CheckCircle2,
+  MinusCircle,
+  HelpCircle,
+  Crown,
+  ArrowRight,
+  Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -115,7 +122,7 @@ export const ScholarshipDeepDive = ({
       <div className="not-prose mb-8 rounded-2xl border-2 border-dashed border-gold/40 bg-gradient-to-br from-gold/[0.06] to-card p-6 sm:p-7">
         <div className="flex items-start gap-4 flex-wrap">
           <div className="h-11 w-11 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center shrink-0">
-            <Sparkles className="w-5 h-5 text-gold-dark" />
+            <Award className="w-5 h-5 text-gold-dark" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-1.5">

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Lock, Sparkles } from "lucide-react";
+import { Lock, Award } from "lucide-react";
 
 const BETA_PASSWORD = "topuni2026";
 
@@ -60,7 +60,7 @@ export const BetaGate = ({ children }: BetaGateProps) => {
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-gold" />
+              <Award className="w-5 h-5 text-gold" />
               Beta Access
             </DialogTitle>
             <DialogDescription>

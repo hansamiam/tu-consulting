@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Pencil, Check, X, GraduationCap, Globe, Sparkles, ArrowRight } from "lucide-react";
+import { Loader2, Pencil, Check, X, GraduationCap, Globe, Award, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 
 interface Props { language?: "en" | "ru"; }
@@ -179,7 +179,7 @@ export const ProfileSettingsCard = ({ language = "en" }: Props) => {
             onClick={() => navigate(wizardPath)}
             className="text-[11px] text-gold-dark hover:text-foreground transition-colors inline-flex items-center gap-1 font-medium"
           >
-            <Sparkles className="h-3 w-3" />
+            <Award className="h-3 w-3" />
             {t("Edit in TopUni AI", "Изменить в TopUni AI")}
             <ArrowRight className="h-3 w-3" />
           </button>
@@ -193,7 +193,7 @@ export const ProfileSettingsCard = ({ language = "en" }: Props) => {
           <div className="grid grid-cols-2 gap-2 text-[12px]">
             <SnapshotRow icon={<Globe className="h-3 w-3 text-gold-dark" />} label={t("Nationality", "Гражданство")} value={profile?.nationality} />
             <SnapshotRow icon={<GraduationCap className="h-3 w-3 text-gold-dark" />} label={t("Level", "Уровень")} value={profile?.grade_level} />
-            <SnapshotRow icon={<Sparkles className="h-3 w-3 text-gold-dark" />} label={t("Field", "Направление")} value={fieldLabel} />
+            <SnapshotRow icon={<Award className="h-3 w-3 text-gold-dark" />} label={t("Field", "Направление")} value={fieldLabel} />
             <SnapshotRow icon={<Globe className="h-3 w-3 text-gold-dark" />} label={t("Targets", "Страны")} value={targets.length > 0 ? targets.slice(0, 3).join(", ") + (targets.length > 3 ? ` +${targets.length - 3}` : "") : null} />
           </div>
         )}

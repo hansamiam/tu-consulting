@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Crown, Target, Sparkles } from "lucide-react";
+import { Crown, Target, Award } from "lucide-react";
 import type { CombinedFundingSection } from "@/types/briefStructured";
 
 const fmtMoney = (v: number) =>
@@ -19,7 +19,7 @@ const FEASIBILITY_META = {
   secondary: {
     en: "Solid alternative",
     ru: "Хорошая альтернатива",
-    Icon: Sparkles,
+    Icon: Award,
     cls: "text-gold-dark border-gold/30 bg-gold/5",
     barCls: "from-gold-dark to-gold",
   },

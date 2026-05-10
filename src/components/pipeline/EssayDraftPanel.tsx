@@ -27,7 +27,12 @@ import { useEffect, useRef, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import {
-  Loader2, Sparkles, Wand2, X, PenLine, Target,
+  Loader2,
+  Award,
+  Wand2,
+  X,
+  PenLine,
+  Target,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
@@ -444,7 +449,7 @@ export const EssayDraftPanel = ({ scholarshipId, scholarshipName, value, onChang
                   <p className="text-[10px] uppercase tracking-[0.18em] font-semibold text-gold-dark mb-1.5">{o.angle}</p>
                   <p className="text-[13px] text-foreground/85 leading-relaxed">{o.text}</p>
                   <p className="text-[11px] text-muted-foreground mt-2 inline-flex items-center gap-1">
-                    <Sparkles className="w-2.5 h-2.5" /> {t("Tap to start with this angle", "Нажмите чтобы начать с этого варианта")}
+                    <Award className="w-2.5 h-2.5" /> {t("Tap to start with this angle", "Нажмите чтобы начать с этого варианта")}
                   </p>
                 </button>
               ))}
@@ -459,7 +464,7 @@ export const EssayDraftPanel = ({ scholarshipId, scholarshipName, value, onChang
         {showCritiquePanel && (
           <aside className="rounded-xl border border-gold/25 bg-gold/[0.04] p-4 min-w-0 xl:max-h-[600px] xl:overflow-y-auto">
             <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] font-semibold text-gold-dark mb-2">
-              <Sparkles className="w-3 h-3" />
+              <Award className="w-3 h-3" />
               <span>{t("Reader's notes", "Заметки читателя")}</span>
               {critiquing && <Loader2 className="w-3 h-3 animate-spin ml-auto" />}
               {!critiquing && critique && (

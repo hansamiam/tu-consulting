@@ -10,8 +10,16 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  CheckCircle2, AlertTriangle, ExternalLink, Search, ChevronRight,
-  ZapOff, Loader2, Filter, RefreshCw, Sparkles,
+  CheckCircle2,
+  AlertTriangle,
+  ExternalLink,
+  Search,
+  ChevronRight,
+  ZapOff,
+  Loader2,
+  Filter,
+  RefreshCw,
+  Award,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -318,7 +326,7 @@ export default function AdminScholarshipVerification() {
                 className="gap-1.5"
                 title="Walk every aggregator hub in the source registry, extract individual scholarship URLs via LLM, and insert each as a new scholarship_sources row. The hourly dispatcher then crawls them on cadence."
               >
-                {discoverBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                {discoverBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Award className="h-3.5 w-3.5" />}
                 Discover from hubs
               </Button>
               <Button
@@ -355,7 +363,7 @@ export default function AdminScholarshipVerification() {
                 className="gap-1.5"
                 title="Fill missing why_this_fits / how_to_win / etc. for up to 50 rows. Idempotent — only writes empty fields."
               >
-                {bulkFillBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                {bulkFillBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Award className="h-3.5 w-3.5" />}
                 Run bulk content fill
               </Button>
             </div>
@@ -572,7 +580,7 @@ const RowCard = ({
               )}
               {missingSoftCount > 0 && (
                 <Button size="sm" variant="outline" disabled={busy} onClick={onFillContent} className="gap-1.5 h-8" title="Fill the missing soft descriptive fields (why_this_fits, how_to_win, etc.) via AI. Only writes empty fields — never overwrites.">
-                  <Sparkles className="w-3.5 h-3.5" />
+                  <Award className="w-3.5 h-3.5" />
                   Fill content
                 </Button>
               )}

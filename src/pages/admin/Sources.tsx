@@ -14,9 +14,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ResponsiveContainer, AreaChart, Area, Tooltip, XAxis } from "recharts";
 import {
-  Plus, Trash2, Play, RefreshCw, AlertTriangle, CheckCircle2, Clock,
-  ExternalLink, ListChecks, Search, Activity, Database, DollarSign,
-  Sparkles, Pause, Loader2,
+  Plus,
+  Trash2,
+  Play,
+  RefreshCw,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
+  ListChecks,
+  Search,
+  Activity,
+  Database,
+  DollarSign,
+  Award,
+  Pause,
+  Loader2,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -352,7 +365,7 @@ const Sources = () => {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <StatCard icon={<CheckCircle2 className="h-4 w-4" />} label="Healthy sources" value={stats.healthyCount} sub={`${sources.length} total`} accent="emerald" />
           <StatCard icon={<Activity className="h-4 w-4" />} label="Runs (24h)" value={stats.runs24h} sub="every hour at :17" />
-          <StatCard icon={<Sparkles className="h-4 w-4" />} label="Scholarships found" value={stats.totalFound} sub="last 24h" accent="amber" />
+          <StatCard icon={<Award className="h-4 w-4" />} label="Scholarships found" value={stats.totalFound} sub="last 24h" accent="amber" />
           <StatCard icon={<Database className="h-4 w-4" />} label="Auto-published" value={autoPubToday} sub="today (≥85% confidence)" />
           <StatCard icon={<DollarSign className="h-4 w-4" />} label="Spent (24h)" value={`$${stats.totalCost.toFixed(3)}`} sub={stats.failedCount > 0 ? `${stats.failedCount} failing` : "all healthy"} accent={stats.failedCount > 0 ? "red" : undefined} />
         </div>

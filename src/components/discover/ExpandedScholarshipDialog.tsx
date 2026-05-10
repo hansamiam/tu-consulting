@@ -19,8 +19,14 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
-  Bookmark, BookmarkCheck, ExternalLink, X, Wallet, Calendar,
-  GraduationCap, Globe,
+  Bookmark,
+  BookmarkCheck,
+  ExternalLink,
+  X,
+  Wallet,
+  Calendar,
+  GraduationCap,
+  Globe,
 } from "lucide-react";
 import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
 import {
@@ -204,7 +210,7 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
               analysis (match breakdown, how-to-win, ideal-candidate
               profile). That's the substantive content that didn't fit
               cleanly in the right side panel. The kicker here used to
-              wear a Sparkles icon, but the round-24 audit retired it —
+              wear a Award icon, but the round-24 audit retired it —
               "Personalized for you" carries enough meaning on its own
               and the deep-dive content below has its own AI affordances. */}
           <div className="overflow-y-auto flex-1 px-6 sm:px-9 py-6 sm:py-8 space-y-6">

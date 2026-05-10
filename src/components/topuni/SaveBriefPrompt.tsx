@@ -17,7 +17,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Sparkles, Bookmark, Clock, Bot, Eye, EyeOff } from "lucide-react";
+import { Loader2, Award, Bookmark, Clock, Bot, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { setPendingAccount, type PendingAccountPayload } from "@/lib/pendingAccount";
 
@@ -137,7 +137,7 @@ export function SaveBriefPrompt({
           <div className="grid grid-cols-3 gap-2 -mx-1 mb-1">
             {typeof liveMatchCount === "number" && liveMatchCount > 0 && (
               <div className="flex flex-col items-start gap-1 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
-                <Sparkles className="w-3.5 h-3.5 text-gold-dark" />
+                <Award className="w-3.5 h-3.5 text-gold-dark" />
                 <p className="font-heading font-bold text-base text-foreground tabular-nums leading-none">{liveMatchCount}</p>
                 <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-semibold leading-snug">
                   {t("matches", "совпадений", )}
@@ -250,7 +250,7 @@ export function SaveBriefPrompt({
             <span>{t("Deadline reminders before each scholarship closes.", "Напоминания за день до каждого дедлайна.")}</span>
           </div>
           <div className="flex items-start gap-1.5">
-            <Sparkles className="w-3 h-3 text-gold-dark shrink-0 mt-0.5" />
+            <Award className="w-3 h-3 text-gold-dark shrink-0 mt-0.5" />
             <span>{t("Report + saved scholarships sync across every device.", "Отчёт и сохранённые стипендии — синхронно на всех устройствах.")}</span>
           </div>
         </div>

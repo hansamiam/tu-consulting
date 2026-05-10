@@ -17,7 +17,7 @@
  * for. Compounding flywheel built into the URL.
  */
 import { useEffect, useState } from "react";
-import { Trophy, Users, Sparkles } from "lucide-react";
+import { Trophy, Users, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface OutcomesData {
@@ -75,7 +75,7 @@ export const ScholarshipOutcomesBlock = ({ scholarshipId, threshold = 3, languag
   return (
     <div className={`rounded-2xl border border-gold/30 bg-gradient-to-br from-gold/[0.05] via-card to-card p-5 sm:p-6 ${className}`}>
       <div className="flex items-center gap-2 mb-4">
-        <Sparkles className="h-3.5 w-3.5 text-gold-dark" />
+        <Award className="h-3.5 w-3.5 text-gold-dark" />
         <p className="text-[10px] uppercase tracking-[0.22em] text-gold-dark font-semibold">
           {t("TopUni member outcomes", "Результаты участников TopUni")}
         </p>

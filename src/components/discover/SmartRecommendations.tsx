@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, TrendingUp, DollarSign, GraduationCap, Star } from "lucide-react";
+import { Award, TrendingUp, DollarSign, GraduationCap, Star } from "lucide-react";
 import { UniversityResult } from "./types";
 import { DiscoverProfile } from "./DiscoverProfileGate";
 
@@ -116,7 +116,7 @@ export const SmartRecommendations = ({ universities, profile, language }: Props)
   return (
     <div className="bg-gradient-to-r from-accent/5 via-primary/5 to-accent/5 border border-accent/20 rounded-xl overflow-hidden">
       <div className="flex items-center gap-2 p-4 border-b border-accent/20">
-        <Sparkles className="h-4 w-4 text-accent" />
+        <Award className="h-4 w-4 text-accent" />
         <h3 className="text-sm font-heading font-semibold">Recommended For You</h3>
         <Badge variant="outline" className="text-xs ml-auto border-accent/30 text-accent">AI-Powered</Badge>
       </div>
