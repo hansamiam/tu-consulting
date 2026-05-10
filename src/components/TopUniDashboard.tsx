@@ -2815,6 +2815,23 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       () => {
         const now = Date.now();
         setPathwayLoading(false);
+        // 2026-05-10: short-content guard. If the stream completed
+        // with effectively no markdown (LLM failed silently, edge
+        // function returned no deltas, etc.), surface a retry path
+        // instead of marking as "generated" with empty content —
+        // user was reporting "analyzing… then reverts to nothing".
+        // 200 chars is a generous floor that filters genuine
+        // failures without false-positiving on a single very short
+        // section that briefly appears mid-stream.
+        if (soFar.trim().length < 200) {
+          setPathwayGenerated(false);
+          setPathwayContent("");
+          setPathwayError(language === "ru"
+            ? "Не удалось сгенерировать брифинг — попробуйте снова через минуту."
+            : "We couldn't generate your brief — try again in a moment.");
+          void track("brief_generation_failed", { status: 0, tier: reportGrade, reason: "empty_stream" });
+          return;
+        }
         setPathwayGenerated(true);
         setPathwayGeneratedAt(now);
         void track("brief_generation_completed", {
