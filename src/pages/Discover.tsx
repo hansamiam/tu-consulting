@@ -266,7 +266,7 @@ interface FilterState {
 }
 
 type Phase = "landing" | "wizard" | "analyzing" | "results";
-type SortBy = "match" | "deadline" | "value" | "effort" | "selectivity";
+type SortBy = "match" | "deadline" | "value" | "effort" | "selectivity" | "trending";
 type ViewMode = "grid" | "list";
 type AppSection = "browse" | "pipeline" | "shortlist" | "collections";
 /* Three application stages — captures the meaningful work-in-progress
@@ -3920,6 +3920,26 @@ const Discover = ({ language = "en" }: Props) => {
     if (sortBy === "value") return [...list].sort((a, b) => (b.estimated_total_value_usd ?? 0) - (a.estimated_total_value_usd ?? 0));
     if (sortBy === "effort") { const o: Record<string, number> = { low: 0, medium: 1, high: 2 }; return [...list].sort((a, b) => (o[a.effort] ?? 1) - (o[b.effort] ?? 1)); }
     if (sortBy === "selectivity") { const o: Record<string, number> = { low: 0, medium: 1, high: 2, very_high: 3, unknown: 4 }; return [...list].sort((a, b) => (o[a.selectivity] ?? 4) - (o[b.selectivity] ?? 4)); }
+    // "Trending" — sort by 30-day save activity DESC. Surfaces what
+    // the catalogue community is acting on right now, even if it
+    // doesn't match the user's profile perfectly. Deadline tie-break
+    // pulls urgent rows up within the same save bucket so a row
+    // saved 12 times closing in 5 days beats one saved 12 times with
+    // a far-out deadline. Rows with no engagement signal fall to the
+    // bottom; match score then orders within them so the tail still
+    // reads as ranked, not random.
+    if (sortBy === "trending") {
+      return [...list].sort((a, b) => {
+        const sa = a.saveCount30d ?? 0;
+        const sb = b.saveCount30d ?? 0;
+        if (sa !== sb) return sb - sa;
+        // Same save count → urgent deadlines first, then match score.
+        const aT = a.application_deadline ? new Date(a.application_deadline).getTime() : Number.MAX_SAFE_INTEGER;
+        const bT = b.application_deadline ? new Date(b.application_deadline).getTime() : Number.MAX_SAFE_INTEGER;
+        if (aT !== bT) return aT - bT;
+        return b.match - a.match;
+      });
+    }
     return list;
     // Deps split: deferredSearch (the lagged query) + the rest of the
     // filter shape. The whole `filters` object would re-trigger this
@@ -4655,6 +4675,14 @@ const Discover = ({ language = "en" }: Props) => {
                       <SelectItem value="match">{t("Best match", "Лучшее совпадение")}</SelectItem>
                       <SelectItem value="deadline">{t("Deadline first", "Сначала по дедлайну")}</SelectItem>
                       <SelectItem value="value">{t("Highest value", "Наибольшая сумма")}</SelectItem>
+                      {/* "Trending" — orders by save_count_30d DESC.
+                          Surfaces what other students are acting on
+                          right now. Compounds: more saves → higher
+                          rank under this sort → more visibility →
+                          more saves. The chip on cards already shows
+                          the count, so users can see the raw signal
+                          driving the order. */}
+                      <SelectItem value="trending">{t("Trending now", "Сейчас в тренде")}</SelectItem>
                       {/* "Most accessible" sort retired — selectivity
                           metadata is incomplete on most rows so the
                           sort produced near-random ordering. */}
