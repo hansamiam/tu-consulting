@@ -30,7 +30,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useApplicationTracker, type AppStatus } from "@/hooks/useApplicationTracker";
 import { useAuth } from "@/contexts/AuthContext";
 import { CountryArt } from "@/lib/countryArt";
-import { accentForCountry, shortCountry } from "@/lib/countryAccent";
+import { shortCountry } from "@/lib/countryAccent";
+import { ALL_COUNTRIES } from "@/data/countries";
 import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
 import { daysUntil } from "@/lib/dates";
 import { toast } from "sonner";
@@ -60,6 +61,9 @@ interface Scholarship {
   last_verified_at: string | null;
   lifecycle_status: string | null;
   next_open_at: string | null;
+  why_this_fits: string | null;
+  how_to_win: string | null;
+  citizenship_requirements: string | null;
 }
 
 // Pipeline workspace simplified (round 9): collapsed from 5 columns
@@ -83,8 +87,11 @@ const COLUMNS: { key: AppStatus | "shortlisted" | "active"; label: { en: string;
 // → I'm writing → I sent it." Removed the "Saved only" virtual
 // option (saving lives on the Discover bookmark, not as a status
 // here).
+// 2026-05-10 v2: dropped "researching" from the picker per user
+// direction "lets get rid of researching, lets just have either
+// drafting or submitted, that's simpler". Saved-but-no-status rows
+// implicitly read as "researching" without needing a label.
 const STATUS_OPTIONS: { value: AppStatus | null; label: { en: string; ru: string } }[] = [
-  { value: "researching", label: { en: "Researching", ru: "Изучаю" } },
   { value: "drafting",    label: { en: "Drafting",    ru: "Готовлю" } },
   { value: "submitted",   label: { en: "Submitted",   ru: "Подал" } },
   { value: null,          label: { en: "Remove status", ru: "Снять статус" } },
@@ -152,7 +159,8 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
           "coverage_type, award_amount_text, estimated_total_value_usd, " +
           "application_deadline, deadline_type, official_url, data_source, " +
           "verification_status, last_verified_at, " +
-          "lifecycle_status, next_open_at",
+          "lifecycle_status, next_open_at, " +
+          "why_this_fits, how_to_win, citizenship_requirements",
         )
         .in("scholarship_id", trackedIds);
       if (cancelled) return;
@@ -748,107 +756,49 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                   </div>
                 )}
 
-                {/* Status setter */}
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-2">
-                    {t("Status", "Статус")}
-                  </p>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="gap-1.5 w-full justify-between">
-                        <span>
-                          {(() => {
-                            const s = tracker.statusMap[openDetail.scholarship_id];
-                            if (s) {
-                              const opt = STATUS_OPTIONS.find((o) => o.value === s);
-                              return opt?.label[isRu ? "ru" : "en"] ?? s;
-                            }
-                            return tracker.shortlist.has(openDetail.scholarship_id)
-                              ? t("Saved only", "Только сохранённые")
-                              : t("Set status", "Поставить статус");
-                          })()}
-                        </span>
-                        <ChevronDown className="w-3.5 h-3.5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-56">
-                      {STATUS_OPTIONS.map((opt) => (
-                        <DropdownMenuItem
-                          key={String(opt.value)}
-                          onClick={() => {
-                            if (opt.value === "shortlisted") {
-                              tracker.setStatus(openDetail.scholarship_id, null);
-                              if (!tracker.shortlist.has(openDetail.scholarship_id)) {
-                                tracker.toggleShortlist(openDetail.scholarship_id);
-                              }
-                            } else {
-                              handleStatusChange(openDetail.scholarship_id, opt.value as AppStatus | null);
-                            }
-                          }}
-                        >
-                          {opt.label[isRu ? "ru" : "en"]}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                {/* 2026-05-10 strip: this Sheet was carrying a TON of
+                    Workspace-specific forms — Status setter, Notes
+                    textarea, RecommendersPanel, EssayDraftPanel,
+                    AdditionalEssaysPanel — that the user flagged as
+                    "completely useless giant panel of forms no one will
+                    fill out". The Workspace canvas already has the
+                    essay drafter as the main writing surface; this Sheet
+                    should be the Discover-style INFO panel ("the thing
+                    info like in the discover database for the
+                    scholarships that panel should be pulled up").
+                    Status setting still lives inline on each
+                    PipelineCard via the StatusBadge + dropdown. The
+                    sub-form panels stay defined in the codebase for
+                    eventual re-use (recommender tracking will return
+                    via a separate dedicated surface, not crammed
+                    into the detail sheet). */}
 
-                {/* Notes */}
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-2">
-                    {t("Your notes", "Ваши заметки")}
-                  </p>
-                  <Textarea
-                    value={draftNote}
-                    onChange={(e) => setDraftNote(e.target.value)}
-                    onBlur={saveNote}
-                    placeholder={t(
-                      "Recommender shortlist, essay angles, fee plan…",
-                      "Рекомендатели, идеи для эссе, план оплаты…",
-                    )}
-                    rows={5}
-                    className="resize-none"
-                  />
-                </div>
+                {openDetail.why_this_fits && (
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-1">
+                      {t("Why this fits", "Почему подходит")}
+                    </p>
+                    <p className="text-sm text-foreground/85 leading-relaxed">{openDetail.why_this_fits}</p>
+                  </div>
+                )}
 
-                {/* Recommender tracking — most common reason a strong
-                    application misses its deadline isn't ineligibility,
-                    it's a recommender who agreed but never submitted.
-                    Three-state per recommender (asked / agreed /
-                    submitted), unlimited per scholarship. */}
-                <RecommendersPanel
-                  value={tracker.recommendersMap[openDetail.scholarship_id] ?? []}
-                  onChange={(next) => tracker.setRecommenders(openDetail.scholarship_id, next.length > 0 ? next : null)}
-                  language={language}
-                  scholarshipName={cleanScholarshipName(openDetail.scholarship_name)}
-                  applicationDeadline={openDetail.application_deadline}
-                  studentName={studentName}
-                />
+                {openDetail.how_to_win && (
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-1">
+                      {t("How to win", "Как выиграть")}
+                    </p>
+                    <p className="text-sm text-foreground/85 leading-relaxed">{openDetail.how_to_win}</p>
+                  </div>
+                )}
 
-                {/* Primary essay draft. Auto-saves through the
-                    tracker hook; AI critique streams in a side
-                    column on desktop. */}
-                <EssayDraftPanel
-                  scholarshipId={openDetail.scholarship_id}
-                  scholarshipName={cleanScholarshipName(openDetail.scholarship_name)}
-                  value={tracker.essayMap[openDetail.scholarship_id] || ""}
-                  onChange={(next) => tracker.setEssayDraft(openDetail.scholarship_id, next || null)}
-                  language={language}
-                />
-
-                {/* Additional essays — multi-essay support for
-                    Schwarzman / Rhodes / Marshall / Fulbright-style
-                    programs that require 2-3 distinct essays. Default
-                    state is a single "Add another essay" button;
-                    expanding it reveals per-essay slots with their
-                    own title, prompt, target, draft, and AI critique. */}
-                <AdditionalEssaysPanel
-                  scholarshipId={openDetail.scholarship_id}
-                  scholarshipName={cleanScholarshipName(openDetail.scholarship_name)}
-                  value={tracker.additionalEssaysMap[openDetail.scholarship_id] ?? null}
-                  onChange={(next) => tracker.setAdditionalEssays(openDetail.scholarship_id, next)}
-                  language={language}
-                />
+                {openDetail.citizenship_requirements && (
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-1">
+                      {t("Eligibility", "Право участия")}
+                    </p>
+                    <p className="text-sm text-foreground/85 leading-relaxed">{openDetail.citizenship_requirements}</p>
+                  </div>
+                )}
 
                 {/* Links — actions the user might take from this card.
                     "Ask the counselor" stashes a session prefill so when
@@ -1619,7 +1569,9 @@ const PipelineCard = ({
           : days <= 30
             ? `${days} ${t("days", "дн.")}`
             : `${Math.ceil(days / 30)} ${t("mo", "мес.")}`;
-  const accent = accentForCountry(s.host_country);
+  // accentForCountry removed with the cream-band rework — no more
+  // region-coloured gradient stripe; country flag emoji + name carry
+  // identity now (matches Discover cards).
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
@@ -1628,24 +1580,32 @@ const PipelineCard = ({
       className="group relative bg-card border border-border rounded-xl overflow-hidden hover:border-gold/40 hover:shadow-sm transition-all cursor-pointer"
       onClick={onOpen}
     >
-      {/* Country gradient stripe — same regional identity as Discover
-          cards so the user sees the same scholarship as the same
-          object across surfaces. Landmark silhouette overlaid right. */}
-      <div className={`relative h-7 bg-gradient-to-r ${accent} overflow-hidden`}>
-        {/* Silhouette is bounded so it never covers the days-chip on
-            the right. Earlier the unbounded h-full image could span the
-            full width on narrow cards and partially clip the deadline
-            countdown — same class of bug as the Discover ScholarCard
-            "+1" overflow (615cd5c). */}
-        <CountryArt country={s.host_country} className="absolute right-1 inset-y-0 h-full max-w-[28%] opacity-35 pointer-events-none text-white" />
-        <span className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-transparent pointer-events-none" />
-        <div className="relative h-full flex items-center justify-between gap-2 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/95 whitespace-nowrap">
-          <span className="truncate drop-shadow-sm min-w-0">
-            {s.host_country ? shortCountry(s.host_country) : "—"}
+      {/* Country band — 2026-05-10 cream-rework parity with Discover
+          cards (was a region-coloured gradient strip; user direction:
+          drop the colour banner, match the new minimal cream treatment).
+          Cream surface, country flag emoji + name in editorial uppercase,
+          silhouette as a faint engraving anchored right, thin gold
+          hairline at bottom. The deadline pill on the right keeps its
+          urgency colour so the user can still scan "what's closing
+          soon" at a glance. "Varies" pill suppressed when the row has
+          no real date (was creating a confusing always-on label). */}
+      <div className="relative h-9 bg-canvas-soft border-b border-gold/15 overflow-hidden">
+        <CountryArt country={s.host_country} className="absolute right-3 top-1/2 -translate-y-1/2 h-7 w-[60px] flex items-center justify-end opacity-[0.18] text-foreground pointer-events-none" />
+        <div className="relative h-full flex items-center justify-between gap-2 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-foreground/85 whitespace-nowrap">
+          <span className="flex items-center gap-1.5 min-w-0 pr-[68px]">
+            {(() => {
+              const flag = s.host_country ? ALL_COUNTRIES.find(c => c.v.toLowerCase() === s.host_country!.toLowerCase())?.f : null;
+              return flag ? <span className="text-[12px] leading-none shrink-0" aria-hidden>{flag}</span> : null;
+            })()}
+            <span className="truncate min-w-0 text-foreground">
+              {s.host_country ? shortCountry(s.host_country) : "—"}
+            </span>
           </span>
-          <span className={`tabular-nums shrink-0 px-1.5 py-0.5 rounded ${days !== null && days <= 7 ? "bg-destructive text-destructive-foreground" : days !== null && days <= 30 ? "bg-amber-500 text-amber-950" : "bg-white/15 text-white/95"}`}>
-            {daysText}
-          </span>
+          {days !== null && (
+            <span className={`tabular-nums shrink-0 px-1.5 py-0.5 rounded ${days <= 7 ? "bg-destructive/15 text-destructive ring-1 ring-destructive/30" : days <= 30 ? "bg-amber-500/15 text-amber-800 dark:text-amber-400 ring-1 ring-amber-500/30" : "bg-foreground/[0.06] text-foreground/75"}`}>
+              {daysText}
+            </span>
+          )}
         </div>
       </div>
 

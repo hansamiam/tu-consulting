@@ -273,7 +273,10 @@ type AppSection = "browse" | "pipeline" | "shortlist" | "collections";
  * rows don't break — the maps below cover all 6 values for display
  * fidelity, but the dropdown only OFFERS the 3 active stages. */
 type AppStatus = "researching" | "drafting" | "submitted" | "decision" | "rejected" | "accepted";
-const ACTIVE_STATUSES: AppStatus[] = ["researching", "drafting", "submitted"];
+// 2026-05-10: dropped "researching" from active statuses per user
+// direction "let's just have either drafting or submitted, simpler".
+// "researching" is implicit when a row is saved but no status set.
+const ACTIVE_STATUSES: AppStatus[] = ["drafting", "submitted"];
 
 const STATUS_LABEL: Record<AppStatus, string> = {
   researching: "Researching",
@@ -2015,21 +2018,16 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
               the per-criteria why. */}
         </div>
 
-        {/* Status + Full-ride row — combined 2026-05-10 so the two
-            chips never stack as separate rows competing for attention.
-            Full-ride is now a STATIC tag (no pulse dot — user feedback:
-            "static, not glowing blinking"); the gold pill alone reads
-            as the premium signal. When status is set the two chips
-            sit side by side; when neither is set, the row is skipped. */}
-        {(status || isFullRide) && (
-          <div className="flex items-center gap-1.5 flex-wrap" onClick={(e) => e.stopPropagation()}>
-            {status && <StatusBadge status={status} onChange={onStatusChange} />}
-            {isFullRide && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gold-dark bg-gold/10 ring-1 ring-gold/30 px-1.5 py-0.5 rounded">
-                <Award className="h-2.5 w-2.5" />
-                {ru ? "Полное" : "Full ride"}
-              </span>
-            )}
+        {/* Full-ride badge only — status badges retired from Discover
+            cards 2026-05-10 ("status should only appear in Workspace,
+            not in the Discover database"). Status now lives on the
+            Workspace PipelineCard exclusively. */}
+        {isFullRide && (
+          <div className="flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gold-dark bg-gold/10 ring-1 ring-gold/30 px-1.5 py-0.5 rounded">
+              <Award className="h-2.5 w-2.5" />
+              {ru ? "Полное" : "Full ride"}
+            </span>
           </div>
         )}
 
@@ -2408,17 +2406,22 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               not satisfied revamp improve do whatever you need to do
               still ugly." Now: clean canvas-soft surface, precise
               typography, generous spacing, single visual focal point. */}
-        <div className="bg-canvas-soft px-6 sm:px-8 pt-5 sm:pt-7 pb-5 sm:pb-6 shrink-0 border-b border-border">
-          <SheetHeader className="space-y-3.5">
-            <div className="flex items-start gap-3">
-              <SelectivityChip level={s.selectivity} />
-              {isNewScholarship(s.created_at) && (
+        <div className="bg-canvas-soft px-6 sm:px-7 pt-4 sm:pt-5 pb-4 sm:pb-5 shrink-0 border-b border-border">
+          <SheetHeader className="space-y-3">
+            {/* Competitive/selectivity chip retired from the detail
+                sheet header 2026-05-10 per user direction "lets get
+                rid of the competitive bar thing for now". The data
+                still backs scoring + bucketing in the grid; just not
+                surfaced here. The "New" pill stays since it's a
+                time-bound discovery signal, not competitiveness. */}
+            {isNewScholarship(s.created_at) && (
+              <div>
                 <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 ring-1 ring-emerald-500/30 px-1.5 py-0.5 rounded">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   {ru ? "Новое" : "New"}
                 </span>
-              )}
-            </div>
+              </div>
+            )}
 
             <SheetTitle className="text-foreground font-heading text-[26px] sm:text-[30px] leading-[1.1] tracking-[-0.02em] text-left">
               {cleanScholarshipName(s.scholarship_name)}
@@ -2617,27 +2620,23 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                   {tab.label}
                 </TabsTrigger>
               ))}
-              {/* Strategy — matches the styling of Overview / Requirements.
-                  Members get the deep strategy panel via onExpand;
-                  non-members hit the membership wall through onUnlock. */}
+              {/* Strategy — Pro/membership gating dropped 2026-05-10
+                  per user direction "we are dropping pro, it's
+                  members only". Authenticated users always get the
+                  full strategy panel; the paywall flow stays in the
+                  codebase but isn't reachable from this tab. */}
               <button
                 type="button"
-                onClick={() => (isMember ? onExpand() : onUnlock())}
-                className="data-[member=false]:after:content-['•'] data-[member=false]:after:text-gold data-[member=false]:after:ml-1.5 inline-flex items-center gap-1.5 border-b-2 border-transparent text-muted-foreground hover:text-foreground rounded-none px-0 pb-3 pt-0 text-sm font-medium bg-transparent transition-colors"
-                data-member={isMember ? "true" : "false"}
+                onClick={() => onExpand()}
+                className="inline-flex items-center gap-1.5 border-b-2 border-transparent text-muted-foreground hover:text-foreground rounded-none px-0 pb-3 pt-0 text-sm font-medium bg-transparent transition-colors"
               >
                 {t("Strategy", "Стратегия")}
-                {!isMember && (
-                  <span className="ml-1 inline-flex items-center text-[9px] font-bold uppercase tracking-[0.18em] text-gold-dark">
-                    {t("Pro", "Pro")}
-                  </span>
-                )}
               </button>
             </TabsList>
           </div>
 
           {/* OVERVIEW */}
-          <TabsContent value="overview" className="px-5 sm:px-7 py-4 sm:py-6 space-y-4 sm:space-y-5 m-0 focus-visible:outline-none">
+          <TabsContent value="overview" className="px-5 sm:px-7 py-3 sm:py-4 space-y-3 sm:space-y-4 m-0 focus-visible:outline-none">
             {/* Overview = ABOUT THE SCHOLARSHIP. Eligibility, citizenship,
                 language, profile-vs-requirements signals — all of that
                 lives in Requirements. The generic blurb fallback was
@@ -2698,18 +2697,19 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               }
 
               if (fieldChips.length === 0) return null;
+              // 2026-05-10: pill colours unified to a single neutral
+              // cream tone per user direction "im also still seeing
+              // tags in different colors... fix it". Pre-fix tag /
+              // duration / field used three different bg/border
+              // shades, plus partner universities used a primary tint
+              // — visually noisy. Now all chips read as one uniform
+              // family.
               return (
                 <div className="flex flex-wrap gap-1.5">
                   {fieldChips.slice(0, 14).map((c, i) => (
                     <span
                       key={`${c.kind}-${i}-${c.label}`}
-                      className={
-                        c.kind === "tag"
-                          ? "text-xs bg-gold/10 text-gold-dark border border-gold/20 px-2.5 py-1 rounded-full font-medium"
-                          : c.kind === "duration"
-                            ? "text-xs text-foreground/75 bg-muted/40 border border-border/70 px-2.5 py-1 rounded-md"
-                            : "text-xs text-foreground/75 bg-muted/60 border border-border px-2.5 py-1 rounded-md"
-                      }
+                      className="text-xs text-foreground/80 bg-muted/50 border border-border/70 px-2.5 py-1 rounded-md font-medium"
                     >
                       {c.label}
                     </span>
@@ -2728,7 +2728,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {s.partner_universities.slice(0, 12).map((u, i) => (
-                    <span key={i} className="text-xs text-foreground/85 bg-primary/[0.04] border border-primary/15 px-2.5 py-1 rounded-md">{u}</span>
+                    <span key={i} className="text-xs text-foreground/80 bg-muted/50 border border-border/70 px-2.5 py-1 rounded-md font-medium">{u}</span>
                   ))}
                   {s.partner_universities.length > 12 && (
                     <span className="text-xs text-muted-foreground self-center">+{s.partner_universities.length - 12} more</span>
@@ -2741,7 +2741,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           {/* REQUIREMENTS — eligibility, citizenship, profile-vs-thresholds,
               application demands. All things "what does this need from
               me" live here so Overview stays a clean program description. */}
-          <TabsContent value="requirements" className="px-5 sm:px-7 py-4 sm:py-6 space-y-5 m-0 focus-visible:outline-none">
+          <TabsContent value="requirements" className="px-5 sm:px-7 py-3 sm:py-4 space-y-4 m-0 focus-visible:outline-none">
             {/* Eligibility narrative + language as a single flowing paragraph.
                 Headers stripped — at this point in the panel, the user is
                 inside the "Requirements" tab, so labelling each paragraph

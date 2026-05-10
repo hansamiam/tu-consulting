@@ -16,9 +16,15 @@ interface NavigationProps {
    *  then fades to the normal opaque cream nav once the user scrolls. Used on the homepage
    *  so the navy gradient at the top of the hero extends through the nav strip. */
   variant?: "default" | "overlay";
+  /** Pixels of scroll before the overlay transitions to opaque. Default 80
+   *  works for short heroes; longer heroes (Academy: ~360-440px) should
+   *  pass a larger value so the transparent-overlay state spans the full
+   *  navy hero region instead of flipping to cream-opaque mid-hero
+   *  (which produced a clashing cream slab over the navy band). */
+  overlayThreshold?: number;
 }
 
-const Navigation = ({ language = "en", variant = "default" }: NavigationProps) => {
+const Navigation = ({ language = "en", variant = "default", overlayThreshold = 80 }: NavigationProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
@@ -28,11 +34,11 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
 
   useEffect(() => {
     if (variant !== "overlay") return;
-    const onScroll = () => setScrolled(window.scrollY > 80);
+    const onScroll = () => setScrolled(window.scrollY > overlayThreshold);
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
-  }, [variant]);
+  }, [variant, overlayThreshold]);
 
   const isOverlay = variant === "overlay" && !scrolled;
   const isRussian = language === "ru";
