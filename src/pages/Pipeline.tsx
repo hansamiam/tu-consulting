@@ -610,6 +610,14 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                         menu in a future pass if recommender editing
                         needs richer UI than inline status quick-cycle. */}
                     <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-xs"
+                        onClick={() => setOpenDetail(selectedScholarship)}
+                      >
+                        {t("Details", "Детали")}
+                      </Button>
                       {selectedScholarship.official_url && (
                         <Button asChild variant="ghost" size="sm" className="h-8 text-xs">
                           <a href={selectedScholarship.official_url} target="_blank" rel="noopener noreferrer">
@@ -620,6 +628,13 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                       )}
                     </div>
                   </header>
+                  {/* Quick-view strip — surfaces key facts (deadline,
+                      funding, eligibility) inline so the writer doesn't
+                      have to break flow to check the source page. The
+                      Details button still opens the full Sheet for
+                      deeper context (recommender editing, similar
+                      programs, full prose). */}
+                  <QuickFactsStrip scholarship={selectedScholarship} language={language} />
                   <div className="px-4 sm:px-6 py-5 sm:py-6 max-w-[816px] mx-auto">
                     <EssayDraftPanel
                       scholarshipId={selectedScholarship.scholarship_id}
@@ -1010,6 +1025,66 @@ export default Pipeline;
 
 /* ─── Internals ─────────────────────────────────────────────────── */
 
+/* QuickFactsStrip — slim inline summary that lives between the
+   essay drafter header and the textarea. Shows the four facts a writer
+   actually checks while drafting (deadline, funding, host, link) so
+   they don't have to break flow to open the Details sheet. The
+   Details button still opens the deeper Sheet for full context. */
+const QuickFactsStrip = ({
+  scholarship, language,
+}: {
+  scholarship: Scholarship;
+  language: "en" | "ru";
+}) => {
+  const isRu = language === "ru";
+  const t = (en: string, ru: string) => (isRu ? ru : en);
+  const dl = scholarship.application_deadline;
+  const dlText = dl
+    ? new Date(dl).toLocaleDateString(isRu ? "ru-RU" : "en-US", { month: "short", day: "numeric", year: "numeric" })
+    : t("No deadline listed", "Дедлайн не указан");
+  const dlDays = dl ? Math.ceil((new Date(dl).getTime() - Date.now()) / 86400_000) : null;
+  const dlTone =
+    dlDays == null ? "text-muted-foreground" :
+    dlDays < 0 ? "text-muted-foreground" :
+    dlDays <= 7 ? "text-destructive" :
+    dlDays <= 30 ? "text-amber-700 dark:text-amber-400" :
+    "text-foreground/80";
+  const fundingLabel = (() => {
+    const c = scholarship.coverage_type?.toLowerCase();
+    if (c === "full_ride") return t("Full ride", "Полное");
+    if (c === "tuition_only") return t("Tuition", "Обучение");
+    if (c === "partial") return t("Partial", "Частичное");
+    if (c === "stipend") return t("Stipend", "Стипендия");
+    if (scholarship.award_amount_text) return scholarship.award_amount_text;
+    return null;
+  })();
+  const totalText = scholarship.estimated_total_value_usd ? fmtMoney(scholarship.estimated_total_value_usd) : null;
+  return (
+    <div className="px-6 py-2.5 border-b border-border bg-canvas-soft/40 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[11px]">
+      <div className="flex items-center gap-1.5">
+        <Calendar className="h-3 w-3 text-muted-foreground/70 shrink-0" />
+        <span className="text-muted-foreground/70 uppercase tracking-[0.14em] font-semibold">{t("Deadline", "Дедлайн")}</span>
+        <span className={`font-semibold tabular-nums ${dlTone}`}>{dlText}</span>
+        {dlDays != null && dlDays >= 0 && (
+          <span className="text-muted-foreground/60">· {dlDays}d</span>
+        )}
+      </div>
+      {(fundingLabel || totalText) && (
+        <div className="flex items-center gap-1.5">
+          <span className="text-muted-foreground/70 uppercase tracking-[0.14em] font-semibold">{t("Funds", "Сумма")}</span>
+          <span className="font-semibold text-foreground/80">{[fundingLabel, totalText].filter(Boolean).join(" · ")}</span>
+        </div>
+      )}
+      {scholarship.host_country && (
+        <div className="flex items-center gap-1.5">
+          <span className="text-muted-foreground/70 uppercase tracking-[0.14em] font-semibold">{t("Host", "Где")}</span>
+          <span className="font-semibold text-foreground/80">{scholarship.host_country}</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* MiniDeadlineCalendar — compact version of DeadlineCalendar tucked
    into the sidebar's bottom space. Same data shape, but cells are
    ~28px squares with just a colored dot indicating deadline density
@@ -1083,41 +1158,36 @@ const MiniDeadlineCalendar = ({
   });
 
   return (
-    <div className="mt-4 pt-4 border-t border-border/50">
-      <div className="flex items-center justify-between mb-2 px-1">
+    <div className="mt-3 pt-3 border-t border-border/50">
+      <div className="flex items-center justify-between mb-1.5 px-1">
         <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground capitalize">
           {monthLabel}
         </p>
-        <div className="flex items-center gap-1">
-          {onSync && (
-            <button
-              type="button"
-              onClick={onSync}
-              className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gold-dark hover:text-foreground transition-colors px-1.5 py-0.5"
-              aria-label={isRu ? "Синхронизация с календарём" : "Sync with calendar app"}
-            >
-              {isRu ? "Синхр." : "Sync"}
-            </button>
-          )}
+        <div className="flex items-center gap-0.5">
           <button
             onClick={goPrev}
             aria-label={isRu ? "Предыдущий месяц" : "Previous month"}
-            className="p-1 rounded hover:bg-foreground/[0.05] text-muted-foreground hover:text-foreground transition-colors"
+            className="p-0.5 rounded hover:bg-foreground/[0.05] text-muted-foreground hover:text-foreground transition-colors"
           >
             <ChevronLeft className="h-3 w-3" />
           </button>
           <button
             onClick={goNext}
             aria-label={isRu ? "Следующий месяц" : "Next month"}
-            className="p-1 rounded hover:bg-foreground/[0.05] text-muted-foreground hover:text-foreground transition-colors"
+            className="p-0.5 rounded hover:bg-foreground/[0.05] text-muted-foreground hover:text-foreground transition-colors"
           >
             <ChevronRight className="h-3 w-3" />
           </button>
         </div>
       </div>
+      {/* 2026-05-10 compaction: cells dropped from aspect-square (~50px
+          tall on a 380px sidebar = ~330px total grid) to fixed h-6
+          (24px). Saves ~180px of vertical space — the essay drafter
+          gets it back, so the calendar reads as a quiet glance widget
+          rather than dominating the sidebar. */}
       <div className="grid grid-cols-7 gap-px text-center">
         {dayHeaders.map((d, i) => (
-          <div key={i} className="text-[9px] font-semibold uppercase text-muted-foreground/60 py-1">{d}</div>
+          <div key={i} className="text-[9px] font-semibold uppercase text-muted-foreground/60 py-0.5">{d}</div>
         ))}
         {cells.map((d, i) => {
           const key = dayKey(d);
@@ -1125,7 +1195,6 @@ const MiniDeadlineCalendar = ({
           const isToday = key === todayKey;
           const dayRows = byDay.get(key) ?? [];
           const hasDeadline = dayRows.length > 0;
-          // Tone: closing in 7d = destructive, 30d = amber, else gold.
           const daysUntil = Math.ceil((d.getTime() - Date.now()) / 86400_000);
           const dotTone =
             !hasDeadline ? "" :
@@ -1143,7 +1212,7 @@ const MiniDeadlineCalendar = ({
               disabled={!hasDeadline}
               onClick={() => hasDeadline && onSelect(dayRows[0].scholarship_id)}
               title={tooltip}
-              className={`relative aspect-square text-[10px] tabular-nums rounded transition-colors ${
+              className={`relative h-6 text-[10px] tabular-nums rounded transition-colors ${
                 hasDeadline
                   ? "hover:bg-foreground/[0.06] cursor-pointer"
                   : "cursor-default"
@@ -1157,12 +1226,28 @@ const MiniDeadlineCalendar = ({
             >
               {d.getDate()}
               {hasDeadline && (
-                <span className={`absolute bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full ${dotTone}`} />
+                <span className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full ${dotTone}`} />
               )}
             </button>
           );
         })}
       </div>
+      {/* Sync row — moved BELOW the grid so the calendar header stays
+          tight (just month + nav arrows). Sync is a power-move action
+          that deserves its own row anyway: full-width gold pill,
+          unmistakable. Pre-fix it sat as a 10px text link in the
+          header where users couldn't see it. */}
+      {onSync && (
+        <button
+          type="button"
+          onClick={onSync}
+          className="group mt-2 w-full inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-semibold tracking-[0.06em] bg-gold/10 hover:bg-gold/15 text-gold-dark hover:text-foreground border border-gold/40 hover:border-gold/60 transition-all"
+          aria-label={isRu ? "Синхронизировать с Google Calendar" : "Sync with Google Calendar"}
+        >
+          <Calendar className="h-3 w-3 transition-transform group-hover:scale-110" />
+          {isRu ? "Синхр. с Google Calendar" : "Sync to Google Calendar"}
+        </button>
+      )}
     </div>
   );
 };

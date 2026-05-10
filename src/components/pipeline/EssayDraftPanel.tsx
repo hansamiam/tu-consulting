@@ -373,8 +373,8 @@ export const EssayDraftPanel = ({ scholarshipId, scholarshipName, value, onChang
               "Drop your essay draft here. Stuck on the opening? Tap \"Get 3 starting drafts\" and the AI gives you three angles to pick from.",
               "Вставьте черновик эссе. Не знаете с чего начать? Нажмите «3 варианта вступления» — AI предложит три угла на выбор.",
             )}
-            rows={14}
-            className="resize-y font-sans text-[14px] leading-relaxed"
+            rows={28}
+            className="resize-y font-sans text-[14px] leading-relaxed min-h-[640px]"
           />
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
             {/* Outline button — shows whenever the draft is empty or
