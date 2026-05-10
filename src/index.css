@@ -131,6 +131,14 @@
     --border: 222 30% 20%;
     --input: 222 30% 20%;
     --ring: 42 70% 55%;
+
+    /* Gold tokens lift in dark mode so text-gold-dark stays readable
+     * against navy without needing per-class `dark:text-gold-light`
+     * overrides scattered across components. The two values track each
+     * other one step apart, mirroring the light-mode relationship. */
+    --gold:        41 64% 60%;
+    --gold-light:  40 64% 70%;
+    --gold-dark:   38 60% 55%;
   }
 }
 

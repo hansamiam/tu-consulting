@@ -383,7 +383,7 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
             <span className="hidden sm:inline">{t("Discover", "Discover")}</span>
           </Link>
           <span className="hidden sm:block self-stretch w-px bg-border/60 my-1" aria-hidden />
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark dark:text-gold-light">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark">
             {t("TopUni", "TopUni")}
           </p>
           <h1 className="font-heading text-base sm:text-lg font-bold text-foreground tracking-tight leading-none -ml-1.5">
@@ -550,7 +550,7 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                 <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
                   <header className="px-6 py-4 border-b border-border bg-muted/20 flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark dark:text-gold-light mb-0.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-0.5">
                         {t("Drafting", "Черновик")}
                       </p>
                       <h2 className="font-heading text-lg sm:text-xl font-bold text-foreground tracking-tight leading-tight">
@@ -1069,7 +1069,7 @@ const DeadlineCalendar = ({
     <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
       <header className="px-5 py-4 border-b border-border bg-muted/20 flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark dark:text-gold-light mb-0.5">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-0.5">
             {t("Deadlines", "Дедлайны")}
           </p>
           <h2 className="font-heading text-lg sm:text-xl font-bold text-foreground tracking-tight leading-tight capitalize">
@@ -1134,7 +1134,7 @@ const DeadlineCalendar = ({
                         ? "bg-destructive/15 text-destructive"
                         : daysLeft <= 30
                           ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
-                          : "bg-gold/10 text-gold-dark dark:text-gold-light";
+                          : "bg-gold/10 text-gold-dark";
                   return (
                     <button
                       key={r.scholarship_id}

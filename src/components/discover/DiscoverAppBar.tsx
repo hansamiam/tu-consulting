@@ -84,7 +84,7 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
           aria-label="Discover"
         >
           <div className="leading-tight hidden sm:block">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark dark:text-gold-light">TopUni</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark">TopUni</p>
             <p className="font-heading text-lg sm:text-xl font-bold tracking-tight text-foreground -mt-0.5 leading-none">Discover</p>
           </div>
         </Link>

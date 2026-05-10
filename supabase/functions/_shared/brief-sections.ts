@@ -121,14 +121,18 @@ const positioning: SectionSpec = {
   reasoning: { effort: "high" },
   buildPrompt: (ctx) => `Output: just the "## Strategic positioning" section, in ${ctx.lang}.
 
-OPEN with a single thesis sentence (≤30 words) that names this student's strongest signal AND biggest competitive reality in one breath — this sentence is the report's editorial pull-quote, so it must stand on its own without context. After that opening sentence, write 2-3 paragraphs of full competitive positioning analysis ${ctx.audienceLine}: quantitative GPA percentile context, IELTS band relative to thresholds at the student's target countries, where the profile is strongest, where it is weakest. Cite numbers.
+You are a trusted older peer writing this brief directly to the reader. Address them as "you" the whole way through. Use their first name once if it lands naturally. Speak with the warmth of someone who's been where they are.
+
+OPEN with a single thesis sentence (≤30 words) that names YOUR strongest signal AND your biggest competitive reality in one breath — this sentence is the brief's pull-quote, so it must stand on its own. Use phrasings like "Here's what I see in you:" or "Here's how I'd pitch you:" — make it feel like a person speaking.
+
+After the opening, write 2-3 paragraphs ${ctx.audienceLine} of honest, specific positioning. Cite the actual GPA in percentile context. Cite the IELTS band relative to thresholds at the target countries by name. Name the strongest signal. Name the weakest. Talk in evidence, not adjectives.
 
 After the paragraphs, output exactly this on its own line:
-**Your 30-day call:** [one specific, single-sentence strategic action this student should take in the next 30 days]
+**Your 30-day call:** [one specific, single-sentence action you'd tell them to take in the next 30 days — direct, addressed to "you"]
 
 ${SHARED_RULES}
 
-STUDENT PROFILE:
+PROFILE (this is who you're writing to):
 ${profileBlock(ctx)}
 
 DATABASE CONTEXT:
@@ -154,13 +158,15 @@ const shortlist: SectionSpec = {
   reasoning: { effort: "high" },
   buildPrompt: (ctx) => `Output: just the "## Your university shortlist" section, in ${ctx.lang}.
 
-Pull 6-10 real universities from the DATABASE CONTEXT below — chosen to be the SHARPEST cut, not the broadest list. Organize into three buckets, in this exact order, using exactly these labels:
+You're sitting across from this person. They've asked: "where should I actually apply?" Pull 6-10 real universities from the DATABASE CONTEXT below — the SHARPEST cut, not the broadest list. Curation is the value here, not coverage.
+
+Open with one short framing sentence that addresses them as "you" — something like "Here's where I'd actually point you:" — to make it feel like a person speaking, not a search result. Then organize into three buckets, in this exact order, using exactly these labels:
 
 ### Strong fits — apply with confidence
 3-5 universities. For each:
-- **University name** — one tight sentence on why THIS student fits THIS program (cite a real profile signal — GPA, field, country alignment, named activity).
+- **University name** — one tight sentence on why YOU fit THIS program (cite a real signal from the profile — your GPA, field, country alignment, named activity). Address them as "you", not "the student".
 - Specific program(s) + admission threshold (IELTS, GPA cutoff) when known.
-- One concrete career anchor: typical starting salary band in the student's field, ONE notable employer, OR one alumni outcome — pick the strongest single fact, not all of them.
+- One concrete career anchor: typical starting salary band in your field, ONE notable employer, OR one alumni outcome — pick the strongest single fact, not all of them.
 
 ### Aligned options — competitive but achievable
 2-3 universities. Same format.
@@ -168,11 +174,11 @@ Pull 6-10 real universities from the DATABASE CONTEXT below — chosen to be the
 ### Worth keeping on the radar
 1-2 universities. Same format.
 
-Do NOT invent universities. Pull only from the database section. NO long uni lists with thin justifications — the report's value is curation, not coverage.
+Do NOT invent universities. Pull only from the database section.
 
 ${SHARED_RULES}
 
-STUDENT PROFILE:
+PROFILE (this is who you're writing to):
 ${profileBlock(ctx)}
 
 DATABASE CONTEXT:
@@ -224,17 +230,21 @@ const fundingPathway: SectionSpec = {
   reasoning: { effort: "high" },
   buildPrompt: (ctx) => `Output: just the "## Funding pathway" section, in ${ctx.lang}.
 
-Pick 3-5 specific scholarships from the DATABASE CONTEXT — the ones THIS student should actually apply to first. Cut speculative options; quality > quantity. For each:
-- **Scholarship name** — award amount + coverage type (full ride / tuition / stipend / partial).
-- One sentence on how the student's profile maps to the program's stated audience. Cite a real signal ("3.7 GPA in CS from Kazakhstan + the robotics activity lands you in their typical admit profile"). Do NOT predict odds in percentages or label as 'reach' / 'safety' / 'long shot' / 'within reach'.
-- Application timing — deadline + WHEN the student should start drafting.
-- The first concrete document or task to start now (essay prompt, recommender, transcript pull).
+This is the section that answers their real question: "How do I actually pay for this?" Speak to them like you've been through this. Pick 3-5 specific scholarships from the DATABASE CONTEXT — the ones YOU should actually apply to first. Quality > quantity, cut speculative options.
 
-End with a single one-line "Stack:" callout naming a plausible combination of 2 scholarships from the list above that together would fully fund the student. ONE line, not a sub-section.
+Open with one short sentence in second person — something like "Here's how I'd stack your funding:" — so it reads like a person, not a database printout.
+
+For each:
+- **Scholarship name** — award amount + coverage type (full ride / tuition / stipend / partial).
+- One sentence on how YOUR profile maps to this program's stated audience. Cite a real signal from the profile ("Your 3.7 GPA in CS from Kazakhstan + your robotics activity puts you squarely in their admit profile"). Do NOT predict odds in percentages or label as 'reach' / 'safety' / 'long shot' / 'within reach'.
+- Application timing — deadline + when you'd start drafting if you were them.
+- The first concrete document or task to start this week (essay prompt, recommender, transcript pull).
+
+End with a single one-line "Stack:" callout naming a plausible combination of 2 scholarships from the list above that together would fully fund them. ONE line, not a sub-section.
 
 ${SHARED_RULES}
 
-STUDENT PROFILE:
+PROFILE (this is who you're writing to):
 ${profileBlock(ctx)}
 
 DATABASE CONTEXT:
@@ -282,11 +292,13 @@ const essays: SectionSpec = {
   reasoning: { effort: "high" },
   buildPrompt: (ctx) => `Output: just the "## Three personalized essay angles" section, in ${ctx.lang}.
 
-Three distinct narrative angles this student could lead with. For EACH, use this exact structure (do not deviate):
+This is the highest-differentiator section in the brief — where you write to them like a friend who happens to be good at this. Open with one short framing sentence in second person — something like "If I were writing your application essay, here's three ways I'd open it:" — to set the voice.
+
+Then three distinct narrative angles you could lead with. For EACH, use this exact structure (do not deviate):
 
 ### Angle 1: [one-sentence concept]
-**Why it works for you:** [2-3 sentences citing specific details from this student's profile]
-**Anchor it with:** [a specific story, detail, or experience]
+**Why it works for you:** [2-3 sentences citing specific details from your profile, addressed to "you"]
+**Anchor it with:** [a specific story, detail, or experience from their inputs]
 **Plays best to:** [which 2-3 target universities this angle plays best to and why]
 
 ### Angle 2: [one-sentence concept]
@@ -299,11 +311,11 @@ Three distinct narrative angles this student could lead with. For EACH, use this
 **Anchor it with:** ...
 **Plays best to:** ...
 
-If the student supplied a "Top activity" or "Personal story" in the profile, at LEAST one angle's "Anchor it with" line MUST pull from that directly.
+If the profile includes a "Top activity" or "Personal story", at LEAST one angle's "Anchor it with" line MUST pull from that directly — quoted or paraphrased so the reader recognizes it as theirs.
 
 ${SHARED_RULES}
 
-STUDENT PROFILE:
+PROFILE (this is who you're writing to):
 ${profileBlock(ctx)}
 
 Begin your response with: ## Three personalized essay angles`,
@@ -346,12 +358,14 @@ const honestGaps: SectionSpec = {
   reasoning: { effort: "medium" },
   buildPrompt: (ctx) => `Output: just the "## Honest gaps to close" section, in ${ctx.lang}.
 
-2-3 specific weaknesses in the profile. For each, use this exact structure (do not deviate):
+This is the section that builds trust — you tell them what you'd worry about if you were them, and what to do about it. Open with one short sentence in second person — something like "Here's what I'd worry about if I were you, and what I'd actually do about it:" — to land the voice.
+
+Then 2-3 specific weaknesses in their profile. For each, use this exact structure (do not deviate):
 
 ### Gap 1: [short headline of the gap]
 **Priority:** [high | medium | low]
-**Why it matters:** [2-3 sentences citing specific thresholds or context]
-**Action this month:** [one specific action they can start now]
+**Why it matters:** [2-3 sentences in second person — talk to them, cite their specific thresholds or context]
+**Action this month:** [one specific action you'd tell them to start now]
 **30-60 day plan:** [the next-step plan after that]
 
 ### Gap 2: [short headline]
@@ -359,7 +373,7 @@ const honestGaps: SectionSpec = {
 
 ${SHARED_RULES}
 
-STUDENT PROFILE:
+PROFILE (this is who you're writing to):
 ${profileBlock(ctx)}
 
 Begin your response with: ## Honest gaps to close`,

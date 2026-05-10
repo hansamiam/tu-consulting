@@ -46,7 +46,7 @@ export const BetaGate = ({ children }: BetaGateProps) => {
         <div className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-[2px] rounded-xl">
           <div className="text-center space-y-3 p-6">
             <div className="w-14 h-14 rounded-full bg-gold/15 flex items-center justify-center mx-auto">
-              <Lock className="w-6 h-6 text-gold" />
+              <Lock className="w-6 h-6 text-gold-dark" />
             </div>
             <h3 className="font-semibold text-foreground">Beta Features</h3>
             <p className="text-xs text-muted-foreground max-w-xs">
@@ -60,7 +60,7 @@ export const BetaGate = ({ children }: BetaGateProps) => {
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Award className="w-5 h-5 text-gold" />
+              <Award className="w-5 h-5 text-gold-dark" />
               Beta Access
             </DialogTitle>
             <DialogDescription>

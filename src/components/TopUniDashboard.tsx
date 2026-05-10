@@ -3076,18 +3076,59 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             : t("Your dashboard", "Ваша панель")
           }
         </h1>
-        {isProfileFilled && (
-          <div className="flex flex-wrap gap-2 mt-3">
-            {profile.targetCountries.map(c => (
-              <Badge key={c} variant="outline" className="text-xs">{c}</Badge>
-            ))}
-            {profile.major && <Badge variant="outline" className="text-xs">{profile.major}</Badge>}
-            {profile.gpa && <Badge variant="outline" className="text-xs">GPA: {profile.gpa}</Badge>}
-            {profile.ielts && <Badge variant="outline" className="text-xs">IELTS: {profile.ielts}</Badge>}
-            {profile.toefl && <Badge variant="outline" className="text-xs">TOEFL: {profile.toefl}</Badge>}
-            {profile.sat && <Badge variant="outline" className="text-xs">SAT: {profile.sat}</Badge>}
-          </div>
-        )}
+        {isProfileFilled && (() => {
+          /* Premium intake summary — replaced the tag-chip strip with a
+             single italic peer-voice line that reads like the brief is
+             addressing the reader. The chips felt utilitarian and looked
+             tacky stacked under a personal greeting; the line below pairs
+             with the "Welcome, [Name]" headline like one breath. Test
+             scores live on a quieter sub-row only when present, so users
+             who put in IELTS/SAT still see them acknowledged without
+             cluttering the headline. */
+          const fmtCountries = (cs: string[]): string => {
+            if (cs.length === 0) return "";
+            if (cs.length === 1) return cs[0];
+            if (cs.length === 2) return `${cs[0]} ${t("and", "и")} ${cs[1]}`;
+            return `${cs.slice(0, -1).join(", ")} ${t("and", "и")} ${cs[cs.length - 1]}`;
+          };
+          const countriesPhrase = fmtCountries(profile.targetCountries);
+          const hasMajor = profile.major && profile.major !== "Undecided" && profile.major !== "Не определился";
+          const hasGpa = !!profile.gpa;
+          const hasScores = !!(profile.ielts || profile.toefl || profile.sat);
+          return (
+            <div className="mt-3 space-y-1">
+              <p className="text-base md:text-[17px] italic text-muted-foreground leading-relaxed">
+                {isRu ? "Цель — " : "Aiming "}
+                {hasMajor && (
+                  <>
+                    <span className="not-italic font-semibold text-foreground">{profile.major}</span>
+                    {countriesPhrase && (isRu ? " в " : " in ")}
+                  </>
+                )}
+                {countriesPhrase && (
+                  <span className="not-italic font-semibold text-foreground">{countriesPhrase}</span>
+                )}
+                {hasGpa && (
+                  <>
+                    <span className="text-muted-foreground/60"> · </span>
+                    <span className="not-italic font-medium text-foreground/85">
+                      {profile.gpa} {t("GPA", "GPA")}
+                    </span>
+                  </>
+                )}
+              </p>
+              {hasScores && (
+                <p className="text-xs text-muted-foreground/70 tracking-wide">
+                  {[
+                    profile.ielts && `IELTS ${profile.ielts}`,
+                    profile.toefl && `TOEFL ${profile.toefl}`,
+                    profile.sat && `SAT ${profile.sat}`,
+                  ].filter(Boolean).join(" · ")}
+                </p>
+              )}
+            </div>
+          );
+        })()}
       </motion.div>
 
       {/* Saved-deadline urgency banner — surfaces if the user has a saved
@@ -3101,20 +3142,24 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         isRu={isRu}
       />
 
-      {/* Dashboard — two surfaces only: Strategy (the report) and Counselor (chat) */}
+      {/* Dashboard — two surfaces only: Strategy (the report) and Counselor
+          (chat). When SHOW_COUNSELOR_TAB is false the tab strip is hidden
+          entirely — a single-tab nav is just chrome with no choice to make,
+          so the brief opens straight into the content. The Tabs wrapper
+          itself stays so we don't have to refactor the body. */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <div className="flex flex-wrap items-center gap-3 border-b border-border pb-1">
-          <TabsList className="bg-transparent p-0 h-auto gap-7 rounded-none -mb-[1px]">
-            <TabsTrigger value="pathway" className="data-[state=active]:text-foreground data-[state=active]:border-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent border-b-2 border-transparent text-muted-foreground hover:text-foreground rounded-none px-0 pb-3 pt-0 text-sm font-medium gap-1.5 bg-transparent">
-              <GraduationCap className="w-4 h-4" /> {t("Strategy", "Стратегия")}
-            </TabsTrigger>
-            {SHOW_COUNSELOR_TAB && (
+        {SHOW_COUNSELOR_TAB && (
+          <div className="flex flex-wrap items-center gap-3 border-b border-border pb-1">
+            <TabsList className="bg-transparent p-0 h-auto gap-7 rounded-none -mb-[1px]">
+              <TabsTrigger value="pathway" className="data-[state=active]:text-foreground data-[state=active]:border-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent border-b-2 border-transparent text-muted-foreground hover:text-foreground rounded-none px-0 pb-3 pt-0 text-sm font-medium gap-1.5 bg-transparent">
+                <GraduationCap className="w-4 h-4" /> {t("Strategy", "Стратегия")}
+              </TabsTrigger>
               <TabsTrigger value="counselor" className="data-[state=active]:text-foreground data-[state=active]:border-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent border-b-2 border-transparent text-muted-foreground hover:text-foreground rounded-none px-0 pb-3 pt-0 text-sm font-medium gap-1.5 bg-transparent">
                 <Bot className="w-4 h-4" /> {t("Counselor", "Советник")}
               </TabsTrigger>
-            )}
-          </TabsList>
-        </div>
+            </TabsList>
+          </div>
+        )}
 
         {/* MY PATHWAY TAB */}
         <TabsContent value="pathway">

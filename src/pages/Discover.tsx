@@ -981,7 +981,7 @@ const TIER = {
     label: "Strong fit",
     dot: "bg-gold",
     text: "text-gold",
-    textLight: "text-gold-dark dark:text-gold",
+    textLight: "text-gold-dark",
     grad: "from-gold via-gold-light to-gold",
     border: "border-gold/30",
   },
@@ -1038,7 +1038,7 @@ const Tag = ({
       case "full-ride":
         return "bg-gold/15 text-gold-dark border border-gold/30";
       case "demographic":
-        return "bg-gold/12 text-gold-dark border border-gold/25";
+        return "bg-gold/15 text-gold-dark border border-gold/25";
       case "outcome":
         return "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 tabular-nums";
     }
@@ -2009,7 +2009,7 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
                   onClick={() => setFilters(f => ({ ...f, [section.key]: o.v }))}
                   className={`px-2.5 py-1 rounded-md text-[12px] leading-tight transition-colors ${
                     active
-                      ? "bg-gold/15 text-gold-dark dark:text-gold font-semibold"
+                      ? "bg-gold/15 text-gold-dark font-semibold"
                       : "text-foreground/65 hover:text-foreground hover:bg-foreground/[0.04]"
                   }`}
                 >
@@ -2340,7 +2340,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                     <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/85 mb-0.5">
                       {t("Total", "Итого")}
                     </p>
-                    <p className="font-heading font-bold text-gold-dark dark:text-gold text-[15px] tabular-nums leading-tight truncate">
+                    <p className="font-heading font-bold text-gold-dark text-[15px] tabular-nums leading-tight truncate">
                       ≈ {totalDistinct}
                     </p>
                   </div>
@@ -2562,7 +2562,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
                       key={`${c.kind}-${i}-${c.label}`}
                       className={
                         c.kind === "tag"
-                          ? "text-xs bg-gold/10 text-gold-dark dark:text-gold border border-gold/20 px-2.5 py-1 rounded-full font-medium"
+                          ? "text-xs bg-gold/10 text-gold-dark border border-gold/20 px-2.5 py-1 rounded-full font-medium"
                           : c.kind === "duration"
                             ? "text-xs text-foreground/75 bg-muted/40 border border-border/70 px-2.5 py-1 rounded-md"
                             : "text-xs text-foreground/75 bg-muted/60 border border-border px-2.5 py-1 rounded-md"
@@ -2902,7 +2902,7 @@ const PaywallCard = ({ lockedCount, className = "", lang = "en" }: { lockedCount
               ? "Бесплатно вы видите первые 5 — этого достаточно, чтобы оценить базу. Подписка открывает каждую программу, AI-разбор стратегии, отслеживание дедлайнов и работу с рекомендателями."
               : "Free covers your first 5 picks so you can sample the database. Membership unlocks every program, the AI strategy deep dive, deadline tracking, and recommender follow-ups."}
           </p>
-          <span className="inline-flex items-center gap-1.5 mt-3 text-xs sm:text-sm font-semibold text-gold-dark dark:text-gold">
+          <span className="inline-flex items-center gap-1.5 mt-3 text-xs sm:text-sm font-semibold text-gold-dark">
             {ru ? "Тарифы" : "See pricing"}
             <ArrowRight className="h-3.5 w-3.5" />
           </span>
@@ -4030,7 +4030,7 @@ const Discover = ({ language = "en" }: Props) => {
                                   a generic filter strip. */}
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-baseline gap-2 flex-wrap">
-                                  <p className="text-[10px] uppercase tracking-[0.22em] text-gold-dark dark:text-gold-light font-bold">
+                                  <p className="text-[10px] uppercase tracking-[0.22em] text-gold-dark font-bold">
                                     {t("Built for you", "Подобрано для вас")}
                                   </p>
                                   <span className="text-[10px] text-muted-foreground tabular-nums">{pct}% {t("complete", "заполнено")}</span>
@@ -4099,7 +4099,7 @@ const Discover = ({ language = "en" }: Props) => {
                         // scholarships" was redundant.
                         <div className="flex items-center justify-between gap-3 flex-wrap">
                           <div>
-                            <p className="text-[10px] uppercase tracking-[0.18em] text-gold-dark dark:text-gold-light font-semibold mb-0.5">
+                            <p className="text-[10px] uppercase tracking-[0.18em] text-gold-dark font-semibold mb-0.5">
                               {t("Personalised view", "Персональный вид")}
                             </p>
                             <p className="text-sm text-foreground/85 leading-snug">
@@ -4153,7 +4153,7 @@ const Discover = ({ language = "en" }: Props) => {
                   </div>
 
                   <Button variant="outline" size="default" className="lg:hidden gap-1.5 h-10 rounded-lg" onClick={() => setFiltersOpen(true)}>
-                    <Filter className="h-4 w-4" />{t("Filters", "Фильтры")}{activeFiltersCount > 0 && <Badge className="h-5 px-1.5 text-[10px] bg-gold/20 text-gold-dark dark:text-gold border-0 ml-0.5">{activeFiltersCount}</Badge>}
+                    <Filter className="h-4 w-4" />{t("Filters", "Фильтры")}{activeFiltersCount > 0 && <Badge className="h-5 px-1.5 text-[10px] bg-gold/20 text-gold-dark border-0 ml-0.5">{activeFiltersCount}</Badge>}
                   </Button>
 
                   <Select value={sortBy} onValueChange={v => setSortBy(v as SortBy)}>
@@ -4288,7 +4288,7 @@ const Discover = ({ language = "en" }: Props) => {
                             <div className="my-2 mx-2 h-px bg-border/50" />
                             <button
                               onClick={() => setCompareOpen(true)}
-                              className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm text-gold-dark bg-gold/8 hover:bg-gold/12 transition-colors"
+                              className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm text-gold-dark bg-gold/10 hover:bg-gold/15 transition-colors"
                             >
                               <span className="flex items-center gap-2.5">
                                 <Columns3 className="h-4 w-4" />
@@ -4305,7 +4305,7 @@ const Discover = ({ language = "en" }: Props) => {
                       <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
                         <div className="flex items-center justify-between mb-5">
                           <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground flex items-center gap-2"><SlidersHorizontal className="h-3.5 w-3.5" />Refine</h3>
-                          {activeFiltersCount > 0 && <Badge className="h-5 px-1.5 text-[10px] bg-gold/20 text-gold-dark dark:text-gold border-0">{activeFiltersCount}</Badge>}
+                          {activeFiltersCount > 0 && <Badge className="h-5 px-1.5 text-[10px] bg-gold/20 text-gold-dark border-0">{activeFiltersCount}</Badge>}
                         </div>
                         <FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} fieldsAvailable={fieldsAvailable} lang={language} />
                       </div>
@@ -4349,7 +4349,7 @@ const Discover = ({ language = "en" }: Props) => {
                       )}
 
                       {isMember && (
-                        <div className="rounded-xl border border-gold/30 bg-gold/8 px-3 py-2.5 flex items-center gap-2">
+                        <div className="rounded-xl border border-gold/30 bg-gold/10 px-3 py-2.5 flex items-center gap-2">
                           <Crown className="h-3.5 w-3.5 text-gold-dark" />
                           <span className="text-[11px] font-semibold text-gold-dark">
                             {subscription.tier === "founding"
@@ -4620,7 +4620,7 @@ const Discover = ({ language = "en" }: Props) => {
                                     kicker={t("Strong fit", "Хорошее совпадение")}
                                     title={t("These align with your profile", "Эти подходят вашему профилю")}
                                     subtitle={t("Your stated nationality, level, and field overlap with the program's audience.", "Ваши гражданство, уровень и направление совпадают с целевой аудиторией программы.")}
-                                    count={sections.strong.length} accentClass="text-gold-dark dark:text-gold" />
+                                    count={sections.strong.length} accentClass="text-gold-dark" />
                                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
                                     {sections.strong.map((s, i) => <ScholarCard {...cardProps(s, i)} />)}
                                   </div>

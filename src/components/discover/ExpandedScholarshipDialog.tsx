@@ -215,7 +215,7 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
               and the deep-dive content below has its own AI affordances. */}
           <div className="overflow-y-auto flex-1 px-6 sm:px-9 py-6 sm:py-8 space-y-6">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark dark:text-gold mb-2">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-2">
                 {t("Personalized for you", "Персонально для вас")}
               </p>
               <h3 className="font-heading text-xl font-bold tracking-tight text-foreground mb-4">

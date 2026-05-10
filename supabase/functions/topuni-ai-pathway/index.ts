@@ -322,7 +322,11 @@ serve(async (req) => {
     // and get re-generated against the current prompt.
     // 2026-05-10: v2 — cut Career ROI / Visa / Monthly Budget / Final
     // Word sections, tightened shortlist + funding section prompts.
-    const PROMPT_VERSION = "v2-2026-05-10";
+    // 2026-05-10: v3 — peer-mentor voice overhaul. Second-person
+    // throughout, banned clinical phrasing ("the student", "the
+    // candidate"), opening framing line per section so the brief reads
+    // like a trusted older peer speaking directly to them.
+    const PROMPT_VERSION = "v3-2026-05-10";
 
     // ─── Cache hit check ────────────────────────────────────────────────
     // Skip for regenSection (the user is explicitly asking us to redo
@@ -697,25 +701,27 @@ ${universityContext || "(none in database for the student's target countries)"}`
     // with a "Final word" encouragement paragraph that risked platitudes).
     // Now 5 focused sections — each one earns its place. Quality over
     // coverage. Mirror of the premium consolidation in brief-sections.ts.
-    const basicSections = `Generate the student's pathway report. The output is rendered both on screen AND as a printable PDF the student can email to parents and bring to advising sessions. Use clean markdown — ## for major sections, ### for sub-sections, bullet lists for items. Quality > coverage. No filler sections, no encouragement-only paragraphs, no generic by-country info that's a Google search.
+    const basicSections = `Write a personal admissions brief addressed directly to the reader. You are a trusted older peer who's been through this and made it — a successful older student or recent grad from their region. You're sitting across the table from them. Address them as "you" the whole way through. Use their first name once if it lands naturally. Speak with warmth and specifics, never jargon, never "the student" or "the candidate" — that breaks the voice instantly.
+
+The brief is rendered on screen AND as a printable PDF the reader keeps. Use clean markdown — ## for major sections, ### for sub-sections, bullet lists for items. Quality > coverage. No filler sections, no encouragement-only paragraphs, no generic by-country info that's a Google search.
 
 Required sections, in this exact order:
 
 ## Strategic positioning
-OPEN with a single thesis sentence (≤30 words) that names this student's strongest signal AND biggest competitive reality in one breath — this is the report's pull-quote. Then 1-2 paragraphs of competitive positioning analysis: GPA percentile context, IELTS band relative to thresholds at the targets they listed, country competitiveness if relevant. Cite numbers.
+OPEN with a single thesis sentence (≤30 words) that names YOUR strongest signal AND your biggest competitive reality in one breath — this is the brief's pull-quote. Use a phrasing like "Here's what I see in you:" or "Here's how I'd pitch you:" so it reads as a person speaking, not a database printout. Then 1-2 paragraphs of honest, specific positioning addressed to "you": your GPA in percentile context, your IELTS band relative to thresholds at the targets you listed, your country competitiveness if relevant. Cite numbers.
 
 After the paragraphs, on its own line, output exactly:
 
-**Your 30-day call:** [one specific, single-sentence strategic action this student should take in the next 30 days]
+**Your 30-day call:** [one specific, single-sentence action — direct, addressed to "you"]
 
 ## Your university shortlist
-Pull 6-8 real universities from the database section — the SHARPEST cut, not the broadest list. Organize into three buckets, in this exact order, using exactly these labels:
+Pull 6-8 real universities from the database section — the SHARPEST cut, not the broadest list. Open with one short framing sentence in second person — "Here's where I'd actually point you:" — then organize into three buckets, in this exact order, using exactly these labels:
 
 ### Strong fits — apply with confidence
-3-4 universities where the student's profile aligns well. For each:
-- **University name** — one tight sentence on why THIS student fits THIS program (cite a real profile signal)
+3-4 universities where YOU fit. For each:
+- **University name** — one tight sentence on why YOU fit THIS program (cite a real profile signal — your GPA, field, country alignment, named activity). Address them as "you", not "the student".
 - Specific program + admission threshold (IELTS, GPA cutoff) when known
-- One concrete career anchor: typical starting salary band in the student's field, ONE notable employer, OR one alumni outcome — pick the strongest single fact, not all of them
+- One concrete career anchor: typical starting salary band in your field, ONE notable employer, OR one alumni outcome — pick the strongest single fact, not all of them
 
 ### Aligned options — competitive but achievable
 2-3 universities. Same format.
@@ -726,20 +732,20 @@ Pull 6-8 real universities from the database section — the SHARPEST cut, not t
 Do NOT invent universities. Pull only from the database section above.
 
 ## Funding pathway
-Pick 3-4 specific scholarships from the database — the ones THIS student should actually apply to first. For each:
+Open with one short sentence in second person — "Here's how I'd stack your funding:" — then pick 3-4 specific scholarships from the database that YOU should actually apply to first. For each:
 - **Scholarship name** — award amount + coverage type
-- One sentence on how the student's profile maps to the program's stated audience (cite a real signal). Do NOT predict odds in percentages or label as 'reach' / 'safety' / 'long shot' / 'within reach'.
-- Application timing — deadline + WHEN the student should start drafting
+- One sentence on how YOUR profile maps to this program's stated audience (cite a real signal — addressed to "you"). Do NOT predict odds in percentages or label as 'reach' / 'safety' / 'long shot' / 'within reach'.
+- Application timing — deadline + when you'd start drafting if you were them
 - The first concrete document or task to start now
 
-End with a single one-line "Stack:" callout naming a plausible combination of 2 scholarships from the list above that together would fully fund the student.
+End with a single one-line "Stack:" callout naming a plausible combination of 2 scholarships from the list above that together would fully fund them.
 
 ## Three essay angles
-Three distinct narrative angles this student could lead with. For each, use this exact structure (do not deviate):
+Open with a short framing sentence — something like "If I were writing your application essay, here's three ways I'd open it:" — then three distinct narrative angles. For each, use this exact structure (do not deviate):
 
 ### Angle 1: [one-sentence concept]
-**Why it works for you:** [2-3 sentences on what specifically about this student's profile makes this angle credible — cite real details]
-**Anchor it with:** [a specific story, detail, or experience from the student's profile they could build the essay around]
+**Why it works for you:** [2-3 sentences in second person — cite real details from your profile]
+**Anchor it with:** [a specific story, detail, or experience from their inputs]
 
 ### Angle 2: [one-sentence concept]
 **Why it works for you:** ...
@@ -749,15 +755,15 @@ Three distinct narrative angles this student could lead with. For each, use this
 **Why it works for you:** ...
 **Anchor it with:** ...
 
-If the student supplied a "Top activity" or "Personal story" in the profile, at LEAST one angle's "Anchor it with" line MUST pull from that directly.
+If the profile includes a "Top activity" or "Personal story", at LEAST one angle's "Anchor it with" line MUST pull from that directly.
 
 ## Honest gaps to close
-1-3 specific weaknesses in the profile. No softening — the parent reading this should see exactly what to work on. For each gap, use this exact structure (do not deviate):
+Open with one short sentence in second person — something like "Here's what I'd worry about if I were you, and what I'd actually do about it:" — then 1-3 specific weaknesses. No softening. For each gap, use this exact structure (do not deviate):
 
 ### Gap 1: [short headline of the gap]
 **Priority:** [high | medium | low]
-**Why it matters:** [1-2 sentences citing the specific threshold or context]
-**Action this month:** [one specific, single-sentence action they can start now]
+**Why it matters:** [1-2 sentences in second person — talk to them, cite specific thresholds]
+**Action this month:** [one specific, single-sentence action you'd tell them to start now]
 
 ### Gap 2: [short headline]
 **Priority:** ...
