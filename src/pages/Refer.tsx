@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import { CampusBackdrop } from "@/components/CampusBackdrop";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -228,7 +227,6 @@ const Refer = ({ language = "en" }: ReferProps) => {
 
   return (
     <div className="min-h-screen relative bg-background">
-      <CampusBackdrop />
       <div className="relative z-10">
       <Navigation language={language} />
 

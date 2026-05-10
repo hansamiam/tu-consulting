@@ -5,7 +5,6 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { ArrowLeft } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import { CampusBackdrop } from "@/components/CampusBackdrop";
 
 const FAQRu = () => {
   const navigate = useNavigate();
@@ -39,7 +38,6 @@ const FAQRu = () => {
 
   return (
     <div className="min-h-screen relative bg-background">
-      <CampusBackdrop />
       <div className="relative z-10">
       <Navigation language="ru" />
       {/* Header */}

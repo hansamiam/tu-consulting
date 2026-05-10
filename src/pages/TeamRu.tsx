@@ -9,9 +9,16 @@ import aigulPhoto from "@/assets/aigul.jpeg";
 import joshPhoto from "@/assets/josh.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
 import samuelPhoto from "@/assets/samuel.jpg";
-import { CampusBackdrop } from "@/components/CampusBackdrop";
+import usFlag from "@/assets/flags/us.svg";
+import caFlag from "@/assets/flags/ca.svg";
+import gbFlag from "@/assets/flags/gb.svg";
+import cnFlag from "@/assets/flags/cn.svg";
+import krFlag from "@/assets/flags/kr.svg";
 import { ScrollProgress } from "@/components/ScrollProgress";
+import { ScrollReveal } from "@/components/ScrollReveal";
 import { StaggerContainer, StaggerItem } from "@/hooks/use-stagger-animation";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
+import { motion } from "framer-motion";
 
 const TeamRu = () => {
   const navigate = useNavigate();
@@ -85,7 +92,6 @@ const TeamRu = () => {
 
   return (
     <div className="min-h-screen relative bg-background">
-      <CampusBackdrop />
       <div className="relative z-10">
       <ScrollProgress />
       <Navigation language="ru" />
@@ -107,18 +113,60 @@ const TeamRu = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 md:py-16">
         <div className="max-w-6xl mx-auto">
-          {/* Mirror EN Team overhaul 2026-05-10: clean editorial header
-              instead of gradient-clipped wordmark + flag-circle ribbon. */}
-          <div className="text-center mb-10 md:mb-16 space-y-3 md:space-y-4 animate-fade-in">
-            <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold text-foreground tracking-tight">
-              Команда
-            </h1>
-            <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-              Четыре человека, которые сами прошли этот путь — и теперь помогают вам пройти его.
-            </p>
-            <p className="text-xs md:text-sm font-medium text-muted-foreground/70 tracking-wide pt-1">
-              <span className="text-foreground/85 font-semibold">$500K+</span> стипендий между нами · <span className="text-foreground/85 font-semibold">10+ лет</span> опыта в США, Великобритании, Канаде, Китае и Корее
-            </p>
+          {/* Header reverted 2026-05-10 to mirror EN — animated $500K+
+              stat, animated 10+ years stat, country flag-circles row.
+              Gradient title removed, solid foreground colour + solid
+              gold underscore (gold-navy gradient was tacky). */}
+          <div className="text-center mb-8 md:mb-16 space-y-4 md:space-y-8 animate-fade-in">
+            <div className="inline-block">
+              <h1 className="font-heading text-2xl sm:text-3xl md:text-5xl font-bold text-foreground tracking-tight mb-2">
+                Команда
+              </h1>
+              <div className="h-1 w-16 md:w-24 bg-gold mx-auto rounded-full"></div>
+            </div>
+
+            <ScrollReveal delay={0.2}>
+              <div className="grid md:grid-cols-3 gap-4 md:gap-8 max-w-4xl mx-auto animate-enter">
+                <motion.div whileHover={{ scale: 1.05 }} className="space-y-1 md:space-y-2">
+                  <div className="min-h-[32px] md:min-h-[56px] flex items-center justify-center">
+                    <div className="text-3xl md:text-5xl font-bold text-gold">
+                      $<AnimatedNumber value={500} />K+
+                    </div>
+                  </div>
+                  <div className="text-xs md:text-base text-muted-foreground">стипендий получено</div>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.05 }} className="space-y-1 md:space-y-2">
+                  <div className="min-h-[32px] md:min-h-[56px] flex items-center justify-center">
+                    <div className="text-3xl md:text-5xl font-bold text-gold">
+                      <AnimatedNumber value={10} />+
+                    </div>
+                  </div>
+                  <div className="text-xs md:text-base text-muted-foreground">лет совокупного опыта</div>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.05 }} className="space-y-1 md:space-y-2">
+                  <div className="min-h-[32px] md:min-h-[56px] flex items-center justify-center">
+                    <div className="flex flex-nowrap gap-1.5 md:gap-3 items-center justify-center">
+                      <div className="w-7 h-7 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
+                        <img src={usFlag} alt="USA" className="w-full h-full object-cover" loading="lazy" />
+                      </div>
+                      <div className="w-7 h-7 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
+                        <img src={caFlag} alt="Canada" className="w-full h-full object-cover" loading="lazy" />
+                      </div>
+                      <div className="w-7 h-7 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
+                        <img src={gbFlag} alt="UK" className="w-full h-full object-cover" loading="lazy" />
+                      </div>
+                      <div className="w-7 h-7 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
+                        <img src={cnFlag} alt="China" className="w-full h-full object-cover object-left" loading="lazy" />
+                      </div>
+                      <div className="w-7 h-7 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
+                        <img src={krFlag} alt="South Korea" className="w-full h-full object-cover" loading="lazy" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-xs md:text-base text-muted-foreground">меж­континентальный опыт</div>
+                </motion.div>
+              </div>
+            </ScrollReveal>
           </div>
 
           {/* Team Grid */}

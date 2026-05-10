@@ -14,7 +14,6 @@ import Navigation from "@/components/Navigation";
 import { useToast } from "@/hooks/use-toast";
 import { PaymentDialog } from "@/components/PaymentDialog";
 import { Footer } from "@/components/Footer";
-import { CampusBackdrop } from "@/components/CampusBackdrop";
 import heroImage from "@/assets/hero-campus.jpg";
 import heroLibrary from "@/assets/hero-library.jpg";
 import yaleCampus from "@/assets/yale-campus.jpg";
@@ -267,7 +266,6 @@ const Offerings = () => {
 
   return (
     <div className="min-h-screen relative bg-background">
-      <CampusBackdrop />
       <div className="relative z-10">
       <Navigation language="en" />
       {/* Header */}

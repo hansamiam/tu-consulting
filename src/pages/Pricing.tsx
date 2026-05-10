@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import { CampusBackdrop } from "@/components/CampusBackdrop";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
@@ -215,7 +214,6 @@ const Pricing = ({ language = "en" }: PricingProps) => {
 
   return (
     <div className="min-h-screen relative bg-background">
-      <CampusBackdrop />
       <div className="relative z-10">
       <Navigation language={language} />
 

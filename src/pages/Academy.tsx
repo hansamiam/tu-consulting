@@ -5,7 +5,6 @@ import { Link } from "react-router-dom";
 import { useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import { CampusBackdrop } from "@/components/CampusBackdrop";
 import { Button } from "@/components/ui/button";
 import { Award, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
@@ -31,7 +30,6 @@ const Academy = ({ language = "en" }: AcademyProps) => {
   }, [ru]);
   return (
     <div className="min-h-screen relative bg-background">
-      <CampusBackdrop />
       <div className="relative z-10">
       <Navigation language={language} />
 

@@ -9,9 +9,16 @@ import aigulPhoto from "@/assets/aigul.jpeg";
 import joshPhoto from "@/assets/josh.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
 import samuelPhoto from "@/assets/samuel.jpg";
-import { CampusBackdrop } from "@/components/CampusBackdrop";
+import usFlag from "@/assets/flags/us.svg";
+import caFlag from "@/assets/flags/ca.svg";
+import gbFlag from "@/assets/flags/gb.svg";
+import cnFlag from "@/assets/flags/cn.svg";
+import krFlag from "@/assets/flags/kr.svg";
 import { ScrollProgress } from "@/components/ScrollProgress";
+import { ScrollReveal } from "@/components/ScrollReveal";
 import { StaggerContainer, StaggerItem } from "@/hooks/use-stagger-animation";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
+import { motion } from "framer-motion";
 import { useEffect } from "react";
 
 const Team = () => {
@@ -90,7 +97,6 @@ const Team = () => {
 
   return (
     <div className="min-h-screen relative bg-background">
-      <CampusBackdrop />
       <div className="relative z-10">
       <ScrollProgress />
       <Navigation language="en" />
@@ -112,26 +118,73 @@ const Team = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 md:py-16">
         <div className="max-w-6xl mx-auto">
-          {/* Header — overhauled 2026-05-10. Pre-overhaul this section
-              had: a gradient-clipped "Our Team" wordmark, a gradient
-              underscore bar, and a 3-up stats grid ($500K secured /
-              10+ years / 5 country-flag bubbles ringed in gold). The
-              gradient text + flag bar read tacky at scale (gradient
-              text is dated visual language; the flag-circle ribbon
-              looked like a multilingual landing-page builder). The
-              new header is a single editorial line: clean wordmark,
-              one peer-voice subhead, one restrained line of
-              credibility. Typography does the premium work. */}
-          <div className="text-center mb-10 md:mb-16 space-y-3 md:space-y-4 animate-fade-in">
-            <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold text-foreground tracking-tight">
-              The team
-            </h1>
-            <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-              Four people who have actually been through this — and now help you do the same.
-            </p>
-            <p className="text-xs md:text-sm font-medium text-muted-foreground/70 tracking-wide pt-1">
-              <span className="text-foreground/85 font-semibold">$500K+</span> in scholarships secured between us · <span className="text-foreground/85 font-semibold">10+ years</span> across the US, UK, Canada, China, and Korea
-            </p>
+          {/* Header — reverted 2026-05-10 to the pre-overhaul layout
+              (animated $500K+ stat, animated 10+ years stat, 5 country
+              flag-circles) per user direction: "REVERT EVERYTHING above
+              the profile photo section". The ONLY change vs pre-
+              overhaul: the gold-navy gradient on the title text and the
+              gradient underscore are dropped. Title is now a solid
+              foreground color and the underscore is a solid gold accent. */}
+          <div className="text-center mb-8 md:mb-16 space-y-4 md:space-y-8 animate-fade-in">
+            <div className="inline-block">
+              <h1 className="font-heading text-2xl sm:text-3xl md:text-5xl font-bold text-foreground tracking-tight mb-2">
+                Our Team
+              </h1>
+              <div className="h-1 w-16 md:w-24 bg-gold mx-auto rounded-full"></div>
+            </div>
+
+            {/* Stats Section */}
+            <ScrollReveal delay={0.2}>
+              <div className="grid md:grid-cols-3 gap-4 md:gap-8 max-w-4xl mx-auto animate-enter">
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  className="space-y-1 md:space-y-2"
+                >
+                  <div className="min-h-[32px] md:min-h-[56px] flex items-center justify-center">
+                    <div className="text-3xl md:text-5xl font-bold text-gold">
+                      $<AnimatedNumber value={500} />K+
+                    </div>
+                  </div>
+                  <div className="text-xs md:text-base text-muted-foreground">in scholarships secured</div>
+                </motion.div>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  className="space-y-1 md:space-y-2"
+                >
+                  <div className="min-h-[32px] md:min-h-[56px] flex items-center justify-center">
+                    <div className="text-3xl md:text-5xl font-bold text-gold">
+                      <AnimatedNumber value={10} />+
+                    </div>
+                  </div>
+                  <div className="text-xs md:text-base text-muted-foreground">years of collective experience</div>
+                </motion.div>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  className="space-y-1 md:space-y-2"
+                >
+                  <div className="min-h-[32px] md:min-h-[56px] flex items-center justify-center">
+                    <div className="flex flex-nowrap gap-1.5 md:gap-3 items-center justify-center">
+                      <div className="w-7 h-7 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
+                        <img src={usFlag} alt="USA flag" className="w-full h-full object-cover" loading="lazy" />
+                      </div>
+                      <div className="w-7 h-7 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
+                        <img src={caFlag} alt="Canada flag" className="w-full h-full object-cover" loading="lazy" />
+                      </div>
+                      <div className="w-7 h-7 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
+                        <img src={gbFlag} alt="United Kingdom flag" className="w-full h-full object-cover" loading="lazy" />
+                      </div>
+                      <div className="w-7 h-7 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
+                        <img src={cnFlag} alt="China flag" className="w-full h-full object-cover object-left" loading="lazy" />
+                      </div>
+                      <div className="w-7 h-7 md:w-10 md:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
+                        <img src={krFlag} alt="South Korea flag" className="w-full h-full object-cover" loading="lazy" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-xs md:text-base text-muted-foreground">cross-continental expertise</div>
+                </motion.div>
+              </div>
+            </ScrollReveal>
           </div>
 
           {/* Team Grid — compact tiles inspired by the home page format.

@@ -4,7 +4,6 @@ import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { blogArticles } from "@/data/blogArticles";
 import { countryGuides } from "@/data/countryGuides";
-import { CampusBackdrop } from "@/components/CampusBackdrop";
 
 // Country-guides section is hidden until the content set is fleshed out.
 // Mirrors Blog.tsx — flip back to true to re-expose without code work.
@@ -19,7 +18,6 @@ const BlogRu = () => {
 
   return (
     <div className="min-h-screen relative bg-background">
-      <CampusBackdrop />
       <div className="relative z-10">
       <Navigation language="ru" />
 

@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { useRef } from "react";
 import { blogArticles } from "@/data/blogArticles";
 import { countryGuides } from "@/data/countryGuides";
-import { CampusBackdrop } from "@/components/CampusBackdrop";
 
 // Country-guides rail is hidden until the content set is fleshed out.
 // Data + route at /blog/guide/:slug remain wired so flipping back to true
@@ -27,7 +26,6 @@ const Blog = () => {
 
   return (
     <div className="min-h-screen relative bg-background">
-      <CampusBackdrop />
       <div className="relative z-10">
       <Navigation language="en" />
 
