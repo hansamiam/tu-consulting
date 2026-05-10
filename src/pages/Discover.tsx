@@ -3054,7 +3054,7 @@ const SectionHeader = ({ kicker, title, subtitle, accentClass }: {
         {kicker}
       </div>
       <h2 className="font-heading font-bold text-lg sm:text-xl text-foreground leading-tight tracking-tight">{title}</h2>
-      <p className="text-xs text-muted-foreground mt-0.5 truncate">{subtitle}</p>
+      <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{subtitle}</p>
     </div>
   </Reveal>
 );
