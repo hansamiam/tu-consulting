@@ -98,7 +98,7 @@ const OfferingsRu = () => {
           <div className="inline-block px-3 py-1.5 md:px-4 md:py-2 bg-accent/10 border border-accent/20 rounded-full mb-3 md:mb-4">
             <p className="text-accent font-semibold text-xs md:text-sm uppercase tracking-wide">Специальное предложение запуска</p>
           </div>
-          <h1 className="font-heading text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mb-3 md:mb-4 px-2">
+          <h1 className="font-heading text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tight mb-3 md:mb-4 px-2">
             Наши услуги
           </h1>
           <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto mb-2 px-4">

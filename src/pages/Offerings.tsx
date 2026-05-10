@@ -287,7 +287,7 @@ const Offerings = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-12">
         {/* Hero Section */}
         <div className="text-center mb-8 md:mb-12 animate-fade-in">
-          <h1 className="font-heading text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mb-3 md:mb-4 px-2">
+          <h1 className="font-heading text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tight mb-3 md:mb-4 px-2">
             Talk to a real consultant
           </h1>
           <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto mb-6 px-4">
@@ -313,7 +313,7 @@ const Offerings = () => {
         {/* Individual Consultations */}
         <section id="consultations" className="mb-12 md:mb-20 animate-fade-in">
           <div className="text-center mb-6 md:mb-8">
-            <h2 className="font-heading text-xl sm:text-2xl md:text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent px-4">
+            <h2 className="font-heading text-xl sm:text-2xl md:text-3xl font-bold mb-2 text-foreground tracking-tight px-4">
               Book a consultation
             </h2>
             <p className="text-muted-foreground text-sm md:text-lg mb-2 md:mb-4 px-4">

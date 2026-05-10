@@ -3269,6 +3269,17 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                       {t("Upgrade for Pro report", "Pro отчёт")}
                     </Button>
                   )}
+                  {/* Print/PDF — the brief's print stylesheet (index.css
+                      "@media print" at line 281) hides all chrome and
+                      renders #printable-report as a clean PDF-ready
+                      document. Surfacing the button so users can save
+                      a copy / share with parents / bring to advising.
+                      Hidden in print preview itself via the same media
+                      query so the button doesn't show up in the PDF. */}
+                  <Button variant="outline" size="sm" onClick={() => window.print()} disabled={pathwayLoading || !pathwayContent} className="gap-1.5 print:hidden">
+                    <FileText className="w-4 h-4" />
+                    {t("Print", "Печать")}
+                  </Button>
                   <Button variant="outline" size="sm" onClick={generatePathway} disabled={pathwayLoading} className="gap-1.5">
                     {pathwayLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                     {t("Regenerate", "Обновить")}

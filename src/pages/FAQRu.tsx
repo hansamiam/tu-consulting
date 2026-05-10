@@ -59,12 +59,9 @@ const FAQRu = () => {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 md:py-12">
         {/* Hero Section */}
         <div className="text-center mb-6 md:mb-12 animate-fade-in">
-          <div className="inline-block">
-            <h1 className="font-heading text-2xl sm:text-3xl md:text-5xl font-bold bg-gradient-to-r from-gold via-accent to-primary bg-clip-text text-transparent mb-2 px-2">
-              Часто задаваемые вопросы
-            </h1>
-            <div className="h-1 w-20 md:w-32 bg-gradient-to-r from-primary to-gold mx-auto rounded-full mb-3 md:mb-4"></div>
-          </div>
+          <h1 className="font-heading text-2xl sm:text-3xl md:text-5xl font-bold text-foreground tracking-tight mb-3 md:mb-4 px-2">
+            Часто задаваемые вопросы
+          </h1>
           <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
             О чём чаще всего спрашивают студенты и родители.
           </p>
