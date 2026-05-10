@@ -1715,8 +1715,8 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
           {/* Save — heart-bookmark, always visible. Gold when saved. */}
           <button
             onClick={onBookmark}
-            aria-label={isBookmarked ? "Remove from saved" : "Save to your pipeline"}
-            title={isBookmarked ? "Saved · click to remove" : "Save"}
+            aria-label={isBookmarked ? (ru ? "Удалить из сохранённых" : "Remove from saved") : (ru ? "Сохранить в шортлист" : "Save to your pipeline")}
+            title={isBookmarked ? (ru ? "Сохранено · нажмите, чтобы удалить" : "Saved · click to remove") : (ru ? "Сохранить" : "Save")}
             className={`inline-flex items-center justify-center h-8 w-8 rounded-md transition-colors ${
               isBookmarked
                 ? "text-gold-dark bg-gold/10 hover:bg-gold/15"
