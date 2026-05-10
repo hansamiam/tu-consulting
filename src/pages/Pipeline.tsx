@@ -64,6 +64,15 @@ interface Scholarship {
   why_this_fits: string | null;
   how_to_win: string | null;
   citizenship_requirements: string | null;
+  // Canonical pipeline fields — populated by canonical-extract edge
+  // function. Promoted into the legacy fields at fetch time so all
+  // consumers read canonical-first without per-call edits.
+  canonical_overview: string | null;
+  canonical_deadline_iso: string | null;
+  canonical_funding_text: string | null;
+  canonical_funding_usd: number | null;
+  canonical_official_url: string | null;
+  canonical_requirements: Record<string, unknown> | null;
 }
 
 // Pipeline workspace simplified (round 9): collapsed from 5 columns
@@ -160,7 +169,8 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
           "application_deadline, deadline_type, official_url, data_source, " +
           "verification_status, last_verified_at, " +
           "lifecycle_status, next_open_at, " +
-          "why_this_fits, how_to_win, citizenship_requirements",
+          "why_this_fits, how_to_win, citizenship_requirements, " +
+          "canonical_deadline_iso, canonical_funding_text, canonical_funding_usd, canonical_official_url, canonical_overview, canonical_requirements",
         )
         .in("scholarship_id", trackedIds);
       if (cancelled) return;
@@ -175,7 +185,25 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
         setLoading(false);
         return;
       }
-      setRows((data as Scholarship[]) ?? []);
+      // Canonical-first promotion (matches Discover.tsx). Existing
+      // consumers read application_deadline / award_amount_text /
+      // official_url etc. as before, but if a canonical_* value
+      // exists for this row it takes precedence — institution-page-
+      // verified data wins over whatever the original scrape
+      // produced.
+      const promoted = ((data ?? []) as (Scholarship & {
+        canonical_deadline_iso?: string | null;
+        canonical_funding_text?: string | null;
+        canonical_funding_usd?: number | null;
+        canonical_official_url?: string | null;
+      })[]).map((s) => ({
+        ...s,
+        application_deadline: s.canonical_deadline_iso ?? s.application_deadline,
+        award_amount_text: s.canonical_funding_text ?? s.award_amount_text,
+        estimated_total_value_usd: s.canonical_funding_usd ?? s.estimated_total_value_usd,
+        official_url: s.canonical_official_url ?? s.official_url,
+      })) as Scholarship[];
+      setRows(promoted);
       setLoading(false);
     })();
     return () => { cancelled = true; };

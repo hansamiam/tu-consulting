@@ -3294,9 +3294,24 @@ const Discover = ({ language = "en" }: Props) => {
         for (const p of (providersRes.data ?? []) as { provider_id: string; trust_tier: "high"|"medium"|"low"|"unknown" }[]) {
           trustMap.set(p.provider_id, p.trust_tier);
         }
+        // 2026-05-10: canonical-first promotion. The canonical-extract
+        // edge function pipeline (migration 20260510110000) populates
+        // canonical_deadline_iso / canonical_funding_text /
+        // canonical_funding_usd / canonical_official_url on rows where
+        // it could verify against the institution's own page. Here we
+        // promote those values into the legacy fields so every existing
+        // consumer (card render, sheet, list row, compare, scoring,
+        // sorting) reads canonical-first WITHOUT requiring per-site
+        // call-by-call edits. Original canonical_* columns are kept
+        // intact on the row in case we want to render "canonical
+        // verified" badges later.
         const enriched = (scholarshipsRes.data as unknown as Scholarship[]).map(s => ({
           ...s,
           provider_trust_tier: s.provider_id ? trustMap.get(s.provider_id) ?? null : null,
+          application_deadline: s.canonical_deadline_iso ?? s.application_deadline,
+          award_amount_text:    s.canonical_funding_text ?? s.award_amount_text,
+          estimated_total_value_usd: s.canonical_funding_usd ?? s.estimated_total_value_usd,
+          official_url:         s.canonical_official_url ?? s.official_url,
         }));
         const cleaned = dedupeAndQualityFilter(enriched);
         setRows(cleaned);
