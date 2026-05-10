@@ -315,6 +315,15 @@ serve(async (req) => {
     const grade = reportGrade || "basic";
     const cacheLang = language || "en";
 
+    // Bumped whenever the brief prompt structure changes (sections
+    // cut/added, validators changed, output contract bumped). Edge
+    // function writes this on every cache insert; lookup requires a
+    // match. Old cached briefs against a different version simply miss
+    // and get re-generated against the current prompt.
+    // 2026-05-10: v2 — cut Career ROI / Visa / Monthly Budget / Final
+    // Word sections, tightened shortlist + funding section prompts.
+    const PROMPT_VERSION = "v2-2026-05-10";
+
     // ─── Cache hit check ────────────────────────────────────────────────
     // Skip for regenSection (the user is explicitly asking us to redo
     // a single section) and for missing profile (we'd hash zeros).
@@ -322,10 +331,11 @@ serve(async (req) => {
     if (!regenSection && profile) {
       const { data: cached } = await supabase
         .from("brief_cache")
-        .select("content, scholarship_ids, generated_at")
+        .select("content, scholarship_ids, generated_at, prompt_version")
         .eq("profile_hash", briefProfileHash)
         .eq("language", cacheLang)
         .eq("grade", grade)
+        .eq("prompt_version", PROMPT_VERSION)
         .maybeSingle();
       if (cached?.content) {
         const cachedAt = new Date(cached.generated_at).getTime();
@@ -907,6 +917,7 @@ ${EDITORIAL_RULES}`;
               content,
               scholarship_ids: scholarshipIdList,
               retrieval_method: retrievalMethod,
+              prompt_version: PROMPT_VERSION,
               generated_at: new Date().toISOString(),
             }, { onConflict: "profile_hash,language,grade" });
           }
@@ -1002,6 +1013,7 @@ ${grade === "premium" ? premiumSections : basicSections}`;
             content,
             scholarship_ids: basicScholarshipIds,
             retrieval_method: retrievalMethod,
+            prompt_version: PROMPT_VERSION,
             generated_at: new Date().toISOString(),
           }, { onConflict: "profile_hash,language,grade" });
         }
