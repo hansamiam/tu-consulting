@@ -59,7 +59,7 @@ const Navigation = ({ language = "en", variant = "default" }: NavigationProps) =
   // chip retired — Workspace itself is the user dashboard, no need for
   // a separate account button to show the tier.
   const tierLabelMobile =
-    subscription.tier === "founding" ? (isRussian ? "Основатель"   : "Founding Member") :
+    subscription.tier === "founding" ? (isRussian ? "Основатель"   : "Founding member") :
     subscription.tier === "pro"      ? (isRussian ? "Pro аккаунт"  : "Pro Member")     :
                                        (isRussian ? "Мой аккаунт"  : "Free");
 

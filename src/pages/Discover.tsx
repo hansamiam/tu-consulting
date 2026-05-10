@@ -4319,7 +4319,11 @@ const Discover = ({ language = "en" }: Props) => {
                       {isMember && (
                         <div className="rounded-xl border border-gold/30 bg-gold/8 px-3 py-2.5 flex items-center gap-2">
                           <Crown className="h-3.5 w-3.5 text-gold-dark" />
-                          <span className="text-[11px] font-semibold text-gold-dark">{subscription.tier === "founding" ? "Founding member" : "Pro member"}</span>
+                          <span className="text-[11px] font-semibold text-gold-dark">
+                            {subscription.tier === "founding"
+                              ? t("Founding member", "Член-основатель")
+                              : t("TopUni Pro", "TopUni Pro")}
+                          </span>
                         </div>
                       )}
 
@@ -4335,7 +4339,10 @@ const Discover = ({ language = "en" }: Props) => {
                           className="block rounded-xl border border-border bg-card/40 hover:bg-card hover:border-gold/30 px-3 py-2.5 transition-colors group"
                         >
                           <p className="text-[11px] text-foreground/75 leading-snug">
-                            Liking TopUni so far? <span className="text-gold-dark font-medium group-hover:underline underline-offset-4">Refer a friend → free month</span>
+                            {t("Liking TopUni so far?", "Нравится TopUni?")}{" "}
+                            <span className="text-gold-dark font-medium group-hover:underline underline-offset-4">
+                              {t("Refer a friend → free month", "Пригласите друга → месяц бесплатно")}
+                            </span>
                           </p>
                         </Link>
                       )}

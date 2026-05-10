@@ -149,7 +149,7 @@ const TopUniAIRu = () => {
       <div className="fixed inset-0 z-0 opacity-20" style={{ backgroundImage: `url(${topuniBg})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(2px)' }} />
       <div className="relative z-10">
         <Navigation language="ru" />
-        <BetaBanner />
+        <BetaBanner language="ru" />
 
         <AnimatePresence mode="wait">
 
