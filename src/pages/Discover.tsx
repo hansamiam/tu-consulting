@@ -58,6 +58,7 @@ import {
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
+import { track } from "@/lib/analytics";
 import { CuratedCollections } from "@/components/discover/CuratedCollections";
 import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
 import { ExpandedScholarshipDialog } from "@/components/discover/ExpandedScholarshipDialog";
@@ -3941,6 +3942,43 @@ const Discover = ({ language = "en" }: Props) => {
     [filteredAll, gateActive]
   );
   const lockedCount = filteredAll.length - filtered.length;
+
+  /* Compounding-data signal: zero-result search telemetry. When a
+   * student types a non-trivial query that returns 0 matches, we
+   * log the (anonymised) query so the team can review missed-demand
+   * scholarships and prioritise adding them. Debounced 800ms after
+   * the LAST keystroke + only when the catalog has actually loaded
+   * — we don't want to fire during the initial-load empty state.
+   * Per-query dedup via a Ref so toggling unrelated filters with
+   * the same query doesn't double-fire. */
+  const zeroResultLastQueryRef = useRef<string>("");
+  useEffect(() => {
+    const q = deferredSearch.trim();
+    // Only log meaningful queries (>= 3 chars filters out single-letter
+    // typos and the empty state). filteredAll === 0 means the search
+    // returned nothing AFTER all filters applied — capture that as
+    // genuine missed demand. rows.length === 0 means catalog hasn't
+    // loaded yet; ignore.
+    if (q.length < 3 || rows.length === 0) return;
+    if (filteredAll.length > 0) return;
+    if (q === zeroResultLastQueryRef.current) return;
+    const handle = window.setTimeout(() => {
+      zeroResultLastQueryRef.current = q;
+      void track("discover_search_zero_results", {
+        query: q.slice(0, 120),
+        active_filters: {
+          coverage: filters.coverage,
+          degree: filters.degree,
+          field: filters.field,
+          host_country: filters.hostCountry,
+          demographic: filters.demographic,
+          only_eligible: filters.onlyEligible,
+          closing_soon: filters.closingSoon,
+        },
+      });
+    }, 800);
+    return () => window.clearTimeout(handle);
+  }, [deferredSearch, filteredAll.length, rows.length, filters.coverage, filters.degree, filters.field, filters.hostCountry, filters.demographic, filters.onlyEligible, filters.closingSoon]);
 
   const sections = useMemo(() => {
     const top = filtered.filter(s => s.priority === "strong_match");

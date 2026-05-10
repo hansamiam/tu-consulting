@@ -35,7 +35,15 @@ export type EventName =
   | "brief_30_day_call_clicked"
   | "calendar_subscribe_opened"
   | "calendar_subscribe_clicked"
-  | "calendar_token_rotated";
+  | "calendar_token_rotated"
+  /** Discover search returned 0 results for a non-trivial query.
+   * Compounding signal — every miss tells us a scholarship students
+   * want that we don't have, so the catalogue keeps catching up to
+   * actual demand. Fired debounced (800ms after the last keystroke)
+   * so we don't spam the events table per character. */
+  | "discover_search_zero_results"
+  /** Brief generation failed at the empty-stream guard (round 96). */
+  | "brief_generation_failed";
 
 const ANON_ID_KEY = "topuni-anon-id";
 
