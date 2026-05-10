@@ -1,9 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import {
-  Instagram, ArrowRight, Crown,
-} from "lucide-react";
+import { ArrowRight, Crown } from "lucide-react";
 import heroImage from "@/assets/hero-campus.jpg";
 import samuelPhoto from "@/assets/samuel.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
@@ -320,24 +318,11 @@ const Index = () => {
 
       </main>
 
-      {/* FOOTER — solid navy now that the membership section gradients all
-          the way into full primary at its bottom edge. */}
-      <footer className="bg-primary text-primary-foreground py-12">
-        <div className="max-w-5xl mx-auto px-5 sm:px-8">
-          <div className="flex flex-col items-center gap-6">
-            <a
-              href="https://www.instagram.com/top_uni_consulting/?g=5"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gold hover:text-gold-light transition-colors p-2"
-              aria-label="Follow us on Instagram"
-            >
-              <Instagram size={26} strokeWidth={1.5} />
-            </a>
-            <Footer language="en" variant="dark" />
-          </div>
-        </div>
-      </footer>
+      {/* Footer — Instagram chip + nav now baked into the Footer
+          component itself (2026-05-10), so the home page no longer
+          wraps it in a custom navy outer with a duplicated Instagram
+          icon. The Footer's own bg-primary handles the navy band. */}
+      <Footer language="en" variant="dark" />
       </div>
     </div>
   );

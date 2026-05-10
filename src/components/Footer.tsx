@@ -1,9 +1,13 @@
 import { Link } from "react-router-dom";
+import { Instagram } from "lucide-react";
 
 interface FooterProps {
   language: "en" | "ru";
   variant?: "light" | "dark";
 }
+
+const INSTAGRAM_URL = "https://www.instagram.com/top_uni_consulting/";
+const INSTAGRAM_HANDLE = "@top_uni_consulting";
 
 // Footer surfaces only what's NOT in primary nav (or what doubles as a
 // conversion driver). Workspace was removed because it lives in primary
@@ -90,6 +94,29 @@ export const Footer = ({ language, variant = "dark" }: FooterProps) => {
         <p className={`${isDark ? "text-primary-foreground/80" : "text-foreground/75"} leading-relaxed text-sm sm:text-[15px] font-medium max-w-md mx-auto`}>
           {t.tagline}
         </p>
+        {/* Instagram follow chip — surfaced site-wide 2026-05-10. Pre-fix
+            this lived only on the home page wrapped around the Footer
+            component, so every other page lost the social signal entirely.
+            Placed between tagline and links so it reads as a personal
+            "follow us" affordance rather than tucked away in legal chrome.
+            Gold pill on dark backgrounds, gold-on-cream on light. Hover
+            adds a subtle lift via brighter gold + Instagram icon translate. */}
+        <div className="flex items-center justify-center pt-1">
+          <a
+            href={INSTAGRAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Follow us on Instagram"
+            className={`group inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all duration-300 ${
+              isDark
+                ? "border-gold/30 bg-gold/[0.06] text-gold hover:border-gold/55 hover:bg-gold/[0.10] hover:text-gold-light"
+                : "border-gold/40 bg-gold/[0.04] text-gold-dark hover:border-gold/60 hover:bg-gold/[0.10] hover:text-foreground"
+            }`}
+          >
+            <Instagram className="h-3.5 w-3.5 transition-transform duration-300 group-hover:scale-110" strokeWidth={1.8} />
+            <span className="tracking-wide">{INSTAGRAM_HANDLE}</span>
+          </a>
+        </div>
         <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs">
           {links.map((l) => (
             <li key={l.to}>
