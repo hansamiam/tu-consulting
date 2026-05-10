@@ -852,6 +852,29 @@ const TopUniAI = () => {
                               targetCountries,
                             }));
                           } catch { /* localStorage may be unavailable; brief still renders */ }
+                          // Hand off any Pro-depth answers the user filled
+                          // on the Step-3 disclosure to the dashboard's
+                          // proDepth store. Without this the wizard's
+                          // depth fields were being captured but never
+                          // read by the brief generator (which only
+                          // looks at the topuni-pro-depth-v1 key). Pro
+                          // members would still see the "Three quick
+                          // questions to unlock your Pro report" CTA
+                          // after generation even though they JUST
+                          // answered them. Now the dashboard reads the
+                          // wizard's depth answers and skips that CTA.
+                          if (isPro && (topActivity.trim() || personalStory.trim() || namedSchools.trim())) {
+                            try {
+                              localStorage.setItem(
+                                "topuni-pro-depth-v1",
+                                JSON.stringify({
+                                  topActivity: topActivity.trim(),
+                                  personalStory: personalStory.trim(),
+                                  namedSchools: namedSchools.trim(),
+                                }),
+                              );
+                            } catch { /* ignore */ }
+                          }
                           setScreen("dashboard");
                         }}
                       >

@@ -423,6 +423,22 @@ const TopUniAIRu = () => {
                               targetCountries: mappedCountries,
                             }));
                           } catch { /* localStorage may be unavailable; brief still renders */ }
+                          // Mirror EN: hand off Pro-depth answers from
+                          // the Step 3 disclosure to the dashboard's
+                          // proDepth store so the brief generator
+                          // actually reads them.
+                          if (isPro && (topActivity.trim() || personalStory.trim() || namedSchools.trim())) {
+                            try {
+                              localStorage.setItem(
+                                "topuni-pro-depth-v1",
+                                JSON.stringify({
+                                  topActivity: topActivity.trim(),
+                                  personalStory: personalStory.trim(),
+                                  namedSchools: namedSchools.trim(),
+                                }),
+                              );
+                            } catch { /* ignore */ }
+                          }
                           setScreen("dashboard");
                         }}
                       >
