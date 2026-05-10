@@ -173,7 +173,7 @@ export const ProfileSettingsCard = ({ language = "en" }: Props) => {
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.14em]">
-            {t("Recommender inputs", "Параметры рекомендаций")}
+            {t("Your profile", "Ваш профиль")}
           </p>
           <button
             onClick={() => navigate(wizardPath)}

@@ -4292,10 +4292,10 @@ const Discover = ({ language = "en" }: Props) => {
                           <div className="absolute -top-1/3 right-0 w-1/2 h-full rounded-full blur-[60px] opacity-20" style={{ background: "radial-gradient(circle, hsl(42 70% 50%) 0%, transparent 60%)" }} />
                           <div className="relative">
                             <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold-light mb-2">
-                              <Crown className="h-3 w-3" /> Founding Pro
+                              <Crown className="h-3 w-3" /> TopUni Pro
                             </div>
                             <p className="font-heading font-bold text-sm leading-tight mb-1">Unlock the full database + workshops with our founders.</p>
-                            <p className="text-[11px] text-primary-foreground/65 mb-3">Lifetime price lock. Capped at {foundingLeft.cap} members.</p>
+                            <p className="text-[11px] text-primary-foreground/65 mb-3">Founding rate — lifetime price lock. Capped at {foundingLeft.cap} members.</p>
                             <div className="h-1.5 rounded-full bg-primary-foreground/15 overflow-hidden mb-2">
                               <div className="h-full bg-gold-light" style={{ width: `${((foundingLeft.cap - foundingLeft.left) / foundingLeft.cap) * 100}%` }} />
                             </div>
@@ -4876,7 +4876,7 @@ const Discover = ({ language = "en" }: Props) => {
               <div className="relative">
                 <div className="inline-flex items-center gap-2 bg-gold/15 border border-gold/30 px-3 py-1 rounded-full mb-5">
                   <Crown className="h-3 w-3 text-gold-light" />
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold-light">Founding Pro</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold-light">TopUni Pro</span>
                 </div>
                 <SheetHeader>
                   <SheetTitle className="font-heading text-2xl text-primary-foreground tracking-tight leading-tight text-left">
@@ -4885,9 +4885,9 @@ const Discover = ({ language = "en" }: Props) => {
                     {paywallOpen === "compare" && "Compare more than 2 scholarships."}
                   </SheetTitle>
                   <p className="text-primary-foreground/65 text-sm leading-relaxed pt-1 text-left">
-                    {paywallOpen === "shortlist" && `You've saved your free ${SHORTLIST_FREE_LIMIT}. Founding Pro members get unlimited saves plus per-scholarship status tracking and notes.`}
-                    {paywallOpen === "strategy" && "Strategy notes — ideal-candidate profile, how-to-win approach, common rejection reasons, weak-candidate warnings — are part of the Founding Pro membership."}
-                    {paywallOpen === "compare" && "Compare up to three scholarships side-by-side as a Founding Pro member."}
+                    {paywallOpen === "shortlist" && `You've saved your free ${SHORTLIST_FREE_LIMIT}. Pro members get unlimited saves plus per-scholarship status tracking and notes.`}
+                    {paywallOpen === "strategy" && "Strategy notes — ideal-candidate profile, how-to-win approach, common rejection reasons, weak-candidate warnings — are part of TopUni Pro."}
+                    {paywallOpen === "compare" && "Compare up to three scholarships side-by-side with TopUni Pro."}
                   </p>
                 </SheetHeader>
               </div>
@@ -4913,7 +4913,7 @@ const Discover = ({ language = "en" }: Props) => {
               )}
               <div className="flex flex-col gap-2 pt-2">
                 <Button variant="gold" size="lg" className="w-full gap-2" onClick={() => { setPaywallOpen(null); navigate("/pricing"); }}>
-                  See Founding Pro <ArrowRight className="h-4 w-4" />
+                  See TopUni Pro <ArrowRight className="h-4 w-4" />
                 </Button>
                 <button onClick={() => setPaywallOpen(null)} className="text-xs text-muted-foreground hover:text-foreground transition-colors py-2">
                   Not now
