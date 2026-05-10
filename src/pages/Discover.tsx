@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import { DiscoverAppBar } from "@/components/discover/DiscoverAppBar";
+import { DiscoverEntranceGate } from "@/components/discover/DiscoverEntranceGate";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -3597,6 +3598,12 @@ const Discover = ({ language = "en" }: Props) => {
           <Navigation language={language} variant={dark ? "overlay" : "default"} />
         )}
         {phase === "results" && <DiscoverAppBar language={language} />}
+
+        {/* Round-42: navy gate-opening entrance plays once per session
+            when the user first lands on /discover. Sits OUTSIDE the
+            phase-conditional layouts so it appears regardless of
+            entry path. Fades itself out after ~1.4s. */}
+        <DiscoverEntranceGate />
 
         <AnimatePresence mode="wait">
           {/* Round-28 IA: landing phase removed. /discover lands users

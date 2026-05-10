@@ -1609,6 +1609,19 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       if (!raw) return null;
       const parsed = JSON.parse(raw);
       if (parsed && parsed.hash === profileHash && typeof parsed.content === "string" && parsed.content.length > 100) {
+        // Defensive — older builds wrote error text into pathwayContent
+        // (e.g. "Something went wrong. Please try again.") before the
+        // pathwayError state existed. Skip the cache restore when the
+        // saved blob looks like an error string instead of a real
+        // markdown report. A real report always opens with a level-2
+        // heading; error messages don't.
+        const looksLikeErrorBlob =
+          /^something went wrong|^couldn't generate|^rate limit|^session expired|^stream error|^network error/i.test(parsed.content.trim()) ||
+          (parsed.content.length < 600 && !parsed.content.includes("\n##"));
+        if (looksLikeErrorBlob) {
+          localStorage.removeItem(PATHWAY_STORAGE_KEY);
+          return null;
+        }
         return { content: parsed.content as string, generatedAt: typeof parsed.generatedAt === "number" ? parsed.generatedAt : null };
       }
     } catch { /* ignore */ }
@@ -1617,6 +1630,12 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
 
   const [pathwayContent, setPathwayContent] = useState<string>(restored?.content ?? "");
   const [pathwayLoading, setPathwayLoading] = useState(false);
+  /* Error state for the strategy-report stream. Previously when the
+   * edge function 401'd or the LLM provider hiccuped, streamSSE wrote
+   * the error message directly into pathwayContent — the user saw a
+   * broken-looking "report" with a stack-trace-ish line at the top.
+   * Now we route errors here and render a clean retry UI instead. */
+  const [pathwayError, setPathwayError] = useState<string | null>(null);
   /* Focus scholarship — populated when the user arrived from a
      /scholarships/:id detail page and clicked "Build my strategy around
      this." Drained from sessionStorage on mount; passed to the pathway
@@ -2633,6 +2652,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     briefAbortRef.current = briefController;
 
     setPathwayLoading(true);
+    setPathwayError(null);
     setPathwayContent("");
     let soFar = "";
     const startedAtMs = Date.now();
@@ -2821,10 +2841,10 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         }
       },
       // Error path — keep pathwayGenerated=false so the user can
-      // retry. Surface the error via toast (and clear any partial
-      // streamed content). Don't mark "brief_generation_completed"
-      // since nothing actually completed, and don't cache the error
-      // text as if it were the brief.
+      // retry. Persist the error to pathwayError so the report area
+      // shows a clean retry card instead of a torn half-stream of
+      // text. Toast still fires so the error is visible even if the
+      // user has scrolled past the report block.
       (status, message) => {
         setPathwayLoading(false);
         setPathwayContent("");
@@ -2834,7 +2854,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           ? (language === "ru" ? "Превышен лимит запросов — попробуйте через минуту." : "Rate limit hit — try again in a minute.")
           : isAuth
           ? (language === "ru" ? "Сессия истекла — войдите заново." : "Session expired — please sign in again.")
-          : (language === "ru" ? `Не удалось сгенерировать брифинг: ${message}` : `Couldn't generate brief: ${message}`);
+          : (language === "ru" ? `Не удалось сгенерировать стратегию: ${message}` : `Couldn't generate the strategy report: ${message}`);
+        setPathwayError(userMessage);
         toast.error(userMessage);
         void track("brief_generation_failed", { status, tier: reportGrade });
       },
@@ -3065,6 +3086,29 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                   <Button variant="gold" onClick={onBack}>
                     {t("Start Your Plan", "Начать план")}
                     <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              )}
+              {/* Error retry block — shows when streamSSE returned a
+                  non-OK status. Was previously inlined into pathwayContent
+                  so the user saw a torn report; now it's a clean retry
+                  card and the report area stays empty until success. */}
+              {pathwayError && !pathwayLoading && (
+                <div className="rounded-2xl border border-destructive/30 bg-destructive/[0.04] px-5 py-6 my-4 text-center space-y-3">
+                  <p className="text-sm font-semibold text-destructive">
+                    {t("Strategy report didn't generate.", "Стратегический отчёт не сгенерировался.")}
+                  </p>
+                  <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
+                    {pathwayError}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={generatePathway}
+                    className="gap-1.5"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    {t("Try again", "Попробовать ещё раз")}
                   </Button>
                 </div>
               )}

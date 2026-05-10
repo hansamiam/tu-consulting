@@ -408,52 +408,45 @@ const TopUniAI = () => {
                           <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@email.com" className="h-11 bg-card" />
                         </div>
                       </div>
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">WhatsApp</Label>
-                          <Input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="With country code" className="h-11 bg-card" />
-                        </div>
-                        {/* Nationality typeahead — accepts any country. The
-                            brief generator uses this to tailor eligibility
-                            framing and bias scholarships that name this
-                            nationality in their eligible_countries list. */}
-                        <div className="space-y-1.5 relative">
-                          <Label className="text-xs uppercase tracking-wider font-medium">Nationality *</Label>
-                          <Input
-                            value={nationality}
-                            onChange={e => setNationality(e.target.value)}
-                            placeholder="Type any country (Kazakhstan, Nigeria, …)"
-                            className="h-11 bg-card"
-                          />
-                          {(() => {
-                            const q = nationality.trim().toLowerCase();
-                            if (!q) return null;
-                            const exact = ALL_COUNTRIES.find(c => c.v.toLowerCase() === q);
-                            if (exact) return null;
-                            const matches = ALL_COUNTRIES.filter(c => c.v.toLowerCase().includes(q)).slice(0, 5);
-                            if (matches.length === 0) return null;
-                            return (
-                              <div className="absolute z-20 left-0 right-0 top-full mt-1 rounded-md border border-border bg-card shadow-lg overflow-hidden">
-                                {matches.map(c => (
-                                  <button
-                                    key={c.v}
-                                    type="button"
-                                    onClick={() => setNationality(c.v)}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/60 transition-colors"
-                                  >
-                                    <span>{c.f}</span>
-                                    <span>{c.v}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            );
-                          })()}
-                        </div>
+                      <div className="space-y-1.5 relative">
+                        {/* WhatsApp field retired — never used by the
+                            brief generator and the extra "give us your
+                            phone" ask was friction with no payoff. */}
+                        <Label className="text-xs uppercase tracking-wider font-medium">Nationality *</Label>
+                        <Input
+                          value={nationality}
+                          onChange={e => setNationality(e.target.value)}
+                          placeholder="Type any country (Kazakhstan, Nigeria, …)"
+                          className="h-11 bg-card"
+                        />
+                        {(() => {
+                          const q = nationality.trim().toLowerCase();
+                          if (!q) return null;
+                          const exact = ALL_COUNTRIES.find(c => c.v.toLowerCase() === q);
+                          if (exact) return null;
+                          const matches = ALL_COUNTRIES.filter(c => c.v.toLowerCase().includes(q)).slice(0, 5);
+                          if (matches.length === 0) return null;
+                          return (
+                            <div className="absolute z-20 left-0 right-0 top-full mt-1 rounded-md border border-border bg-card shadow-lg overflow-hidden">
+                              {matches.map(c => (
+                                <button
+                                  key={c.v}
+                                  type="button"
+                                  onClick={() => setNationality(c.v)}
+                                  className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/60 transition-colors"
+                                >
+                                  <span>{c.f}</span>
+                                  <span>{c.v}</span>
+                                </button>
+                              ))}
+                            </div>
+                          );
+                        })()}
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-xs uppercase tracking-wider font-medium">Where you are *</Label>
+                        <Label className="text-xs uppercase tracking-wider font-medium">Current stage *</Label>
                         <Select value={gradeLevel} onValueChange={setGradeLevel}>
-                          <SelectTrigger className="h-11 bg-card"><SelectValue placeholder="Select your stage" /></SelectTrigger>
+                          <SelectTrigger className="h-11 bg-card"><SelectValue placeholder="Pick your stage" /></SelectTrigger>
                           <SelectContent>
                             {[
                               "High School",
