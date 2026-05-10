@@ -261,9 +261,7 @@ const TopUniAIRu = () => {
                       {[
                         { label: "Престиж", value: prestige, set: setPrestige, icon: <GraduationCap className="w-4 h-4" /> },
                         { label: "Стипендия", value: scholarship, set: setScholarship, icon: <Shield className="w-4 h-4" /> },
-                        { label: "Карьерная отдача", value: careerRoi, set: setCareerRoi, icon: <Target className="w-4 h-4" /> },
                         { label: "Доступность визы", value: visaAccess, set: setVisaAccess, icon: <CheckCircle2 className="w-4 h-4" /> },
-                        { label: "Предпочтение по локации", value: locationPref, set: setLocationPref, icon: <ArrowRight className="w-4 h-4" /> },
                       ].map(item => (
                         <div key={item.label} className="space-y-2">
                           <div className="flex items-center justify-between"><Label className="flex items-center gap-2">{item.icon} {item.label}</Label><span className="text-sm font-semibold text-accent">{item.value[0]}/5</span></div>

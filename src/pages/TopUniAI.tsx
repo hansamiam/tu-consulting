@@ -639,12 +639,17 @@ const TopUniAI = () => {
                       <p className="text-muted-foreground mt-2 text-sm">Weight each on a 1-5 scale.</p>
                     </div>
                     <div className="space-y-5">
+                      {/* Round-42: 5 sliders → 3. "Career ROI" was vague
+                          and the brief generator gets the same signal
+                          from major + grade level. "Location preference"
+                          duplicated the targetCountries selection on
+                          step 2. Cuts the page from 5 sliders to the
+                          three that actually shape the report:
+                          prestige, scholarship need, visa accessibility. */}
                       {[
                         { label: "Prestige", value: prestige, set: setPrestige, icon: GraduationCap, low: "Any school", high: "Top 50 only" },
                         { label: "Scholarship need", value: scholarship, set: setScholarship, icon: Shield, low: "Self-fund OK", high: "Must be free" },
-                        { label: "Career ROI", value: careerRoi, set: setCareerRoi, icon: Target, low: "Open-ended", high: "Top 1% jobs" },
                         { label: "Visa accessibility", value: visaAccess, set: setVisaAccess, icon: CheckCircle2, low: "Don't mind", high: "Easy access" },
-                        { label: "Location preference", value: locationPref, set: setLocationPref, icon: ArrowRight, low: "Anywhere", high: "Specific city" },
                       ].map(item => (
                         <div key={item.label} className="bg-card border border-border/70 rounded-xl p-5">
                           <div className="flex items-center justify-between mb-3">
