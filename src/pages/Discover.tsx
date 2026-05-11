@@ -601,6 +601,17 @@ const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: numbe
     match += Math.min(4, Math.round(Math.log(saveCount30d + 1) * 0.7));
   }
 
+  // Provider trust boost — mirror of the match_scholarships RPC's
+  // provider_trust_boost (migration 20260509030000). Rewards rows whose
+  // provider has been hand-vetted as an institutional funder (high) or
+  // a known organisation (medium). Low / unknown contribute 0. Cap
+  // at +3 — provider trust is a credibility nudge, not a thumb on the
+  // scale strong enough to outweigh real fit signals. The catalog
+  // loader joins providers.trust_tier onto each row at fetch time so
+  // this is a cheap field lookup.
+  if (s.provider_trust_tier === "high") match += 3;
+  else if (s.provider_trust_tier === "medium") match += 1;
+
   if (eligibility === "likely" && match >= 70) eligibility = "eligible";
   match = Math.max(0, Math.min(100, Math.round(match)));
 
@@ -1971,6 +1982,22 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
                 <p className="text-[11px] text-muted-foreground/85 line-clamp-2 leading-snug">
                   {p}
                 </p>
+                {/* Verified-funder dot — surfaces hand-vetted high-trust
+                    providers (institutional funders like Rhodes Trust,
+                    Fulbright, DAAD, etc.). The dot is intentionally
+                    subtle: visible only on close read, doesn't draw the
+                    eye away from the title, but converts a row from
+                    "anonymous catalog entry" → "this is a known funder"
+                    for the readers who scan for the signal. */}
+                {s.provider_trust_tier === "high" && (
+                  <span
+                    className="inline-flex items-center justify-center shrink-0 h-3.5 w-3.5 rounded-full bg-gold/15 text-gold-dark"
+                    title={ru ? "Проверенный фонд" : "Verified funder"}
+                    aria-label={ru ? "Проверенный фонд" : "Verified funder"}
+                  >
+                    <CheckCircle2 className="h-2.5 w-2.5" />
+                  </span>
+                )}
               </div>
             );
           })()}
