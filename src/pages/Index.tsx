@@ -173,19 +173,21 @@ const Index = () => {
           style={{ backgroundImage: `linear-gradient(180deg, transparent, hsl(var(--primary) / 0.07) 50%, transparent)` }}
         >
           <div className="max-w-6xl mx-auto px-5 sm:px-8">
-            <motion.div {...fadeUp()} className="max-w-4xl mx-auto text-center mb-14 sm:mb-16">
+            <motion.div {...fadeUp()} className="max-w-4xl mx-auto text-center mb-20 sm:mb-24">
               {/* "TEAM" kicker dropped — the H2 below already names the
                   section. A kicker + H2 that says the same thing twice
                   is redundant chrome; keeping just the H2 reads cleaner
                   and matches the other sections that don't double-label. */}
-              <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-10">
+              <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-8 sm:mb-10">
                 Meet the team.
               </h2>
 
               {/* Stats block — carried over from /team. $500K+ secured,
                   10+ years of collective experience, 5-country flag row.
-                  Animated numbers count up on scroll-into-view. */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto mb-8">
+                  Animated numbers count up on scroll-into-view. Wider
+                  horizontal gap between the 3 stat columns so each one
+                  reads as its own anchor instead of a crowded triplet. */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-12 max-w-4xl mx-auto mb-6">
                 <motion.div whileHover={{ scale: 1.04 }} className="space-y-1 sm:space-y-2">
                   <div className="min-h-[44px] sm:min-h-[56px] flex items-center justify-center">
                     <div className="text-4xl sm:text-5xl font-bold text-gold">
@@ -234,7 +236,10 @@ const Index = () => {
               </div>
             </motion.div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10">
+            {/* Team grid — bumped row gap on mobile (gap-y-12) so the
+                2×2 stack on small screens has visible breathing between
+                rows. Desktop's 4-across row-gap unchanged. */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 sm:gap-x-8 gap-y-12 sm:gap-y-10">
               {TEAM.map((m, i) => (
                 <motion.button
                   key={m.name}
@@ -251,26 +256,23 @@ const Index = () => {
                   </div>
                   <p className="font-heading font-semibold text-foreground text-base leading-tight">{m.name}</p>
                   <p className="text-sm text-muted-foreground mt-1">{m.title}</p>
-                  {/* School / credential — bumped from text-xs gold to a
-                      heavier serif treatment so the prestige reads at a
-                      glance. Earlier it was a small gold caption that
-                      visually receded into the card edge; the credential
-                      IS the proof point of the section so it needs to
-                      land first, not last. Editorial uppercase + tighter
-                      tracking keeps it premium not flashy. */}
-                  <p className="font-heading text-[13px] sm:text-sm text-gold-dark mt-2 font-semibold tracking-[0.04em]">
+                  {/* School / credential — editorial uppercase + tight
+                      letter-spacing + gold-dark weight reads like the
+                      masthead credit line on a profile piece. Prestige
+                      lands at a glance without going flashy. */}
+                  <p className="font-heading text-[11px] sm:text-xs text-gold-dark mt-2.5 font-bold uppercase tracking-[0.16em]">
                     {m.school}
                   </p>
                 </motion.button>
               ))}
             </div>
 
-            <motion.div {...fadeUp(0.3)} className="mt-12">
+            <motion.div {...fadeUp(0.3)} className="mt-16 sm:mt-20 text-center">
               <button
                 onClick={() => navigate('/team')}
                 className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-gold-dark transition-colors"
               >
-                Read team profiles <ArrowRight className="h-4 w-4" />
+                More about us <ArrowRight className="h-4 w-4" />
               </button>
             </motion.div>
           </div>
