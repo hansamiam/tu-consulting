@@ -73,7 +73,7 @@ const TeamRu = () => {
     {
       name: "Айгуль Абдубаетова",
       title: "Старший советник",
-      tagline: "Oregon & OSCE Academy",
+      tagline: "U of Oregon",
       photo: aigulPhoto,
       hometown: "Бишкек, Кыргызстан",
       education: "Университет Орегона",
