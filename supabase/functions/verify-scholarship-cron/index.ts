@@ -15,7 +15,7 @@
 //   select cron.schedule('verify-scholarship-cron', '0 5 * * *',
 //     $$ select net.http_post(...) $$);
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getDispatchClient } from "../_shared/dispatchClient.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,10 +49,17 @@ const WORKER_QUIT_HEADROOM_MS = 5_000;
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!SUPABASE_URL || !SERVICE_ROLE) return json(500, { error: "Missing Supabase env" });
-  const supa = createClient(SUPABASE_URL, SERVICE_ROLE);
+  // Shared dispatchClient — loads the rotation-resilient dispatch token
+  // from private.app_secrets so internal supa.functions.invoke calls
+  // hit the gateway with the SAME token pg_cron uses. Avoids the
+  // env-injected-SUPABASE_SERVICE_ROLE_KEY-is-stale-legacy-JWT failure
+  // mode that has been silently 401ing every internal invoke.
+  let supa;
+  try {
+    ({ supa } = await getDispatchClient());
+  } catch (e) {
+    return json(500, { error: `Missing Supabase env: ${(e as Error).message}` });
+  }
 
   // Candidates: have a source_url, not currently broken. Order by
   // data_completeness_score ASC first (the migration 20260507190000

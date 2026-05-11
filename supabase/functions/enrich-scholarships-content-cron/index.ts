@@ -12,7 +12,7 @@
 //
 // Cost shape: 100 × ~$0.0008 = $0.08/day cap on AI spend.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getDispatchClient } from "../_shared/dispatchClient.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,11 +29,16 @@ const THROTTLE_MS = 1200;
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!SUPABASE_URL || !SERVICE_ROLE) return json(500, { error: "Missing Supabase env" });
-
-  const supa = createClient(SUPABASE_URL, SERVICE_ROLE);
+  // dispatchClient loads the rotation-resilient apikey from
+  // private.app_secrets — supa.functions.invoke below then succeeds
+  // against the API gateway even when the env-injected service-role
+  // key is the legacy JWT format (which the gateway now rejects).
+  let supa;
+  try {
+    ({ supa } = await getDispatchClient());
+  } catch (e) {
+    return json(500, { error: `Missing Supabase env: ${(e as Error).message}` });
+  }
 
   // Candidates: rows missing ANY of the eight soft fields. Exclude broken
   // rows (per the same contract LLMs use) so we don't burn AI budget

@@ -17,7 +17,7 @@
 //          )
 //        ) $$);
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getDispatchClient } from "../_shared/dispatchClient.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,11 +40,14 @@ const THROTTLE_MS = 2000;
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!SUPABASE_URL || !SERVICE_ROLE) return json(500, { error: "Missing Supabase env" });
-
-  const supa = createClient(SUPABASE_URL, SERVICE_ROLE);
+  // dispatchClient — see verify-scholarship-cron for the auth-rotation
+  // rationale. Internal supa.functions.invoke uses the dispatch token.
+  let supa;
+  try {
+    ({ supa } = await getDispatchClient());
+  } catch (e) {
+    return json(500, { error: `Missing Supabase env: ${(e as Error).message}` });
+  }
 
   // Find candidates: enriched_at IS NULL OR enriched_at < now() - 180 days.
   const stalenessCutoff = new Date(Date.now() - STALENESS_DAYS * 86400_000).toISOString();
