@@ -28,7 +28,7 @@ export default function ThankYou() {
   const [intakeDone, setIntakeDone] = useState(false);
 
   useEffect(() => {
-    document.title = "Payment Confirmed — Top Uni Consulting";
+    document.title = "Payment Confirmed — TopUni";
 
     // Load Calendly
     const script = document.createElement("script");

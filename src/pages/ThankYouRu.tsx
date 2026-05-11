@@ -26,7 +26,7 @@ export default function ThankYouRu() {
   const [verifyError, setVerifyError] = useState<string | null>(null);
 
   useEffect(() => {
-    document.title = "Оплата подтверждена — Top Uni Consulting";
+    document.title = "Оплата подтверждена — TopUni";
     const script = document.createElement("script");
     script.src = "https://assets.calendly.com/assets/external/widget.js";
     script.async = true;
