@@ -55,6 +55,7 @@ import {
   Share2,
   Globe,
   ShieldCheck,
+  RefreshCw,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
@@ -3320,6 +3321,15 @@ const Discover = ({ language = "en" }: Props) => {
    * still works (the boost is optional). */
   const [saveCounts, setSaveCounts] = useState<Map<string, number>>(new Map());
   const [loading, setLoading] = useState(true);
+  /* Catalog-fetch error state — when the supabase fetch itself
+   * fails (network drop, RLS misconfig, cold-start race), we used
+   * to show the empty-results state ("Nothing matches these
+   * filters") which misled users into thinking their filters
+   * were too tight. Now: an explicit retry banner that fires a
+   * fresh fetch on click. Refreshes when fetchKey bumps. */
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [fetchKey, setFetchKey] = useState(0);
+  const retryCatalog = () => { setCatalogError(null); setLoading(true); setFetchKey(k => k + 1); };
   const [profile, setProfile] = useState<Profile>({ country: "", degrees: [], gpa: "", gpaScale: "4.0", ielts: "", toefl: "", sat: "", field: "", demographics: [], targetCountries: [] });
   // Round-28 IA: /discover always lands you in the database. Previously
   // we showed a big "answer 4 questions" landing wall that forked users
@@ -3534,7 +3544,22 @@ const Discover = ({ language = "en" }: Props) => {
           .select("provider_id, trust_tier")
           .neq("trust_tier", "unknown"),
       ]);
+      // Explicit network/RLS error path — pre-fix a failed fetch
+      // left rows=[] and the UI rendered the "no matches" empty
+      // state, which misleads users into adjusting filters that
+      // had nothing to do with the actual failure.
+      if (scholarshipsRes.error || !scholarshipsRes.data) {
+        if (!usedCache) {
+          setCatalogError(scholarshipsRes.error?.message ?? "Failed to load catalog");
+          setLoading(false);
+        }
+        // When the cache hydrated already, we silently keep the
+        // cached rows visible — better stale than blank.
+        return;
+      }
       if (scholarshipsRes.data) {
+        // Clear any prior error since we just got a successful response.
+        setCatalogError(null);
         const trustMap = new Map<string, "high" | "medium" | "low" | "unknown">();
         for (const p of (providersRes.data ?? []) as { provider_id: string; trust_tier: "high"|"medium"|"low"|"unknown" }[]) {
           trustMap.set(p.provider_id, p.trust_tier);
@@ -3593,7 +3618,9 @@ const Discover = ({ language = "en" }: Props) => {
       // fetch resolves milliseconds after the cache hydrate.
       if (!usedCache) setLoading(false);
     })();
-  }, []);
+    // fetchKey lets the retry banner trigger a fresh fetch by bumping.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchKey]);
 
   useEffect(() => {
     // Hydrate from localStorage on mount AND any time the user changes
@@ -4967,7 +4994,32 @@ const Discover = ({ language = "en" }: Props) => {
                   </aside>
 
                   <main className="flex-1 min-w-0">
-                    {loading ? (
+                    {/* Catalog-fetch error banner. Shown above whatever
+                        else renders so users can see the failure cause
+                        + retry without losing scroll position. When the
+                        cache hydrated, cached rows still render below
+                        and this banner sits at the top as an advisory. */}
+                    {catalogError && (
+                      <div className="rounded-2xl border border-destructive/30 bg-destructive/[0.04] px-5 py-4 mb-4 flex items-start gap-3">
+                        <ShieldAlert className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-destructive">
+                            {t("Couldn't load the catalog", "Не удалось загрузить базу")}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                            {t(
+                              "Check your connection or try again. If this keeps happening, email team@topuniconsulting.com.",
+                              "Проверьте соединение или попробуйте снова. Если повторяется, напишите team@topuniconsulting.com.",
+                            )}
+                          </p>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={retryCatalog} className="gap-1.5 shrink-0">
+                          <RefreshCw className="h-3.5 w-3.5" />
+                          {t("Retry", "Повторить")}
+                        </Button>
+                      </div>
+                    )}
+                    {loading && !catalogError ? (
                       // Card-shaped skeletons that mirror the real card
                       // geometry — country band, title stub, blurb lines,
                       // footer chips, action row — so the layout doesn't
