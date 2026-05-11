@@ -27,14 +27,16 @@ const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 // Cap per run so a misconfigured deploy can't burn the entire AI/Firecrawl
-// budget in one cron tick. 100 × ~$0.0035 = $0.35/day max spend.
-const MAX_PER_RUN = 100;
+// budget in one cron tick. 200 × ~$0.0035 = $0.70/day max spend at the
+// current every-30-min schedule × 2x bump from 100 — keeps drain time
+// at ~7 days for a 2-3k row catalog instead of ~15 days.
+const MAX_PER_RUN = 200;
 
 // Concurrent verify-scholarship calls. Each call hits Firecrawl + an
-// AI extraction; ~3s avg. With CONCURRENCY=4 and no per-call throttle,
-// throughput is ~1.3 verifies/s — well under Firecrawl's per-second
-// cap and ~10× the previous serial+throttle rate.
-const CONCURRENCY = 4;
+// AI extraction; ~3s avg. CONCURRENCY=6 keeps throughput ~2 verifies/s
+// — still under Firecrawl's per-second cap and lets 200 rows fit
+// inside the 140s deadline (200/6 × 3s ≈ 100s).
+const CONCURRENCY = 6;
 
 // Deadline for the entire run. Supabase edge functions cap at ~150s
 // on paid tier; we leave 10s headroom for the JSON response. Pre-fix
