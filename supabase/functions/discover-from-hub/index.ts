@@ -16,10 +16,13 @@
 // skipped. Re-running on the same hub re-extracts and only inserts
 // genuinely new URLs.
 //
-// Cost: ~$0.015 per hub crawl ($0.01 Firecrawl + ~$0.005 pro-tier LLM).
-// Cached server-side via the dispatcher's content-hash check on the
-// individual sources, so cost is paid once per discovery + ongoing
-// per-source crawls (which already short-circuit on unchanged content).
+// Cost: ~$0.025 per hub crawl ($0.02 Firecrawl for up to 2 pagination
+// pages + ~$0.005 pro-tier LLM call against the combined markdown).
+// Discovery yield ~2× the prior single-page walk, so cost-per-URL
+// is actually lower. Cached server-side via the dispatcher's
+// content-hash check on the individual sources, so cost is paid once
+// per discovery + ongoing per-source crawls (which already short-
+// circuit on unchanged content).
 //
 // Auth: admin or service-role.
 
@@ -142,17 +145,64 @@ serve(async (req) => {
     return json(400, { error: "Either hub_source_id or hub_url required" });
   }
 
-  // Fetch the hub page. We pass NO onlyMainContent so the LLM can see
-  // navigation + sidebar links (which are exactly what we're after on
-  // directory pages).
-  let pageMarkdown = "";
-  try {
-    const result = await firecrawlScrape({ url: hubUrl, onlyMainContent: false });
-    pageMarkdown = result.markdown;
-    if (!pageMarkdown.trim()) return json(200, { ok: false, reason: "empty markdown" });
-  } catch (e) {
-    return json(200, { ok: false, reason: "fetch failed", error: (e as Error).message });
+  // Fetch the hub page + up to 2 paginated successors. Most aggregator
+  // hubs (especially WordPress-based ones — opportunitiesforyouth.org,
+  // opportunitytracker.ug, opportunitydesk.org, scholars4dev.com,
+  // afterschoolafrica.com) paginate at /page/2/, /page/3/. Page 1
+  // covers ~15 most-recent posts; pages 2-3 surface another 30 posts'
+  // worth of URLs without re-harvesting any. We pass NO onlyMainContent
+  // so the LLM can see navigation + sidebar links (which are exactly
+  // what we're after on directory pages).
+  //
+  // Resilient to non-WordPress sites: if a /page/N/ URL returns empty
+  // or a 404-shaped page (Firecrawl just gives us short / boilerplate
+  // markdown), we stop and use what we already have. Cost: at most
+  // 3× Firecrawl per hub (~$0.03 vs $0.01 prior) — but the URL
+  // discovery yield is ~3-4× higher, so cost-per-discovered-URL
+  // is actually lower.
+  // 2 pages strikes the budget balance: ~30 listings per hub (vs. ~15
+  // single-page), Firecrawl cost stays under $0.02/hub, and per-hub
+  // runtime stays around 10-15s so the cron dispatcher's 12-hub /
+  // 60s-timeout envelope still holds.
+  const MAX_PAGES = 2;
+  const SHORT_PAGE_THRESHOLD = 1500; // chars; below this it's almost
+                                     // certainly an empty / 404 page
+  const pageUrls: string[] = [hubUrl];
+  for (let i = 2; i <= MAX_PAGES; i++) {
+    // WordPress canonical pagination. Append /page/N/ (with both
+    // trailing-slash variants handled by URL normalization). Won't
+    // hurt non-WordPress sites — they'll just return their 404 / home
+    // page, we'll detect the short markdown and stop.
+    const sep = hubUrl.endsWith("/") ? "" : "/";
+    pageUrls.push(`${hubUrl}${sep}page/${i}/`);
   }
+
+  let combinedMarkdown = "";
+  let pagesWalked = 0;
+  for (const url of pageUrls) {
+    try {
+      const result = await firecrawlScrape({ url, onlyMainContent: false });
+      const md = result.markdown ?? "";
+      // First page must produce something; otherwise the whole crawl is dead.
+      if (pagesWalked === 0 && !md.trim()) {
+        return json(200, { ok: false, reason: "empty markdown on page 1" });
+      }
+      // Subsequent pages can quietly fail — that's our signal pagination
+      // doesn't exist on this site (or we've passed the last page).
+      if (pagesWalked > 0 && md.trim().length < SHORT_PAGE_THRESHOLD) break;
+      combinedMarkdown += (pagesWalked > 0 ? "\n\n=== PAGE BREAK ===\n\n" : "") + md;
+      pagesWalked++;
+    } catch (e) {
+      // Same logic — first-page fetch failure is fatal; later-page
+      // failure is fine, we just stop walking.
+      if (pagesWalked === 0) {
+        return json(200, { ok: false, reason: "fetch failed", error: (e as Error).message });
+      }
+      break;
+    }
+  }
+  const pageMarkdown = combinedMarkdown;
+  if (!pageMarkdown.trim()) return json(200, { ok: false, reason: "empty markdown" });
 
   const truncated = pageMarkdown.slice(0, MAX_MARKDOWN_CHARS);
   let extracted: DiscoveredScholarship[] = [];
