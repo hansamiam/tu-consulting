@@ -1,4 +1,4 @@
-# TopUni Consulting
+# TopUni
 
 AI-driven university admissions strategy + scholarship database for ambitious students applying internationally. Built by Yale, Cambridge, and Harvard alumni.
 
