@@ -2006,23 +2006,6 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
                     <CheckCircle2 className="h-2.5 w-2.5" />
                   </span>
                 )}
-                {/* Cross-source consensus indicator — only renders when
-                    the same scholarship has been independently confirmed
-                    by ≥ 2 source URLs (consensus_score is incremented
-                    by record_scholarship_source on each unique-source
-                    confirm). This is the moat aggregator competitors
-                    can't match: they list whatever a single page said;
-                    we only earn the badge after two pages agree. */}
-                {typeof s.consensus_score === "number" && s.consensus_score >= 2 && (
-                  <span
-                    className="inline-flex items-center gap-0.5 shrink-0 text-[9px] font-bold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 ring-1 ring-emerald-500/30 px-1 py-0.5 rounded"
-                    title={ru
-                      ? `Подтверждено ${s.consensus_score} независимыми источниками`
-                      : `Cross-verified by ${s.consensus_score} independent sources`}
-                  >
-                    ×{s.consensus_score}
-                  </span>
-                )}
               </div>
             );
           })()}
