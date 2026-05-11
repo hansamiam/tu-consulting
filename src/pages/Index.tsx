@@ -7,11 +7,17 @@ import samuelPhoto from "@/assets/samuel.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
 import joshPhoto from "@/assets/josh.jpg";
 import aigulPhoto from "@/assets/aigul.jpeg";
+import usFlag from "@/assets/flags/us.svg";
+import caFlag from "@/assets/flags/ca.svg";
+import gbFlag from "@/assets/flags/gb.svg";
+import cnFlag from "@/assets/flags/cn.svg";
+import krFlag from "@/assets/flags/kr.svg";
 import Navigation from "@/components/Navigation";
 import { shouldRedirectToRussian } from "@/utils/languageDetection";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { Footer } from "@/components/Footer";
 import { OutcomesBar } from "@/components/OutcomesBar";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { motion } from "framer-motion";
 
 const fadeUp = (delay = 0) => ({
@@ -21,8 +27,11 @@ const fadeUp = (delay = 0) => ({
   transition: { delay, duration: 0.7, ease: [0.22, 1, 0.36, 1] as const },
 });
 
+// Home-page team grid — Samuel's title intentionally shorter than on
+// /team (just "CEO", no "Founder & CEO") so the home cards stay
+// scannable and don't repeat the same word across role rows.
 const TEAM = [
-  { name: "Samuel Han", title: "Founder & CEO", school: "Yale", photo: samuelPhoto },
+  { name: "Samuel Han", title: "CEO", school: "Yale", photo: samuelPhoto },
   { name: "Nurzada Abdivalieva", title: "Co-Founder", school: "Tsinghua · Cambridge", photo: nurzadaPhoto },
   { name: "Josh Hughes", title: "Lead Consultant", school: "Harvard", photo: joshPhoto },
   { name: "Aigul Abdoubaetova", title: "Senior Advisor", school: "Ex-OSCE Academy", photo: aigulPhoto },
@@ -146,100 +155,80 @@ const Index = () => {
             Round 10 collapse: lead with the shift (the user's status quo
             vs ours), follow with one editorial line on what makes us
             different. The product takes 60 seconds; the page should too. */}
-        <section id="how" className="py-20 sm:py-28">
-          <div className="max-w-5xl mx-auto px-5 sm:px-8">
-            <motion.div {...fadeUp()} className="max-w-2xl mx-auto text-center mb-12 sm:mb-14">
-              <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">The shift</p>
-              <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12]">
-                From scattered tabs to a ranked plan.
-              </h2>
-              {/* Auto-hides until at least one TopUni member logs an
-                  accepted award. Once outcomes flow, this becomes a
-                  compounding trust signal right above the section. */}
-              <div className="mt-6">
-                <OutcomesBar variant="card" language="en" />
-              </div>
-            </motion.div>
+        {/* The 'scattered tabs / ranked plan' section was retired here:
+            the four-bullet listicle felt generic and over-extended the
+            scroll before the user got to the team — the actual proof
+            point right now while the Discover database is still
+            maturing. Headlining with the team's track record + cross-
+            continental experience lands the consulting/advising story
+            faster. OutcomesBar moved into the team section header below
+            so the trust signal still appears once outcomes flow in. */}
 
-            <div className="grid sm:grid-cols-2 gap-4 sm:gap-5 mb-12 sm:mb-16">
-              <motion.div
-                {...fadeUp(0.05)}
-                className="rounded-2xl border border-border bg-card p-6 sm:p-7"
-              >
-                <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-4">
-                  Without TopUni
-                </p>
-                <ul className="space-y-3">
-                  {[
-                    "Listing sites that show every scholarship to every visitor",
-                    "Random Reddit advice",
-                    "Missed deadlines",
-                    "Unsure if you actually qualify for any of them",
-                    "No clear essay strategy",
-                  ].map((line, i) => (
-                    <li key={i} className="flex items-start gap-3 text-[15px] text-foreground/75 leading-snug">
-                      <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
-                      <span>{line}</span>
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-
-              <motion.div
-                {...fadeUp(0.1)}
-                className="relative rounded-2xl border border-gold/30 bg-gradient-to-br from-gold/[0.07] via-card to-card p-6 sm:p-7 overflow-hidden"
-              >
-                <div className="absolute left-0 inset-y-0 w-[3px] bg-gradient-to-b from-gold-dark via-gold to-gold-dark" />
-                <p className="text-[11px] uppercase tracking-[0.18em] text-gold-dark font-semibold mb-4">
-                  With TopUni
-                </p>
-                <ul className="space-y-3">
-                  {[
-                    "Ranked opportunities tailored to your profile",
-                    "Why-it-fits notes for each scholarship",
-                    "Funding filters that actually narrow the universe",
-                    "Deadline plan that emails you before each one",
-                    "Live monthly workshops with admitted founders",
-                  ].map((line, i) => (
-                    <li key={i} className="flex items-start gap-3 text-[15px] text-foreground leading-snug">
-                      <span className="mt-1 text-gold-dark shrink-0">
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </span>
-                      <span>{line}</span>
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-            </div>
-
-            {/* One-line worldview anchor — closes the section with WHY this
-                exists, after showing WHAT it does. Keeps the section
-                focused without adding a 2nd visual block. */}
-            <motion.p
-              {...fadeUp(0.18)}
-              className="font-sans text-lg sm:text-xl text-foreground/85 leading-[1.5] tracking-[-0.005em] text-center text-balance max-w-3xl mx-auto"
-            >
-              Elite admissions consulting costs thousands. Generic scholarship listing sites bury you in opportunities you don't qualify for.
-              {" "}
-              <span className="text-gold-dark font-semibold">TopUni is the software in between</span> — personalized strategy, opportunities ranked against your actual profile, and live execution support, at a fraction of the cost.
-            </motion.p>
-          </div>
-        </section>
-
-        {/* TEAM — subtle background shift, no hard block */}
+        {/* TEAM — subtle background shift, no hard block.
+            Header carries over the /team stats block ($500K+, 10+ years,
+            5-flag row) so the home page leads with the consulting moat
+            instead of a generic tagline. */}
         <section
           className="py-20 sm:py-28"
           style={{ backgroundImage: `linear-gradient(180deg, transparent, hsl(var(--primary) / 0.07) 50%, transparent)` }}
         >
           <div className="max-w-6xl mx-auto px-5 sm:px-8">
-            <motion.div {...fadeUp()} className="max-w-3xl mx-auto text-center mb-14 sm:mb-16">
+            <motion.div {...fadeUp()} className="max-w-4xl mx-auto text-center mb-14 sm:mb-16">
               <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">Team</p>
-              <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-5">
+              <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-10">
                 We've sat in the rooms you're applying to.
               </h2>
-              <p className="text-muted-foreground text-lg leading-relaxed">
-                Yale · Harvard · Cambridge · Tsinghua — admitted, funded, and on the other side of the table.
-              </p>
+
+              {/* Stats block — carried over from /team. $500K+ secured,
+                  10+ years of collective experience, 5-country flag row.
+                  Animated numbers count up on scroll-into-view. */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto mb-8">
+                <motion.div whileHover={{ scale: 1.04 }} className="space-y-1 sm:space-y-2">
+                  <div className="min-h-[44px] sm:min-h-[56px] flex items-center justify-center">
+                    <div className="text-4xl sm:text-5xl font-bold text-gold">
+                      $<AnimatedNumber value={500} />K+
+                    </div>
+                  </div>
+                  <div className="text-xs sm:text-base text-muted-foreground">in scholarships secured</div>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.04 }} className="space-y-1 sm:space-y-2">
+                  <div className="min-h-[44px] sm:min-h-[56px] flex items-center justify-center">
+                    <div className="text-4xl sm:text-5xl font-bold text-gold">
+                      <AnimatedNumber value={10} />+
+                    </div>
+                  </div>
+                  <div className="text-xs sm:text-base text-muted-foreground">years of collective experience</div>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.04 }} className="space-y-1 sm:space-y-2">
+                  <div className="min-h-[44px] sm:min-h-[56px] flex items-center justify-center">
+                    <div className="flex flex-nowrap gap-2 sm:gap-3 items-center justify-center">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
+                        <img src={usFlag} alt="USA" className="w-full h-full object-cover" loading="lazy" />
+                      </div>
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
+                        <img src={caFlag} alt="Canada" className="w-full h-full object-cover" loading="lazy" />
+                      </div>
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
+                        <img src={gbFlag} alt="UK" className="w-full h-full object-cover" loading="lazy" />
+                      </div>
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
+                        <img src={cnFlag} alt="China" className="w-full h-full object-cover object-left" loading="lazy" />
+                      </div>
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
+                        <img src={krFlag} alt="South Korea" className="w-full h-full object-cover" loading="lazy" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-xs sm:text-base text-muted-foreground">cross-continental expertise</div>
+                </motion.div>
+              </div>
+
+              {/* OutcomesBar — kept from the retired 'shift' section so
+                  once one TopUni member logs an accepted award, the
+                  compounding trust signal still surfaces above the team. */}
+              <div className="mt-4">
+                <OutcomesBar variant="card" language="en" />
+              </div>
             </motion.div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10">
@@ -295,13 +284,13 @@ const Index = () => {
         >
           <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
             <motion.div {...fadeUp()} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gold/30 bg-gold/10 text-gold-dark text-[11px] font-medium tracking-[0.18em] uppercase mb-7">
-              <Crown className="h-3.5 w-3.5" /> Early access · first 50 lock for life
+              <Crown className="h-3.5 w-3.5" /> Early access · first 50 signups
             </motion.div>
             <motion.h2 {...fadeUp(0.05)} className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.1] mb-5">
-              The full toolkit, $39/month.
+              Become a member, $39/month.
             </motion.h2>
             <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-lg mb-9 max-w-xl mx-auto leading-relaxed">
-              TopUni AI · Discover · Academy · monthly live workshops with the alumni team. Early-access discount applies automatically; promo codes accepted at checkout.
+              TopUni AI · Discover · Academy · monthly live workshops with the team. Early-access discount applied automatically.
             </motion.p>
             <motion.div {...fadeUp(0.2)} className="flex flex-wrap items-center justify-center gap-3">
               <Button

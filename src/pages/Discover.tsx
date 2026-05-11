@@ -4717,6 +4717,7 @@ const Discover = ({ language = "en" }: Props) => {
               {!loading && ranked.length > 0 && (
                 <CuratedCollections
                   rows={ranked}
+                  filters={filters as unknown as Record<string, unknown>}
                   onApply={(patch) => setFilters(f => ({ ...f, ...patch as Partial<FilterState> }))}
                   lang={language}
                 />
