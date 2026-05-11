@@ -84,7 +84,7 @@ const IndexRu = () => {
                 {...fadeUp(0.15)}
                 className="font-heading text-[2.125rem] sm:text-6xl font-bold tracking-tight leading-[1.08] sm:leading-[1.02] mb-6 sm:mb-7 text-balance max-w-4xl mx-auto text-foreground md:text-6xl"
               >
-                Ваша индивидуальная <span className="text-gold-dark">стратегия поступления</span>
+                Ваша индивидуальная <span className="text-gold-dark">стратегия стипендий</span>
                 <br className="hidden sm:block" /> за минуты.
               </motion.h1>
 
