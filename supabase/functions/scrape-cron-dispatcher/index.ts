@@ -50,7 +50,11 @@ serve(async (req) => {
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  // Prefer SB_SECRET_KEY (the modern sb_secret_* short-form key) when
+  // present — that's the value the API gateway accepts via the apikey
+  // header. Fall back to the legacy SUPABASE_SERVICE_ROLE_KEY for
+  // older projects where SB_SECRET_KEY isn't injected.
+  const SERVICE_ROLE = Deno.env.get("SB_SECRET_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!SUPABASE_URL || !SERVICE_ROLE) return json(500, { error: "Supabase env not configured" });
 
   // Auth: cron (service role) or admin user only.
@@ -124,10 +128,15 @@ serve(async (req) => {
     let status = 0;
     let ok = false;
     try {
+      // Auth via apikey header — sb_secret_* keys aren't JWTs so the
+      // gateway rejects them in Authorization: Bearer. Both headers
+      // are sent so this works regardless of which key shape is in
+      // SERVICE_ROLE (legacy JWT or sb_secret_*). requireAdminOrService
+      // reads from either header on the function side.
       const r = await fetch(`${SUPABASE_URL}/functions/v1/scrape-source`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${SERVICE_ROLE}`,
+          apikey: SERVICE_ROLE,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ source_id: s.source_id }),

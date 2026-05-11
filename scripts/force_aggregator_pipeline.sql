@@ -46,7 +46,6 @@ SELECT
     url     := 'https://bsfldtpemfxhnkdzccib.supabase.co/functions/v1/discover-from-hub',
     headers := jsonb_build_object(
       'apikey',       public.app_cron_token(),
-      'Authorization','Bearer ' || public.app_cron_token(),
       'Content-Type', 'application/json'
     ),
     body    := jsonb_build_object('hub_source_id', source_id)
@@ -62,7 +61,6 @@ SELECT net.http_post(
   url     := 'https://bsfldtpemfxhnkdzccib.supabase.co/functions/v1/scrape-cron-dispatcher',
   headers := jsonb_build_object(
     'apikey',       public.app_cron_token(),
-    'Authorization','Bearer ' || public.app_cron_token(),
     'Content-Type', 'application/json'
   ),
   body    := jsonb_build_object('force_all', true)
@@ -77,7 +75,6 @@ SELECT 'canonical' AS which, net.http_post(
   url     := 'https://bsfldtpemfxhnkdzccib.supabase.co/functions/v1/canonical-extract-cron',
   headers := jsonb_build_object(
     'apikey',       public.app_cron_token(),
-    'Authorization','Bearer ' || public.app_cron_token(),
     'Content-Type', 'application/json'
   ),
   body    := '{}'::jsonb
@@ -87,7 +84,6 @@ SELECT 'cover-images', net.http_post(
   url     := 'https://bsfldtpemfxhnkdzccib.supabase.co/functions/v1/enrich-cover-images-cron',
   headers := jsonb_build_object(
     'apikey',       public.app_cron_token(),
-    'Authorization','Bearer ' || public.app_cron_token(),
     'Content-Type', 'application/json'
   ),
   body    := '{}'::jsonb
