@@ -565,13 +565,34 @@ const TopUniAI = () => {
                           <div className="flex gap-2">
                             <Input
                               value={gpa}
+                              // Keydown gate: block non-numeric keys at the
+                              // keystroke before they enter the field. The
+                              // previous onChange-only strip let letters
+                              // briefly flash into the input then disappear
+                              // (visible jitter); blocking on keydown means
+                              // letters never appear in the first place.
+                              // Whitelist navigation + clipboard keys so
+                              // arrows, backspace, copy/paste still work.
+                              onKeyDown={e => {
+                                const allowed = [
+                                  "Backspace", "Delete", "Tab", "Escape", "Enter",
+                                  "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
+                                  "Home", "End",
+                                ];
+                                if (allowed.includes(e.key)) return;
+                                if (e.metaKey || e.ctrlKey) return; // cmd+a, cmd+c, etc.
+                                // One decimal point max.
+                                if (e.key === ".") {
+                                  if (gpa.includes(".")) e.preventDefault();
+                                  return;
+                                }
+                                if (!/^[0-9]$/.test(e.key)) e.preventDefault();
+                              }}
                               onChange={e => {
-                                // Numeric-only — accept digits + a single
-                                // decimal point. Pre-fix the field accepted
-                                // arbitrary text including letters which
-                                // broke downstream score normalisation
-                                // (NaN paths) and looked unprofessional in
-                                // a "premium" wizard.
+                                // Belt-and-braces strip — paste events
+                                // bypass keydown so anything pasted still
+                                // needs cleaning here. Single decimal point
+                                // enforced same as the keydown branch.
                                 const v = e.target.value.replace(/[^0-9.]/g, "");
                                 const parts = v.split(".");
                                 const cleaned = parts.length > 2
@@ -642,10 +663,10 @@ const TopUniAI = () => {
                           <Shield className="w-4 h-4 text-gold-dark shrink-0 mt-0.5" />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-foreground leading-tight">
-                              Keep your report (recommended)
+                              Save your report
                             </p>
                             <p className="text-[11px] text-foreground/70 leading-snug mt-0.5">
-                              Set a password and your strategy syncs across your phone + laptop. Skip if you'd rather see it once and move on.
+                              Set a password to create an account.
                             </p>
                           </div>
                         </div>
@@ -759,18 +780,16 @@ const TopUniAI = () => {
                           regions — what the optional path delivered
                           anyway. The major/field below is the real
                           locking variable for direction. */}
+                      {/* Intended major — converted from a native
+                          <datalist> (browser-default ugly dropdown) to a
+                          themed Select to match the rest of the wizard.
+                          "Other" reveals a free-text input so users with
+                          a specialty not in the canonical list (e.g.
+                          "Quantum Biophysics") aren't blocked. */}
                       <div className="space-y-1.5">
                         <Label className="text-xs uppercase tracking-wider font-medium">Intended major *</Label>
-                        <Input
-                          value={major}
-                          onChange={e => setMajor(e.target.value)}
-                          placeholder="Type or pick — e.g. Computer Science"
-                          className="h-11 bg-card"
-                          list="major-suggestions"
-                          autoComplete="off"
-                        />
-                        <datalist id="major-suggestions">
-                          {[
+                        {(() => {
+                          const MAJORS = [
                             "Undecided",
                             "Computer Science", "Engineering", "Business", "Economics",
                             "Mathematics", "Physics", "Chemistry", "Biology",
@@ -783,8 +802,33 @@ const TopUniAI = () => {
                             "Finance", "Marketing", "Communications", "Journalism",
                             "Music", "Visual Arts", "Performing Arts", "Film",
                             "Cultural Studies", "Development Studies", "Social Work",
-                          ].map(m => <option key={m} value={m} />)}
-                        </datalist>
+                          ];
+                          const isOther = !!major && !MAJORS.includes(major);
+                          const selectValue = isOther ? "__other__" : (major || "");
+                          return (
+                            <>
+                              <Select
+                                value={selectValue}
+                                onValueChange={v => setMajor(v === "__other__" ? (isOther ? major : "") : v)}
+                              >
+                                <SelectTrigger className="h-11 bg-card"><SelectValue placeholder="Select your major" /></SelectTrigger>
+                                <SelectContent className="max-h-72">
+                                  {MAJORS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                                  <SelectItem value="__other__">Other (type below)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              {selectValue === "__other__" && (
+                                <Input
+                                  value={isOther ? major : ""}
+                                  onChange={e => setMajor(e.target.value)}
+                                  placeholder="e.g. Quantum Biophysics"
+                                  className="h-11 bg-card mt-2"
+                                  autoFocus
+                                />
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                       {/* Self-fund Select retired 2026-05-09 — overlapped
                           with the "Scholarship need" 1–5 slider on step 3.

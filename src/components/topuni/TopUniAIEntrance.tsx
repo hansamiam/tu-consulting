@@ -138,7 +138,7 @@ export const TopUniAIEntrance = ({ language = "en" }: Props) => {
             transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1], times: [0, 0.5, 1], delay: 0.85 }}
             className="text-[11px] sm:text-xs font-medium tracking-[0.22em] uppercase text-primary-foreground/65 mt-4"
           >
-            {ru ? "Стратегия за минуты" : "Strategy in minutes"}
+            {ru ? "Ваша индивидуальная стратегия" : "Your tailored strategy"}
           </motion.p>
         </motion.div>
       </motion.div>

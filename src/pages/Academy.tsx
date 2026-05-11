@@ -1,12 +1,10 @@
 // Academy — public landing for the upcoming June launch.
 // Public /academy always shows the launch landing regardless of
 // auth state, so signed-in users don't see a different page.
-import { Link } from "react-router-dom";
 import { useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import { Button } from "@/components/ui/button";
-import { Award, ArrowRight } from "lucide-react";
+import { Award } from "lucide-react";
 import { motion } from "framer-motion";
 import samuelPhoto from "@/assets/samuel.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
@@ -50,8 +48,8 @@ const Academy = ({ language = "en" }: AcademyProps) => {
           </motion.h1>
           <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-primary-foreground/75 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
             {t(
-              "Workshops and office hours, joined by guest experts from across the world.",
-              "Воркшопы и office-hours с приглашёнными экспертами со всего мира.",
+              "Joined by guest experts from around the world.",
+              "С приглашёнными экспертами со всего мира.",
             )}
           </motion.p>
         </div>
@@ -92,32 +90,12 @@ const Academy = ({ language = "en" }: AcademyProps) => {
         </div>
       </section>
 
-      {/* CTA ─────────────────────────────────────────────────────── */}
-      <section className="max-w-2xl mx-auto px-4 pb-20">
-        <div className="rounded-2xl border border-gold/30 bg-card p-7 text-center">
-          <h3 className="font-heading text-lg sm:text-xl font-bold text-foreground mb-2 tracking-tight">
-            {t("Doors open in June.", "Двери откроются в июне.")}
-          </h3>
-          <p className="text-sm text-muted-foreground mb-5 leading-relaxed max-w-md mx-auto">
-            {t(
-              "Until then, the rest of TopUni — your personalized strategy from TopUni AI and the scholarship Discover database — is live and free during beta.",
-              "А пока остальной TopUni — ваша персональная стратегия от TopUni AI и база стипендий Discover — доступен бесплатно во время беты.",
-            )}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-2.5 sm:justify-center">
-            <Button asChild variant="gold" className="gap-1.5">
-              <Link to={ru ? "/topuni-ai/ru" : "/topuni-ai"}>
-                {t("Build my strategy", "Построить стратегию")} <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="gap-1.5">
-              <Link to={ru ? "/discover/ru" : "/discover"}>
-                {t("Open Discover", "Открыть Discover")}
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </section>
+      {/* CTA section retired here per user direction — "less is more".
+          The "Doors open in June" callout + Build-strategy/Open-Discover
+          buttons duplicated CTA the visitor already had via the global
+          nav. The Academy hero badge ("Launching in June") communicates
+          timing on its own; Discover and TopUni AI are reachable from
+          every page via Navigation. */}
 
       {/* Bottom bookend — short gradient ramp into the navy footer.
           Pre-fix this was h-32/40 (128-160px) which felt like dead air
