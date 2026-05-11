@@ -28,10 +28,10 @@ const fadeUp = (delay = 0) => ({
 });
 
 // Home-page team grid — Samuel's title intentionally shorter than on
-// /team (just "CEO", no "Founder & CEO") so the home cards stay
-// scannable and don't repeat the same word across role rows.
+// /team (just "Founder", no "Founder & CEO") so the home cards stay
+// scannable.
 const TEAM = [
-  { name: "Samuel Han", title: "CEO", school: "Yale", photo: samuelPhoto },
+  { name: "Samuel Han", title: "Founder", school: "Yale", photo: samuelPhoto },
   { name: "Nurzada Abdivalieva", title: "Co-Founder", school: "Tsinghua · Cambridge", photo: nurzadaPhoto },
   { name: "Josh Hughes", title: "Lead Consultant", school: "Harvard", photo: joshPhoto },
   { name: "Aigul Abdoubaetova", title: "Senior Advisor", school: "Ex-OSCE Academy", photo: aigulPhoto },
@@ -174,12 +174,13 @@ const Index = () => {
         >
           <div className="max-w-6xl mx-auto px-5 sm:px-8">
             <motion.div {...fadeUp()} className="max-w-4xl mx-auto text-center mb-14 sm:mb-16">
-              <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-8">Team</p>
-
-              {/* H2 ("We've sat in the rooms you're applying to.")
-                  retired here — the stats block + flag row below carries
-                  the proof on its own and the H2 felt like a chest-thump
-                  that the numbers already make better. */}
+              <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">Team</p>
+              {/* Lightweight section header — "Meet the team." (not the
+                  retired chest-thump "We've sat in the rooms..."). Just
+                  enough text to anchor the section before the stats. */}
+              <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-10">
+                Meet the team.
+              </h2>
 
               {/* Stats block — carried over from /team. $500K+ secured,
                   10+ years of collective experience, 5-country flag row.
@@ -250,7 +251,16 @@ const Index = () => {
                   </div>
                   <p className="font-heading font-semibold text-foreground text-base leading-tight">{m.name}</p>
                   <p className="text-sm text-muted-foreground mt-1">{m.title}</p>
-                  <p className="text-xs text-gold-dark mt-1.5 font-medium tracking-wide">{m.school}</p>
+                  {/* School / credential — bumped from text-xs gold to a
+                      heavier serif treatment so the prestige reads at a
+                      glance. Earlier it was a small gold caption that
+                      visually receded into the card edge; the credential
+                      IS the proof point of the section so it needs to
+                      land first, not last. Editorial uppercase + tighter
+                      tracking keeps it premium not flashy. */}
+                  <p className="font-heading text-[13px] sm:text-sm text-gold-dark mt-2 font-semibold tracking-[0.04em]">
+                    {m.school}
+                  </p>
                 </motion.button>
               ))}
             </div>
@@ -260,7 +270,7 @@ const Index = () => {
                 onClick={() => navigate('/team')}
                 className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-gold-dark transition-colors"
               >
-                Meet the team <ArrowRight className="h-4 w-4" />
+                Read team profiles <ArrowRight className="h-4 w-4" />
               </button>
             </motion.div>
           </div>
