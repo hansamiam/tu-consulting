@@ -94,7 +94,7 @@ const Navigation = ({ language = "en", variant = "default", overlayThreshold = 8
   // Sign-in button when both could appear.
   const navItems = [
     { label: "TopUni AI",                                     path: isRussian ? "/topuni-ai/ru" : "/topuni-ai" },
-    { label: isRussian ? "Стипендии"   : "Discover",          path: isRussian ? "/discover/ru" : "/discover" },
+    { label: isRussian ? "Подбор"       : "Discover",          path: isRussian ? "/discover/ru" : "/discover" },
     { label: isRussian ? "Академия"    : "Academy",           path: isRussian ? "/academy/ru" : "/academy" },
   ];
 
