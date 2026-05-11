@@ -5378,9 +5378,9 @@ const Discover = ({ language = "en" }: Props) => {
             <div className="px-7 py-6 border-b border-border bg-canvas-soft sticky top-0 z-10 backdrop-blur">
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2 font-heading text-xl tracking-tight">
-                  <Columns3 className="h-5 w-5 text-gold-dark" /> Compare scholarships · {compareSet.size}
+                  <Columns3 className="h-5 w-5 text-gold-dark" /> {t("Compare scholarships", "Сравнить стипендии")} · {compareSet.size}
                 </SheetTitle>
-                <p className="text-xs text-muted-foreground">Side-by-side breakdown. Up to three at a time.</p>
+                <p className="text-xs text-muted-foreground">{t("Side-by-side breakdown. Up to three at a time.", "Сравнение бок о бок. До трёх за раз.")}</p>
               </SheetHeader>
             </div>
 
