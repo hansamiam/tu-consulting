@@ -13,8 +13,13 @@
  * admin mode for that.
  */
 
+/* Founders allowlist — gets paid-feature bypass + admin surfaces
+ * (the /admin pages, founding-tier badges, etc.) regardless of
+ * subscription state. Email match is case-insensitive at the
+ * comparison site, so don't bother normalising here. */
 const ADMIN_EMAILS = [
   "samuel.shn.han@gmail.com",
+  "nurzada.abdivalieva@gmail.com",
 ];
 
 const ADMIN_FLAG_KEY = "topuni_admin";
