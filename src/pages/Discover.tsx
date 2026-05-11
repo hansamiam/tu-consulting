@@ -2111,18 +2111,48 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
               the per-criteria why. */}
         </div>
 
-        {/* Full-ride badge only — status badges retired from Discover
-            cards 2026-05-10 ("status should only appear in Workspace,
-            not in the Discover database"). Status now lives on the
-            Workspace PipelineCard exclusively. */}
-        {isFullRide && (
-          <div className="flex items-center gap-1.5">
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gold-dark bg-gold/10 ring-1 ring-gold/30 px-1.5 py-0.5 rounded">
-              <Award className="h-2.5 w-2.5" />
-              {ru ? "Полное" : "Full ride"}
-            </span>
-          </div>
-        )}
+        {/* Full-ride + Quick-apply badges row. The two badges read as
+            opposite axes — full-ride = high upside / high competition,
+            quick-apply = low friction / fast win. They never both
+            apply to the same row in practice (full-ride programs
+            uniformly require an essay + recs), so this row picks
+            whichever signal the row actually carries.
+            Quick-apply gates on the structural friction fields the
+            scrape pipeline populates: no essay, no interview, ≤1
+            rec required, OR an explicit effort_level=low tag. */}
+        {(() => {
+          if (isFullRide) {
+            return (
+              <div className="flex items-center gap-1.5">
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gold-dark bg-gold/10 ring-1 ring-gold/30 px-1.5 py-0.5 rounded">
+                  <Award className="h-2.5 w-2.5" />
+                  {ru ? "Полное" : "Full ride"}
+                </span>
+              </div>
+            );
+          }
+          const isQuickApply =
+            s.effort === "low"
+            || (s.essay_required === false
+                && s.interview_required === false
+                && (s.recommendation_letters_required ?? 0) <= 1);
+          if (isQuickApply) {
+            return (
+              <div className="flex items-center gap-1.5">
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 ring-1 ring-emerald-500/30 px-1.5 py-0.5 rounded"
+                  title={ru
+                    ? "Лёгкая заявка — без эссе или интервью"
+                    : "Low-friction application — no essay or interview required"}
+                >
+                  <Zap className="h-2.5 w-2.5" />
+                  {ru ? "Лёгкая заявка" : "Quick apply"}
+                </span>
+              </div>
+            );
+          }
+          return null;
+        })()}
 
         {/* Action row — clean now: just bookmark + share. The full-ride
             pill moved up to share the row with the status chip. */}
