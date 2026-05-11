@@ -201,6 +201,13 @@ interface Scholarship {
    * fetch SELECTs providers(trust_tier) via the FK. Drives the
    * "Verified funder" pill on cards + detail panels. */
   provider_trust_tier?: "high" | "medium" | "low" | "unknown" | null;
+  /* Multi-source consensus score (smallint 0-N). Incremented by a DB
+   * trigger every time a NEW source URL confirms the scholarship's
+   * core fields via record_scholarship_source(). N=1 = single source
+   * found it. N>=2 = independently cross-verified — a real moat over
+   * aggregator competitors who never reconcile sources. Surface as a
+   * "Cross-verified" badge on cards when >= 2. */
+  consensus_score?: number | null;
 }
 
 interface Profile {
@@ -1997,6 +2004,23 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
                     aria-label={ru ? "Проверенный фонд" : "Verified funder"}
                   >
                     <CheckCircle2 className="h-2.5 w-2.5" />
+                  </span>
+                )}
+                {/* Cross-source consensus indicator — only renders when
+                    the same scholarship has been independently confirmed
+                    by ≥ 2 source URLs (consensus_score is incremented
+                    by record_scholarship_source on each unique-source
+                    confirm). This is the moat aggregator competitors
+                    can't match: they list whatever a single page said;
+                    we only earn the badge after two pages agree. */}
+                {typeof s.consensus_score === "number" && s.consensus_score >= 2 && (
+                  <span
+                    className="inline-flex items-center gap-0.5 shrink-0 text-[9px] font-bold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 ring-1 ring-emerald-500/30 px-1 py-0.5 rounded"
+                    title={ru
+                      ? `Подтверждено ${s.consensus_score} независимыми источниками`
+                      : `Cross-verified by ${s.consensus_score} independent sources`}
+                  >
+                    ×{s.consensus_score}
                   </span>
                 )}
               </div>
