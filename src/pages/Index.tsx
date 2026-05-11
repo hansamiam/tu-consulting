@@ -34,7 +34,7 @@ const TEAM = [
   { name: "Samuel Han", title: "Founder", school: "Yale", photo: samuelPhoto },
   { name: "Nurzada Abdivalieva", title: "Co-Founder", school: "Tsinghua · Cambridge", photo: nurzadaPhoto },
   { name: "Josh Hughes", title: "Lead Consultant", school: "Harvard", photo: joshPhoto },
-  { name: "Aigul Abdoubaetova", title: "Senior Advisor", school: "Ex-OSCE Academy", photo: aigulPhoto },
+  { name: "Aigul Abdoubaetova", title: "Senior Advisor", school: "U of Oregon", photo: aigulPhoto },
 ];
 
 const Index = () => {
@@ -174,10 +174,10 @@ const Index = () => {
         >
           <div className="max-w-6xl mx-auto px-5 sm:px-8">
             <motion.div {...fadeUp()} className="max-w-4xl mx-auto text-center mb-14 sm:mb-16">
-              <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">Team</p>
-              {/* Lightweight section header — "Meet the team." (not the
-                  retired chest-thump "We've sat in the rooms..."). Just
-                  enough text to anchor the section before the stats. */}
+              {/* "TEAM" kicker dropped — the H2 below already names the
+                  section. A kicker + H2 that says the same thing twice
+                  is redundant chrome; keeping just the H2 reads cleaner
+                  and matches the other sections that don't double-label. */}
               <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-10">
                 Meet the team.
               </h2>
