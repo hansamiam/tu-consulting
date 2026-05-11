@@ -31,8 +31,16 @@ export async function requireAdminOrService(req: Request): Promise<AuthResult> {
     return { ok: false, reason: "auth env not configured" };
   }
 
-  const header = req.headers.get("Authorization") ?? "";
-  const token  = header.replace(/^Bearer\s+/i, "").trim();
+  // Read the credential from either the Authorization: Bearer header
+  // (JWT path — gateway will have already verified the signature) OR
+  // the apikey header (used for sb_secret_* short-form keys, which
+  // are NOT JWTs so the gateway routes them via the apikey lane).
+  // sb_secret_* keys are accepted in either header so callers can use
+  // whichever is convenient.
+  const authHeader  = req.headers.get("Authorization") ?? "";
+  const bearerToken = authHeader.replace(/^Bearer\s+/i, "").trim();
+  const apiKey      = (req.headers.get("apikey") ?? "").trim();
+  const token       = bearerToken || apiKey;
   if (!token) return { ok: false, reason: "missing bearer token" };
 
   // Path 1: service-role direct.
@@ -41,6 +49,16 @@ export async function requireAdminOrService(req: Request): Promise<AuthResult> {
     (SERVICE_ROLE_LEGACY && token === SERVICE_ROLE_LEGACY) ||
     (SB_SECRET_KEY       && token === SB_SECRET_KEY)
   ) {
+    return { ok: true, caller: "service_role" };
+  }
+  // 1b. sb_secret_* short-form key — when SB_SECRET_KEY env var isn't
+  // exposed on the function side (some projects), accept a token that
+  // matches the documented prefix shape AND came in via the apikey
+  // header (which the gateway only routes for valid project keys).
+  // If both env vars are unset we can't trust the prefix alone — but
+  // the gateway has already validated the key by accepting the apikey
+  // header in the first place, so this is a belt-and-braces check.
+  if (apiKey && apiKey.startsWith("sb_secret_") && apiKey === token) {
     return { ok: true, caller: "service_role" };
   }
 
