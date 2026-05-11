@@ -460,6 +460,82 @@ const stBasils = wrap(
   </>
 );
 
+// Hagia Sophia (Turkey) — central low dome flanked by 4 thin
+// minarets at the corners. The four-minaret crown is what
+// distinguishes Istanbul's silhouette from Russia's onion-dome
+// arrangement. Half-dome buttresses on either side of the main
+// dome read as the Byzantine apse / Ottoman extension.
+const hagiaSophia = wrap(
+  <>
+    {/* Four corner minarets — tall thin columns with onion-top caps */}
+    <rect x="44" y="14" width="2.5" height="38" />
+    <path d="M43 14 L45.25 8 L47.5 14 Z" />
+    <rect x="44.6" y="6" width="1.3" height="3" />
+
+    <rect x="56" y="10" width="2.5" height="42" />
+    <path d="M55 10 L57.25 4 L59.5 10 Z" />
+    <rect x="56.6" y="2" width="1.3" height="3" />
+
+    <rect x="100" y="10" width="2.5" height="42" />
+    <path d="M99 10 L101.25 4 L103.5 10 Z" />
+    <rect x="100.6" y="2" width="1.3" height="3" />
+
+    <rect x="112" y="14" width="2.5" height="38" />
+    <path d="M111 14 L113.25 8 L115.5 14 Z" />
+    <rect x="112.6" y="6" width="1.3" height="3" />
+
+    {/* Side half-domes — Byzantine apses flanking the main dome */}
+    <path d="M62 52 L62 36 Q66 30 70 32 L70 52 Z" opacity="0.7" />
+    <path d="M88 52 L88 32 Q92 30 96 36 L96 52 Z" opacity="0.7" />
+
+    {/* Central main dome — wide low dome on a drum */}
+    <rect x="68" y="32" width="24" height="20" />
+    <path d="M68 32 Q80 14 92 32 Z" />
+    {/* Crescent finial on the central dome (Ottoman addition) */}
+    <path d="M79 14 Q79 11 81 11 Q80 12.5 80 14 Z" />
+  </>
+);
+
+// Wawel Castle (Poland) — Renaissance castle on a hill with
+// distinctive cathedral spires + crenellated walls. The cluster
+// of asymmetric tower shapes reads as Old Town Krakow, distinct
+// from Berlin's Brandenburg quadriga.
+const wawelCastle = wrap(
+  <>
+    {/* Hill base — gentle rise the castle sits on */}
+    <path d="M40 52 L48 46 L120 46 L116 52 Z" opacity="0.55" />
+
+    {/* Left flanking tower — square Gothic */}
+    <rect x="50" y="24" width="8" height="22" />
+    {/* Crenellations on top — 3 merlons */}
+    <rect x="50" y="22" width="2" height="2" />
+    <rect x="53" y="22" width="2" height="2" />
+    <rect x="56" y="22" width="2" height="2" />
+
+    {/* Central Wawel Cathedral — tall central tower + dome */}
+    <rect x="62" y="18" width="10" height="28" />
+    {/* Dome on cathedral tower (Sigismund Chapel reference) */}
+    <path d="M62 18 Q67 8 72 18 Z" />
+    {/* Cross on top */}
+    <rect x="66.5" y="3" width="1" height="6" />
+    <rect x="64.5" y="5" width="5" height="1" />
+
+    {/* Royal Castle main wing — wide rectangular block */}
+    <rect x="76" y="28" width="24" height="18" />
+    {/* Roof — Renaissance pitched */}
+    <path d="M76 28 L88 18 L100 28 Z" />
+    {/* Windows row (decorative dots) */}
+    <rect x="80" y="34" width="2" height="3" opacity="0.6" />
+    <rect x="86" y="34" width="2" height="3" opacity="0.6" />
+    <rect x="92" y="34" width="2" height="3" opacity="0.6" />
+
+    {/* Right flanking tower — round Romanesque */}
+    <rect x="104" y="26" width="8" height="20" />
+    <path d="M104 26 Q108 18 112 26 Z" />
+    <circle cx="108" cy="20" r="1" opacity="0.6" />
+  </>
+);
+
 // Hong Kong skyline (Victoria Harbour) — varied tower heights with
 // the distinctive IFC tapered crown.
 const hkSkyline = wrap(
@@ -964,7 +1040,7 @@ const COUNTRY_ART: Record<string, React.ReactNode> = {
 
   // Middle East / North Africa
   UAE: burj, "United Arab Emirates": burj, "Saudi Arabia": burj, Israel: burj,
-  Turkey: stBasils, Iran: mosque, Iraq: mosque, Lebanon: mosque, Jordan: mosque,
+  Turkey: hagiaSophia, "Türkiye": hagiaSophia, Iran: mosque, Iraq: mosque, Lebanon: mosque, Jordan: mosque,
   Egypt: pyramids, Morocco: mosque, Qatar: burj, Kuwait: burj,
 
   // Sub-Saharan Africa
@@ -984,7 +1060,7 @@ const COUNTRY_ART: Record<string, React.ReactNode> = {
   Sweden: vasaShip, Norway: staveChurch, Finland: finnishSauna,
   Denmark: windmill, Iceland: staveChurch, // Iceland nods to its
   // Norse heritage; alternative would be a geyser.
-  Russia: stBasils, Ukraine: saintSophiaKyiv, Poland: brandenburg,
+  Russia: stBasils, Ukraine: saintSophiaKyiv, Poland: wawelCastle,
   // Czechia gets its own iconic Prague clock + Gothic spire —
   // distinct from Germany's Brandenburg quadriga.
   Czechia: pragueClock, "Czech Republic": pragueClock,

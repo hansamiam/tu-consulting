@@ -2111,48 +2111,21 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
               the per-criteria why. */}
         </div>
 
-        {/* Full-ride + Quick-apply badges row. The two badges read as
-            opposite axes — full-ride = high upside / high competition,
-            quick-apply = low friction / fast win. They never both
-            apply to the same row in practice (full-ride programs
-            uniformly require an essay + recs), so this row picks
-            whichever signal the row actually carries.
-            Quick-apply gates on the structural friction fields the
-            scrape pipeline populates: no essay, no interview, ≤1
-            rec required, OR an explicit effort_level=low tag. */}
-        {(() => {
-          if (isFullRide) {
-            return (
-              <div className="flex items-center gap-1.5">
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gold-dark bg-gold/10 ring-1 ring-gold/30 px-1.5 py-0.5 rounded">
-                  <Award className="h-2.5 w-2.5" />
-                  {ru ? "Полное" : "Full ride"}
-                </span>
-              </div>
-            );
-          }
-          const isQuickApply =
-            s.effort === "low"
-            || (s.essay_required === false
-                && s.interview_required === false
-                && (s.recommendation_letters_required ?? 0) <= 1);
-          if (isQuickApply) {
-            return (
-              <div className="flex items-center gap-1.5">
-                <span
-                  className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 ring-1 ring-emerald-500/30 px-1.5 py-0.5 rounded"
-                  title={ru
-                    ? "Лёгкая заявка — без эссе или интервью"
-                    : "Low-friction application — no essay or interview required"}
-                >
-                  <Zap className="h-2.5 w-2.5" />
-                  {ru ? "Лёгкая заявка" : "Quick apply"}
-                </span>
-              </div>
-            );
-          }
-          return null;
-        })()}
+        {/* Full-ride badge only. Quick-apply retired 2026-05-11 per
+            user feedback — "most quick-apply are only if you're
+            already applying to a whole-ass university." The signal
+            misled students into thinking a scholarship was
+            standalone-easy when it was actually attached to a
+            broader application. The underlying effort_level data
+            still drives sorting but isn't surfaced as a chip. */}
+        {isFullRide && (
+          <div className="flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gold-dark bg-gold/10 ring-1 ring-gold/30 px-1.5 py-0.5 rounded">
+              <Award className="h-2.5 w-2.5" />
+              {ru ? "Полное" : "Full ride"}
+            </span>
+          </div>
+        )}
 
         {/* Action row — clean now: just bookmark + share. The full-ride
             pill moved up to share the row with the status chip. */}
@@ -2984,20 +2957,15 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               );
             })()}
 
-            {/* Application-demand chips — render inline at the top of
-                the reqs panel, no header. Same chip-rail pattern as
-                Overview so the visual language stays consistent. */}
-            {(s.essay_required || s.interview_required || (s.recommendation_letters_required ?? 0) > 0) && (
-              <div className="flex flex-wrap gap-2">
-                {s.essay_required && <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full"><FileText className="h-3 w-3" />{t("Essay required", "Требуется эссе")}</span>}
-                {s.interview_required && <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full"><Users className="h-3 w-3" />{t("Interview", "Интервью")}</span>}
-                {(s.recommendation_letters_required ?? 0) > 0 && (
-                  <span className="inline-flex items-center gap-1.5 text-xs bg-warning/10 text-warning border border-warning/20 px-2.5 py-1 rounded-full">
-                    <FileText className="h-3 w-3" />{s.recommendation_letters_required} {ru ? "реком. писем" : `rec letter${(s.recommendation_letters_required ?? 0) > 1 ? "s" : ""}`}
-                  </span>
-                )}
-              </div>
-            )}
+            {/* Application-demand chips + redundant warnings block
+                retired 2026-05-11 per user feedback ("random orange
+                bubbles … list of ielts tofl … then AGAIN some orange
+                ass 'not open to X nationals'"). The reqs[] checklist
+                below already encodes both the threshold facts (IELTS,
+                TOEFL, GPA, etc.) AND the eligibility status (met /
+                miss) per row, so the orange chips + warnings stack
+                was redundant signaling layered on top of the same
+                data. Single source of truth = the ReqRow list. */}
 
             {reqs.length > 0 ? (
               <div className="bg-muted/30 rounded-2xl px-4 py-1">
@@ -3007,16 +2975,6 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               !s.eligibility_requirements && (
                 <p className="text-sm text-muted-foreground">{t("No specific requirements recorded for this scholarship.", "Конкретные требования по этой стипендии не записаны.")}</p>
               )
-            )}
-
-            {s.warnings.length > 0 && (
-              <div className="rounded-2xl border border-warning/25 bg-warning/[0.04] px-4 py-3.5 space-y-1.5">
-                {s.warnings.map((w, i) => (
-                  <div key={i} className="flex items-start gap-2 text-sm leading-relaxed text-warning">
-                    <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />{w}
-                  </div>
-                ))}
-              </div>
             )}
 
             {s.required_documents && s.required_documents.length > 0 && (
@@ -3052,11 +3010,12 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
               </div>
             )}
             {(() => {
-              // "Cycle" row removed — deadline_type is already encoded in
-              // the dl.text suffix on the Deadline row ("(Reopens annually)",
-              // "(Rolling)", etc.), so listing it twice was overlap.
+              // Deadline row dropped here 2026-05-11 — was duplicating
+              // the Deadline cell in the key-facts grid at the top of
+              // the sheet ("Deadline / Annual / Platform / UCA / ..."
+              // reading as repetition). Logistics box keeps only the
+              // facts NOT shown elsewhere: Platform + Application fee.
               const rows = [
-                [t("Deadline", "Дедлайн"), deadlineDate ? `${deadlineDate} (${dl.text})` : (dl.text || "TBD")],
                 [t("Platform", "Платформа"), s.application_platform],
                 [t("Application fee", "Стоимость подачи"), s.application_fee_text],
               ].filter(([, v]) => v) as [string, string][];
