@@ -1925,7 +1925,15 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
         <CountryArt country={bannerCtry} className="absolute right-4 top-1/2 -translate-y-1/2 h-9 w-[72px] flex items-center justify-end opacity-[0.18] text-foreground pointer-events-none" />
         <span className="relative flex items-center gap-2 min-w-0 flex-1 pr-[88px]">
           {bannerCtry && (() => {
-            const flag = ALL_COUNTRIES.find(c => c.v.toLowerCase() === bannerCtry.toLowerCase())?.f;
+            // Canonicalize before flag lookup — DB rows have "Turkiye"
+            // (no diacritic), "Türkiye" (with), "USA", "UK", "Republic
+            // of Korea", etc. ALL_COUNTRIES only stores the canonical
+            // form ("Turkey", "United States", ...). Without this
+            // normalization a "Turkiye" row showed no flag at all.
+            const canon = canonicalCountry(bannerCtry);
+            const flag =
+              ALL_COUNTRIES.find(c => c.v.toLowerCase() === canon.toLowerCase())?.f
+              ?? ALL_COUNTRIES.find(c => c.v.toLowerCase() === bannerCtry.toLowerCase())?.f;
             return (
               <>
                 {flag && <span className="text-[13px] leading-none shrink-0" aria-hidden>{flag}</span>}
