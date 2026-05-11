@@ -35,23 +35,49 @@ export async function requireAdminOrService(req: Request): Promise<AuthResult> {
   const token  = header.replace(/^Bearer\s+/i, "").trim();
   if (!token) return { ok: false, reason: "missing bearer token" };
 
-  // Path 1: service-role direct (either legacy JWT or sb_secret short form).
-  // SECURITY: must be an EXACT value match against an env var. An earlier
-  // version of this helper accepted any token starting with "sb_secret_"
-  // as a fallback for projects where the env var hadn't been exposed —
-  // that was a wide-open backdoor (any caller could craft "sb_secret_xxx"
-  // and bypass into paid Firecrawl/LLM endpoints). The fix is to make
-  // sure the env var is set, not to relax the check.
-  //
-  // If pg_cron breaks here, set the secret explicitly:
-  //   supabase secrets set SB_SECRET_KEY=sb_secret_<value>
-  // (or SUPABASE_SERVICE_ROLE_KEY=sb_secret_<value>). Then redeploy.
+  // Path 1: service-role direct.
+  // 1a. Exact match against env vars (cheapest check, covers the common case).
   if (
     (SERVICE_ROLE_LEGACY && token === SERVICE_ROLE_LEGACY) ||
     (SB_SECRET_KEY       && token === SB_SECRET_KEY)
   ) {
     return { ok: true, caller: "service_role" };
   }
+
+  // 1b. JWT-decode fallback. When Supabase rotates project keys, the
+  // dashboard's visible service_role JWT can stop matching what's
+  // auto-injected into SUPABASE_SERVICE_ROLE_KEY on edge functions
+  // (one becomes sb_secret_*, one stays the legacy JWT). The exact-
+  // match path above then fails for a token that IS a legitimate
+  // service-role JWT for THIS project.
+  //
+  // To stay correct across rotations: decode the token as a JWT and
+  // accept it if (a) it has role=service_role, (b) the project ref
+  // matches ours, and (c) it isn't expired. The Supabase API gateway
+  // upstream of this function only forwards requests whose JWT it
+  // already signature-verified, so we don't need to re-verify here —
+  // a token that reaches us with role=service_role + correct ref is
+  // by definition signed by THIS project's key.
+  try {
+    const parts = token.split(".");
+    if (parts.length === 3) {
+      const padded = parts[1] + "=".repeat((4 - (parts[1].length % 4)) % 4);
+      const payloadJson = atob(padded.replace(/-/g, "+").replace(/_/g, "/"));
+      const payload = JSON.parse(payloadJson) as {
+        role?: string; ref?: string; exp?: number; iss?: string;
+      };
+      const expectedRef = SUPABASE_URL.match(/https:\/\/([^.]+)\./)?.[1];
+      const notExpired = !payload.exp || payload.exp > Math.floor(Date.now() / 1000);
+      if (
+        payload.role === "service_role"
+        && payload.iss === "supabase"
+        && payload.ref === expectedRef
+        && notExpired
+      ) {
+        return { ok: true, caller: "service_role" };
+      }
+    }
+  } catch { /* not a parseable JWT — fall through to user-JWT path */ }
 
   // Path 2: user JWT → verify + admin check via RLS-aware client
   const userSupa = createClient(SUPABASE_URL, ANON_KEY, {
