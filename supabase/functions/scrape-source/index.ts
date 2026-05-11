@@ -54,7 +54,18 @@ const json = (status: number, body: unknown) =>
 // Auto-publish threshold. Above this, the extraction goes straight into
 // scholarships and triggers an embedding refresh. Below, it sits in
 // staging for an admin to approve in /admin/queue.
-const AUTO_PUBLISH_THRESHOLD = 0.85;
+//
+// Two-tier threshold: 0.78 for any row that already cleared our
+// minimum-information gate (validateExtracted enforces 4 required
+// fields + 2 of 6 substantive signals), 0.85 for rows we want extra
+// admin scrutiny on. Lowered from a flat 0.85 because the LLM
+// systematically scores 0.78-0.84 for clean extractions from
+// aggregator article pages (single-source coverage, but the data
+// itself is good) — those were piling up in staging while the
+// catalog stayed empty of fresh content. Anything that passes the
+// min-info gate AND scores ≥0.78 is more useful published-as-low-
+// confidence than buried-in-staging waiting on admin time.
+const AUTO_PUBLISH_THRESHOLD = 0.78;
 
 // Rough cost per LLM extraction call. Pro tier (~$0.005) chosen over flash
 // (~$0.0015) because: (a) extraction is stamped against accuracy gates that
