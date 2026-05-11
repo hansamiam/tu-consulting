@@ -27,10 +27,14 @@ DECLARE
 BEGIN
   FOR spec IN
     SELECT jobname, schedule, url_suffix FROM (VALUES
-      -- canonical-extract — daily 04:00 UTC. Runs AFTER verify-scholarship-cron's
-      -- last in-day pass (every 30 min, so it's always recent) so the
-      -- canonical extractor reads from just-verified data.
-      ('canonical-extract-cron',       '0 4 * * *',  'canonical-extract-cron'),
+      -- canonical-extract — every 6h. 4× daily at 50 rows/run = 200 rows/day
+      -- of canonical-overview / canonical-funding / canonical-deadline
+      -- coverage gained (vs. 50/day at the original daily slot). Drains
+      -- the unprocessed backlog in ~10 days instead of 40. Cost ~$0.72/day
+      -- (4× $0.18) — acceptable spend for catalog quality. Runs OFF the
+      -- verify-scholarship-cron half-hour boundary so the two don't
+      -- contend for LLM gateway capacity at the same moment.
+      ('canonical-extract-cron',       '15 */6 * * *','canonical-extract-cron'),
       -- enrich-cover-images — daily 03:30 UTC. Earlier in the night so
       -- new rows landed since yesterday have a cover image by morning UK.
       -- No LLM cost, just HEAD requests, so the daily cadence is fine
