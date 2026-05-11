@@ -212,6 +212,46 @@ const Pricing = ({ language = "en" }: PricingProps) => {
     : foundingLeft === 0 ? t.cta.soldOut
     : t.cta.claim;
 
+  // Pricing page placeheld behind a Coming Soon screen per founder
+  // direction — the full membership offer (tiers, included items,
+  // founding-cohort scarcity) isn't internally locked in yet, and
+  // shipping a half-baked page undermines the rest of the product.
+  // The full implementation below is intentionally kept intact so we
+  // can flip this flag back to true once pricing is finalised — no
+  // re-build, just a one-line change.
+  const SHOW_FULL_PRICING = false;
+  if (!SHOW_FULL_PRICING) {
+    const isRu = language === "ru";
+    return (
+      <div className="min-h-screen relative bg-background">
+        <div className="relative z-10">
+          <Navigation language={language} />
+          <main className="flex items-center justify-center px-6" style={{ minHeight: "calc(100vh - 80px)" }}>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              className="max-w-xl mx-auto text-center"
+            >
+              <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/30 px-3 py-1 rounded-full text-gold-dark text-[11px] font-medium tracking-[0.18em] uppercase mb-6">
+                <Crown className="h-3.5 w-3.5" />
+                {isRu ? "Скоро" : "Coming soon"}
+              </div>
+              <h1 className="font-heading text-4xl sm:text-5xl font-bold text-foreground tracking-tight mb-5 leading-tight">
+                {isRu ? "Подписка скоро." : "Membership, coming soon."}
+              </h1>
+              <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">
+                {isRu
+                  ? "TopUni AI и Discover уже доступны бесплатно во время беты."
+                  : "TopUni AI and Discover are live and free during beta."}
+              </p>
+            </motion.div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen relative bg-background">
       <div className="relative z-10">

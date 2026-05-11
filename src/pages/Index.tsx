@@ -174,10 +174,12 @@ const Index = () => {
         >
           <div className="max-w-6xl mx-auto px-5 sm:px-8">
             <motion.div {...fadeUp()} className="max-w-4xl mx-auto text-center mb-14 sm:mb-16">
-              <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">Team</p>
-              <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-10">
-                We've sat in the rooms you're applying to.
-              </h2>
+              <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-8">Team</p>
+
+              {/* H2 ("We've sat in the rooms you're applying to.")
+                  retired here — the stats block + flag row below carries
+                  the proof on its own and the H2 felt like a chest-thump
+                  that the numbers already make better. */}
 
               {/* Stats block — carried over from /team. $500K+ secured,
                   10+ years of collective experience, 5-country flag row.
