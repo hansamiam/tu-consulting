@@ -70,11 +70,21 @@ serve(async (req) => {
   // auto-publish rate cratered or whose rows keep coming up broken — no
   // point burning Firecrawl/AI budget on them until admin re-enables).
   // 'degraded' sources still scrape but get filtered to half cadence below.
+  //
+  // SKIP aggregator-category sources here. Those hubs are walked by
+  // discover-from-hubs-cron, which extracts INDIVIDUAL program URLs
+  // and inserts them as separate (non-aggregator) sources. Running
+  // scrape-source against a hub's listing page burns Firecrawl + LLM
+  // calls to emit thin/no rows (listing snippets fail the minimum-
+  // info gate) — useless work that also generates low-quality staging
+  // pollution. The per-program URLs discover-from-hub finds DO land
+  // here and get scraped on normal cadence.
   let query = supa
     .from("scholarship_sources")
-    .select("source_id, name, url, last_crawled_at, frequency_hours, consecutive_failures, health_status")
+    .select("source_id, name, url, last_crawled_at, frequency_hours, consecutive_failures, health_status, category")
     .eq("is_active", true)
     .neq("health_status", "quarantined")
+    .neq("category", "aggregator")
     .lt("consecutive_failures", FAILURE_CIRCUIT_BREAKER)
     .order("last_crawled_at", { ascending: true, nullsFirst: true })
     .limit(MAX_SOURCES_PER_TICK);

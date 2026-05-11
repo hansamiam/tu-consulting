@@ -267,7 +267,7 @@ interface FilterState {
 }
 
 type Phase = "landing" | "wizard" | "analyzing" | "results";
-type SortBy = "match" | "deadline" | "value" | "effort" | "selectivity" | "trending";
+type SortBy = "match" | "deadline" | "value" | "effort" | "selectivity" | "trending" | "newest";
 type ViewMode = "grid" | "list";
 type AppSection = "browse" | "pipeline" | "shortlist" | "collections";
 /* Three application stages — captures the meaningful work-in-progress
@@ -3983,6 +3983,19 @@ const Discover = ({ language = "en" }: Props) => {
         return b.match - a.match;
       });
     }
+    // "Newest" — sort by created_at DESC. Catalog freshness is a moat;
+    // surfacing it as a first-class sort lets returning users see what
+    // landed since their last visit without scrolling through stable
+    // rankings. Match score tie-break keeps the within-day ordering
+    // relevant instead of arbitrary.
+    if (sortBy === "newest") {
+      return [...list].sort((a, b) => {
+        const aT = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const bT = b.created_at ? new Date(b.created_at).getTime() : 0;
+        if (aT !== bT) return bT - aT;
+        return b.match - a.match;
+      });
+    }
     return list;
     // Deps split: deferredSearch (the lagged query) + the rest of the
     // filter shape. The whole `filters` object would re-trigger this
@@ -4752,6 +4765,7 @@ const Discover = ({ language = "en" }: Props) => {
                           the count, so users can see the raw signal
                           driving the order. */}
                       <SelectItem value="trending">{t("Trending now", "Сейчас в тренде")}</SelectItem>
+                      <SelectItem value="newest">{t("Newest first", "Сначала новые")}</SelectItem>
                       {/* "Most accessible" sort retired — selectivity
                           metadata is incomplete on most rows so the
                           sort produced near-random ordering. */}
