@@ -33,8 +33,13 @@ const Academy = ({ language = "en" }: AcademyProps) => {
       <div className="relative z-10">
       <Navigation language={language} variant="overlay" overlaySentinelId="academy-hero-end" />
 
-      {/* HERO ───────────────────────────────────────────────────────── */}
-      <section className="relative bg-gradient-to-br from-primary via-primary to-primary/90 py-20 sm:py-28 overflow-hidden">
+      {/* HERO — pulled up behind the nav with -mt-16 (nav h-16 = 64px)
+          so the navy band extends THROUGH the nav strip, eliminating
+          the cream-nav-above-navy-hero seam. Mirror of Index.tsx's
+          hero treatment. Inner padding boosted (pt-32 / sm:pt-36) so
+          the eyebrow + h1 still sit comfortably below the nav region
+          rather than crashing into it. */}
+      <section className="relative -mt-16 bg-gradient-to-br from-primary via-primary to-primary/90 pt-32 sm:pt-36 pb-20 sm:pb-28 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(var(--gold)/0.1),_transparent_60%)]" />
         <div className="relative max-w-3xl mx-auto px-4 text-center">
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 bg-gold/15 border border-gold/40 px-3 py-1 rounded-full text-gold text-xs font-semibold mb-6">

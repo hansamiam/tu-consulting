@@ -1,16 +1,14 @@
 /* Blog (Journal) — pre-launch teaser surface.
  *
  * The article catalogue + magazine layout is gated behind SHOW_ARTICLES.
- * While SHOW_ARTICLES is false (commission still in flight), this page
- * renders a single premium "intermission" — a brief editorial promise of
- * what's coming, not a half-empty article list with one giant title block.
+ * While SHOW_ARTICLES is false this page renders a minimal "coming soon"
+ * card — no editorial promises about content we haven't produced.
  *
- * Redesigned 2026-05-10 per user direction "the TopUni Journal header is
- * too big, redesign the whole page". Now: small editorial eyebrow,
- * tightened wordmark, a typeset note describing the angle of the
- * publication, and a quiet sample-line teaser of what the first issues
- * will explore. No bottom navy ramp (which read as marketing chrome on
- * an essentially empty page).
+ * 2026-05-11 retire: prior round had a five-line cycling "in the first
+ * issues" teaser promising Schwarzman / Rhodes essays + an editorial
+ * mission statement. User: "ridiculous fluff overpromise that we don't
+ * even have in our plans for top uni journal — simplify it i told you
+ * just coming soon stay tuned". Stripped to a single line.
  *
  * Switch SHOW_ARTICLES back to true to re-expose the magazine layout
  * below; the data and routes were never removed.
@@ -19,7 +17,7 @@ import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { motion } from "framer-motion";
 import { blogArticles } from "@/data/blogArticles";
 import { countryGuides } from "@/data/countryGuides";
@@ -27,35 +25,11 @@ import { countryGuides } from "@/data/countryGuides";
 const SHOW_COUNTRY_GUIDES = false;
 const SHOW_ARTICLES = false;
 
-/* Sample lines that feel like an editorial table-of-contents-in-the-
- * making — one specific angle each, written as if the next issue is
- * about to print. No headlines yet, just teasers. */
-const TEASER_LINES = [
-  "On the Schwarzman essay that almost didn't make the cut",
-  "The day-of-acceptance call: what 8 of our scholars did with the next 24 hours",
-  "Why your safety school deserves the same essay you wrote for your reach",
-  "Reading rejection: how the Rhodes panel actually decides",
-  "Three sentences to never write in a personal statement",
-];
-
 const Blog = () => {
   const navigate = useNavigate();
   const featured = blogArticles[0];
   const rest = blogArticles.slice(1);
   const railRef = useRef<HTMLDivElement>(null);
-  const [teaserIdx, setTeaserIdx] = useState(0);
-
-  /* Cycle teaser lines every 4s — soft, no flashing, just keeps the
-   * page feeling alive. Stops if reduced-motion is preferred. */
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) return;
-    const id = window.setInterval(() => {
-      setTeaserIdx((i) => (i + 1) % TEASER_LINES.length);
-    }, 4500);
-    return () => window.clearInterval(id);
-  }, []);
 
   const scrollRail = (dir: "left" | "right") => {
     railRef.current?.scrollBy({ left: dir === "left" ? -320 : 320, behavior: "smooth" });
@@ -65,77 +39,28 @@ const Blog = () => {
     <div className="min-h-screen bg-background">
       <Navigation language="en" />
 
-      {/* Coming-soon hero — quiet, editorial, "magazine in production"
-          feel. No giant gradient wordmark — the smallness IS the
-          treatment. */}
+      {/* Coming-soon — single line. No promises about what we'll publish,
+          no fake table of contents. */}
       {!SHOW_ARTICLES && !SHOW_COUNTRY_GUIDES && (
-        <main className="max-w-2xl mx-auto px-6 lg:px-8 pt-20 pb-24 lg:pt-28 lg:pb-32">
+        <main className="max-w-xl mx-auto px-6 lg:px-8 pt-24 pb-24 lg:pt-32 lg:pb-32">
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="space-y-8"
+            className="space-y-5"
           >
-            {/* Issue indicator — sets the tone: "this is a publication" */}
             <div className="flex items-center gap-3">
               <span className="h-px w-10 bg-gold-dark" />
               <p className="text-[10px] font-mono uppercase tracking-[0.26em] text-gold-dark">
-                Issue 01 · in production
+                TopUni Journal
               </p>
             </div>
-
-            {/* Wordmark — restrained, editorial. Not a giant gradient
-                splash. */}
             <h1 className="font-heading text-3xl sm:text-4xl font-bold text-foreground tracking-[-0.02em] leading-[1.1]">
-              The TopUni Journal
+              Coming soon.
             </h1>
-
-            {/* Editorial promise — what the publication is, in one line.
-                Voice: confident, specific, written from inside the
-                competition. */}
-            <p className="text-base sm:text-lg text-foreground/80 leading-relaxed max-w-xl">
-              Long-form notes from inside the world's most competitive scholarships —
-              written by the team and by alumni who've actually won them.
+            <p className="text-sm text-muted-foreground">
+              Stay tuned.
             </p>
-
-            {/* Cycling teaser — gives the page a rhythm without flashing
-                ads. Read like a magazine's coming-soon table of
-                contents being typeset live. */}
-            <div className="pt-2 border-t border-border/60 max-w-xl">
-              <p className="text-[10px] font-mono uppercase tracking-[0.22em] text-muted-foreground mb-3 pt-5">
-                In the first issues
-              </p>
-              <div className="relative h-14 sm:h-12 overflow-hidden">
-                {TEASER_LINES.map((line, i) => (
-                  <motion.p
-                    key={i}
-                    className="absolute inset-0 text-sm sm:text-[15px] text-foreground/70 italic leading-relaxed"
-                    animate={{
-                      opacity: i === teaserIdx ? 1 : 0,
-                      y: i === teaserIdx ? 0 : (i < teaserIdx ? -8 : 8),
-                    }}
-                    transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-                  >
-                    — {line}
-                  </motion.p>
-                ))}
-              </div>
-            </div>
-
-            {/* Quiet outbound — Discover is the thing to do while the
-                Journal types itself. No giant CTA pill — just a magazine-
-                style end-card line. */}
-            <div className="pt-4 max-w-xl">
-              <button
-                onClick={() => navigate("/discover")}
-                className="group inline-flex items-center gap-2 text-sm font-medium text-gold-dark hover:text-foreground transition-colors"
-              >
-                <span className="border-b border-gold-dark/40 group-hover:border-foreground/40 pb-0.5 transition-colors">
-                  Read the scholarship database while we write
-                </span>
-                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-              </button>
-            </div>
           </motion.div>
         </main>
       )}

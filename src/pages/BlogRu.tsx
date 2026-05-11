@@ -1,10 +1,7 @@
 /* BlogRu — pre-launch teaser surface (Russian).
  *
- * Mirrors Blog.tsx 2026-05-10 redesign: drops the giant "Top Uni Блог"
- * gradient masthead + plain "Скоро / Следите за обновлениями" card.
- * Now: a single editorial intermission with magazine-in-production
- * framing — Issue 01 indicator, tightened wordmark, cycling teaser
- * lines that rotate through 5 specific topics.
+ * Mirrors Blog.tsx 2026-05-11 strip-down: single "Coming soon. Stay
+ * tuned." card. No editorial promises about content we don't have.
  *
  * Article catalogue + magazine layout gated behind SHOW_ARTICLES — flip
  * back to true to re-expose without code work.
@@ -12,7 +9,6 @@
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { ArrowRight } from "lucide-react";
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { blogArticles } from "@/data/blogArticles";
@@ -21,89 +17,35 @@ import { countryGuides } from "@/data/countryGuides";
 const SHOW_COUNTRY_GUIDES = false;
 const SHOW_ARTICLES = false;
 
-const TEASER_LINES_RU = [
-  "Эссе на Schwarzman, которое чуть не отправили в корзину",
-  "День принятия: что делали 8 наших стипендиатов в первые 24 часа",
-  "Почему safety-школа заслуживает того же эссе, что и reach",
-  "Как читать отказ: что комиссия Rhodes действительно решает",
-  "Три фразы, которые никогда не пишите в personal statement",
-];
-
 const BlogRu = () => {
   const navigate = useNavigate();
   const featured = blogArticles[0];
   const rest = blogArticles.slice(1);
-  const [teaserIdx, setTeaserIdx] = useState(0);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) return;
-    const id = window.setInterval(() => {
-      setTeaserIdx((i) => (i + 1) % TEASER_LINES_RU.length);
-    }, 4500);
-    return () => window.clearInterval(id);
-  }, []);
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation language="ru" />
 
       {!SHOW_ARTICLES && !SHOW_COUNTRY_GUIDES && (
-        <main className="max-w-2xl mx-auto px-6 lg:px-8 pt-20 pb-24 lg:pt-28 lg:pb-32">
+        <main className="max-w-xl mx-auto px-6 lg:px-8 pt-24 pb-24 lg:pt-32 lg:pb-32">
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="space-y-8"
+            className="space-y-5"
           >
             <div className="flex items-center gap-3">
               <span className="h-px w-10 bg-gold-dark" />
               <p className="text-[10px] font-mono uppercase tracking-[0.26em] text-gold-dark">
-                Выпуск 01 · в работе
+                Журнал TopUni
               </p>
             </div>
-
             <h1 className="font-heading text-3xl sm:text-4xl font-bold text-foreground tracking-[-0.02em] leading-[1.1]">
-              Журнал TopUni
+              Скоро.
             </h1>
-
-            <p className="text-base sm:text-lg text-foreground/80 leading-relaxed max-w-xl">
-              Длинные заметки изнутри самых конкурентных стипендий мира — от команды и от выпускников, которые их действительно выиграли.
+            <p className="text-sm text-muted-foreground">
+              Следите за обновлениями.
             </p>
-
-            <div className="pt-2 border-t border-border/60 max-w-xl">
-              <p className="text-[10px] font-mono uppercase tracking-[0.22em] text-muted-foreground mb-3 pt-5">
-                В первых выпусках
-              </p>
-              <div className="relative h-14 sm:h-12 overflow-hidden">
-                {TEASER_LINES_RU.map((line, i) => (
-                  <motion.p
-                    key={i}
-                    className="absolute inset-0 text-sm sm:text-[15px] text-foreground/70 italic leading-relaxed"
-                    animate={{
-                      opacity: i === teaserIdx ? 1 : 0,
-                      y: i === teaserIdx ? 0 : (i < teaserIdx ? -8 : 8),
-                    }}
-                    transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-                  >
-                    — {line}
-                  </motion.p>
-                ))}
-              </div>
-            </div>
-
-            <div className="pt-4 max-w-xl">
-              <button
-                onClick={() => navigate("/discover/ru")}
-                className="group inline-flex items-center gap-2 text-sm font-medium text-gold-dark hover:text-foreground transition-colors"
-              >
-                <span className="border-b border-gold-dark/40 group-hover:border-foreground/40 pb-0.5 transition-colors">
-                  Открыть базу стипендий пока мы пишем
-                </span>
-                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-              </button>
-            </div>
           </motion.div>
         </main>
       )}
