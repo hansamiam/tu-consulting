@@ -68,6 +68,31 @@ SELECT net.http_post(
   body    := jsonb_build_object('force_all', true)
 ) AS http_request_id;
 
+-- ─── (3b) Fire canonical-extract + cover-image enrichment ──────────────
+-- Both crons populate user-visible fields (overview / funding text /
+-- cover image) that students see on Discover cards. Manually firing
+-- them after a fresh scrape batch lets the catalog look complete
+-- instead of waiting for the next nightly tick.
+SELECT 'canonical' AS which, net.http_post(
+  url     := 'https://bsfldtpemfxhnkdzccib.supabase.co/functions/v1/canonical-extract-cron',
+  headers := jsonb_build_object(
+    'apikey',       public.app_cron_token(),
+    'Authorization','Bearer ' || public.app_cron_token(),
+    'Content-Type', 'application/json'
+  ),
+  body    := '{}'::jsonb
+) AS req_id
+UNION ALL
+SELECT 'cover-images', net.http_post(
+  url     := 'https://bsfldtpemfxhnkdzccib.supabase.co/functions/v1/enrich-cover-images-cron',
+  headers := jsonb_build_object(
+    'apikey',       public.app_cron_token(),
+    'Authorization','Bearer ' || public.app_cron_token(),
+    'Content-Type', 'application/json'
+  ),
+  body    := '{}'::jsonb
+);
+
 -- ─── (4) After 60-90s, run THIS section alone to inspect results ───────
 -- Replace the http_request_id list with whichever IDs you got back above.
 SELECT
