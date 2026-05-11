@@ -50,10 +50,10 @@ serve(async (req) => {
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  // Prefer SB_SECRET_KEY (the modern sb_secret_* short-form key) when
-  // present — that's the value the API gateway accepts via the apikey
-  // header. Fall back to the legacy SUPABASE_SERVICE_ROLE_KEY for
-  // older projects where SB_SECRET_KEY isn't injected.
+  // Pull the service-role key from env for the supabase-js client
+  // (which only needs to reach the gateway with SOMETHING in apikey
+  // — sb_secret_* in env works; legacy JWT in env also works for the
+  // client SDK because the SDK sends the value via apikey too).
   const SERVICE_ROLE = Deno.env.get("SB_SECRET_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!SUPABASE_URL || !SERVICE_ROLE) return json(500, { error: "Supabase env not configured" });
 
@@ -64,6 +64,19 @@ serve(async (req) => {
   const supa = createClient(SUPABASE_URL, SERVICE_ROLE, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+
+  // Pull the dispatch-side token from private.app_secrets — the SAME
+  // value pg_cron uses to hit our edge functions. This is the only
+  // value guaranteed to work against THIS project's API gateway after
+  // a key rotation (the env-injected SERVICE_ROLE may still be the
+  // legacy JWT, which the "Disable legacy JWT" gateway toggle now
+  // rejects). One DB round-trip at the top of each dispatch run,
+  // amortised across MAX_SOURCES_PER_TICK internal fetches.
+  let DISPATCH_TOKEN: string = SERVICE_ROLE;
+  try {
+    const { data: tokenRpc } = await supa.rpc("app_cron_token");
+    if (typeof tokenRpc === "string" && tokenRpc.length > 10) DISPATCH_TOKEN = tokenRpc;
+  } catch { /* fall back to env-derived SERVICE_ROLE — better than nothing */ }
 
   // Manual override (admin can pass { force_all: true } to ignore cadence).
   const body = await req.json().catch(() => ({} as { force_all?: boolean; source_ids?: string[] }));
@@ -128,15 +141,14 @@ serve(async (req) => {
     let status = 0;
     let ok = false;
     try {
-      // Auth via apikey header — sb_secret_* keys aren't JWTs so the
-      // gateway rejects them in Authorization: Bearer. Both headers
-      // are sent so this works regardless of which key shape is in
-      // SERVICE_ROLE (legacy JWT or sb_secret_*). requireAdminOrService
-      // reads from either header on the function side.
+      // DISPATCH_TOKEN comes from private.app_secrets via the rpc call
+      // above — same value pg_cron uses, gateway-rotation-resilient.
+      // apikey header (not Bearer) because the gateway only accepts
+      // sb_secret_* short-form keys via the apikey lane.
       const r = await fetch(`${SUPABASE_URL}/functions/v1/scrape-source`, {
         method: "POST",
         headers: {
-          apikey: SERVICE_ROLE,
+          apikey: DISPATCH_TOKEN,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ source_id: s.source_id }),

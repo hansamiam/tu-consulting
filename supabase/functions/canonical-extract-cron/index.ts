@@ -33,9 +33,23 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SB_SECRET_KEY");
+  const SERVICE_ROLE = Deno.env.get("SB_SECRET_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!SUPABASE_URL || !SERVICE_ROLE) return json(500, { error: "missing supabase env" });
-  const supa = createClient(SUPABASE_URL, SERVICE_ROLE);
+  // Bootstrap client — used to load the rotation-resilient dispatch
+  // token from private.app_secrets. Same source pg_cron uses, so
+  // every fan-out fetch in this run hits the gateway with a value
+  // that matches the cron token under any rotation state.
+  const bootstrap = createClient(SUPABASE_URL, SERVICE_ROLE);
+  let DISPATCH_TOKEN: string = SERVICE_ROLE;
+  try {
+    const { data: tokenRpc } = await bootstrap.rpc("app_cron_token");
+    if (typeof tokenRpc === "string" && tokenRpc.length > 10) DISPATCH_TOKEN = tokenRpc;
+  } catch { /* fall back to env-derived SERVICE_ROLE */ }
+  // Real client uses the dispatch token so supa.functions.invoke()
+  // calls below send the correct apikey to the gateway. Re-creating
+  // the client (rather than mutating) keeps supabase-js's internal
+  // headers in sync with the new apikey.
+  const supa = createClient(SUPABASE_URL, DISPATCH_TOKEN);
 
   const staleCutoff = new Date(Date.now() - STALE_THRESHOLD_DAYS * 86400_000).toISOString();
 

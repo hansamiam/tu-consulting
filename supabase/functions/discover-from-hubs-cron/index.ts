@@ -52,9 +52,6 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  // Prefer SB_SECRET_KEY (modern sb_secret_* key) so the internal
-  // fetch below uses the apikey-routable token shape. Fall back to
-  // the legacy JWT for projects where SB_SECRET_KEY isn't exposed.
   const SERVICE_ROLE = Deno.env.get("SB_SECRET_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!SUPABASE_URL || !SERVICE_ROLE) return json(500, { error: "Supabase env not configured" });
 
@@ -64,6 +61,16 @@ serve(async (req) => {
   const supa = createClient(SUPABASE_URL, SERVICE_ROLE, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+
+  // Same pattern as scrape-cron-dispatcher: fetch the rotation-resilient
+  // dispatch token from private.app_secrets so internal fan-out fetches
+  // always use whatever value pg_cron is currently using. Avoids the
+  // env-var-stale-after-rotation failure mode.
+  let DISPATCH_TOKEN: string = SERVICE_ROLE;
+  try {
+    const { data: tokenRpc } = await supa.rpc("app_cron_token");
+    if (typeof tokenRpc === "string" && tokenRpc.length > 10) DISPATCH_TOKEN = tokenRpc;
+  } catch { /* fall back to env-derived SERVICE_ROLE */ }
 
   // Pick aggregator-category hubs in last_crawled_at ascending order so
   // hubs we haven't touched in the longest go first. is_active filter
@@ -86,13 +93,12 @@ serve(async (req) => {
 
   const dispatchOne = async (h: typeof hubs[number]) => {
     try {
-      // apikey header — same shape as scrape-cron-dispatcher uses for
-      // its internal calls. sb_secret_* keys aren't JWTs so Bearer
-      // gets rejected by the gateway with UNAUTHORIZED_INVALID_JWT_FORMAT.
+      // DISPATCH_TOKEN from private.app_secrets — see scrape-cron-dispatcher
+      // for the gateway-rotation-resilience rationale.
       const r = await fetch(`${SUPABASE_URL}/functions/v1/discover-from-hub`, {
         method: "POST",
         headers: {
-          apikey: SERVICE_ROLE,
+          apikey: DISPATCH_TOKEN,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ hub_source_id: h.source_id }),
