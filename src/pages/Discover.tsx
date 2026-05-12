@@ -274,7 +274,7 @@ interface FilterState {
 }
 
 type Phase = "landing" | "wizard" | "analyzing" | "results";
-type SortBy = "match" | "deadline" | "value" | "effort" | "selectivity" | "trending" | "newest";
+type SortBy = "match" | "deadline" | "value" | "effort" | "selectivity" | "trending" | "newest" | "alpha";
 type ViewMode = "grid" | "list";
 type AppSection = "browse" | "pipeline" | "shortlist" | "collections";
 /* Three application stages — captures the meaningful work-in-progress
@@ -4011,6 +4011,27 @@ const Discover = ({ language = "en" }: Props) => {
         return b.match - a.match;
       });
     }
+    // "Alphabetical" — sort by scholarship_name A→Z. Useful when the
+    // student already has a target program in mind (Chevening, MEXT,
+    // Fulbright) and wants to jump to it quickly without typing in
+    // search. Cleans the name first via cleanScholarshipName so cosmetic
+    // suffixes ("(2026)", "Programme") don't push letters around. Uses
+    // `localeCompare` with the active language so Cyrillic + Latin sort
+    // naturally (RU users see Russian-collated names; EN users see
+    // English-collated). `sensitivity: "base"` ignores case + diacritics
+    // so "École" and "Ecole" land next to each other.
+    if (sortBy === "alpha") {
+      const collator = new Intl.Collator(language === "ru" ? "ru" : "en", {
+        sensitivity: "base",
+        numeric: true,
+      });
+      return [...list].sort((a, b) =>
+        collator.compare(
+          cleanScholarshipName(a.scholarship_name ?? ""),
+          cleanScholarshipName(b.scholarship_name ?? ""),
+        ),
+      );
+    }
     return list;
     // Deps split: deferredSearch (the lagged query) + the rest of the
     // filter shape. The whole `filters` object would re-trigger this
@@ -4020,7 +4041,7 @@ const Discover = ({ language = "en" }: Props) => {
     // to update the result list — the input itself updates immediately
     // on filters.search.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ranked, deferredSearch, filters.coverage, filters.degree, filters.selectivity, filters.demographic, filters.field, filters.hostCountry, filters.onlyEligible, filters.closingSoon, sortBy, hidden, showHidden]);
+  }, [ranked, deferredSearch, filters.coverage, filters.degree, filters.selectivity, filters.demographic, filters.field, filters.hostCountry, filters.onlyEligible, filters.closingSoon, sortBy, hidden, showHidden, language]);
 
   /* Free-tier gating — slice the filtered list to FREE_VISIBLE_LIMIT
    * for users who aren't paid + aren't admin. Everything downstream
@@ -4782,6 +4803,13 @@ const Discover = ({ language = "en" }: Props) => {
                           driving the order. */}
                       <SelectItem value="trending">{t("Trending now", "Сейчас в тренде")}</SelectItem>
                       <SelectItem value="newest">{t("Newest first", "Сначала новые")}</SelectItem>
+                      {/* Alphabetical — locale-aware via Intl.Collator,
+                          ignores cosmetic suffixes via cleanScholarshipName
+                          so "Chevening (2026)" sits next to "Chevening
+                          Scholarships" instead of getting bumped by the
+                          parenthesis. Useful when the student is hunting
+                          a specific named program. */}
+                      <SelectItem value="alpha">{t("A → Z", "А → Я")}</SelectItem>
                       {/* "Most accessible" sort retired — selectivity
                           metadata is incomplete on most rows so the
                           sort produced near-random ordering. */}
