@@ -23,7 +23,7 @@ const FOOTER_LINKS_EN = [
 const FOOTER_LINKS_RU = [
   { to: "/team/ru",      label: "Команда" },
   { to: "/pricing/ru",   label: "Цены" },
-  { to: "/blog",         label: "Блог" },
+  { to: "/blog/ru",      label: "Блог" },
 ];
 
 // "All funders" link removed from public navigation per user direction

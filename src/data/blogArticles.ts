@@ -65,7 +65,7 @@ export const blogArticles: BlogArticle[] = [
     image: "https://images.unsplash.com/photo-1523050854058-8df90110c476?w=800&q=80",
     content: [
       "Every year, thousands of ambitious students from Central Asia and beyond set their sights on top universities in the US, UK, Canada, and Europe. Yet many fall into the same traps that could have been easily avoided with the right guidance.",
-      "**1. Applying Only to \"Dream\" Schools**\nMany students only apply to the most prestigious names — Harvard, Oxford, MIT — without building a balanced list. A strong application strategy includes reach, match, and safety schools. Don't let prestige blind you to excellent programs that are a better fit for your profile.",
+      "**1. Applying Only to \"Dream\" Schools**\nMany students only apply to the most prestigious names — Harvard, Oxford, MIT — without building a balanced list. A strong application strategy mixes ambitious aims with programs that genuinely fit your profile. Don't let prestige blind you to excellent universities where you'd actually thrive.",
       "**2. Writing Generic Personal Statements**\nAdmissions officers read thousands of essays. \"I've always been passionate about...\" doesn't stand out. The best essays are specific, personal, and show self-awareness. Tell a story only you can tell.",
       "**3. Ignoring Financial Planning**\nTuition is just the beginning. Housing, insurance, books, travel — costs add up fast. Many students don't research scholarships early enough or underestimate the cost of living. Use tools like our Discover cost calculator to plan realistically.",
       "**4. Waiting Until the Last Minute**\nStrong applications take months, not weeks. Starting your essays in November for a January deadline is a recipe for mediocrity. Begin research in the spring, draft essays over summer, and refine in the fall.",
@@ -73,7 +73,7 @@ export const blogArticles: BlogArticle[] = [
     ],
     contentRu: [
       "Каждый год тысячи амбициозных студентов из Центральной Азии нацеливаются на топовые университеты США, Великобритании, Канады и Европы. Но многие попадают в одни и те же ловушки, которых можно было легко избежать.",
-      "**1. Подача только в «университеты мечты»**\nМногие студенты подают заявки только в самые престижные — Гарвард, Оксфорд, MIT — не составляя сбалансированного списка. Сильная стратегия включает амбициозные, подходящие и запасные варианты.",
+      "**1. Подача только в «университеты мечты»**\nМногие студенты подают заявки только в самые престижные — Гарвард, Оксфорд, MIT — не составляя сбалансированного списка. Сильная стратегия сочетает амбициозные цели с программами, которые реально подходят вашему профилю. Не позволяйте престижу заслонить отличные университеты, где вы по-настоящему проявите себя.",
       "**2. Шаблонные мотивационные письма**\nПриёмные комиссии читают тысячи эссе. «Я всегда мечтал о...» не выделяется. Лучшие эссе конкретны, личны и показывают самосознание. Расскажите историю, которую можете рассказать только вы.",
       "**3. Игнорирование финансового планирования**\nОбучение — это только начало. Жильё, страховка, книги, перелёты — расходы растут быстро. Многие студенты не ищут стипендии достаточно рано. Используйте наш калькулятор расходов в разделе Discover.",
       "**4. Всё в последний момент**\nСильные заявки требуют месяцев, а не недель. Начинать эссе в ноябре для январского дедлайна — рецепт посредственности. Начните исследование весной, пишите черновики летом, дорабатывайте осенью.",

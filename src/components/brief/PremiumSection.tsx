@@ -85,7 +85,7 @@ export const PremiumSection = ({
         <div className="flex items-center gap-2 mb-4 flex-wrap">
           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-[0.18em] uppercase bg-gradient-to-r from-gold-dark to-gold text-primary">
             <Crown className="w-3 h-3" />
-            {isRu ? "Pro" : "Pro"}
+            Pro
           </span>
           <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark">
             {copy.eyebrow}
