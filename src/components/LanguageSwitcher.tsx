@@ -1,23 +1,28 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
+// Russian routes always end with `/ru` (e.g. /pricing/ru, /blog/:id/ru,
+// /scholarships/by-country/:country/ru). The previous includes('/ru')
+// + replace('/ru', '') pair matched ANYWHERE in the path, so a user
+// visiting /scholarships/by-country/russia or /by-field/russian-studies
+// was (a) flagged as on the Russian site even though they weren't, and
+// (b) had their URL mangled to /scholarships/by-country/ssia on switch.
+// Anchor to the path boundary instead.
+const RU_PATH_RE = /\/ru$/;
+
 const LanguageSwitcher = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const isRussian = location.pathname.includes('/ru');
+  const isRussian = RU_PATH_RE.test(location.pathname);
 
   const switchLanguage = () => {
     if (isRussian) {
-      // Remove /ru from the path
-      const newPath = location.pathname.replace('/ru', '');
-      navigate(newPath || '/');
+      const newPath = location.pathname.replace(RU_PATH_RE, "");
+      navigate(newPath || "/");
+    } else if (location.pathname === "/") {
+      navigate("/ru");
     } else {
-      // Add /ru to the path
-      if (location.pathname === '/') {
-        navigate('/ru');
-      } else {
-        navigate(`${location.pathname}/ru`);
-      }
+      navigate(`${location.pathname}/ru`);
     }
   };
 
