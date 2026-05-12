@@ -219,10 +219,19 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
         if (cancelled || !data?.matches) return;
         const ids = data.matches.map((m) => m.scholarship_id).filter((sid) => sid !== s.scholarship_id);
         if (ids.length === 0) return;
+        // Apply the same visibility gate the catalog read-path uses —
+        // pre-fix the similar-scholarships rail could surface 'broken'
+        // (re-fetch failed) or 'closed_archived' rows because the .in()
+        // filter wasn't joined with verification_status / lifecycle_status
+        // predicates. The sibling-from-funder rail below already does this;
+        // we missed it here.
         const { data: rows } = await supabase
           .from("scholarships")
           .select("scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, application_deadline, target_degree_level, target_fields, is_featured, why_this_fits, official_url")
-          .in("scholarship_id", ids.slice(0, 4));
+          .in("scholarship_id", ids.slice(0, 8))
+          .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
+          .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null")
+          .limit(4);
         if (!cancelled) setSimilar(((rows as SimilarScholarship[]) ?? []));
       } catch (e) {
         // Silent failure — similar list is enrichment, not critical
