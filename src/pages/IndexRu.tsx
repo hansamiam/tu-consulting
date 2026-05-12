@@ -6,10 +6,16 @@ import samuelPhoto from "@/assets/samuel.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
 import joshPhoto from "@/assets/josh.jpg";
 import aigulPhoto from "@/assets/aigul.jpeg";
+import usFlag from "@/assets/flags/us.svg";
+import caFlag from "@/assets/flags/ca.svg";
+import gbFlag from "@/assets/flags/gb.svg";
+import cnFlag from "@/assets/flags/cn.svg";
+import krFlag from "@/assets/flags/kr.svg";
 import Navigation from "@/components/Navigation";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { Footer } from "@/components/Footer";
 import { OutcomesBar } from "@/components/OutcomesBar";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { motion } from "framer-motion";
 
 const fadeUp = (delay = 0) => ({
@@ -19,11 +25,14 @@ const fadeUp = (delay = 0) => ({
   transition: { delay, duration: 0.7, ease: [0.22, 1, 0.36, 1] as const },
 });
 
+// Home-page team grid — Samuel's title intentionally shorter than on
+// /team/ru (just "Основатель", no "Основатель и CEO") so the home
+// cards stay scannable. Mirrors Index.tsx.
 const TEAM = [
-  { name: "Samuel Han", title: "Founder & CEO", school: "Yale", photo: samuelPhoto },
-  { name: "Nurzada Abdivalieva", title: "Co-Founder", school: "Tsinghua · Cambridge", photo: nurzadaPhoto },
-  { name: "Josh Hughes", title: "Lead Consultant", school: "Harvard", photo: joshPhoto },
-  { name: "Aigul Abdoubaetova", title: "Senior Advisor", school: "Ex-OSCE Academy", photo: aigulPhoto },
+  { name: "Samuel Han", title: "Основатель", school: "Yale", photo: samuelPhoto },
+  { name: "Nurzada Abdivalieva", title: "Со-основатель", school: "Tsinghua · Cambridge", photo: nurzadaPhoto },
+  { name: "Josh Hughes", title: "Ведущий консультант", school: "Harvard", photo: joshPhoto },
+  { name: "Aigul Abdoubaetova", title: "Старший советник", school: "U of Oregon", photo: aigulPhoto },
 ];
 
 const IndexRu = () => {
@@ -120,99 +129,85 @@ const IndexRu = () => {
             </div>
           </section>
 
-          {/* CONSOLIDATED — Round 10 collapse: worldview + how-it-works
-              + before/after merged into one tight narrative, mirroring EN. */}
-          <section id="how" className="py-20 sm:py-28">
-            <div className="max-w-5xl mx-auto px-5 sm:px-8">
-              <motion.div {...fadeUp()} className="max-w-2xl mx-auto text-center mb-12 sm:mb-14">
-                <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">Сдвиг</p>
-                <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12]">
-                  От 47 вкладок к ранжированному плану.
-                </h2>
-                <div className="mt-6">
-                  <OutcomesBar variant="card" language="ru" />
-                </div>
-              </motion.div>
+          {/* CONSOLIDATED — Round 10's worldview + before/after listicle
+              was retired here to mirror EN (commit 95d382a). The four-bullet
+              compare felt generic and stretched the scroll before users hit
+              the team — the actual proof point right now while Discover is
+              still maturing. OutcomesBar moved into the team section header
+              below so the trust signal still surfaces. */}
 
-              <div className="grid sm:grid-cols-2 gap-4 sm:gap-5 mb-12 sm:mb-16">
-                <motion.div
-                  {...fadeUp(0.05)}
-                  className="rounded-2xl border border-border bg-card p-6 sm:p-7"
-                >
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-4">
-                    Без TopUni
-                  </p>
-                  <ul className="space-y-3">
-                    {[
-                      "Сайты-агрегаторы, которые показывают всем одни и те же стипендии",
-                      "Случайные советы с Reddit",
-                      "Пропущенные дедлайны",
-                      "Непонятно, проходите ли вы вообще",
-                      "Нет внятной стратегии для эссе",
-                    ].map((line, i) => (
-                      <li key={i} className="flex items-start gap-3 text-[15px] text-foreground/75 leading-snug">
-                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
-                        <span>{line}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </motion.div>
-
-                <motion.div
-                  {...fadeUp(0.1)}
-                  className="relative rounded-2xl border border-gold/30 bg-gradient-to-br from-gold/[0.07] via-card to-card p-6 sm:p-7 overflow-hidden"
-                >
-                  <div className="absolute left-0 inset-y-0 w-[3px] bg-gradient-to-b from-gold-dark via-gold to-gold-dark" />
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-gold-dark font-semibold mb-4">
-                    С TopUni
-                  </p>
-                  <ul className="space-y-3">
-                    {[
-                      "Ранжированные возможности под ваш профиль",
-                      "Заметки «почему стоит изучить» по каждой стипендии",
-                      "Фильтры финансирования, которые реально сужают список",
-                      "План дедлайнов с напоминаниями на почту",
-                      "Ежемесячные живые воркшопы с поступившими основателями",
-                    ].map((line, i) => (
-                      <li key={i} className="flex items-start gap-3 text-[15px] text-foreground leading-snug">
-                        <span className="mt-1 text-gold-dark shrink-0">
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </span>
-                        <span>{line}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </motion.div>
-              </div>
-
-              <motion.p
-                {...fadeUp(0.18)}
-                className="font-sans text-lg sm:text-xl text-foreground/85 leading-[1.5] tracking-[-0.005em] text-center text-balance max-w-3xl mx-auto"
-              >
-                Элитный консалтинг по поступлению стоит тысячи. Сайты-агрегаторы заваливают вас стипендиями, на которые вы не проходите.
-                {" "}
-                <span className="text-gold-dark font-semibold">TopUni — софт между ними</span> — персональная стратегия, возможности, ранжированные под ваш реальный профиль, и поддержка вживую за долю стоимости.
-              </motion.p>
-            </div>
-          </section>
-
-          {/* TEAM */}
+          {/* TEAM — subtle background shift, no hard block.
+              Header carries over the /team stats block ($500K+, 10+ years,
+              5-flag row) so the home page leads with the consulting moat
+              instead of a generic tagline. */}
           <section
             className="py-20 sm:py-28"
             style={{ backgroundImage: `linear-gradient(180deg, transparent, hsl(var(--primary) / 0.07) 50%, transparent)` }}
           >
             <div className="max-w-6xl mx-auto px-5 sm:px-8">
-              <motion.div {...fadeUp()} className="max-w-3xl mx-auto text-center mb-14 sm:mb-16">
-                <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-4">Команда</p>
-                <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-5">
-                  Мы сидели в тех комнатах, в которые вы поступаете.
+              <motion.div {...fadeUp()} className="max-w-4xl mx-auto text-center mb-20 sm:mb-24">
+                {/* "Команда" kicker dropped — the H2 below already names
+                    the section. A kicker + H2 that say the same thing
+                    twice is redundant chrome. Mirrors EN. */}
+                <h2 className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.12] mb-8 sm:mb-10">
+                  Знакомьтесь с командой.
                 </h2>
-                <p className="text-muted-foreground text-lg leading-relaxed">
-                  Yale · Harvard · Cambridge · Tsinghua — поступали, получали финансирование, теперь по другую сторону стола.
-                </p>
+
+                {/* Stats block — carried over from /team. $500K+ secured,
+                    10+ years of collective experience, 5-country flag row.
+                    Animated numbers count up on scroll-into-view. */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-12 max-w-4xl mx-auto mb-6">
+                  <motion.div whileHover={{ scale: 1.04 }} className="space-y-1 sm:space-y-2">
+                    <div className="min-h-[44px] sm:min-h-[56px] flex items-center justify-center">
+                      <div className="text-4xl sm:text-5xl font-bold text-gold">
+                        $<AnimatedNumber value={500} />K+
+                      </div>
+                    </div>
+                    <div className="text-xs sm:text-base text-muted-foreground">привлечено в стипендиях</div>
+                  </motion.div>
+                  <motion.div whileHover={{ scale: 1.04 }} className="space-y-1 sm:space-y-2">
+                    <div className="min-h-[44px] sm:min-h-[56px] flex items-center justify-center">
+                      <div className="text-4xl sm:text-5xl font-bold text-gold">
+                        <AnimatedNumber value={10} />+
+                      </div>
+                    </div>
+                    <div className="text-xs sm:text-base text-muted-foreground">лет совместного опыта</div>
+                  </motion.div>
+                  <motion.div whileHover={{ scale: 1.04 }} className="space-y-1 sm:space-y-2">
+                    <div className="min-h-[44px] sm:min-h-[56px] flex items-center justify-center">
+                      <div className="flex flex-nowrap gap-2 sm:gap-3 items-center justify-center">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
+                          <img src={usFlag} alt="США" className="w-full h-full object-cover" loading="lazy" />
+                        </div>
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
+                          <img src={caFlag} alt="Канада" className="w-full h-full object-cover" loading="lazy" />
+                        </div>
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
+                          <img src={gbFlag} alt="Великобритания" className="w-full h-full object-cover" loading="lazy" />
+                        </div>
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
+                          <img src={cnFlag} alt="Китай" className="w-full h-full object-cover object-left" loading="lazy" />
+                        </div>
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-gold/40 overflow-hidden flex-shrink-0 p-0.5">
+                          <img src={krFlag} alt="Южная Корея" className="w-full h-full object-cover" loading="lazy" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-xs sm:text-base text-muted-foreground">опыт с пяти континентов</div>
+                  </motion.div>
+                </div>
+
+                {/* OutcomesBar — moved here from the retired "Сдвиг" section
+                    so once one TopUni member logs an accepted award, the
+                    compounding trust signal still surfaces above the team. */}
+                <div className="mt-4">
+                  <OutcomesBar variant="card" language="ru" />
+                </div>
               </motion.div>
 
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10">
+              {/* Team grid — gap-y-12 on mobile so the 2×2 stack on small
+                  screens has visible breathing between rows. Mirrors EN. */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 sm:gap-x-8 gap-y-12 sm:gap-y-10">
                 {TEAM.map((m, i) => (
                   <motion.button
                     key={m.name}
@@ -229,17 +224,22 @@ const IndexRu = () => {
                     </div>
                     <p className="font-heading font-semibold text-foreground text-base leading-tight">{m.name}</p>
                     <p className="text-sm text-muted-foreground mt-1">{m.title}</p>
-                    <p className="text-xs text-gold-dark mt-1.5 font-medium tracking-wide">{m.school}</p>
+                    {/* School / credential — editorial uppercase + tight
+                        letter-spacing + gold-dark weight reads like the
+                        masthead credit line on a profile piece. Mirrors EN. */}
+                    <p className="font-heading text-[11px] sm:text-xs text-gold-dark mt-2.5 font-bold uppercase tracking-[0.16em]">
+                      {m.school}
+                    </p>
                   </motion.button>
                 ))}
               </div>
 
-              <motion.div {...fadeUp(0.3)} className="mt-12 text-center">
+              <motion.div {...fadeUp(0.3)} className="mt-16 sm:mt-20 text-center">
                 <button
                   onClick={() => navigate('/team/ru')}
                   className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-gold-dark transition-colors"
                 >
-                  Вся команда <ArrowRight className="h-4 w-4" />
+                  Подробнее о команде <ArrowRight className="h-4 w-4" />
                 </button>
               </motion.div>
             </div>

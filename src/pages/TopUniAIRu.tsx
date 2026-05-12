@@ -289,7 +289,30 @@ const TopUniAIRu = () => {
                           <div className="flex gap-2">
                             <Input
                               value={gpa}
+                              // Keydown gate mirrors TopUniAI.tsx — blocks
+                              // non-numeric keys at the keystroke so letters
+                              // never flash into the input. Whitelist
+                              // navigation + clipboard keys so arrows,
+                              // backspace, copy/paste still work. One
+                              // decimal point max.
+                              onKeyDown={e => {
+                                const allowed = [
+                                  "Backspace", "Delete", "Tab", "Escape", "Enter",
+                                  "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
+                                  "Home", "End",
+                                ];
+                                if (allowed.includes(e.key)) return;
+                                if (e.metaKey || e.ctrlKey) return;
+                                if (e.key === ".") {
+                                  if (gpa.includes(".")) e.preventDefault();
+                                  return;
+                                }
+                                if (!/^[0-9]$/.test(e.key)) e.preventDefault();
+                              }}
                               onChange={e => {
+                                // Belt-and-braces strip — paste bypasses
+                                // keydown so anything pasted still needs
+                                // cleaning here.
                                 const v = e.target.value.replace(/[^0-9.]/g, "");
                                 const parts = v.split(".");
                                 const cleaned = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join("")}` : v;
@@ -342,10 +365,10 @@ const TopUniAIRu = () => {
                           <Shield className="w-4 h-4 text-gold-dark shrink-0 mt-0.5" />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-foreground leading-tight">
-                              Сохраните отчёт (рекомендуется)
+                              Сохраните отчёт
                             </p>
                             <p className="text-[11px] text-foreground/70 leading-snug mt-0.5">
-                              Установите пароль — стратегия синхронизируется на телефоне и ноутбуке. Пропустите, чтобы посмотреть один раз.
+                              Установите пароль, чтобы создать аккаунт.
                             </p>
                           </div>
                         </div>
@@ -426,15 +449,54 @@ const TopUniAIRu = () => {
                     </div>
                     <div className="space-y-5">
                       {/* Целевые страны убраны 2026-05-10 — см. EN-страницу. */}
+                      {/* Intended major — mirrors TopUniAI.tsx. Native
+                          <datalist> retired (browser-default ugly dropdown)
+                          in favour of a themed Select. "Другое (введите ниже)"
+                          reveals a free-text input so users with a specialty
+                          not in the canonical list aren't blocked. */}
                       <div className="space-y-2">
                         <Label>Специальность *</Label>
-                        <Input value={major} onChange={e => setMajor(e.target.value)} placeholder="напр. Информатика, Экономика" list="major-suggestions-ru" />
-                        <datalist id="major-suggestions-ru">
-                          {["Не определился", "Информатика", "Экономика", "Бизнес и менеджмент", "Инженерия", "Медицина", "Право", "Психология", "Международные отношения", "Журналистика", "Дизайн", "Архитектура", "Математика", "Физика", "Биология", "Химия"].map(m => <option key={m} value={m} />)}
-                        </datalist>
-                        <button type="button" onClick={() => setMajor("Не определился")} className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline">
-                          Ещё не определились? Выбрать «Не определился»
-                        </button>
+                        {(() => {
+                          const MAJORS = [
+                            "Не определился",
+                            "Информатика", "Инженерия", "Бизнес и менеджмент", "Экономика",
+                            "Математика", "Физика", "Химия", "Биология",
+                            "Медицина и здравоохранение", "Право", "Международные отношения",
+                            "Государственная политика", "Политология", "Психология",
+                            "Социология", "Антропология", "История", "Философия",
+                            "Литература", "Лингвистика", "Образование", "Архитектура",
+                            "Дизайн", "Экология и устойчивое развитие",
+                            "Data Science", "Искусственный интеллект", "Статистика",
+                            "Финансы", "Маркетинг", "Коммуникации", "Журналистика",
+                            "Музыка", "Изобразительное искусство", "Сценическое искусство", "Кино",
+                            "Культурология", "Социальная работа",
+                          ];
+                          const isOther = !!major && !MAJORS.includes(major);
+                          const selectValue = isOther ? "__other__" : (major || "");
+                          return (
+                            <>
+                              <Select
+                                value={selectValue}
+                                onValueChange={v => setMajor(v === "__other__" ? (isOther ? major : "") : v)}
+                              >
+                                <SelectTrigger><SelectValue placeholder="Выберите специальность" /></SelectTrigger>
+                                <SelectContent className="max-h-72">
+                                  {MAJORS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                                  <SelectItem value="__other__">Другое (введите ниже)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              {selectValue === "__other__" && (
+                                <Input
+                                  value={isOther ? major : ""}
+                                  onChange={e => setMajor(e.target.value)}
+                                  placeholder="напр. Квантовая биофизика"
+                                  className="mt-2"
+                                  autoFocus
+                                />
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-2"><Label>Бюджет</Label>

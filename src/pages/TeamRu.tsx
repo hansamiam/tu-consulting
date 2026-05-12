@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -20,6 +21,16 @@ import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { motion } from "framer-motion";
 
 const TeamRu = () => {
+
+  // Mirrors Team.tsx — sets the tab title on mount, restores on unmount.
+  // Without this, RU users land on /team/ru with whatever the previous
+  // page set as title (often the EN /team title if they navigated from
+  // the EN site, which is a confusing language switch in the tab).
+  useEffect(() => {
+    const prev = document.title;
+    document.title = "Команда — TopUni";
+    return () => { document.title = prev; };
+  }, []);
 
   const teamMembers = [
     {

@@ -153,9 +153,19 @@ const Pricing = ({ language = "en" }: PricingProps) => {
 
   useEffect(() => {
     const prev = document.title;
-    document.title = language === "ru"
-      ? "Цены — TopUni Pro · Стратегия поступления и стипендий"
-      : "Pricing — TopUni Pro · Admissions + scholarship strategy";
+    // Title reflects whether the full pricing page is gated. While
+    // SHOW_FULL_PRICING=false renders the Coming Soon stub, surfacing
+    // "TopUni Pro · pricing" in the tab is misleading. Once the flag
+    // flips the full membership title returns. Keep the two branches
+    // co-located so they stay in lockstep with the page state below.
+    const isComingSoon = true; // mirrors SHOW_FULL_PRICING=false below
+    document.title = isComingSoon
+      ? (language === "ru"
+          ? "Подписка скоро — TopUni"
+          : "Membership coming soon — TopUni")
+      : (language === "ru"
+          ? "Цены — TopUni Pro · Стратегия поступления и стипендий"
+          : "Pricing — TopUni Pro · Admissions + scholarship strategy");
     supabase.from("founding_member_counter")
       .select("claimed_count, cap")
       .eq("id", 1)
