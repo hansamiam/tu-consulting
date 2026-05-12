@@ -57,8 +57,23 @@ export function useScholarshipTracking() {
       if (now - last < DEDUP_WINDOW_MS) return; // dedup window
       dedupRef.current.set(key, now);
 
-      // Fire-and-forget; we never block UI on this. Errors are intentionally
-      // swallowed — failed analytics should not break the user's flow.
+      // Prune the dedup map opportunistically — entries older than 2× the
+      // window are guaranteed past their suppress range. Without this, a
+      // long Discover session (hundreds of cards viewed) would grow the
+      // map unboundedly. Cheap O(n) sweep amortized across calls.
+      if (dedupRef.current.size > 64) {
+        const cutoff = now - DEDUP_WINDOW_MS * 2;
+        for (const [k, t] of dedupRef.current) {
+          if (t < cutoff) dedupRef.current.delete(k);
+        }
+      }
+
+      // Fire-and-forget; we never block UI on this. But on RPC failure we
+      // CLEAR the dedup entry so the next interaction within the window
+      // can retry — pre-fix a single failed event blocked all follow-up
+      // events of the same type for 60s, which silently leaked data into
+      // the activity-signal engine (engagement_boost feeds match scoring,
+      // so dropped views = degraded ranking forever for that user).
       supabase
         .rpc("track_scholarship_event", {
           p_scholarship_id: scholarshipId,
@@ -68,9 +83,13 @@ export function useScholarshipTracking() {
           p_context: context ? (context as unknown as never) : null,
         })
         .then(({ error }) => {
-          if (error && typeof console !== "undefined") {
-            // Don't toast — user shouldn't see analytics noise. Log for ops.
-            console.warn("[track]", error.message);
+          if (error) {
+            // Clear the dedup so the next interaction retries.
+            dedupRef.current.delete(key);
+            if (typeof console !== "undefined") {
+              // Don't toast — user shouldn't see analytics noise.
+              console.warn("[track]", error.message);
+            }
           }
         });
     },

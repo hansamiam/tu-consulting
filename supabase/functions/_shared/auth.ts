@@ -97,9 +97,15 @@ export async function requireAdminOrService(req: Request): Promise<AuthResult> {
     }
   } catch { /* not a parseable JWT — fall through to user-JWT path */ }
 
-  // Path 2: user JWT → verify + admin check via RLS-aware client
+  // Path 2: user JWT → verify + admin check via RLS-aware client.
+  // Forwards the caller's Authorization header so auth.getUser()
+  // resolves to the actual user, not anon. (Pre-fix this referenced
+  // a `header` variable that no longer existed after the c2e210c
+  // rename to `authHeader` — every admin-UI button hitting a function
+  // protected by requireAdminOrService crashed with ReferenceError at
+  // this line instead of resolving the admin's identity.)
   const userSupa = createClient(SUPABASE_URL, ANON_KEY, {
-    global: { headers: { Authorization: header } },
+    global: { headers: { Authorization: authHeader } },
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const { data: { user }, error: uErr } = await userSupa.auth.getUser();

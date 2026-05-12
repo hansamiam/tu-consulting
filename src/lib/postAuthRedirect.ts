@@ -8,16 +8,20 @@
  * /account instead of /pricing or /topuni-ai/ru.
  *
  * localStorage is shared across tabs of the same origin, so the
- * destination survives the email-client tab break. 30-minute TTL
- * means a stale flag from days ago can't redirect a fresh sign-in
- * to an unrelated surface.
+ * destination survives the email-client tab break. 2-hour TTL means
+ * a stale flag from days ago can't redirect a fresh sign-in to an
+ * unrelated surface, while still covering realistic user lag —
+ * pre-fix the 30-minute window dropped intent for any user who
+ * checked their email over lunch and came back later, silently
+ * landing them on /account instead of /pricing or /topuni-ai/ru
+ * (the page they'd just hit "Save my report" on).
  *
  * Refactored in round 68 from the four direct sessionStorage call
  * sites (Pricing, ProComparisonModal, SaveBriefPrompt, AuthCallback).
  */
 
 const KEY = "topuni-post-auth-redirect-v1";
-const TTL_MS = 30 * 60_000;
+const TTL_MS = 2 * 60 * 60_000;
 
 interface Stored {
   dest: string;
