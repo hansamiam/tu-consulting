@@ -63,17 +63,34 @@ Deno.serve(async (req) => {
     return json(500, { error: `Missing Supabase env: ${(e as Error).message}` });
   }
 
-  // Candidates: have a source_url, not currently broken. Order by
-  // data_completeness_score ASC first (the migration 20260507190000
-  // index supports this) so low-quality rows get re-verified ahead of
-  // already-rich ones — re-verification is the only path by which a
-  // thin row can pick up missing data. Then last_verified_at ASC so
-  // within an equal-completeness band we prefer the stalest row.
+  // Candidates: have a source_url. Order by data_completeness_score ASC
+  // first (the migration 20260507190000 index supports this) so
+  // low-quality rows get re-verified ahead of already-rich ones —
+  // re-verification is the only path by which a thin row can pick up
+  // missing data. Then last_verified_at ASC so within an equal-
+  // completeness band we prefer the stalest row.
+  //
+  // Pre-2026-05-12: this query excluded broken rows entirely
+  // (.neq verification_status broken). Combined with url-health-cron
+  // having a one-way state machine (broken → broken, never broken →
+  // stale on recovery), this stranded 47 rows in a permanent dead
+  // state. The healing migration 20260512020000 added a trigger that
+  // auto-recovers broken → stale when url_consecutive_fails drops to
+  // 0, but Firecrawl can scrape JS-rendered pages that the simple
+  // fetch in url-health-cron can't, so broken rows often AREN'T
+  // genuinely broken — they just fail the simpler check.
+  //
+  // We now include broken rows in the candidate set so this cron is a
+  // SECOND recovery path. Verify-scholarship handles fetch failures
+  // gracefully (stamps last_verified_at, doesn't escalate), and on a
+  // clean re-extraction promotes back to 'verified'. We keep the cap
+  // soft via the existing completeness-score ordering — broken rows
+  // typically have low completeness scores, so they naturally bubble
+  // to the front of the queue without a special clause.
   const { data: candidates, error: candErr } = await supa
     .from("scholarships")
     .select("scholarship_id, scholarship_name, last_verified_at, verification_status, data_completeness_score")
     .not("source_url", "is", null)
-    .neq("verification_status", "broken")
     .order("data_completeness_score", { ascending: true, nullsFirst: true })
     .order("last_verified_at", { ascending: true, nullsFirst: true })
     .limit(MAX_PER_RUN);
