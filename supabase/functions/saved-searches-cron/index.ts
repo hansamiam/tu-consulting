@@ -183,6 +183,11 @@ Deno.serve(async (req) => {
   // 30-day window covers the case where the cron has been off for
   // weeks; older rows aren't "new" enough to surface anyway.
   const window = new Date(Date.now() - 30 * 86400_000).toISOString();
+  // Match the Discover read filter exactly. .in() drops NULL rows, but
+  // the catalog query in Discover explicitly includes NULL — leaving
+  // NULL-status rows visible in the UI but invisible to saved-search
+  // alerts, so a user can browse-and-save a scholarship that will
+  // NEVER show up in their digest.
   const { data: recentScholarships } = await supa
     .from("scholarships")
     .select(
@@ -191,8 +196,8 @@ Deno.serve(async (req) => {
       "official_url, target_fields, target_degree_level, selectivity_level, " +
       "target_demographics, data_completeness_score, created_at",
     )
-    .in("verification_status", ["verified", "stale", "pending"])
-    .in("lifecycle_status", ["active", "reopens_annually"])
+    .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
+    .or("lifecycle_status.is.null,lifecycle_status.in.(active,reopens_annually)")
     // Quality floor — only digest rows that carry enough information to
     // be useful in an email subject line. Matches the Discover min-info
     // gate intent (≥2 substantive signals beyond name+provider+country).
