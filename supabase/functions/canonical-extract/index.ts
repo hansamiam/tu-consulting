@@ -182,15 +182,34 @@ Deno.serve(async (req: Request) => {
   // 3. Scrape
   let markdown = "";
   let scrapeStatus = 0;
+  let finalUrl = cleanUrl;
   try {
     const result = await firecrawlScrape({ url: cleanUrl, onlyMainContent: true, waitFor: 1500 });
     markdown = (result.markdown ?? "").slice(0, MAX_MARKDOWN_CHARS);
     scrapeStatus = result.metadata?.statusCode ?? 0;
+    // Firecrawl follows redirects. If a legacy "official" URL 301s to
+    // an aggregator (we've seen Reach Oxford / Inlaks links point at
+    // scholars4dev), the markdown is a 50-item round-up page — the
+    // LLM extracts "list of scholarships" instead of program detail,
+    // which silently lands as low-confidence-rejected. Better to
+    // short-circuit and re-queue for a fresh canonical URL hunt.
+    if (typeof result.metadata?.sourceURL === "string" && result.metadata.sourceURL.length > 0) {
+      finalUrl = result.metadata.sourceURL;
+    }
   } catch (e) {
     return json(200, { ok: false, reason: "scrape_failed", message: String(e), url: cleanUrl });
   }
   if (!markdown || markdown.length < 200) {
     return json(200, { ok: false, reason: "thin_content", url: cleanUrl, scrapeStatus });
+  }
+  if (isAggregator(finalUrl)) {
+    return json(200, {
+      ok: false,
+      reason: "redirected_to_aggregator",
+      requested_url: cleanUrl,
+      final_url: finalUrl,
+      message: "Source URL resolved to an aggregator domain after redirects; canonical extraction skipped.",
+    });
   }
 
   // 4. LLM extraction

@@ -10,14 +10,12 @@
  * localStorage is shared across tabs of the same origin, so the
  * destination survives the email-client tab break. 2-hour TTL means
  * a stale flag from days ago can't redirect a fresh sign-in to an
- * unrelated surface, while still covering realistic user lag —
- * pre-fix the 30-minute window dropped intent for any user who
- * checked their email over lunch and came back later, silently
- * landing them on /account instead of /pricing or /topuni-ai/ru
- * (the page they'd just hit "Save my report" on).
+ * unrelated surface, while still covering realistic user lag.
  *
- * Refactored in round 68 from the four direct sessionStorage call
- * sites (Pricing, ProComparisonModal, SaveBriefPrompt, AuthCallback).
+ * Open-redirect defence: anything in storage is mutable by any script
+ * with same-origin access (extensions, XSS, a stray /admin tool), so
+ * never trust the stored value verbatim. We only accept and emit
+ * same-origin relative paths; anything else is dropped.
  */
 
 const KEY = "topuni-post-auth-redirect-v1";
@@ -28,8 +26,24 @@ interface Stored {
   savedAt: number;
 }
 
+const isSafeRelativePath = (dest: unknown): dest is string => {
+  if (typeof dest !== "string") return false;
+  if (dest.length === 0 || dest.length > 512) return false;
+  // Must start with exactly one "/" — rejects "//evil.com/x" and
+  // "http(s)://…" and javascript: / data: URIs.
+  if (dest[0] !== "/") return false;
+  if (dest[1] === "/" || dest[1] === "\\") return false;
+  // No whitespace anywhere and no control chars.
+  for (let i = 0; i < dest.length; i++) {
+    const c = dest.charCodeAt(i);
+    if (c <= 0x20 || c === 0x7f) return false;
+  }
+  return true;
+};
+
 export const setPostAuthRedirect = (dest: string): void => {
-  if (!dest || typeof window === "undefined") return;
+  if (typeof window === "undefined") return;
+  if (!isSafeRelativePath(dest)) return;
   try {
     const payload: Stored = { dest, savedAt: Date.now() };
     localStorage.setItem(KEY, JSON.stringify(payload));
@@ -43,8 +57,11 @@ export const consumePostAuthRedirect = (): string | null => {
     if (!raw) return null;
     localStorage.removeItem(KEY);
     const parsed = JSON.parse(raw) as Stored;
-    if (!parsed?.dest || typeof parsed.savedAt !== "number") return null;
+    if (!parsed || typeof parsed.savedAt !== "number") return null;
     if (Date.now() - parsed.savedAt > TTL_MS) return null;
+    // Re-validate on read — storage is shared and a hostile script may
+    // have written a different shape between set and consume.
+    if (!isSafeRelativePath(parsed.dest)) return null;
     return parsed.dest;
   } catch {
     return null;

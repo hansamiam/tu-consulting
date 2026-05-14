@@ -84,8 +84,15 @@ export function useSemanticScholarshipMatch(profile: MatchProfile, opts?: { limi
       setState((s) => ({ ...s, enabled: false, loading: false, matches: new Map() }));
       return;
     }
-    const key = profileKey(profile);
-    if (key === lastKeyRef.current) return; // already fetched for this profile
+    // Include the limit in the cache key so widening/shrinking the
+    // requested top-N actually refires the fetch. Before this fix the
+    // gate keyed on profileKey alone, so toggling Discover's "load
+    // 100 results" path silently kept the 50-row map and silently
+    // capped the ranking pool — bug surfaced as "I clicked More and
+    // nothing happened."
+    const limit = Math.min(Math.max(opts?.limit ?? 50, 5), 100);
+    const key = `${profileKey(profile)}::${limit}`;
+    if (key === lastKeyRef.current) return; // already fetched for this profile+limit
     lastKeyRef.current = key;
 
     let cancelled = false;
@@ -114,7 +121,7 @@ export function useSemanticScholarshipMatch(profile: MatchProfile, opts?: { limi
               min_sat: numOrNull(profile.sat) ?? undefined,
               degree_level: profile.degree,
             },
-            limit: Math.min(Math.max(opts?.limit ?? 50, 5), 100),
+            limit,
           },
         });
         if (cancelled) return;

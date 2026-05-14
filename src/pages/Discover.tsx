@@ -3602,10 +3602,30 @@ const Discover = ({ language = "en" }: Props) => {
               }
             }
           }
-          sessionStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify({
+          const payload = JSON.stringify({
             ts: Date.now(), rows: cleaned, saves: savesEntries,
-          }));
-        } catch { /* quota / private mode — non-fatal */ }
+          });
+          try {
+            sessionStorage.setItem(CATALOG_CACHE_KEY, payload);
+          } catch {
+            // QuotaExceededError or private-mode write fail. The cache
+            // is just a perf optimisation — surviving without it is
+            // fine, but on mobile / multi-tab the next write would
+            // also throw and we'd never re-cache. Evict the prior
+            // entry + every other "topuni_*" key in sessionStorage
+            // and retry once. If THAT also fails, give up silently.
+            try {
+              sessionStorage.removeItem(CATALOG_CACHE_KEY);
+              const stale: string[] = [];
+              for (let i = 0; i < sessionStorage.length; i++) {
+                const k = sessionStorage.key(i);
+                if (k && k.startsWith("topuni_") && k !== CATALOG_CACHE_KEY) stale.push(k);
+              }
+              stale.forEach((k) => sessionStorage.removeItem(k));
+              sessionStorage.setItem(CATALOG_CACHE_KEY, payload);
+            } catch { /* truly out of room — proceed without cache */ }
+          }
+        } catch { /* serialisation fail — non-fatal, just skip the cache */ }
       }
       if (statsRes.data) {
         const m = new Map<string, number>();
