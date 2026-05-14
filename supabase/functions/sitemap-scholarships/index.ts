@@ -37,13 +37,21 @@ Deno.serve(async () => {
 
   const supa = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-  // Only verified + stale rows are surfaced to public detail pages, so
-  // those are the only URLs we want indexed. Pending/broken stay hidden.
-  // Pull last_verified_at + updated_at so the lastmod is meaningful.
+  // Match the public detail-page read filter exactly: verified, stale,
+  // pending, or NULL — anything except 'broken'. Pre-fix the sitemap
+  // only emitted verified+stale, but ScholarshipDetail.tsx renders
+  // pending rows too (auto-published at confidence ≥0.78 with the
+  // "Always confirm deadlines and amounts" disclaimer). That meant
+  // ~1/3 of the catalog had live, user-visible detail pages that
+  // Google never crawled — pure SEO leak.
+  //
+  // Pending rows get a slightly lower priority (0.5) so Google focuses
+  // its crawl budget on the already-verified rows first, but they ARE
+  // in the index so lastmod updates from the verify cron get picked up.
   const { data: rows, error } = await supa
     .from("scholarships")
     .select("scholarship_id, last_verified_at, created_at, verification_status")
-    .or("verification_status.is.null,verification_status.in.(verified,stale)")
+    .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
     .limit(5000);
 
   if (error) {
@@ -62,9 +70,14 @@ Deno.serve(async () => {
     const lastmod = r.last_verified_at ?? r.created_at ?? null;
     const lastmodTag = lastmod ? `<lastmod>${escape(new Date(lastmod).toISOString().slice(0, 10))}</lastmod>` : "";
     const id = escape(r.scholarship_id);
+    // Priority schedule: verified > stale > pending/NULL. Helps Google
+    // spend its crawl budget on the trust-confirmed rows first.
+    const status = r.verification_status ?? "pending";
+    const prioEn = status === "verified" ? 0.7 : status === "stale" ? 0.6 : 0.5;
+    const prioRu = Math.max(0.4, prioEn - 0.1);
     return [
-      `  <url><loc>${SITE}/scholarships/${id}</loc>${lastmodTag}<changefreq>weekly</changefreq><priority>0.7</priority></url>`,
-      `  <url><loc>${SITE}/scholarships/${id}/ru</loc>${lastmodTag}<changefreq>weekly</changefreq><priority>0.6</priority></url>`,
+      `  <url><loc>${SITE}/scholarships/${id}</loc>${lastmodTag}<changefreq>weekly</changefreq><priority>${prioEn}</priority></url>`,
+      `  <url><loc>${SITE}/scholarships/${id}/ru</loc>${lastmodTag}<changefreq>weekly</changefreq><priority>${prioRu}</priority></url>`,
     ];
   });
 
