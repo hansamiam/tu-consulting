@@ -928,7 +928,10 @@ serve(async (req) => {
       // official link yet" state instead of a misleading link.
       const isAggregatorSource = src.category === "aggregator";
       const fallbackOfficial = isAggregatorSource ? null : src.url;
-      const upsertPayload: Record<string, unknown> = {
+      // Build the data payload — everything EXCEPT trust-state fields,
+      // which we handle separately on insert vs update so re-scrapes of
+      // already-verified rows don't silently demote their trust.
+      const dataPayload: Record<string, unknown> = {
         scholarship_name:                s.scholarship_name,
         provider_name:                   s.provider_name,
         host_country:                    s.host_country,
@@ -970,8 +973,6 @@ serve(async (req) => {
         risk_note:                       s.risk_note ?? null,
         eligibility_requirements:        s.eligibility_requirements ?? null,
         partner_universities:            s.partner_universities ?? null,
-        verified:                        false,
-        last_verified_date:              new Date().toISOString().slice(0, 10),
         // Persist LLM-reported extraction confidence so the
         // match_scholarships trust calibration (added in 20260507240000)
         // can gently penalize low-confidence rows when ranking. NULL on
@@ -979,15 +980,18 @@ serve(async (req) => {
         // pre-this-deploy rows stay neutral until verify-scholarship
         // re-touches them and updates the value.
         confidence:                      s.confidence,
-        // First-class verification metadata (see DATA_PIPELINE_AUDIT.md):
         // source_url is the page we extracted FROM (may differ from the
-        // scholarship's apply-here URL); last_verified_at is timestamp-
-        // precision so the URL-health cron can update it without losing
-        // time-of-day info; verification_status starts at 'pending' until
-        // a human marks it 'verified' (or the auto-verify cron upgrades it).
+        // scholarship's apply-here URL).
+        //
+        // We deliberately do NOT write last_verified_at / last_verified_date
+        // here. Pre-fix scrape-source stamped both columns to now() on every
+        // re-scrape, which silently DEPRIORITIZED freshly-scraped rows in
+        // verify-scholarship-cron's `ORDER BY last_verified_at ASC NULLS FIRST`
+        // queue — the rows most likely to need re-verification got pushed to
+        // the back. Verify-scholarship and url-health-cron are the only paths
+        // that should advance these timestamps; scrape-source merely brings
+        // in new data and lets verify confirm.
         source_url:                      src.url,
-        last_verified_at:                new Date().toISOString(),
-        verification_status:             "pending",
         // Embedding: clear so embed-scholarships re-embeds on next cron tick
         embedding:                       null,
         embedding_source_text:           buildEmbeddingSourceText(s),
@@ -997,16 +1001,52 @@ serve(async (req) => {
       let landedScholarshipId: string | null = null;
       if (existingId) {
         updatedCount++;
-        await supa.from("scholarships").update(upsertPayload).eq("scholarship_id", existingId);
+        // Re-scrape of an existing row.
+        //
+        // Pre-fix this branch always wrote verification_status='pending'
+        // and verified=false into the row, which silently DEMOTED any
+        // previously-verified scholarship back to first-discovery state
+        // on every re-scrape. A row independently verified five times
+        // would still flip to 'pending' tonight when scrape-cron picked
+        // up a fresh source — losing the trust history that drives the
+        // Verified pill, sitemap inclusion priority, and consensus math.
+        //
+        // Correct semantics: if there's no diff vs. stored, the row's
+        // trust state is unchanged. If there's a diff, the row is now
+        // *stale* relative to its last verification, not 'pending'
+        // (which is reserved for first-time scrapes). 'verified' (bool)
+        // is similarly a historical marker — leave it alone; the
+        // verify-scholarship cron is the only writer that should
+        // promote/demote it.
+        //
+        // The update payload below is pure data — the verify-scholarship
+        // cron picks up stale rows on its next tick and promotes them
+        // back to 'verified' once it re-confirms the diff.
+        const updatePayload: Record<string, unknown> = { ...dataPayload };
+        if (diffSummary) {
+          updatePayload.verification_status = "stale";
+        }
+        await supa.from("scholarships").update(updatePayload).eq("scholarship_id", existingId);
         landedScholarshipId = existingId;
       } else {
         // The 20260505060000 migration added a UNIQUE index on canonical_key.
         // Use upsert with onConflict so concurrent scrapes that race past our
         // SELECT-then-INSERT don't blow up on the constraint. The trigger
         // computes canonical_key on insert, so we don't need to pass it.
+        //
+        // First-time INSERT initialises the trust state: 'pending' status
+        // means "newly discovered, awaiting first verification cron tick",
+        // and verified=false because the program hasn't passed a human or
+        // automated trust check yet. Both columns transition forward only
+        // — verify-scholarship and the URL-health cron own promotion.
+        const insertPayload: Record<string, unknown> = {
+          ...dataPayload,
+          verified: false,
+          verification_status: "pending",
+        };
         const { data: inserted, error: insertErr } = await supa
           .from("scholarships")
-          .upsert(upsertPayload, { onConflict: "canonical_key", ignoreDuplicates: false })
+          .upsert(insertPayload, { onConflict: "canonical_key", ignoreDuplicates: false })
           .select("scholarship_id")
           .maybeSingle();
         if (insertErr) {
