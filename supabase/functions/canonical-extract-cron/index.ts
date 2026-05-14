@@ -58,12 +58,19 @@ Deno.serve(async (req) => {
        (b) canonical_overview_at < 90d ago → stale, refresh
      Order: nulls first (so brand-new rows get a canonical asap), then
      oldest-first within stale. Skip rows with no usable URL — those
-     would early-return "no_clean_url" and waste the cron slot. */
+     would early-return "no_clean_url" and waste the cron slot.
+
+     Verification gate: keep rows the catalog shows (verified, stale,
+     pending, NULL) and exclude 'broken'. Pre-fix .neq("verification_
+     status", "broken") silently dropped NULL-status rows too because
+     SQL evaluates `NULL <> 'broken'` as NULL, which WHERE treats as
+     FALSE — leaving any row inserted before the column existed in a
+     permanent canonical-extract dead zone. */
   const { data: nullRows, error: nullErr } = await supa
     .from("scholarships")
     .select("scholarship_id, scholarship_name, canonical_overview_at")
     .or("official_url.not.is.null,source_url.not.is.null,canonical_official_url.not.is.null")
-    .neq("verification_status", "broken")
+    .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
     .is("canonical_overview_at", null)
     .limit(MAX_PER_RUN);
 
@@ -78,7 +85,7 @@ Deno.serve(async (req) => {
       .from("scholarships")
       .select("scholarship_id, scholarship_name, canonical_overview_at")
       .or("official_url.not.is.null,source_url.not.is.null,canonical_official_url.not.is.null")
-      .neq("verification_status", "broken")
+      .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
       .lt("canonical_overview_at", staleCutoff)
       .order("canonical_overview_at", { ascending: true })
       .limit(remaining);

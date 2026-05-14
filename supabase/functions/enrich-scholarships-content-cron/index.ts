@@ -49,10 +49,17 @@ Deno.serve(async (req) => {
   // — these are what makes the Strategy tab decision-grade rather than
   // generic. Worth re-running across rows that already have the basic
   // five filled but lack these.
+  // Filter to the same gate the read-side uses: verified, stale, pending,
+  // or NULL — anything except 'broken'. Pre-fix .neq("verification_status",
+  // "broken") silently excluded rows with NULL verification_status because
+  // PostgreSQL evaluates `NULL <> 'broken'` as NULL (unknown → FALSE in
+  // WHERE). The catalog still renders those rows (Discover's read query
+  // includes them explicitly), so the user sees thin rows that this cron
+  // would never enrich — a permanent enrichment dead zone.
   const { data: candidates, error: candErr } = await supa
     .from("scholarships")
     .select("scholarship_id, scholarship_name")
-    .neq("verification_status", "broken")
+    .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
     .or(
       "why_this_fits.is.null,ideal_candidate_profile.is.null," +
       "how_to_win.is.null,what_to_prepare_first.is.null,best_for_tags.is.null," +

@@ -153,11 +153,15 @@ Deno.serve(async (req) => {
   //     dead; no point fetching)
   // Order verified rows first so curated content gets visual treatment
   // before pending rows do.
+  // Verification gate matches the read-side: verified, stale, pending, or
+  // NULL — anything except 'broken'. Pre-fix .neq("verification_status",
+  // "broken") silently dropped NULL-status rows because SQL evaluates
+  // `NULL <> 'broken'` as NULL, which WHERE treats as FALSE.
   const { data: candidates, error: candErr } = await supa
     .from("scholarships")
     .select("scholarship_id, scholarship_name, official_url, source_url, verification_status")
     .is("cover_image_url", null)
-    .neq("verification_status", "broken")
+    .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
     .not("official_url", "is", null)
     .order("verification_status", { ascending: true })
     .limit(MAX_PER_RUN);
