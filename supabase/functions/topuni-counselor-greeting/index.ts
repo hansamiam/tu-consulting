@@ -19,17 +19,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { chatCompletions } from "../_shared/ai-gateway.ts";
 import { checkRateLimit, clientIp } from "../_shared/rate-limit.ts";
 import { EDITORIAL_RULES_TIGHT } from "../_shared/editorial-rules.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondJson } from "../_shared/http.ts";
 
 const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), {
-    status, headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  respondJson(status, body, corsHeaders);
 
 interface Profile {
   fullName?: string;
@@ -93,7 +87,8 @@ function profileBlock(p: Profile): string {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req);
+  if (pre) return pre;
   if (req.method !== "POST") return json(405, { error: "POST only" });
 
   // Rate limit per IP. Greeting is one-shot per session in legitimate use;

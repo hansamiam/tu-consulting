@@ -26,11 +26,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { chatCompletions } from "../_shared/ai-gateway.ts";
 import { checkRateLimit, clientIp } from "../_shared/rate-limit.ts";
 import { EDITORIAL_RULES_TIGHT } from "../_shared/editorial-rules.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondJson } from "../_shared/http.ts";
+import { createUserClient } from "../_shared/clients.ts";
 
 const FREE_PREVIEW_TOKEN_BUDGET = 600;    // approx tokens before we cut the free user
 const FREE_DAILY_LIMIT = 2;
@@ -56,13 +54,11 @@ const ESSAY_TYPE_LABEL: Record<EssayType, string> = {
 };
 
 const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  respondJson(status, body, corsHeaders);
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req);
+  if (pre) return pre;
   if (req.method !== "POST") return json(405, { error: "POST only" });
 
   try {
@@ -92,12 +88,9 @@ serve(async (req) => {
     let isPremium = false;
     let userId: string | null = null;
     const authHeader = req.headers.get("Authorization");
-    if (authHeader && SUPABASE_URL && ANON_KEY) {
+    if (authHeader) {
       try {
-        const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-          global: { headers: { Authorization: authHeader } },
-          auth: { persistSession: false, autoRefreshToken: false },
-        });
+        const userClient = createUserClient(authHeader);
         const { data: u } = await userClient.auth.getUser();
         userId = u.user?.id ?? null;
         if (userId) {

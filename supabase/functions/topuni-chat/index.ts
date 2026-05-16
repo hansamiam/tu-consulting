@@ -16,11 +16,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { chatCompletions } from "../_shared/ai-gateway.ts";
 import { checkRateLimit, clientIp } from "../_shared/rate-limit.ts";
 import { EDITORIAL_RULES_TIGHT } from "../_shared/editorial-rules.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { CORS_HEADERS_EXTENDED as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondError } from "../_shared/http.ts";
+import { createServiceClient, createUserClient } from "../_shared/clients.ts";
 
 const STATUS_LABELS: Record<string, string> = {
   researching: "Researching",
@@ -100,25 +98,17 @@ interface TrackerEntry {
 }
 
 async function buildLiveCaseContext(
-  supabaseUrl: string,
-  anonKey: string,
-  serviceRoleKey: string,
   authHeader: string,
 ): Promise<{ context: string; userId: string | null }> {
   // Resolve user_id from JWT
-  const userClient = createClient(supabaseUrl, anonKey, {
-    global: { headers: { Authorization: authHeader } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const userClient = createUserClient(authHeader);
   const { data: u } = await userClient.auth.getUser();
   const userId = u.user?.id ?? null;
   if (!userId) return { context: "", userId: null };
 
   // Use service-role to bypass RLS pain on the join (RLS would still
   // restrict; we filter explicitly by user_id below).
-  const admin = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const admin = createServiceClient();
 
   // 1. Tracker entries — only rows where the user has done SOMETHING
   //    (status set, notes non-empty, shortlisted, or hidden=true). We
@@ -339,26 +329,26 @@ async function buildLiveCaseContext(
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req, corsHeaders);
+  if (pre) return pre;
 
   try {
     const { messages, language, profile, reportSummary, sessionId } = await req.json();
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-    const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     // AI gateway env validated lazily in chatCompletions — see _shared/ai-gateway.ts
 
     // Rate limit by IP. Each call streams an LLM response. 15/min covers
     // active conversation pace (one msg every 4 seconds is fast typing);
     // abuse caps at $0.30/min/IP at flash-tier pricing.
-    if (SUPABASE_URL && ANON_KEY) {
-      const supaRL = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
-      const ip = clientIp(req);
-      const ok = await checkRateLimit(supaRL, { key: `chat:${ip}`, perMinute: 15 });
-      if (!ok) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please slow down." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+    {
+      const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+      const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+      if (SUPABASE_URL && ANON_KEY) {
+        const supaRL = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+        const ip = clientIp(req);
+        const ok = await checkRateLimit(supaRL, { key: `chat:${ip}`, perMinute: 15 });
+        if (!ok) {
+          return respondError(429, "Rate limit exceeded. Please slow down.", corsHeaders);
+        }
       }
     }
 
@@ -368,9 +358,9 @@ serve(async (req) => {
     let liveContext = "";
     let userId: string | null = null;
     const authHeader = req.headers.get("Authorization");
-    if (authHeader && SUPABASE_URL && ANON_KEY && SERVICE_ROLE) {
+    if (authHeader) {
       try {
-        const r = await buildLiveCaseContext(SUPABASE_URL, ANON_KEY, SERVICE_ROLE, authHeader);
+        const r = await buildLiveCaseContext(authHeader);
         liveContext = r.context;
         userId = r.userId;
       } catch (e) {
@@ -464,23 +454,14 @@ CRITICAL — ANTI-HALLUCINATION RULES FOR SCHOLARSHIP NAMES:
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return respondError(429, "Rate limit exceeded. Please try again in a moment.", corsHeaders);
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Service temporarily unavailable. Please try again later." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return respondError(402, "Service temporarily unavailable. Please try again later.", corsHeaders);
       }
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI service error" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondError(500, "AI service error", corsHeaders);
     }
 
     /* If we have a userId AND a sessionId, persist this turn's user
@@ -488,12 +469,10 @@ CRITICAL — ANTI-HALLUCINATION RULES FOR SCHOLARSHIP NAMES:
        the assistant's full reply and write that too. Anon callers and
        no-session calls bypass this — the existing localStorage-only
        behaviour stays. */
-    if (userId && sessionId && SUPABASE_URL && SERVICE_ROLE && messages?.length) {
+    if (userId && sessionId && messages?.length) {
       const lastUser = messages[messages.length - 1];
       if (lastUser?.role === "user" && typeof lastUser.content === "string") {
-        const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
-          auth: { persistSession: false, autoRefreshToken: false },
-        });
+        const admin = createServiceClient();
         // Verify the session belongs to this user (RLS would block but
         // we want a clean error rather than silent drop)
         const { data: sess } = await admin
@@ -559,9 +538,6 @@ CRITICAL — ANTI-HALLUCINATION RULES FOR SCHOLARSHIP NAMES:
     });
   } catch (e) {
     console.error("topuni-chat error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respondError(500, e instanceof Error ? e.message : "Unknown error", corsHeaders);
   }
 });
