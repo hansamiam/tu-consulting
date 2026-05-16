@@ -19,13 +19,9 @@
 //   curl -X POST <fn-url>/scholarship-deadline-cron \
 //     -H "Authorization: Bearer ${SERVICE_ROLE_KEY}"
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondError, respondJson } from "../_shared/http.ts";
+import { createServiceClient } from "../_shared/clients.ts";
 
 const SITE = Deno.env.get("PUBLIC_SITE_URL") ?? "https://topuni.org";
 
@@ -76,27 +72,12 @@ const formatAmount = (
 };
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "POST only" }), {
-      status: 405,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+  const pre = handleCorsOptions(req);
+  if (pre) return pre;
+  if (req.method !== "POST") return respondError(405, "POST only", corsHeaders);
 
   const startedAt = Date.now();
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!SUPABASE_URL || !SERVICE_ROLE) {
-    return new Response(JSON.stringify({ error: "Supabase env not configured" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  const supa = createClient(SUPABASE_URL, SERVICE_ROLE, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const supa = createServiceClient();
 
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
@@ -120,19 +101,11 @@ Deno.serve(async (req) => {
     .lte("scholarship.application_deadline", cutoff)
     .returns<Omit<DueRow, "profile">[]>();
 
-  if (trackErr) {
-    return new Response(JSON.stringify({ error: trackErr.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+  if (trackErr) return respondError(500, trackErr.message, corsHeaders);
 
   const candidates = (tracker ?? []).filter((r) => r.scholarship?.application_deadline);
   if (candidates.length === 0) {
-    return new Response(
-      JSON.stringify({ checked: 0, sent: 0, duration_ms: Date.now() - startedAt }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return respondJson(200, { checked: 0, sent: 0, duration_ms: Date.now() - startedAt }, corsHeaders);
   }
 
   // Hydrate emails / names from student_profiles (one query, all users).
@@ -242,15 +215,12 @@ Deno.serve(async (req) => {
     }
   }
 
-  return new Response(
-    JSON.stringify({
-      checked: candidates.length,
-      sent,
-      skipped,
-      errors_count: errors.length,
-      first_errors: errors.slice(0, 5),
-      duration_ms: Date.now() - startedAt,
-    }),
-    { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-  );
+  return respondJson(200, {
+    checked: candidates.length,
+    sent,
+    skipped,
+    errors_count: errors.length,
+    first_errors: errors.slice(0, 5),
+    duration_ms: Date.now() - startedAt,
+  }, corsHeaders);
 });

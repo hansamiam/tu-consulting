@@ -30,14 +30,10 @@
 //          )
 //        ) $$);
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireAdminOrService } from "../_shared/auth.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondError, respondJson } from "../_shared/http.ts";
+import { createServiceClient } from "../_shared/clients.ts";
 
 const SITE = Deno.env.get("PUBLIC_SITE_URL") ?? "https://topuni.org";
 
@@ -63,27 +59,16 @@ interface ProfileRow {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req);
+  if (pre) return pre;
 
   // Cron / admin gate. verify_jwt is false for this function (the gateway
   // can't see the cron's sb_secret apikey as a JWT), so it authenticates
   // the caller itself here.
   const auth = await requireAdminOrService(req);
-  if (!auth.ok) {
-    return new Response(JSON.stringify({ error: auth.reason ?? "unauthorized" }), {
-      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+  if (!auth.ok) return respondError(401, auth.reason ?? "unauthorized", corsHeaders);
 
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!SUPABASE_URL || !SERVICE_ROLE) {
-    return new Response(JSON.stringify({ error: "Missing Supabase env" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-  const supa = createClient(SUPABASE_URL, SERVICE_ROLE);
+  const supa = createServiceClient();
 
   const now = Date.now();
   const minBriefAt = new Date(now - NUDGE_WINDOW_MAX_DAYS * 86400_000).toISOString();
@@ -101,17 +86,11 @@ Deno.serve(async (req) => {
 
   if (candErr) {
     console.error("[pro-upgrade-nudge-cron] candidate query failed", candErr);
-    return new Response(JSON.stringify({ error: "candidate query failed" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respondError(500, "candidate query failed", corsHeaders);
   }
 
   if (!candidates || candidates.length === 0) {
-    return new Response(JSON.stringify({ ok: true, sent: 0, skipped: 0, errors: [] }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respondJson(200, { ok: true, sent: 0, skipped: 0, errors: [] }, corsHeaders);
   }
 
   // Filter out paying members. The subscriptions table is keyed by user_id;
@@ -176,8 +155,5 @@ Deno.serve(async (req) => {
     }
   }
 
-  return new Response(
-    JSON.stringify({ ok: true, sent, skipped, errors, candidateCount: candidates.length, eligibleCount: eligible.length }),
-    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-  );
+  return respondJson(200, { ok: true, sent, skipped, errors, candidateCount: candidates.length, eligibleCount: eligible.length }, corsHeaders);
 });

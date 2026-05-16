@@ -15,13 +15,10 @@
 // Honors student_profiles.nudge_opt_out — the same single mute control
 // gates all email surfaces.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondError, respondJson } from "../_shared/http.ts";
+import { createServiceClient } from "../_shared/clients.ts";
 
 const SITE = Deno.env.get("PUBLIC_SITE_URL") ?? "https://topuni.org";
 
@@ -44,7 +41,7 @@ interface AuthUser {
 const hoursBetween = (a: Date, b: Date) => Math.abs(a.getTime() - b.getTime()) / 3600_000;
 const daysBetween = (a: Date, b: Date) => Math.abs(a.getTime() - b.getTime()) / 86_400_000;
 
-async function alreadySent(supa: ReturnType<typeof createClient>, templateName: string, recipientEmail: string, sinceIso?: string): Promise<boolean> {
+async function alreadySent(supa: SupabaseClient, templateName: string, recipientEmail: string, sinceIso?: string): Promise<boolean> {
   let q = supa
     .from("email_send_log")
     .select("id", { head: true, count: "exact" })
@@ -62,24 +59,14 @@ async function alreadySent(supa: ReturnType<typeof createClient>, templateName: 
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req);
+  if (pre) return pre;
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "POST only" }), {
-      status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respondError(405, "POST only", corsHeaders);
   }
 
   const startedAt = Date.now();
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!SUPABASE_URL || !SERVICE_ROLE) {
-    return new Response(JSON.stringify({ error: "Supabase env not configured" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-  const supa = createClient(SUPABASE_URL, SERVICE_ROLE, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const supa = createServiceClient();
 
   // Pull every authed user in one shot (paginated). At founding-cohort
   // scale this is fine; we'll batch later if it ever exceeds 5k.
@@ -88,9 +75,7 @@ Deno.serve(async (req) => {
   while (true) {
     const { data, error } = await supa.auth.admin.listUsers({ page, perPage: 200 });
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondError(500, error.message, corsHeaders);
     }
     for (const u of data.users) {
       allUsers.push({
@@ -276,15 +261,12 @@ Deno.serve(async (req) => {
     skipped++;
   }
 
-  return new Response(
-    JSON.stringify({
-      candidates: allUsers.length,
-      sent,
-      skipped,
-      failed,
-      first_errors: errors.slice(0, 5),
-      duration_ms: Date.now() - startedAt,
-    }),
-    { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-  );
+  return respondJson(200, {
+    candidates: allUsers.length,
+    sent,
+    skipped,
+    failed,
+    first_errors: errors.slice(0, 5),
+    duration_ms: Date.now() - startedAt,
+  }, corsHeaders);
 });

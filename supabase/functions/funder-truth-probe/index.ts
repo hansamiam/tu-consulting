@@ -27,20 +27,14 @@
 // abort the cron run. Each result is logged so admin can review.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { firecrawlScrape } from "../_shared/firecrawl.ts";
 import { requireAdminOrService } from "../_shared/auth.ts";
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondJson } from "../_shared/http.ts";
+import { createServiceClient } from "../_shared/clients.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
 const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  respondJson(status, body, corsHeaders);
 
 interface FacticityRow {
   provider_slug: string;
@@ -118,7 +112,8 @@ function classifyText(text: string): { state: ProbeResult["detected_state"]; sig
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req);
+  if (pre) return pre;
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
 
   // Cron / admin gate. verify_jwt is false for this function (the gateway
@@ -127,14 +122,7 @@ serve(async (req) => {
   const auth = await requireAdminOrService(req);
   if (!auth.ok) return json(401, { error: auth.reason ?? "unauthorized" });
 
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SB_SECRET_KEY");
-  if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
-    return json(500, { error: "Supabase env not configured" });
-  }
-  const supa = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const supa = createServiceClient();
 
   // Optional body: { only?: string[] } restricts to specific provider slugs.
   let only: string[] | undefined;

@@ -1,7 +1,12 @@
 import * as React from 'npm:react@18.3.1'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
+import { handleCorsOptions } from '../_shared/cors.ts'
+import { respondError, respondJson } from '../_shared/http.ts'
 
+// Custom CORS headers — Allow-Headers is "authorization, content-type"
+// here (no apikey / x-client-info). preview-transactional-email is
+// internal-only, gated by LOVABLE_API_KEY, so we keep the tighter list.
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, content-type',
@@ -11,29 +16,19 @@ const corsHeaders = {
 // Gated by LOVABLE_API_KEY — only the Go API calls this.
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
+  const pre = handleCorsOptions(req, corsHeaders)
+  if (pre) return pre
 
   const apiKey = Deno.env.get('LOVABLE_API_KEY')
   if (!apiKey) {
-    return new Response(
-      JSON.stringify({ error: 'Server configuration error' }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
+    return respondError(500, 'Server configuration error', corsHeaders)
   }
 
   // Verify the caller is authorized with LOVABLE_API_KEY
   const authHeader = req.headers.get('Authorization')
   const token = authHeader?.replace(/^Bearer\s+/i, '')
   if (token !== apiKey) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return respondError(401, 'Unauthorized', corsHeaders)
   }
 
   const templateNames = Object.keys(TEMPLATES)
@@ -93,8 +88,5 @@ Deno.serve(async (req) => {
     }
   }
 
-  return new Response(JSON.stringify({ templates: results }), {
-    status: 200,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  })
+  return respondJson(200, { templates: results }, corsHeaders)
 })

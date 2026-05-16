@@ -1,21 +1,16 @@
 // Scheduled email scanner — runs every 5 min via pg_cron.
 // Sends 24h reminder, 1h reminder, and post-call upsell based on bookings.calendly_scheduled_at.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondJson } from "../_shared/http.ts";
+import { createServiceClient } from "../_shared/clients.ts";
 
 const SITE = "https://topuni.org";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req);
+  if (pre) return pre;
 
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-  );
+  const supabase = createServiceClient();
 
   const now = Date.now();
   const in24h = new Date(now + 24 * 3600 * 1000);
@@ -25,7 +20,7 @@ Deno.serve(async (req) => {
   const past1h = new Date(now - 60 * 60 * 1000);
   const past3h = new Date(now - 3 * 3600 * 1000);
 
-  let results = { reminder24h: 0, reminder1h: 0, postCall: 0 };
+  const results = { reminder24h: 0, reminder1h: 0, postCall: 0 };
 
   // 24h reminders: scheduled between now+23h and now+24h, not yet sent
   const { data: r24 } = await supabase
@@ -106,7 +101,5 @@ Deno.serve(async (req) => {
     results.postCall++;
   }
 
-  return new Response(JSON.stringify({ ok: true, ...results }), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  return respondJson(200, { ok: true, ...results }, corsHeaders);
 });

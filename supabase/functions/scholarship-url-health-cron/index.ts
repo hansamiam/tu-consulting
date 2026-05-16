@@ -14,14 +14,10 @@
 // and a 5s budget per request, the run completes well under the
 // 60s function timeout even if many time out.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireAdminOrService } from "../_shared/auth.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondError, respondJson } from "../_shared/http.ts";
+import { createServiceClient } from "../_shared/clients.ts";
 
 const REQUEST_TIMEOUT_MS = 6000;
 const MAX_REDIRECTS = 3;
@@ -202,36 +198,19 @@ async function pMap<T, R>(items: T[], fn: (x: T) => Promise<R>, concurrency: num
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req);
+  if (pre) return pre;
 
   // Cron / admin gate. verify_jwt is false for this function (the gateway
   // can't see the cron's sb_secret apikey as a JWT), so it authenticates
   // the caller itself here.
   const auth = await requireAdminOrService(req);
-  if (!auth.ok) {
-    return new Response(JSON.stringify({ error: auth.reason ?? "unauthorized" }), {
-      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "POST only" }), {
-      status: 405,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+  if (!auth.ok) return respondError(401, auth.reason ?? "unauthorized", corsHeaders);
+
+  if (req.method !== "POST") return respondError(405, "POST only", corsHeaders);
 
   const startedAt = Date.now();
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!SUPABASE_URL || !SERVICE_ROLE) {
-    return new Response(JSON.stringify({ error: "Supabase env not configured" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-  const supa = createClient(SUPABASE_URL, SERVICE_ROLE, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const supa = createServiceClient();
 
   // Optional override: ?max_rows=N for manual one-off runs
   const url = new URL(req.url);
@@ -242,17 +221,9 @@ Deno.serve(async (req) => {
     .select("scholarship_id, official_url, url_consecutive_fails")
     .limit(maxRows)
     .returns<QueueRow[]>();
-  if (qErr) {
-    return new Response(JSON.stringify({ error: qErr.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+  if (qErr) return respondError(500, qErr.message, corsHeaders);
   if (!queue || queue.length === 0) {
-    return new Response(
-      JSON.stringify({ checked: 0, ok: 0, redirect: 0, fail: 0, duration_ms: Date.now() - startedAt }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return respondJson(200, { checked: 0, ok: 0, redirect: 0, fail: 0, duration_ms: Date.now() - startedAt }, corsHeaders);
   }
 
   const results = await pMap(queue, async (row) => {
@@ -296,12 +267,9 @@ Deno.serve(async (req) => {
   // Settle all updates; partial failures don't abort
   await Promise.allSettled(updates);
 
-  return new Response(
-    JSON.stringify({
-      checked: queue.length,
-      ok, redirect, fail,
-      duration_ms: Date.now() - startedAt,
-    }),
-    { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-  );
+  return respondJson(200, {
+    checked: queue.length,
+    ok, redirect, fail,
+    duration_ms: Date.now() - startedAt,
+  }, corsHeaders);
 });

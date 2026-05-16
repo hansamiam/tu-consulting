@@ -21,7 +21,7 @@
 // Cache: short s-maxage (5 min) so deadline edits propagate quickly.
 // Calendar clients ignore Cache-Control; this is for our edge.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createServiceClient } from "../_shared/clients.ts";
 
 const SITE = "https://topuni.org";
 const PRODID = "-//TopUni//Scholarship Deadlines//EN";
@@ -186,14 +186,11 @@ function buildVEvent(row: TrackerRow, nowStamp: string): string {
 }
 
 Deno.serve(async (req) => {
+  // Calendar feed responds with text/calendar (RFC 5545), not JSON —
+  // shared respondJson doesn't apply. OPTIONS preflight is custom too
+  // (204 status with calendar-specific headers), so kept inline.
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: calHeaders });
-  }
-
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!SUPABASE_URL || !SERVICE_ROLE) {
-    return new Response("Missing Supabase env", { status: 500 });
   }
 
   const url = new URL(req.url);
@@ -203,7 +200,7 @@ Deno.serve(async (req) => {
     return new Response("Invalid token", { status: 400 });
   }
 
-  const supa = createClient(SUPABASE_URL, SERVICE_ROLE);
+  const supa = createServiceClient();
 
   const { data: sub, error: subErr } = await supa
     .from("calendar_subscriptions")

@@ -12,20 +12,13 @@
 // Returns a per-source status array so the run is debuggable from logs.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireAdminOrService } from "../_shared/auth.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondJson } from "../_shared/http.ts";
+import { createServiceClient } from "../_shared/clients.ts";
 
 const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  respondJson(status, body, corsHeaders);
 
 // Don't try to scrape more than this in one dispatcher tick — keeps us
 // under the 60s function timeout and avoids burning Firecrawl credits
@@ -46,24 +39,18 @@ const CONCURRENCY = 5;
 const FAILURE_CIRCUIT_BREAKER = 5;
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req);
+  if (pre) return pre;
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  // Pull the service-role key from env for the supabase-js client
-  // (which only needs to reach the gateway with SOMETHING in apikey
-  // — sb_secret_* in env works; legacy JWT in env also works for the
-  // client SDK because the SDK sends the value via apikey too).
-  const SERVICE_ROLE = Deno.env.get("SB_SECRET_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!SUPABASE_URL || !SERVICE_ROLE) return json(500, { error: "Supabase env not configured" });
+  if (!SUPABASE_URL) return json(500, { error: "Supabase env not configured" });
 
   // Auth: cron (service role) or admin user only.
   const auth = await requireAdminOrService(req);
   if (!auth.ok) return json(401, { error: `Unauthorized: ${auth.reason}` });
 
-  const supa = createClient(SUPABASE_URL, SERVICE_ROLE, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const supa = createServiceClient();
 
   // Pull the dispatch-side token from private.app_secrets — the SAME
   // value pg_cron uses to hit our edge functions. This is the only
@@ -72,11 +59,12 @@ serve(async (req) => {
   // legacy JWT, which the "Disable legacy JWT" gateway toggle now
   // rejects). One DB round-trip at the top of each dispatch run,
   // amortised across MAX_SOURCES_PER_TICK internal fetches.
-  let DISPATCH_TOKEN: string = SERVICE_ROLE;
+  let DISPATCH_TOKEN: string =
+    Deno.env.get("SB_SECRET_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   try {
     const { data: tokenRpc } = await supa.rpc("app_cron_token");
     if (typeof tokenRpc === "string" && tokenRpc.length > 10) DISPATCH_TOKEN = tokenRpc;
-  } catch { /* fall back to env-derived SERVICE_ROLE — better than nothing */ }
+  } catch { /* fall back to env-derived service key — better than nothing */ }
 
   // Manual override (admin can pass { force_all: true } to ignore cadence).
   const body = await req.json().catch(() => ({} as { force_all?: boolean; source_ids?: string[] }));

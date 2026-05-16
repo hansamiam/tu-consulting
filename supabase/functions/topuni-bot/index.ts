@@ -33,7 +33,12 @@
 // ─────────────────────────────────────────────────────────────────────
 
 import { chatCompletions } from "../_shared/ai-gateway.ts";
+import { handleCorsOptions } from "../_shared/cors.ts";
+import { respondJson } from "../_shared/http.ts";
 
+// Custom CORS — Telegram sends `x-telegram-bot-api-secret-token`
+// which the shared BASIC variant doesn't allow. Kept inline since
+// it's the only function that needs this specific header.
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-telegram-bot-api-secret-token",
@@ -41,9 +46,7 @@ const corsHeaders = {
 };
 
 const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), {
-    status, headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  respondJson(status, body, corsHeaders);
 
 /* ── KNOWLEDGE BASE ───────────────────────────────────────────────────
    Single source of truth the bot answers from. Edit here when product
@@ -213,7 +216,8 @@ async function generateReply(userText: string, fromName?: string): Promise<strin
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req, corsHeaders);
+  if (pre) return pre;
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
 
   const TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");

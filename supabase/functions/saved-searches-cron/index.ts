@@ -13,13 +13,9 @@
 // Idempotency: per-day idempotencyKey derived from the search id + ISO
 // date; re-running within the same day skips already-sent rows.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondError, respondJson } from "../_shared/http.ts";
+import { createServiceClient } from "../_shared/clients.ts";
 
 const SITE = Deno.env.get("PUBLIC_SITE_URL") ?? "https://topuni.org";
 
@@ -129,43 +125,21 @@ function applyFilters(scholarship: ScholarshipMatch, filters: Record<string, unk
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "POST only" }), {
-      status: 405,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+  const pre = handleCorsOptions(req);
+  if (pre) return pre;
+  if (req.method !== "POST") return respondError(405, "POST only", corsHeaders);
 
   const startedAt = Date.now();
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!SUPABASE_URL || !SERVICE_ROLE) {
-    return new Response(JSON.stringify({ error: "Supabase env not configured" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-  const supa = createClient(SUPABASE_URL, SERVICE_ROLE, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const supa = createServiceClient();
 
   const { data: searches, error: searchErr } = await supa
     .from("saved_searches")
     .select("id, user_id, name, filters, last_alert_at, created_at")
     .eq("alert_enabled", true)
     .returns<SavedSearchRow[]>();
-  if (searchErr) {
-    return new Response(JSON.stringify({ error: searchErr.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+  if (searchErr) return respondError(500, searchErr.message, corsHeaders);
   if (!searches || searches.length === 0) {
-    return new Response(
-      JSON.stringify({ searches: 0, sent: 0, duration_ms: Date.now() - startedAt }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return respondJson(200, { searches: 0, sent: 0, duration_ms: Date.now() - startedAt }, corsHeaders);
   }
 
   // Filter out users who muted nudges.
@@ -272,15 +246,12 @@ Deno.serve(async (req) => {
     }
   }
 
-  return new Response(
-    JSON.stringify({
-      searches: searches.length,
-      sent,
-      skipped,
-      errors_count: errors.length,
-      first_errors: errors.slice(0, 5),
-      duration_ms: Date.now() - startedAt,
-    }),
-    { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-  );
+  return respondJson(200, {
+    searches: searches.length,
+    sent,
+    skipped,
+    errors_count: errors.length,
+    first_errors: errors.slice(0, 5),
+    duration_ms: Date.now() - startedAt,
+  }, corsHeaders);
 });
