@@ -1,5 +1,6 @@
-import { createClient } from 'npm:@supabase/supabase-js@2'
 import { WebhookError, verifyWebhookRequest } from 'npm:@lovable.dev/webhooks-js'
+import { respondJson } from '../_shared/http.ts'
+import { createServiceClient } from '../_shared/clients.ts'
 
 // Suppression event payload sent by the Go API when Mailgun reports
 // a bounce, complaint, or unsubscribe.
@@ -24,12 +25,8 @@ function parseSuppressionPayload(body: string): SuppressionPayload {
   return data
 }
 
-function jsonResponse(data: Record<string, unknown>, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  })
-}
+const jsonResponse = (data: Record<string, unknown>, status = 200) =>
+  respondJson(status, data)
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
@@ -37,10 +34,8 @@ Deno.serve(async (req) => {
   }
 
   const apiKey = Deno.env.get('LOVABLE_API_KEY')
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')
-  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-  if (!apiKey || !supabaseUrl || !supabaseServiceKey) {
+  if (!apiKey) {
     console.error('Missing required environment variables')
     return jsonResponse({ error: 'Server configuration error' }, 500)
   }
@@ -79,7 +74,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'Internal error' }, 500)
   }
 
-  const supabase = createClient(supabaseUrl, supabaseServiceKey)
+  const supabase = createServiceClient()
   const normalizedEmail = payload.email.toLowerCase()
 
   // 1. Upsert to suppressed_emails (idempotent — safe for retries)

@@ -1,33 +1,16 @@
-import { createClient } from 'npm:@supabase/supabase-js@2'
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from '../_shared/cors.ts'
+import { respondJson } from '../_shared/http.ts'
+import { createServiceClient } from '../_shared/clients.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type',
-}
-
-function jsonResponse(data: Record<string, unknown>, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  })
-}
+const jsonResponse = (data: Record<string, unknown>, status = 200) =>
+  respondJson(status, data, corsHeaders)
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
+  const pre = handleCorsOptions(req)
+  if (pre) return pre
 
   if (req.method !== 'GET' && req.method !== 'POST') {
     return jsonResponse({ error: 'Method not allowed' }, 405)
-  }
-
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')
-  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-
-  if (!supabaseUrl || !supabaseServiceKey) {
-    return jsonResponse({ error: 'Server configuration error' }, 500)
   }
 
   // Extract token from query params (GET) or body (POST)
@@ -67,7 +50,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'Token is required' }, 400)
   }
 
-  const supabase = createClient(supabaseUrl, supabaseServiceKey)
+  const supabase = createServiceClient()
 
   // Look up the token
   const { data: tokenRecord, error: lookupError } = await supabase

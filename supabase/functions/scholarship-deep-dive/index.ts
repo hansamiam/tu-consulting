@@ -16,7 +16,6 @@
 // row is written with user_id=NULL when no JWT is present, NULL-or-the-
 // user-id otherwise.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { chatCompletions } from "../_shared/ai-gateway.ts";
 import { checkRateLimit, clientIp } from "../_shared/rate-limit.ts";
 import { EDITORIAL_RULES_TIGHT } from "../_shared/editorial-rules.ts";
@@ -26,12 +25,9 @@ import {
   cleanHostCountry,
   cleanAwardText,
 } from "../_shared/scholarshipFields.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { CORS_HEADERS_EXTENDED as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondJson } from "../_shared/http.ts";
+import { createServiceClient, createUserClient } from "../_shared/clients.ts";
 
 // Bumped 5 — added trust calibration (thin-row caveats), audience gate
 // (target_demographics restrict-or-target tags), and partner_universities
@@ -149,18 +145,12 @@ function isolateJson(raw: string): string {
 }
 
 const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  respondJson(status, body, corsHeaders);
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req, corsHeaders);
+  if (pre) return pre;
   if (req.method !== "POST") return json(405, { error: "POST only" });
-
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!SUPABASE_URL || !SERVICE_ROLE) return json(500, { error: "Missing Supabase env" });
 
   let body: ReqBody;
   try { body = await req.json() as ReqBody; }
@@ -175,18 +165,13 @@ Deno.serve(async (req) => {
   const auth = req.headers.get("Authorization");
   if (auth?.startsWith("Bearer ")) {
     try {
-      const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-      if (anonKey) {
-        const userClient = createClient(SUPABASE_URL, anonKey, {
-          global: { headers: { Authorization: auth } },
-        });
-        const { data } = await userClient.auth.getUser();
-        userId = data?.user?.id ?? null;
-      }
+      const userClient = createUserClient(auth);
+      const { data } = await userClient.auth.getUser();
+      userId = data?.user?.id ?? null;
     } catch { /* anon callers are fine */ }
   }
 
-  const supa = createClient(SUPABASE_URL, SERVICE_ROLE);
+  const supa = createServiceClient();
 
   // ─── Rate limit by IP ──────────────────────────────────────────────────
   // Each cache miss costs ~$0.005 of AI spend. Without a cap an anon

@@ -1,8 +1,10 @@
 import * as React from 'npm:react@18.3.1'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
-import { createClient } from 'npm:@supabase/supabase-js@2'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
 import { checkRateLimit, clientIp } from '../_shared/rate-limit.ts'
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from '../_shared/cors.ts'
+import { respondError, respondJson } from '../_shared/http.ts'
+import { createServiceClient } from '../_shared/clients.ts'
 
 // Configuration baked in at scaffold time — do NOT change these manually.
 // To update, re-run the email domain setup flow.
@@ -15,12 +17,6 @@ const SENDER_DOMAIN = "notify.topuni.org"
 // When display_from_root is enabled, this can be the root domain for cleaner branding,
 // even though actual sending uses the subdomain above.
 const FROM_DOMAIN = "topuni.org"
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type',
-}
 
 // Generate a cryptographically random 32-byte hex token
 function generateToken(): string {
@@ -36,24 +32,8 @@ function generateToken(): string {
 // reaches this code. No in-function auth check is needed.
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
-
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')
-  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-
-  if (!supabaseUrl || !supabaseServiceKey) {
-    console.error('Missing required environment variables')
-    return new Response(
-      JSON.stringify({ error: 'Server configuration error' }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
-  }
+  const pre = handleCorsOptions(req)
+  if (pre) return pre
 
   // Per-IP rate limit. verify_jwt=true at the gateway only enforces a
   // valid JWT (anon key counts), so anyone with the public anon key
@@ -62,20 +42,17 @@ Deno.serve(async (req) => {
   // Bypass for service_role callers (cron jobs may legitimately fan
   // out to many recipients per minute).
   const SB_SECRET = Deno.env.get('SB_SECRET_KEY') ?? ''
-  const SR_LEGACY = supabaseServiceKey
+  const SR_LEGACY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   const bearer = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim()
   const isServiceRole =
     (SR_LEGACY && bearer === SR_LEGACY) ||
     (SB_SECRET && bearer === SB_SECRET)
   if (!isServiceRole) {
-    const supaRL = createClient(supabaseUrl, supabaseServiceKey)
+    const supaRL = createServiceClient()
     const ip = clientIp(req)
     const ok = await checkRateLimit(supaRL, { key: `send-email:${ip}`, perMinute: 5 })
     if (!ok) {
-      return new Response(
-        JSON.stringify({ error: 'Rate limit exceeded' }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return respondError(429, 'Rate limit exceeded', corsHeaders)
     }
   }
 
@@ -95,23 +72,11 @@ Deno.serve(async (req) => {
       templateData = body.templateData
     }
   } catch {
-    return new Response(
-      JSON.stringify({ error: 'Invalid JSON in request body' }),
-      {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
+    return respondError(400, 'Invalid JSON in request body', corsHeaders)
   }
 
   if (!templateName) {
-    return new Response(
-      JSON.stringify({ error: 'templateName is required' }),
-      {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
+    return respondError(400, 'templateName is required', corsHeaders)
   }
 
   // 1. Look up template from registry (early — needed to resolve recipient)
@@ -119,14 +84,10 @@ Deno.serve(async (req) => {
 
   if (!template) {
     console.error('Template not found in registry', { templateName })
-    return new Response(
-      JSON.stringify({
-        error: `Template '${templateName}' not found. Available: ${Object.keys(TEMPLATES).join(', ')}`,
-      }),
-      {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+    return respondError(
+      404,
+      `Template '${templateName}' not found. Available: ${Object.keys(TEMPLATES).join(', ')}`,
+      corsHeaders,
     )
   }
 
@@ -136,19 +97,15 @@ Deno.serve(async (req) => {
   const effectiveRecipient = template.to || recipientEmail
 
   if (!effectiveRecipient) {
-    return new Response(
-      JSON.stringify({
-        error: 'recipientEmail is required (unless the template defines a fixed recipient)',
-      }),
-      {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+    return respondError(
+      400,
+      'recipientEmail is required (unless the template defines a fixed recipient)',
+      corsHeaders,
     )
   }
 
   // Create Supabase client with service role (bypasses RLS)
-  const supabase = createClient(supabaseUrl, supabaseServiceKey)
+  const supabase = createServiceClient()
 
   // 2. Check suppression list (fail-closed: if we can't verify, don't send)
   const { data: suppressed, error: suppressionError } = await supabase
@@ -162,13 +119,7 @@ Deno.serve(async (req) => {
       error: suppressionError,
       effectiveRecipient,
     })
-    return new Response(
-      JSON.stringify({ error: 'Failed to verify suppression status' }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
+    return respondError(500, 'Failed to verify suppression status', corsHeaders)
   }
 
   if (suppressed) {
@@ -181,13 +132,7 @@ Deno.serve(async (req) => {
     })
 
     console.log('Email suppressed', { effectiveRecipient, templateName })
-    return new Response(
-      JSON.stringify({ success: false, reason: 'email_suppressed' }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
+    return respondJson(200, { success: false, reason: 'email_suppressed' }, corsHeaders)
   }
 
   // 3. Get or create unsubscribe token (one token per email address)
@@ -213,13 +158,7 @@ Deno.serve(async (req) => {
       status: 'failed',
       error_message: 'Failed to look up unsubscribe token',
     })
-    return new Response(
-      JSON.stringify({ error: 'Failed to prepare email' }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
+    return respondError(500, 'Failed to prepare email', corsHeaders)
   }
 
   if (existingToken && !existingToken.used_at) {
@@ -246,13 +185,7 @@ Deno.serve(async (req) => {
         status: 'failed',
         error_message: 'Failed to create unsubscribe token',
       })
-      return new Response(
-        JSON.stringify({ error: 'Failed to prepare email' }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
+      return respondError(500, 'Failed to prepare email', corsHeaders)
     }
 
     // If another request raced us, our upsert was silently ignored.
@@ -275,13 +208,7 @@ Deno.serve(async (req) => {
         status: 'failed',
         error_message: 'Failed to confirm unsubscribe token storage',
       })
-      return new Response(
-        JSON.stringify({ error: 'Failed to prepare email' }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
+      return respondError(500, 'Failed to prepare email', corsHeaders)
     }
     unsubscribeToken = storedToken.token
   } else {
@@ -298,13 +225,7 @@ Deno.serve(async (req) => {
       error_message:
         'Unsubscribe token used but email missing from suppressed list',
     })
-    return new Response(
-      JSON.stringify({ success: false, reason: 'email_suppressed' }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
+    return respondJson(200, { success: false, reason: 'email_suppressed' }, corsHeaders)
   }
 
   // 4. Render React Email template to HTML and plain text
@@ -366,19 +287,10 @@ Deno.serve(async (req) => {
       error_message: 'Failed to enqueue email',
     })
 
-    return new Response(JSON.stringify({ error: 'Failed to enqueue email' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return respondError(500, 'Failed to enqueue email', corsHeaders)
   }
 
   console.log('Transactional email enqueued', { templateName, effectiveRecipient })
 
-  return new Response(
-    JSON.stringify({ success: true, queued: true }),
-    {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    }
-  )
+  return respondJson(200, { success: true, queued: true }, corsHeaders)
 })

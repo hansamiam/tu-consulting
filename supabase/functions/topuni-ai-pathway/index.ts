@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.78.0";
 import { chatCompletions, embeddings as gatewayEmbeddings } from "../_shared/ai-gateway.ts";
 import { checkRateLimit, clientIp } from "../_shared/rate-limit.ts";
 import {
@@ -15,11 +14,9 @@ import {
   cleanHostCountry,
   cleanAwardText,
 } from "../_shared/scholarshipFields.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { CORS_HEADERS_EXTENDED as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondError, respondJson } from "../_shared/http.ts";
+import { createServiceClient, createUserClient } from "../_shared/clients.ts";
 
 const EMBEDDING_MODEL = "text-embedding-3-small";
 
@@ -292,12 +289,11 @@ function buildOrderedSectionStream(promises: Array<Promise<SectionResult>>): Rea
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req, corsHeaders);
+  if (pre) return pre;
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createServiceClient();
 
     // Rate limit: 5 brief generations per minute per IP. A real visitor will
     // never hit this; abuse scripts will. Each blocked request saves ~$0.02
@@ -305,10 +301,7 @@ serve(async (req) => {
     const ip = clientIp(req);
     const ok = await checkRateLimit(supabase, { key: `ai-pathway:${ip}`, perMinute: 5 });
     if (!ok) {
-      return new Response(
-        JSON.stringify({ error: "Rate limit exceeded — please wait a minute." }),
-        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return respondError(429, "Rate limit exceeded — please wait a minute.", corsHeaders);
     }
 
     const { profile, language, reportGrade, regenSection, focusScholarshipId } = await req.json();
@@ -395,11 +388,7 @@ serve(async (req) => {
       try {
         const auth = req.headers.get("Authorization");
         if (!auth?.startsWith("Bearer ")) return;
-        const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-        if (!anonKey) return;
-        const userClient = createClient(supabaseUrl, anonKey, {
-          global: { headers: { Authorization: auth } },
-        });
+        const userClient = createUserClient(auth);
         const { data: { user } } = await userClient.auth.getUser();
         if (!user?.id) return;
         await supabase
@@ -807,9 +796,7 @@ ${EDITORIAL_RULES}`;
       if (typeof regenSection === "string" && regenSection) {
         const target = PREMIUM_SECTIONS.find(s => s.id === regenSection);
         if (!target) {
-          return new Response(JSON.stringify({ error: `Unknown section id: ${regenSection}` }), {
-            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return respondError(400, `Unknown section id: ${regenSection}`, corsHeaders);
         }
         const stream = buildOrderedSectionStream([generateSection(target, briefCtx)]);
         return new Response(stream, {
@@ -898,27 +885,19 @@ ${grade === "premium" ? premiumSections : basicSections}`;
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return respondError(429, "Rate limit exceeded. Please try again in a moment.", corsHeaders);
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Service temporarily unavailable." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return respondError(402, "Service temporarily unavailable.", corsHeaders);
       }
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI service error" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondError(500, "AI service error", corsHeaders);
     }
 
     // Tee + cache for the basic monolithic stream too.
     if (!response.body) {
-      return new Response(JSON.stringify({ error: "No response body" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondError(500, "No response body", corsHeaders);
     }
     const { client: basicClient, accumulated: basicAccum } = teeStreamForCache(response.body);
     const basicScholarshipIds = scholarshipRows.map((r: any) => r.scholarship_id).filter(Boolean);
@@ -947,8 +926,6 @@ ${grade === "premium" ? premiumSections : basicSections}`;
     });
   } catch (e) {
     console.error("topuni-ai-pathway error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respondError(500, e instanceof Error ? e.message : "Unknown error", corsHeaders);
   }
 });
