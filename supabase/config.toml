@@ -44,8 +44,14 @@ verify_jwt = false
 [functions.match-scholarships]
 verify_jwt = false
 
+# verify_jwt = false: invoked by pg_cron, which sends the sb_secret_*
+# token via the `apikey` header only — no Authorization JWT. With
+# verify_jwt = true the gateway rejected every cron tick with
+# UNAUTHORIZED_NO_AUTH_HEADER before the function ran. The function
+# instead authenticates the caller itself via requireAdminOrService
+# (_shared/auth.ts), which accepts the cron token and admin user JWTs.
 [functions.embed-scholarships]
-verify_jwt = true
+verify_jwt = false
 
 [functions.scholarship-deadline-cron]
 verify_jwt = true
@@ -60,7 +66,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.pro-upgrade-nudge-cron]
-verify_jwt = true
+verify_jwt = false
 
 [functions.extract-brief-data]
 verify_jwt = false
@@ -75,19 +81,19 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.enrich-universities-cron]
-verify_jwt = true
+verify_jwt = false
 
 [functions.verify-scholarship]
 verify_jwt = true
 
 [functions.verify-scholarship-cron]
-verify_jwt = true
+verify_jwt = false
 
 [functions.enrich-scholarship-content]
 verify_jwt = true
 
 [functions.enrich-scholarships-content-cron]
-verify_jwt = true
+verify_jwt = false
 
 [functions.sitemap-scholarships]
 verify_jwt = false
@@ -96,13 +102,13 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.discover-from-hub]
-verify_jwt = true
+verify_jwt = false
 
 [functions.discover-from-hubs-cron]
-verify_jwt = true
+verify_jwt = false
 
 [functions.promote-pending-cron]
-verify_jwt = true
+verify_jwt = false
 
 [functions.og-brief]
 verify_jwt = false
@@ -111,7 +117,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.scholarship-url-health-cron]
-verify_jwt = true
+verify_jwt = false
 
 [functions.register-referral]
 verify_jwt = true
@@ -123,4 +129,20 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.funder-truth-probe]
-verify_jwt = true
+verify_jwt = false
+
+# Cron / internal-dispatch functions previously missing from this file
+# (verify_jwt defaulted to true → 401 on every cron tick). Same fix as
+# the block above: gateway lets the request through, the function gates
+# the caller itself.
+[functions.scrape-cron-dispatcher]
+verify_jwt = false
+
+[functions.scrape-source]
+verify_jwt = false
+
+[functions.canonical-extract-cron]
+verify_jwt = false
+
+[functions.enrich-cover-images-cron]
+verify_jwt = false

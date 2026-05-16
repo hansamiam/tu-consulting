@@ -15,6 +15,7 @@
 // 60s function timeout even if many time out.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireAdminOrService } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -202,6 +203,16 @@ async function pMap<T, R>(items: T[], fn: (x: T) => Promise<R>, concurrency: num
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Cron / admin gate. verify_jwt is false for this function (the gateway
+  // can't see the cron's sb_secret apikey as a JWT), so it authenticates
+  // the caller itself here.
+  const auth = await requireAdminOrService(req);
+  if (!auth.ok) {
+    return new Response(JSON.stringify({ error: auth.reason ?? "unauthorized" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "POST only" }), {
       status: 405,

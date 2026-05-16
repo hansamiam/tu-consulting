@@ -13,6 +13,7 @@
 // Cost shape: 100 × ~$0.0008 = $0.08/day cap on AI spend.
 
 import { getDispatchClient } from "../_shared/dispatchClient.ts";
+import { requireAdminOrService } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,6 +29,12 @@ const THROTTLE_MS = 1200;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Cron / admin gate. verify_jwt is false for this function (the gateway
+  // can't see the cron's sb_secret apikey as a JWT), so it authenticates
+  // the caller itself here.
+  const auth = await requireAdminOrService(req);
+  if (!auth.ok) return json(401, { error: auth.reason ?? "unauthorized" });
 
   // dispatchClient loads the rotation-resilient apikey from
   // private.app_secrets — supa.functions.invoke below then succeeds

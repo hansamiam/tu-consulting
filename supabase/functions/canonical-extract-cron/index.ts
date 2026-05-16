@@ -13,6 +13,7 @@
 //     $$ select net.http_post(...) $$);
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireAdminOrService } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,6 +32,12 @@ const STALE_THRESHOLD_DAYS  = 90;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Cron / admin gate. verify_jwt is false for this function (the gateway
+  // can't see the cron's sb_secret apikey as a JWT), so it authenticates
+  // the caller itself here.
+  const auth = await requireAdminOrService(req);
+  if (!auth.ok) return json(401, { error: auth.reason ?? "unauthorized" });
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
   const SERVICE_ROLE = Deno.env.get("SB_SECRET_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");

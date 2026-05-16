@@ -18,6 +18,7 @@
 //        ) $$);
 
 import { getDispatchClient } from "../_shared/dispatchClient.ts";
+import { requireAdminOrService } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,6 +40,12 @@ const THROTTLE_MS = 2000;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Cron / admin gate. verify_jwt is false for this function (the gateway
+  // can't see the cron's sb_secret apikey as a JWT), so it authenticates
+  // the caller itself here.
+  const auth = await requireAdminOrService(req);
+  if (!auth.ok) return json(401, { error: auth.reason ?? "unauthorized" });
 
   // dispatchClient — see verify-scholarship-cron for the auth-rotation
   // rationale. Internal supa.functions.invoke uses the dispatch token.

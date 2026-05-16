@@ -19,6 +19,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { embeddings as gatewayEmbeddings } from "../_shared/ai-gateway.ts";
+import { requireAdminOrService } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -62,6 +63,12 @@ const toVectorLiteral = (v: number[]): string => `[${v.join(",")}]`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Cron / admin gate. verify_jwt is false for this function (the gateway
+  // can't see the cron's sb_secret apikey as a JWT), so it authenticates
+  // the caller itself here.
+  const auth = await requireAdminOrService(req);
+  if (!auth.ok) return json(401, { error: auth.reason ?? "unauthorized" });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
 
   try {
