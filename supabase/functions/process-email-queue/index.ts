@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { createClient as _createClient } from 'npm:@supabase/supabase-js@2'
-const createClient = _createClient as unknown as (url: string, key: string, opts?: any) => any
+import { respondJson } from '../_shared/http.ts'
+import { createServiceClient } from '../_shared/clients.ts'
 
 /* ─── Email sender — Resend by default, with optional fallback ─────
    Replaces the previous @lovable.dev/email-js dependency so the email
@@ -152,23 +152,15 @@ async function moveToDlq(
 
 Deno.serve(async (req) => {
   const apiKey = Deno.env.get('RESEND_API_KEY')
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')
-  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-  if (!apiKey || !supabaseUrl || !supabaseServiceKey) {
-    console.error('Missing required environment variables (RESEND_API_KEY / SUPABASE_*)')
-    return new Response(
-      JSON.stringify({ error: 'Server configuration error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    )
+  if (!apiKey) {
+    console.error('Missing required environment variable RESEND_API_KEY')
+    return respondJson(500, { error: 'Server configuration error' })
   }
 
   const authHeader = req.headers.get('Authorization')
   if (!authHeader?.startsWith('Bearer ')) {
-    return new Response(
-      JSON.stringify({ error: 'Unauthorized' }),
-      { status: 401, headers: { 'Content-Type': 'application/json' } }
-    )
+    return respondJson(401, { error: 'Unauthorized' })
   }
 
   // Defense in depth: verify_jwt=true already requires a valid JWT at the
@@ -177,13 +169,10 @@ Deno.serve(async (req) => {
   const token = authHeader.slice('Bearer '.length).trim()
   const claims = parseJwtClaims(token)
   if (claims?.role !== 'service_role') {
-    return new Response(
-      JSON.stringify({ error: 'Forbidden' }),
-      { status: 403, headers: { 'Content-Type': 'application/json' } }
-    )
+    return respondJson(403, { error: 'Forbidden' })
   }
 
-  const supabase = createClient(supabaseUrl, supabaseServiceKey)
+  const supabase = createServiceClient()
 
   // 1. Check rate-limit cooldown and read queue config
   const { data: state } = await supabase
@@ -192,10 +181,7 @@ Deno.serve(async (req) => {
     .single()
 
   if (state?.retry_after_until && new Date(state.retry_after_until) > new Date()) {
-    return new Response(
-      JSON.stringify({ skipped: true, reason: 'rate_limited' }),
-      { headers: { 'Content-Type': 'application/json' } }
-    )
+    return respondJson(200, { skipped: true, reason: 'rate_limited' })
   }
 
   const batchSize = state?.batch_size ?? DEFAULT_BATCH_SIZE
@@ -387,20 +373,14 @@ Deno.serve(async (req) => {
             .eq('id', 1)
 
           // Stop processing — remaining messages stay in queue (VT expires, retried next cycle)
-          return new Response(
-            JSON.stringify({ processed: totalProcessed, stopped: 'rate_limited' }),
-            { headers: { 'Content-Type': 'application/json' } }
-          )
+          return respondJson(200, { processed: totalProcessed, stopped: 'rate_limited' })
         }
 
         // 403 means emails are disabled for this project — retrying won't help.
         // Move straight to DLQ and stop processing the rest of the batch.
         if (isForbidden(error)) {
           await moveToDlq(supabase, queue, msg, 'Emails disabled for this project')
-          return new Response(
-            JSON.stringify({ processed: totalProcessed, stopped: 'emails_disabled' }),
-            { headers: { 'Content-Type': 'application/json' } }
-          )
+          return respondJson(200, { processed: totalProcessed, stopped: 'emails_disabled' })
         }
 
         // Log non-429 failures to track real retry attempts.
@@ -425,8 +405,5 @@ Deno.serve(async (req) => {
     }
   }
 
-  return new Response(
-    JSON.stringify({ processed: totalProcessed }),
-    { headers: { 'Content-Type': 'application/json' } }
-  )
+  return respondJson(200, { processed: totalProcessed })
 })
