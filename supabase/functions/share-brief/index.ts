@@ -20,12 +20,9 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkRateLimit, clientIp } from "../_shared/rate-limit.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondJson } from "../_shared/http.ts";
+import { createServiceClient, createUserClient } from "../_shared/clients.ts";
 
 const SLUG_ALPHABET = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const SLUG_LENGTH = 8;
@@ -41,10 +38,7 @@ function makeSlug(): string {
 }
 
 const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  respondJson(status, body, corsHeaders);
 
 interface ShareBody {
   content?: string;
@@ -59,15 +53,11 @@ interface ShareBody {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req);
+  if (pre) return pre;
   if (req.method !== "POST") return json(405, { error: "POST only" });
 
   try {
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-    const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-    if (!SUPABASE_URL || !SERVICE_ROLE || !ANON_KEY) return json(500, { error: "Supabase env not configured" });
-
     // Rate limit per IP. Each call writes a 200–100,000-char row to
     // shared_briefs (and the URL is publicly addressable). Without a
     // cap an attacker could spray thousands of polluted briefs into
@@ -75,6 +65,9 @@ Deno.serve(async (req) => {
     // someone ever links them. 4/min is generous for legitimate use
     // (a user typically shares once per session).
     {
+      const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+      const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+      if (!SUPABASE_URL || !ANON_KEY) return json(500, { error: "Supabase env not configured" });
       const supaRL = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
       const ip = clientIp(req);
       const ok = await checkRateLimit(supaRL, { key: `share-brief:${ip}`, perMinute: 4 });
@@ -91,10 +84,7 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (authHeader && authHeader.startsWith("Bearer ")) {
       try {
-        const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-          global: { headers: { Authorization: authHeader } },
-          auth: { persistSession: false, autoRefreshToken: false },
-        });
+        const userClient = createUserClient(authHeader);
         const { data: u } = await userClient.auth.getUser();
         userId = u.user?.id ?? null;
       } catch { /* anon — fine */ }
@@ -102,9 +92,7 @@ Deno.serve(async (req) => {
 
     // Service-role client for the insert (bypasses RLS for the WITH CHECK
     // on created_by_user_id; we still write the actual user_id).
-    const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    const admin = createServiceClient();
 
     const language = body.language === "ru" ? "ru" : "en";
     const reportGrade = body.reportGrade === "premium" ? "premium" : "basic";

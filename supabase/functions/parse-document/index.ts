@@ -22,14 +22,10 @@
 // document_id, then proceeds. Service-role for the storage download
 // + final UPDATE so RLS doesn't block.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { vision as gatewayVision } from "../_shared/ai-gateway.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondJson } from "../_shared/http.ts";
+import { createServiceClient, createUserClient } from "../_shared/clients.ts";
 
 interface DocRow {
   document_id: string;
@@ -41,10 +37,7 @@ interface DocRow {
 }
 
 const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  respondJson(status, body, corsHeaders);
 
 const KIND_INSTRUCTION: Record<string, string> = {
   transcript: "This is a student transcript or grade report. Transcribe ALL course names, grades, GPAs, dates, and institution names verbatim. Preserve any GPA-on-scale notation (e.g. 3.8/4.0). Output in plain text, structured by semester / year if visible.",
@@ -84,22 +77,16 @@ function base64Encode(bytes: Uint8Array): string {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req);
+  if (pre) return pre;
   if (req.method !== "POST") return json(405, { error: "POST only" });
 
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-  if (!SUPABASE_URL || !SERVICE_ROLE || !ANON_KEY) return json(500, { error: "Supabase env not configured" });
   // AI gateway env validated lazily in gatewayVision — see _shared/ai-gateway.ts
 
   // Auth check — caller must own the document_id
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) return json(401, { error: "Authorization required" });
-  const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-    global: { headers: { Authorization: authHeader } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const userClient = createUserClient(authHeader);
   const { data: u } = await userClient.auth.getUser();
   const userId = u.user?.id;
   if (!userId) return json(401, { error: "Unauthenticated" });
@@ -108,9 +95,7 @@ Deno.serve(async (req) => {
   const documentId = body.document_id;
   if (!documentId) return json(400, { error: "document_id required" });
 
-  const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const admin = createServiceClient();
 
   const { data: doc, error: docErr } = await admin
     .from("student_documents")

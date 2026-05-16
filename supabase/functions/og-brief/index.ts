@@ -15,7 +15,13 @@
 // invalidate via deploy version.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { handleCorsOptions } from "../_shared/cors.ts";
 
+// og-brief is hit by social-platform crawlers (Twitter, LinkedIn,
+// WhatsApp, Slack, iMessage) on GET only — same headers as other
+// functions but with Allow-Headers: "*" because we don't know which
+// the crawler sends. Custom override of the shared CORS to keep
+// "*" exactly as the original.
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "*",
@@ -178,7 +184,8 @@ const placeholderSvg = (): string => buildSvg({
 });
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req, corsHeaders);
+  if (pre) return pre;
   // Crawlers send GET; sometimes HEAD for CDN priming
   if (req.method !== "GET" && req.method !== "HEAD") {
     return new Response("GET only", { status: 405, headers: corsHeaders });

@@ -11,7 +11,7 @@
 // canonical URL is https://topuni.org/sitemap-scholarships.xml — that's
 // what robots.txt advertises.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createServiceClient } from "../_shared/clients.ts";
 
 const SITE = "https://topuni.org";
 
@@ -29,13 +29,7 @@ const escape = (s: string) =>
    .replace(/'/g, "&apos;");
 
 Deno.serve(async () => {
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!SUPABASE_URL || !SERVICE_ROLE) {
-    return new Response("Missing Supabase env", { status: 500 });
-  }
-
-  const supa = createClient(SUPABASE_URL, SERVICE_ROLE);
+  const supa = createServiceClient();
 
   // Match the public detail-page read filter exactly: verified, stale,
   // pending, or NULL — anything except 'broken'. Pre-fix the sitemap

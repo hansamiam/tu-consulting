@@ -24,12 +24,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { chatCompletions } from "../_shared/ai-gateway.ts";
 import { checkRateLimit, clientIp } from "../_shared/rate-limit.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { CORS_HEADERS_EXTENDED as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondJson } from "../_shared/http.ts";
 
 interface ReqBody {
   /** The full markdown brief from topuni-ai-pathway. */
@@ -170,11 +166,10 @@ function isolateJson(raw: string): string {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req, corsHeaders);
+  if (pre) return pre;
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "POST only" }), {
-      status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respondJson(405, { error: "POST only" }, corsHeaders);
   }
 
   // Rate limit per IP. Each call extracts structured data via the LLM
@@ -187,9 +182,7 @@ Deno.serve(async (req) => {
     const ip = clientIp(req);
     const ok = await checkRateLimit(supaRL, { key: `extract-brief:${ip}`, perMinute: 8 });
     if (!ok) {
-      return new Response(JSON.stringify({ error: "Rate limit exceeded." }), {
-        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondJson(429, { error: "Rate limit exceeded." }, corsHeaders);
     }
   }
 
@@ -197,15 +190,11 @@ Deno.serve(async (req) => {
   try {
     body = await req.json() as ReqBody;
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
-      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respondJson(400, { error: "Invalid JSON body" }, corsHeaders);
   }
 
   if (!body.briefMarkdown || body.briefMarkdown.length < 200) {
-    return new Response(JSON.stringify({ error: "briefMarkdown too short or missing" }), {
-      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respondJson(400, { error: "briefMarkdown too short or missing" }, corsHeaders);
   }
 
   const prompt = buildExtractionPrompt(body);
@@ -223,11 +212,11 @@ Deno.serve(async (req) => {
     if (!resp.ok) {
       const errText = await resp.text();
       console.error("[extract-brief-data] gateway error", resp.status, errText.slice(0, 400));
-      return new Response(JSON.stringify({
-        // Soft-fail: return empty payload so the frontend keeps showing the markdown narrative.
+      // Soft-fail: return empty payload so the frontend keeps showing the markdown narrative.
+      return respondJson(200, {
         careerRoi: null, combinedFunding: null, visaPathway: null,
         _error: `gateway ${resp.status}`,
-      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }, corsHeaders);
     }
 
     const data = await resp.json();
@@ -239,10 +228,10 @@ Deno.serve(async (req) => {
       ?? "";
 
     if (!raw) {
-      return new Response(JSON.stringify({
+      return respondJson(200, {
         careerRoi: null, combinedFunding: null, visaPathway: null,
         _error: "empty completion",
-      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }, corsHeaders);
     }
 
     let parsed: unknown;
@@ -250,10 +239,10 @@ Deno.serve(async (req) => {
       parsed = JSON.parse(isolateJson(raw));
     } catch (e) {
       console.warn("[extract-brief-data] JSON parse failed", (e as Error).message, raw.slice(0, 400));
-      return new Response(JSON.stringify({
+      return respondJson(200, {
         careerRoi: null, combinedFunding: null, visaPathway: null,
         _error: "parse failed",
-      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }, corsHeaders);
     }
 
     // Defensive shape check — keep only the three top-level keys we care about.
@@ -264,23 +253,22 @@ Deno.serve(async (req) => {
       visaPathway: p.visaPathway ?? null,
     };
 
+    // Custom Cache-Control header — keep this one inline. respondJson
+    // doesn't take per-call header overrides; the 30-min server-side
+    // cache is the point of this Response so we wrap it manually.
     return new Response(JSON.stringify(out), {
       status: 200,
       headers: {
         ...corsHeaders,
         "Content-Type": "application/json",
-        // Cache 30 min server-side — the brief is keyed by profileHash on
-        // the client so the same profile won't hit us repeatedly. CDN
-        // caching on POST isn't standard but Supabase respects it for
-        // repeat callers within a deployment.
         "Cache-Control": "private, max-age=1800",
       },
     });
   } catch (e) {
     console.error("[extract-brief-data] unhandled", e);
-    return new Response(JSON.stringify({
+    return respondJson(200, {
       careerRoi: null, combinedFunding: null, visaPathway: null,
       _error: e instanceof Error ? e.message : "unknown",
-    }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }, corsHeaders);
   }
 });

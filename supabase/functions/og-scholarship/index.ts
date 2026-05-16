@@ -16,7 +16,11 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { cleanScholarshipName, cleanProvider } from "../_shared/scholarshipFields.ts";
+import { handleCorsOptions } from "../_shared/cors.ts";
 
+// Crawler-only GET endpoint; Allow-Headers: "*" so we don't have to
+// guess what unfurl bots send. Kept inline rather than using shared
+// CORS_HEADERS_BASIC because of the "*" headers value.
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "*",
@@ -246,7 +250,8 @@ function placeholderSvg(): string {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req, corsHeaders);
+  if (pre) return pre;
   if (req.method !== "GET" && req.method !== "HEAD") {
     return new Response("GET only", { status: 405, headers: corsHeaders });
   }
