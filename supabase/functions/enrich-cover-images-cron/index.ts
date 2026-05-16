@@ -30,17 +30,13 @@
 // Cost: zero LLM spend. The only cost is bandwidth for the HTML +
 // HEAD requests, which is negligible.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireAdminOrService } from "../_shared/auth.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondJson } from "../_shared/http.ts";
+import { createServiceClient } from "../_shared/clients.ts";
 
 const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  respondJson(status, body, corsHeaders);
 
 const MAX_PER_RUN = 50;
 const THROTTLE_MS = 1500;
@@ -139,7 +135,8 @@ const fetchHtml = async (url: string): Promise<string | null> => {
 };
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req);
+  if (pre) return pre;
 
   // Cron / admin gate. verify_jwt is false for this function (the gateway
   // can't see the cron's sb_secret apikey as a JWT), so it authenticates
@@ -147,11 +144,7 @@ Deno.serve(async (req) => {
   const auth = await requireAdminOrService(req);
   if (!auth.ok) return json(401, { error: auth.reason ?? "unauthorized" });
 
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!SUPABASE_URL || !SERVICE_ROLE) return json(500, { error: "Missing Supabase env" });
-
-  const supa = createClient(SUPABASE_URL, SERVICE_ROLE);
+  const supa = createServiceClient();
 
   // Candidates: rows that
   //   · have an official_url (otherwise nothing to scrape)
