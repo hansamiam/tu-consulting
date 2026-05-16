@@ -17,15 +17,11 @@
 
 import { getDispatchClient } from "../_shared/dispatchClient.ts";
 import { requireAdminOrService } from "../_shared/auth.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondJson } from "../_shared/http.ts";
 
 const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  respondJson(status, body, corsHeaders);
 
 // Cap per run so a misconfigured deploy can't burn the entire AI/Firecrawl
 // budget in one cron tick. 200 × ~$0.0035 = $0.70/day max spend at the
@@ -50,7 +46,8 @@ const RUN_DEADLINE_MS = 140_000;
 const WORKER_QUIT_HEADROOM_MS = 5_000;
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req);
+  if (pre) return pre;
 
   // Cron / admin gate. verify_jwt is false for this function (the gateway
   // can't see the cron's sb_secret apikey as a JWT), so it authenticates

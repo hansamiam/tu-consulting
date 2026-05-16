@@ -18,7 +18,6 @@
 //     -d '{"source_id": "<uuid>"}'
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { chatCompletions } from "../_shared/ai-gateway.ts";
 import { firecrawlScrape, FIRECRAWL_COST_PER_SCRAPE_USD } from "../_shared/firecrawl.ts";
 import { requireAdminOrService } from "../_shared/auth.ts";
@@ -38,18 +37,12 @@ import {
   knownProgramValueUsd,
   inferDegreeLevelsFromNames,
 } from "../_shared/scholarshipFields.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondJson } from "../_shared/http.ts";
+import { createServiceClient } from "../_shared/clients.ts";
 
 const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  respondJson(status, body, corsHeaders);
 
 // Auto-publish threshold. Above this, the extraction goes straight into
 // scholarships and triggers an embedding refresh. Below, it sits in
@@ -655,12 +648,9 @@ function diffScholarship(
 // ─── Main handler ──────────────────────────────────────────────────────────
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req);
+  if (pre) return pre;
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
-
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!SUPABASE_URL || !SERVICE_ROLE) return json(500, { error: "Supabase env not configured" });
 
   // Auth: cron (service role) or admin user only.
   const auth = await requireAdminOrService(req);
@@ -670,9 +660,7 @@ serve(async (req) => {
   try { body = await req.json(); } catch { return json(400, { error: "Invalid JSON body" }); }
   if (!body.source_id) return json(400, { error: "source_id required" });
 
-  const supa = createClient(SUPABASE_URL, SERVICE_ROLE, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const supa = createServiceClient();
 
   // Load source + claim it (set last_crawled_at = now so the dispatcher
   // doesn't double-fire on the same row if a run takes a while).

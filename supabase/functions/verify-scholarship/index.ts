@@ -25,7 +25,6 @@
 //
 // Auth: admin OR service-role only. Never anon.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { chatCompletions } from "../_shared/ai-gateway.ts";
 import { firecrawlScrape, FIRECRAWL_COST_PER_SCRAPE_USD } from "../_shared/firecrawl.ts";
 import { requireAdminOrService } from "../_shared/auth.ts";
@@ -45,15 +44,12 @@ import {
   knownProgramValueUsd,
   inferDegreeLevelsFromNames,
 } from "../_shared/scholarshipFields.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondJson } from "../_shared/http.ts";
+import { createServiceClient } from "../_shared/clients.ts";
 
 const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  respondJson(status, body, corsHeaders);
 
 const COST_ESTIMATE_USD = 0.0015 + FIRECRAWL_COST_PER_SCRAPE_USD;
 const MAX_MARKDOWN_CHARS = 25_000;
@@ -248,22 +244,19 @@ function diffMaterial(stored: Record<string, unknown>, fresh: ExtractedFields): 
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req);
+  if (pre) return pre;
   if (req.method !== "POST") return json(405, { error: "POST only" });
 
   const auth = await requireAdminOrService(req);
   if (!auth.ok) return json(401, { error: `Unauthorized: ${auth.reason}` });
-
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!SUPABASE_URL || !SERVICE_ROLE) return json(500, { error: "Missing Supabase env" });
 
   let body: { scholarship_id?: string };
   try { body = await req.json(); }
   catch { return json(400, { error: "Invalid JSON body" }); }
   if (!body.scholarship_id) return json(400, { error: "scholarship_id required" });
 
-  const supa = createClient(SUPABASE_URL, SERVICE_ROLE);
+  const supa = createServiceClient();
 
   const { data: stored, error: loadErr } = await supa
     .from("scholarships")
