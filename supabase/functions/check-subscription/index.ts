@@ -2,13 +2,9 @@
 // Called from the frontend on auth change + every 60s.
 
 import Stripe from "https://esm.sh/stripe@18.5.0?target=deno";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { CORS_HEADERS_EXTENDED as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondJson } from "../_shared/http.ts";
+import { createServiceClient, createUserClient } from "../_shared/clients.ts";
 
 // Reverse-lookup price → (tier, interval)
 const PRICE_MAP: Record<string, { tier: "pro" | "founding"; interval: "month" | "year" }> = {
@@ -26,40 +22,28 @@ const PRICE_MAP: Record<string, { tier: "pro" | "founding"; interval: "month" | 
 };
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req, corsHeaders);
+  if (pre) return pre;
 
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ subscribed: false }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondJson(200, { subscribed: false }, corsHeaders);
     }
 
-    const userClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
+    const userClient = createUserClient(authHeader);
     const { data: userData } = await userClient.auth.getUser();
     const user = userData.user;
     if (!user?.email) {
-      return new Response(JSON.stringify({ subscribed: false }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondJson(200, { subscribed: false }, corsHeaders);
     }
 
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const admin = createServiceClient();
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2025-08-27.basil" });
 
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     if (customers.data.length === 0) {
-      return new Response(JSON.stringify({ subscribed: false, tier: "free" }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondJson(200, { subscribed: false, tier: "free" }, corsHeaders);
     }
     const customerId = customers.data[0].id;
 
@@ -80,9 +64,7 @@ Deno.serve(async (req) => {
         tier: "free",
         status: "canceled",
       }, { onConflict: "stripe_subscription_id" });
-      return new Response(JSON.stringify({ subscribed: false, tier: "free" }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondJson(200, { subscribed: false, tier: "free" }, corsHeaders);
     }
 
     const item = active.items.data[0];
@@ -188,19 +170,15 @@ Deno.serve(async (req) => {
       console.warn("[check-subscription] referral side-effect failed", e);
     }
 
-    return new Response(JSON.stringify({
+    return respondJson(200, {
       subscribed: true,
       tier: mapping.tier,
       interval: mapping.interval,
       status: active.status,
       current_period_end: row.current_period_end,
-    }), {
-      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    }, corsHeaders);
   } catch (e) {
     console.error("check-subscription error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respondJson(500, { error: e instanceof Error ? e.message : "Unknown" }, corsHeaders);
   }
 });

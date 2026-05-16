@@ -5,13 +5,9 @@
 // RESEND_API_KEY or a Resend error never breaks the form. Called from
 // /topuni-ai/partners (EN + RU). The form data is low-risk and public, so
 // we accept anon callers and rely on the table's "Anyone can submit" RLS.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondError, respondJson } from "../_shared/http.ts";
+import { createServiceClient } from "../_shared/clients.ts";
 
 // Environment-driven email config. All optional — if RESEND_API_KEY is
 // unset, the function still writes the row and returns success; the user
@@ -138,7 +134,8 @@ function ackText(r: InquiryRow): string {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req);
+  if (pre) return pre;
 
   try {
     const body = await req.json();
@@ -152,16 +149,10 @@ Deno.serve(async (req) => {
     } = body;
 
     if (!institution_name || !region || !contact_email) {
-      return new Response(
-        JSON.stringify({ error: "institution_name, region, and contact_email are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return respondError(400, "institution_name, region, and contact_email are required", corsHeaders);
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabase = createServiceClient();
 
     const { data: inquiry, error: insertErr } = await supabase
       .from("partner_inquiries")
@@ -179,10 +170,7 @@ Deno.serve(async (req) => {
 
     if (insertErr) {
       console.error("partner_inquiries insert failed:", insertErr);
-      return new Response(JSON.stringify({ error: insertErr.message }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondError(500, insertErr.message, corsHeaders);
     }
 
     await supabase.from("student_interactions").insert({
@@ -239,15 +227,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    return new Response(
-      JSON.stringify({ success: true, inquiry_id: inquiry.id }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return respondJson(200, { success: true, inquiry_id: inquiry.id }, corsHeaders);
   } catch (e) {
     console.error("partner-inquiry-notify error:", e);
-    return new Response(JSON.stringify({ error: String(e) }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respondError(500, String(e), corsHeaders);
   }
 });

@@ -4,14 +4,9 @@
 // pricing without re-creating Stripe objects every time.
 
 import Stripe from "https://esm.sh/stripe@18.5.0?target=deno";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { CORS_HEADERS_EXTENDED as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondError, respondJson } from "../_shared/http.ts";
+import { createServiceClient } from "../_shared/clients.ts";
 
 // Authoritative server-side catalog. Frontend can never tamper with prices.
 // product_key -> { name, amount_usd_cents, is_consultation, sessions, image }
@@ -56,7 +51,8 @@ const PROMOS: Record<string, { discount: number; only_consultation: boolean; lab
 };
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req, corsHeaders);
+  if (pre) return pre;
 
   try {
     const body = await req.json().catch(() => ({}));
@@ -71,16 +67,10 @@ Deno.serve(async (req) => {
     } = body || {};
 
     if (!product_key || typeof product_key !== "string" || !CATALOG[product_key]) {
-      return new Response(JSON.stringify({ error: "Invalid product_key" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondError(400, "Invalid product_key", corsHeaders);
     }
     if (!contact_email || typeof contact_email !== "string" || !contact_email.includes("@")) {
-      return new Response(JSON.stringify({ error: "Valid contact_email required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondError(400, "Valid contact_email required", corsHeaders);
     }
 
     const item = CATALOG[product_key];
@@ -101,19 +91,13 @@ Deno.serve(async (req) => {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
       console.error("STRIPE_SECRET_KEY missing");
-      return new Response(JSON.stringify({ error: "Payment provider not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondError(500, "Payment provider not configured", corsHeaders);
     }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
     // Pre-create a pending booking row so we can correlate the session_id later.
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabase = createServiceClient();
 
     const { data: booking, error: bookingErr } = await supabase
       .from("bookings")
@@ -215,15 +199,9 @@ Deno.serve(async (req) => {
       },
     });
 
-    return new Response(
-      JSON.stringify({ url: session.url, session_id: session.id, booking_id: booking?.id }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return respondJson(200, { url: session.url, session_id: session.id, booking_id: booking?.id }, corsHeaders);
   } catch (e) {
     console.error("create-checkout error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return respondError(500, e instanceof Error ? e.message : "Unknown error", corsHeaders);
   }
 });

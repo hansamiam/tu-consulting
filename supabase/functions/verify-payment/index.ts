@@ -3,25 +3,18 @@
 // Idempotent — safe to call multiple times.
 
 import Stripe from "https://esm.sh/stripe@18.5.0?target=deno";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { CORS_HEADERS_EXTENDED as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondError, respondJson } from "../_shared/http.ts";
+import { createServiceClient } from "../_shared/clients.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req, corsHeaders);
+  if (pre) return pre;
 
   try {
     const { session_id } = await req.json().catch(() => ({}));
     if (!session_id || typeof session_id !== "string" || !session_id.startsWith("cs_")) {
-      return new Response(JSON.stringify({ error: "Valid session_id required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondError(400, "Valid session_id required", corsHeaders);
     }
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
@@ -30,10 +23,7 @@ Deno.serve(async (req) => {
 
     const session = await stripe.checkout.sessions.retrieve(session_id);
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabase = createServiceClient();
 
     const paid = session.payment_status === "paid";
     const status = paid ? "paid" : session.payment_status === "unpaid" ? "checkout_initiated" : "pending_review";
@@ -68,23 +58,17 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(
-      JSON.stringify({
-        paid,
-        status,
-        amount_usd: (session.amount_total || 0) / 100,
-        currency: session.currency,
-        customer_email: session.customer_email || session.customer_details?.email,
-        product_name: session.metadata?.product_key || null,
-        is_consultation: session.metadata?.is_consultation === "true",
-      }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return respondJson(200, {
+      paid,
+      status,
+      amount_usd: (session.amount_total || 0) / 100,
+      currency: session.currency,
+      customer_email: session.customer_email || session.customer_details?.email,
+      product_name: session.metadata?.product_key || null,
+      is_consultation: session.metadata?.is_consultation === "true",
+    }, corsHeaders);
   } catch (e) {
     console.error("verify-payment error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return respondError(500, e instanceof Error ? e.message : "Unknown", corsHeaders);
   }
 });

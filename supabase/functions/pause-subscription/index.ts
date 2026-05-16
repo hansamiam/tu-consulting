@@ -8,43 +8,30 @@
 // that retains the customer relationship without charging them. Stripe
 // handles the auto-resume — no cron required on our side.
 import Stripe from "https://esm.sh/stripe@18.5.0?target=deno";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { CORS_HEADERS_EXTENDED as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondError, respondJson } from "../_shared/http.ts";
+import { createUserClient } from "../_shared/clients.ts";
 
 const PAUSE_DAYS = 30;
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req, corsHeaders);
+  if (pre) return pre;
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "POST only" }), {
-      status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respondError(405, "POST only", corsHeaders);
   }
 
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Not authenticated" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondError(401, "Not authenticated", corsHeaders);
     }
 
-    const userClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
+    const userClient = createUserClient(authHeader);
     const { data: userData } = await userClient.auth.getUser();
     const user = userData.user;
     if (!user?.email) {
-      return new Response(JSON.stringify({ error: "Not authenticated" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondError(401, "Not authenticated", corsHeaders);
     }
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2025-08-27.basil" });
@@ -53,9 +40,7 @@ Deno.serve(async (req) => {
     // uses, no extra mapping table required.
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     if (customers.data.length === 0) {
-      return new Response(JSON.stringify({ error: "No billing account found" }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondError(404, "No billing account found", corsHeaders);
     }
     const customerId = customers.data[0].id;
 
@@ -67,22 +52,17 @@ Deno.serve(async (req) => {
       limit: 1,
     });
     if (subs.data.length === 0) {
-      return new Response(JSON.stringify({ error: "No active subscription to pause" }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondError(404, "No active subscription to pause", corsHeaders);
     }
     const sub = subs.data[0];
 
     // Reject re-pausing an already-paused subscription so the UI doesn't
     // accidentally extend the pause window each click.
     if (sub.pause_collection) {
-      return new Response(
-        JSON.stringify({
-          error: "Subscription is already paused",
-          resumes_at: sub.pause_collection.resumes_at,
-        }),
-        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return respondJson(409, {
+        error: "Subscription is already paused",
+        resumes_at: sub.pause_collection.resumes_at,
+      }, corsHeaders);
     }
 
     const resumesAt = Math.floor(Date.now() / 1000) + PAUSE_DAYS * 86_400;
@@ -90,20 +70,15 @@ Deno.serve(async (req) => {
       pause_collection: { behavior: "void", resumes_at: resumesAt },
     });
 
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        subscription_id: updated.id,
-        resumes_at: resumesAt,
-        resumes_at_iso: new Date(resumesAt * 1000).toISOString(),
-        pause_days: PAUSE_DAYS,
-      }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return respondJson(200, {
+      ok: true,
+      subscription_id: updated.id,
+      resumes_at: resumesAt,
+      resumes_at_iso: new Date(resumesAt * 1000).toISOString(),
+      pause_days: PAUSE_DAYS,
+    }, corsHeaders);
   } catch (e) {
     console.error("pause-subscription error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respondError(500, e instanceof Error ? e.message : "Unknown", corsHeaders);
   }
 });

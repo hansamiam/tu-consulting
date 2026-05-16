@@ -7,14 +7,9 @@
 // overselling.
 
 import Stripe from "https://esm.sh/stripe@18.5.0?target=deno";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { CORS_HEADERS_EXTENDED as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondError, respondJson } from "../_shared/http.ts";
+import { createServiceClient, createUserClient } from "../_shared/clients.ts";
 
 // Early-Access tier — $19/mo. Single tier, monthly only for now.
 // Internal SKU identifier 'founding' preserved (DB rows reference it).
@@ -24,7 +19,8 @@ const FOUNDING_PRICES: { month: string; year: string } = {
 };
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req, corsHeaders);
+  if (pre) return pre;
 
   try {
     const body = await req.json();
@@ -34,44 +30,29 @@ Deno.serve(async (req) => {
     // Auth user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Sign in required" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondError(401, "Sign in required", corsHeaders);
     }
-    const userClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
+    const userClient = createUserClient(authHeader);
     const { data: userData } = await userClient.auth.getUser();
     const user = userData.user;
     if (!user?.email) {
-      return new Response(JSON.stringify({ error: "Not authenticated" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondError(401, "Not authenticated", corsHeaders);
     }
 
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const admin = createServiceClient();
 
     // Atomically reserve a founding slot
     const { data: claimData, error: claimErr } = await admin.rpc("claim_founding_member_slot");
     if (claimErr) {
       console.error("claim error", claimErr);
-      return new Response(JSON.stringify({ error: "Couldn't reserve early-access spot" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondError(500, "Couldn't reserve early-access spot", corsHeaders);
     }
     if (claimData == null) {
       // Hardcoded denominator removed (was "100/100") — the cap moved
       // to 50 and any future shift would re-stale this string. The
       // claim_founding_spot RPC returns null when the cohort is full
       // regardless of cap.
-      return new Response(JSON.stringify({ error: "Early-access cohort is sold out. Join the waitlist for the launch-discount tier (50% off year one for the next 200 members)." }), {
-        status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondError(409, "Early-access cohort is sold out. Join the waitlist for the launch-discount tier (50% off year one for the next 200 members).", corsHeaders);
     }
     const reservedFoundingNumber = claimData as number;
 
@@ -122,13 +103,9 @@ Deno.serve(async (req) => {
       cancel_url: `${origin}/pricing?canceled=1`,
     });
 
-    return new Response(JSON.stringify({ url: session.url }), {
-      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respondJson(200, { url: session.url }, corsHeaders);
   } catch (e) {
     console.error("create-subscription-checkout error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respondError(500, e instanceof Error ? e.message : "Unknown", corsHeaders);
   }
 });

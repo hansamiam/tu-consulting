@@ -5,15 +5,13 @@
 //
 // Subscribe to events: invitee.created, invitee.canceled, invitee_no_show.created
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondJson } from "../_shared/http.ts";
+import { createServiceClient } from "../_shared/clients.ts";
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req);
+  if (pre) return pre;
 
   try {
     // Auth via shared secret
@@ -35,15 +33,10 @@ Deno.serve(async (req: Request) => {
     console.log("[calendly-webhook]", event, { inviteeUri, inviteeEmail, startTime });
 
     if (!event || !inviteeEmail) {
-      return new Response(JSON.stringify({ ok: true, ignored: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondJson(200, { ok: true, ignored: true }, corsHeaders);
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    );
+    const supabase = createServiceClient();
 
     // Find most recent paid booking for this email that doesn't have a calendly event yet
     // (or matches the same invitee_uri for updates)
@@ -61,9 +54,7 @@ Deno.serve(async (req: Request) => {
 
     if (!target) {
       console.warn("[calendly-webhook] no matching booking for", inviteeEmail);
-      return new Response(JSON.stringify({ ok: true, matched: false }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondJson(200, { ok: true, matched: false }, corsHeaders);
     }
 
     const updates: Record<string, unknown> = {};
@@ -118,14 +109,9 @@ Deno.serve(async (req: Request) => {
       console.error("[calendly-webhook] email send failed", e);
     }
 
-    return new Response(JSON.stringify({ ok: true, booking_id: target.id, event }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respondJson(200, { ok: true, booking_id: target.id, event }, corsHeaders);
   } catch (err) {
     console.error("[calendly-webhook] error", err);
-    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "unknown" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respondJson(500, { error: err instanceof Error ? err.message : "unknown" }, corsHeaders);
   }
 });
