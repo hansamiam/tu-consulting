@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Lock, Play, Clock, Users, Star, Eye, BookOpen, Mic, FileText, Video } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type ContentType = "workshop" | "masterclass" | "guide" | "template" | "recording" | "case-study";
@@ -24,7 +25,7 @@ export interface ContentItem {
   date: string;
 }
 
-const typeConfig: Record<ContentType, { icon: any; color: string; label: string }> = {
+const typeConfig: Record<ContentType, { icon: LucideIcon; color: string; label: string }> = {
   workshop: { icon: Video, color: "bg-blue-500/20 text-blue-400", label: "Workshop" },
   masterclass: { icon: Star, color: "bg-gold/20 text-gold", label: "Masterclass" },
   guide: { icon: BookOpen, color: "bg-green-500/20 text-green-400", label: "Guide" },

@@ -31,6 +31,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { ENV } from "@/lib/env";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import type { AdditionalEssay } from "@/hooks/useApplicationTracker";
@@ -46,7 +47,7 @@ interface Props {
   language?: "en" | "ru";
 }
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_URL = ENV.SUPABASE_URL;
 const WORD_TARGETS = [300, 500, 650, 800, 1000] as const;
 type WordTarget = typeof WORD_TARGETS[number];
 
@@ -227,7 +228,7 @@ const EssayCard = ({ essay, index, scholarshipName, language, onChange, onRemove
       const { data: { session } } = await supabase.auth.getSession();
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "",
+        apikey: ENV.SUPABASE_PUBLISHABLE_KEY,
       };
       if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
 

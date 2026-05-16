@@ -64,6 +64,7 @@ import { toast } from "sonner";
 import { useNavigate, Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
+import { ENV, EDGE_FUNCTIONS_URL } from "@/lib/env";
 import { cleanScholarshipName, cleanProvider, compactAward } from "@/lib/scholarshipFields";
 
 interface StudentProfile {
@@ -106,7 +107,7 @@ type Msg = { role: "user" | "assistant"; content: string };
 
 // (TrackerItem interface removed along with the tracker tab.)
 
-const PATHWAY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/topuni-ai-pathway`;
+const PATHWAY_URL = `${EDGE_FUNCTIONS_URL}/topuni-ai-pathway`;
 
 /* ─── Inline-markdown helper ──────────────────────────────────────────
    Tiny renderer for the bold + italic inside a single line. Used by the
@@ -1439,7 +1440,7 @@ const InteractiveActionPlanOrFallback = (props: {
   return <InteractiveActionPlan {...props} />;
 };
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/topuni-chat`;
+const CHAT_URL = `${EDGE_FUNCTIONS_URL}/topuni-chat`;
 
 /* ─── Analysis progress — substantive loading state ───────────────────
    Replaces the generic spinner the user used to see in the few seconds
@@ -2514,7 +2515,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
 
   const streamSSE = async (
     url: string,
-    body: any,
+    body: Record<string, unknown>,
     onDelta: (chunk: string) => void,
     onDone: () => void,
     onError?: (status: number, message: string) => void,
@@ -2525,7 +2526,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     // live-case context (tracker / tasks / cached brief). Falls back
     // to anon key for unauthenticated callers.
     const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const token = session?.access_token ?? ENV.SUPABASE_PUBLISHABLE_KEY;
     let resp: Response;
     try {
       resp = await fetch(url, {
@@ -2533,7 +2534,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          apikey: ENV.SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify(body),
         signal,

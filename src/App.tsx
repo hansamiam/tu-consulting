@@ -2,9 +2,10 @@ import { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, QueryCache } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { AuthProvider } from "./contexts/AuthContext";
 import { rememberReferralFromUrl } from "./lib/referralCapture";
@@ -76,7 +77,26 @@ const AdminAcademy               = lazy(() => import("./pages/admin/Academy"));
 const AdminPartnerInquiries      = lazy(() => import("./pages/admin/PartnerInquiries"));
 const SubmitScholarship    = lazy(() => import("./pages/SubmitScholarship"));
 
-const queryClient = new QueryClient();
+/* Query client with sane defaults + a single place to surface query
+   failures. Before this, a failed background query was silent — no
+   retry, no toast, no log. `retry: 1` rides out transient network
+   blips; `staleTime` 5min cuts refetch storms on route changes; the
+   QueryCache onError gives one consistent error toast instead of
+   every component reinventing its own failure handling. */
+const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error) => {
+      console.error("[query]", error);
+      toast.error(
+        error instanceof Error ? error.message : "Something went wrong loading data.",
+      );
+    },
+  }),
+  defaultOptions: {
+    queries: { retry: 1, staleTime: 5 * 60 * 1000, refetchOnWindowFocus: false },
+    mutations: { retry: 0 },
+  },
+});
 
 /* Captures ?ref=CODE on any landing — runs once on mount. The actual
    referral registration happens in AuthCallback after the user signs

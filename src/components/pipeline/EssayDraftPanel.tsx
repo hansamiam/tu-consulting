@@ -35,6 +35,7 @@ import {
   Target,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { ENV } from "@/lib/env";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { EssayOutlineCard } from "@/components/pipeline/EssayOutlineCard";
@@ -50,7 +51,7 @@ interface Props {
   language?: "en" | "ru";
 }
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_URL = ENV.SUPABASE_URL;
 
 /** Common scholarship-essay word ceilings. Pick one to track against. */
 const WORD_TARGETS = [300, 500, 650, 800, 1000] as const;
@@ -199,7 +200,7 @@ export const EssayDraftPanel = ({ scholarshipId, scholarshipName, value, onChang
       const { data: { session } } = await supabase.auth.getSession();
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "",
+        apikey: ENV.SUPABASE_PUBLISHABLE_KEY,
       };
       if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
 

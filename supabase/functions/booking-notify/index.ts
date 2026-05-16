@@ -1,16 +1,13 @@
 // Logs a booking event to student_interactions for the funnel dashboard.
 // Receipt is already uploaded directly from the client to storage; we just need
 // a server-side audit trail that's queryable by admins.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondJson, respondError } from "../_shared/http.ts";
+import { createServiceClient } from "../_shared/clients.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req);
+  if (pre) return pre;
 
   try {
     const body = await req.json();
@@ -29,16 +26,10 @@ Deno.serve(async (req) => {
     } = body;
 
     if (!consultation_type) {
-      return new Response(JSON.stringify({ error: "consultation_type required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondError(400, "consultation_type required", corsHeaders);
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabase = createServiceClient();
 
     // Insert booking
     const { data: booking, error: bookingErr } = await supabase
@@ -62,10 +53,7 @@ Deno.serve(async (req) => {
 
     if (bookingErr) {
       console.error("Booking insert failed:", bookingErr);
-      return new Response(JSON.stringify({ error: bookingErr.message }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondError(500, bookingErr.message, corsHeaders);
     }
 
     // Mirror to interactions for funnel analytics
@@ -80,15 +68,9 @@ Deno.serve(async (req) => {
       },
     });
 
-    return new Response(JSON.stringify({ success: true, booking_id: booking.id }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respondJson(200, { success: true, booking_id: booking.id }, corsHeaders);
   } catch (e) {
     console.error("booking-notify error:", e);
-    return new Response(JSON.stringify({ error: String(e) }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respondError(500, String(e), corsHeaders);
   }
 });

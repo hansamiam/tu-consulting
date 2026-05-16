@@ -40,6 +40,7 @@ import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { EDGE_FUNCTIONS_URL } from "@/lib/env";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -307,7 +308,7 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
       }
     })();
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [s?.provider_id, s?.scholarship_id]);
 
   /* SEO meta — unique per scholarship */
@@ -345,7 +346,7 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
     // edge function. Every WhatsApp / X / LinkedIn / iMessage share now
     // unfurls into a beautiful gold-accented preview card with the
     // scholarship name, funding, country, and deadline urgency.
-    const ogImageUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-scholarship?id=${s.scholarship_id}`;
+    const ogImageUrl = `${EDGE_FUNCTIONS_URL}/og-scholarship?id=${s.scholarship_id}`;
     setMeta("og:image", ogImageUrl, true);
     setMeta("og:image:width", "1200", true);
     setMeta("og:image:height", "630", true);

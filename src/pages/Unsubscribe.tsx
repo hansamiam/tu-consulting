@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { ENV, EDGE_FUNCTIONS_URL } from "@/lib/env";
 
 /* Bilingual unsubscribe surface. Detects language from the
  * ?lang=ru URL param (added by RU-language transactional emails)
@@ -22,8 +23,8 @@ export default function Unsubscribe() {
 
   useEffect(() => {
     if (!token) { setState("invalid"); return; }
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/handle-email-unsubscribe?token=${encodeURIComponent(token)}`;
-    fetch(url, { headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY } })
+    const url = `${EDGE_FUNCTIONS_URL}/handle-email-unsubscribe?token=${encodeURIComponent(token)}`;
+    fetch(url, { headers: { apikey: ENV.SUPABASE_PUBLISHABLE_KEY } })
       .then(r => r.json())
       .then(d => {
         if (d.email) setEmail(d.email);

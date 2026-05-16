@@ -33,11 +33,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { ENV, EDGE_FUNCTIONS_URL } from "@/lib/env";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface EssayCritiqueProps { language?: "en" | "ru"; }
 
-const ESSAY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/essay-critique`;
+const ESSAY_URL = `${EDGE_FUNCTIONS_URL}/essay-critique`;
 
 type EssayType = "personal_statement" | "scholarship" | "sop" | "supplemental";
 
@@ -243,7 +244,7 @@ const EssayCritique = ({ language = "en" }: EssayCritiqueProps) => {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const token = session?.access_token ?? ENV.SUPABASE_PUBLISHABLE_KEY;
 
       const resp = await fetch(ESSAY_URL, {
         method: "POST",
@@ -251,7 +252,7 @@ const EssayCritique = ({ language = "en" }: EssayCritiqueProps) => {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          apikey: ENV.SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({
           essay, essayType,

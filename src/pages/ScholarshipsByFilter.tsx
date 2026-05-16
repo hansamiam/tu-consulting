@@ -19,6 +19,7 @@ import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { EDGE_FUNCTIONS_URL } from "@/lib/env";
 import { ScholarshipCard, ScholarshipCardSkeleton, type ScholarshipCardData, type ScholarshipCardStats } from "@/components/ScholarshipCard";
 import { ShareScholarshipModal } from "@/components/ShareScholarshipModal";
 import { EmptyState } from "@/components/EmptyState";
@@ -316,7 +317,7 @@ const ScholarshipsByFilter = ({ mode }: Props) => {
     // proper preview card instead of bare URL text. Falls back to the
     // global TopUni og-brief image since per-filter dynamic OG would
     // be a separate lift.
-    const ogImage = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-brief`;
+    const ogImage = `${EDGE_FUNCTIONS_URL}/og-brief`;
     setMeta("og:title", resolved.meta.title, true);
     setMeta("og:description", resolved.meta.description, true);
     setMeta("og:type", "website", true);

@@ -1,12 +1,9 @@
 // Tracks an engagement milestone for the authed user.
 // When enough milestones are hit, automatically grants a 5-day "earned trial" of Pro.
-import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { CORS_HEADERS_EXTENDED as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondJson, respondError } from "../_shared/http.ts";
+import { createServiceClient, createUserClient } from "../_shared/clients.ts";
 
 const TRIAL_TRIGGER_MILESTONES = ["profile_completed", "first_quiz", "saved_3_universities"];
 const TRIAL_DAYS = 5;
@@ -61,39 +58,27 @@ async function isTriggerMilestoneEarned(
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req, corsHeaders);
+  if (pre) return pre;
 
   try {
     const { milestone_key, metadata } = await req.json();
     if (!milestone_key || typeof milestone_key !== "string") {
-      return new Response(JSON.stringify({ error: "milestone_key required" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondError(400, "milestone_key required", corsHeaders);
     }
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Sign in required" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondError(401, "Sign in required", corsHeaders);
     }
-    const userClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
+    const userClient = createUserClient(authHeader);
     const { data: userData } = await userClient.auth.getUser();
     const user = userData.user;
     if (!user) {
-      return new Response(JSON.stringify({ error: "Not authenticated" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respondError(401, "Not authenticated", corsHeaders);
     }
 
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const admin = createServiceClient();
 
     // For trial-triggering milestones, verify against DB source of
     // truth before recording. Without this gate, a malicious authed
@@ -107,9 +92,7 @@ Deno.serve(async (req) => {
     if (isTriggerKey) {
       const earned = await isTriggerMilestoneEarned(admin, user.id, milestone_key);
       if (!earned) {
-        return new Response(JSON.stringify({ ok: false, error: "Milestone not yet earned" }), {
-          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return respondJson(200, { ok: false, error: "Milestone not yet earned" }, corsHeaders);
       }
     }
 
@@ -146,13 +129,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ ok: true, trial_activated: trialActivated }), {
-      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respondJson(200, { ok: true, trial_activated: trialActivated }, corsHeaders);
   } catch (e) {
     console.error("track-milestone error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respondError(500, e instanceof Error ? e.message : "Unknown", corsHeaders);
   }
 });

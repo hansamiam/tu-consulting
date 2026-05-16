@@ -14,6 +14,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { ArrowRight, Loader2, ShieldCheck, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { EDGE_FUNCTIONS_URL } from "@/lib/env";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { ReportRenderer } from "@/components/TopUniDashboard";
@@ -187,7 +188,7 @@ const SharedBriefPage = () => {
         return `An AI-generated university admissions strategy from TopUni${major}${target}.`;
       })();
       const url = `https://topuni.org/brief/${data.slug}`;
-      const ogImage = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-brief?slug=${encodeURIComponent(data.slug)}`;
+      const ogImage = `${EDGE_FUNCTIONS_URL}/og-brief?slug=${encodeURIComponent(data.slug)}`;
       const fallbackImage = "https://topuni.org/og-brief-fallback.png";
 
       document.title = title;

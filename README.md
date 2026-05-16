@@ -29,12 +29,50 @@ npm run build        # production build with code-splitting
 npm run lint
 ```
 
-`.env`:
+`.env` (see `.env.example` for the full template):
 ```
 VITE_SUPABASE_PROJECT_ID=bsfldtpemfxhnkdzccib
 VITE_SUPABASE_URL=https://bsfldtpemfxhnkdzccib.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=<anon key>
 ```
+
+## Local development database
+
+By default the app talks straight to the **cloud** Postgres. For isolated
+local work (offline, testing destructive changes, no risk to prod data),
+run an in-Docker Supabase stack instead.
+
+The local DB is built from a **schema snapshot** of the cloud project plus a
+**catalog-data subset** — not by replaying `supabase/migrations/` (those
+include operational/cron migrations that POST to the real cloud project).
+
+```sh
+brew install supabase/tap/supabase     # one-time
+
+# 1. Snapshot the cloud schema (one-time, re-run when schema changes)
+supabase login                          # or: supabase login --token <PAT>
+supabase link --project-ref bsfldtpemfxhnkdzccib
+supabase db dump --linked -f supabase/schema.sql
+
+# 2. Snapshot a catalog-data subset — NO user/PII tables.
+#    Needs the cloud DB URI (dashboard → Settings → Database → Connection string).
+pg_dump "$CLOUD_DB_URL" --data-only --no-owner --no-privileges \
+  --table public.scholarships --table public.providers \
+  --table public.scholarship_sources --table public.universities \
+  --table public.scholarship_evidence --table public.provider_authoritative_facts \
+  -f supabase/seed.sql
+
+# 3. Build the local DB (idempotent — re-run any time)
+bash scripts/local-db.sh
+
+# 4. Point the frontend at it
+cp .env.example .env.local               # then uncomment the LOCAL block
+npm run dev
+```
+
+`supabase/schema.sql` and `supabase/seed.sql` are snapshots — **regenerate
+them (steps 1–2) whenever the cloud schema changes**. `.env.local` is
+gitignored (`*.local`) and overrides `.env`, so cloud config stays intact.
 
 ## Required edge function secrets
 
@@ -59,7 +97,7 @@ supabase login --token <PAT>
 supabase link --project-ref bsfldtpemfxhnkdzccib
 supabase db push                 # if CLI's session-role works
 ```
-If the CLI's session-role flow is blocked (some plans), use the management-API SQL endpoint instead — there's `scripts/run_migrations.sh` (or run individual `.sql` files via the dashboard SQL editor).
+If the CLI's session-role flow is blocked (some plans), run the individual `.sql` files via the dashboard SQL editor.
 
 ### Edge functions
 ```sh

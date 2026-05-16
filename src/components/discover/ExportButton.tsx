@@ -28,7 +28,7 @@ export const ExportButton = ({ universities, language }: Props) => {
       `"${u.university_name}"`,
       u.country,
       u.city,
-      (u as any).global_ranking || "",
+      (u as { global_ranking?: number | string }).global_ranking || "",
       u.tuition_usd_per_year ?? "",
       u.language_of_instruction || "",
       u.foundation_year_available ? "Yes" : "No",
