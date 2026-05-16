@@ -17,15 +17,11 @@
 //     -d '{"max_rows": 200}'
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { embeddings as gatewayEmbeddings } from "../_shared/ai-gateway.ts";
 import { requireAdminOrService } from "../_shared/auth.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondJson } from "../_shared/http.ts";
+import { createServiceClient } from "../_shared/clients.ts";
 
 // OpenAI text-embedding-3-small: 1536 dim, $0.02 / 1M tokens.
 // Lovable AI gateway proxies this transparently.
@@ -42,10 +38,7 @@ interface NeedingRow {
 }
 
 const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  respondJson(status, body, corsHeaders);
 
 async function embedBatch(texts: string[]): Promise<number[][]> {
   const vectors = await gatewayEmbeddings({ input: texts, modelOverride: EMBEDDING_MODEL });
@@ -62,7 +55,8 @@ async function embedBatch(texts: string[]): Promise<number[][]> {
 const toVectorLiteral = (v: number[]): string => `[${v.join(",")}]`;
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req);
+  if (pre) return pre;
 
   // Cron / admin gate. verify_jwt is false for this function (the gateway
   // can't see the cron's sb_secret apikey as a JWT), so it authenticates
@@ -72,17 +66,12 @@ serve(async (req) => {
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
 
   try {
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-    const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!SUPABASE_URL || !SERVICE_ROLE) return json(500, { error: "Supabase env not configured" });
     // AI gateway env validated lazily in gatewayEmbeddings — see _shared/ai-gateway.ts
 
     const body = await req.json().catch(() => ({} as { max_rows?: number }));
     const maxRows = Math.min(Math.max(Number(body.max_rows) || 200, 1), 500);
 
-    const supa = createClient(SUPABASE_URL, SERVICE_ROLE, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    const supa = createServiceClient();
 
     // Pull rows that need embedding from the maintenance view
     const { data: rows, error: fetchErr } = await supa

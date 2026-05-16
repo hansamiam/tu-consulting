@@ -40,19 +40,15 @@
 //
 // Auth: admin OR service-role only. Never anon.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { chatCompletions } from "../_shared/ai-gateway.ts";
 import { firecrawlScrape, FIRECRAWL_COST_PER_SCRAPE_USD } from "../_shared/firecrawl.ts";
 import { requireAdminOrService } from "../_shared/auth.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondJson } from "../_shared/http.ts";
+import { createServiceClient } from "../_shared/clients.ts";
 
 const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  respondJson(status, body, corsHeaders);
 
 const COST_ESTIMATE_USD = 0.0020 + FIRECRAWL_COST_PER_SCRAPE_USD;
 const MAX_MARKDOWN_CHARS = 25_000;
@@ -142,7 +138,8 @@ PAGE MARKDOWN:
 {{MARKDOWN}}`;
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req);
+  if (pre) return pre;
   if (req.method !== "POST")    return json(405, { error: "POST only" });
 
   const auth = await requireAdminOrService(req);
@@ -153,9 +150,7 @@ Deno.serve(async (req: Request) => {
   const scholarshipId = body.scholarship_id;
   if (!scholarshipId || typeof scholarshipId !== "string") return json(400, { error: "scholarship_id required" });
 
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-  const SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SB_SECRET_KEY") ?? "";
-  const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+  const supabase = createServiceClient();
 
   // 1. Load row
   const { data: row, error: rowErr } = await supabase

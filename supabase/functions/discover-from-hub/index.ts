@@ -27,21 +27,15 @@
 // Auth: admin or service-role.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { chatCompletions } from "../_shared/ai-gateway.ts";
 import { firecrawlScrape, FIRECRAWL_COST_PER_SCRAPE_USD } from "../_shared/firecrawl.ts";
 import { requireAdminOrService } from "../_shared/auth.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
+import { respondJson } from "../_shared/http.ts";
+import { createServiceClient } from "../_shared/clients.ts";
 
 const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), {
-    status, headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  respondJson(status, body, corsHeaders);
 
 const MAX_MARKDOWN_CHARS = 60_000;
 // Hard cap on URLs we'll insert from one hub crawl. The LLM occasionally
@@ -103,12 +97,9 @@ function isLikelyScholarshipUrl(url: string): boolean {
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const pre = handleCorsOptions(req);
+  if (pre) return pre;
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
-
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!SUPABASE_URL || !SERVICE_ROLE) return json(500, { error: "Supabase env not configured" });
 
   const auth = await requireAdminOrService(req);
   if (!auth.ok) return json(401, { error: `Unauthorized: ${auth.reason}` });
@@ -118,9 +109,7 @@ serve(async (req) => {
   catch { return json(400, { error: "Invalid JSON body" }); }
 
   const minConfidence = typeof body.min_confidence === "number" ? body.min_confidence : 0.7;
-  const supa = createClient(SUPABASE_URL, SERVICE_ROLE, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const supa = createServiceClient();
 
   // Resolve the hub URL — caller passes either a source_id (preferred,
   // links the run to the registry row) or a raw URL (one-shot).
