@@ -226,7 +226,7 @@ Output ONLY the JSON object. Begin with { and end with }.`;
   if (Object.keys(uniPatch).length > 0) {
     uniPatch.enrichment_metadata = newMeta;
     uniPatch.enriched_at = now;
-    await supa.from("universities").update(uniPatch).eq("university_id", university.university_id);
+    await supa.from("universities").update(uniPatch as never).eq("university_id", university.university_id);
     updatesUniversity = Object.keys(uniPatch).length - 2; // exclude metadata + enriched_at
   } else {
     // Even if we wrote no values, mark the row as scanned so the cron
@@ -281,7 +281,7 @@ Output ONLY the JSON object. Begin with { and end with }.`;
         admPatch.enrichment_metadata = newAdmMeta;
         admPatch.enriched_at = now;
         await supa.from("admission_requirements")
-          .update(admPatch)
+          .update(admPatch as never)
           .eq("requirement_id", adm.requirement_id);
         updatesAdmissions += Object.keys(admPatch).length - 2;
       }
@@ -318,7 +318,7 @@ Output ONLY the JSON object. Begin with { and end with }.`;
         appPatch.enrichment_metadata = newAppMeta;
         appPatch.enriched_at = now;
         await supa.from("applications")
-          .update(appPatch)
+          .update(appPatch as never)
           .eq("application_id", app.application_id);
         updatesApplications += Object.keys(appPatch).length - 2;
       }
