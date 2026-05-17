@@ -128,7 +128,18 @@ export async function chatCompletions(opts: ChatCompletionsOpts): Promise<Respon
     });
   }
 
-  // Lovable + OpenAI use the same OpenAI-compatible shape
+  // Lovable + OpenAI use the same OpenAI-compatible shape.
+  // The `reasoning` field is provider/model-specific:
+  //   - Lovable's gateway accepts it for Gemini 2.5 family.
+  //   - OpenAI rejects it as "Unrecognized request argument" on every
+  //     non-reasoning model (gpt-4o, gpt-4o-mini); only o1/o3-family
+  //     models accept it. Forwarding it unconditionally 400'd every
+  //     enrich-university call (and every brief-sections call) until
+  //     this gate was added.
+  const supportsReasoning =
+    provider === "lovable"
+    || (provider === "openai" && /^o[1-9]/i.test(model));
+
   return fetch(chatBaseUrl(provider), {
     method: "POST",
     headers: {
@@ -139,7 +150,7 @@ export async function chatCompletions(opts: ChatCompletionsOpts): Promise<Respon
       model,
       messages: opts.messages,
       stream: !!opts.stream,
-      ...(opts.reasoning ? { reasoning: opts.reasoning } : {}),
+      ...(opts.reasoning && supportsReasoning ? { reasoning: opts.reasoning } : {}),
     }),
   });
 }
