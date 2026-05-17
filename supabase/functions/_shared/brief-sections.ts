@@ -1,22 +1,31 @@
 /**
- * Brief section specs — declarative per-section prompts + validators for
- * the multi-pass premium brief pipeline in topuni-ai-pathway.
+ * Brief section specs — v6 (magazine redesign).
  *
- * The basic tier still uses one monolithic system prompt. Premium tier
- * runs each of these sections as a focused LLM call in parallel, then
- * the edge function streams them to the client in the order defined here.
+ * Six journey sections that each produce a STRUCTURED JSON payload
+ * (not markdown). The renderer in src/components/brief/* owns 100%
+ * of visual choices; this file just orchestrates one LLM call per
+ * section and validates the JSON shape.
  *
- * Each section is fully self-contained — the prompt embeds the profile,
- * the retrieved DB context, and the section-specific instructions. No
- * narrative dependency between sections (a section won't reference an
- * earlier section's specific wording), so they can run in true parallel.
+ * Journey order:
+ *   01 whereYouStand      — current profile interpreted, sets the thesis
+ *   02 whereYouCanLand    — 3 schools (reach / target / safety)
+ *   03 howYoullPay        — 3-5 scholarships ordered by deadline
+ *   04 whatToWrite        — 3 essay angles
+ *   05 whatsBlockingYou   — 2-3 gaps with priority + action
+ *   06 whatToDoThisMonth  — 4-week plan with checkable tasks
  *
- * Validators check structural invariants the brief renderer relies on
- * (e.g. the "30-day call" line in positioning, the three-bucket ###
- * sub-headings in shortlist). On validation failure the edge function
- * regenerates that section ONCE with a stricter prompt; if it fails a
- * second time we keep the first attempt and move on (degrading
- * gracefully beats blocking the whole brief).
+ * Each section streams as one complete `data: {section, payload}` SSE
+ * event. The renderer fills its block as soon as that event arrives;
+ * sections not yet streamed render as skeletons in journey position.
+ *
+ * Validators check JSON keys + entry counts. A failure triggers ONE
+ * regen with a stricter prompt; if regen also fails we keep the first
+ * attempt and move on (degrading > blocking the whole brief).
+ *
+ * The four legacy v5 specs (careerRoi, visa, monthlyBudget, finalWord)
+ * were retired in the 2026-05-10 cull; the v5 list (positioning,
+ * shortlist, fundingPathway, essays, honestGaps) is retired here. If
+ * you need them back, dig through git history at this file's prior rev.
  */
 
 export interface BriefContext {
@@ -56,35 +65,37 @@ export interface ValidatorResult {
 }
 
 export interface SectionSpec {
-  /** Identifier — used in logs + telemetry. Not user-facing. */
+  /** Identifier — used in logs, SSE event payloads, renderer mapping. */
   id: string;
-  /** Section H2 heading the renderer detects (e.g. "## Strategic positioning").
-   *  The completion MUST start with this heading. */
+  /** Display heading the renderer surfaces. NOT used by the LLM in
+   *  the new JSON-mode flow — the LLM emits the heading in its `headline`
+   *  payload key. Kept here so the renderer + section list stay in
+   *  sync at a glance. */
   heading: string;
   /** Build the focused user-prompt for this section. */
   buildPrompt: (ctx: BriefContext) => string;
-  /** Optional structural validator. A failure here triggers ONE regen. */
-  validate?: (markdown: string, ctx: BriefContext) => ValidatorResult;
+  /** JSON shape validator — parse + key + count checks. */
+  validate?: (rawJson: string, ctx: BriefContext) => ValidatorResult;
   /** Reasoning effort for premium-tier model calls. */
   reasoning?: { effort: "low" | "medium" | "high" };
 }
 
 import { EDITORIAL_RULES } from "./editorial-rules.ts";
 
-// SHARED_RULES = the centralized editorial rules + a section-spec
-// instruction (always start with the H2 heading the renderer expects).
-// Editing the banned-word list happens in editorial-rules.ts now —
-// see comment there.
-const SHARED_RULES = `
+const SHARED_JSON_RULES = `
 ${EDITORIAL_RULES}
-- Begin your response with the section heading exactly as instructed.`;
+
+OUTPUT FORMAT — STRICT:
+- Output ONLY a single JSON object matching the schema below.
+- No markdown fences, no preamble, no trailing prose.
+- Every required key MUST be present. If you would emit generic copy
+  ("write a strong essay", "pursue your dreams", "leverage your strengths"),
+  OMIT that optional key instead. Empty arrays/strings beat platitudes.
+- Strings use plain text. No markdown bold, italics, headers, or bullets
+  inside string values — those belong in the renderer, not the data.`;
 
 const profileBlock = (ctx: BriefContext): string => {
   const p = ctx.profile;
-  // The wizard saves skipped fields as "" rather than dropping the key,
-  // so plain `?? fallback` would let `IELTS: ` (empty) reach the prompt
-  // and the LLM would treat that as a real datum. `pf` collapses falsy
-  // strings to the fallback before they hit the LLM.
   const pf = (v: unknown, fallback: string): string => {
     if (v === null || v === undefined) return fallback;
     const s = String(v).trim();
@@ -113,351 +124,313 @@ const profileBlock = (ctx: BriefContext): string => {
 
 const dbBlock = (ctx: BriefContext): string => ctx.dbContext;
 
-/* ─── Section specs ──────────────────────────────────────────────────── */
+/** Parse helper — returns the parsed object or null if not valid JSON. */
+const tryParse = (raw: string): unknown | null => {
+  try { return JSON.parse(raw); } catch { return null; }
+};
 
-const positioning: SectionSpec = {
-  id: "positioning",
-  heading: "## Strategic positioning",
+/* ─── Section specs (journey order) ──────────────────────────────────── */
+
+/* 01 — Where You Stand */
+const whereYouStand: SectionSpec = {
+  id: "whereYouStand",
+  heading: "Where you stand",
   reasoning: { effort: "high" },
-  buildPrompt: (ctx) => `Output: just the "## Strategic positioning" section, in ${ctx.lang}.
+  buildPrompt: (ctx) => `
+You are writing the OPENING section of a personalized admissions strategy
+brief, in the voice of a real admissions counselor talking to ${ctx.audienceLine}.
+This section interprets WHO THIS STUDENT IS right now — what their profile
+reads like to admissions readers, what they have going for them, what's
+under-leveraged. It sets the thesis the rest of the brief argues.
 
-You are a trusted older peer writing this brief directly to the reader. Address them as "you" the whole way through. Use their first name once if it lands naturally. Speak with the warmth of someone who's been where they are.
-
-OPEN with a single thesis sentence (≤30 words) that names YOUR strongest signal AND your biggest competitive reality in one breath — this sentence is the brief's pull-quote, so it must stand on its own. Use phrasings like "Here's what I see in you:" or "Here's how I'd pitch you:" — make it feel like a person speaking.
-
-After the opening, write 2-3 paragraphs ${ctx.audienceLine} of honest, specific positioning. Cite the actual GPA in percentile context. Cite the IELTS band relative to thresholds at the target countries by name. Name the strongest signal. Name the weakest. Talk in evidence, not adjectives.
-
-After the paragraphs, output exactly this on its own line:
-**Your 30-day call:** [one specific, single-sentence action you'd tell them to take in the next 30 days — direct, addressed to "you"]
-
-${SHARED_RULES}
-
-PROFILE (this is who you're writing to):
+STUDENT PROFILE:
 ${profileBlock(ctx)}
 
-DATABASE CONTEXT:
+LIVE CONTEXT (cohort + matched programs for your reference):
 ${dbBlock(ctx)}
 
-Begin your response with: ## Strategic positioning`,
-  validate: (md) => {
-    if (md.length < 600) return { ok: false, reason: `too short (${md.length} chars)` };
-    // The renderer's StrategicPositioning component pulls out the call line.
-    if (!/(your\s+30-day\s+call|стратегический\s+шаг|30-?дневный\s+шаг)/i.test(md)) {
-      return { ok: false, reason: "missing 30-day call line" };
+OUTPUT — emit a JSON object exactly matching this shape:
+{
+  "kicker": "01 · Where you stand",
+  "headline": "string — a 4-8 word display title that captures the thesis. NOT generic ('Your strong start') — specific to this student ('A policy-leaning STEM profile') ",
+  "lead": "string — ONE sentence (max ~30 words) that anchors the brief. This sentence gets a drop cap in the renderer, so the FIRST WORD should be punchy and concrete. NAME the student's positioning in one breath.",
+  "body": "string — 2-3 short paragraphs (separate with \\n\\n) interpreting their profile. What admissions officers see at first glance. What's the under-leveraged angle. What competitive band they're in. No platitudes, no superlatives.",
+  "pullquote": "string — ONE sentence framed as a directive call. Pattern: 'Your 30-day call: <single concrete action>'. The action must be measurable and shippable in ≤30 days. Example: 'Your 30-day call: publish one 1500-word analysis of an open data set in your major — public link, GitHub or Medium.'"
+}
+
+${SHARED_JSON_RULES}`,
+  validate: (raw) => {
+    const obj = tryParse(raw) as Record<string, unknown> | null;
+    if (!obj) return { ok: false, reason: "not valid JSON" };
+    for (const k of ["kicker","headline","lead","body","pullquote"]) {
+      const v = obj[k];
+      if (typeof v !== "string" || v.trim().length < 10) {
+        return { ok: false, reason: `missing or too short: ${k}` };
+      }
     }
-    if (!/^##\s+strategic\s+positioning/im.test(md) && !/^##\s+стратегическ/im.test(md)) {
-      return { ok: false, reason: "missing required H2 heading" };
+    if (!/30[- ]day/i.test(obj.pullquote as string)) {
+      return { ok: false, reason: "pullquote missing '30-day call' framing" };
     }
     return { ok: true };
   },
 };
 
-const shortlist: SectionSpec = {
-  id: "shortlist",
-  // 2026-05-10 pivot: scholarship-first means the brief is about funding,
-  // and the school list is a 3-row illustration of where the funding
-  // takes them — not a 6-10 row shortlist users have to pick from. The
-  // section heading reframes this from "your shortlist" (which implies
-  // school selection is the decision) to "where these scholarships
-  // land you" (where the scholarship IS the decision and the school is
-  // the consequence).
-  heading: "## Schools where these scholarships land you",
+/* 02 — Where You Can Land */
+const whereYouCanLand: SectionSpec = {
+  id: "whereYouCanLand",
+  heading: "Where you can land",
   reasoning: { effort: "high" },
-  buildPrompt: (ctx) => `Output: just the "## Schools where these scholarships land you" section, in ${ctx.lang}.
-
-CONTEXT: TopUni is scholarship-first, not school-first. The reader is hunting funding, not picking from 6,000 universities the way a US-college applicant would. So this section is NOT a school shortlist in the traditional sense — it's a **3-school illustrative slice** showing where the scholarships in their funding pathway actually land them. Quality and concreteness over breadth. Three is the cap.
-
-Open with one short framing sentence in second person — something like "Here's where these scholarships actually take you:" — so it reads like a person speaking, not a search result. Then list 3 universities (no buckets, no "strong fits" / "aligned options" / "worth keeping" labels). For each:
-
-- **University name** — one tight sentence on why YOU fit THIS program AND which scholarship from your funding pathway covers it (cite the scholarship by name and a real signal from your profile — GPA, field, country alignment, named activity). Address them as "you", not "the student".
-- Specific program(s) + admission threshold (IELTS, GPA cutoff) when known.
-- One concrete career anchor: typical starting salary band in your field, ONE notable employer, OR one alumni outcome — pick the strongest single fact, not all of them.
-
-After the three schools, output one short coda sentence that frames this as illustrative — something like "These three are where the funding pathway lands you cleanly. Other schools fit too — your scholarships are the engine, the school is the vehicle."
-
-Do NOT invent universities. Pull only from the database section. Do NOT include 6+ schools — three is the cap.
-
-${SHARED_RULES}
-
-PROFILE (this is who you're writing to):
-${profileBlock(ctx)}
-
-DATABASE CONTEXT:
-${dbBlock(ctx)}
-
-Begin your response with: ## Schools where these scholarships land you`,
-  validate: (md) => {
-    // Bucket validators retired with the 2026-05-10 scholarship-first
-    // pivot — the new format is a flat 3-school list, no buckets.
-    if (md.length < 350) return { ok: false, reason: `too short (${md.length} chars)` };
-    return { ok: true };
-  },
-};
-
-const careerRoi: SectionSpec = {
-  id: "career_roi",
-  heading: "## Career ROI breakdown",
-  reasoning: { effort: "medium" },
-  buildPrompt: (ctx) => `Output: just the "## Career ROI breakdown" section, in ${ctx.lang}.
-
-For each top-3 recommended university (the strongest 3 fits from the shortlist this student would build from the DATABASE CONTEXT below):
-- Typical starting salary range in this student's target field
-- Employment rate within 6 months of graduation
-- Notable employers from each program
-- Long-term trajectory (where alumni are 5-10 years later)
-
-Format as ### sub-sections per university, with a clear name heading and bulleted facts.
-
-${SHARED_RULES}
+  buildPrompt: (ctx) => `
+You are writing the SCHOOLS section — naming EXACTLY 3 universities this
+student should put on their list. One reach, one target, one safety.
+Pulled from the LIVE CONTEXT below; do not invent schools.
 
 STUDENT PROFILE:
 ${profileBlock(ctx)}
 
-DATABASE CONTEXT:
+LIVE CONTEXT (use these schools — pick from the matched list):
 ${dbBlock(ctx)}
 
-Begin your response with: ## Career ROI breakdown`,
-  validate: (md) => {
-    if (md.length < 400) return { ok: false, reason: `too short (${md.length} chars)` };
+OUTPUT — emit a JSON object exactly matching this shape:
+{
+  "kicker": "02 · Where you can land",
+  "headline": "string — 4-8 word display line tying these 3 schools to the student's thesis. Example: 'Three doors into U.S. policy graduate work.'",
+  "lead": "string — ONE sentence (max ~30 words) framing why THIS particular trio fits the student. Drop-cap rendered.",
+  "entries": [
+    {
+      "tier": "reach",
+      "name": "string — exact school name as in LIVE CONTEXT",
+      "country": "string — short country name",
+      "whyItFits": "string — 1 sentence naming the SPECIFIC reason this school matches this student. Cite the angle. NOT 'great fit' or 'strong program' — name what.",
+      "threshold": "string — 1 line summarising the admission bar: 'GPA 3.8+ · IELTS 7.5 · top-2% class rank' or 'Acceptance rate ~7%'. Use real numbers from context where present.",
+      "careerAnchor": "string — 1 line naming WHO hires graduates / where alumni go. Real names beat categories. Example: 'McKinsey, Goldman, IMF; ~60% finance/consulting'."
+    },
+    { "tier": "target", ... same shape ... },
+    { "tier": "safety", ... same shape ... }
+  ]
+}
+
+EXACTLY 3 entries in order: reach, target, safety.
+
+${SHARED_JSON_RULES}`,
+  validate: (raw) => {
+    const obj = tryParse(raw) as Record<string, unknown> | null;
+    if (!obj) return { ok: false, reason: "not valid JSON" };
+    const entries = obj.entries as unknown[] | undefined;
+    if (!Array.isArray(entries) || entries.length !== 3) {
+      return { ok: false, reason: "entries must be array of length 3" };
+    }
+    const tiers = entries.map((e) => (e as { tier?: string }).tier);
+    if (!tiers.includes("reach") || !tiers.includes("target") || !tiers.includes("safety")) {
+      return { ok: false, reason: "entries must include reach + target + safety tiers" };
+    }
     return { ok: true };
   },
 };
 
-const fundingPathway: SectionSpec = {
-  id: "funding",
-  heading: "## Funding pathway",
+/* 03 — How You'll Pay */
+const howYoullPay: SectionSpec = {
+  id: "howYoullPay",
+  heading: "How you'll pay",
   reasoning: { effort: "high" },
-  buildPrompt: (ctx) => `Output: just the "## Funding pathway" section, in ${ctx.lang}.
-
-This is the section that answers their real question: "How do I actually pay for this?" Speak to them like you've been through this. Pick 3-5 specific scholarships from the DATABASE CONTEXT — the ones YOU should actually apply to first. Quality > quantity, cut speculative options.
-
-Open with one short sentence in second person — something like "Here's how I'd stack your funding:" — so it reads like a person, not a database printout.
-
-For each:
-- **Scholarship name** — award amount + coverage type (full ride / tuition / stipend / partial).
-- One sentence on how YOUR profile maps to this program's stated audience. Cite a real signal from the profile ("Your 3.7 GPA in CS from Kazakhstan + your robotics activity puts you squarely in their admit profile"). Do NOT predict odds in percentages or label as 'reach' / 'safety' / 'long shot' / 'within reach'.
-- Application timing — deadline + when you'd start drafting if you were them.
-- The first concrete document or task to start this week (essay prompt, recommender, transcript pull).
-
-End with a single one-line "Stack:" callout naming a plausible combination of 2 scholarships from the list above that together would fully fund them. ONE line, not a sub-section.
-
-${SHARED_RULES}
-
-PROFILE (this is who you're writing to):
-${profileBlock(ctx)}
-
-DATABASE CONTEXT:
-${dbBlock(ctx)}
-
-Begin your response with: ## Funding pathway`,
-  validate: (md) => {
-    if (md.length < 500) return { ok: false, reason: `too short (${md.length} chars)` };
-    return { ok: true };
-  },
-};
-
-const visa: SectionSpec = {
-  id: "visa",
-  heading: "## Visa and post-graduation pathway",
-  reasoning: { effort: "medium" },
-  buildPrompt: (ctx) => `Output: just the "## Visa and post-graduation pathway" section, in ${ctx.lang}.
-
-For each of the student's top 3 target countries (from the profile's targetCountries):
-- Student visa difficulty (specific to this student's nationality)
-- Post-study work visa details and duration
-- Path to permanent residency timeline
-- Realistic challenges this student should plan for
-
-Format as ### sub-sections per country.
-
-${SHARED_RULES}
+  buildPrompt: (ctx) => `
+You are writing the FUNDING section — 3 to 5 scholarships ranked by best-
+fit-for-this-student × urgency. Pull from LIVE CONTEXT only; do not
+invent. Order by application_deadline ASCENDING (closest deadline first).
 
 STUDENT PROFILE:
 ${profileBlock(ctx)}
 
-DATABASE CONTEXT:
+LIVE CONTEXT (use these scholarships):
 ${dbBlock(ctx)}
 
-Begin your response with: ## Visa and post-graduation pathway`,
-  validate: (md) => {
-    if (md.length < 400) return { ok: false, reason: `too short (${md.length} chars)` };
+OUTPUT — emit a JSON object exactly matching this shape:
+{
+  "kicker": "03 · How you'll pay",
+  "headline": "string — 4-8 word display line capturing the funding strategy. Example: 'Stack three awards, cover four years.'",
+  "lead": "string — ONE sentence (max ~30 words) framing the funding picture for this student. Drop-cap rendered.",
+  "entries": [
+    {
+      "name": "string — exact scholarship name from LIVE CONTEXT",
+      "coverage": "string — short coverage label: 'Full ride' | 'Tuition only' | 'Stipend' | 'Partial' | 'Travel grant' | 'Research funding'",
+      "awardText": "string — short award value: '$50K/year' or '~$310K total' or 'Full tuition + stipend'",
+      "deadline": "string — ISO date YYYY-MM-DD, or 'Rolling', or 'TBA'",
+      "howProfileMaps": "string — 1-2 sentences naming the SPECIFIC profile elements this student should lead with on this application. Cite the angle. Skip generic 'strong applicants'.",
+      "firstTask": "string — ONE concrete action they should take FIRST this week. Example: 'Request the supervisor letter from Prof. Chen — 4-week lead time.'"
+    },
+    ... 3 to 5 entries total ...
+  ],
+  "stackingNote": "string — 1-2 sentences explaining how these awards combine (or compete) for THIS student. Pattern: 'These three are stackable; together they'd cover X. The fourth is mutually exclusive with the first because both restrict to Y.' Skip if there's no real stacking insight."
+}
+
+${SHARED_JSON_RULES}`,
+  validate: (raw) => {
+    const obj = tryParse(raw) as Record<string, unknown> | null;
+    if (!obj) return { ok: false, reason: "not valid JSON" };
+    const entries = obj.entries as unknown[] | undefined;
+    if (!Array.isArray(entries) || entries.length < 3 || entries.length > 5) {
+      return { ok: false, reason: "entries must be array of 3-5" };
+    }
     return { ok: true };
   },
 };
 
-const essays: SectionSpec = {
-  id: "essays",
-  heading: "## Three personalized essay angles",
+/* 04 — What to Write */
+const whatToWrite: SectionSpec = {
+  id: "whatToWrite",
+  heading: "What to write",
   reasoning: { effort: "high" },
-  buildPrompt: (ctx) => `Output: just the "## Three personalized essay angles" section, in ${ctx.lang}.
-
-This is the highest-differentiator section in the brief — where you write to them like a friend who happens to be good at this. Open with one short framing sentence in second person — something like "If I were writing your application essay, here's three ways I'd open it:" — to set the voice.
-
-Then three distinct narrative angles you could lead with. For EACH, use this exact structure (do not deviate):
-
-### Angle 1: [one-sentence concept]
-**Why it works for you:** [2-3 sentences citing specific details from your profile, addressed to "you"]
-**Anchor it with:** [a specific story, detail, or experience from their inputs]
-**Plays best to:** [which 2-3 target universities this angle plays best to and why]
-
-### Angle 2: [one-sentence concept]
-**Why it works for you:** ...
-**Anchor it with:** ...
-**Plays best to:** ...
-
-### Angle 3: [one-sentence concept]
-**Why it works for you:** ...
-**Anchor it with:** ...
-**Plays best to:** ...
-
-If the profile includes a "Top activity" or "Personal story", at LEAST one angle's "Anchor it with" line MUST pull from that directly — quoted or paraphrased so the reader recognizes it as theirs.
-
-${SHARED_RULES}
-
-PROFILE (this is who you're writing to):
-${profileBlock(ctx)}
-
-Begin your response with: ## Three personalized essay angles`,
-  validate: (md) => {
-    const angles = (md.match(/^###\s+angle\s+[123]/gim) || []).length
-                + (md.match(/^###\s+(угол|ракурс|вариант)\s+[123]/gim) || []).length;
-    if (angles < 3) return { ok: false, reason: `only ${angles} angles produced` };
-    return { ok: true };
-  },
-};
-
-const monthlyBudget: SectionSpec = {
-  id: "monthly_budget",
-  heading: "## Monthly budget breakdown",
-  reasoning: { effort: "low" },
-  buildPrompt: (ctx) => `Output: just the "## Monthly budget breakdown" section, in ${ctx.lang}.
-
-For the top 3 recommended cities (from the student's targetCountries):
-- Rent, food, transport, insurance, books, leisure (realistic ranges)
-- Part-time work options and typical earnings if visa allows
-- Total monthly cost and how scholarship coverage maps onto it
-
-Format as ### sub-sections per city.
-
-${SHARED_RULES}
+  buildPrompt: (ctx) => `
+You are writing the ESSAYS section — EXACTLY 3 distinct essay angles this
+student could lead with. Each angle pulls from a different part of their
+profile so the brief surfaces multiple compelling stories, not one
+overused thread.
 
 STUDENT PROFILE:
 ${profileBlock(ctx)}
 
-Begin your response with: ## Monthly budget breakdown`,
-  validate: (md) => {
-    if (md.length < 300) return { ok: false, reason: `too short (${md.length} chars)` };
+OUTPUT — emit a JSON object exactly matching this shape:
+{
+  "kicker": "04 · What to write",
+  "headline": "string — 4-8 word display line. Example: 'Three stories the reader hasn't heard yet.'",
+  "lead": "string — ONE sentence (max ~30 words) framing the essay strategy. Drop-cap rendered.",
+  "entries": [
+    {
+      "title": "string — short evocative angle title, max 6 words. Example: 'The civic-tech bridge' or 'Quiet builder, loud results'.",
+      "whyItWorks": "string — 1-2 sentences naming WHY this angle resonates with admissions readers at the schools in section 02. Specific: 'Cambridge values measurable civic impact over scale of audience'.",
+      "anchorItWith": "string — 1 sentence naming the ONE concrete moment/project/datum this essay should center on. Pulled from the student's profile.",
+      "playsBestTo": "string — 1 sentence naming WHICH school(s) / scholarship(s) this angle plays best to. Specific names, not 'top schools'."
+    },
+    ... 3 entries total ...
+  ]
+}
+
+${SHARED_JSON_RULES}`,
+  validate: (raw) => {
+    const obj = tryParse(raw) as Record<string, unknown> | null;
+    if (!obj) return { ok: false, reason: "not valid JSON" };
+    const entries = obj.entries as unknown[] | undefined;
+    if (!Array.isArray(entries) || entries.length !== 3) {
+      return { ok: false, reason: "entries must be exactly 3 angles" };
+    }
     return { ok: true };
   },
 };
 
-const honestGaps: SectionSpec = {
-  id: "honest_gaps",
-  heading: "## Honest gaps to close",
-  reasoning: { effort: "medium" },
-  buildPrompt: (ctx) => `Output: just the "## Honest gaps to close" section, in ${ctx.lang}.
-
-This is the section that builds trust — you tell them what you'd worry about if you were them, and what to do about it. Open with one short sentence in second person — something like "Here's what I'd worry about if I were you, and what I'd actually do about it:" — to land the voice.
-
-Then 2-3 specific weaknesses in their profile. For each, use this exact structure (do not deviate):
-
-### Gap 1: [short headline of the gap]
-**Priority:** [high | medium | low]
-**Why it matters:** [2-3 sentences in second person — talk to them, cite their specific thresholds or context]
-**Action this month:** [one specific action you'd tell them to start now]
-**30-60 day plan:** [the next-step plan after that]
-
-### Gap 2: [short headline]
-... same fields ...
-
-${SHARED_RULES}
-
-PROFILE (this is who you're writing to):
-${profileBlock(ctx)}
-
-Begin your response with: ## Honest gaps to close`,
-  validate: (md) => {
-    const gaps = (md.match(/^###\s+gap\s+\d/gim) || []).length
-              + (md.match(/^###\s+(пробел|недотяг)\s+\d/gim) || []).length;
-    if (gaps < 2) return { ok: false, reason: `only ${gaps} gaps produced` };
-    return { ok: true };
-  },
-};
-
-const actionPlan: SectionSpec = {
-  id: "action_plan",
-  heading: "## 90-day action plan",
-  reasoning: { effort: "medium" },
-  buildPrompt: (ctx) => `Output: just the "## 90-day action plan" section, in ${ctx.lang}.
-
-Week-by-week from today, grouped as Weeks 1-2 / 3-6 / 7-12. 3-4 concrete actions per group, with specific deliverables. Reference the student's specific scores and target countries. Concrete actions only — no "research more" filler.
-
-${SHARED_RULES}
+/* 05 — What's Blocking You */
+const whatsBlockingYou: SectionSpec = {
+  id: "whatsBlockingYou",
+  heading: "What's blocking you",
+  reasoning: { effort: "high" },
+  buildPrompt: (ctx) => `
+You are writing the GAPS section — 2 to 3 HONEST gaps in this student's
+profile that need closing before they apply. Be a coach, not a cheerleader.
+If everything is on track, OMIT the section by emitting an empty entries
+array — the renderer handles that gracefully.
 
 STUDENT PROFILE:
 ${profileBlock(ctx)}
 
-DATABASE CONTEXT (for naming specific scholarships in the action items):
+OUTPUT — emit a JSON object exactly matching this shape:
+{
+  "kicker": "05 · What's blocking you",
+  "headline": "string — 4-8 word display line. Example: 'Two gaps to close before October.'",
+  "lead": "string — ONE sentence (max ~30 words) framing the gaps work honestly. Drop-cap rendered.",
+  "entries": [
+    {
+      "priority": "high" | "medium",
+      "title": "string — short gap title, max 8 words. Example: 'Test-score ceiling for top-3 reach'.",
+      "whyItMatters": "string — 1-2 sentences naming the SPECIFIC consequence if unaddressed. Not 'might hurt your chances' — name what.",
+      "actionThisMonth": "string — ONE concrete action they should take THIS MONTH. Should fit in 30 days.",
+      "next60Days": "string — 1 sentence describing the follow-through over the next 60 days."
+    },
+    ... 0 to 3 entries total ...
+  ]
+}
+
+${SHARED_JSON_RULES}`,
+  validate: (raw) => {
+    const obj = tryParse(raw) as Record<string, unknown> | null;
+    if (!obj) return { ok: false, reason: "not valid JSON" };
+    const entries = obj.entries as unknown[] | undefined;
+    if (!Array.isArray(entries)) return { ok: false, reason: "entries must be array" };
+    if (entries.length > 3) return { ok: false, reason: "max 3 gap entries" };
+    return { ok: true };
+  },
+};
+
+/* 06 — What to Do This Month */
+const whatToDoThisMonth: SectionSpec = {
+  id: "whatToDoThisMonth",
+  heading: "What to do this month",
+  reasoning: { effort: "high" },
+  buildPrompt: (ctx) => `
+You are writing the CLOSING section — a concrete 4-week action plan. This
+is the brief's payoff: the student should finish reading knowing exactly
+what to do tomorrow. Each week has a focus + 3-5 specific tasks.
+
+STUDENT PROFILE:
+${profileBlock(ctx)}
+
+CONTEXT REFERENCES — pull task specifics from the schools/scholarships/
+gaps in earlier sections so the plan is grounded, not generic:
 ${dbBlock(ctx)}
 
-Begin your response with: ## 90-day action plan`,
-  validate: (md) => {
-    const weekHeadings = (md.match(/weeks?\s+\d/gim) || []).length;
-    if (weekHeadings < 3) return { ok: false, reason: `only ${weekHeadings} week-bucket headings found` };
+OUTPUT — emit a JSON object exactly matching this shape:
+{
+  "kicker": "06 · What to do this month",
+  "headline": "string — 4-8 word display line. Example: 'Your next 28 days, mapped.'",
+  "lead": "string — ONE sentence (max ~30 words) framing the plan. Drop-cap rendered.",
+  "weeks": [
+    {
+      "label": "Week 1",
+      "focus": "string — ONE sentence naming the week's focus. Example: 'Start the recommender pipeline + draft your strongest essay angle.'",
+      "tasks": [
+        "string — 1 specific actionable task, ≤14 words, present-tense imperative",
+        "...3-5 tasks per week..."
+      ]
+    },
+    { "label": "Week 2", ... },
+    { "label": "Week 3", ... },
+    { "label": "Week 4", ... }
+  ],
+  "closingLine": "string — ONE final sentence of momentum. Quiet confidence, not hype. Example: 'Ship Week 1 and the rest follows.'"
+}
+
+EXACTLY 4 weeks. Each week MUST have 3-5 tasks.
+
+${SHARED_JSON_RULES}`,
+  validate: (raw) => {
+    const obj = tryParse(raw) as Record<string, unknown> | null;
+    if (!obj) return { ok: false, reason: "not valid JSON" };
+    const weeks = obj.weeks as unknown[] | undefined;
+    if (!Array.isArray(weeks) || weeks.length !== 4) {
+      return { ok: false, reason: "weeks must be array of length 4" };
+    }
+    for (const w of weeks) {
+      const tasks = (w as { tasks?: unknown[] }).tasks;
+      if (!Array.isArray(tasks) || tasks.length < 3 || tasks.length > 5) {
+        return { ok: false, reason: "each week must have 3-5 tasks" };
+      }
+    }
     return { ok: true };
   },
 };
 
-const finalWord: SectionSpec = {
-  id: "final_word",
-  heading: "## Final word",
-  reasoning: { effort: "low" },
-  buildPrompt: (ctx) => `Output: just the "## Final word" section, in ${ctx.lang}.
-
-One short paragraph (3-4 sentences) of specific encouragement based on this student's strongest signal — what they should believe about their candidacy as they go execute. Do not give generic motivation. Do not say "good luck." Cite something concrete from their profile and tell them why it matters.
-
-${SHARED_RULES}
-
-STUDENT PROFILE:
-${profileBlock(ctx)}
-
-Begin your response with: ## Final word`,
-  validate: (md) => {
-    if (md.length < 200) return { ok: false, reason: `too short (${md.length} chars)` };
-    return { ok: true };
-  },
-};
-
-/** Premium tier section list, in render order. Sections are produced in
- *  parallel; the edge function streams them to the client in this order.
- *
- *  Consolidated 2026-05-10: cut careerRoi / visa / monthlyBudget /
- *  finalWord because 9 sections diluted the report. Generic by-country
- *  visa info, generic city cost-of-living tables, salary-band lookups,
- *  and end-of-report encouragement paragraphs were not what made the
- *  brief decision-grade — they padded length and competed with the
- *  sections that actually move the student. The 5 surviving sections
- *  carry the full strategic value: positioning + 30-day call, the
- *  curated shortlist (now with ONE career anchor folded in per uni so
- *  ROI doesn't disappear entirely), funding, the essay angles
- *  (highest differentiator), and honest gaps (decision-protection).
- *  The retired sections stay defined below in case we re-enable them
- *  for a deeper "premium-plus" tier. */
 export const PREMIUM_SECTIONS: SectionSpec[] = [
-  positioning,
-  shortlist,
-  fundingPathway,
-  essays,
-  honestGaps,
+  whereYouStand,
+  whereYouCanLand,
+  howYoullPay,
+  whatToWrite,
+  whatsBlockingYou,
+  whatToDoThisMonth,
 ];
 
-// Retired (kept for reference / potential premium-plus reinstatement):
-// careerRoi, visa, monthlyBudget, finalWord, actionPlan
-void careerRoi; void visa; void monthlyBudget; void finalWord; void actionPlan;
-
-/** Stricter regen prompt addendum applied on validator failure. */
 export function buildRegenPrompt(spec: SectionSpec, ctx: BriefContext, reason: string): string {
-  return spec.buildPrompt(ctx) + `
+  return `${spec.buildPrompt(ctx)}
 
-CRITICAL: Your previous attempt failed validation: "${reason}". Re-output the section, this time strictly following the structure. Begin with the H2 heading exactly as written. Do not skip required sub-sections or labels.`;
+YOUR PREVIOUS ATTEMPT FAILED VALIDATION: ${reason}
+
+Re-emit the JSON object meeting every constraint above. Output ONLY the
+JSON. No fences, no preamble.`;
 }

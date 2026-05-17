@@ -92,8 +92,32 @@ async function computeBriefHash(profile: any, grade: string, lang: string): Prom
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
 }
 
-/* Wrap a string of accumulated brief markdown back into the SSE format
-   the client parser expects. Emits a single content chunk + DONE. */
+/* v6 magazine cache replay — emits per-section JSON events the new
+   BriefMagazine renderer expects. Cache content shape:
+     { schema: 2, sections: { whereYouStand: {...}, ... } }
+   We replay in PREMIUM_SECTIONS order so the client renders in journey
+   order; missing sections are skipped (renderer keeps their skeletons). */
+function replayMagazineCachedAsSse(sections: Record<string, unknown>): ReadableStream<Uint8Array> {
+  const enc = new TextEncoder();
+  return new ReadableStream({
+    start(c) {
+      try {
+        for (const spec of PREMIUM_SECTIONS) {
+          const payload = sections[spec.id];
+          if (payload === undefined) continue;
+          c.enqueue(enc.encode(`data: ${JSON.stringify({ section: spec.id, payload })}\n\n`));
+        }
+        c.enqueue(enc.encode(`data: [DONE]\n\n`));
+      } finally {
+        c.close();
+      }
+    },
+  });
+}
+
+/* Legacy basic-tier markdown cache replay — unchanged from v5. Kept
+   because the basic-tier prompt still streams raw markdown; only the
+   premium pipeline moved to JSON-per-section in v6. */
 function replayCachedAsSse(content: string): ReadableStream<Uint8Array> {
   const enc = new TextEncoder();
   return new ReadableStream({
@@ -107,9 +131,10 @@ function replayCachedAsSse(content: string): ReadableStream<Uint8Array> {
 }
 
 /* Parse an accumulated raw SSE buffer back into the markdown string —
-   reverse of buildOrderedSectionStream / OpenAI-stream format. Used to
-   capture the FULL brief for caching after the client stream has
-   completed. */
+   reverse of the legacy markdown-chunked SSE format. Used to capture
+   the FULL basic-tier brief for caching after the client stream
+   completes. The v6 magazine path persists sections as JSON directly,
+   so it doesn't go through here. */
 function extractContentFromSse(raw: string): string {
   let out = "";
   for (const line of raw.split("\n")) {
@@ -157,8 +182,11 @@ function teeStreamForCache(source: ReadableStream<Uint8Array>): {
 
 interface SectionResult {
   spec: SectionSpec;
-  markdown: string;
-  /** Whether the markdown passed validation (after any regen). */
+  /** Raw JSON string the model emitted (already passed validator). */
+  rawJson: string;
+  /** Parsed payload object — what the renderer consumes. */
+  payload: unknown;
+  /** Whether the payload passed validation (after any regen). */
   valid: boolean;
   /** Whether we needed a second attempt to satisfy the validator. */
   regenerated: boolean;
@@ -166,13 +194,29 @@ interface SectionResult {
   failureReason?: string;
 }
 
-/* Generate a single section. Calls the model once; if a validator fails,
-   regenerates ONCE with a stricter prompt; falls back to the first attempt
-   if both fail (better degraded section than blocking the whole brief). */
-async function generateSection(spec: SectionSpec, ctx: BriefContext): Promise<SectionResult> {
-  const sysContent = `You are TopUni AI, an expert admissions strategist. You output ONLY the requested markdown section, beginning with the H2 heading exactly as instructed. No preamble, no commentary, no fences.`;
+/** Best-effort JSON parse — returns null on failure. */
+function safeParseJson(raw: string): unknown {
+  try { return JSON.parse(raw); } catch { return null; }
+}
 
-  let firstAttempt = "";
+/** Strip markdown fences if the model added them despite jsonMode. */
+function isolateJson(raw: string): string {
+  let s = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+  const first = s.indexOf("{");
+  const last = s.lastIndexOf("}");
+  if (first !== -1 && last !== -1 && last > first) s = s.slice(first, last + 1);
+  return s;
+}
+
+/* Generate a single section. Calls the model once with response_format
+   json_object; if a validator fails, regenerates ONCE with a stricter
+   prompt; falls back to the first attempt if both fail. Returns the
+   raw JSON string + parsed payload — the SSE emitter forwards the JSON
+   verbatim and the renderer parses on the client. */
+async function generateSection(spec: SectionSpec, ctx: BriefContext): Promise<SectionResult> {
+  const sysContent = `You are TopUni AI, an expert admissions strategist. You output ONLY a valid JSON object matching the schema in the user message. No markdown fences. No preamble.`;
+
+  let firstRaw = "";
   let firstReason: string | undefined;
 
   for (let attempt = 1; attempt <= 2; attempt++) {
@@ -180,27 +224,27 @@ async function generateSection(spec: SectionSpec, ctx: BriefContext): Promise<Se
       ? spec.buildPrompt(ctx)
       : buildRegenPrompt(spec, ctx, firstReason ?? "validation failed");
     try {
+      // 2026-05-17: token-spend minimisation pass — downgraded magazine
+      // sections from "pro" + reasoning:high to "flash" + no reasoning.
+      // gpt-4o-mini is sufficient for the structured JSON shape we now
+      // demand, and the cost-per-brief drops ~10x. Per-section spec
+      // reasoning hints are intentionally ignored at the call site.
       const resp = await chatCompletions({
-        tier: "pro",
+        tier: "flash",
         messages: [
           { role: "system", content: sysContent },
           { role: "user",   content: prompt },
         ],
         stream: false,
-        ...(spec.reasoning ? { reasoning: spec.reasoning } : {}),
+        jsonMode: true,
       });
       if (!resp.ok) {
         const errBody = await resp.text();
-        console.warn(`[brief-sections] ${spec.id} attempt ${attempt} HTTP ${resp.status}: ${errBody.slice(0, 200)}`);
+        console.warn(`[brief-sections-v6] ${spec.id} attempt ${attempt} HTTP ${resp.status}: ${errBody.slice(0, 200)}`);
         if (attempt === 1) { firstReason = `gateway HTTP ${resp.status}`; continue; }
-        // Attempt 2 also failed — keep first attempt if we have it.
-        return {
-          spec,
-          markdown: firstAttempt || `${spec.heading}\n\n*(This section couldn't be generated. We'll try again next time.)*`,
-          valid: false,
-          regenerated: true,
-          failureReason: firstReason,
-        };
+        // Degraded: return a stub payload so the renderer shows a placeholder card.
+        const stub = JSON.stringify({ kicker: spec.id, headline: spec.heading, lead: "This section couldn't be generated.", error: firstReason });
+        return { spec, rawJson: firstRaw || stub, payload: safeParseJson(firstRaw || stub), valid: false, regenerated: true, failureReason: firstReason };
       }
       const data = await resp.json();
       const text = (
@@ -208,84 +252,104 @@ async function generateSection(spec: SectionSpec, ctx: BriefContext): Promise<Se
         ?? (Array.isArray(data?.content) ? data.content.map((c: any) => c?.text ?? "").join("") : "")
         ?? ""
       ) as string;
-      const trimmed = text.trim();
+      const isolated = isolateJson(text);
+      const parsed = safeParseJson(isolated);
 
-      const validation = spec.validate?.(trimmed, ctx) ?? { ok: true };
+      const validation = spec.validate?.(isolated, ctx) ?? (parsed ? { ok: true } : { ok: false, reason: "not valid JSON" });
       if (validation.ok) {
-        return {
-          spec,
-          markdown: trimmed,
-          valid: true,
-          regenerated: attempt > 1,
-          failureReason: firstReason,
-        };
+        return { spec, rawJson: isolated, payload: parsed, valid: true, regenerated: attempt > 1, failureReason: firstReason };
       }
-      // First-attempt failure: stash it and retry with stricter prompt.
       if (attempt === 1) {
-        firstAttempt = trimmed;
+        firstRaw = isolated;
         firstReason = validation.reason ?? "unspecified";
         continue;
       }
-      // Second attempt also failed — keep the better of the two by length.
-      const second = trimmed;
-      const better = second.length > firstAttempt.length ? second : firstAttempt;
-      return { spec, markdown: better, valid: false, regenerated: true, failureReason: firstReason };
+      // Second attempt also failed — keep the longer / more-complete of the two
+      const better = isolated.length > firstRaw.length ? isolated : firstRaw;
+      return { spec, rawJson: better, payload: safeParseJson(better), valid: false, regenerated: true, failureReason: firstReason };
     } catch (e) {
-      console.warn(`[brief-sections] ${spec.id} attempt ${attempt} threw:`, (e as Error).message);
+      console.warn(`[brief-sections-v6] ${spec.id} attempt ${attempt} threw:`, (e as Error).message);
       if (attempt === 2) {
-        return {
-          spec,
-          markdown: firstAttempt || `${spec.heading}\n\n*(This section couldn't be generated. We'll try again next time.)*`,
-          valid: false,
-          regenerated: true,
-          failureReason: (e as Error).message,
-        };
+        const stub = JSON.stringify({ kicker: spec.id, headline: spec.heading, lead: "This section couldn't be generated.", error: (e as Error).message });
+        return { spec, rawJson: firstRaw || stub, payload: safeParseJson(firstRaw || stub), valid: false, regenerated: true, failureReason: (e as Error).message };
       }
     }
   }
-  // Unreachable — both attempts above always return.
-  return {
-    spec,
-    markdown: `${spec.heading}\n\n*(Generation failed.)*`,
-    valid: false,
-    regenerated: true,
-  };
+  // Unreachable — both attempts always return.
+  const stub = JSON.stringify({ kicker: spec.id, headline: spec.heading, lead: "Generation failed.", error: "unreachable" });
+  return { spec, rawJson: stub, payload: safeParseJson(stub), valid: false, regenerated: true };
 }
 
-/* Stream a list of section promises to the client in defined order using
-   the OpenAI-compat SSE format (`data: {"choices":[{"delta":{"content":...}}]}`)
-   so the existing frontend parser works unchanged. */
+/* v6 magazine stream — emits one SSE event per completed section as
+   `data: {"section":"<id>","payload":{...}}`. Sections are awaited in
+   PREMIUM_SECTIONS order so the client renders in journey order. The
+   payload is the parsed JSON the renderer consumes directly. */
 function buildOrderedSectionStream(promises: Array<Promise<SectionResult>>): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
   return new ReadableStream<Uint8Array>({
     async start(controller) {
-      const emit = (text: string) => {
-        const chunk = JSON.stringify({ choices: [{ delta: { content: text } }] });
+      const emit = (section: string, payload: unknown) => {
+        const chunk = JSON.stringify({ section, payload });
         controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
       };
       try {
         for (let i = 0; i < promises.length; i++) {
           const result = await promises[i];
-          // Insert paragraph spacing between sections so the markdown
-          // renders with clean separation.
-          const prefix = i === 0 ? "" : "\n\n";
-          emit(prefix + result.markdown);
+          emit(result.spec.id, result.payload ?? { error: "no payload" });
           if (!result.valid) {
-            console.warn(`[brief-sections] section ${result.spec.id} delivered invalid (reason: ${result.failureReason ?? "?"})`);
+            console.warn(`[brief-sections-v6] section ${result.spec.id} delivered invalid (reason: ${result.failureReason ?? "?"})`);
           }
           if (result.regenerated) {
-            console.log(`[brief-sections] section ${result.spec.id} regenerated`);
+            console.log(`[brief-sections-v6] section ${result.spec.id} regenerated`);
           }
         }
         controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
       } catch (e) {
-        console.error("[brief-sections] stream error:", e);
-        emit(`\n\n*(An unexpected error interrupted brief generation. Please regenerate.)*\n`);
+        console.error("[brief-sections-v6] stream error:", e);
+        emit("_error", { message: (e as Error).message });
       } finally {
         controller.close();
       }
     },
   });
+}
+
+/* Tee a magazine stream + accumulate parsed payloads keyed by section
+   id so the cache write can persist `{ sections: {...} }` directly. */
+function teeMagazineStreamForCache(source: ReadableStream<Uint8Array>): {
+  client: ReadableStream<Uint8Array>;
+  accumulated: Promise<Record<string, unknown>>;
+} {
+  const [forClient, forCache] = source.tee();
+  const accumulated = (async () => {
+    const reader = forCache.getReader();
+    const dec = new TextDecoder();
+    let buf = "";
+    const out: Record<string, unknown> = {};
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (value) buf += dec.decode(value, { stream: true });
+      // Process complete SSE events as they arrive
+      while (true) {
+        const sep = buf.indexOf("\n\n");
+        if (sep === -1) break;
+        const event = buf.slice(0, sep);
+        buf = buf.slice(sep + 2);
+        if (!event.startsWith("data: ")) continue;
+        const json = event.slice(6).trim();
+        if (!json || json === "[DONE]") continue;
+        try {
+          const parsed = JSON.parse(json) as { section?: string; payload?: unknown };
+          if (parsed.section && parsed.payload !== undefined) {
+            out[parsed.section] = parsed.payload;
+          }
+        } catch { /* ignore */ }
+      }
+    }
+    return out;
+  })();
+  return { client: forClient, accumulated };
 }
 
 serve(async (req) => {
@@ -326,7 +390,17 @@ serve(async (req) => {
     // version forces regeneration with the consolidated 5-section
     // PREMIUM_SECTIONS list (or the basicSections 5-section prompt for
     // non-premium tier).
-    const PROMPT_VERSION = "v5-2026-05-10";
+    // 2026-05-17 v6-magazine — full editorial-magazine redesign of the
+    // premium brief. Sections restructured into a 6-step journey
+    // (whereYouStand → whereYouCanLand → howYoullPay → whatToWrite →
+    // whatsBlockingYou → whatToDoThisMonth) and each section now emits
+    // STRUCTURED JSON instead of markdown. SSE protocol changes shape
+    // (`data: {section, payload}`) so old cached briefs would mis-render
+    // under the new client. v5 cache rows are skipped by the
+    // prompt_version mismatch and the row gets re-generated on first
+    // hit. Basic tier still streams legacy markdown — only premium
+    // moved to the magazine flow in v6.
+    const PROMPT_VERSION = "v6-magazine-2026-05-17";
 
     // ─── Cache hit check ────────────────────────────────────────────────
     // Skip for regenSection (the user is explicitly asking us to redo
@@ -355,8 +429,24 @@ serve(async (req) => {
           drifted = !!drift && drift.length > 0;
         }
         if (!drifted) {
-          // Cache hit + fresh — replay as SSE. Snappy load, $0 spend.
-          return new Response(replayCachedAsSse(cached.content), {
+          // Cache hit + fresh — branch on schema:
+          //   v6 magazine: content is a JSON object { sections: {...} }
+          //   legacy basic: content is a markdown string
+          let magazineSections: Record<string, unknown> | null = null;
+          if (grade === "premium") {
+            try {
+              const obj = typeof cached.content === "string"
+                ? JSON.parse(cached.content)
+                : (cached.content as { sections?: Record<string, unknown> });
+              if (obj && typeof obj === "object" && obj.sections) {
+                magazineSections = obj.sections as Record<string, unknown>;
+              }
+            } catch { /* fall through to legacy replay */ }
+          }
+          const stream = magazineSections
+            ? replayMagazineCachedAsSse(magazineSections)
+            : replayCachedAsSse(typeof cached.content === "string" ? cached.content : "");
+          return new Response(stream, {
             headers: {
               ...corsHeaders,
               "Content-Type": "text/event-stream",
@@ -788,37 +878,35 @@ ${EDITORIAL_RULES}`;
         });
       }
 
-      // Full premium build — all sections in parallel, streamed in order.
+      // Full premium build — all sections in parallel, magazine SSE.
       const sectionPromises = PREMIUM_SECTIONS.map(spec => generateSection(spec, briefCtx));
       const stream = buildOrderedSectionStream(sectionPromises);
-      // Tee for cache persistence — client gets the same stream, the
-      // accumulator buffers the full SSE text in the background and
-      // saves to brief_cache once complete. Fire-and-forget; cache
-      // failure never blocks the response.
-      const { client, accumulated } = teeStreamForCache(stream);
+      // Tee for cache persistence — accumulator collects JSON payloads
+      // keyed by section id; persisted as { schema: 2, sections: {...} }.
+      const { client, accumulated } = teeMagazineStreamForCache(stream);
       const scholarshipIdList = scholarshipRows.map((r: any) => r.scholarship_id).filter(Boolean);
       (async () => {
         try {
-          const raw = await accumulated;
-          const content = extractContentFromSse(raw);
-          if (content && content.length > 200) {
+          const sections = await accumulated;
+          if (sections && Object.keys(sections).length > 0) {
             await supabase.from("brief_cache").upsert({
               profile_hash: briefProfileHash,
               language: cacheLang,
               grade,
-              content,
+              content: JSON.stringify({ schema: 2, sections }),
+              brief_schema_version: 2,
               scholarship_ids: scholarshipIdList,
               retrieval_method: retrievalMethod,
               prompt_version: PROMPT_VERSION,
               generated_at: new Date().toISOString(),
-            }, { onConflict: "profile_hash,language,grade" });
+            } as never, { onConflict: "profile_hash,language,grade" });
           }
         } catch (e) {
           console.warn("[brief-cache] persist failed", (e as Error).message);
         }
       })();
       return new Response(client, {
-        headers: { ...corsHeaders, "Content-Type": "text/event-stream", "X-Cache": "MISS" },
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream", "X-Cache": "MISS", "X-Brief-Schema": "2" },
       });
     }
 
@@ -856,15 +944,16 @@ ${profile.topActivity ? "- Reference the top activity by name in the essay angle
 
 ${grade === "premium" ? premiumSections : basicSections}`;
 
-    // Premium reports get the stronger model (gateway translates per provider)
+    // 2026-05-17: tier:flash for both premium + basic monolithic. The
+    // premium tier is now served by the JSON-section path above; this
+    // branch is the legacy basic-tier fallback. Cheap.
     const response = await chatCompletions({
-      tier: grade === "premium" ? "pro" : "flash",
+      tier: "flash",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: `Generate my personalized university pathway plan.` },
       ],
       stream: true,
-      ...(grade === "premium" ? { reasoning: { effort: "high" as const } } : {}),
     });
 
     if (!response.ok) {

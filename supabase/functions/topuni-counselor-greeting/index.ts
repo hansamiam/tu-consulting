@@ -182,13 +182,13 @@ Output the JSON now. The greeting addresses ${firstName} by first name and opens
 
   let parsed: GreetingOutput;
   try {
-    // Pro tier — flash consistently broke the "no chatbot closer" rule
-    // ("Let's dig in", "Maximize your potential" etc). Greeting fires
-    // once per session so the cost (~$0.005) is acceptable for the
-    // jump in tone fidelity. The output is short (≤200 tokens) so the
-    // pro-tier latency stays under ~3s.
+    // 2026-05-17: downgraded to flash as part of the token-spend cut.
+    // The tone-fidelity loss is acceptable for now; the greeting prompt
+    // has been strengthened to keep flash on-voice without the pro
+    // reasoning effort. Re-promote to pro if user tone-rejection rate
+    // climbs after launch.
     const resp = await chatCompletions({
-      tier: "pro",
+      tier: "flash",
       messages: [
         { role: "system", content: "You are a Yale/Cambridge/Harvard-trained admissions strategist. Output only valid JSON matching the requested schema. The greeting reads like a real human coach with a point of view — confident, direct, never sappy. NEVER use chatbot patterns ('Let's dig in', 'How can I help', 'Looking forward to'). The student must feel like the counselor knows their specific file." },
         { role: "user", content: prompt },

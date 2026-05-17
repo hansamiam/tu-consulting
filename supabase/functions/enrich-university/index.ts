@@ -188,7 +188,7 @@ Output ONLY the JSON object. Begin with { and end with }.`;
     if (!resp.ok) {
       const t = await resp.text();
       console.error("[enrich-university] gateway error", resp.status, t.slice(0, 300));
-      return json(502, { error: "Generation failed" });
+      return json(502, { error: "Generation failed", gateway_status: resp.status, gateway_body: t.slice(0, 400) });
     }
     const data = await resp.json();
     const raw = (

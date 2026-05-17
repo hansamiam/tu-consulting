@@ -245,22 +245,30 @@ const Index = () => {
                   key={m.name}
                   {...fadeUp(0.06 * i)}
                   onClick={() => navigate('/team')}
-                  className="group text-center"
+                  className="group text-center flex flex-col items-center"
                 >
-                  <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden mb-5 bg-canvas mx-auto ring-1 ring-border/60 ring-offset-4 ring-offset-background shadow-sm">
+                  {/* Photo: square ring with fixed dimensions + shrink-0
+                      so the flex layout never compresses one card's
+                      photo when its sibling has a longer name/school
+                      string below. On mobile the 2-col grid was showing
+                      uneven photo heights because the buttons were
+                      stretching to row height; locking aspect via
+                      flex-col + shrink-0 + min-h on the caption block
+                      keeps every photo identical. */}
+                  <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden mb-5 bg-canvas ring-1 ring-border/60 ring-offset-4 ring-offset-background shadow-sm shrink-0 aspect-square">
                     <img
                       src={m.photo}
                       alt={m.name}
                       className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-700"
+                      loading="lazy"
                     />
                   </div>
-                  <p className="font-heading font-semibold text-foreground text-base leading-tight">{m.name}</p>
+                  <p className="font-heading font-semibold text-foreground text-base leading-tight min-h-[2.5rem] flex items-center">{m.name}</p>
                   <p className="text-sm text-muted-foreground mt-1">{m.title}</p>
-                  {/* School / credential — editorial uppercase + tight
-                      letter-spacing + gold-dark weight reads like the
-                      masthead credit line on a profile piece. Prestige
-                      lands at a glance without going flashy. */}
-                  <p className="font-heading text-[11px] sm:text-xs text-gold-dark mt-2.5 font-bold uppercase tracking-[0.16em]">
+                  {/* School / credential — locked min-height so a
+                      single-line "Yale" doesn't shorten its card vs a
+                      two-line "Tsinghua · Cambridge" sibling. */}
+                  <p className="font-heading text-[11px] sm:text-xs text-gold-dark mt-2.5 font-bold uppercase tracking-[0.16em] min-h-[2rem] flex items-center text-center">
                     {m.school}
                   </p>
                 </motion.button>

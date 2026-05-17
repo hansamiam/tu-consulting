@@ -413,6 +413,7 @@ export type Database = {
       }
       brief_cache: {
         Row: {
+          brief_schema_version: number
           content: string
           cost_estimate_usd: number | null
           generated_at: string
@@ -425,6 +426,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          brief_schema_version?: number
           content: string
           cost_estimate_usd?: number | null
           generated_at?: string
@@ -437,6 +439,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          brief_schema_version?: number
           content?: string
           cost_estimate_usd?: number | null
           generated_at?: string
@@ -473,6 +476,248 @@ export type Database = {
           fetch_count?: number
           last_accessed_at?: string | null
           revoked_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      compass_audits: {
+        Row: {
+          brand_id: string
+          citation_rate: number | null
+          cited_sources: Json | null
+          competitor_summary: Json | null
+          created_at: string
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          is_public: boolean
+          recommendations: Json | null
+          share_of_voice: number | null
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          brand_id: string
+          citation_rate?: number | null
+          cited_sources?: Json | null
+          competitor_summary?: Json | null
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          is_public?: boolean
+          recommendations?: Json | null
+          share_of_voice?: number | null
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          brand_id?: string
+          citation_rate?: number | null
+          cited_sources?: Json | null
+          competitor_summary?: Json | null
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          is_public?: boolean
+          recommendations?: Json | null
+          share_of_voice?: number | null
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compass_audits_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "compass_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compass_brands: {
+        Row: {
+          category: string | null
+          competitors: string[] | null
+          created_at: string
+          display_name: string | null
+          domain: string
+          id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          competitors?: string[] | null
+          created_at?: string
+          display_name?: string | null
+          domain: string
+          id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          competitors?: string[] | null
+          created_at?: string
+          display_name?: string | null
+          domain?: string
+          id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      compass_mentions: {
+        Row: {
+          created_at: string
+          entity: string
+          id: string
+          is_target: boolean
+          position: number | null
+          prompt_run_id: string
+          sentiment: string | null
+          snippet: string | null
+        }
+        Insert: {
+          created_at?: string
+          entity: string
+          id?: string
+          is_target?: boolean
+          position?: number | null
+          prompt_run_id: string
+          sentiment?: string | null
+          snippet?: string | null
+        }
+        Update: {
+          created_at?: string
+          entity?: string
+          id?: string
+          is_target?: boolean
+          position?: number | null
+          prompt_run_id?: string
+          sentiment?: string | null
+          snippet?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compass_mentions_prompt_run_id_fkey"
+            columns: ["prompt_run_id"]
+            isOneToOne: false
+            referencedRelation: "compass_prompt_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compass_prompt_runs: {
+        Row: {
+          citations: Json | null
+          cost_usd: number | null
+          created_at: string
+          engine: string
+          error_message: string | null
+          id: string
+          latency_ms: number | null
+          prompt_id: string
+          raw_response: string | null
+        }
+        Insert: {
+          citations?: Json | null
+          cost_usd?: number | null
+          created_at?: string
+          engine: string
+          error_message?: string | null
+          id?: string
+          latency_ms?: number | null
+          prompt_id: string
+          raw_response?: string | null
+        }
+        Update: {
+          citations?: Json | null
+          cost_usd?: number | null
+          created_at?: string
+          engine?: string
+          error_message?: string | null
+          id?: string
+          latency_ms?: number | null
+          prompt_id?: string
+          raw_response?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compass_prompt_runs_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "compass_prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compass_prompts: {
+        Row: {
+          audit_id: string
+          created_at: string
+          id: string
+          intent: string | null
+          text: string
+        }
+        Insert: {
+          audit_id: string
+          created_at?: string
+          id?: string
+          intent?: string | null
+          text: string
+        }
+        Update: {
+          audit_id?: string
+          created_at?: string
+          id?: string
+          intent?: string | null
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compass_prompts_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: false
+            referencedRelation: "compass_audits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compass_subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          id: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          tier: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -2266,6 +2511,7 @@ export type Database = {
       shared_briefs: {
         Row: {
           brief_id: string
+          brief_schema_version: number
           content: string
           created_at: string
           created_by_user_id: string | null
@@ -2282,6 +2528,7 @@ export type Database = {
         }
         Insert: {
           brief_id?: string
+          brief_schema_version?: number
           content: string
           created_at?: string
           created_by_user_id?: string | null
@@ -2298,6 +2545,7 @@ export type Database = {
         }
         Update: {
           brief_id?: string
+          brief_schema_version?: number
           content?: string
           created_at?: string
           created_by_user_id?: string | null
@@ -3152,6 +3400,7 @@ export type Database = {
         Returns: undefined
       }
       _canonicalize_field: { Args: { f: string }; Returns: string }
+      app_cron_token: { Args: never; Returns: string }
       canonicalize_field_array: { Args: { p_arr: string[] }; Returns: string[] }
       canonicalize_field_of_study: { Args: { p_raw: string }; Returns: string }
       canonicalize_provider: { Args: { p_raw: string }; Returns: string }
@@ -3204,6 +3453,12 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      heal_broken_scholarships: {
+        Args: never
+        Returns: {
+          healed_count: number
+        }[]
       }
       increment_brief_view: { Args: { p_slug: string }; Returns: undefined }
       increment_referral_total_uses: {
@@ -3300,6 +3555,7 @@ export type Database = {
         Args: { p_name: string }
         Returns: string
       }
+      normalize_tags: { Args: { p_tags: string[] }; Returns: string[] }
       provider_slug: { Args: { p_name: string }; Returns: string }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }

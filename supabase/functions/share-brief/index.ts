@@ -79,6 +79,17 @@ Deno.serve(async (req) => {
     if (content.length < 200) return json(400, { error: "Brief content too short to share" });
     if (content.length > 100_000) return json(400, { error: "Brief too long" });
 
+    // v6 magazine briefs are stored as JSON (`{schema:2, sections}`).
+    // Detect by leading "{" + presence of "sections" key. Legacy
+    // markdown briefs continue to set schema_version = 1.
+    let schemaVersion = 1;
+    if (content.startsWith("{")) {
+      try {
+        const parsed = JSON.parse(content) as { schema?: number; sections?: unknown };
+        if (parsed?.schema === 2 && parsed.sections) schemaVersion = 2;
+      } catch { /* not JSON — treat as legacy markdown */ }
+    }
+
     // Resolve caller user_id from JWT if present (anon callers leave authHeader as anon JWT or unset)
     let userId: string | null = null;
     const authHeader = req.headers.get("Authorization");
@@ -114,6 +125,7 @@ Deno.serve(async (req) => {
           content,
           language,
           report_grade: reportGrade,
+          brief_schema_version: schemaVersion,
           profile_first_name: profile.firstName?.slice(0, 64) || null,
           profile_grade_level: profile.gradeLevel?.slice(0, 64) || null,
           profile_major: profile.major?.slice(0, 200) || null,
@@ -121,7 +133,7 @@ Deno.serve(async (req) => {
           created_by_user_id: userId,
           expires_at: expiresAt,
           is_public: true,
-        })
+        } as never)
         .select("brief_id, slug")
         .single();
       if (!error) { inserted = data; break; }

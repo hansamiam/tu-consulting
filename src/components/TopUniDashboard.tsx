@@ -66,6 +66,9 @@ import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import { ENV, EDGE_FUNCTIONS_URL } from "@/lib/env";
 import { cleanScholarshipName, cleanProvider, compactAward } from "@/lib/scholarshipFields";
+import { BriefMagazine } from "@/components/brief/BriefMagazine";
+import type { BriefSections, SectionId } from "@/components/brief/types";
+import { serializeBriefForCounselor } from "@/components/brief/serializeForCounselor";
 
 interface StudentProfile {
   fullName: string;
@@ -1625,12 +1628,15 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   const [proUnlockOpen, setProUnlockOpen] = useState(false);
   const hasProDepth = !!(proDepth.topActivity || proDepth.personalStory || proDepth.namedSchools);
 
-  // The active grade for THIS render: members get premium, period.
-  // Non-members never get premium — Pro depth questions are gated
-  // behind membership now (round 96), so a non-member can no longer
-  // self-upgrade by filling 3 free fields. Earlier flow: anon user
-  // fills depth → free premium brief → silent revenue leak.
-  const reportGrade: "basic" | "premium" = isMember ? "premium" : "basic";
+  // 2026-05-17: tiered strategy report retired. Every user gets the
+  // full premium magazine report — no basic/premium split, no Pro
+  // depth questions, no upsell on the report itself. Membership now
+  // gates only the personalized counselor sessions + Discover saves
+  // (the things that genuinely scale with human attention), not the
+  // one-shot strategy report. Hard-coded to "premium" so every
+  // existing code path that branches on reportGrade keeps generating
+  // the deeper PREMIUM_SECTIONS journey.
+  const reportGrade: "basic" | "premium" = "premium";
 
   /* Profile hash — bumps when ANY signal changes that should invalidate
      the cached brief: identity fields, language, AND the reportGrade
@@ -1702,8 +1708,27 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     return null;
   }, [profileHash]);
 
-  const [pathwayContent, setPathwayContent] = useState<string>(restored?.content ?? "");
+  const [pathwayContent, setPathwayContent] = useState<string>(() => {
+    // schema-2 (magazine JSON) restored content is parsed into magazineSections
+    // below; pathwayContent should be empty in that case so the legacy
+    // renderer doesn't try to read JSON as markdown.
+    const c = restored?.content ?? "";
+    if (typeof c === "string" && c.startsWith("{") && c.includes('"sections"')) return "";
+    return c;
+  });
   const [pathwayLoading, setPathwayLoading] = useState(false);
+  /* v6 magazine sections — populated by the new SSE protocol
+   * (`data: {section, payload}`). When this has entries we render
+   * BriefMagazine instead of the legacy ReportRenderer markdown path. */
+  const [magazineSections, setMagazineSections] = useState<BriefSections>(() => {
+    const c = restored?.content;
+    if (typeof c !== "string" || !c.startsWith("{")) return {};
+    try {
+      const parsed = JSON.parse(c) as { schema?: number; sections?: BriefSections };
+      if (parsed?.schema === 2 && parsed.sections) return parsed.sections;
+    } catch { /* not magazine JSON, fall through */ }
+    return {};
+  });
   /* Error state for the strategy-report stream. Previously when the
    * edge function 401'd or the LLM provider hiccuped, streamSSE wrote
    * the error message directly into pathwayContent — the user saw a
@@ -2089,7 +2114,12 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         slug: string; url: string; expiresAt: string | null; isOwner: boolean;
       }>("share-brief", {
         body: {
-          content: pathwayContent,
+          // v6 magazine: send JSON `{schema:2, sections}` so the
+          // recipient SharedBrief page renders via BriefMagazine.
+          // Legacy/basic-tier: send markdown verbatim.
+          content: Object.keys(magazineSections).length > 0
+            ? JSON.stringify({ schema: 2, sections: magazineSections })
+            : pathwayContent,
           language,
           reportGrade,
           profileSnapshot: {
@@ -2520,6 +2550,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     onDone: () => void,
     onError?: (status: number, message: string) => void,
     signal?: AbortSignal,
+    onSection?: (section: SectionId, payload: unknown) => void,
   ) => {
     // Pass the user's session JWT when authed so edge functions can
     // resolve user_id via getUser() — needed for the counselor's
@@ -2585,6 +2616,13 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           if (jsonStr === "[DONE]") { streamDone = true; break; }
           try {
             const parsed = JSON.parse(jsonStr);
+            // v6 magazine shape: `{section, payload}` — premium brief
+            // streams per-section JSON instead of markdown chunks.
+            if (parsed && typeof parsed === "object" && parsed.section && "payload" in parsed) {
+              onSection?.(parsed.section as SectionId, parsed.payload);
+              continue;
+            }
+            // Legacy markdown chunk (basic tier + old shape)
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) onDelta(content);
           } catch {
@@ -2742,7 +2780,9 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     setPathwayLoading(true);
     setPathwayError(null);
     setPathwayContent("");
+    setMagazineSections({});
     let soFar = "";
+    const magazineAcc: BriefSections = {};
     const startedAtMs = Date.now();
 
     void track("brief_generation_started", { tier: reportGrade, has_pro_depth: hasProDepth });
@@ -2774,20 +2814,18 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       () => {
         const now = Date.now();
         setPathwayLoading(false);
-        // 2026-05-10: short-content guard. If the stream completed
-        // with effectively no markdown (LLM failed silently, edge
-        // function returned no deltas, etc.), surface a retry path
-        // instead of marking as "generated" with empty content —
-        // user was reporting "analyzing… then reverts to nothing".
-        // 200 chars is a generous floor that filters genuine
-        // failures without false-positiving on a single very short
-        // section that briefly appears mid-stream.
-        if (soFar.trim().length < 200) {
+        // 2026-05-10: short-content guard. v6 magazine path emits no
+        // markdown deltas — it streams structured per-section JSON via
+        // onSection instead. Accept EITHER ≥200 chars of markdown OR
+        // at least 1 magazine section as a "generated" signal.
+        const sectionCount = Object.keys(magazineAcc).length;
+        if (soFar.trim().length < 200 && sectionCount === 0) {
           setPathwayGenerated(false);
           setPathwayContent("");
+          setMagazineSections({});
           setPathwayError(language === "ru"
             ? "Не удалось сгенерировать брифинг — попробуйте снова через минуту."
-            : "We couldn't generate your brief — try again in a moment.");
+            : "We couldn't generate your strategy report — try again in a moment.");
           void track("brief_generation_failed", { status: 0, tier: reportGrade, reason: "empty_stream" });
           return;
         }
@@ -2808,7 +2846,17 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         // subsequent visits restore the same text and the action-plan
         // checkboxes (keyed by text hash) line up.
         try {
-          if (soFar && soFar.length > 100) {
+          // v6 magazine: persist as JSON `{schema:2, sections}` so the
+          // restored content branch can rehydrate magazineSections.
+          // Legacy markdown: persist as raw string under the same key.
+          const sectionCountForCache = Object.keys(magazineAcc).length;
+          if (sectionCountForCache > 0) {
+            localStorage.setItem(PATHWAY_STORAGE_KEY, JSON.stringify({
+              hash: profileHash,
+              content: JSON.stringify({ schema: 2, sections: magazineAcc }),
+              generatedAt: now,
+            }));
+          } else if (soFar && soFar.length > 100) {
             localStorage.setItem(PATHWAY_STORAGE_KEY, JSON.stringify({
               hash: profileHash,
               content: soFar,
@@ -2821,8 +2869,14 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         // sections (Career ROI, Combined Funding, Visa Pathway). Runs in
         // parallel to the email send below so the user sees charts within
         // a few seconds of the brief landing. Soft-fails: on any error the
-        // markdown narrative still renders cleanly.
-        if (reportGrade === "premium" && soFar.length > 800) {
+        // 2026-05-17: extract-brief-data second pass disabled. It
+        // existed to populate the Combined Funding chart + Career ROI
+        // chart on the LEGACY markdown report; the new magazine renderer
+        // doesn't show those charts, so the call is wasted spend. Gated
+        // on `false` rather than deleted in case we re-introduce a
+        // chart appendix later — re-enabling is a one-line flip.
+        const EXTRACT_BRIEF_DATA_ENABLED = false;
+        if (EXTRACT_BRIEF_DATA_ENABLED && reportGrade === "premium" && soFar.length > 800) {
           setStructuredLoading(true);
           (async () => {
             try {
@@ -2888,7 +2942,11 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                   url: string;
                 }>("share-brief", {
                   body: {
-                    content: soFar,
+                    // v6 magazine: use the JSON-shaped sections we just
+                    // streamed. Legacy basic-tier: markdown soFar.
+                    content: Object.keys(magazineAcc).length > 0
+                      ? JSON.stringify({ schema: 2, sections: magazineAcc })
+                      : soFar,
                     language,
                     reportGrade,
                     profileSnapshot: {
@@ -2977,6 +3035,11 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         void track("brief_generation_failed", { status, tier: reportGrade });
       },
       briefController.signal,
+      // v6 magazine — receive per-section JSON payloads as they stream
+      (section, payload) => {
+        magazineAcc[section] = payload as never;
+        setMagazineSections({ ...magazineAcc });
+      },
     );
   };
 
@@ -3034,10 +3097,15 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
 
     // Hand the chat function the profile + a slim summary of the student's
     // strategy report so the counselor can answer with specifics instead of
-    // asking the student to repeat themselves.
-    const reportSummary = pathwayContent
-      ? pathwayContent.slice(0, 4000)
-      : "";
+    // asking the student to repeat themselves. v6 magazine briefs live in
+    // magazineSections (not pathwayContent); we flatten the structured JSON
+    // back to plain prose for the counselor's system prompt.
+    const reportSummary = (() => {
+      if (Object.keys(magazineSections).length > 0) {
+        return serializeBriefForCounselor(magazineSections).slice(0, 4000);
+      }
+      return pathwayContent ? pathwayContent.slice(0, 4000) : "";
+    })();
 
     await streamSSE(
       CHAT_URL,
@@ -3293,7 +3361,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                     // only replacing one bucket.
                     onClick={() => {
                       if (pathwayContent && !window.confirm(t(
-                        "Regenerate the full brief? Your current report will be replaced.",
+                        "Regenerate the full strategy report? Your current report will be replaced.",
                         "Сгенерировать отчёт заново? Текущий отчёт будет заменён.",
                       ))) return;
                       generatePathway();
@@ -3451,7 +3519,19 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                   {(() => {
                     return (
                       <>
-                        {pathwayContent && (
+                        {/* v6 magazine path — if any sections streamed, render
+                            the editorial layout. Falls back to the legacy
+                            markdown ReportRenderer when no magazine sections
+                            present (basic tier, legacy cached briefs). */}
+                        {Object.keys(magazineSections).length > 0 ? (
+                          <BriefMagazine
+                            mode="static"
+                            sections={magazineSections}
+                            studentName={profile.fullName || (isRu ? "Ваш отчёт" : "Your strategy report")}
+                            gradeLabel={reportGrade === "premium" ? "Pro" : "Basic"}
+                            generatedAt={pathwayGeneratedAt ? new Date(pathwayGeneratedAt).toISOString() : undefined}
+                          />
+                        ) : pathwayContent && (
                           <ReportRenderer
                             markdown={pathwayContent}
                             completedTasks={completedTasks}
@@ -3630,12 +3710,15 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             chrome). /pricing carries the full feature
                             comparison for users who click through. */}
 
-                        {/* Pro brief upgrade card — moved from above the
-                            report to here (after the user has consumed
-                            the basic brief and presumably wants more).
-                            Showing this before the report is bad UX:
-                            paywall friction without value first. */}
-                        {pathwayContent && !pathwayLoading && !isMember && !hasProDepth && (
+                        {/* Tiered Pro-report upsell retired 2026-05-17.
+                            The strategy report is fully free now — no
+                            depth questions, no basic-vs-Pro split. The
+                            CTA below pitches MEMBERSHIP (live counselor
+                            guidance) rather than a re-rendered report.
+                            Only shown to non-members; members get an
+                            in-product counselor tab and don't need the
+                            upsell here. */}
+                        {!pathwayLoading && (pathwayContent || Object.keys(magazineSections).length > 0) && !isMember && (
                           <motion.div
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -3646,15 +3729,15 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                               <div className="min-w-0 flex-1">
                                 <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-[0.18em] uppercase bg-gradient-to-r from-gold-dark to-gold text-primary mb-2">
                                   <Crown className="w-3 h-3" />
-                                  {t("Pro report", "Pro-отчёт")}
+                                  {t("Membership", "Подписка")}
                                 </div>
                                 <h3 className="font-heading text-lg sm:text-xl font-bold tracking-tight text-foreground mb-1.5">
-                                  {t("Want this report rewritten specifically about you?",
-                                     "Хотите отчёт конкретно про вас?")}
+                                  {t("Want more tailored guidance from real counselors?",
+                                     "Нужны более точные рекомендации от консультантов?")}
                                 </h3>
                                 <p className="text-sm text-muted-foreground leading-relaxed">
-                                  {t("Membership unlocks the Pro report — three depth questions about your story, then the AI rewrites it at premium tier. Strategic positioning, essay angles, shortlist — all anchored to what makes you specifically credible.",
-                                     "Подписка открывает Pro-отчёт — три вопроса о вас, и AI переписывает на премиум-уровне. Позиционирование, ракурсы эссе и шорт-лист — со ссылками на вашу историю.")}
+                                  {t("Membership unlocks live monthly workshops with our Yale, Cambridge, Tsinghua, Harvard alumni team plus unlimited counselor chat — real insight on your specific situation, not another auto-generated report.",
+                                     "Подписка открывает живые ежемесячные воркшопы с командой выпускников Yale, Cambridge, Tsinghua, Harvard и неограниченный чат с консультантом — реальные ответы на вашу ситуацию.")}
                                 </p>
                               </div>
                               <Button
@@ -3664,44 +3747,6 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                               >
                                 <Crown className="w-4 h-4" />
                                 {t("See membership", "Открыть подписку")}
-                              </Button>
-                            </div>
-                          </motion.div>
-                        )}
-
-                        {/* Member-only Pro report unlock — paid users
-                            can still trigger the depth-question rewrite
-                            from here, again positioned AFTER the brief
-                            (consume value first). */}
-                        {pathwayContent && !pathwayLoading && isMember && !hasProDepth && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.3 }}
-                            className="not-prose mt-12 rounded-xl border border-gold/40 bg-gradient-to-br from-gold/8 to-transparent p-5 sm:p-6 print:hidden"
-                          >
-                            <div className="flex items-start gap-4 flex-wrap">
-                              <div className="min-w-0 flex-1">
-                                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-[0.18em] uppercase bg-gradient-to-r from-gold-dark to-gold text-primary mb-2">
-                                  <Crown className="w-3 h-3" />
-                                  {t("Pro report", "Pro-отчёт")}
-                                </div>
-                                <h3 className="font-heading text-lg sm:text-xl font-bold tracking-tight text-foreground mb-1.5">
-                                  {t("Three quick questions to unlock your Pro report.",
-                                     "Три быстрых вопроса — и вы получите Pro-отчёт.")}
-                                </h3>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                  {t("Your activities, your story, your named target schools — the AI rewrites the report at premium tier with these in context.",
-                                     "Активности, история, конкретные университеты — AI перепишет отчёт с учётом этих данных.")}
-                                </p>
-                              </div>
-                              <Button
-                                variant="gold"
-                                onClick={() => setProUnlockOpen(true)}
-                                className="gap-1.5 shrink-0"
-                              >
-                                <Crown className="w-4 h-4" />
-                                {t("Answer & rewrite", "Ответить и переписать")}
                               </Button>
                             </div>
                           </motion.div>
@@ -3999,7 +4044,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                           </h3>
                           <p className="text-sm text-muted-foreground leading-relaxed">
                             {greetingLoading
-                              ? t("Reading your profile and brief — drafting a starting point in a second.",
+                              ? t("Reading your profile and strategy report — drafting a starting point in a second.",
                                   "Читаю ваш профиль и брифинг — через секунду подготовлю отправную точку.")
                               : referProfile
                               ? (pathwayContent && pathwayContent.length > 200

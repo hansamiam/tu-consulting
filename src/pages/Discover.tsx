@@ -1,4 +1,4 @@
-import { memo, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import { DiscoverAppBar } from "@/components/discover/DiscoverAppBar";
@@ -274,7 +274,7 @@ interface FilterState {
 }
 
 type Phase = "landing" | "wizard" | "analyzing" | "results";
-type SortBy = "match" | "deadline" | "value" | "effort" | "selectivity" | "trending" | "newest" | "alpha";
+type SortBy = "match" | "deadline" | "newest";
 type ViewMode = "grid" | "list";
 type AppSection = "browse" | "pipeline" | "shortlist" | "collections";
 /* Three application stages — captures the meaningful work-in-progress
@@ -869,16 +869,32 @@ const REGIONS: Record<string, string[]> = {
     "Sweden", "Norway", "Denmark", "Finland", "Ireland", "Italy",
     "Spain", "Portugal", "Belgium", "Austria", "Poland", "Czech Republic",
     "Hungary", "Greece", "Iceland", "Estonia", "Latvia", "Lithuania",
+    "Slovenia", "Slovakia", "Romania", "Bulgaria", "Croatia",
   ],
   "Asia-Pacific": [
-    "Japan", "South Korea", "Singapore", "Hong Kong", "Australia",
-    "New Zealand", "Taiwan", "China", "Malaysia", "Thailand", "Vietnam",
-    "Indonesia", "Philippines",
+    "Japan", "South Korea", "Singapore", "Hong Kong", "Taiwan",
+    "China", "Malaysia", "Thailand", "Vietnam", "Indonesia",
+    "Philippines", "India", "Pakistan", "Bangladesh", "Sri Lanka",
+    "Nepal",
   ],
+  "Oceania": ["Australia", "New Zealand", "Fiji"],
   "North America": ["United States", "Canada", "Mexico"],
+  "Latin America": [
+    "Brazil", "Argentina", "Chile", "Colombia", "Peru", "Uruguay",
+    "Ecuador", "Costa Rica", "Panama", "Cuba",
+  ],
+  "Africa": [
+    "South Africa", "Nigeria", "Kenya", "Ghana", "Morocco", "Egypt",
+    "Tunisia", "Uganda", "Tanzania", "Ethiopia", "Rwanda", "Senegal",
+    "Botswana",
+  ],
   "MENA": [
     "United Arab Emirates", "Saudi Arabia", "Qatar", "Israel", "Turkey",
-    "Egypt", "Jordan", "Morocco",
+    "Egypt", "Jordan", "Morocco", "Lebanon", "Oman", "Kuwait", "Bahrain",
+  ],
+  "Russia & Central Asia": [
+    "Russia", "Kazakhstan", "Uzbekistan", "Kyrgyzstan", "Tajikistan",
+    "Turkmenistan", "Azerbaijan", "Armenia", "Georgia", "Mongolia",
   ],
 };
 
@@ -2300,16 +2316,22 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
         )}
         {hostCountries.length > 0 && (
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">{t("Host country", "Страна обучения")}</p>
-            {/* Region chips — one-tap multi-country selection. Active
-                state shows the gold pill; clicking again clears.
-                Single-country selections via the Select below clear
-                the region pill (the hostCountry slot can hold either
-                a region:X virtual or a single country, not both). */}
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">{t("Region", "Регион")}</p>
+            {/* Per-region chips are now the primary filter — country
+                granularity is buried below as an advanced pick. Regions
+                map to country lists via REGIONS at filter time. */}
             <div className="flex flex-wrap gap-1.5 mb-2">
               {Object.keys(REGIONS).map(r => {
                 const v = `region:${r}`;
                 const active = filters.hostCountry === v;
+                const ruLabel =
+                  r === "Europe" ? "Европа" :
+                  r === "Asia-Pacific" ? "Азия-ТО" :
+                  r === "North America" ? "Сев. Америка" :
+                  r === "Latin America" ? "Лат. Америка" :
+                  r === "Oceania" ? "Океания" :
+                  r === "Africa" ? "Африка" :
+                  r === "Russia & Central Asia" ? "СНГ" : r;
                 return (
                   <button
                     key={r}
@@ -2321,15 +2343,15 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
                         : "bg-muted/40 text-muted-foreground hover:bg-muted/60 border border-transparent"
                     }`}
                   >
-                    {t(r, r === "Europe" ? "Европа" : r === "Asia-Pacific" ? "Азия-ТО" : r === "North America" ? "Сев. Америка" : r)}
+                    {t(r, ruLabel)}
                   </button>
                 );
               })}
             </div>
             <Select value={filters.hostCountry.startsWith("region:") ? "all" : filters.hostCountry} onValueChange={v => setFilters(f => ({ ...f, hostCountry: v }))}>
-              <SelectTrigger className="h-8 text-[13px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-7 text-[11px] text-muted-foreground"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t("All countries", "Все страны")}</SelectItem>
+                <SelectItem value="all">{t("Or pick a specific country…", "Или выбрать страну…")}</SelectItem>
                 {hostCountries.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -3276,19 +3298,21 @@ const Discover = ({ language = "en" }: Props) => {
   const ru = language === "ru";
   const t = (en: string, ruText: string) => (ru ? ruText : en);
 
-  /* Free-tier scholarship gate. Free users see a generous-but-finite
-   * preview window (FREE_VISIBLE_LIMIT rows). Past that, a paywall
-   * card explains how many more are unlocked with Membership. Members
-   * + admins see all rows. The admin path lets the founder keep
-   * iterating on the free experience without paying himself; toggle
-   * via ?admin=1 in the URL or by being signed in with an ADMIN_EMAIL. */
-  const FREE_VISIBLE_LIMIT = 5;
-  // Run once per mount: ?admin=1 / ?admin=0 in the URL flips the
-  // localStorage flag so the user can opt the device into admin mode
-  // without code changes.
+  /* Discover paywall removed (2026-05-17). The catalog is fully visible
+   * to free users now — the only paywalled surface left is the
+   * personalized TopUni AI strategy report. Keeping `gateActive`
+   * defined as a constant `false` so existing call sites (PaywallRow,
+   * PaywallCard, gateActive checks) compile and become no-ops without
+   * a wider refactor. FREE_VISIBLE_LIMIT kept as a large sentinel so
+   * the slice math at line 4055 returns the full filteredAll list. */
+  const FREE_VISIBLE_LIMIT = Number.MAX_SAFE_INTEGER;
   useEffect(() => { consumeAdminUrlFlag(); }, []);
   const adminBypass = isAdminUser(user) || isAdminBypass();
-  const gateActive = !isMember && !adminBypass;
+  // Always false now — discover is fully unlocked.
+  const gateActive = false;
+  // Reference adminBypass to silence the unused-var warning; kept
+  // available for any future admin-only feature path.
+  void adminBypass;
   const [foundingLeft, setFoundingLeft] = useState<{ left: number; cap: number } | null>(null);
 
   /* Temporary "beta" banner — surfaces honesty about the data quality
@@ -3353,7 +3377,7 @@ const Discover = ({ language = "en" }: Props) => {
     const timer = setTimeout(() => {
       const stored = getStoredProfile();
       if (!stored?.nationality) return;
-      setSortBy((cur) => (cur === "deadline" ? "match" : cur));
+      setSortBy((cur) => (cur === "newest" ? "match" : cur));
     }, 250);
     return () => clearTimeout(timer);
   }, [user]);
@@ -3361,6 +3385,17 @@ const Discover = ({ language = "en" }: Props) => {
   const [wiz, setWiz] = useState<WizardData>(DEFAULT_WIZARD);
   const [openDetail, setOpenDetail] = useState<Scored | null>(null);
   const [expandedDetail, setExpandedDetail] = useState<Scored | null>(null);
+  /* 2026-05-17: row clicks now navigate to the dedicated detail
+     route instead of opening the retired DetailSheet. The legacy
+     state above is kept for back-compat with the few remaining
+     callers (compare / shortlist / collection mounts) that still
+     call setOpenDetail; they no-op visually since the Sheet mount
+     was deleted, but the next iteration will rip out those references
+     entirely. */
+  const openDetailRoute = useCallback((s: Scored) => {
+    const path = language === "ru" ? `/scholarships/${s.scholarship_id}/ru` : `/scholarships/${s.scholarship_id}`;
+    navigate(path);
+  }, [language, navigate]);
   /* Application tracker — offline-first hook that mirrors localStorage
      and (when authed) syncs to Postgres `application_tracker`. Replaces
      the four separate useState + useEffect blobs that lived here. */
@@ -3393,8 +3428,13 @@ const Discover = ({ language = "en" }: Props) => {
   // first. Once they build a profile and the page reloads, the default flips
   // to "match" automatically (lazy initializer reads stored profile).
   const [sortBy, setSortBy] = useState<SortBy>(() => {
+    // Dashboard framing — lead with the freshest scholarships so the
+    // page reads as a stream of newly-discovered programs (the way
+    // opportunitiesforyouth.org does), not a static catalog. If the
+    // user has a profile we still default to Best match because the
+    // scoring signal is meaningful for them.
     const stored = getStoredProfile();
-    return stored?.nationality ? "match" : "deadline";
+    return stored?.nationality ? "match" : "newest";
   });
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [shortlistOpen, setShortlistOpen] = useState(false);
@@ -3995,34 +4035,10 @@ const Discover = ({ language = "en" }: Props) => {
         return aT - bT;
       });
     }
-    if (sortBy === "value") return [...list].sort((a, b) => (b.estimated_total_value_usd ?? 0) - (a.estimated_total_value_usd ?? 0));
-    if (sortBy === "effort") { const o: Record<string, number> = { low: 0, medium: 1, high: 2 }; return [...list].sort((a, b) => (o[a.effort] ?? 1) - (o[b.effort] ?? 1)); }
-    if (sortBy === "selectivity") { const o: Record<string, number> = { low: 0, medium: 1, high: 2, very_high: 3, unknown: 4 }; return [...list].sort((a, b) => (o[a.selectivity] ?? 4) - (o[b.selectivity] ?? 4)); }
-    // "Trending" — sort by 30-day save activity DESC. Surfaces what
-    // the catalogue community is acting on right now, even if it
-    // doesn't match the user's profile perfectly. Deadline tie-break
-    // pulls urgent rows up within the same save bucket so a row
-    // saved 12 times closing in 5 days beats one saved 12 times with
-    // a far-out deadline. Rows with no engagement signal fall to the
-    // bottom; match score then orders within them so the tail still
-    // reads as ranked, not random.
-    if (sortBy === "trending") {
-      return [...list].sort((a, b) => {
-        const sa = a.saveCount30d ?? 0;
-        const sb = b.saveCount30d ?? 0;
-        if (sa !== sb) return sb - sa;
-        // Same save count → urgent deadlines first, then match score.
-        const aT = a.application_deadline ? new Date(a.application_deadline).getTime() : Number.MAX_SAFE_INTEGER;
-        const bT = b.application_deadline ? new Date(b.application_deadline).getTime() : Number.MAX_SAFE_INTEGER;
-        if (aT !== bT) return aT - bT;
-        return b.match - a.match;
-      });
-    }
     // "Newest" — sort by created_at DESC. Catalog freshness is a moat;
     // surfacing it as a first-class sort lets returning users see what
-    // landed since their last visit without scrolling through stable
-    // rankings. Match score tie-break keeps the within-day ordering
-    // relevant instead of arbitrary.
+    // landed since their last visit. Match score tie-break keeps the
+    // within-day ordering relevant instead of arbitrary.
     if (sortBy === "newest") {
       return [...list].sort((a, b) => {
         const aT = a.created_at ? new Date(a.created_at).getTime() : 0;
@@ -4030,27 +4046,6 @@ const Discover = ({ language = "en" }: Props) => {
         if (aT !== bT) return bT - aT;
         return b.match - a.match;
       });
-    }
-    // "Alphabetical" — sort by scholarship_name A→Z. Useful when the
-    // student already has a target program in mind (Chevening, MEXT,
-    // Fulbright) and wants to jump to it quickly without typing in
-    // search. Cleans the name first via cleanScholarshipName so cosmetic
-    // suffixes ("(2026)", "Programme") don't push letters around. Uses
-    // `localeCompare` with the active language so Cyrillic + Latin sort
-    // naturally (RU users see Russian-collated names; EN users see
-    // English-collated). `sensitivity: "base"` ignores case + diacritics
-    // so "École" and "Ecole" land next to each other.
-    if (sortBy === "alpha") {
-      const collator = new Intl.Collator(language === "ru" ? "ru" : "en", {
-        sensitivity: "base",
-        numeric: true,
-      });
-      return [...list].sort((a, b) =>
-        collator.compare(
-          cleanScholarshipName(a.scholarship_name ?? ""),
-          cleanScholarshipName(b.scholarship_name ?? ""),
-        ),
-      );
     }
     return list;
     // Deps split: deferredSearch (the lagged query) + the rest of the
@@ -4811,28 +4806,17 @@ const Discover = ({ language = "en" }: Props) => {
                   <Select value={sortBy} onValueChange={v => setSortBy(v as SortBy)}>
                     <SelectTrigger className="w-[156px] h-10 text-sm rounded-lg"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="match">{t("Best match", "Лучшее совпадение")}</SelectItem>
-                      <SelectItem value="deadline">{t("Deadline first", "Сначала по дедлайну")}</SelectItem>
-                      <SelectItem value="value">{t("Highest value", "Наибольшая сумма")}</SelectItem>
-                      {/* "Trending" — orders by save_count_30d DESC.
-                          Surfaces what other students are acting on
-                          right now. Compounds: more saves → higher
-                          rank under this sort → more visibility →
-                          more saves. The chip on cards already shows
-                          the count, so users can see the raw signal
-                          driving the order. */}
-                      <SelectItem value="trending">{t("Trending now", "Сейчас в тренде")}</SelectItem>
+                      {/* Pared down to three sorts: trending/value/alpha
+                          retired because A→Z exposed how many dupe rows
+                          we still carry, value was noisy when
+                          estimated_total_value_usd is sparse, and the
+                          trending compounding loop hurt more than it
+                          helped at founding-cohort scale. The dashboard
+                          framing wants Newest first as the default —
+                          treat Discover as a stream, not a static catalog. */}
                       <SelectItem value="newest">{t("Newest first", "Сначала новые")}</SelectItem>
-                      {/* Alphabetical — locale-aware via Intl.Collator,
-                          ignores cosmetic suffixes via cleanScholarshipName
-                          so "Chevening (2026)" sits next to "Chevening
-                          Scholarships" instead of getting bumped by the
-                          parenthesis. Useful when the student is hunting
-                          a specific named program. */}
-                      <SelectItem value="alpha">{t("A → Z", "А → Я")}</SelectItem>
-                      {/* "Most accessible" sort retired — selectivity
-                          metadata is incomplete on most rows so the
-                          sort produced near-random ordering. */}
+                      <SelectItem value="deadline">{t("Deadline first", "Сначала по дедлайну")}</SelectItem>
+                      <SelectItem value="match">{t("Best match", "Лучшее совпадение")}</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -5194,7 +5178,7 @@ const Discover = ({ language = "en" }: Props) => {
                           }
                           const cp = (s: Scored, i: number) => ({
                             key: s.scholarship_id, s, index: i,
-                            onSelect: () => setOpenDetail(s),
+                            onSelect: () => openDetailRoute(s),
                             isBookmarked: shortlist.has(s.scholarship_id),
                             onBookmark: (e: React.MouseEvent) => { e.stopPropagation(); toggleBookmark(s.scholarship_id); },
                             status: statusMap[s.scholarship_id],
@@ -5274,7 +5258,7 @@ const Discover = ({ language = "en" }: Props) => {
                         {appSection === "browse" && (() => {
                           const cardProps = (s: Scored, i: number) => ({
                             key: s.scholarship_id, s, index: i,
-                            onSelect: () => setOpenDetail(s),
+                            onSelect: () => openDetailRoute(s),
                             isBookmarked: shortlist.has(s.scholarship_id),
                             onBookmark: (e: React.MouseEvent) => { e.stopPropagation(); toggleBookmark(s.scholarship_id); },
                             status: statusMap[s.scholarship_id],
@@ -5547,7 +5531,7 @@ const Discover = ({ language = "en" }: Props) => {
                                 </h3>
                                 <p className="text-xs text-muted-foreground line-clamp-2 leading-snug">{[cleanProvider(s.provider_name), s.host_country && shortCountry(s.host_country)].filter(Boolean).join(" · ")}</p>
                                 <div className="flex gap-2 mt-3">
-                                  <Button variant="gold" size="sm" className="text-xs h-7 px-3" onClick={() => { setOpenDetail(s); setCompareOpen(false); }}>
+                                  <Button variant="gold" size="sm" className="text-xs h-7 px-3" onClick={() => { setCompareOpen(false); openDetailRoute(s); }}>
                                     Strategy
                                   </Button>
                                   {s.official_url && !isAggregatorUrl(s.official_url) && (
@@ -5604,7 +5588,7 @@ const Discover = ({ language = "en" }: Props) => {
                 const dl = deadlineDisplay(s.application_deadline, "en", s.deadline_type);
                 return (
                   <button key={s.scholarship_id}
-                    onClick={() => { setOpenDetail(s); setShortlistOpen(false); }}
+                    onClick={() => { setShortlistOpen(false); openDetailRoute(s); }}
                     className="w-full text-left bg-card border border-border rounded-2xl p-3.5 hover:border-gold/40 hover:shadow-md transition-all flex items-start gap-3 group">
                     <div className={`h-11 w-11 rounded-2xl bg-gradient-to-br ${tier.grad} flex items-center justify-center text-[13px] font-bold text-white shrink-0 tracking-tight`}>{initials(s.provider_name || s.scholarship_name)}</div>
                     <div className="min-w-0 flex-1">
@@ -5663,7 +5647,7 @@ const Discover = ({ language = "en" }: Props) => {
                         key={s.scholarship_id}
                         s={s}
                         index={i}
-                        onSelect={() => { setOpenDetail(s); setOpenCollection(null); }}
+                        onSelect={() => { setOpenCollection(null); openDetailRoute(s); }}
                         isBookmarked={shortlist.has(s.scholarship_id)}
                         onBookmark={(e) => { e.stopPropagation(); toggleBookmark(s.scholarship_id); }}
                         status={statusMap[s.scholarship_id]}
@@ -5764,24 +5748,13 @@ const Discover = ({ language = "en" }: Props) => {
           </SheetContent>
         </Sheet>
 
-        <DetailSheet
-          s={openDetail}
-          open={!!openDetail}
-          onClose={() => setOpenDetail(null)}
-          isBookmarked={openDetail ? shortlist.has(openDetail.scholarship_id) : false}
-          onBookmark={() => openDetail && toggleBookmark(openDetail.scholarship_id)}
-          profile={profile}
-          status={openDetail ? statusMap[openDetail.scholarship_id] : undefined}
-          onStatusChange={(st) => openDetail && setStatus(openDetail.scholarship_id, st)}
-          note={openDetail ? (notesMap[openDetail.scholarship_id] || "") : ""}
-          onNoteChange={(n) => openDetail && setNote(openDetail.scholarship_id, n)}
-          similar={similarToOpen}
-          onSwitchTo={(s) => setOpenDetail(s)}
-          isMember={isMember}
-          onUnlock={() => setPaywallOpen("strategy")}
-          onExpand={() => openDetail && setExpandedDetail(openDetail)}
-          lang={language}
-        />
+        {/* DetailSheet retired 2026-05-17 — the right-side vertical
+            drawer was the "tiny ugly popup" the user (and a friend)
+            flagged. Row clicks now navigate to the dedicated
+            /scholarships/:id route via the onSelect handlers below.
+            Keeping the component import + similarToOpen memo unused
+            for one ship cycle in case we need to roll back; will
+            delete cleanly in the next pass. */}
 
         <ExpandedScholarshipDialog
           s={expandedDetail}

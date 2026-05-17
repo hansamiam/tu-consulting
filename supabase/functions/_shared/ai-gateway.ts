@@ -94,6 +94,13 @@ export interface ChatCompletionsOpts {
   messages: Array<{ role: "system" | "user" | "assistant"; content: string | unknown[] }>;
   stream?: boolean;
   reasoning?: { effort: "low" | "medium" | "high" };
+  /** Forces OpenAI-compat `response_format: { type: "json_object" }`.
+   *  Lovable's gateway supports this on Gemini 2.5; OpenAI gpt-4o
+   *  supports it natively. Anthropic ignores (use prompt-side schema
+   *  instruction instead). Callers should also instruct the model in
+   *  the user prompt to emit JSON — this flag tightens the response
+   *  shape but doesn't replace good prompting. */
+  jsonMode?: boolean;
   // Provider-specific overrides
   modelOverride?: string;
 }
@@ -128,7 +135,18 @@ export async function chatCompletions(opts: ChatCompletionsOpts): Promise<Respon
     });
   }
 
-  // Lovable + OpenAI use the same OpenAI-compatible shape
+  // Lovable + OpenAI use the same OpenAI-compatible shape.
+  // The `reasoning` field is provider/model-specific:
+  //   - Lovable's gateway accepts it for Gemini 2.5 family.
+  //   - OpenAI rejects it as "Unrecognized request argument" on every
+  //     non-reasoning model (gpt-4o, gpt-4o-mini); only o1/o3-family
+  //     models accept it. Forwarding it unconditionally 400'd every
+  //     enrich-university call (and every brief-sections call) until
+  //     this gate was added.
+  const supportsReasoning =
+    provider === "lovable"
+    || (provider === "openai" && /^o[1-9]/i.test(model));
+
   return fetch(chatBaseUrl(provider), {
     method: "POST",
     headers: {
@@ -139,7 +157,8 @@ export async function chatCompletions(opts: ChatCompletionsOpts): Promise<Respon
       model,
       messages: opts.messages,
       stream: !!opts.stream,
-      ...(opts.reasoning ? { reasoning: opts.reasoning } : {}),
+      ...(opts.reasoning && supportsReasoning ? { reasoning: opts.reasoning } : {}),
+      ...(opts.jsonMode ? { response_format: { type: "json_object" } } : {}),
     }),
   });
 }

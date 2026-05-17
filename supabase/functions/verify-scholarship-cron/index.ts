@@ -29,11 +29,16 @@ const json = (status: number, body: unknown) =>
 // at ~7 days for a 2-3k row catalog instead of ~15 days.
 const MAX_PER_RUN = 200;
 
-// Concurrent verify-scholarship calls. Each call hits Firecrawl + an
-// AI extraction; ~3s avg. CONCURRENCY=6 keeps throughput ~2 verifies/s
-// — still under Firecrawl's per-second cap and lets 200 rows fit
-// inside the 140s deadline (200/6 × 3s ≈ 100s).
-const CONCURRENCY = 6;
+// Concurrent verify-scholarship calls. CONCURRENCY=6 was sized for 3s
+// average per call, but real-world latency is 7-15s (Firecrawl + AI),
+// so 6 in flight produced ~30 rps of new connections to the same
+// internal gateway origin → the gateway dropped ~85% of fan-out
+// invokes with "Failed to send a request to the Edge Function"
+// (FunctionsFetchError), counted as "other" in the bucket tally.
+// Dropped to 3 so the gateway's per-source pool isn't saturated.
+const CONCURRENCY = 3;
+const RETRIES_ON_FETCH_ERROR = 2;
+const RETRY_BACKOFF_MS = [500, 1500];
 
 // Deadline for the entire run. Supabase edge functions cap at ~150s
 // on paid tier; we leave 10s headroom for the JSON response. Pre-fix
@@ -114,6 +119,9 @@ Deno.serve(async (req) => {
     fetch_failed: 0,
     page_too_thin: 0,
     extract_failed: 0,
+    no_source_url: 0,
+    pending: 0,
+    fan_out_failed: 0,
     other: 0,
   };
   const errors: string[] = [];
@@ -122,25 +130,44 @@ Deno.serve(async (req) => {
   let processed = 0;
 
   const verifyOne = async (c: typeof candidates[number]) => {
-    try {
-      const { data, error } = await supa.functions.invoke<{
-        ok: boolean;
-        status: string;
-        diff_count?: number;
-      }>("verify-scholarship", { body: { scholarship_id: c.scholarship_id } });
+    let lastErr: { message: string; isFetch: boolean } | null = null;
 
-      if (error) {
-        errors.push(`${c.scholarship_name}: ${error.message}`);
-        counters.other++;
+    // Retry only the FunctionsFetchError class — transient internal
+    // gateway drops. Real per-row errors (parse fail, fetch_failed,
+    // etc.) come back in `data.status` with 200 from verify-scholarship
+    // and don't fall into this branch.
+    for (let attempt = 0; attempt <= RETRIES_ON_FETCH_ERROR; attempt++) {
+      try {
+        const { data, error } = await supa.functions.invoke<{
+          ok: boolean;
+          status: string;
+          diff_count?: number;
+        }>("verify-scholarship", { body: { scholarship_id: c.scholarship_id } });
+
+        if (error) {
+          const isFetch = /Failed to send a request/i.test(error.message);
+          lastErr = { message: error.message, isFetch };
+          if (isFetch && attempt < RETRIES_ON_FETCH_ERROR) {
+            await new Promise(r => setTimeout(r, RETRY_BACKOFF_MS[attempt] ?? 1500));
+            continue;
+          }
+          break;
+        }
+
+        const status = data?.status ?? "other";
+        if (status in counters) counters[status as keyof typeof counters]++;
+        else counters.other++;
         return;
+      } catch (e) {
+        lastErr = { message: (e as Error).message, isFetch: false };
+        break;
       }
+    }
 
-      const status = data?.status ?? "other";
-      if (status in counters) counters[status as keyof typeof counters]++;
+    if (lastErr) {
+      errors.push(`${c.scholarship_name}: ${lastErr.message}`);
+      if (lastErr.isFetch) counters.fan_out_failed++;
       else counters.other++;
-    } catch (e) {
-      errors.push(`${c.scholarship_name}: ${(e as Error).message}`);
-      counters.other++;
     }
   };
 
