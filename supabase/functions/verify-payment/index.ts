@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
             ? session.payment_intent
             : session.payment_intent?.id || null;
       }
-      await supabase.from("bookings").update(updates).eq("id", existing.id);
+      await supabase.from("bookings").update(updates as never).eq("id", existing.id);
 
       if (paid) {
         await supabase.from("student_interactions").insert({

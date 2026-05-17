@@ -71,12 +71,15 @@ Deno.serve(async (req) => {
   });
   if (insErr) return json(500, { error: insErr.message });
 
-  // Bump the referrer's denormalised counter
-  await admin.rpc("increment_referral_total_uses", { p_code: codeRow.code }).then(() => {}).catch(async () => {
+  // Bump the referrer's denormalised counter. The supabase rpc result
+  // is PromiseLike (no .catch) so wrap in try/catch.
+  try {
+    await admin.rpc("increment_referral_total_uses" as never, { p_code: codeRow.code } as never);
+  } catch {
     // RPC didn't exist? Fall back to a direct update via SELECT current then write.
     const { data: c } = await admin.from("referral_codes").select("total_uses").eq("code", codeRow.code).maybeSingle();
-    await admin.from("referral_codes").update({ total_uses: (c?.total_uses ?? 0) + 1 }).eq("code", codeRow.code);
-  });
+    await admin.from("referral_codes").update({ total_uses: (c?.total_uses ?? 0) + 1 } as never).eq("code", codeRow.code);
+  }
 
   return json(200, { ok: true, status: "registered", code: codeRow.code });
 });

@@ -132,14 +132,17 @@ Deno.serve(async (req) => {
           // Notify the referrer (best-effort — looks up email via
           // student_profiles since we don't store it on auth.users
           // directly without admin scopes).
+          // student_profiles has no `language` column — selecting it 400s
+          // the whole query. Default to English; see saved-searches-cron
+          // fix in f30dd1a for context.
           const { data: refProfile } = await admin
             .from("student_profiles")
-            .select("email, full_name, language")
+            .select("email, full_name")
             .eq("user_id", ref.referrer_user_id)
             .maybeSingle();
           if (refProfile?.email) {
             try {
-              const refLang: "en" | "ru" = (refProfile as { language?: string | null }).language === "ru" ? "ru" : "en";
+              const refLang: "en" | "ru" = "en";
               await admin.functions.invoke("send-transactional-email", {
                 body: {
                   recipientEmail: refProfile.email,
