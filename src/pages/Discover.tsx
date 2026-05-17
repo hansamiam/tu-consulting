@@ -1,4 +1,4 @@
-import { memo, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import { DiscoverAppBar } from "@/components/discover/DiscoverAppBar";
@@ -3385,6 +3385,17 @@ const Discover = ({ language = "en" }: Props) => {
   const [wiz, setWiz] = useState<WizardData>(DEFAULT_WIZARD);
   const [openDetail, setOpenDetail] = useState<Scored | null>(null);
   const [expandedDetail, setExpandedDetail] = useState<Scored | null>(null);
+  /* 2026-05-17: row clicks now navigate to the dedicated detail
+     route instead of opening the retired DetailSheet. The legacy
+     state above is kept for back-compat with the few remaining
+     callers (compare / shortlist / collection mounts) that still
+     call setOpenDetail; they no-op visually since the Sheet mount
+     was deleted, but the next iteration will rip out those references
+     entirely. */
+  const openDetailRoute = useCallback((s: Scored) => {
+    const path = language === "ru" ? `/scholarships/${s.scholarship_id}/ru` : `/scholarships/${s.scholarship_id}`;
+    navigate(path);
+  }, [language, navigate]);
   /* Application tracker — offline-first hook that mirrors localStorage
      and (when authed) syncs to Postgres `application_tracker`. Replaces
      the four separate useState + useEffect blobs that lived here. */
@@ -5167,7 +5178,7 @@ const Discover = ({ language = "en" }: Props) => {
                           }
                           const cp = (s: Scored, i: number) => ({
                             key: s.scholarship_id, s, index: i,
-                            onSelect: () => setOpenDetail(s),
+                            onSelect: () => openDetailRoute(s),
                             isBookmarked: shortlist.has(s.scholarship_id),
                             onBookmark: (e: React.MouseEvent) => { e.stopPropagation(); toggleBookmark(s.scholarship_id); },
                             status: statusMap[s.scholarship_id],
@@ -5247,7 +5258,7 @@ const Discover = ({ language = "en" }: Props) => {
                         {appSection === "browse" && (() => {
                           const cardProps = (s: Scored, i: number) => ({
                             key: s.scholarship_id, s, index: i,
-                            onSelect: () => setOpenDetail(s),
+                            onSelect: () => openDetailRoute(s),
                             isBookmarked: shortlist.has(s.scholarship_id),
                             onBookmark: (e: React.MouseEvent) => { e.stopPropagation(); toggleBookmark(s.scholarship_id); },
                             status: statusMap[s.scholarship_id],
@@ -5520,7 +5531,7 @@ const Discover = ({ language = "en" }: Props) => {
                                 </h3>
                                 <p className="text-xs text-muted-foreground line-clamp-2 leading-snug">{[cleanProvider(s.provider_name), s.host_country && shortCountry(s.host_country)].filter(Boolean).join(" · ")}</p>
                                 <div className="flex gap-2 mt-3">
-                                  <Button variant="gold" size="sm" className="text-xs h-7 px-3" onClick={() => { setOpenDetail(s); setCompareOpen(false); }}>
+                                  <Button variant="gold" size="sm" className="text-xs h-7 px-3" onClick={() => { setCompareOpen(false); openDetailRoute(s); }}>
                                     Strategy
                                   </Button>
                                   {s.official_url && !isAggregatorUrl(s.official_url) && (
@@ -5577,7 +5588,7 @@ const Discover = ({ language = "en" }: Props) => {
                 const dl = deadlineDisplay(s.application_deadline, "en", s.deadline_type);
                 return (
                   <button key={s.scholarship_id}
-                    onClick={() => { setOpenDetail(s); setShortlistOpen(false); }}
+                    onClick={() => { setShortlistOpen(false); openDetailRoute(s); }}
                     className="w-full text-left bg-card border border-border rounded-2xl p-3.5 hover:border-gold/40 hover:shadow-md transition-all flex items-start gap-3 group">
                     <div className={`h-11 w-11 rounded-2xl bg-gradient-to-br ${tier.grad} flex items-center justify-center text-[13px] font-bold text-white shrink-0 tracking-tight`}>{initials(s.provider_name || s.scholarship_name)}</div>
                     <div className="min-w-0 flex-1">
@@ -5636,7 +5647,7 @@ const Discover = ({ language = "en" }: Props) => {
                         key={s.scholarship_id}
                         s={s}
                         index={i}
-                        onSelect={() => { setOpenDetail(s); setOpenCollection(null); }}
+                        onSelect={() => { setOpenCollection(null); openDetailRoute(s); }}
                         isBookmarked={shortlist.has(s.scholarship_id)}
                         onBookmark={(e) => { e.stopPropagation(); toggleBookmark(s.scholarship_id); }}
                         status={statusMap[s.scholarship_id]}
@@ -5737,24 +5748,13 @@ const Discover = ({ language = "en" }: Props) => {
           </SheetContent>
         </Sheet>
 
-        <DetailSheet
-          s={openDetail}
-          open={!!openDetail}
-          onClose={() => setOpenDetail(null)}
-          isBookmarked={openDetail ? shortlist.has(openDetail.scholarship_id) : false}
-          onBookmark={() => openDetail && toggleBookmark(openDetail.scholarship_id)}
-          profile={profile}
-          status={openDetail ? statusMap[openDetail.scholarship_id] : undefined}
-          onStatusChange={(st) => openDetail && setStatus(openDetail.scholarship_id, st)}
-          note={openDetail ? (notesMap[openDetail.scholarship_id] || "") : ""}
-          onNoteChange={(n) => openDetail && setNote(openDetail.scholarship_id, n)}
-          similar={similarToOpen}
-          onSwitchTo={(s) => setOpenDetail(s)}
-          isMember={isMember}
-          onUnlock={() => setPaywallOpen("strategy")}
-          onExpand={() => openDetail && setExpandedDetail(openDetail)}
-          lang={language}
-        />
+        {/* DetailSheet retired 2026-05-17 — the right-side vertical
+            drawer was the "tiny ugly popup" the user (and a friend)
+            flagged. Row clicks now navigate to the dedicated
+            /scholarships/:id route via the onSelect handlers below.
+            Keeping the component import + similarToOpen memo unused
+            for one ship cycle in case we need to roll back; will
+            delete cleanly in the next pass. */}
 
         <ExpandedScholarshipDialog
           s={expandedDetail}

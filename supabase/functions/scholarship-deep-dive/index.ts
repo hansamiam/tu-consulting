@@ -350,8 +350,13 @@ Now output ONLY the JSON. Begin with { and end with }.`;
     // typical admit gap, prescribing a real positioning angle. The cost
     // diff (~$0.005 vs ~$0.0008) is paid once per row and is the entire
     // value prop of the My Plan tab.
+    // 2026-05-17: downgraded to flash for token-spend cut. The earlier
+    // pro tier was cited at ~$0.005/call; flash brings it to ~$0.0008.
+    // Quality risk: less specific copy on edge-case scholarships. Re-
+    // promote per-row only if conversion telemetry shows the depth was
+    // earning the user click-through.
     const resp = await chatCompletions({
-      tier: "pro",
+      tier: "flash",
       messages: [
         { role: "system", content: "You are a Yale/Cambridge/Harvard-trained admissions strategist briefing a real student on a specific scholarship. Output only valid JSON matching the requested schema. The student decides whether to spend 20 hours on this application based on what you write — generic content WASTES their time. Always be specific to their numbers and this program." },
         { role: "user", content: prompt },

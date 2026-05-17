@@ -224,15 +224,19 @@ async function generateSection(spec: SectionSpec, ctx: BriefContext): Promise<Se
       ? spec.buildPrompt(ctx)
       : buildRegenPrompt(spec, ctx, firstReason ?? "validation failed");
     try {
+      // 2026-05-17: token-spend minimisation pass — downgraded magazine
+      // sections from "pro" + reasoning:high to "flash" + no reasoning.
+      // gpt-4o-mini is sufficient for the structured JSON shape we now
+      // demand, and the cost-per-brief drops ~10x. Per-section spec
+      // reasoning hints are intentionally ignored at the call site.
       const resp = await chatCompletions({
-        tier: "pro",
+        tier: "flash",
         messages: [
           { role: "system", content: sysContent },
           { role: "user",   content: prompt },
         ],
         stream: false,
         jsonMode: true,
-        ...(spec.reasoning ? { reasoning: spec.reasoning } : {}),
       });
       if (!resp.ok) {
         const errBody = await resp.text();
@@ -940,15 +944,16 @@ ${profile.topActivity ? "- Reference the top activity by name in the essay angle
 
 ${grade === "premium" ? premiumSections : basicSections}`;
 
-    // Premium reports get the stronger model (gateway translates per provider)
+    // 2026-05-17: tier:flash for both premium + basic monolithic. The
+    // premium tier is now served by the JSON-section path above; this
+    // branch is the legacy basic-tier fallback. Cheap.
     const response = await chatCompletions({
-      tier: grade === "premium" ? "pro" : "flash",
+      tier: "flash",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: `Generate my personalized university pathway plan.` },
       ],
       stream: true,
-      ...(grade === "premium" ? { reasoning: { effort: "high" as const } } : {}),
     });
 
     if (!response.ok) {

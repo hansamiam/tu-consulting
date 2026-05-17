@@ -167,16 +167,18 @@ ${EDITORIAL_RULES_TIGHT}
 
 ${essay}`;
 
-    // Premium gets the stronger model + reasoning effort high; preview
-    // uses flash to keep the cost sane on free users (some won't convert).
+    // 2026-05-17: force flash + drop reasoning on every essay critique
+    // (premium AND preview). Token budget reduction sweep. The quality
+    // gap on gpt-4o-mini for this prompt is acceptable; isPremium left
+    // intact so the gate logic (longer responses, deeper feedback in
+    // the prompt) still tunes the OUTPUT shape, just on a cheaper model.
     const response = await chatCompletions({
-      tier: isPremium ? "pro" : "flash",
+      tier: "flash",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userMsg },
       ],
       stream: true,
-      ...(isPremium ? { reasoning: { effort: "high" as const } } : {}),
     });
 
     if (!response.ok) {

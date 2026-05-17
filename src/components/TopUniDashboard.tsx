@@ -2869,8 +2869,14 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         // sections (Career ROI, Combined Funding, Visa Pathway). Runs in
         // parallel to the email send below so the user sees charts within
         // a few seconds of the brief landing. Soft-fails: on any error the
-        // markdown narrative still renders cleanly.
-        if (reportGrade === "premium" && soFar.length > 800) {
+        // 2026-05-17: extract-brief-data second pass disabled. It
+        // existed to populate the Combined Funding chart + Career ROI
+        // chart on the LEGACY markdown report; the new magazine renderer
+        // doesn't show those charts, so the call is wasted spend. Gated
+        // on `false` rather than deleted in case we re-introduce a
+        // chart appendix later — re-enabling is a one-line flip.
+        const EXTRACT_BRIEF_DATA_ENABLED = false;
+        if (EXTRACT_BRIEF_DATA_ENABLED && reportGrade === "premium" && soFar.length > 800) {
           setStructuredLoading(true);
           (async () => {
             try {
