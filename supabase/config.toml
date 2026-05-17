@@ -77,20 +77,30 @@ verify_jwt = false
 [functions.generate-scholarship-checklist]
 verify_jwt = false
 
+# verify_jwt = false: fanned out to by enrich-universities-cron via
+# supa.functions.invoke(), which sets Authorization: Bearer sb_secret_*.
+# Gateway rejected as non-JWT before the function ran. In-body auth
+# via requireAdminOrService (enrich-university:114).
 [functions.enrich-university]
-verify_jwt = true
+verify_jwt = false
 
 [functions.enrich-universities-cron]
 verify_jwt = false
 
+# verify_jwt = false: fanned out to by verify-scholarship-cron via
+# supa.functions.invoke(). Same dispatchee-401 pattern. In-body auth
+# via requireAdminOrService (verify-scholarship:252).
 [functions.verify-scholarship]
-verify_jwt = true
+verify_jwt = false
 
 [functions.verify-scholarship-cron]
 verify_jwt = false
 
+# verify_jwt = false: fanned out to by enrich-scholarships-content-cron
+# via supa.functions.invoke(). Same dispatchee-401 pattern. In-body
+# auth via requireAdminOrService (enrich-scholarship-content:90).
 [functions.enrich-scholarship-content]
-verify_jwt = true
+verify_jwt = false
 
 [functions.enrich-scholarships-content-cron]
 verify_jwt = false
@@ -142,6 +152,12 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.canonical-extract-cron]
+verify_jwt = false
+
+# verify_jwt = false: fanned out to by canonical-extract-cron via
+# supa.functions.invoke(). Same dispatchee-401 pattern. In-body auth
+# via requireAdminOrService.
+[functions.canonical-extract]
 verify_jwt = false
 
 [functions.enrich-cover-images-cron]

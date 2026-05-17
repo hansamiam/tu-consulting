@@ -28,7 +28,6 @@ interface ProfileRow {
   email: string | null;
   nudge_opt_out: boolean;
   created_at: string | null;
-  language: string | null;
 }
 
 interface AuthUser {
@@ -91,13 +90,16 @@ Deno.serve(async (req) => {
   }
 
   // Hydrate profile data (nudge_opt_out + display name) for everyone.
+  // student_profiles has no `language` column — selecting it 400s the
+  // query. Default userLang to "en" below; same fix as saved-searches-cron
+  // / scholarship-deadline-cron / check-subscription.
   const userIds = allUsers.map((u) => u.id);
   const { data: profiles } = await supa
     .from("student_profiles")
-    .select("user_id, full_name, email, nudge_opt_out, created_at, language")
+    .select("user_id, full_name, email, nudge_opt_out, created_at")
     .in("user_id", userIds);
   const profileMap = new Map<string, ProfileRow>(
-    (profiles ?? []).map((p) => [p.user_id as string, p as ProfileRow]),
+    (profiles ?? []).map((p) => [p.user_id, p]),
   );
 
   let sent = 0, skipped = 0, failed = 0;
@@ -111,11 +113,12 @@ Deno.serve(async (req) => {
     if (profile?.nudge_opt_out) { skipped++; continue; }
 
     const firstName = profile?.full_name?.split(" ")[0]?.trim() || undefined;
-    const userLang: "en" | "ru" = profile?.language === "ru" ? "ru" : "en";
-    const ru = userLang === "ru";
-    const localizedDiscover = `${SITE}${ru ? "/discover/ru" : "/discover"}`;
-    const localizedPipeline = `${SITE}${ru ? "/pipeline/ru" : "/pipeline"}`;
-    const localizedManage = `${SITE}${ru ? "/account/ru" : "/account"}?action=pause-nudges`;
+    // Default to English — student_profiles has no language column yet
+    // (see comment at the profile fetch).
+    const userLang: "en" | "ru" = "en";
+    const localizedDiscover = `${SITE}/discover`;
+    const localizedPipeline = `${SITE}/pipeline`;
+    const localizedManage = `${SITE}/account?action=pause-nudges`;
 
     const createdAt = u.created_at ? new Date(u.created_at) : null;
     const lastSignIn = u.last_sign_in_at ? new Date(u.last_sign_in_at) : null;

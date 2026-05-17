@@ -23,6 +23,23 @@ interface ResendEmailPayload {
   message_id: string
 }
 
+// Shape of the JSON blob enqueued into pgmq. Extends ResendEmailPayload with
+// the enqueue timestamp (set by the enqueuer for TTL calculations).
+// The pgmq read_email rpc returns `message: Json`; we cast to this shape
+// at the top of the processing loop and null-guard against poisoned rows.
+interface QueuePayload extends ResendEmailPayload {
+  queued_at?: string
+}
+
+// pgmq's read_email also returns an `enqueued_at` timestamp on the row
+// envelope. Not part of the generated rpc return type, so widen here.
+interface QueueMessage {
+  msg_id: number
+  message: QueuePayload | null
+  read_ct: number
+  enqueued_at?: string
+}
+
 class EmailSendError extends Error {
   status: number
   constructor(message: string, status: number) {
@@ -128,10 +145,10 @@ function parseJwtClaims(token: string): Record<string, unknown> | null {
 async function moveToDlq(
   supabase: any,
   queue: string,
-  msg: { msg_id: number; message: Record<string, unknown> },
+  msg: { msg_id: number; message: unknown },
   reason: string
 ): Promise<void> {
-  const payload = msg.message
+  const payload = (msg.message ?? {}) as Record<string, unknown>
   await supabase.from('email_send_log').insert({
     message_id: payload.message_id,
     template_name: (payload.label || queue) as string,
@@ -247,11 +264,18 @@ Deno.serve(async (req) => {
       }
     }
 
-    for (let i = 0; i < messages.length; i++) {
-      const msg = messages[i]
+    const typedMessages = (messages ?? []) as unknown as QueueMessage[]
+    for (let i = 0; i < typedMessages.length; i++) {
+      const msg = typedMessages[i]
       const payload = msg.message
+      // Poisoned row — empty / null payload. Send straight to DLQ so the
+      // queue doesn't loop on it. Continue with the rest of the batch.
+      if (!payload) {
+        await moveToDlq(supabase, queue, msg as never, 'Null payload (poisoned row)')
+        continue
+      }
       const failedAttempts =
-        payload?.message_id && typeof payload.message_id === 'string'
+        payload.message_id && typeof payload.message_id === 'string'
           ? (failedAttemptsByMessageId.get(payload.message_id) ?? 0)
           : msg.read_ct ?? 0
 

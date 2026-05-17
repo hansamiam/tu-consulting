@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
         idempotencyKey: `r24h-${b.id}`,
         templateData: {
           name: b.contact_name,
-          scheduledAt: new Date(b.calendly_scheduled_at).toLocaleString("en-US", { dateStyle: "full", timeStyle: "short" }),
+          scheduledAt: new Date(b.calendly_scheduled_at ?? Date.now()).toLocaleString("en-US", { dateStyle: "full", timeStyle: "short" }),
           meetingUrl: b.calendly_meeting_url,
           intakeCompleted: !!b.intake_completed_at,
           intakeUrl: `${SITE}/thank-you?booking=${b.id}`,

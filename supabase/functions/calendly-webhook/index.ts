@@ -73,7 +73,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (Object.keys(updates).length > 0) {
-      const { error } = await supabase.from("bookings").update(updates).eq("id", target.id);
+      const { error } = await supabase.from("bookings").update(updates as never).eq("id", target.id);
       if (error) throw error;
     }
 
