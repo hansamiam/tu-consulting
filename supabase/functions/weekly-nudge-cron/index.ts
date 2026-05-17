@@ -163,9 +163,15 @@ Deno.serve(async (req) => {
   // 6-day cooldown so within-week re-runs don't double-send
   const cooldown = new Date(Date.now() - 6 * 86400_000).toISOString();
 
+  // student_profiles has NO `language` column — selecting it 400s the
+  // whole query → 500 on this cron. Same bug pattern as the earlier
+  // scholarship-deadline-cron fix. Default everyone to English; the
+  // userLang resolver below reads a defensive ?? "en" fallback.
+  // A real per-user language preference needs ALTER TABLE +
+  // wizard-capture work, tracked separately.
   const { data: profiles, error: profileErr } = await supa
     .from("student_profiles")
-    .select("user_id, full_name, email, major, field_of_study, target_countries, gpa, ielts, last_nudge_sent_at, language")
+    .select("user_id, full_name, email, major, field_of_study, target_countries, gpa, ielts, last_nudge_sent_at")
     .eq("nudge_opt_out", false)
     .or(`last_nudge_sent_at.is.null,last_nudge_sent_at.lt.${cooldown}`)
     .returns<ProfileRow[]>();

@@ -138,7 +138,15 @@ Deno.serve(async (req) => {
     .eq("university_id", body.university_id)
     .maybeSingle();
 
-  if (uErr || !university) return json(404, { error: "University not found" });
+  // Distinguish query failure (e.g. missing grants / RLS / bad join)
+  // from genuine "no such row" — collapsing the two as a 404 ate the
+  // real error for days when the `applications` table was missing a
+  // service_role GRANT and the embedded select silently broke.
+  if (uErr) {
+    console.error("[enrich-university] read failed", body.university_id, uErr);
+    return json(500, { error: `University read failed: ${uErr.message}` });
+  }
+  if (!university) return json(404, { error: "University not found", university_id: body.university_id });
 
   const programs = (university.programs as any[]) || [];
   const programLines = programs.map((p, i) =>
