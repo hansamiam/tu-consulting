@@ -16,6 +16,7 @@
 // gates all email surfaces.
 
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireAdminOrService } from "../_shared/auth.ts";
 import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
 import { respondError, respondJson } from "../_shared/http.ts";
 import { createServiceClient } from "../_shared/clients.ts";
@@ -63,6 +64,9 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return respondError(405, "POST only", corsHeaders);
   }
+
+  const auth = await requireAdminOrService(req);
+  if (!auth.ok) return respondError(401, auth.reason ?? "unauthorized", corsHeaders);
 
   const startedAt = Date.now();
   const supa = createServiceClient();

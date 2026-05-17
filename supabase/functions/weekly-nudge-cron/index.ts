@@ -15,6 +15,7 @@
 
 import { chatCompletions } from "../_shared/ai-gateway.ts";
 import { EDITORIAL_RULES_TIGHT } from "../_shared/editorial-rules.ts";
+import { requireAdminOrService } from "../_shared/auth.ts";
 import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
 import { respondError, respondJson } from "../_shared/http.ts";
 import { createServiceClient } from "../_shared/clients.ts";
@@ -155,6 +156,9 @@ Deno.serve(async (req) => {
   if (pre) return pre;
   if (req.method !== "POST") return respondError(405, "POST only", corsHeaders);
 
+  const auth = await requireAdminOrService(req);
+  if (!auth.ok) return respondError(401, auth.reason ?? "unauthorized", corsHeaders);
+
   const startedAt = Date.now();
   // AI gateway env (LOVABLE_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY)
   // is validated lazily inside chatCompletions when called.
@@ -163,9 +167,15 @@ Deno.serve(async (req) => {
   // 6-day cooldown so within-week re-runs don't double-send
   const cooldown = new Date(Date.now() - 6 * 86400_000).toISOString();
 
+  // student_profiles has NO `language` column — selecting it 400s the
+  // whole query → 500 on this cron. Same bug pattern as the earlier
+  // scholarship-deadline-cron fix. Default everyone to English; the
+  // userLang resolver below reads a defensive ?? "en" fallback.
+  // A real per-user language preference needs ALTER TABLE +
+  // wizard-capture work, tracked separately.
   const { data: profiles, error: profileErr } = await supa
     .from("student_profiles")
-    .select("user_id, full_name, email, major, field_of_study, target_countries, gpa, ielts, last_nudge_sent_at, language")
+    .select("user_id, full_name, email, major, field_of_study, target_countries, gpa, ielts, last_nudge_sent_at")
     .eq("nudge_opt_out", false)
     .or(`last_nudge_sent_at.is.null,last_nudge_sent_at.lt.${cooldown}`)
     .returns<ProfileRow[]>();

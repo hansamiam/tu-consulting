@@ -19,6 +19,7 @@
 //   curl -X POST <fn-url>/scholarship-deadline-cron \
 //     -H "Authorization: Bearer ${SERVICE_ROLE_KEY}"
 
+import { requireAdminOrService } from "../_shared/auth.ts";
 import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
 import { respondError, respondJson } from "../_shared/http.ts";
 import { createServiceClient } from "../_shared/clients.ts";
@@ -75,6 +76,11 @@ Deno.serve(async (req) => {
   const pre = handleCorsOptions(req);
   if (pre) return pre;
   if (req.method !== "POST") return respondError(405, "POST only", corsHeaders);
+
+  // Cron / admin gate. verify_jwt is false (gateway can't see the cron's
+  // sb_secret apikey as a JWT), so we authenticate the caller here.
+  const auth = await requireAdminOrService(req);
+  if (!auth.ok) return respondError(401, auth.reason ?? "unauthorized", corsHeaders);
 
   const startedAt = Date.now();
   const supa = createServiceClient();
