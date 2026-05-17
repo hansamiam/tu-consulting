@@ -47,6 +47,7 @@ import {
 import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
 import { respondJson } from "../_shared/http.ts";
 import { createServiceClient } from "../_shared/clients.ts";
+import type { Json } from "../_shared/database.types.ts";
 
 const json = (status: number, body: unknown) =>
   respondJson(status, body, corsHeaders);
@@ -223,7 +224,7 @@ function diffMaterial(stored: Record<string, unknown>, fresh: ExtractedFields): 
   const diffs: { field: DiffField; was: unknown; now: unknown }[] = [];
   for (const f of DIFF_FIELDS) {
     const a = stored[f];
-    const b = (fresh as Record<string, unknown>)[f];
+    const b = (fresh as unknown as Record<string, unknown>)[f];
     if (b === undefined || b === null) continue;
     // NULL/empty stored → fresh value is additive, not a contradiction.
     // Backfill set already silently writes prose-field NULL→value; we
@@ -261,16 +262,7 @@ Deno.serve(async (req) => {
   const { data: stored, error: loadErr } = await supa
     .from("scholarships")
     .select(
-      "scholarship_id, scholarship_name, provider_name, host_country, " +
-      "application_deadline, deadline_type, coverage_type, award_amount_text, " +
-      "estimated_total_value_usd, min_gpa, min_ielts, min_toefl, min_sat, " +
-      "essay_required, recommendation_letters_required, interview_required, " +
-      "citizenship_requirements, eligibility_requirements, " +
-      "language_requirements, duration_text, " +
-      "target_fields, target_degree_level, eligible_countries, target_demographics, partner_universities, " +
-      "why_this_fits, how_to_win, ideal_candidate_profile, " +
-      "what_to_prepare_first, strategy_notes, weak_candidate_warning, " +
-      "source_url, official_url, verification_status, last_verified_at"
+      `scholarship_id, scholarship_name, provider_name, host_country, application_deadline, deadline_type, coverage_type, award_amount_text, estimated_total_value_usd, min_gpa, min_ielts, min_toefl, min_sat, essay_required, recommendation_letters_required, interview_required, citizenship_requirements, eligibility_requirements, language_requirements, duration_text, target_fields, target_degree_level, eligible_countries, target_demographics, partner_universities, why_this_fits, how_to_win, ideal_candidate_profile, what_to_prepare_first, strategy_notes, weak_candidate_warning, source_url, official_url, verification_status, last_verified_at`
     )
     .eq("scholarship_id", body.scholarship_id)
     .maybeSingle();
@@ -325,7 +317,7 @@ Deno.serve(async (req) => {
     }
   }
   if (Object.keys(selfCleanUpdate).length > 0) {
-    await supa.from("scholarships").update(selfCleanUpdate).eq("scholarship_id", stored.scholarship_id);
+    await supa.from("scholarships").update(selfCleanUpdate as never).eq("scholarship_id", stored.scholarship_id);
     // Reflect locally so downstream LLM prompt + diff comparison use
     // the cleaned values too — otherwise we'd compute a name diff on
     // every pass.
@@ -522,7 +514,7 @@ Deno.serve(async (req) => {
   const backfillUpdates: Record<string, unknown> = {};
   for (const f of BACKFILL_NULL_FIELDS) {
     const a = (stored as Record<string, unknown>)[f];
-    const b = (fresh as Record<string, unknown>)[f];
+    const b = (fresh as unknown as Record<string, unknown>)[f];
     const storedEmpty = a === null || a === undefined || (Array.isArray(a) && a.length === 0);
     const freshNonEmpty = Array.isArray(b) && b.length > 0;
     if (storedEmpty && freshNonEmpty) backfillUpdates[f] = b;
@@ -534,7 +526,7 @@ Deno.serve(async (req) => {
   // existing prose.
   for (const f of BACKFILL_NULL_PROSE_FIELDS) {
     const a = (stored as Record<string, unknown>)[f];
-    const b = (fresh as Record<string, unknown>)[f];
+    const b = (fresh as unknown as Record<string, unknown>)[f];
     if (typeof b !== "string") continue;
     const trimmed = b.trim();
     if (trimmed.length < PROSE_BACKFILL_MIN_LEN) continue;
@@ -596,9 +588,9 @@ Deno.serve(async (req) => {
         await supa.rpc("record_scholarship_source", {
           p_scholarship_id: stored.scholarship_id,
           p_source_url: targetUrl,
-          p_source_hint: null,
-          p_confirms: confirms.length > 0 ? confirms : null,
-          p_confidence: typeof fresh.confidence === "number" ? fresh.confidence : null,
+          p_source_hint: undefined,
+          p_confirms: confirms.length > 0 ? confirms : undefined,
+          p_confidence: typeof fresh.confidence === "number" ? fresh.confidence : undefined,
         });
       } catch (e) {
         console.warn("[verify-scholarship] record_scholarship_source failed", (e as Error).message);
@@ -618,16 +610,20 @@ Deno.serve(async (req) => {
   // Land the fresh extraction in scholarships_staging with a needs_review
   // status so an admin can compare + accept. Don't promote verification_status
   // yet — keep at 'stale' so it shows up in the queue.
+  // scholarships_staging.source_id/fingerprint are typed as required by the
+  // generated schema; for self-heal stages there's no upstream source row,
+  // so cast the row through `as never` to bypass the typed-insert check.
+  // Runtime is fine — the columns are nullable in Postgres.
   await supa.from("scholarships_staging").insert({
     source_id: null,
     scholarship_id: stored.scholarship_id,
     fingerprint: null,
     raw_text: pageMarkdown.slice(0, 2000),
-    parsed_data: fresh as unknown as Record<string, unknown>,
+    parsed_data: fresh as unknown as Json,
     confidence: fresh.confidence,
     diff_summary: diffs.map(d => `${d.field}: ${JSON.stringify(d.was)} → ${JSON.stringify(d.now)}`).join("; "),
     status: "pending",
-  }).select("staging_id").maybeSingle();
+  } as never).select("staging_id").maybeSingle();
 
   await supa.from("scholarships")
     .update({

@@ -19,6 +19,7 @@ import { chatCompletions } from "../_shared/ai-gateway.ts";
 import { CORS_HEADERS_EXTENDED as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
 import { respondJson } from "../_shared/http.ts";
 import { createServiceClient } from "../_shared/clients.ts";
+import type { Json } from "../_shared/database.types.ts";
 
 const SCHEMA_VERSION = 1;
 const COST_ESTIMATE_USD = 0.0006;
@@ -78,13 +79,7 @@ Deno.serve(async (req) => {
     supa
       .from("scholarships")
       .select(
-        "scholarship_id, scholarship_name, provider_name, host_country, " +
-        "coverage_type, official_url, application_deadline, " +
-        "min_gpa, gpa_scale, min_ielts, min_toefl, min_sat, " +
-        "essay_required, recommendation_letters_required, interview_required, " +
-        "citizenship_requirements, eligibility_requirements, " +
-        "language_requirements, application_fee_text, what_to_prepare_first, " +
-        "last_verified_date"
+        `scholarship_id, scholarship_name, provider_name, host_country, coverage_type, official_url, application_deadline, min_gpa, gpa_scale, min_ielts, min_toefl, min_sat, essay_required, recommendation_letters_required, interview_required, citizenship_requirements, eligibility_requirements, language_requirements, application_fee_text, what_to_prepare_first, last_verified_date`
       )
       .eq("scholarship_id", body.scholarshipId)
       .maybeSingle(),
@@ -105,7 +100,7 @@ Deno.serve(async (req) => {
         || new Date(scholarship.last_verified_date) <= new Date(cached.generated_at));
 
   if (cacheValid) {
-    return json(200, { items: cached.items as ChecklistItem[], _cached: true, _generated_at: cached.generated_at });
+    return json(200, { items: cached.items as unknown as ChecklistItem[], _cached: true, _generated_at: cached.generated_at });
   }
 
   // ─── Generate ────────────────────────────────────────────────────────
@@ -210,7 +205,7 @@ Begin output with [ and end with ].`;
   // Upsert the cache so a re-fire just overwrites with the freshest version.
   await supa.from("scholarship_checklists").upsert({
     scholarship_id: body.scholarshipId,
-    items: parsed,
+    items: parsed as unknown as Json,
     schema_version: SCHEMA_VERSION,
     cost_estimate_usd: COST_ESTIMATE_USD,
     model_tag: Deno.env.get("AI_PROVIDER") || "lovable",

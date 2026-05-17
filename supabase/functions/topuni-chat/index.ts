@@ -172,11 +172,12 @@ async function buildLiveCaseContext(
     .maybeSingle();
 
   // 4. Cached profile (canonical, in case the client lost it)
+  // Single-literal select — supabase-js infers the row type only when
+  // .select() receives a string literal, not a `+`-concatenated string.
   const { data: profile } = await admin
     .from("student_profiles")
     .select(
-      "full_name, nationality, grade_level, gpa, ielts, sat, target_countries, " +
-      "major, field_of_study, budget, scholarship_needed, timeline",
+      `full_name, nationality, grade_level, gpa, ielts, sat, target_countries, major, field_of_study, budget, scholarship_needed, timeline`,
     )
     .eq("user_id", userId)
     .maybeSingle();

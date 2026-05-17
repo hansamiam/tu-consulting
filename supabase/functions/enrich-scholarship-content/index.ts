@@ -100,14 +100,7 @@ Deno.serve(async (req) => {
   const { data: row, error: loadErr } = await supa
     .from("scholarships")
     .select(
-      "scholarship_id, scholarship_name, provider_name, host_country, " +
-      "coverage_type, award_amount_text, target_degree_level, target_fields, " +
-      "eligibility_requirements, citizenship_requirements, " +
-      "min_gpa, gpa_scale, min_ielts, min_toefl, min_sat, " +
-      "essay_required, interview_required, recommendation_letters_required, " +
-      "selectivity_level, " +
-      "why_this_fits, ideal_candidate_profile, how_to_win, what_to_prepare_first, best_for_tags, " +
-      "common_rejection_reasons, weak_candidate_warning, strategy_notes"
+      `scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, target_degree_level, target_fields, eligibility_requirements, citizenship_requirements, min_gpa, gpa_scale, min_ielts, min_toefl, min_sat, essay_required, interview_required, recommendation_letters_required, selectivity_level, why_this_fits, ideal_candidate_profile, how_to_win, what_to_prepare_first, best_for_tags, common_rejection_reasons, weak_candidate_warning, strategy_notes`
     )
     .eq("scholarship_id", body.scholarship_id)
     .maybeSingle();
@@ -269,7 +262,7 @@ Output the JSON now.`;
   patch.embedding = null;
   patch.embedded_at = null;
 
-  await supa.from("scholarships").update(patch).eq("scholarship_id", row.scholarship_id);
+  await supa.from("scholarships").update(patch as never).eq("scholarship_id", row.scholarship_id);
 
   return json(200, {
     ok: true,

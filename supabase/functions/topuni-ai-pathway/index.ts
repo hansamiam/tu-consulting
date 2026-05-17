@@ -457,18 +457,12 @@ serve(async (req) => {
         const ids = matches.map((m: any) => m.scholarship_id);
         const { data: hydrated } = await supabase
           .from("scholarships")
+          // Single-literal select — supabase-js can only infer the row
+          // type when .select() receives a string literal; `+`-concat
+          // collapses to `string` and the row type fell back to
+          // GenericStringError, breaking .filter()/spread downstream.
           .select(
-            "scholarship_id, scholarship_name, provider_name, host_country, " +
-            "coverage_type, award_amount_text, estimated_total_value_usd, " +
-            "target_degree_level, target_fields, target_demographics, " +
-            "partner_universities, " +
-            "eligible_countries, application_deadline, deadline_type, " +
-            "min_gpa, gpa_scale, min_ielts, min_toefl, " +
-            "selectivity_level, ideal_candidate_profile, " +
-            "eligibility_requirements, citizenship_requirements, official_url, " +
-            "source_url, last_verified_at, verification_status, " +
-            "confidence, data_completeness_score, " +
-            "why_this_fits, strategy_notes"
+            `scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, target_degree_level, target_fields, target_demographics, partner_universities, eligible_countries, application_deadline, deadline_type, min_gpa, gpa_scale, min_ielts, min_toefl, selectivity_level, ideal_candidate_profile, eligibility_requirements, citizenship_requirements, official_url, source_url, last_verified_at, verification_status, confidence, data_completeness_score, why_this_fits, strategy_notes`,
           )
           .in("scholarship_id", ids)
           // Drop rows the LLM should never see in its prompt context. Per
@@ -496,12 +490,7 @@ serve(async (req) => {
       let q = supabase
         .from("scholarships")
         .select(
-          "scholarship_id, scholarship_name, provider_name, host_country, " +
-          "coverage_type, award_amount_text, estimated_total_value_usd, " +
-          "target_degree_level, target_fields, application_deadline, " +
-          "eligibility_requirements, citizenship_requirements, official_url, " +
-          "source_url, last_verified_at, verification_status, " +
-          "why_this_fits, strategy_notes"
+          `scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, target_degree_level, target_fields, application_deadline, eligibility_requirements, citizenship_requirements, official_url, source_url, last_verified_at, verification_status, why_this_fits, strategy_notes`,
         )
         .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
           .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null");
@@ -526,12 +515,7 @@ serve(async (req) => {
       const { data: focusRow } = await supabase
         .from("scholarships")
         .select(
-          "scholarship_id, scholarship_name, provider_name, host_country, " +
-          "coverage_type, award_amount_text, estimated_total_value_usd, " +
-          "target_degree_level, target_fields, application_deadline, " +
-          "eligibility_requirements, citizenship_requirements, official_url, " +
-          "source_url, last_verified_at, verification_status, " +
-          "why_this_fits, strategy_notes, how_to_win, ideal_candidate_profile"
+          `scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, target_degree_level, target_fields, application_deadline, eligibility_requirements, citizenship_requirements, official_url, source_url, last_verified_at, verification_status, why_this_fits, strategy_notes, how_to_win, ideal_candidate_profile`,
         )
         .eq("scholarship_id", focusScholarshipId)
         .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")

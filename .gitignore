@@ -29,6 +29,9 @@ docs/
 # Supabase CLI scratch
 supabase/.temp/
 
+# Deno typecheck cache (used by `deno check` against edge fns)
+deno.lock
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

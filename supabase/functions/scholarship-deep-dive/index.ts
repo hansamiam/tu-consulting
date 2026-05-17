@@ -28,6 +28,7 @@ import {
 import { CORS_HEADERS_EXTENDED as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
 import { respondJson } from "../_shared/http.ts";
 import { createServiceClient, createUserClient } from "../_shared/clients.ts";
+import type { Json } from "../_shared/database.types.ts";
 
 // Bumped 5 — added trust calibration (thin-row caveats), audience gate
 // (target_demographics restrict-or-target tags), and partner_universities
@@ -194,17 +195,11 @@ Deno.serve(async (req) => {
   const { data: scholarship, error: schErr } = await supa
     .from("scholarships")
     .select(
-      "scholarship_name, provider_name, host_country, coverage_type, " +
-      "award_amount_text, estimated_total_value_usd, target_degree_level, " +
-      "target_fields, application_deadline, deadline_type, " +
-      "min_gpa, gpa_scale, min_ielts, min_toefl, min_sat, " +
-      "citizenship_requirements, eligible_countries, eligibility_requirements, " +
-      "target_demographics, partner_universities, notes, " +
-      "selectivity_level, effort_level, ideal_candidate_profile, " +
-      "weak_candidate_warning, why_this_fits, how_to_win, what_to_prepare_first, " +
-      "essay_required, recommendation_letters_required, interview_required, " +
-      "confidence, data_completeness_score, " +
-      "updated_at"
+      // `notes` lived only on scholarship_staging — never promoted to
+      // the live table — so this select used to 400 silently and the
+      // "Provenance notes" prompt line below was always "(none)". Drop
+      // both. See 20260507230000_embedding_source_eligibility_demographics.sql.
+      `scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, target_degree_level, target_fields, application_deadline, deadline_type, min_gpa, gpa_scale, min_ielts, min_toefl, min_sat, citizenship_requirements, eligible_countries, eligibility_requirements, target_demographics, partner_universities, selectivity_level, effort_level, ideal_candidate_profile, weak_candidate_warning, why_this_fits, how_to_win, what_to_prepare_first, essay_required, recommendation_letters_required, interview_required, strategy_notes, confidence, data_completeness_score, updated_at`
     )
     .eq("scholarship_id", body.scholarshipId)
     .maybeSingle();
@@ -232,7 +227,7 @@ Deno.serve(async (req) => {
     const cachedAt = new Date(cached.generated_at).getTime();
     const rowUpdatedAt = scholarship.updated_at ? new Date(scholarship.updated_at).getTime() : 0;
     if (cachedAt >= rowUpdatedAt) {
-      return json(200, { ...(cached.content as DeepDiveOutput), _cached: true, _generated_at: cached.generated_at });
+      return json(200, { ...(cached.content as unknown as DeepDiveOutput), _cached: true, _generated_at: cached.generated_at });
     }
     // else: drift detected → fall through to regenerate.
   }
@@ -301,7 +296,7 @@ Deno.serve(async (req) => {
     `Ideal candidate (heuristic): ${scholarship.ideal_candidate_profile || "(none)"}`,
     `Weak candidate warning: ${scholarship.weak_candidate_warning || "(none)"}`,
     `Eligibility prose: ${scholarship.eligibility_requirements || "(none)"}`,
-    `Provenance notes: ${scholarship.notes || "(none)"}`,
+    `Strategy notes: ${scholarship.strategy_notes || "(none)"}`,
     `Source-row confidence: ${conf !== null ? conf.toFixed(2) : "unknown"} · completeness: ${comp !== null ? comp : "unknown"}/12${lowTrust ? " — TREAT AS THIN ROW" : ""}`,
   ].join("\n");
 
@@ -399,7 +394,7 @@ Now output ONLY the JSON. Begin with { and end with }.`;
     scholarship_id: body.scholarshipId,
     profile_hash: profileHash,
     user_id: userId,
-    content: parsed,
+    content: parsed as unknown as Json,
     schema_version: SCHEMA_VERSION,
     cost_estimate_usd: COST_ESTIMATE_USD,
     model_tag: Deno.env.get("AI_PROVIDER") || "lovable",

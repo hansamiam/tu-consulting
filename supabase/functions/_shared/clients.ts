@@ -6,6 +6,10 @@
  * key selection (see dispatchClient.ts for the full rationale).
  */
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Database } from "./database.types.ts";
+
+export type ServiceClient = SupabaseClient<Database>;
+export type UserClient = SupabaseClient<Database>;
 
 /**
  * Service-role client — full DB access, bypasses RLS.
@@ -16,13 +20,13 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
  * no-regression swap that additionally survives a project's
  * "disable legacy JWT" setting.
  */
-export function createServiceClient(): SupabaseClient {
+export function createServiceClient(): ServiceClient {
   const url = Deno.env.get("SUPABASE_URL");
   const key = Deno.env.get("SB_SECRET_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) {
     throw new Error("createServiceClient: SUPABASE_URL or service-role key missing from env");
   }
-  return createClient(url, key);
+  return createClient<Database>(url, key);
 }
 
 /**
@@ -30,11 +34,11 @@ export function createServiceClient(): SupabaseClient {
  * signed-in user via `.auth.getUser()` and for RLS-bound reads of the
  * user's own rows. Pass the request's raw `Authorization` header.
  */
-export function createUserClient(authHeader: string): SupabaseClient {
+export function createUserClient(authHeader: string): UserClient {
   const url = Deno.env.get("SUPABASE_URL");
   const anon = Deno.env.get("SUPABASE_ANON_KEY");
   if (!url || !anon) {
     throw new Error("createUserClient: SUPABASE_URL or SUPABASE_ANON_KEY missing from env");
   }
-  return createClient(url, anon, { global: { headers: { Authorization: authHeader } } });
+  return createClient<Database>(url, anon, { global: { headers: { Authorization: authHeader } } });
 }
