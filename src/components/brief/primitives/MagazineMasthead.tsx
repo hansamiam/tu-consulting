@@ -46,6 +46,8 @@ export const MagazineMasthead: React.FC<Props> = ({
         <span className="font-heading text-[11px] uppercase tracking-[0.32em] text-gold-dark font-semibold">
           TopUni · Strategy Report
         </span>
+        {/* (Renamed from "brief" → "strategy report" for product brand
+            consistency — 2026-05-17.) */}
         <span className="h-px w-12 bg-gold-dark/60" aria-hidden />
       </div>
 

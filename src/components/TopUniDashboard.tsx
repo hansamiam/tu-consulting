@@ -1628,12 +1628,15 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   const [proUnlockOpen, setProUnlockOpen] = useState(false);
   const hasProDepth = !!(proDepth.topActivity || proDepth.personalStory || proDepth.namedSchools);
 
-  // The active grade for THIS render: members get premium, period.
-  // Non-members never get premium — Pro depth questions are gated
-  // behind membership now (round 96), so a non-member can no longer
-  // self-upgrade by filling 3 free fields. Earlier flow: anon user
-  // fills depth → free premium brief → silent revenue leak.
-  const reportGrade: "basic" | "premium" = isMember ? "premium" : "basic";
+  // 2026-05-17: tiered strategy report retired. Every user gets the
+  // full premium magazine report — no basic/premium split, no Pro
+  // depth questions, no upsell on the report itself. Membership now
+  // gates only the personalized counselor sessions + Discover saves
+  // (the things that genuinely scale with human attention), not the
+  // one-shot strategy report. Hard-coded to "premium" so every
+  // existing code path that branches on reportGrade keeps generating
+  // the deeper PREMIUM_SECTIONS journey.
+  const reportGrade: "basic" | "premium" = "premium";
 
   /* Profile hash — bumps when ANY signal changes that should invalidate
      the cached brief: identity fields, language, AND the reportGrade
@@ -2822,7 +2825,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           setMagazineSections({});
           setPathwayError(language === "ru"
             ? "Не удалось сгенерировать брифинг — попробуйте снова через минуту."
-            : "We couldn't generate your brief — try again in a moment.");
+            : "We couldn't generate your strategy report — try again in a moment.");
           void track("brief_generation_failed", { status: 0, tier: reportGrade, reason: "empty_stream" });
           return;
         }
@@ -3352,7 +3355,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                     // only replacing one bucket.
                     onClick={() => {
                       if (pathwayContent && !window.confirm(t(
-                        "Regenerate the full brief? Your current report will be replaced.",
+                        "Regenerate the full strategy report? Your current report will be replaced.",
                         "Сгенерировать отчёт заново? Текущий отчёт будет заменён.",
                       ))) return;
                       generatePathway();
@@ -3518,7 +3521,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                           <BriefMagazine
                             mode="static"
                             sections={magazineSections}
-                            studentName={profile.fullName || (isRu ? "Ваш бриф" : "Your brief")}
+                            studentName={profile.fullName || (isRu ? "Ваш отчёт" : "Your strategy report")}
                             gradeLabel={reportGrade === "premium" ? "Pro" : "Basic"}
                             generatedAt={pathwayGeneratedAt ? new Date(pathwayGeneratedAt).toISOString() : undefined}
                           />
@@ -3701,12 +3704,15 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             chrome). /pricing carries the full feature
                             comparison for users who click through. */}
 
-                        {/* Pro brief upgrade card — moved from above the
-                            report to here (after the user has consumed
-                            the basic brief and presumably wants more).
-                            Showing this before the report is bad UX:
-                            paywall friction without value first. */}
-                        {pathwayContent && !pathwayLoading && !isMember && !hasProDepth && (
+                        {/* Tiered Pro-report upsell retired 2026-05-17.
+                            The strategy report is fully free now — no
+                            depth questions, no basic-vs-Pro split. The
+                            CTA below pitches MEMBERSHIP (live counselor
+                            guidance) rather than a re-rendered report.
+                            Only shown to non-members; members get an
+                            in-product counselor tab and don't need the
+                            upsell here. */}
+                        {!pathwayLoading && (pathwayContent || Object.keys(magazineSections).length > 0) && !isMember && (
                           <motion.div
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -3717,15 +3723,15 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                               <div className="min-w-0 flex-1">
                                 <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-[0.18em] uppercase bg-gradient-to-r from-gold-dark to-gold text-primary mb-2">
                                   <Crown className="w-3 h-3" />
-                                  {t("Pro report", "Pro-отчёт")}
+                                  {t("Membership", "Подписка")}
                                 </div>
                                 <h3 className="font-heading text-lg sm:text-xl font-bold tracking-tight text-foreground mb-1.5">
-                                  {t("Want this report rewritten specifically about you?",
-                                     "Хотите отчёт конкретно про вас?")}
+                                  {t("Want more tailored guidance from real counselors?",
+                                     "Нужны более точные рекомендации от консультантов?")}
                                 </h3>
                                 <p className="text-sm text-muted-foreground leading-relaxed">
-                                  {t("Membership unlocks the Pro report — three depth questions about your story, then the AI rewrites it at premium tier. Strategic positioning, essay angles, shortlist — all anchored to what makes you specifically credible.",
-                                     "Подписка открывает Pro-отчёт — три вопроса о вас, и AI переписывает на премиум-уровне. Позиционирование, ракурсы эссе и шорт-лист — со ссылками на вашу историю.")}
+                                  {t("Membership unlocks live monthly workshops with our Yale, Cambridge, Tsinghua, Harvard alumni team plus unlimited counselor chat — real insight on your specific situation, not another auto-generated report.",
+                                     "Подписка открывает живые ежемесячные воркшопы с командой выпускников Yale, Cambridge, Tsinghua, Harvard и неограниченный чат с консультантом — реальные ответы на вашу ситуацию.")}
                                 </p>
                               </div>
                               <Button
@@ -3735,44 +3741,6 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                               >
                                 <Crown className="w-4 h-4" />
                                 {t("See membership", "Открыть подписку")}
-                              </Button>
-                            </div>
-                          </motion.div>
-                        )}
-
-                        {/* Member-only Pro report unlock — paid users
-                            can still trigger the depth-question rewrite
-                            from here, again positioned AFTER the brief
-                            (consume value first). */}
-                        {pathwayContent && !pathwayLoading && isMember && !hasProDepth && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.3 }}
-                            className="not-prose mt-12 rounded-xl border border-gold/40 bg-gradient-to-br from-gold/8 to-transparent p-5 sm:p-6 print:hidden"
-                          >
-                            <div className="flex items-start gap-4 flex-wrap">
-                              <div className="min-w-0 flex-1">
-                                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-[0.18em] uppercase bg-gradient-to-r from-gold-dark to-gold text-primary mb-2">
-                                  <Crown className="w-3 h-3" />
-                                  {t("Pro report", "Pro-отчёт")}
-                                </div>
-                                <h3 className="font-heading text-lg sm:text-xl font-bold tracking-tight text-foreground mb-1.5">
-                                  {t("Three quick questions to unlock your Pro report.",
-                                     "Три быстрых вопроса — и вы получите Pro-отчёт.")}
-                                </h3>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                  {t("Your activities, your story, your named target schools — the AI rewrites the report at premium tier with these in context.",
-                                     "Активности, история, конкретные университеты — AI перепишет отчёт с учётом этих данных.")}
-                                </p>
-                              </div>
-                              <Button
-                                variant="gold"
-                                onClick={() => setProUnlockOpen(true)}
-                                className="gap-1.5 shrink-0"
-                              >
-                                <Crown className="w-4 h-4" />
-                                {t("Answer & rewrite", "Ответить и переписать")}
                               </Button>
                             </div>
                           </motion.div>
@@ -4070,7 +4038,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                           </h3>
                           <p className="text-sm text-muted-foreground leading-relaxed">
                             {greetingLoading
-                              ? t("Reading your profile and brief — drafting a starting point in a second.",
+                              ? t("Reading your profile and strategy report — drafting a starting point in a second.",
                                   "Читаю ваш профиль и брифинг — через секунду подготовлю отправную точку.")
                               : referProfile
                               ? (pathwayContent && pathwayContent.length > 200

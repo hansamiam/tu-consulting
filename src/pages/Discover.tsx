@@ -3298,19 +3298,21 @@ const Discover = ({ language = "en" }: Props) => {
   const ru = language === "ru";
   const t = (en: string, ruText: string) => (ru ? ruText : en);
 
-  /* Free-tier scholarship gate. Free users see a generous-but-finite
-   * preview window (FREE_VISIBLE_LIMIT rows). Past that, a paywall
-   * card explains how many more are unlocked with Membership. Members
-   * + admins see all rows. The admin path lets the founder keep
-   * iterating on the free experience without paying himself; toggle
-   * via ?admin=1 in the URL or by being signed in with an ADMIN_EMAIL. */
-  const FREE_VISIBLE_LIMIT = 5;
-  // Run once per mount: ?admin=1 / ?admin=0 in the URL flips the
-  // localStorage flag so the user can opt the device into admin mode
-  // without code changes.
+  /* Discover paywall removed (2026-05-17). The catalog is fully visible
+   * to free users now — the only paywalled surface left is the
+   * personalized TopUni AI strategy report. Keeping `gateActive`
+   * defined as a constant `false` so existing call sites (PaywallRow,
+   * PaywallCard, gateActive checks) compile and become no-ops without
+   * a wider refactor. FREE_VISIBLE_LIMIT kept as a large sentinel so
+   * the slice math at line 4055 returns the full filteredAll list. */
+  const FREE_VISIBLE_LIMIT = Number.MAX_SAFE_INTEGER;
   useEffect(() => { consumeAdminUrlFlag(); }, []);
   const adminBypass = isAdminUser(user) || isAdminBypass();
-  const gateActive = !isMember && !adminBypass;
+  // Always false now — discover is fully unlocked.
+  const gateActive = false;
+  // Reference adminBypass to silence the unused-var warning; kept
+  // available for any future admin-only feature path.
+  void adminBypass;
   const [foundingLeft, setFoundingLeft] = useState<{ left: number; cap: number } | null>(null);
 
   /* Temporary "beta" banner — surfaces honesty about the data quality
@@ -4785,32 +4787,6 @@ const Discover = ({ language = "en" }: Props) => {
                       )}
                     </div>
                   )}
-
-                  {/* Quick-filter chips — common toggles surfaced
-                      inline so the user doesn't have to open the full
-                      panel for the 3 things they'll click most often.
-                      Hidden on the narrowest mobile widths (the Filters
-                      drawer button covers those). */}
-                  <div className="hidden md:flex items-center gap-1.5 flex-wrap">
-                    {[
-                      { id: "qf-closing", label: t("Closing soon", "Скоро закрытие"), active: filters.closingSoon, onClick: () => setFilters(f => ({ ...f, closingSoon: !f.closingSoon })) },
-                      { id: "qf-fullride", label: t("Full ride", "Полное покрытие"), active: filters.coverage === "full_ride", onClick: () => setFilters(f => ({ ...f, coverage: f.coverage === "full_ride" ? "all" : "full_ride" })) },
-                      { id: "qf-eligible", label: t("Eligible to me", "Доступные мне"), active: filters.onlyEligible, onClick: () => setFilters(f => ({ ...f, onlyEligible: !f.onlyEligible })) },
-                    ].map(qf => (
-                      <button
-                        key={qf.id}
-                        type="button"
-                        onClick={qf.onClick}
-                        className={`px-2.5 h-7 rounded-full text-[11.5px] font-medium transition-colors ${
-                          qf.active
-                            ? "bg-gold/15 text-gold-dark border border-gold/40"
-                            : "bg-muted/40 text-muted-foreground hover:bg-muted/70 border border-transparent"
-                        }`}
-                      >
-                        {qf.label}
-                      </button>
-                    ))}
-                  </div>
 
                   <Button variant="outline" size="default" className="lg:hidden gap-1.5 h-10 rounded-lg" onClick={() => setFiltersOpen(true)}>
                     <Filter className="h-4 w-4" />{t("Filters", "Фильтры")}{activeFiltersCount > 0 && <Badge className="h-5 px-1.5 text-[10px] bg-gold/20 text-gold-dark border-0 ml-0.5">{activeFiltersCount}</Badge>}
