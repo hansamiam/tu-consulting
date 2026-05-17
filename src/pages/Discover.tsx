@@ -4002,7 +4002,17 @@ const Discover = ({ language = "en" }: Props) => {
         const regionName = filters.hostCountry.slice(7);
         const countries = REGIONS[regionName] || [];
         if (countries.length > 0) {
-          list = list.filter(s => s.host_country && countries.includes(canonicalCountry(s.host_country)));
+          // 'International' scholarships are open globally, so they
+          // qualify for ANY region the user picks. Without this they'd
+          // be hidden when the user filters by region (which a user is
+          // very likely to do) — and many of the most prestigious
+          // open-to-anyone rows (Mastercard, Open Society, Rotary) carry
+          // host_country='International' rather than a specific country.
+          list = list.filter(s => {
+            if (!s.host_country) return false;
+            const c = canonicalCountry(s.host_country);
+            return countries.includes(c) || c === "International";
+          });
         }
       } else {
         list = list.filter(s => s.host_country && canonicalCountry(s.host_country) === filters.hostCountry);
