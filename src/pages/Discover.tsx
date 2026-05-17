@@ -863,6 +863,15 @@ const bannerCountry = (s: { host_country: string | null; eligible_countries: str
  * pattern used elsewhere. The filter pipeline expands to a country
  * list at evaluation time. Country names use the same canonicalCountry
  * forms the dropdown uses so the predicate matches. */
+/* Five tight regions, picked so every group has real catalogue weight
+ * and the chip row doesn't overflow into a second line on mobile. Asia
+ * + Oceania merged (only 10 Oceania rows total); Africa + MENA merged
+ * (shared geography + small per-region count); Americas consolidates
+ * North + Latin. Russia & Central Asia stays separate because it's the
+ * primary audience region (Kazakhstan / Bishkek users) and dropping
+ * it into Asia would hide it. Country lists include common spelling
+ * variants (USA/United States, Turkey/Türkiye) so the filter matches
+ * what's actually in the data. */
 const REGIONS: Record<string, string[]> = {
   "Europe": [
     "United Kingdom", "Germany", "France", "Netherlands", "Switzerland",
@@ -870,27 +879,27 @@ const REGIONS: Record<string, string[]> = {
     "Spain", "Portugal", "Belgium", "Austria", "Poland", "Czech Republic",
     "Hungary", "Greece", "Iceland", "Estonia", "Latvia", "Lithuania",
     "Slovenia", "Slovakia", "Romania", "Bulgaria", "Croatia",
+    "European Union",
   ],
-  "Asia-Pacific": [
+  "Asia & Pacific": [
     "Japan", "South Korea", "Singapore", "Hong Kong", "Taiwan",
     "China", "Malaysia", "Thailand", "Vietnam", "Indonesia",
     "Philippines", "India", "Pakistan", "Bangladesh", "Sri Lanka",
     "Nepal",
+    "Australia", "New Zealand", "Fiji", "Pacific Region",
   ],
-  "Oceania": ["Australia", "New Zealand", "Fiji"],
-  "North America": ["United States", "Canada", "Mexico"],
-  "Latin America": [
+  "Americas": [
+    "United States", "USA", "Canada", "Mexico",
     "Brazil", "Argentina", "Chile", "Colombia", "Peru", "Uruguay",
     "Ecuador", "Costa Rica", "Panama", "Cuba",
   ],
-  "Africa": [
+  "Africa & MENA": [
     "South Africa", "Nigeria", "Kenya", "Ghana", "Morocco", "Egypt",
     "Tunisia", "Uganda", "Tanzania", "Ethiopia", "Rwanda", "Senegal",
-    "Botswana",
-  ],
-  "MENA": [
-    "United Arab Emirates", "Saudi Arabia", "Qatar", "Israel", "Turkey",
-    "Egypt", "Jordan", "Morocco", "Lebanon", "Oman", "Kuwait", "Bahrain",
+    "Botswana", "Cape Verde", "Côte d'Ivoire", "Togo",
+    "United Arab Emirates", "Saudi Arabia", "Qatar", "Israel",
+    "Turkey", "Turkiye", "Türkiye",
+    "Jordan", "Lebanon", "Oman", "Kuwait", "Bahrain",
   ],
   "Russia & Central Asia": [
     "Russia", "Kazakhstan", "Uzbekistan", "Kyrgyzstan", "Tajikistan",
@@ -2248,16 +2257,19 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
       { v: "PhD", l: "PhD" },
     ] },
   ];
+  /* Eligibility tags pruned to the cohorts that have ≥1 active
+   * scholarship in the catalogue. Women + Women-in-STEM consolidated to
+   * a single "Women" entry (uses the virtual "women-any" value the
+   * filter pipeline expands to OR-match both DB tags). Refugees + displaced
+   * likewise merged via "refugee-any". Dropped: indigenous / lgbtq /
+   * underrepresented-minority — zero matching rows, the option was just
+   * dead UI weight. Re-add when a real scholarship lands. */
   const demographicOpts = [
     { v: "all", l: t("All applicants", "Все") },
-    { v: "women", l: t("Women", "Женщины") },
-    { v: "underrepresented-stem", l: t("Women in STEM", "Женщины в STEM") },
+    { v: "women-any", l: t("Women", "Женщины") },
     { v: "first-generation", l: t("First-generation", "Первое поколение") },
     { v: "low-income", l: t("Need-based", "По доходу") },
-    { v: "refugee", l: t("Refugees", "Беженцы") },
-    { v: "indigenous", l: t("Indigenous", "Коренные народы") },
-    { v: "lgbtq", l: "LGBTQ+" },
-    { v: "underrepresented-minority", l: t("Underrepresented", "Недопредставленные") },
+    { v: "refugee-any", l: t("Refugees", "Беженцы") },
     { v: "disability", l: t("Disability", "Инвалидность") },
   ];
   return (
@@ -2326,11 +2338,9 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
                 const active = filters.hostCountry === v;
                 const ruLabel =
                   r === "Europe" ? "Европа" :
-                  r === "Asia-Pacific" ? "Азия-ТО" :
-                  r === "North America" ? "Сев. Америка" :
-                  r === "Latin America" ? "Лат. Америка" :
-                  r === "Oceania" ? "Океания" :
-                  r === "Africa" ? "Африка" :
+                  r === "Asia & Pacific" ? "Азия и ТО" :
+                  r === "Americas" ? "Америка" :
+                  r === "Africa & MENA" ? "Африка и БВ" :
                   r === "Russia & Central Asia" ? "СНГ" : r;
                 return (
                   <button
@@ -4479,14 +4489,17 @@ const Discover = ({ language = "en" }: Props) => {
                         <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">{t("Eligibility groups (optional)", "Категории (необязательно)")}</label>
                         <p className="text-[11px] text-primary-foreground/40 -mt-1">{t("Tap any that apply — surfaces programs designed for you.", "Отметьте подходящее — откроем программы, созданные специально для вас.")}</p>
                         <div className="flex flex-wrap gap-1.5">
+                          {/* Self-ID chips pruned to the cohorts with ≥1 real
+                              scholarship in the catalogue. Same set as the
+                              eligibility filter dropdown so user expectations
+                              line up. Indigenous / LGBTQ / underrepresented-
+                              minority dropped as no scholarship in the DB
+                              targets them — re-add when real rows land. */}
                           {[
                             { v: "women", l: t("Women", "Женщины") },
                             { v: "first-generation", l: t("First-generation", "Первое поколение") },
                             { v: "low-income", l: t("Need-based", "По доходу") },
                             { v: "refugee", l: t("Refugee", "Беженцы") },
-                            { v: "indigenous", l: t("Indigenous", "Коренные народы") },
-                            { v: "lgbtq", l: "LGBTQ+" },
-                            { v: "underrepresented-minority", l: t("Underrepresented", "Недопредставленные") },
                             { v: "disability", l: t("Disability", "Инвалидность") },
                           ].map(d => {
                             const on = wiz.demographics.includes(d.v);

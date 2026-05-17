@@ -48,6 +48,10 @@ import { ShareScholarshipModal } from "@/components/ShareScholarshipModal";
 import { EmptyState } from "@/components/EmptyState";
 import { ScholarshipCard, type ScholarshipCardData } from "@/components/ScholarshipCard";
 import { useTrackView, useScholarshipTracking } from "@/hooks/useScholarshipTracking";
+import { EditorialCard } from "@/components/brief/primitives/EditorialCard";
+import { PullQuote } from "@/components/brief/primitives/PullQuote";
+import { EditorialProse } from "@/components/brief/primitives/EditorialProse";
+import { LeadParagraph } from "@/components/brief/primitives/LeadParagraph";
 import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
 import { ScholarshipOutcomesBlock } from "@/components/scholarship/ScholarshipOutcomesBlock";
 import { getStoredProfile } from "@/components/discover/DiscoverProfileGate";
@@ -563,22 +567,29 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
     <div className="min-h-screen bg-background">
       <Navigation language={language} />
 
-      {/* HERO ─────────────────────────────────────────────────────── */}
-      <section className="bg-gradient-to-br from-primary via-primary to-primary/95 py-12 sm:py-16">
-        <div className="max-w-4xl mx-auto px-5 sm:px-8">
+      {/* HERO — editorial masthead matching the strategy-report magazine.
+          The previous dark-navy block was the eyesore the user called
+          out; replaced with a quiet cream/background hero where the
+          serif name carries the page, tag chips sit beneath, and the
+          action rail anchors below without competing. */}
+      <section className="bg-background border-b border-border">
+        <div className="max-w-[860px] mx-auto px-5 sm:px-8 pt-8 pb-12 sm:pb-16">
           <Link
             to={ru ? "/discover/ru" : "/discover"}
-            className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.18em] text-primary-foreground/70 hover:text-gold-light transition-colors mb-4"
+            className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.22em] text-muted-foreground hover:text-foreground transition-colors mb-8 font-semibold"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             {t("Back to Discover", "Назад в Discover")}
           </Link>
-          <p className="text-[11px] uppercase tracking-[0.22em] text-gold font-semibold mb-3">
-            {s.host_country
-              ? `${t("Scholarship", "Стипендия")} · ${shortCountry(s.host_country)}`
-              : t("Scholarship", "Стипендия")}
-          </p>
-          <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold text-primary-foreground tracking-tight leading-tight mb-3">
+          <div className="flex items-center gap-3 mb-5">
+            <span className="h-px w-8 bg-gold-dark/60" aria-hidden />
+            <span className="font-heading text-[11px] uppercase tracking-[0.28em] text-gold-dark font-semibold">
+              {s.host_country
+                ? `${t("Scholarship", "Стипендия")} · ${shortCountry(s.host_country)}`
+                : t("Scholarship", "Стипендия")}
+            </span>
+          </div>
+          <h1 className="font-heading text-4xl sm:text-5xl md:text-6xl font-bold text-foreground tracking-[-0.025em] leading-[1.02] mb-4">
             {cleanScholarshipName(s.scholarship_name)}
           </h1>
           {(() => {
@@ -587,29 +598,41 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
             return providerMeta?.slug ? (
               <Link
                 to={`/scholarships/by-provider/${providerMeta.slug}`}
-                className="text-primary-foreground/85 text-sm sm:text-base underline-offset-4 hover:underline mb-5 inline-block"
+                className="font-heading italic text-muted-foreground text-base sm:text-lg underline-offset-4 hover:text-foreground hover:underline mb-7 inline-block"
               >
                 {p}
               </Link>
             ) : (
-              <p className="text-primary-foreground/80 text-sm sm:text-base mb-5">{p}</p>
+              <p className="font-heading italic text-muted-foreground text-base sm:text-lg mb-7">{p}</p>
             );
           })()}
-          <div className="flex flex-wrap gap-2 mb-6">
+          <div className="flex flex-wrap gap-2 mb-7">
             {s.coverage_type && (
-              <Chip>
+              <span className="font-heading text-[11px] uppercase tracking-[0.18em] px-2.5 py-1 rounded-sm bg-gold/15 text-gold-dark font-semibold">
                 {s.coverage_type === "full_ride" ? t("Full ride", "Полное")
                   : s.coverage_type === "tuition_only" ? t("Tuition only", "Только обучение")
                   : t("Stipend", "Стипендия")}
-              </Chip>
+              </span>
             )}
-            {(s.target_degree_level ?? []).slice(0, 3).map((d) => <Chip key={d}>{humanizeDegreeLabel(d)}</Chip>)}
+            {(s.target_degree_level ?? []).slice(0, 3).map((d) => (
+              <span key={d} className="font-heading text-[11px] uppercase tracking-[0.18em] px-2.5 py-1 rounded-sm bg-muted/60 text-foreground/75 font-semibold">
+                {humanizeDegreeLabel(d)}
+              </span>
+            ))}
             {(() => {
               const fld = displayField(s.target_fields);
-              return fld ? <Chip key="field">{fld}</Chip> : null;
+              return fld ? (
+                <span key="field" className="font-heading text-[11px] uppercase tracking-[0.18em] px-2.5 py-1 rounded-sm bg-muted/60 text-foreground/75 font-semibold">
+                  {fld}
+                </span>
+              ) : null;
             })()}
             {s.application_deadline && days !== null && (
-              <Chip tone={days <= 7 ? "danger" : days <= 30 ? "warn" : "neutral"}>
+              <span className={`font-heading text-[11px] uppercase tracking-[0.18em] px-2.5 py-1 rounded-sm font-semibold ${
+                days <= 7 ? "bg-rose-500/15 text-rose-600 dark:text-rose-400" :
+                days <= 30 ? "bg-amber-500/15 text-amber-700 dark:text-amber-400" :
+                "bg-muted/60 text-foreground/75"
+              }`}>
                 {days <= 0
                   ? t("Closed", "Закрыто")
                   : days === 1
@@ -617,7 +640,7 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
                     : days <= 30
                       ? `${days} ${t("days left", "дн. осталось")}`
                       : `${Math.round(days / 30)} ${t("months", "мес.")}`}
-              </Chip>
+              </span>
             )}
           </div>
 
@@ -635,7 +658,7 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
             if (recentSaves >= 3) parts.push(`+${recentSaves} ${t("this week", "за неделю")}`);
             else if (recentViews >= 25) parts.push(`${recentViews.toLocaleString()} ${t("viewed in the past 7 days", "просмотров за 7 дней")}`);
             return (
-              <p className="text-[12px] text-primary-foreground/60 mb-5 tracking-wide">
+              <p className="text-[12px] text-muted-foreground mb-5 tracking-wide">
                 {parts.join(" · ")}
               </p>
             );
@@ -669,7 +692,7 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
                   variant="outline"
                   size="lg"
                   asChild
-                  className={`gap-2 bg-transparent border-primary-foreground/30 hover:bg-primary-foreground/10 ${aggregator ? "text-amber-200 border-amber-300/40" : "text-primary-foreground"}`}
+                  className={`gap-2 ${aggregator ? "text-amber-700 border-amber-400/50 hover:bg-amber-500/10" : ""}`}
                 >
                   <a
                     href={s.official_url}
@@ -694,7 +717,7 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
                   ? t("Removed from your pipeline", "Убрано из воронки")
                   : t("Saved to your pipeline", "Сохранено в воронку"));
               }}
-              className="gap-2 bg-transparent text-primary-foreground border-primary-foreground/30 hover:bg-primary-foreground/10"
+              className="gap-2"
             >
               {isShortlisted ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
               {isShortlisted ? t("Saved", "Сохранено") : t("Save to pipeline", "В воронку")}
@@ -703,7 +726,7 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
               variant="outline"
               size="lg"
               onClick={() => { setShareOpen(true); track(s.scholarship_id, "shared", "detail"); }}
-              className="gap-2 bg-transparent text-primary-foreground border-primary-foreground/30 hover:bg-primary-foreground/10"
+              className="gap-2"
               aria-label={t("Share this scholarship", "Поделиться")}
             >
               <Share2 className="w-4 h-4" /> {t("Share", "Поделиться")}
@@ -752,8 +775,13 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
         <ScholarshipOutcomesBlock scholarshipId={s.scholarship_id} />
       </div>
 
-      {/* DETAIL GRID ──────────────────────────────────────────────── */}
-      <section className="max-w-4xl mx-auto px-5 sm:px-8 py-10 sm:py-14 space-y-10">
+      {/* DETAIL GRID — editorial magazine layout.
+          Sections are NOT rendered as undifferentiated card-shaped blocks
+          anymore; each content type gets a visual treatment that matches
+          its role (lead → drop-cap, warnings → toned cards, strategy
+          notes → pull-quote, etc.). Sits within the same 860px measure
+          as the hero so the reading column stays consistent. */}
+      <section className="max-w-[860px] mx-auto px-5 sm:px-8 py-10 sm:py-14 space-y-12 sm:space-y-14">
         {/* Key facts row */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <Fact icon={<Wallet />} label={t("Award", "Финансирование")} value={s.award_amount_text || compactAward(s) || (s.estimated_total_value_usd ? `~$${Math.round(s.estimated_total_value_usd / 1000)}K total` : "—")} />
@@ -795,66 +823,176 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
           );
         })()}
 
-        {/* Sections */}
-        {s.why_this_fits && <Section title={t("Why this could fit", "Почему это может подойти")} body={s.why_this_fits} />}
-        {s.eligibility_requirements && <Section title={t("Eligibility", "Кто может подавать")} body={s.eligibility_requirements} />}
-        {s.ideal_candidate_profile && <Section title={t("Ideal candidate", "Идеальный кандидат")} body={s.ideal_candidate_profile} />}
+        {/* WHY THIS FITS — editorial lead with drop cap. Sets the tone for
+            the rest of the page: this is the personalised pitch for THIS
+            scholarship and gets the front-of-magazine treatment. */}
+        {s.why_this_fits && (
+          <div>
+            <Kicker label={t("Why this fits", "Почему это подходит")} centered />
+            <LeadParagraph text={s.why_this_fits} />
+          </div>
+        )}
+
+        {/* ELIGIBILITY + IDEAL CANDIDATE — paired sidebar cards. They
+            answer the same reader question ("am I in scope?") from two
+            angles (hard rules vs ideal profile) so they belong side by
+            side on desktop. */}
+        {(s.eligibility_requirements || s.ideal_candidate_profile) && (
+          <div className="grid md:grid-cols-2 gap-4 sm:gap-5">
+            {s.eligibility_requirements && (
+              <EditorialCard accent="neutral">
+                <CardKicker label={t("Eligibility", "Кто может подавать")} />
+                <p className="font-heading text-foreground/85 text-[15.5px] leading-[1.7] whitespace-pre-line">
+                  {s.eligibility_requirements}
+                </p>
+              </EditorialCard>
+            )}
+            {s.ideal_candidate_profile && (
+              <EditorialCard accent="emerald">
+                <CardKicker label={t("Ideal candidate", "Идеальный кандидат")} accent="emerald" />
+                <p className="font-heading text-foreground/85 text-[15.5px] leading-[1.7] whitespace-pre-line">
+                  {s.ideal_candidate_profile}
+                </p>
+              </EditorialCard>
+            )}
+          </div>
+        )}
+
+        {/* HARD THRESHOLDS — small-caps stat strip. Number-heavy data
+            doesn't need prose; the tile grid reads like a stat-line at
+            the top of a profile spread. */}
         {(s.min_gpa || s.min_ielts || s.min_toefl || s.min_sat) && (
-          <Section title={t("Hard thresholds", "Жёсткие пороги")}>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div>
+            <Kicker label={t("Hard thresholds", "Жёсткие пороги")} centered />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto">
               {s.min_gpa && <Fact label={t("GPA min", "GPA мин.")} value={`${s.min_gpa}/${s.gpa_scale ?? 4.0}`} />}
               {s.min_ielts && <Fact label={t("IELTS min", "IELTS мин.")} value={String(s.min_ielts)} />}
               {s.min_toefl && <Fact label={t("TOEFL min", "TOEFL мин.")} value={String(s.min_toefl)} />}
               {s.min_sat && <Fact label={t("SAT min", "SAT мин.")} value={String(s.min_sat)} />}
             </div>
-          </Section>
+          </div>
         )}
-        {s.how_to_win && <Section title={t("How to win it", "Как выиграть")} body={s.how_to_win} />}
+
+        {/* HOW TO WIN IT — main feature body. Centered kicker + serif
+            body in editorial measure. */}
+        {s.how_to_win && (
+          <div>
+            <Kicker label={t("How to win it", "Как выиграть")} centered />
+            <EditorialProse text={s.how_to_win} />
+          </div>
+        )}
+
+        {/* WHY PEOPLE GET REJECTED — rose-toned editorial card. The
+            colour band signals "stop and read this" without screaming
+            error-banner. */}
         {s.common_rejection_reasons && (
-          <Section title={t("Why people get rejected", "Почему отказывают")} body={s.common_rejection_reasons} tone="warn" />
+          <EditorialCard accent="rose">
+            <CardKicker
+              label={t("Why people get rejected", "Почему отказывают")}
+              accent="rose"
+              icon={<AlertCircle className="w-3.5 h-3.5" />}
+            />
+            <p className="font-heading text-foreground/85 text-[15.5px] leading-[1.7] whitespace-pre-line">
+              {s.common_rejection_reasons}
+            </p>
+          </EditorialCard>
         )}
+
+        {/* WEAK CANDIDATE WARNING — amber-toned. Distinct accent so it
+            doesn't blur into the rose rejection-reasons block above. */}
         {s.weak_candidate_warning && (
-          <Section title={t("Don't apply if…", "Не подавайте, если…")} body={s.weak_candidate_warning} tone="warn" />
+          <EditorialCard accent="amber">
+            <CardKicker
+              label={t("Don't apply if…", "Не подавайте, если…")}
+              accent="amber"
+              icon={<ShieldAlert className="w-3.5 h-3.5" />}
+            />
+            <p className="font-heading text-foreground/85 text-[15.5px] leading-[1.7] whitespace-pre-line">
+              {s.weak_candidate_warning}
+            </p>
+          </EditorialCard>
         )}
-        {s.what_to_prepare_first && <Section title={t("Start with this", "Начните с этого")} body={s.what_to_prepare_first} />}
-        {s.strategy_notes && <Section title={t("Strategy notes", "Заметки по стратегии")} body={s.strategy_notes} />}
+
+        {/* START HERE — gold action box. Matches the brief's
+            "this month's action" treatment; this is the one concrete
+            next step the visitor should take, so it gets the most
+            actionable styling on the page. */}
+        {s.what_to_prepare_first && (
+          <div className="bg-gold/10 border-l-[3px] border-gold-dark px-5 sm:px-7 py-5 sm:py-6 rounded-r-sm">
+            <p className="font-heading text-[10.5px] uppercase tracking-[0.28em] text-gold-dark font-semibold mb-2.5">
+              {t("Start here", "Начните здесь")}
+            </p>
+            <p className="font-heading text-foreground text-base sm:text-[17px] leading-[1.6] whitespace-pre-line">
+              {s.what_to_prepare_first}
+            </p>
+          </div>
+        )}
+
+        {/* STRATEGY NOTES — pull-quote. The notes are usually punchy
+            one-liners (the strategist's hot take) so they read best as
+            a magazine pull-quote, not a labelled prose block. */}
+        {s.strategy_notes && (
+          <PullQuote
+            text={s.strategy_notes}
+            label={t("Strategist's note", "Заметка стратега")}
+          />
+        )}
+
+        {/* REQUIRED DOCUMENTS — checklist sidebar. Two-up grid on desktop
+            so a long list doesn't stretch the page; checkmark icons
+            telegraph "this is a packlist." */}
         {s.required_documents && s.required_documents.length > 0 && (
-          <Section title={t("Required documents", "Обязательные документы")}>
-            <ul className="space-y-1.5 text-sm text-foreground/90">
+          <EditorialCard accent="neutral">
+            <CardKicker label={t("Required documents", "Обязательные документы")} />
+            <ul className="grid sm:grid-cols-2 gap-y-2.5 gap-x-6">
               {s.required_documents.map((d, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-gold-dark mt-1 shrink-0" />
-                  {d}
+                <li key={i} className="flex items-start gap-2.5 text-[15px] text-foreground/85 leading-[1.5]">
+                  <CheckCircle2 className="w-4 h-4 text-gold-dark mt-0.5 shrink-0" />
+                  <span>{d}</span>
                 </li>
               ))}
             </ul>
-          </Section>
-        )}
-        {s.partner_universities && s.partner_universities.length > 0 && (
-          <Section title={t("Partner universities", "Партнёрские университеты")}>
-            <div className="flex flex-wrap gap-2">
-              {s.partner_universities.map((u, i) => (
-                <span key={i} className="text-sm bg-muted/40 border border-border px-3 py-1 rounded-full">{u}</span>
-              ))}
-            </div>
-          </Section>
+          </EditorialCard>
         )}
 
-        {/* Reinforcement CTA — same destination as the hero, restated
-            after the eligibility / partners blocks for visitors who
-            scrolled past the hero before deciding. Source label distinct
-            from the hero's so we can compare conversion. */}
-        <div className="bg-card border border-border rounded-2xl p-6 sm:p-8 text-center">
-          <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">
-            {t("Don't just read — strategise", "Не только читайте — стройте стратегию")}
-          </p>
-          <h3 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground mb-3 leading-tight">
+        {/* PARTNER UNIVERSITIES — chip strip. List-shaped data, no need
+            for prose treatment; small bordered chips keep visual
+            hierarchy quiet so the focus stays on the CTAs below. */}
+        {s.partner_universities && s.partner_universities.length > 0 && (
+          <div>
+            <Kicker label={t("Partner universities", "Партнёрские университеты")} centered />
+            <div className="flex flex-wrap gap-2 max-w-2xl mx-auto justify-center">
+              {s.partner_universities.map((u, i) => (
+                <span
+                  key={i}
+                  className="text-[13px] font-medium bg-canvas-soft/60 border border-border/60 px-3 py-1.5 rounded-sm text-foreground/85"
+                >
+                  {u}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Reinforcement CTA — restated after the body for visitors who
+            scrolled past the hero. Editorial framing instead of a generic
+            shadcn card so it reads like the closing column of a feature
+            spread, not a banner. */}
+        <div className="border-t border-b border-border bg-canvas-soft/40 px-6 sm:px-10 py-10 sm:py-12 text-center -mx-5 sm:-mx-8">
+          <div className="flex items-center gap-3 justify-center mb-5">
+            <span className="h-px w-8 bg-gold-dark/60" aria-hidden />
+            <span className="font-heading text-[11px] uppercase tracking-[0.28em] text-gold-dark font-semibold">
+              {t("Don't just read — strategise", "Не только читайте — стройте стратегию")}
+            </span>
+            <span className="h-px w-8 bg-gold-dark/60" aria-hidden />
+          </div>
+          <h3 className="font-heading text-2xl sm:text-3xl font-bold tracking-[-0.02em] text-foreground mb-4 leading-[1.15] max-w-2xl mx-auto">
             {t(
               `Build a personal strategy that includes the ${cleanScholarshipName(s.scholarship_name)}.`,
               `Постройте персональную стратегию, включающую ${cleanScholarshipName(s.scholarship_name)}.`,
             )}
           </h3>
-          <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto mb-6">
+          <p className="font-heading text-foreground/75 text-[15.5px] leading-[1.65] max-w-xl mx-auto mb-7">
             {t(
               "TopUni AI takes your profile, ranks every scholarship in the database against you, and tells you specifically how to win this one — what to lead with, how to prep.",
               "TopUni AI берёт ваш профиль, ранжирует каждую стипендию в базе под вас и подсказывает, как выиграть именно эту — с чего начать, как готовиться.",
@@ -868,7 +1006,7 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
           >
             {t("Build my strategy around this", "Построить стратегию вокруг этой стипендии")} <ArrowRight className="w-4 h-4" />
           </Button>
-          <p className="text-[11px] text-muted-foreground/70 mt-4">{t("60 seconds. Free.", "60 секунд. Бесплатно.")}</p>
+          <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground mt-4 font-semibold">{t("60 seconds · Free", "60 секунд · Бесплатно")}</p>
         </div>
 
         {/* More from this funder — only renders when this row is linked
@@ -1093,6 +1231,46 @@ const DeadlineUrgencyBanner = ({ deadline, deadlineType, days }: {
     );
   }
   return null;
+};
+
+/* Kicker — centered editorial small-caps label with thin gold rule
+   bracketing the text. Used as the heading for non-card body sections
+   (why-this-fits, how-to-win, hard-thresholds, partner-universities).
+   Mirrors the SectionDivider treatment in the strategy report. */
+const Kicker = ({ label, centered = false }: { label: string; centered?: boolean }) => (
+  <div className={`flex items-center gap-3 mb-5 ${centered ? "justify-center" : ""}`}>
+    <span className="h-px w-8 bg-gold-dark/60" aria-hidden />
+    <span className="font-heading text-[11px] uppercase tracking-[0.28em] text-gold-dark font-semibold">
+      {label}
+    </span>
+    {centered && <span className="h-px w-8 bg-gold-dark/60" aria-hidden />}
+  </div>
+);
+
+/* CardKicker — small accented label used inside EditorialCard. Colour
+   tracks the card's accent so warning cards (rose/amber) get a matching
+   label, neutral cards default to gold. Optional leading icon for
+   warn-style cards. */
+const CardKicker = ({
+  label,
+  accent = "gold",
+  icon,
+}: {
+  label: string;
+  accent?: "gold" | "rose" | "amber" | "emerald";
+  icon?: React.ReactNode;
+}) => {
+  const tone =
+    accent === "rose" ? "text-rose-700 dark:text-rose-400"
+    : accent === "amber" ? "text-amber-700 dark:text-amber-400"
+    : accent === "emerald" ? "text-emerald-700 dark:text-emerald-400"
+    : "text-gold-dark";
+  return (
+    <p className={`font-heading text-[10.5px] uppercase tracking-[0.28em] font-semibold mb-3 flex items-center gap-1.5 ${tone}`}>
+      {icon}
+      {label}
+    </p>
+  );
 };
 
 const Section = ({ title, body, children, tone = "neutral" }: {
