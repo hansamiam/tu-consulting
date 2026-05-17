@@ -66,6 +66,9 @@ import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import { ENV, EDGE_FUNCTIONS_URL } from "@/lib/env";
 import { cleanScholarshipName, cleanProvider, compactAward } from "@/lib/scholarshipFields";
+import { BriefMagazine } from "@/components/brief/BriefMagazine";
+import type { BriefSections, SectionId } from "@/components/brief/types";
+import { serializeBriefForCounselor } from "@/components/brief/serializeForCounselor";
 
 interface StudentProfile {
   fullName: string;
@@ -1702,8 +1705,27 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     return null;
   }, [profileHash]);
 
-  const [pathwayContent, setPathwayContent] = useState<string>(restored?.content ?? "");
+  const [pathwayContent, setPathwayContent] = useState<string>(() => {
+    // schema-2 (magazine JSON) restored content is parsed into magazineSections
+    // below; pathwayContent should be empty in that case so the legacy
+    // renderer doesn't try to read JSON as markdown.
+    const c = restored?.content ?? "";
+    if (typeof c === "string" && c.startsWith("{") && c.includes('"sections"')) return "";
+    return c;
+  });
   const [pathwayLoading, setPathwayLoading] = useState(false);
+  /* v6 magazine sections — populated by the new SSE protocol
+   * (`data: {section, payload}`). When this has entries we render
+   * BriefMagazine instead of the legacy ReportRenderer markdown path. */
+  const [magazineSections, setMagazineSections] = useState<BriefSections>(() => {
+    const c = restored?.content;
+    if (typeof c !== "string" || !c.startsWith("{")) return {};
+    try {
+      const parsed = JSON.parse(c) as { schema?: number; sections?: BriefSections };
+      if (parsed?.schema === 2 && parsed.sections) return parsed.sections;
+    } catch { /* not magazine JSON, fall through */ }
+    return {};
+  });
   /* Error state for the strategy-report stream. Previously when the
    * edge function 401'd or the LLM provider hiccuped, streamSSE wrote
    * the error message directly into pathwayContent — the user saw a
@@ -2089,7 +2111,12 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         slug: string; url: string; expiresAt: string | null; isOwner: boolean;
       }>("share-brief", {
         body: {
-          content: pathwayContent,
+          // v6 magazine: send JSON `{schema:2, sections}` so the
+          // recipient SharedBrief page renders via BriefMagazine.
+          // Legacy/basic-tier: send markdown verbatim.
+          content: Object.keys(magazineSections).length > 0
+            ? JSON.stringify({ schema: 2, sections: magazineSections })
+            : pathwayContent,
           language,
           reportGrade,
           profileSnapshot: {
@@ -2520,6 +2547,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     onDone: () => void,
     onError?: (status: number, message: string) => void,
     signal?: AbortSignal,
+    onSection?: (section: SectionId, payload: unknown) => void,
   ) => {
     // Pass the user's session JWT when authed so edge functions can
     // resolve user_id via getUser() — needed for the counselor's
@@ -2585,6 +2613,13 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           if (jsonStr === "[DONE]") { streamDone = true; break; }
           try {
             const parsed = JSON.parse(jsonStr);
+            // v6 magazine shape: `{section, payload}` — premium brief
+            // streams per-section JSON instead of markdown chunks.
+            if (parsed && typeof parsed === "object" && parsed.section && "payload" in parsed) {
+              onSection?.(parsed.section as SectionId, parsed.payload);
+              continue;
+            }
+            // Legacy markdown chunk (basic tier + old shape)
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) onDelta(content);
           } catch {
@@ -2742,7 +2777,9 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     setPathwayLoading(true);
     setPathwayError(null);
     setPathwayContent("");
+    setMagazineSections({});
     let soFar = "";
+    const magazineAcc: BriefSections = {};
     const startedAtMs = Date.now();
 
     void track("brief_generation_started", { tier: reportGrade, has_pro_depth: hasProDepth });
@@ -2774,17 +2811,15 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       () => {
         const now = Date.now();
         setPathwayLoading(false);
-        // 2026-05-10: short-content guard. If the stream completed
-        // with effectively no markdown (LLM failed silently, edge
-        // function returned no deltas, etc.), surface a retry path
-        // instead of marking as "generated" with empty content —
-        // user was reporting "analyzing… then reverts to nothing".
-        // 200 chars is a generous floor that filters genuine
-        // failures without false-positiving on a single very short
-        // section that briefly appears mid-stream.
-        if (soFar.trim().length < 200) {
+        // 2026-05-10: short-content guard. v6 magazine path emits no
+        // markdown deltas — it streams structured per-section JSON via
+        // onSection instead. Accept EITHER ≥200 chars of markdown OR
+        // at least 1 magazine section as a "generated" signal.
+        const sectionCount = Object.keys(magazineAcc).length;
+        if (soFar.trim().length < 200 && sectionCount === 0) {
           setPathwayGenerated(false);
           setPathwayContent("");
+          setMagazineSections({});
           setPathwayError(language === "ru"
             ? "Не удалось сгенерировать брифинг — попробуйте снова через минуту."
             : "We couldn't generate your brief — try again in a moment.");
@@ -2808,7 +2843,17 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         // subsequent visits restore the same text and the action-plan
         // checkboxes (keyed by text hash) line up.
         try {
-          if (soFar && soFar.length > 100) {
+          // v6 magazine: persist as JSON `{schema:2, sections}` so the
+          // restored content branch can rehydrate magazineSections.
+          // Legacy markdown: persist as raw string under the same key.
+          const sectionCountForCache = Object.keys(magazineAcc).length;
+          if (sectionCountForCache > 0) {
+            localStorage.setItem(PATHWAY_STORAGE_KEY, JSON.stringify({
+              hash: profileHash,
+              content: JSON.stringify({ schema: 2, sections: magazineAcc }),
+              generatedAt: now,
+            }));
+          } else if (soFar && soFar.length > 100) {
             localStorage.setItem(PATHWAY_STORAGE_KEY, JSON.stringify({
               hash: profileHash,
               content: soFar,
@@ -2888,7 +2933,11 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                   url: string;
                 }>("share-brief", {
                   body: {
-                    content: soFar,
+                    // v6 magazine: use the JSON-shaped sections we just
+                    // streamed. Legacy basic-tier: markdown soFar.
+                    content: Object.keys(magazineAcc).length > 0
+                      ? JSON.stringify({ schema: 2, sections: magazineAcc })
+                      : soFar,
                     language,
                     reportGrade,
                     profileSnapshot: {
@@ -2977,6 +3026,11 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         void track("brief_generation_failed", { status, tier: reportGrade });
       },
       briefController.signal,
+      // v6 magazine — receive per-section JSON payloads as they stream
+      (section, payload) => {
+        magazineAcc[section] = payload as never;
+        setMagazineSections({ ...magazineAcc });
+      },
     );
   };
 
@@ -3034,10 +3088,15 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
 
     // Hand the chat function the profile + a slim summary of the student's
     // strategy report so the counselor can answer with specifics instead of
-    // asking the student to repeat themselves.
-    const reportSummary = pathwayContent
-      ? pathwayContent.slice(0, 4000)
-      : "";
+    // asking the student to repeat themselves. v6 magazine briefs live in
+    // magazineSections (not pathwayContent); we flatten the structured JSON
+    // back to plain prose for the counselor's system prompt.
+    const reportSummary = (() => {
+      if (Object.keys(magazineSections).length > 0) {
+        return serializeBriefForCounselor(magazineSections).slice(0, 4000);
+      }
+      return pathwayContent ? pathwayContent.slice(0, 4000) : "";
+    })();
 
     await streamSSE(
       CHAT_URL,
@@ -3451,7 +3510,19 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                   {(() => {
                     return (
                       <>
-                        {pathwayContent && (
+                        {/* v6 magazine path — if any sections streamed, render
+                            the editorial layout. Falls back to the legacy
+                            markdown ReportRenderer when no magazine sections
+                            present (basic tier, legacy cached briefs). */}
+                        {Object.keys(magazineSections).length > 0 ? (
+                          <BriefMagazine
+                            mode="static"
+                            sections={magazineSections}
+                            studentName={profile.fullName || (isRu ? "Ваш бриф" : "Your brief")}
+                            gradeLabel={reportGrade === "premium" ? "Pro" : "Basic"}
+                            generatedAt={pathwayGeneratedAt ? new Date(pathwayGeneratedAt).toISOString() : undefined}
+                          />
+                        ) : pathwayContent && (
                           <ReportRenderer
                             markdown={pathwayContent}
                             completedTasks={completedTasks}

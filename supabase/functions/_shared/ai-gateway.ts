@@ -94,6 +94,13 @@ export interface ChatCompletionsOpts {
   messages: Array<{ role: "system" | "user" | "assistant"; content: string | unknown[] }>;
   stream?: boolean;
   reasoning?: { effort: "low" | "medium" | "high" };
+  /** Forces OpenAI-compat `response_format: { type: "json_object" }`.
+   *  Lovable's gateway supports this on Gemini 2.5; OpenAI gpt-4o
+   *  supports it natively. Anthropic ignores (use prompt-side schema
+   *  instruction instead). Callers should also instruct the model in
+   *  the user prompt to emit JSON — this flag tightens the response
+   *  shape but doesn't replace good prompting. */
+  jsonMode?: boolean;
   // Provider-specific overrides
   modelOverride?: string;
 }
@@ -151,6 +158,7 @@ export async function chatCompletions(opts: ChatCompletionsOpts): Promise<Respon
       messages: opts.messages,
       stream: !!opts.stream,
       ...(opts.reasoning && supportsReasoning ? { reasoning: opts.reasoning } : {}),
+      ...(opts.jsonMode ? { response_format: { type: "json_object" } } : {}),
     }),
   });
 }

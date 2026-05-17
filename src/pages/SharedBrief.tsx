@@ -19,6 +19,8 @@ import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { ReportRenderer } from "@/components/TopUniDashboard";
 import { BriefMasthead } from "@/components/brief/BriefMasthead";
+import { BriefMagazine } from "@/components/brief/BriefMagazine";
+import type { BriefSections } from "@/components/brief/types";
 import type { InlineScholarshipData } from "@/components/InlineScholarshipCard";
 
 interface SharedBrief {
@@ -35,6 +37,24 @@ interface SharedBrief {
   view_count: number;
   is_public: boolean;
   expires_at: string | null;
+  brief_schema_version?: number | null;
+}
+
+/** Parse stored content into magazine sections, or return null if it's
+ *  legacy markdown. Briefs written under schema 2 (the v6 redesign)
+ *  store `{schema: 2, sections: {...}}` JSON; pre-redesign briefs
+ *  store raw markdown strings. */
+function parseMagazineContent(content: string | null | undefined): BriefSections | null {
+  if (!content || typeof content !== "string") return null;
+  const trimmed = content.trim();
+  if (!trimmed.startsWith("{")) return null;
+  try {
+    const parsed = JSON.parse(trimmed) as { schema?: number; sections?: BriefSections };
+    if (parsed?.schema === 2 && parsed.sections && typeof parsed.sections === "object") {
+      return parsed.sections;
+    }
+  } catch { /* not JSON — legacy markdown */ }
+  return null;
 }
 
 /* The ReportRenderer expects this shape (LiveMatchLite from
@@ -339,16 +359,37 @@ const SharedBriefPage = () => {
                      [&_p]:text-muted-foreground [&_li]:text-muted-foreground
                      [&_strong]:text-foreground"
         >
-          <ReportRenderer
-            markdown={brief.content}
-            completedTasks={new Set()}
-            onToggle={noopToggle}
-            taskKey={taskKey}
-            isRu={isRu}
-            onOpenDiscover={() => navigate(isRu ? "/discover/ru" : "/discover")}
-            liveMatches={scholarshipsForCards}
-            tier={tier}
-          />
+          {(() => {
+            // schema-2 (magazine) shared briefs render via BriefMagazine
+            // for the editorial layout. Legacy markdown briefs continue
+            // to render via the original ReportRenderer with no change.
+            const magazine = brief.brief_schema_version === 2
+              ? parseMagazineContent(brief.content)
+              : parseMagazineContent(brief.content); // also auto-detect for safety
+            if (magazine) {
+              return (
+                <BriefMagazine
+                  mode="static"
+                  sections={magazine}
+                  studentName={brief.profile_first_name || (isRu ? "Стратегический брифинг" : "Strategy report")}
+                  gradeLabel={brief.report_grade === "premium" ? "Pro" : "Basic"}
+                  generatedAt={brief.created_at}
+                />
+              );
+            }
+            return (
+              <ReportRenderer
+                markdown={brief.content}
+                completedTasks={new Set()}
+                onToggle={noopToggle}
+                taskKey={taskKey}
+                isRu={isRu}
+                onOpenDiscover={() => navigate(isRu ? "/discover/ru" : "/discover")}
+                liveMatches={scholarshipsForCards}
+                tier={tier}
+              />
+            );
+          })()}
         </div>
 
         {/* Branding + conversion CTA. Quantified — names what the visitor
