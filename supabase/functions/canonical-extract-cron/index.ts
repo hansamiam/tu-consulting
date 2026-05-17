@@ -100,36 +100,58 @@ Deno.serve(async (req) => {
     return json(200, { ok: true, candidates: 0, message: "no rows to extract" });
   }
 
-  const counters = { extracted: 0, no_clean_url: 0, low_confidence: 0, scrape_failed: 0, llm_failed: 0, other: 0 };
+  const counters = { extracted: 0, no_clean_url: 0, low_confidence: 0, scrape_failed: 0, llm_failed: 0, fan_out_failed: 0, other: 0 };
   const errors: string[] = [];
 
   const startedAt = Date.now();
   let processed = 0;
 
+  // Same fix as verify-scholarship-cron: internal supa.functions.invoke
+  // sporadically drops with FunctionsFetchError ("Failed to send a
+  // request to the Edge Function") when the gateway's per-source pool
+  // saturates. Retry once with a short backoff and bucket
+  // FunctionsFetchError separately so silent fan-out loss is visible.
+  const RETRIES_ON_FETCH_ERROR = 2;
+  const RETRY_BACKOFF_MS = [500, 1500];
+
   const extractOne = async (c: typeof candidates[number]) => {
-    try {
-      const { data, error } = await supa.functions.invoke<{
-        ok: boolean;
-        reason?: string;
-        changed?: string[];
-      }>("canonical-extract", { body: { scholarship_id: c.scholarship_id } });
+    for (let attempt = 0; attempt <= RETRIES_ON_FETCH_ERROR; attempt++) {
+      try {
+        const { data, error } = await supa.functions.invoke<{
+          ok: boolean;
+          reason?: string;
+          changed?: string[];
+        }>("canonical-extract", { body: { scholarship_id: c.scholarship_id } });
 
-      if (error) { errors.push(`${c.scholarship_name}: ${error.message}`); counters.other++; return; }
-      if (!data) { counters.other++; return; }
+        if (error) {
+          const isFetch = /Failed to send a request/i.test(error.message);
+          if (isFetch && attempt < RETRIES_ON_FETCH_ERROR) {
+            await new Promise(r => setTimeout(r, RETRY_BACKOFF_MS[attempt] ?? 1500));
+            continue;
+          }
+          errors.push(`${c.scholarship_name}: ${error.message}`);
+          if (isFetch) counters.fan_out_failed++;
+          else counters.other++;
+          return;
+        }
+        if (!data) { counters.other++; return; }
 
-      if (data.ok) {
-        counters.extracted++;
-      } else {
-        const r = data.reason ?? "other";
-        if (r === "no_clean_url")        counters.no_clean_url++;
-        else if (r === "low_confidence") counters.low_confidence++;
-        else if (r === "scrape_failed" || r === "thin_content") counters.scrape_failed++;
-        else if (r === "llm_http_error" || r === "llm_parse_failed" || r === "llm_empty_extraction") counters.llm_failed++;
-        else counters.other++;
+        if (data.ok) {
+          counters.extracted++;
+        } else {
+          const r = data.reason ?? "other";
+          if (r === "no_clean_url")        counters.no_clean_url++;
+          else if (r === "low_confidence") counters.low_confidence++;
+          else if (r === "scrape_failed" || r === "thin_content") counters.scrape_failed++;
+          else if (r === "llm_http_error" || r === "llm_parse_failed" || r === "llm_empty_extraction") counters.llm_failed++;
+          else counters.other++;
+        }
+        return;
+      } catch (e) {
+        errors.push(`${c.scholarship_name}: ${(e as Error).message}`);
+        counters.other++;
+        return;
       }
-    } catch (e) {
-      errors.push(`${c.scholarship_name}: ${(e as Error).message}`);
-      counters.other++;
     }
   };
 
