@@ -15,6 +15,7 @@
 
 import { chatCompletions } from "../_shared/ai-gateway.ts";
 import { EDITORIAL_RULES_TIGHT } from "../_shared/editorial-rules.ts";
+import { requireAdminOrService } from "../_shared/auth.ts";
 import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
 import { respondError, respondJson } from "../_shared/http.ts";
 import { createServiceClient } from "../_shared/clients.ts";
@@ -154,6 +155,9 @@ Deno.serve(async (req) => {
   const pre = handleCorsOptions(req);
   if (pre) return pre;
   if (req.method !== "POST") return respondError(405, "POST only", corsHeaders);
+
+  const auth = await requireAdminOrService(req);
+  if (!auth.ok) return respondError(401, auth.reason ?? "unauthorized", corsHeaders);
 
   const startedAt = Date.now();
   // AI gateway env (LOVABLE_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY)

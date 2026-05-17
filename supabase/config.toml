@@ -53,8 +53,11 @@ verify_jwt = false
 [functions.embed-scholarships]
 verify_jwt = false
 
+# verify_jwt = false: pg_cron-triggered. Same dispatchee-401 pattern —
+# gateway rejects sb_secret apikey as non-JWT. In-body auth via
+# requireAdminOrService.
 [functions.scholarship-deadline-cron]
-verify_jwt = true
+verify_jwt = false
 
 [functions.share-brief]
 verify_jwt = false
@@ -63,7 +66,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.weekly-nudge-cron]
-verify_jwt = true
+verify_jwt = false
 
 [functions.pro-upgrade-nudge-cron]
 verify_jwt = false
@@ -161,4 +164,14 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.enrich-cover-images-cron]
+verify_jwt = false
+
+# Cron-triggered, previously missing from this file → defaulted to
+# verify_jwt=true → 401 UNAUTHORIZED_NO_AUTH_HEADER on every tick.
+# Same fix as the dispatchee block: gateway lets the request through,
+# the function gates the caller itself via requireAdminOrService.
+[functions.saved-searches-cron]
+verify_jwt = false
+
+[functions.lifecycle-emails-cron]
 verify_jwt = false
