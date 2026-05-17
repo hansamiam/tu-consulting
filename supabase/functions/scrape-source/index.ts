@@ -40,6 +40,7 @@ import {
 import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
 import { respondJson } from "../_shared/http.ts";
 import { createServiceClient } from "../_shared/clients.ts";
+import type { Json } from "../_shared/database.types.ts";
 
 const json = (status: number, body: unknown) =>
   respondJson(status, body, corsHeaders);
@@ -636,7 +637,7 @@ function diffScholarship(
   const changes: string[] = [];
   for (const k of watched) {
     const a = existing[k as string];
-    const b = (next as Record<string, unknown>)[k];
+    const b = (next as unknown as Record<string, unknown>)[k];
     if (b === undefined || b === null) continue;
     if (JSON.stringify(a) !== JSON.stringify(b)) {
       changes.push(`${k}: ${JSON.stringify(a) ?? "null"} → ${JSON.stringify(b)}`);
@@ -701,7 +702,7 @@ serve(async (req) => {
       error_class: errClass,
       error_message: msg,
       http_status: httpStatus,
-      context: ctx ?? null,
+      context: (ctx ?? null) as unknown as Json,
     });
   };
   const bumpFailure = async () => {
@@ -897,7 +898,7 @@ serve(async (req) => {
       scholarship_id: existingId,
       fingerprint,
       raw_text: truncated.slice(0, 2000),
-      parsed_data: s as unknown as Record<string, unknown>,
+      parsed_data: s as unknown as Json,
       confidence: s.confidence,
       diff_summary: diffSummary,
       status: stagingStatus,
@@ -1014,7 +1015,7 @@ serve(async (req) => {
         if (diffSummary) {
           updatePayload.verification_status = "stale";
         }
-        await supa.from("scholarships").update(updatePayload).eq("scholarship_id", existingId);
+        await supa.from("scholarships").update(updatePayload as never).eq("scholarship_id", existingId);
         landedScholarshipId = existingId;
       } else {
         // The 20260505060000 migration added a UNIQUE index on canonical_key.
@@ -1034,7 +1035,7 @@ serve(async (req) => {
         };
         const { data: inserted, error: insertErr } = await supa
           .from("scholarships")
-          .upsert(insertPayload, { onConflict: "canonical_key", ignoreDuplicates: false })
+          .upsert(insertPayload as never, { onConflict: "canonical_key", ignoreDuplicates: false })
           .select("scholarship_id")
           .maybeSingle();
         if (insertErr) {
@@ -1063,9 +1064,9 @@ serve(async (req) => {
           await supa.rpc("record_scholarship_source", {
             p_scholarship_id: landedScholarshipId,
             p_source_url: src.url,
-            p_source_hint: src.category ?? null,
-            p_confirms: confirms.length > 0 ? confirms : null,
-            p_confidence: typeof s.confidence === "number" ? s.confidence : null,
+            p_source_hint: src.category ?? undefined,
+            p_confirms: confirms.length > 0 ? confirms : undefined,
+            p_confidence: typeof s.confidence === "number" ? s.confidence : undefined,
           });
         } catch (e) {
           console.warn("[scrape-source] record_scholarship_source failed", (e as Error).message);

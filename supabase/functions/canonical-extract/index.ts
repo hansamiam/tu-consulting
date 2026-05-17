@@ -329,7 +329,7 @@ Deno.serve(async (req: Request) => {
   // 7. Persist
   const { error: updErr } = await supabase
     .from("scholarships")
-    .update(updates)
+    .update(updates as never)
     .eq("scholarship_id", scholarshipId);
   if (updErr) {
     return json(500, { ok: false, reason: "db_update_failed", message: updErr.message });

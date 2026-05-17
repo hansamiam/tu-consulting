@@ -45,6 +45,7 @@ interface TrackerRow {
     award_amount_text: string | null;
     source_url: string | null;
     official_url: string | null;
+    verification_status: string | null;
   } | null;
 }
 

@@ -59,7 +59,7 @@ serve(async (req) => {
   let DISPATCH_TOKEN: string =
     Deno.env.get("SB_SECRET_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   try {
-    const { data: tokenRpc } = await supa.rpc("app_cron_token");
+    const { data: tokenRpc } = await supa.rpc("app_cron_token" as never) as { data: unknown };
     if (typeof tokenRpc === "string" && tokenRpc.length > 10) DISPATCH_TOKEN = tokenRpc;
   } catch { /* fall back to env-derived service key */ }
 

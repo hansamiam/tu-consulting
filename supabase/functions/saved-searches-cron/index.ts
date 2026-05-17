@@ -144,12 +144,16 @@ Deno.serve(async (req) => {
 
   // Filter out users who muted nudges.
   const userIds = Array.from(new Set(searches.map((s) => s.user_id)));
+  // student_profiles has no `language` column — selecting it was 400-ing
+  // the whole query, so this cron was likely never sending. Default to
+  // English; a per-user language preference can be added later (would
+  // need an ALTER TABLE + the wizard to capture it on signup).
   const { data: profiles } = await supa
     .from("student_profiles")
-    .select("user_id, full_name, email, nudge_opt_out, language")
+    .select("user_id, full_name, email, nudge_opt_out")
     .in("user_id", userIds);
-  const profileMap = new Map<string, { full_name: string | null; email: string | null; nudge_opt_out: boolean; language: string | null }>(
-    (profiles ?? []).map((p) => [p.user_id, p as any]),
+  const profileMap = new Map<string, { full_name: string | null; email: string | null; nudge_opt_out: boolean }>(
+    (profiles ?? []).map((p) => [p.user_id, p]),
   );
 
   // Pull a single batch of recent scholarships and apply each user's
@@ -208,8 +212,8 @@ Deno.serve(async (req) => {
 
     try {
       const today = new Date().toISOString().slice(0, 10);
-      const userLang: "en" | "ru" = profile.language === "ru" ? "ru" : "en";
-      const ru = userLang === "ru";
+      const userLang: "en" | "ru" = "en";
+      const ru = false;
       const { error: sendErr } = await supa.functions.invoke("send-transactional-email", {
         body: {
           recipientEmail: profile.email,

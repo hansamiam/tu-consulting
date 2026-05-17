@@ -159,7 +159,7 @@ async function checkUrl(rawUrl: string): Promise<CheckResult> {
         const body = await readBodyClipped(resp);
         const sniff = detectSoft404(body);
         if (sniff.soft404) {
-          return { status: "fail", httpCode: resp.status, reason: sniff.reason };
+          return { status: "fail", httpCode: resp.status, reason: sniff.reason ?? "soft_404" };
         }
       } else {
         try { resp.body?.cancel(); } catch { /* ignore */ }
@@ -259,8 +259,11 @@ Deno.serve(async (req) => {
       if (nextFails >= 3) patch.verification_status = "broken";
       fail++;
     }
+    // PostgrestFilterBuilder is PromiseLike — Promise.allSettled awaits it
+    // at runtime. The cast is purely to satisfy Promise<unknown>[] now that
+    // the typed client returns a stricter builder shape.
     updates.push(
-      supa.from("scholarships").update(patch).eq("scholarship_id", row.scholarship_id),
+      supa.from("scholarships").update(patch as never).eq("scholarship_id", row.scholarship_id) as unknown as Promise<unknown>,
     );
   }
 

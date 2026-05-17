@@ -114,12 +114,16 @@ Deno.serve(async (req) => {
   // getting deadline emails. Pre-migration profiles without nudge_opt_out
   // default to false (opted-in) which matches the column default.
   const userIds = Array.from(new Set(candidates.map((c) => c.user_id)));
+  // student_profiles has no `language` column — selecting it was 400-ing
+  // the whole query, so this cron was likely never sending. Default to
+  // English; a per-user language preference can be added later (would
+  // need an ALTER TABLE + the wizard to capture it on signup).
   const { data: profiles } = await supa
     .from("student_profiles")
-    .select("user_id, full_name, email, nudge_opt_out, language")
+    .select("user_id, full_name, email, nudge_opt_out")
     .in("user_id", userIds);
-  const profileMap = new Map<string, { full_name: string | null; email: string | null; nudge_opt_out: boolean; language: string | null }>(
-    (profiles ?? []).map((p) => [p.user_id, p as any]),
+  const profileMap = new Map<string, { full_name: string | null; email: string | null; nudge_opt_out: boolean }>(
+    (profiles ?? []).map((p) => [p.user_id, p]),
   );
 
   let sent = 0;
@@ -185,9 +189,9 @@ Deno.serve(async (req) => {
           templateData: {
             name: profile.full_name?.split(" ")[0] || undefined,
             scholarshipName: sch.scholarship_name,
-            // Date formatting follows the user's language so Russian
-            // recipients see Russian month names.
-            deadlineDate: formatDate(sch.application_deadline!, profile.language === "ru" ? "ru-RU" : "en-US"),
+            // Date formatting defaults to English — student_profiles has
+            // no language column yet, see comment at the profile fetch.
+            deadlineDate: formatDate(sch.application_deadline!, "en-US"),
             daysRemaining,
             // Status label is unlocalized — passed as the raw key so the
             // template can render the localized label from its own
@@ -195,8 +199,8 @@ Deno.serve(async (req) => {
             status: row.status || undefined,
             amount: formatAmount(sch.award_amount_text, sch.coverage_type, sch.estimated_total_value_usd),
             scholarshipUrl: sch.official_url || undefined,
-            trackerUrl: profile.language === "ru" ? `${SITE}/pipeline/ru` : `${SITE}/pipeline`,
-            language: profile.language === "ru" ? "ru" : "en",
+            trackerUrl: `${SITE}/pipeline`,
+            language: "en",
           },
         },
       });
