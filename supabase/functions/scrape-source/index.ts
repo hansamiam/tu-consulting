@@ -268,9 +268,33 @@ function extractJson(s: string): unknown {
   const candidate = (fenced ? fenced[1] : s).trim();
   // Try direct parse, else find the first { ... } block
   try { return JSON.parse(candidate); } catch { /* fall through */ }
-  const m = candidate.match(/\{[\s\S]*\}/);
-  if (!m) throw new Error("No JSON object in LLM response");
-  return JSON.parse(m[0]);
+  // 2026-05-18: handle "valid JSON followed by trailing junk" — gpt-4o-mini
+  // flash occasionally returns `{"scholarships":[]}\n\nNote: this page
+  // has no scholarships to extract.` which JSON.parse rejects with
+  // "Unexpected non-whitespace character after JSON at position 19".
+  // The previous regex `\{[\s\S]*\}` was greedy and grabbed straight
+  // through to a trailing `}` in the commentary, then re-parsed the
+  // whole compound and re-failed. Walk braces from the first `{` to
+  // its balanced match and parse just that prefix — handles both
+  // "junk after }" and "extra `}` in commentary" cases.
+  const start = candidate.indexOf("{");
+  if (start === -1) throw new Error("No JSON object in LLM response");
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  for (let i = start; i < candidate.length; i++) {
+    const c = candidate[i];
+    if (escape) { escape = false; continue; }
+    if (c === "\\") { escape = true; continue; }
+    if (c === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (c === "{") depth++;
+    else if (c === "}") {
+      depth--;
+      if (depth === 0) return JSON.parse(candidate.slice(start, i + 1));
+    }
+  }
+  throw new Error("Unbalanced JSON in LLM response");
 }
 
 /** Validate a single LLM-returned scholarship; returns null if it fails the
