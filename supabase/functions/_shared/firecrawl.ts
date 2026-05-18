@@ -23,15 +23,29 @@ export interface FirecrawlScrapeOptions {
   waitFor?: number;
   /** Optional override of the standard timeout (ms). Default 45s. */
   timeout?: number;
+  /** When true, also request rawHtml (rendered HTML including head meta).
+   *  Used by enrich-cover-images-cron to scrape og:image off the
+   *  post-JS-render head — Firecrawl's metadata.ogImage isn't reliable. */
+  withRawHtml?: boolean;
 }
 
 export interface FirecrawlScrapeResult {
   markdown: string;
+  /** Post-JS-render raw HTML when withRawHtml=true was requested. */
+  rawHtml?: string;
   metadata?: {
     title?: string;
     description?: string;
     statusCode?: number;
     sourceURL?: string;
+    // Firecrawl sometimes populates these from the JS-rendered head, but
+    // coverage is inconsistent — many sites end up with metadata.{} even
+    // when og:image is present. For reliable og:image extraction, request
+    // withRawHtml and parse the head yourself.
+    ogImage?: string;
+    ogTitle?: string;
+    ogDescription?: string;
+    twitterImage?: string;
   };
 }
 
@@ -60,7 +74,7 @@ export async function firecrawlScrape(opts: FirecrawlScrapeOptions): Promise<Fir
       },
       body: JSON.stringify({
         url: opts.url,
-        formats: ["markdown"],
+        formats: opts.withRawHtml ? ["markdown", "rawHtml"] : ["markdown"],
         onlyMainContent: opts.onlyMainContent ?? true,
         waitFor: opts.waitFor ?? 0,
         timeout: Math.max(timeoutMs - 2_000, 15_000),
@@ -79,6 +93,7 @@ export async function firecrawlScrape(opts: FirecrawlScrapeOptions): Promise<Fir
 
     return {
       markdown: data.data?.markdown ?? "",
+      rawHtml: data.data?.rawHtml,
       metadata: data.data?.metadata,
     };
   } finally {

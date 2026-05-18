@@ -34,13 +34,19 @@ import { requireAdminOrService } from "../_shared/auth.ts";
 import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
 import { respondJson } from "../_shared/http.ts";
 import { createServiceClient } from "../_shared/clients.ts";
+import { firecrawlScrape } from "../_shared/firecrawl.ts";
 
 const json = (status: number, body: unknown) =>
   respondJson(status, body, corsHeaders);
 
-const MAX_PER_RUN = 50;
-const THROTTLE_MS = 1500;
-const FETCH_TIMEOUT_MS = 8000;
+const MAX_PER_RUN = 20;
+const THROTTLE_MS = 800;
+const FETCH_TIMEOUT_MS = 5000;
+// Edge function CPU/wall-clock ceiling. Real worker hard-kills us around
+// ~150s — leave headroom. We exit the loop early once we cross this
+// threshold; remaining candidates roll to the next daily run.
+const WALL_CLOCK_BUDGET_MS = 120_000;
+const FIRECRAWL_TIMEOUT_MS = 18_000;
 const USER_AGENT = "Mozilla/5.0 (compatible; TopUniBot/1.0; +https://topuni.com/bot)";
 
 // Extract the resolved cover image URL from a scholarship's official
@@ -147,23 +153,32 @@ Deno.serve(async (req) => {
   const supa = createServiceClient();
 
   // Candidates: rows that
+  //   · are user-visible (active or reopens_annually lifecycle AND deadline
+  //     within the next 6 months) — we don't waste Firecrawl budget on
+  //     archived rows. The Discover frontend enforces the same window so
+  //     anything outside it can't be seen anyway.
   //   · have an official_url (otherwise nothing to scrape)
   //   · have no cover_image_url yet
   //   · aren't broken (the URL-health checker has flagged the link as
   //     dead; no point fetching)
-  // Order verified rows first so curated content gets visual treatment
-  // before pending rows do.
+  // Order by deadline ASC so the most-urgent (and most likely to be
+  // clicked) rows get treated first.
   // Verification gate matches the read-side: verified, stale, pending, or
   // NULL — anything except 'broken'. Pre-fix .neq("verification_status",
   // "broken") silently dropped NULL-status rows because SQL evaluates
   // `NULL <> 'broken'` as NULL, which WHERE treats as FALSE.
+  const sixMonthsOut = new Date(Date.now() + 6 * 30 * 86_400_000).toISOString().slice(0, 10);
+  const today = new Date().toISOString().slice(0, 10);
   const { data: candidates, error: candErr } = await supa
     .from("scholarships")
     .select("scholarship_id, scholarship_name, official_url, source_url, verification_status")
     .is("cover_image_url", null)
+    .in("lifecycle_status", ["active", "reopens_annually"])
+    .gte("application_deadline", today)
+    .lte("application_deadline", sixMonthsOut)
     .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
     .not("official_url", "is", null)
-    .order("verification_status", { ascending: true })
+    .order("application_deadline", { ascending: true })
     .limit(MAX_PER_RUN);
 
   if (candErr) {
@@ -175,12 +190,27 @@ Deno.serve(async (req) => {
   }
 
   let filled = 0;
+  let filledViaFirecrawl = 0;
   let noImage = 0;
   let invalid = 0;
   let failed = 0;
+  let timedOutEarly = false;
   const errors: string[] = [];
+  const runStart = Date.now();
+
+  // 2026-05-18: Firecrawl fallback. Empirical: 5/6 modern scholarship
+  // pages (universities, .gov programs) ship og:image only after JS
+  // renders — raw fetch sees a skeleton. Firecrawl renders the page
+  // server-side and returns metadata.ogImage directly. ~$0.001 per
+  // fallback call, capped per run to avoid runaway spend AND to stay
+  // inside the worker compute budget.
+  let firecrawlBudget = 10;
 
   for (let i = 0; i < candidates.length; i++) {
+    if (Date.now() - runStart > WALL_CLOCK_BUDGET_MS) {
+      timedOutEarly = true;
+      break;
+    }
     const c = candidates[i];
     if (i > 0) await new Promise(r => setTimeout(r, THROTTLE_MS));
 
@@ -192,10 +222,43 @@ Deno.serve(async (req) => {
     if (!url) { failed++; continue; }
 
     try {
-      const html = await fetchHtml(url);
-      if (!html) { failed++; continue; }
+      let candidateImage: string | null = null;
+      let viaFirecrawl = false;
 
-      const candidateImage = extractCoverImage(html, url);
+      // Pass 1: raw HTML fetch (free, fast — works on static sites).
+      const html = await fetchHtml(url);
+      if (html) candidateImage = extractCoverImage(html, url);
+
+      // Pass 2: Firecrawl fallback for JS-rendered pages. We ask for
+      // rawHtml (post-render) and reuse the same og:image extractor —
+      // Firecrawl's metadata.ogImage is sparsely populated in practice
+      // but the rendered head reliably contains the meta tags.
+      if (!candidateImage && firecrawlBudget > 0) {
+        firecrawlBudget--;
+        try {
+          const fc = await firecrawlScrape({
+            url,
+            onlyMainContent: false,
+            waitFor: 800,
+            timeout: FIRECRAWL_TIMEOUT_MS,
+            withRawHtml: true,
+          });
+          if (fc.rawHtml) candidateImage = extractCoverImage(fc.rawHtml, url);
+          if (!candidateImage) {
+            // Last resort: take Firecrawl's own ogImage parse if it
+            // happened to populate (rare but cheap to check).
+            const raw = fc.metadata?.ogImage || fc.metadata?.twitterImage;
+            if (raw) {
+              try { candidateImage = new URL(raw, url).toString(); } catch { /* bad URL */ }
+            }
+          }
+          viaFirecrawl = !!candidateImage;
+        } catch (e) {
+          // Firecrawl failure is non-fatal — fall through to noImage.
+          errors.push(`${c.scholarship_id}: firecrawl ${e instanceof Error ? e.message : String(e)}`);
+        }
+      }
+
       if (!candidateImage) { noImage++; continue; }
 
       const ok = await validateImageUrl(candidateImage);
@@ -211,6 +274,7 @@ Deno.serve(async (req) => {
         continue;
       }
       filled++;
+      if (viaFirecrawl) filledViaFirecrawl++;
     } catch (e) {
       failed++;
       errors.push(`${c.scholarship_id}: ${e instanceof Error ? e.message : String(e)}`);
@@ -221,9 +285,12 @@ Deno.serve(async (req) => {
     ok: true,
     candidates: candidates.length,
     filled,
+    filledViaFirecrawl,
     noImage,
     invalid,
     failed,
+    timedOutEarly,
+    elapsedMs: Date.now() - runStart,
     errors: errors.slice(0, 10),
   });
 });

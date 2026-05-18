@@ -1184,6 +1184,12 @@ serve(async (req) => {
           ...reactivatePayload,
           verified: false,
           verification_status: "pending",
+          // 2026-05-18: Tag the provenance so legacy hand-curated rows
+          // are distinguishable from fresh scraper output. Without this
+          // the DB default ('hand_curated') was masking every scraped
+          // row, making it impossible to audit which rows came from
+          // which pipeline.
+          data_source: "scrape",
         };
         const { data: inserted, error: insertErr } = await supa
           .from("scholarships")

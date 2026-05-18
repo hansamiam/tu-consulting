@@ -9,6 +9,7 @@ import TopUniDashboard from "@/components/TopUniDashboard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -927,6 +928,72 @@ const TopUniAI = () => {
                       ))}
                     </div>
 
+                    {/* 2026-05-18 Optional Step 4 fields. Collapsible so the
+                        quick-path user closes it and presses Generate. When
+                        opened, four textareas sharpen the strategy report
+                        (essay angles, fit notes, named-school bucket). All
+                        skippable — empty values are stripped in
+                        projectToDiscoverProfile. */}
+                    <details className="group bg-card border border-border/70 rounded-xl">
+                      <summary className="cursor-pointer list-none flex items-center justify-between p-4 hover:bg-muted/30 rounded-xl transition-colors">
+                        <div className="flex items-center gap-2.5">
+                          <Target className="w-4 h-4 text-gold-dark" />
+                          <span className="text-sm font-semibold text-foreground">Optional — sharpen your plan</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground group-open:hidden">
+                          + Add detail
+                        </span>
+                        <span className="text-xs text-muted-foreground hidden group-open:inline">
+                          – Collapse
+                        </span>
+                      </summary>
+                      <div className="px-4 pb-4 pt-1 space-y-4 border-t border-border/60">
+                        <p className="text-xs text-muted-foreground pt-3 -mb-1">
+                          Skip any field. The more you share, the more personalized your essay angles and shortlist.
+                        </p>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="careerGoal" className="text-xs font-medium text-foreground">Career goal</Label>
+                          <Textarea
+                            id="careerGoal"
+                            placeholder="e.g. data scientist focused on climate modeling"
+                            value={careerGoal}
+                            onChange={(e) => setCareerGoal(e.target.value)}
+                            className="min-h-[60px] resize-none"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="extracurriculars" className="text-xs font-medium text-foreground">Extracurriculars & achievements</Label>
+                          <Textarea
+                            id="extracurriculars"
+                            placeholder="e.g. founded a community library, IMO bronze, 200hr neuroscience research"
+                            value={extracurriculars}
+                            onChange={(e) => setExtracurriculars(e.target.value)}
+                            className="min-h-[70px] resize-none"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="background" className="text-xs font-medium text-foreground">Background context</Label>
+                          <Textarea
+                            id="background"
+                            placeholder="e.g. first-gen, raised in Bishkek, parents both teachers"
+                            value={background}
+                            onChange={(e) => setBackground(e.target.value)}
+                            className="min-h-[60px] resize-none"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="namedSchools" className="text-xs font-medium text-foreground">Schools you have in mind</Label>
+                          <Textarea
+                            id="namedSchools"
+                            placeholder="e.g. Stanford, UofT, KAIST"
+                            value={namedSchools}
+                            onChange={(e) => setNamedSchools(e.target.value)}
+                            className="min-h-[50px] resize-none"
+                          />
+                        </div>
+                      </div>
+                    </details>
+
                     <div className="flex justify-between pt-4">
                       <Button variant="outline" onClick={() => goToStep(2)}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
                       <Button
@@ -946,6 +1013,7 @@ const TopUniAI = () => {
                               fullName, email, nationality, gradeLevel,
                               gpa, gpaScale, ielts, toefl, sat, major, budget,
                               targetCountries,
+                              careerGoal, extracurriculars, background, namedSchools,
                             }));
                           } catch { /* localStorage may be unavailable; brief still renders */ }
                           setScreen("dashboard");
