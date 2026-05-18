@@ -11,7 +11,17 @@
 // canonical URL is https://topuni.org/sitemap-scholarships.xml — that's
 // what robots.txt advertises.
 
-import { createServiceClient } from "../_shared/clients.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+// Inlined service-role client to avoid the deploy-bundler's
+// inconsistent handling of relative imports from `_shared`. Same key
+// preference order createServiceClient() uses.
+function makeServiceClient() {
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SB_SECRET_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key) throw new Error("SUPABASE_URL or service-role key missing");
+  return createClient(url, key);
+}
 
 const SITE = "https://topuni.org";
 
@@ -29,7 +39,7 @@ const escape = (s: string) =>
    .replace(/'/g, "&apos;");
 
 Deno.serve(async () => {
-  const supa = createServiceClient();
+  const supa = makeServiceClient();
 
   // Match the public detail-page read filter exactly: verified, stale,
   // pending, or NULL — anything except 'broken'. Pre-fix the sitemap
@@ -42,9 +52,17 @@ Deno.serve(async () => {
   // Pending rows get a slightly lower priority (0.5) so Google focuses
   // its crawl budget on the already-verified rows first, but they ARE
   // in the index so lastmod updates from the verify cron get picked up.
+  // Filter by lifecycle_status='active' so the 2026-05-17 cull (52 rows
+  // with no verifiable source URL flipped to 'superseded') drops out of
+  // the sitemap. Pre-fix Google was still crawling those URLs because
+  // the verification_status filter only catches the verified/stale axis
+  // — superseded rows kept their old verified status from when they
+  // were live. The detail page still loads them (so existing bookmarks
+  // don't 404), but they should no longer be indexed.
   const { data: rows, error } = await supa
     .from("scholarships")
     .select("scholarship_id, last_verified_at, created_at, verification_status")
+    .eq("lifecycle_status", "active")
     .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
     .limit(5000);
 
