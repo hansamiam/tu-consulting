@@ -179,7 +179,17 @@ Re-extract from the page content below. Fields to populate (or leave null):
   "duration_text": "e.g. '1 year (taught master's)' or '2-4 years depending on degree'",
   "target_fields": ["Computer Science"],
   "target_degree_level": ["master","phd"],
-  "target_demographics": ["women","first-generation"],
+  "target_demographics": [],
+  // ↑ Empty by default. Only add a tag from this CONSTRAINED SET when the
+  //   program EXPLICITLY restricts to that group: "women","men","lgbtq",
+  //   "first-generation","low-income","refugee","displaced","indigenous",
+  //   "underrepresented-stem","underrepresented-minority","disability",
+  //   "military-veteran","rural","mature-student". Diversity / equal-
+  //   opportunity language ("welcomes underrepresented applicants",
+  //   "encourages women to apply") is NOT a restriction — leave the
+  //   array empty. Tagging a flagship merit award like Knight-Hennessy
+  //   as {women, first-generation} from boilerplate diversity language
+  //   has been the single biggest source of bad cards on /discover.
   "eligible_countries": ["India","Pakistan"],
   "partner_universities": ["Harvard University","MIT"],
   "confidence": 0.92

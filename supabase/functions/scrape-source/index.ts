@@ -226,7 +226,7 @@ Extract every scholarship program described on this page. Return strictly:
       "duration_text": "...",
       "target_degree_level": ["master","phd"],
       "target_fields": ["..."],
-      "target_demographics": ["women","first-generation"],
+      "target_demographics": [],
       "min_gpa": 3.5, "gpa_scale": 4.0,
       "min_ielts": 7.0, "min_toefl": 100,
       "citizenship_requirements": "...",
