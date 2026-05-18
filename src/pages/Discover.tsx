@@ -5388,10 +5388,38 @@ const Discover = ({ language = "en" }: Props) => {
                           if (!hasProfileBucketing && sections.stretch.length > 0) {
                             return (
                               <section>
+                                {/* 2026-05-18: bulletin-feed framing for the
+                                    no-profile state. Pre-fix this header read
+                                    "Database · All scholarships" with a
+                                    static "build your profile" subtitle,
+                                    which made the page feel like a
+                                    one-shot catalog. Reframed as a live
+                                    feed — the active sort dictates the
+                                    framing so "Newest first" reads as a
+                                    bulletin, "Deadline first" reads as
+                                    closing-soon urgency. */}
                                 <SectionHeader
-                                  kicker={t("Database", "База")}
-                                  title={t("All scholarships", "Все стипендии")}
-                                  subtitle={t("Build your profile (top right) to see which ones fit you best.", "Заполните профиль (вверху справа), чтобы увидеть, какие подходят лучше.")}
+                                  kicker={
+                                    sortBy === "newest"
+                                      ? t("Live feed", "Live-лента")
+                                      : sortBy === "deadline"
+                                        ? t("Closing soon", "Закрываются скоро")
+                                        : t("Database", "База")
+                                  }
+                                  title={
+                                    sortBy === "newest"
+                                      ? t("Latest opportunities", "Последние возможности")
+                                      : sortBy === "deadline"
+                                        ? t("Application windows opening + closing", "Окна подачи — открытие и закрытие")
+                                        : t("All scholarships", "Все стипендии")
+                                  }
+                                  subtitle={
+                                    sortBy === "newest"
+                                      ? t("Updated continuously — fresh additions surface first.", "Обновляется постоянно — новые позиции сверху.")
+                                      : sortBy === "deadline"
+                                        ? t("Sorted by what closes next so urgent programs surface first.", "Отсортировано по ближайшим дедлайнам.")
+                                        : t("Build your profile (top right) to see which ones fit you best.", "Заполните профиль (вверху справа), чтобы увидеть, какие подходят лучше.")
+                                  }
                                   accentClass="text-foreground/60"
                                 />
                                 {renderSectionGrid("all", sections.stretch)}
