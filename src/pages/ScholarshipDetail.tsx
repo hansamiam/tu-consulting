@@ -1139,7 +1139,34 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
               ? t("Curated", "Курировано")
               : t("External research", "Внешний поиск")}
           </span>
-          {s.last_verified_date && <span>· {t("Verified", "Проверено")} {s.last_verified_date}</span>}
+          {/* Verified line — prefer the live last_verified_at timestamp
+              (set by every verify-cron pass; reflects reality) and
+              render as a relative "N days ago" so users feel the
+              freshness instead of having to parse a date. Falls back to
+              last_verified_date when only that text column is set. */}
+          {(() => {
+            if (s.last_verified_at) {
+              const ms = Date.now() - new Date(s.last_verified_at).getTime();
+              const days = Math.max(0, Math.floor(ms / 86400000));
+              const label =
+                days === 0
+                  ? t("today", "сегодня")
+                  : days === 1
+                    ? t("1 day ago", "1 день назад")
+                    : days < 30
+                      ? `${days} ${t("days ago", "дней назад")}`
+                      : `${Math.round(days / 30)} ${t("months ago", "мес. назад")}`;
+              return (
+                <span className="inline-flex items-center gap-1">
+                  · {t("Verified", "Проверено")} <span className="font-semibold text-foreground/80">{label}</span>
+                </span>
+              );
+            }
+            if (s.last_verified_date) {
+              return <span>· {t("Verified", "Проверено")} {s.last_verified_date}</span>;
+            }
+            return null;
+          })()}
           <a
             href={`mailto:hello@topuni.com?subject=${encodeURIComponent("Inaccurate scholarship data: " + cleanScholarshipName(s.scholarship_name))}`}
             className="ml-auto underline hover:text-foreground"
