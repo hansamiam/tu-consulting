@@ -2812,6 +2812,14 @@ const Discover = ({ language = "en" }: Props) => {
           // passed last night gets flipped today). Direct /scholarships/:id
           // lookups still work for saved-pipeline + shared-brief links.
           .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null")
+          // 2026-05-18 final: only rows with an OPEN deadline (concrete
+          // future date) within the next 6 months. User direction —
+          // "only those that have recently been posted and have actual
+          // relevant upcoming cycle that has been opened". NULL deadline
+          // / further-than-6mo rows are LLM extrapolations or legacy
+          // hand-uploads with no verified live cycle.
+          .gte("application_deadline", new Date().toISOString().slice(0, 10))
+          .lte("application_deadline", new Date(Date.now() + 6 * 30 * 86_400_000).toISOString().slice(0, 10))
           .order("estimated_total_value_usd", { ascending: false }),
         supabase
           .from("scholarship_stats")
