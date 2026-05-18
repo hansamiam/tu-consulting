@@ -424,17 +424,24 @@ const TopUniAI = () => {
                   stage instead of three abstract bars. Active step's
                   label gets a subtle gold tint; completed steps get
                   the canvas-foreground colour; upcoming stay muted. */}
+              {/* 2026-05-19: Progress now spans 4 steps. The 4th is the
+                  optional context step (career goal, ECs, background,
+                  named schools). User direction was to redesign the
+                  flow so the extras are part of the journey, not tacked
+                  on the end of Step 3 as a collapsible. Step 4 has a
+                  prominent Skip path for users who want the fast lane. */}
               <div className="flex items-start justify-center gap-3 mb-10">
                 {[
                   { n: 1, label: "Profile" },
                   { n: 2, label: "Goals" },
                   { n: 3, label: "Priorities" },
+                  { n: 4, label: "Sharpen" },
                 ].map(s => {
                   const isActive = s.n === step;
                   const isDone = s.n < step;
                   return (
                     <div key={s.n} className="flex flex-col items-center gap-1.5 min-w-0">
-                      <div className="h-1.5 w-14 sm:w-16 rounded-full overflow-hidden bg-border/60">
+                      <div className="h-1.5 w-12 sm:w-14 rounded-full overflow-hidden bg-border/60">
                         <motion.div
                           className="h-full bg-gold-dark"
                           initial={false}
@@ -928,101 +935,120 @@ const TopUniAI = () => {
                       ))}
                     </div>
 
-                    {/* 2026-05-18 Optional Step 4 fields. Collapsible so the
-                        quick-path user closes it and presses Generate. When
-                        opened, four textareas sharpen the strategy report
-                        (essay angles, fit notes, named-school bucket). All
-                        skippable — empty values are stripped in
-                        projectToDiscoverProfile. */}
-                    <details className="group bg-card border border-border/70 rounded-xl">
-                      <summary className="cursor-pointer list-none flex items-center justify-between p-4 hover:bg-muted/30 rounded-xl transition-colors">
-                        <div className="flex items-center gap-2.5">
-                          <Target className="w-4 h-4 text-gold-dark" />
-                          <span className="text-sm font-semibold text-foreground">Optional — sharpen your plan</span>
-                        </div>
-                        <span className="text-xs text-muted-foreground group-open:hidden">
-                          + Add detail
-                        </span>
-                        <span className="text-xs text-muted-foreground hidden group-open:inline">
-                          – Collapse
-                        </span>
-                      </summary>
-                      <div className="px-4 pb-4 pt-1 space-y-4 border-t border-border/60">
-                        <p className="text-xs text-muted-foreground pt-3 -mb-1">
-                          Skip any field. The more you share, the more personalized your essay angles and shortlist.
-                        </p>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="careerGoal" className="text-xs font-medium text-foreground">Career goal</Label>
-                          <Textarea
-                            id="careerGoal"
-                            placeholder="e.g. data scientist focused on climate modeling"
-                            value={careerGoal}
-                            onChange={(e) => setCareerGoal(e.target.value)}
-                            className="min-h-[60px] resize-none"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="extracurriculars" className="text-xs font-medium text-foreground">Extracurriculars & achievements</Label>
-                          <Textarea
-                            id="extracurriculars"
-                            placeholder="e.g. founded a community library, IMO bronze, 200hr neuroscience research"
-                            value={extracurriculars}
-                            onChange={(e) => setExtracurriculars(e.target.value)}
-                            className="min-h-[70px] resize-none"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="background" className="text-xs font-medium text-foreground">Background context</Label>
-                          <Textarea
-                            id="background"
-                            placeholder="e.g. first-gen, raised in Bishkek, parents both teachers"
-                            value={background}
-                            onChange={(e) => setBackground(e.target.value)}
-                            className="min-h-[60px] resize-none"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="namedSchools" className="text-xs font-medium text-foreground">Schools you have in mind</Label>
-                          <Textarea
-                            id="namedSchools"
-                            placeholder="e.g. Stanford, UofT, KAIST"
-                            value={namedSchools}
-                            onChange={(e) => setNamedSchools(e.target.value)}
-                            className="min-h-[50px] resize-none"
-                          />
-                        </div>
-                      </div>
-                    </details>
-
                     <div className="flex justify-between pt-4">
                       <Button variant="outline" onClick={() => goToStep(2)}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
-                      <Button
-                        variant="gold"
-                        size="lg"
-                        onClick={() => {
-                          // Seed Discover with the same profile so the user
-                          // never has to re-answer the nationality / level /
-                          // GPA / IELTS questions inside Discover. Once this
-                          // fires, /discover skips its wizard and lands
-                          // straight on personalized results. saveProfile
-                          // also fires the cross-device sync to
-                          // student_profiles, so signing in on another
-                          // device pulls the same profile back down.
-                          try {
-                            saveProfile(projectToDiscoverProfile({
-                              fullName, email, nationality, gradeLevel,
-                              gpa, gpaScale, ielts, toefl, sat, major, budget,
-                              targetCountries,
-                              careerGoal, extracurriculars, background, namedSchools,
-                            }));
-                          } catch { /* localStorage may be unavailable; brief still renders */ }
-                          setScreen("dashboard");
-                        }}
-                      >
-                        Generate my plan
-                        <ArrowRight className="ml-2 w-5 h-5" />
+                      <Button variant="gold" onClick={() => goToStep(4)}>
+                        Continue <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
                     </div>
+                  </motion.div>
+                )}
+
+                {step === 4 && (
+                  <motion.div
+                    key="step4"
+                    initial={stepEnter}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={stepExit}
+                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                    className="space-y-7"
+                  >
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Step 04 · Sharpen</p>
+                      <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight">
+                        Tell us more — or skip ahead.
+                      </h2>
+                      <p className="text-muted-foreground mt-2 text-sm">
+                        Optional. Each detail makes your essay angles and shortlist sharper. Anything you share stays private to your report.
+                      </p>
+                    </div>
+                    <div className="space-y-5">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="careerGoal" className="text-xs uppercase tracking-wider font-medium">Career goal</Label>
+                        <Textarea
+                          id="careerGoal"
+                          placeholder="e.g. data scientist focused on climate modeling"
+                          value={careerGoal}
+                          onChange={(e) => setCareerGoal(e.target.value)}
+                          className="min-h-[70px] resize-none bg-card"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="extracurriculars" className="text-xs uppercase tracking-wider font-medium">Extracurriculars &amp; achievements</Label>
+                        <Textarea
+                          id="extracurriculars"
+                          placeholder="e.g. founded a community library, IMO bronze, 200 hrs neuroscience research"
+                          value={extracurriculars}
+                          onChange={(e) => setExtracurriculars(e.target.value)}
+                          className="min-h-[90px] resize-none bg-card"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="background" className="text-xs uppercase tracking-wider font-medium">Background context</Label>
+                        <Textarea
+                          id="background"
+                          placeholder="e.g. first-gen, raised in Bishkek, parents both teachers"
+                          value={background}
+                          onChange={(e) => setBackground(e.target.value)}
+                          className="min-h-[70px] resize-none bg-card"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="namedSchools" className="text-xs uppercase tracking-wider font-medium">Schools you have in mind</Label>
+                        <Textarea
+                          id="namedSchools"
+                          placeholder="e.g. Stanford, U of Toronto, KAIST"
+                          value={namedSchools}
+                          onChange={(e) => setNamedSchools(e.target.value)}
+                          className="min-h-[60px] resize-none bg-card"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Generate handler shared by Skip + Generate buttons.
+                        Same as old Step 3 Generate but moved here so the
+                        optional context fields are guaranteed-persisted
+                        before the brief streams. */}
+                    {(() => {
+                      const onGenerate = () => {
+                        try {
+                          saveProfile(projectToDiscoverProfile({
+                            fullName, email, nationality, gradeLevel,
+                            gpa, gpaScale, ielts, toefl, sat, major, budget,
+                            targetCountries,
+                            careerGoal, extracurriculars, background, namedSchools,
+                          }));
+                        } catch { /* localStorage may be unavailable; brief still renders */ }
+                        setScreen("dashboard");
+                      };
+                      const filled = [careerGoal, extracurriculars, background, namedSchools]
+                        .filter((v) => v && v.trim().length > 0).length;
+                      return (
+                        <>
+                          <div className="text-center pt-2">
+                            <p className="text-[11.5px] text-muted-foreground">
+                              {filled === 0
+                                ? "Skip to generate — your report will use the basics you've already shared."
+                                : `${filled} of 4 fields added · sharpens essay angles and fit notes.`}
+                            </p>
+                          </div>
+                          <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
+                            <Button variant="outline" onClick={() => goToStep(3)}>
+                              <ArrowLeft className="mr-2 w-4 h-4" /> Back
+                            </Button>
+                            <div className="flex gap-2 sm:gap-3">
+                              <Button variant="ghost" onClick={onGenerate} className="text-muted-foreground hover:text-foreground">
+                                Skip for now
+                              </Button>
+                              <Button variant="gold" size="lg" onClick={onGenerate}>
+                                Generate my plan
+                                <ArrowRight className="ml-2 w-5 h-5" />
+                              </Button>
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </motion.div>
                 )}
 
