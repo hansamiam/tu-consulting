@@ -162,6 +162,22 @@ INCLUSION SCOPE (decide whether to extract a scholarship at all):
 - EXCLUDE the same way for any country-domestic-only scholarship with no immigrant pathway (e.g., a Canadian scholarship purely for Canadian-born citizens).
 - When uncertain, LEAN INCLUDE if the program text mentions immigrant identity, country-of-origin heritage, refugee status, or international background as eligibility — those students need this product even if the program is hosted in a single country.
 
+WHAT IS A SCHOLARSHIP — REJECT NON-DEGREE FUNDING:
+This catalogue is for DEGREE PROGRAM scholarships (bachelor / master / PhD / postdoc). The product is "find scholarships to fund my degree." A program is in-scope ONLY when it pays for someone's bachelor/master/PhD/postdoc enrollment and tenure at a university.
+
+EXCLUDE — return {"scholarships":[]} or skip the row when the page describes any of:
+- Conference travel grants / conference scholarships / event-attendance funding (e.g. "Google Conference Scholarships", "AWS travel grant", "ACM SIGCHI conference scholarship"). These fund a trip to a conference, not a degree.
+- Hackathons / competitions / innovation challenges / pitch contests / prize-only awards with no associated degree enrollment. A $10K "innovation prize" given to a winner is not a scholarship.
+- Short-term research grants / short-stay fellowships / 1-3 month visiting programs (e.g. DAAD "Short-Term Research Grants", "1-month visiting scholar"). These fund a brief stay, not a degree.
+- Leadership / training / mentorship / cohort programs that don't enroll the recipient in a degree at a university (e.g. Vital Voices Engage Fellowship, Acumen Fellows, social-entrepreneur cohorts). Even if "fellowship" is in the name, if there's no degree, it's out.
+- Entrepreneurship / accelerator / incubator programs (e.g. "Aspiring entrepreneurs fellowship", "early-stage founders program"). Not degree funding.
+- Workshops / bootcamps / certificate programs / continuing-education programs that don't lead to a recognised bachelor/master/PhD/postdoc credential.
+- Tiny one-off grants under $3,000 USD total value — those aren't scholarships in the user's sense; they're book stipends or single-payment awards that don't materially fund a degree.
+- "Funding databases" or "scholarship lists" themselves — those are aggregators (categorise via the source category, not as a scholarship).
+
+If a page mixes a real degree scholarship with conference/training side-programs, extract ONLY the degree scholarship and skip the rest.
+If you're unsure whether a "fellowship" enrolls the recipient in a degree, lean EXCLUDE and OMIT the row rather than emit a guess.
+
 Field semantics:
 - coverage_type: "full_ride" = tuition + stipend + travel. "partial" = some funding. "tuition_only" = waiver. "stipend" = monthly allowance only. "other" = anything else.
 - target_degree_level: subset of ["bachelor","master","phd","postdoc"]
