@@ -580,6 +580,18 @@ function validateExtracted(x: unknown): ExtractedScholarship | null {
     o.partner_universities = real.length > 0 ? real : undefined;
   }
 
+  // 2026-05-18: server-side guard against aggregator URLs being saved
+  // as the row's official_url. The prompt asks the LLM to omit
+  // aggregator URLs, but the LLM still slips them through ~6% of the
+  // time (it copies the scrape source URL). Net result: user clicks
+  // "Apply on official site" and lands on a third-party listicle, not
+  // the funder's authoritative page. NULL the field here so the row
+  // doesn't ship with a misleading URL.
+  const AGG_DOMAINS = /(scholars4dev|opportunitiesforyouth|opportunit(ies)?tracker|opportunitydesk|scholarship-positions|scholarshipsdb|scholarshipsads|opportunitiescorner|after\.|buddy4study|mladiinfo|afterschoolafrica|opportunitiesforafricans)\./i;
+  if (typeof o.official_url === "string" && AGG_DOMAINS.test(o.official_url)) {
+    o.official_url = undefined;
+  }
+
   // Minimum-information gate. Name + provider + country alone aren't
   // enough — that just means a page mentioned a scholarship's title.
   // Require at least 2 of the substantive signals below before we

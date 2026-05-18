@@ -1664,7 +1664,7 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
           glance. Same palette as the card hero band. */}
       <div className={`w-1 shrink-0 bg-gradient-to-b ${accent}`} aria-hidden />
 
-      <div className="flex-1 grid grid-cols-[minmax(0,1fr),auto] sm:grid-cols-[minmax(0,1fr),170px,128px] items-center gap-4 px-4 py-3 min-h-[68px] min-w-0">
+      <div className="flex-1 grid grid-cols-[minmax(0,1fr),auto] sm:grid-cols-[minmax(0,1fr),130px,128px] items-center gap-4 px-4 py-3 min-h-[68px] min-w-0">
         {/* Country-art circle badge retired (round 21). It carried country
             identity (already conveyed by the left accent stripe + the
             country chip below) and doubled as the MatchScoreBreakdown
@@ -1737,38 +1737,25 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
             );
           })()}
 
-          {/* Mobile award + deadline (desktop has its own column). */}
-          <div className="sm:hidden flex items-center justify-between gap-2 mt-1 text-[12px] min-w-0">
-            {award && /\d/.test(award) ? (
-              <span className="inline-flex items-center gap-1 font-semibold min-w-0 truncate text-foreground">
-                <span className="truncate">{award}</span>
-              </span>
-            ) : (
-              <span className="text-muted-foreground/40">—</span>
-            )}
-            <span className={`tabular-nums font-medium leading-tight whitespace-nowrap shrink-0 ${dl.cls}`}>
+          {/* Mobile deadline (desktop has its own column).
+              2026-05-18 final: award text/coverage chip dropped entirely
+              from the row layout — coverage_type categorisation is
+              retired and showing the LLM-paraphrased award_amount_text
+              twice (here + in the detail panel) read as noise. */}
+          <div className="sm:hidden flex items-center mt-1 text-[12px] min-w-0">
+            <span className={`tabular-nums font-medium leading-tight whitespace-nowrap ${dl.cls}`}>
               {dl.text}
             </span>
           </div>
         </div>
 
-        {/* Award + Deadline (desktop only) — vertical stack in a fixed
-            170px column so geometry stays stable no matter the row
-            content. Award reads as the headline number; the deadline
-            sits beneath as smaller, color-toned countdown / "Rolling".
-            Was a single horizontal line with " · " separator that
-            overflowed for long awards or wide deadline text and
-            pushed "Rolling" into the margins. Status column removed
-            entirely from browse: status is a Workspace concept and
-            had no meaningful render here for unbookmarked rows. */}
-        <div className="hidden sm:flex flex-col items-end justify-center gap-0.5 min-w-0 text-right">
-          <span
-            className="text-[13px] font-semibold leading-tight truncate max-w-full text-foreground"
-            title={award ?? undefined}
-          >
-            {award && /\d/.test(award) ? award : "—"}
-          </span>
-          <span className={`text-[11px] tabular-nums font-medium leading-tight whitespace-nowrap ${dl.cls}`}>
+        {/* Deadline only (desktop) — single-line emphasis on the
+            countdown so the row reads as a bulletin: name · provider
+            · when does this close. Award column retired 2026-05-18
+            final per user direction (coverage tags dropped, free-form
+            award text was redundant with the detail panel). */}
+        <div className="hidden sm:flex flex-col items-end justify-center min-w-0 text-right">
+          <span className={`text-[14px] tabular-nums font-semibold leading-tight whitespace-nowrap ${dl.cls}`}>
             {dl.text}
           </span>
         </div>
@@ -2042,17 +2029,12 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           })()}
         </div>
 
-        {/* 2026-05-18: card award chip now renders ONLY when the row has
-            a concrete-dollar amount (digits present). Generic coverage
-            labels ("Full ride" / "Tuition only" / "Partial") were
-            retired alongside the coverage filter — they read as thin
-            signal at catalog scale. Rows without a specific number
-            just don't show the chip. */}
-        {award && /\d/.test(award) && (
-          <div className="inline-flex self-start items-center gap-1.5 text-[12px] font-semibold text-foreground bg-muted/40 border border-border/60 px-2.5 py-1 rounded-md whitespace-nowrap">
-            {award}
-          </div>
-        )}
+        {/* 2026-05-18 final: card award chip removed entirely. User
+            direction: "amount column needs to get rid of that —
+            accordingly adapt and change". Coverage tags retired, the
+            concrete-amount-only fallback was generating noise without
+            adding decision value at card scale; the award reads on
+            the DetailSheet which opens on click. */}
 
         {/* 2026-05-18: card description (canonical_overview / why_this_fits
             / auto-blurb) retired. Per user direction: "lets get rid of the
@@ -4803,7 +4785,9 @@ const Discover = ({ language = "en" }: Props) => {
                   // an objective rating from the scholarship's data; Tier
                   // was a derived label off the same data.
                   { label: "Selectivity", render: s => <SelectivityChip level={s.selectivity} />, isEmpty: s => s.selectivity === "unknown" },
-                  { label: "Award", render: s => s.award_amount_text ? s.award_amount_text : (compactAward(s) || COVERAGE_LABEL[s.coverage_type] || "—"), isEmpty: s => !s.award_amount_text && !COVERAGE_LABEL[s.coverage_type] },
+                  // 2026-05-18 final: "Award" row removed from Compare too
+                  // (coverage labels retired, free-form award text was
+                  // redundant with Total value). Total value carries the $$.
                   { label: "Total value", render: s => s.estimated_total_value_usd ? <span className="text-gold-dark font-bold">{fmtValue(s.estimated_total_value_usd)}</span> : "—", isEmpty: s => !s.estimated_total_value_usd },
                   { label: "Deadline", render: s => {
                       const dl = deadlineDisplay(s.application_deadline, "en", s.deadline_type);
