@@ -4248,14 +4248,18 @@ const Discover = ({ language = "en" }: Props) => {
 
   const activeFiltersCount = [filters.search !== "", filters.coverage !== "all", filters.degree !== "all", filters.selectivity !== "all", filters.field !== "all", filters.hostCountry !== "all", filters.demographic !== "all", filters.onlyEligible, filters.closingSoon].filter(Boolean).length;
 
+  // 2026-05-18: dashboard/bulletin reframe — never quote the total
+  // catalog size to the user (drives "X scholarships" thinking when
+  // what matters is per-row quality + freshness). Analysis copy below
+  // describes the matching steps without leaning on a hard count.
   const analysisTexts = ru ? [
-    `Сканируем ${rows.length || 200}+ стипендий`,
+    `Сканируем актуальные возможности`,
     `Фильтруем по гражданству${wiz.nationality ? `: ${wiz.nationality}` : ""}`,
     `Подбираем программы ${wiz.degrees.length > 0 ? wiz.degrees.join(" / ") : "вашего уровня"}${wiz.field ? ` в направлении ${wiz.field}` : ""}`,
     "Оцениваем академические пороги и селективность",
     "Ранжируем лучшие возможности",
   ] : [
-    `Scanning ${rows.length || 200}+ scholarships`,
+    `Scanning live opportunities`,
     `Filtering by nationality${wiz.nationality ? `: ${wiz.nationality}` : ""}`,
     `Matching ${wiz.degrees.length > 0 ? wiz.degrees.join(" / ") : "your degree"} programs${wiz.field ? ` in ${wiz.field}` : ""}`,
     "Evaluating academic thresholds and selectivity",
@@ -4263,7 +4267,6 @@ const Discover = ({ language = "en" }: Props) => {
   ];
 
   const dark = phase === "wizard" || phase === "analyzing";
-  const totalVerified = rows.length || 200;
 
   return (
     <div className={`min-h-screen relative transition-colors duration-700 ${dark ? "" : "bg-background"}`}>
@@ -4818,31 +4821,15 @@ const Discover = ({ language = "en" }: Props) => {
                     {filters.search && <button onClick={() => setFilters(f => ({ ...f, search: "" }))} aria-label={t("Clear search", "Очистить поиск")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>}
                   </div>
 
-                  {/* Result count — small tabular feedback that the
-                      filter / search / sort produced something. Pre-
-                      fix the user typed a query and had to count rows
-                      themselves. The count reflects filteredAll (the
-                      full filtered set) so members see total matches
-                      not just the paginated visible window. Free
-                      users see "X / Y" — visible vs total — so the
-                      paywall framing is honest. */}
-                  {!loading && ranked.length > 0 && (
-                    <div className="hidden md:flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums shrink-0 px-2">
-                      {gateActive && lockedCount > 0 ? (
-                        <>
-                          <span className="font-semibold text-foreground">{filtered.length}</span>
-                          <span className="text-muted-foreground/60">/</span>
-                          <span>{filteredAll.length}</span>
-                          <span className="ml-1">{t("results", "результатов")}</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="font-semibold text-foreground">{filteredAll.length}</span>
-                          <span className="ml-1">{filteredAll.length === 1 ? t("result", "результат") : t("results", "результатов")}</span>
-                        </>
-                      )}
-                    </div>
-                  )}
+                  {/* 2026-05-18: numeric result count retired. The
+                      product reframed Discover as a constantly-updating
+                      bulletin (opportunitiesforyouth.org style) rather
+                      than a fixed-catalog list — surfacing "247
+                      scholarships" or "12 / 30 visible" pushes users to
+                      think in totals when what actually matters is the
+                      quality + recency of each entry. If the filter
+                      returned nothing, the empty-state below makes that
+                      clear without a hard count. */}
 
                   <Button variant="outline" size="default" className="lg:hidden gap-1.5 h-10 rounded-lg" onClick={() => setFiltersOpen(true)}>
                     <Filter className="h-4 w-4" />{t("Filters", "Фильтры")}{activeFiltersCount > 0 && <Badge className="h-5 px-1.5 text-[10px] bg-gold/20 text-gold-dark border-0 ml-0.5">{activeFiltersCount}</Badge>}
@@ -5340,9 +5327,14 @@ const Discover = ({ language = "en" }: Props) => {
                                     onClick={() => toggleSectionExpanded("list")}
                                     className="w-full px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground hover:text-gold-dark transition-colors border-t border-border bg-canvas-soft/30 hover:bg-gold/5"
                                   >
+                                    {/* 2026-05-18: hard count "(+N)" dropped
+                                        from the "Show all" affordance. The
+                                        dashboard reframe says the user
+                                        shouldn't be steered toward thinking
+                                        in totals — just expand-or-not. */}
                                     {expanded
                                       ? t("Show less", "Свернуть")
-                                      : t(`Show all (+${hiddenCount})`, `Все (+${hiddenCount})`)}
+                                      : t("Show more", "Показать ещё")}
                                   </button>
                                 )}
                                 {lockedCount > 0 && <PaywallRow lockedCount={lockedCount} lang={language} />}
@@ -5751,8 +5743,8 @@ const Discover = ({ language = "en" }: Props) => {
               <div className="space-y-2.5 text-sm text-foreground/85">
                 {[
                   t(
-                    `Full database — all ${rows.length || 200}+ scholarships with strategy notes, rejection patterns, and how-to-win approaches.`,
-                    `Полная база — все ${rows.length || 200}+ стипендий со стратегическими заметками, причинами отказов и подходами к победе.`,
+                    `Full live feed — every active opportunity with strategy notes, rejection patterns, and how-to-win approaches. Updated continuously, not a stale once-a-year catalog.`,
+                    `Полная live-лента — каждая актуальная возможность со стратегическими заметками, причинами отказов и подходами к победе. Обновляется постоянно — не статичный каталог.`,
                   ),
                   t(
                     "Live monthly workshops with our founders — Yale, Cambridge & Tsinghua, Harvard.",
