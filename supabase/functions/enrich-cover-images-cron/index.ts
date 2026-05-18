@@ -154,9 +154,9 @@ Deno.serve(async (req) => {
 
   // Candidates: rows that
   //   · are user-visible (active or reopens_annually lifecycle AND deadline
-  //     within the next 6 months) — we don't waste Firecrawl budget on
-  //     archived rows. The Discover frontend enforces the same window so
-  //     anything outside it can't be seen anyway.
+  //     in the future) — we don't waste Firecrawl budget on archived rows.
+  //     The Discover frontend enforces the same gate so anything outside
+  //     it can't be seen anyway.
   //   · have an official_url (otherwise nothing to scrape)
   //   · have no cover_image_url yet
   //   · aren't broken (the URL-health checker has flagged the link as
@@ -167,7 +167,6 @@ Deno.serve(async (req) => {
   // NULL — anything except 'broken'. Pre-fix .neq("verification_status",
   // "broken") silently dropped NULL-status rows because SQL evaluates
   // `NULL <> 'broken'` as NULL, which WHERE treats as FALSE.
-  const sixMonthsOut = new Date(Date.now() + 6 * 30 * 86_400_000).toISOString().slice(0, 10);
   const today = new Date().toISOString().slice(0, 10);
   const { data: candidates, error: candErr } = await supa
     .from("scholarships")
@@ -175,7 +174,6 @@ Deno.serve(async (req) => {
     .is("cover_image_url", null)
     .in("lifecycle_status", ["active", "reopens_annually"])
     .gte("application_deadline", today)
-    .lte("application_deadline", sixMonthsOut)
     .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
     .not("official_url", "is", null)
     .order("application_deadline", { ascending: true })

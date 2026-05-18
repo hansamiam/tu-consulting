@@ -2812,14 +2812,16 @@ const Discover = ({ language = "en" }: Props) => {
           // passed last night gets flipped today). Direct /scholarships/:id
           // lookups still work for saved-pipeline + shared-brief links.
           .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null")
-          // 2026-05-18 final: only rows with an OPEN deadline (concrete
-          // future date) within the next 6 months. User direction —
-          // "only those that have recently been posted and have actual
-          // relevant upcoming cycle that has been opened". NULL deadline
-          // / further-than-6mo rows are LLM extrapolations or legacy
-          // hand-uploads with no verified live cycle.
+          // 2026-05-19: any row whose deadline hasn't passed yet, no upper
+          // bound. User direction: "basically everything in the scholarships
+          // tag section of opportunitiesforyouth.org and opportunitytracker.ug
+          // that deadline hasn't passed should be there". With the +1yr LLM
+          // auto-roll-forward function disabled (see migration
+          // 20260518170000) and stale-vintage source rows killed, far-future
+          // deadlines are now trustworthy when they exist. Rows with NULL
+          // deadlines remain filtered out (they're either unknown-cycle or
+          // legacy hand-uploads).
           .gte("application_deadline", new Date().toISOString().slice(0, 10))
-          .lte("application_deadline", new Date(Date.now() + 6 * 30 * 86_400_000).toISOString().slice(0, 10))
           .order("estimated_total_value_usd", { ascending: false }),
         supabase
           .from("scholarship_stats")
