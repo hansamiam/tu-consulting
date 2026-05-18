@@ -55,7 +55,7 @@ interface DiscoveredScholarship {
   confidence: number;
 }
 
-const SYSTEM_PROMPT = `You read scholarship aggregator / directory pages and extract URLs that point to INDIVIDUAL scholarship programs (not category indexes, not the directory's home page, not navigation).
+const SYSTEM_PROMPT = `You read scholarship aggregator / directory pages and extract URLs that point to INDIVIDUAL DEGREE-PROGRAM scholarships (not category indexes, not the directory's home page, not navigation, NOT non-degree opportunities).
 
 For each individual scholarship link you find on the page, output a JSON entry with the program name, its absolute URL, an optional 1-line parser_hint, and a confidence score 0-1.
 
@@ -70,13 +70,30 @@ CRITICAL RULES:
 3. Only include URLs that look like a real scholarship program page (a single program with a deadline, eligibility, and application info — even if you can't see it from the listing snippet).
 4. confidence is HIGH (0.85+) only when the link text + surrounding context clearly names a specific scholarship and you can confirm the URL points to a per-program page (not a listing).
 5. Output a JSON object: { "scholarships": [{name, url, hint, confidence}...] }. No markdown fences, no preamble.
-6. Cap your output at the 50 highest-confidence URLs. Skip generic ones.`;
+6. Cap your output at the 50 highest-confidence URLs. Skip generic ones.
+
+WHAT IS A DEGREE SCHOLARSHIP — REJECT NON-DEGREE FUNDING:
+This catalogue is for DEGREE PROGRAM scholarships (bachelor / master / PhD / postdoc). A link is in-scope ONLY when it points at a program that pays for someone's degree enrollment at a university.
+
+EXCLUDE — DO NOT extract URLs for any of these patterns, even if "scholarship" / "fellowship" / "fund" appears in the name:
+- Conference travel grants / conference scholarships / event-attendance funding (e.g. "Google Conference Scholarships", "ACM SIGCHI travel grant").
+- Hackathons / competitions / pitch contests / prize-only awards (e.g. "Sony World Photography Awards", "Kofi Annan NextGen Democracy Prize"). Prize money ≠ degree funding.
+- Short courses / winter schools / summer schools / workshops / bootcamps / certificate programs (e.g. "UNESCO Winter School", "Summer Programme in X").
+- Mentorship programs / leadership cohorts / training fellowships that don't enroll the recipient in a degree (e.g. "Vital Voices Engage Fellowship", "Youth4Climate Mentorship").
+- Career / mid-career / professional fellowships (e.g. "Buffett Fund for Women Journalists", journalism fellowships, "Early-Career Fellowship Program").
+- Entrepreneur / accelerator / incubator programs (e.g. "Savvy Global Fellowship for Aspiring Entrepreneurs").
+- Internships / research-associate positions / staff jobs (e.g. "Tech and Operations Research Associate at Harvard", "Economics Intern at Insurance Europe").
+- Reporting grants / journalism grants / one-off project grants (e.g. "Rainforest Reporting Grant").
+- Anything obviously stale-vintage (year in title like 2018, 2019, 2020, 2021).
+- One-time tiny grants under $5K total value.
+
+If the URL's path or surrounding name has any of these signals — skip it. Better to extract 5 confident degree-scholarship URLs than 50 mixed-quality URLs that bloat the catalogue. The downstream scrape-source LLM will re-filter against the page content, but URLs we never insert never burn a Firecrawl credit.`;
 
 // isolateJson retired 2026-05-18; replaced by the shared
 // extractLlmJson helper which walks balanced braces. See its import
 // in the top-of-file imports block.
 
-function isLikelyScholarshipUrl(url: string): boolean {
+function isLikelyScholarshipUrl(url: string, name?: string): boolean {
   // Heuristic gate before insertion. Block the categories of bad URL the
   // LLM occasionally returns despite the prompt.
   try {
@@ -87,6 +104,24 @@ function isLikelyScholarshipUrl(url: string): boolean {
     if (path === "/" || path === "" || path.match(/^\/(en|us|uk|au)?\/?$/)) return false;
     // Block file-extension downloads (we want HTML pages, not PDFs from the hub itself).
     if (/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip|jpg|jpeg|png|gif|mp4|mp3)$/i.test(path)) return false;
+
+    // 2026-05-18: extended non-degree-scholarship URL/name patterns.
+    // Caught 7-out-of-10 hub-cron-discovered URLs that were jobs /
+    // internships / conferences / journalism grants / winter schools —
+    // patterns the user explicitly flagged as polluting the catalogue.
+    // Check BOTH the URL path and (when supplied) the program name —
+    // the LLM sometimes embeds the giveaway in the name only.
+    const haystack = `${path} ${(name ?? "").toLowerCase()}`;
+    const NON_DEGREE_PATTERNS = [
+      /\b(internship|intern[- ]position|research[- ]associate|fellow position|job opening|hiring|career[- ]opportunity)\b/,
+      /\b(winter[- ]school|summer[- ]school|short[- ]course|bootcamp|workshop|webinar|seminar|symposium|conference[- ]grant|conference[- ]scholarship|travel[- ]grant|travel[- ]scholarship)\b/,
+      /\b(photography[- ]award|reporting[- ]grant|journalism[- ](grant|fund)|writing[- ]grant)\b/,
+      /\b(mentorship[- ]program|mentorship[- ]programme|young[- ]leaders|youth[- ]programme)\b/,
+      /\b(entrepreneur[- ]?(ship|s)?[- ]program|early[- ]stage[- ]founders|accelerator|incubator|pitch[- ]contest|hackathon|competition)\b/,
+      /\b20(0[5-9]|1[0-9]|20|21)\b/,  // stale-year markers
+    ];
+    if (NON_DEGREE_PATTERNS.some((r) => r.test(haystack))) return false;
+
     return true;
   } catch {
     return false;
@@ -239,7 +274,7 @@ serve(async (req) => {
       && typeof d.url === "string" && d.url.trim().length > 10
       && typeof d.confidence === "number" && d.confidence >= minConfidence
     )
-    .filter((d) => isLikelyScholarshipUrl(d.url))
+    .filter((d) => isLikelyScholarshipUrl(d.url, d.name))
     .slice(0, MAX_DISCOVERED_PER_HUB);
 
   if (candidates.length === 0) {
@@ -249,7 +284,7 @@ serve(async (req) => {
       discovered: extracted.length,
       inserted: 0,
       skipped_low_confidence: extracted.filter((d) => (d.confidence ?? 0) < minConfidence).length,
-      skipped_invalid_url: extracted.filter((d) => !isLikelyScholarshipUrl(d.url ?? "")).length,
+      skipped_invalid_url: extracted.filter((d) => !isLikelyScholarshipUrl(d.url ?? "", d.name)).length,
       cost_estimate_usd: FIRECRAWL_COST_PER_SCRAPE_USD + LLM_COST_PER_DISCOVERY_USD,
     });
   }
