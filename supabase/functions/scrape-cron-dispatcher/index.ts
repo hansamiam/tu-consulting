@@ -27,13 +27,15 @@ const json = (status: number, body: unknown) =>
 // vs the serial 20-source ceiling.
 const MAX_SOURCES_PER_TICK = 40;
 
-// Concurrent scrape-source calls. Firecrawl's free tier allows ~10
-// req/s, paid ~50 req/s. Each scrape-source call holds a Firecrawl
-// connection for ~2-5s, so 5 in flight averages ~1-3 req/s — well
-// under both tier limits with headroom for OpenAI rate-limits too.
-// (Pre-rewrite: serial = 1 in flight = 1 req/source-burst, leaving
-// most of Firecrawl's bandwidth idle.)
-const CONCURRENCY = 5;
+// 2026-05-18: dropped CONCURRENCY from 5 → 2 after a sustained
+// burst of OpenAI 429 (TPM 30000 / org-tier-1) wiped out 9 of 12
+// scrapes in a single tick. At 5 in flight × ~10K tokens/call =
+// 50K tokens burst, well over the 30K-per-minute window. With
+// concurrency 2 we average ~20K tokens/burst — comfortably under
+// the cap and the per-call 429 retry inside scrape-source can
+// ride out the rare spike. Net throughput drop is small because
+// the bottleneck is the LLM, not Firecrawl.
+const CONCURRENCY = 2;
 
 // Stop hammering a source once it's failed this many times in a row.
 const FAILURE_CIRCUIT_BREAKER = 5;

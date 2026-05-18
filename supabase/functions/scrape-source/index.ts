@@ -743,36 +743,65 @@ serve(async (req) => {
   }
 
   // ─── LLM extraction ──────────────────────────────────────────────────────
+  // 2026-05-18: added retry-on-429 + don't burn the source's failure
+  // counter for our own rate limits. Pre-fix, an OpenAI TPM 429
+  // counted as a source failure — and the dispatcher hides sources
+  // after 5 consecutive failures via the circuit breaker. Result:
+  // popular hubs like OFY would get rate-limited by US, then quietly
+  // banned for being "broken." Two bugs at once: a misattributed
+  // failure mode AND a self-DoS amplifier.
   const truncated = pageMarkdown.slice(0, MAX_MARKDOWN_CHARS);
   let extracted: ExtractedScholarship[] = [];
-  try {
-    const resp = await chatCompletions({
-      // Pro tier — see LLM_COST_PER_EXTRACTION_USD comment. Higher
-      // extraction fidelity → more rows clear the 0.85 confidence gate
-      // for auto-publish, fewer rows pile up in staging. Auto-published
-      // rows feed the verified database directly; staged rows wait for
-      // admin review. The cost diff is paid once per content-changed
-      // crawl, not per request — content-hash short-circuit makes the
-      // amortized cost negligible at steady state.
-      tier: "pro",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: USER_PROMPT_TEMPLATE(src.name, src.url, src.category, src.parser_hint, truncated) },
-      ],
-    });
-    if (!resp.ok) throw new Error(`LLM HTTP ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
-    const data = await resp.json();
-    const text = data?.choices?.[0]?.message?.content as string | undefined;
-    if (!text) throw new Error("LLM returned empty content");
-    const parsed = extractJson(text) as LLMExtractionResponse;
-    const candidates = Array.isArray(parsed?.scholarships) ? parsed.scholarships : [];
-    extracted = candidates.map(validateExtracted).filter((x): x is ExtractedScholarship => !!x);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    await logError("llm_failed", msg);
-    await bumpFailure();
-    await finalize("failed", { error_message: msg });
-    return json(200, { ok: false, reason: "LLM extraction failed", error: msg });
+  let rateLimitedRetries = 0;
+  const MAX_LLM_RETRIES = 2;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    try {
+      const resp = await chatCompletions({
+        // Pro tier — see LLM_COST_PER_EXTRACTION_USD comment. Higher
+        // extraction fidelity → more rows clear the 0.85 confidence
+        // gate for auto-publish, fewer rows pile up in staging.
+        tier: "pro",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: USER_PROMPT_TEMPLATE(src.name, src.url, src.category, src.parser_hint, truncated) },
+        ],
+      });
+      if (!resp.ok) {
+        if (resp.status === 429 && rateLimitedRetries < MAX_LLM_RETRIES) {
+          // Sleep ~13s and try again. The dispatcher is parallel, so
+          // a single retry per worker generally rides out the per-
+          // minute TPM window — gpt-4o TPM resets in 60s.
+          rateLimitedRetries++;
+          await new Promise(r => setTimeout(r, 13_000));
+          continue;
+        }
+        const body = (await resp.text()).slice(0, 300);
+        const isRateLimit = resp.status === 429;
+        const msg = `LLM HTTP ${resp.status}: ${body}`;
+        await logError(isRateLimit ? "llm_rate_limited" : "llm_failed", msg, undefined, resp.status);
+        // Don't penalize the SOURCE for OUR rate-limit cap. The
+        // circuit-breaker should only fire when the SOURCE itself is
+        // unreliable (Firecrawl returning empty, LLM unable to
+        // extract structured data from the page, etc.).
+        if (!isRateLimit) await bumpFailure();
+        await finalize(isRateLimit ? "rate_limited" : "failed", { error_message: msg });
+        return json(200, { ok: false, reason: isRateLimit ? "rate-limited (no source penalty)" : "LLM extraction failed", error: msg });
+      }
+      const data = await resp.json();
+      const text = data?.choices?.[0]?.message?.content as string | undefined;
+      if (!text) throw new Error("LLM returned empty content");
+      const parsed = extractJson(text) as LLMExtractionResponse;
+      const candidates = Array.isArray(parsed?.scholarships) ? parsed.scholarships : [];
+      extracted = candidates.map(validateExtracted).filter((x): x is ExtractedScholarship => !!x);
+      break;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      await logError("llm_failed", msg);
+      await bumpFailure();
+      await finalize("failed", { error_message: msg });
+      return json(200, { ok: false, reason: "LLM extraction failed", error: msg });
+    }
   }
 
   if (extracted.length === 0) {
