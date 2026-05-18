@@ -62,7 +62,9 @@ import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverPro
 import { track } from "@/lib/analytics";
 import { CuratedCollections } from "@/components/discover/CuratedCollections";
 import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
-import { ExpandedScholarshipDialog } from "@/components/discover/ExpandedScholarshipDialog";
+// ExpandedScholarshipDialog import retired 2026-05-18 — the full-detail
+// dialog was flagged as not ship-ready; the right-side DetailSheet
+// is now the only detail surface.
 // MatchScoreBreakdown import retired round 33 — the per-row hover
 // popover that wrapped the MatchGauge was removed; rows convey fit
 // via section bucketing + sort order now. Re-import if a future
@@ -2402,7 +2404,7 @@ const ReqRow = ({ label, status, detail }: {
 };
 
 /* ─── Detail Sheet (tabbed, visual) ──────────────────────────────────── */
-const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, status, onStatusChange, onExpand, lang = "en" }: {
+const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, status, onStatusChange, lang = "en" }: {
   s: Scored | null; open: boolean; onClose: () => void;
   isBookmarked: boolean; onBookmark: () => void;
   profile: Profile;
@@ -2414,7 +2416,6 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
   onSwitchTo: (s: Scored) => void;
   isMember: boolean;
   onUnlock: () => void;
-  onExpand: () => void;
   lang?: Lang;
 }) => {
   // Hooks must run unconditionally (Rules of Hooks). The track call is
@@ -2542,13 +2543,10 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
           )}
         </div>
 
-        {/* Deep dive link */}
-        <div className="mt-auto px-6 sm:px-7 py-4 border-t border-border/60 print:hidden">
-          <Button variant="ghost" size="sm" onClick={onExpand} className="w-full justify-between text-muted-foreground hover:text-foreground">
-            {t("Open full deep dive", "Полный разбор")}
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Button>
-        </div>
+        {/* 2026-05-18: removed the "Open full deep dive" affordance —
+            it routed to ExpandedScholarshipDialog which the user
+            explicitly flagged as not ship-ready. The quick panel above
+            IS the detail view for now. */}
       </SheetContent>
     </Sheet>
   );
@@ -2762,7 +2760,8 @@ const Discover = ({ language = "en" }: Props) => {
   const [wizardStep, setWizardStep] = useState(0);
   const [wiz, setWiz] = useState<WizardData>(DEFAULT_WIZARD);
   const [openDetail, setOpenDetail] = useState<Scored | null>(null);
-  const [expandedDetail, setExpandedDetail] = useState<Scored | null>(null);
+  // 2026-05-18: expandedDetail state retired — see comment near the
+  // (removed) ExpandedScholarshipDialog render below.
   /* 2026-05-18 round 2: restored the ORIGINAL right-side DetailSheet
      (the in-place quick-draw panel users had before 2026-05-17). Row
      clicks now open `openDetail`, which mounts the DetailSheet — the
@@ -5208,24 +5207,11 @@ const Discover = ({ language = "en" }: Props) => {
           onSwitchTo={(s) => setOpenDetail(s)}
           isMember={isMember}
           onUnlock={() => navigate(language === "ru" ? "/pricing/ru" : "/pricing")}
-          onExpand={() => {
-            if (openDetail) {
-              setExpandedDetail(openDetail);
-              setOpenDetail(null);
-            }
-          }}
           lang={language}
         />
-
-        <ExpandedScholarshipDialog
-          s={expandedDetail}
-          profile={profile}
-          onClose={() => setExpandedDetail(null)}
-          onApply={() => expandedDetail?.official_url && window.open(expandedDetail.official_url, "_blank", "noopener,noreferrer")}
-          onSave={() => expandedDetail && toggleBookmark(expandedDetail.scholarship_id)}
-          isBookmarked={expandedDetail ? shortlist.has(expandedDetail.scholarship_id) : false}
-          lang={language}
-        />
+        {/* 2026-05-18: ExpandedScholarshipDialog render removed. The
+            old full-detail dialog wasn't ship-ready and the new
+            DetailSheet above is the single source of detail view. */}
       </div>
     </div>
   );
