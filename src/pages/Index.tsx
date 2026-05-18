@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Crown } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/hero-campus.jpg";
 import samuelPhoto from "@/assets/samuel.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
@@ -39,10 +40,26 @@ const TEAM = [
 
 const Index = () => {
   const navigate = useNavigate();
+  // Live catalog counter — pulled from Supabase on mount. Falls back
+  // gracefully to a static line if the count call fails. Read scope
+  // is anon-safe (head:true count uses public RLS).
+  const [liveCount, setLiveCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (shouldRedirectToRussian()) navigate('/ru');
   }, [navigate]);
+
+  useEffect(() => {
+    (async () => {
+      const todayIso = new Date().toISOString().slice(0, 10);
+      const { count, error } = await supabase
+        .from("scholarships")
+        .select("scholarship_id", { count: "exact", head: true })
+        .in("lifecycle_status", ["active", "reopens_annually"])
+        .gte("application_deadline", todayIso);
+      if (!error && typeof count === "number") setLiveCount(count);
+    })();
+  }, []);
 
   return (
     <div className="min-h-screen relative bg-background text-foreground antialiased">
@@ -124,7 +141,7 @@ const Index = () => {
                · AVAILABLE IN RUSSIAN & ENGLISH
             </motion.p>
 
-            <motion.div {...fadeUp(0.35)} className="flex flex-wrap items-center justify-center gap-3 mb-10">
+            <motion.div {...fadeUp(0.35)} className="flex flex-wrap items-center justify-center gap-3 mb-5">
               <Button
                 variant="gold"
                 size="lg"
@@ -145,6 +162,17 @@ const Index = () => {
                 Discover scholarships
               </Button>
             </motion.div>
+
+            {/* Live-catalog freshness line. Renders only when the count
+                read succeeds — falls back to invisible rather than
+                showing a static placeholder, so a stale number can't
+                be misleading. */}
+            {liveCount !== null && liveCount > 0 && (
+              <motion.p {...fadeUp(0.42)} className="text-[11.5px] sm:text-xs text-foreground/65 mb-10 inline-flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+                Built on a live database of <span className="font-semibold text-foreground tabular-nums">{liveCount}</span> active scholarships, refreshed daily.
+              </motion.p>
+            )}
           </div>
         </section>
 
