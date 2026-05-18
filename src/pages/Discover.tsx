@@ -2435,7 +2435,7 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
   const award = (s.award_amount_text && /\d/.test(s.award_amount_text))
     ? s.award_amount_text
     : null;
-  const levels = (s.target_degree_level ?? []).map(humanizeDegreeLabel).filter(Boolean).join(" · ");
+  const levels = (s.target_degree_level ?? []).map(humanizeDegree).filter(Boolean).join(" · ");
   const newish = isNewScholarship(s.created_at);
   const aggregator = isAggregatorUrl(s.official_url);
 
