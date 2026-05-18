@@ -2875,14 +2875,41 @@ const Discover = ({ language = "en" }: Props) => {
         // call-by-call edits. Original canonical_* columns are kept
         // intact on the row in case we want to render "canonical
         // verified" badges later.
-        const enriched = (scholarshipsRes.data as unknown as Scholarship[]).map(s => ({
-          ...s,
-          provider_trust_tier: s.provider_id ? trustMap.get(s.provider_id) ?? null : null,
-          application_deadline: s.canonical_deadline_iso ?? s.application_deadline,
-          award_amount_text:    s.canonical_funding_text ?? s.award_amount_text,
-          estimated_total_value_usd: s.canonical_funding_usd ?? s.estimated_total_value_usd,
-          official_url:         s.canonical_official_url ?? s.official_url,
-        }));
+        // 2026-05-18 hotfix: canonical_deadline_iso can be a stale prior-
+        // cycle date captured by canonical-extract months ago (e.g.
+        // 2024-10-31 while the live application_deadline is 2027-04-30).
+        // The old `canonical_deadline_iso ?? application_deadline` blindly
+        // promoted that stale value to the user-facing date, surfacing
+        // "12 months ago" deadlines in Discover. Now: only promote
+        // canonical_deadline_iso when it's NOT older than the live
+        // application_deadline. application_deadline is refreshed by
+        // every successful scrape-source re-run; canonical_deadline_iso
+        // is refreshed on canonical-extract's 6h cadence and can lag.
+        const nowMs = Date.now();
+        const isStaleCanonicalDate = (canon: string | null, fresh: string | null): boolean => {
+          if (!canon) return false;
+          const canonMs = new Date(canon).getTime();
+          if (isNaN(canonMs)) return false;
+          if (canonMs < nowMs) return true; // canonical date is in the past
+          if (fresh) {
+            const freshMs = new Date(fresh).getTime();
+            if (!isNaN(freshMs) && canonMs < freshMs) return true; // canonical older than live
+          }
+          return false;
+        };
+        const enriched = (scholarshipsRes.data as unknown as Scholarship[]).map(s => {
+          const useCanonicalDeadline = !isStaleCanonicalDate(s.canonical_deadline_iso, s.application_deadline);
+          return {
+            ...s,
+            provider_trust_tier: s.provider_id ? trustMap.get(s.provider_id) ?? null : null,
+            application_deadline: useCanonicalDeadline
+              ? (s.canonical_deadline_iso ?? s.application_deadline)
+              : s.application_deadline,
+            award_amount_text:    s.canonical_funding_text ?? s.award_amount_text,
+            estimated_total_value_usd: s.canonical_funding_usd ?? s.estimated_total_value_usd,
+            official_url:         s.canonical_official_url ?? s.official_url,
+          };
+        });
         const cleaned = dedupeAndQualityFilter(enriched);
         setRows(cleaned);
         // Persist the cleaned/promoted rows + saves into the
