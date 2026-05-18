@@ -580,8 +580,11 @@ Deno.serve(async (req) => {
   if (diffs.length === 0) {
     // No material changes — clean re-verify. Promote to 'verified',
     // bump the timestamp, AND apply any opportunistic backfill so the
-    // additive learnings don't sit unused.
-    await supa.from("scholarships")
+    // additive learnings don't sit unused. 2026-05-18: error-check the
+    // promote — silently failing here means the row stays at 'pending'
+    // or 'stale' forever despite passing verification, blocking it from
+    // surfacing in user-facing results.
+    const { error: promoteErr } = await supa.from("scholarships")
       .update({
         verification_status: "verified",
         last_verified_at: now,
@@ -594,6 +597,10 @@ Deno.serve(async (req) => {
         ...backfillUpdates,
       })
       .eq("scholarship_id", stored.scholarship_id);
+    if (promoteErr) {
+      console.error("[verify-scholarship] verified-promote failed", promoteErr.message, "id=", stored.scholarship_id);
+      return json(500, { error: `promote_failed: ${promoteErr.message}` });
+    }
 
     // ─── Record evidence — re-verification keeps the source warm ───
     // Bumps last_confirmed_at on the scholarship_evidence row so the
@@ -636,7 +643,12 @@ Deno.serve(async (req) => {
   // generated schema; for self-heal stages there's no upstream source row,
   // so cast the row through `as never` to bypass the typed-insert check.
   // Runtime is fine — the columns are nullable in Postgres.
-  await supa.from("scholarships_staging").insert({
+  // 2026-05-18: error-check the staging insert. Pre-fix a silent failure
+  // here meant the diff was LOST (admin never sees it in the queue),
+  // while the main row update below still marked status='stale' and
+  // bumped confidence — leaving the user-facing row in a "you've been
+  // verified-but-stale-with-no-pending-diff" zombie state.
+  const { error: stagingErr } = await supa.from("scholarships_staging").insert({
     source_id: null,
     scholarship_id: stored.scholarship_id,
     fingerprint: null,
@@ -646,8 +658,12 @@ Deno.serve(async (req) => {
     diff_summary: diffs.map(d => `${d.field}: ${JSON.stringify(d.was)} → ${JSON.stringify(d.now)}`).join("; "),
     status: "pending",
   } as never).select("staging_id").maybeSingle();
+  if (stagingErr) {
+    console.error("[verify-scholarship] staging insert failed", stagingErr.message, "id=", stored.scholarship_id);
+    return json(500, { error: `staging_insert_failed: ${stagingErr.message}` });
+  }
 
-  await supa.from("scholarships")
+  const { error: staleUpdateErr } = await supa.from("scholarships")
     .update({
       verification_status: "stale",
       last_verified_at: now,
@@ -663,6 +679,11 @@ Deno.serve(async (req) => {
       ...backfillUpdates,
     })
     .eq("scholarship_id", stored.scholarship_id);
+  if (staleUpdateErr) {
+    console.error("[verify-scholarship] stale-update failed", staleUpdateErr.message, "id=", stored.scholarship_id);
+    // Don't return 500 — the diff already landed in staging, which is the
+    // important record for admin review. Mark this attempt and move on.
+  }
 
   return json(200, {
     ok: true,
