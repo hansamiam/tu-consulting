@@ -55,6 +55,11 @@ interface IntakeFields {
   major: string;
   budget: string;
   targetCountries: string[];
+  // 2026-05-18: optional Step 4 "Tell us more" fields. All skippable.
+  careerGoal?: string;
+  extracurriculars?: string;
+  background?: string;
+  namedSchools?: string;
 }
 
 /** Project the wizard's intake into the DiscoverProfile shape that
@@ -82,4 +87,11 @@ export const projectToDiscoverProfile = (intake: IntakeFields): DiscoverProfile 
   // biasing matches toward home-country programs, the opposite of
   // what an applicant looking abroad actually wants.
   targetCountries: intake.targetCountries.filter(Boolean),
+  // Optional Step 4 fields — only included when the user actually
+  // typed something (skip-able). topuni-ai-pathway reads them off the
+  // profile to sharpen the brief; absence is fine.
+  careerGoal: intake.careerGoal?.trim() || undefined,
+  extracurriculars: intake.extracurriculars?.trim() || undefined,
+  background: intake.background?.trim() || undefined,
+  namedSchools: intake.namedSchools?.trim() || undefined,
 });

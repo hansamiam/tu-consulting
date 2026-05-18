@@ -98,6 +98,13 @@ interface WizardDraft {
   careerRoi: number;
   visaAccess: number;
   locationPref: number;
+  /* 2026-05-18 Step 4 optional intake. All skippable. Sharpen the
+   * brief's personalisation when filled; absent ⇒ brief just leans on
+   * Step 1-3 fields like before. */
+  careerGoal?: string;
+  extracurriculars?: string;
+  background?: string;
+  namedSchools?: string;
   /** Wall-clock ms — drafts older than 14 days are dropped on read. */
   ts?: number;
 }
@@ -207,11 +214,16 @@ const TopUniAI = () => {
   const [visaAccess, setVisaAccess] = useState<number[]>([typeof draft?.visaAccess === "number" ? draft.visaAccess : 3]);
   const [locationPref, setLocationPref] = useState<number[]>([typeof draft?.locationPref === "number" ? draft.locationPref : 3]);
 
-  // Pro-depth questions (top achievement, personal story, named
-  // schools) live entirely in the after-brief ProBriefUnlock dialog
-  // now — keeping the intake to a fast 3-step flow and putting the
-  // depth ask AFTER the user has seen what the free brief delivers,
-  // which converts better than asking up-front.
+  // 2026-05-18 Step 4 optional fields. All skippable — Pro upsell
+  // dialog retired in favour of in-flow optional questions so the
+  // brief can be personalised without paywalling the depth signal.
+  // Users who want a quick pass click "Skip" and never see them; users
+  // who want a sharper brief fill them in. Each maps directly into
+  // the topuni-ai-pathway prompt's PROFILE section.
+  const [careerGoal, setCareerGoal] = useState<string>(draft?.careerGoal ?? "");
+  const [extracurriculars, setExtracurriculars] = useState<string>(draft?.extracurriculars ?? "");
+  const [background, setBackground] = useState<string>(draft?.background ?? "");
+  const [namedSchools, setNamedSchools] = useState<string>(draft?.namedSchools ?? "");
 
   // Draft-restore auto-jump retired round 10 alongside the landing
   // screen — the page now always opens directly in 'intake' so there's
@@ -317,6 +329,11 @@ const TopUniAI = () => {
         targetCountries, major, budget, scholarshipNeeded, timeline,
         prestige: prestige[0], scholarship: scholarship[0],
         careerRoi: careerRoi[0], visaAccess: visaAccess[0], locationPref: locationPref[0],
+        // Optional Step 4 — persist only when filled.
+        careerGoal: careerGoal || undefined,
+        extracurriculars: extracurriculars || undefined,
+        background: background || undefined,
+        namedSchools: namedSchools || undefined,
         ts: Date.now(),
       };
       localStorage.setItem(WIZARD_DRAFT_KEY, JSON.stringify(draftPayload));
@@ -326,6 +343,7 @@ const TopUniAI = () => {
     fullName, email, whatsapp, nationality, gradeLevel, gpa, gpaScale, ielts, toefl, sat,
     targetCountries, major, budget, scholarshipNeeded, timeline,
     prestige, scholarship, careerRoi, visaAccess, locationPref,
+    careerGoal, extracurriculars, background, namedSchools,
   ]);
 
   /* Once the user transitions to the dashboard the wizard answers are

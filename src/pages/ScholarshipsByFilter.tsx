@@ -149,7 +149,7 @@ const THEMES: Record<string, { titlePart: string; predicate: (r: ScholarshipRow)
   },
   "first-generation": {
     titlePart: "First-generation",
-    predicate: (r) => !!r.target_demographics?.includes("first-generation"),
+    predicate: (r) => !!r.target_demographics?.includes("first-gen"),
     introHint: "Scholarships for the first in your family to attend college or university.",
   },
   "for-refugees": {

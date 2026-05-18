@@ -470,7 +470,7 @@ export function extractDemographicsFromCitizenship(raw: string | null | undefine
   if (/^(women|female( applicants?)?)\.?$/.test(t)) return "women";
   if (/^(men|male( applicants?)?)\.?$/.test(t)) return "men";
   if (/^(lgbtq[+]?|queer|trans)\.?$/.test(t)) return "lgbtq";
-  if (/^(first-generation|first generation)\.?$/.test(t)) return "first-generation";
+  if (/^(first-generation|first generation|first-gen)\.?$/.test(t)) return "first-gen";
   if (/^low[- ]income\.?$/.test(t)) return "low-income";
   if (/^(refugees?|asylum seekers?)\.?$/.test(t)) return "refugee";
   if (/^displaced\.?$/.test(t)) return "displaced";
@@ -484,7 +484,7 @@ export function extractDemographicsFromCitizenship(raw: string | null | undefine
 /** Validates an array of demographic tags against the canonical set.
  *  Returns only the recognised values. Used to coerce LLM output. */
 const VALID_DEMOGRAPHICS = new Set([
-  "women", "men", "lgbtq", "first-generation", "low-income", "refugee",
+  "women", "men", "lgbtq", "first-gen", "low-income", "refugee",
   "displaced", "indigenous", "underrepresented-stem", "underrepresented-minority",
   "disability", "military-veteran", "rural", "mature-student",
 ]);
@@ -494,7 +494,7 @@ export function cleanTargetDemographics(raw: unknown): string[] {
   const seen = new Set<string>();
   const aliasMap: Record<string, string> = {
     "lgbtq+": "lgbtq", "lgbt": "lgbtq",
-    "first_generation": "first-generation", "firstgen": "first-generation", "first-gen": "first-generation",
+    "first_generation": "first-gen", "first-generation": "first-gen", "firstgen": "first-gen",
     "low_income": "low-income", "lowincome": "low-income",
     "veteran": "military-veteran", "veterans": "military-veteran", "military": "military-veteran",
     "underrepresented": "underrepresented-minority", "minority": "underrepresented-minority", "minorities": "underrepresented-minority",

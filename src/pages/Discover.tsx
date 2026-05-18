@@ -2226,7 +2226,7 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
   const demographicOpts = [
     { v: "all", l: t("All applicants", "Все") },
     { v: "women-any", l: t("Women", "Женщины") },
-    { v: "first-generation", l: t("First-generation", "Первое поколение") },
+    { v: "first-gen", l: t("First-gen", "Первое поколение") },
     { v: "low-income", l: t("Need-based", "По доходу") },
     { v: "refugee-any", l: t("Refugees", "Беженцы") },
     { v: "disability", l: t("Disability", "Инвалидность") },
@@ -3781,7 +3781,7 @@ const Discover = ({ language = "en" }: Props) => {
                               targets them — re-add when real rows land. */}
                           {[
                             { v: "women", l: t("Women", "Женщины") },
-                            { v: "first-generation", l: t("First-generation", "Первое поколение") },
+                            { v: "first-gen", l: t("First-gen", "Первое поколение") },
                             { v: "low-income", l: t("Need-based", "По доходу") },
                             { v: "refugee", l: t("Refugee", "Беженцы") },
                             { v: "disability", l: t("Disability", "Инвалидность") },

@@ -39,6 +39,15 @@ export interface DiscoverProfile {
    * scholarship matching. Empty array = no preference, score against
    * all hosts. Mirrors student_profiles.target_countries text[]. */
   targetCountries?: string[];
+  /* Optional intake fields collected on the Step 4 "Tell us more"
+   * page in TopUni AI. All skippable; users who want to fly through
+   * the wizard never see them. Each one materially sharpens the
+   * brief's personalisation (career goal feeds the strategy,
+   * extracurriculars feed the essay-angle suggestion, etc.). */
+  careerGoal?: string;
+  extracurriculars?: string;
+  background?: string;
+  namedSchools?: string;
 }
 
 const STORAGE_KEY = "topuni_discover_profile";
