@@ -20,12 +20,15 @@ import { createServiceClient } from "../_shared/clients.ts";
 const json = (status: number, body: unknown) =>
   respondJson(status, body, corsHeaders);
 
-// Don't try to scrape more than this in one dispatcher tick — keeps us
-// under the 60s function timeout and avoids burning Firecrawl credits
-// in a runaway burst. With CONCURRENCY=5, 40 sources × ~5s avg / 5 ≈
-// 40s — fits inside the timeout with headroom and ~doubles throughput
-// vs the serial 20-source ceiling.
-const MAX_SOURCES_PER_TICK = 40;
+// 2026-05-18: dropped MAX_SOURCES_PER_TICK from 40 → 12 after
+// sustained gpt-4o TPM 30000 pressure burned through batches.
+// 12 sources × ~5K tokens each ≈ 60K total over the ~60s window,
+// still over the per-minute ceiling but the 429 retry inside
+// scrape-source recovers most of them within one window. Combined
+// with the existing cron schedule (every hour) this drains the
+// queue cleanly without sustained 429 thrash. Net throughput is
+// a bit slower per tick; reliability per source is much higher.
+const MAX_SOURCES_PER_TICK = 12;
 
 // 2026-05-18: dropped CONCURRENCY from 5 → 2 after a sustained
 // burst of OpenAI 429 (TPM 30000 / org-tier-1) wiped out 9 of 12

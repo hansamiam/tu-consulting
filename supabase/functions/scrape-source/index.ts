@@ -769,11 +769,15 @@ serve(async (req) => {
       });
       if (!resp.ok) {
         if (resp.status === 429 && rateLimitedRetries < MAX_LLM_RETRIES) {
-          // Sleep ~13s and try again. The dispatcher is parallel, so
-          // a single retry per worker generally rides out the per-
-          // minute TPM window — gpt-4o TPM resets in 60s.
+          // 2026-05-18: extended sleep 13s → 30s. The per-minute TPM
+          // bucket resets every 60s, so a 30s sleep gives us a clean
+          // half-window to retry into. 13s was too tight under sustained
+          // burst load — most retries landed back in the same hot window
+          // and 429'd again. With MAX_SOURCES_PER_TICK=12 and 30s
+          // backoff, a worker's max wait is 60s per tick which still
+          // fits inside the function's timeout.
           rateLimitedRetries++;
-          await new Promise(r => setTimeout(r, 13_000));
+          await new Promise(r => setTimeout(r, 30_000));
           continue;
         }
         const body = (await resp.text()).slice(0, 300);
