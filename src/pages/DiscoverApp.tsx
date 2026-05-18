@@ -234,7 +234,19 @@ const DiscoverApp = ({ language = "en" }: Props) => {
     (async () => {
       const { data } = await supabase
         .from("scholarships")
-        .select("*")
+        // 2026-05-18: explicit column list mirrors the trim Discover.tsx
+        // applied today. Excludes the 1536-dim embedding column which
+        // is pgvector-only / server-side and was bloating mobile load.
+        .select(
+          "scholarship_id, scholarship_name, provider_name, official_url, host_country, " +
+          "eligible_countries, target_degree_level, target_fields, award_amount_text, " +
+          "estimated_total_value_usd, coverage_type, min_gpa, gpa_scale, min_ielts, " +
+          "min_toefl, min_sat, citizenship_requirements, application_deadline, deadline_type, " +
+          "required_documents, essay_required, recommendation_letters_required, interview_required, " +
+          "separate_application_required, selectivity_level, effort_level, effort_reason, " +
+          "ideal_candidate_profile, common_rejection_reasons, strategy_notes, best_for_tags, " +
+          "why_this_fits, how_to_win, what_to_prepare_first, next_step, risk_note"
+        )
         // Match the canonical trust filter Discover + ScholarshipsByFilter
         // use. The previous \`verified=true\` boolean is the legacy column;
         // verification_status is the authoritative source and includes
