@@ -63,11 +63,19 @@ const MIN_CONFIDENCE_TO_TRUST = 0.7;
 /* Field-level diff threshold rules. We don't flag micro-changes (case
    diffs, trailing whitespace) — only material drift the user would
    notice. */
+// 2026-05-18: removed `award_amount_text` from DIFF_FIELDS. It's a
+// free-form prose string the LLM paraphrases slightly on every re-
+// extraction ("Full tuition + £20,400 stipend" vs "Full tuition + a
+// £20,400 stipend, plus travel"). That generated a false-positive
+// diff on EVERY re-verify and kept ~100 rows stuck in
+// verification_status='stale' indefinitely. estimated_total_value_usd
+// (a structured number) is the better amount-change signal — it
+// stays in the diff set so a genuine award change still triggers
+// staging.
 const DIFF_FIELDS = [
   "application_deadline",
   "deadline_type",
   "coverage_type",
-  "award_amount_text",
   "estimated_total_value_usd",
   "min_gpa",
   "min_ielts",
