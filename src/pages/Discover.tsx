@@ -1662,7 +1662,7 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
     >
       {/* Country gradient stripe — gives every row regional identity at a
           glance. Same palette as the card hero band. */}
-      <div className={`w-1 shrink-0 bg-gradient-to-b ${accent} ${isFullRide ? "ring-1 ring-inset ring-gold/30" : ""}`} aria-hidden />
+      <div className={`w-1 shrink-0 bg-gradient-to-b ${accent}`} aria-hidden />
 
       <div className="flex-1 grid grid-cols-[minmax(0,1fr),auto] sm:grid-cols-[minmax(0,1fr),170px,128px] items-center gap-4 px-4 py-3 min-h-[68px] min-w-0">
         {/* Country-art circle badge retired (round 21). It carried country
@@ -1739,9 +1739,8 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
 
           {/* Mobile award + deadline (desktop has its own column). */}
           <div className="sm:hidden flex items-center justify-between gap-2 mt-1 text-[12px] min-w-0">
-            {award ? (
-              <span className={`inline-flex items-center gap-1 font-semibold min-w-0 truncate ${isFullRide ? "text-gold-dark" : "text-foreground"}`}>
-                {isFullRide && <Award className="h-3 w-3 shrink-0" />}
+            {award && /\d/.test(award) ? (
+              <span className="inline-flex items-center gap-1 font-semibold min-w-0 truncate text-foreground">
                 <span className="truncate">{award}</span>
               </span>
             ) : (
@@ -1764,11 +1763,10 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
             had no meaningful render here for unbookmarked rows. */}
         <div className="hidden sm:flex flex-col items-end justify-center gap-0.5 min-w-0 text-right">
           <span
-            className={`text-[13px] font-semibold leading-tight truncate max-w-full ${isFullRide ? "text-gold-dark" : "text-foreground"}`}
+            className="text-[13px] font-semibold leading-tight truncate max-w-full text-foreground"
             title={award ?? undefined}
           >
-            {isFullRide && <Award className="inline h-3 w-3 mr-1 -mt-0.5" />}
-            {award ?? "—"}
+            {award && /\d/.test(award) ? award : "—"}
           </span>
           <span className={`text-[11px] tabular-nums font-medium leading-tight whitespace-nowrap ${dl.cls}`}>
             {dl.text}
@@ -1931,7 +1929,7 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
       transition={{ delay: Math.min(index * 0.03, 0.3), duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ y: -2 }}
       onClick={onSelect}
-      className={`group relative rounded-xl bg-card border hover:shadow-lg transition-all cursor-pointer h-full flex flex-col overflow-hidden ${isComparing ? "border-gold ring-2 ring-gold/20" : isFullRide ? "border-gold/35 hover:border-gold/55" : "border-border hover:border-foreground/20"} ${isHidden ? "opacity-50" : ""}`}
+      className={`group relative rounded-xl bg-card border hover:shadow-lg transition-all cursor-pointer h-full flex flex-col overflow-hidden ${isComparing ? "border-gold ring-2 ring-gold/20" : "border-border hover:border-foreground/20"} ${isHidden ? "opacity-50" : ""}`}
     >
       {/* Country band — 2026-05-10 reworked from a region-coloured
           gradient strip to a premium minimal treatment per user
