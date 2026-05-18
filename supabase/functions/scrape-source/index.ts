@@ -594,6 +594,19 @@ function validateExtracted(x: unknown): ExtractedScholarship | null {
     o.official_url = undefined;
   }
 
+  // 2026-05-18: US-citizens-only filter. TopUni's audience is international
+  // students from Central Asia / global south — US-citizen-restricted
+  // awards (AAUW American Doctoral, DoD NDSE, Switzer, Veterans Foundation,
+  // Fulbright U.S. Student Program, etc.) are noise. Reject rows whose
+  // citizenship_requirements names US/American restriction without an
+  // explicit "international" / "worldwide" / "all nationalities" carve-out.
+  if (typeof o.citizenship_requirements === "string") {
+    const cr = o.citizenship_requirements;
+    const isUsRestricted = /\b(U\.?S\.?|United States|American)\s+(citizen|citizenship|national)/i.test(cr);
+    const hasInternationalCarveout = /\b(international|worldwide|global|all nationalit|non[- ]?US|outside the (US|United States))/i.test(cr);
+    if (isUsRestricted && !hasInternationalCarveout) return null;
+  }
+
   // Minimum-information gate. Name + provider + country alone aren't
   // enough — that just means a page mentioned a scholarship's title.
   // Require at least 2 of the substantive signals below before we
