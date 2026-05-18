@@ -5200,9 +5200,13 @@ const Discover = ({ language = "en" }: Props) => {
           isBookmarked={openDetail ? shortlist.has(openDetail.scholarship_id) : false}
           onBookmark={() => openDetail && toggleBookmark(openDetail.scholarship_id)}
           profile={profile}
-          status={openDetail ? statusMap.get(openDetail.scholarship_id) : undefined}
+          // statusMap + notesMap are `Record<string, T>` (plain objects),
+          // not Maps — must use bracket access. Calling `.get()` on them
+          // is what caused the "te.get is not a function" runtime crash
+          // users were hitting when opening any scholarship panel.
+          status={openDetail ? statusMap[openDetail.scholarship_id] : undefined}
           onStatusChange={(st) => openDetail && setStatus(openDetail.scholarship_id, st)}
-          note={openDetail ? (notesMap.get(openDetail.scholarship_id) ?? "") : ""}
+          note={openDetail ? (notesMap[openDetail.scholarship_id] ?? "") : ""}
           onNoteChange={(n) => openDetail && setNote(openDetail.scholarship_id, n)}
           similar={similarToOpen}
           onSwitchTo={(s) => setOpenDetail(s)}
