@@ -33,6 +33,7 @@ import { requireAdminOrService } from "../_shared/auth.ts";
 import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
 import { respondJson } from "../_shared/http.ts";
 import { createServiceClient } from "../_shared/clients.ts";
+import { extractLlmJson } from "../_shared/llm-json.ts";
 
 const json = (status: number, body: unknown) =>
   respondJson(status, body, corsHeaders);
@@ -71,13 +72,9 @@ CRITICAL RULES:
 5. Output a JSON object: { "scholarships": [{name, url, hint, confidence}...] }. No markdown fences, no preamble.
 6. Cap your output at the 50 highest-confidence URLs. Skip generic ones.`;
 
-function isolateJson(raw: string): string {
-  let s = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
-  const first = s.indexOf("{");
-  const last = s.lastIndexOf("}");
-  if (first !== -1 && last !== -1 && last > first) s = s.slice(first, last + 1);
-  return s;
-}
+// isolateJson retired 2026-05-18; replaced by the shared
+// extractLlmJson helper which walks balanced braces. See its import
+// in the top-of-file imports block.
 
 function isLikelyScholarshipUrl(url: string): boolean {
   // Heuristic gate before insertion. Block the categories of bad URL the
@@ -228,7 +225,7 @@ serve(async (req) => {
     const data = await resp.json();
     const text = data?.choices?.[0]?.message?.content as string | undefined;
     if (!text) return json(502, { error: "Empty completion" });
-    const parsed = JSON.parse(isolateJson(text)) as { scholarships?: DiscoveredScholarship[] };
+    const parsed = extractLlmJson(text) as { scholarships?: DiscoveredScholarship[] };
     extracted = Array.isArray(parsed.scholarships) ? parsed.scholarships : [];
   } catch (e) {
     return json(502, { error: `Parse failed: ${(e as Error).message}` });

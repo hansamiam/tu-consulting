@@ -46,6 +46,7 @@ import { requireAdminOrService } from "../_shared/auth.ts";
 import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
 import { respondJson } from "../_shared/http.ts";
 import { createServiceClient } from "../_shared/clients.ts";
+import { extractLlmJson } from "../_shared/llm-json.ts";
 
 const json = (status: number, body: unknown) =>
   respondJson(status, body, corsHeaders);
@@ -234,9 +235,9 @@ Deno.serve(async (req: Request) => {
     const content = data.choices?.[0]?.message?.content
       ?? data.content?.[0]?.text  // Anthropic shape
       ?? "";
-    // Some models still wrap in ```json ... ```; strip if present.
-    const cleaned = content.replace(/^```json\s*/i, "").replace(/```\s*$/i, "").trim();
-    extraction = JSON.parse(cleaned);
+    // 2026-05-18: switched to brace-walking shared helper so trailing
+    // LLM commentary after the JSON body doesn't break parse.
+    extraction = extractLlmJson(content) as CanonicalExtraction;
   } catch (e) {
     return json(200, { ok: false, reason: "llm_parse_failed", message: String(e) });
   }

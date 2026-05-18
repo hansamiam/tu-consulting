@@ -48,6 +48,10 @@ import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared
 import { respondJson } from "../_shared/http.ts";
 import { createServiceClient } from "../_shared/clients.ts";
 import type { Json } from "../_shared/database.types.ts";
+// 2026-05-18: shared brace-walking JSON parser. Replaces the local
+// greedy-lastIndexOf-} parser that grabbed too much when the LLM
+// appended commentary containing a `}`.
+import { extractLlmJson as extractJson } from "../_shared/llm-json.ts";
 
 const json = (status: number, body: unknown) =>
   respondJson(status, body, corsHeaders);
@@ -222,13 +226,7 @@ function rollForwardAnnualDeadline(iso: string): string {
   return date.toISOString().slice(0, 10);
 }
 
-function extractJson(s: string): unknown {
-  let t = s.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
-  const first = t.indexOf("{");
-  const last = t.lastIndexOf("}");
-  if (first !== -1 && last !== -1 && last > first) t = t.slice(first, last + 1);
-  return JSON.parse(t);
-}
+// extractJson moved to ../_shared/llm-json.ts; imported above.
 
 function diffMaterial(stored: Record<string, unknown>, fresh: ExtractedFields): { field: DiffField; was: unknown; now: unknown }[] {
   const diffs: { field: DiffField; was: unknown; now: unknown }[] = [];
