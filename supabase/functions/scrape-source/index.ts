@@ -758,10 +758,17 @@ serve(async (req) => {
   while (true) {
     try {
       const resp = await chatCompletions({
-        // Pro tier — see LLM_COST_PER_EXTRACTION_USD comment. Higher
-        // extraction fidelity → more rows clear the 0.85 confidence
-        // gate for auto-publish, fewer rows pile up in staging.
-        tier: "pro",
+        // 2026-05-18: downgraded pro → flash. Pro (gpt-4o) hits a
+        // 30K TPM cap from the org-tier-1 OpenAI account, which the
+        // scrape pipeline kept blowing through under sustained load.
+        // Flash (gpt-4o-mini) has ~200K TPM (6.6x), >10x cheaper,
+        // and produces structured JSON of comparable quality on the
+        // straightforward "extract scholarship fields from a known
+        // schema" task — most of the win from pro was on freeform
+        // prose, which we don't need here. The confidence floor
+        // (0.85) gates auto-publish either way; below it goes to
+        // staging for admin review.
+        tier: "flash",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: USER_PROMPT_TEMPLATE(src.name, src.url, src.category, src.parser_hint, truncated) },
