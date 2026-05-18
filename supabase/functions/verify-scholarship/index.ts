@@ -327,12 +327,24 @@ Deno.serve(async (req) => {
     }
   }
   if (Object.keys(selfCleanUpdate).length > 0) {
-    await supa.from("scholarships").update(selfCleanUpdate as never).eq("scholarship_id", stored.scholarship_id);
-    // Reflect locally so downstream LLM prompt + diff comparison use
-    // the cleaned values too — otherwise we'd compute a name diff on
-    // every pass.
-    if (typeof selfCleanUpdate.scholarship_name === "string") stored.scholarship_name = selfCleanUpdate.scholarship_name;
-    if (typeof selfCleanUpdate.provider_name === "string") stored.provider_name = selfCleanUpdate.provider_name;
+    // 2026-05-18: error-check. A silently-failing self-clean (e.g. RLS
+    // surprise, type coercion error on target_demographics array)
+    // means user-relative phrasing keeps getting served to users
+    // forever and the diff loop computes the same "name needs cleaning"
+    // diff on every verify-cron tick — wasted LLM spend with no row
+    // ever moving.
+    const { error: selfCleanErr } = await supa.from("scholarships")
+      .update(selfCleanUpdate as never)
+      .eq("scholarship_id", stored.scholarship_id);
+    if (selfCleanErr) {
+      console.warn("[verify-scholarship] self-clean update failed", selfCleanErr.message, "id=", stored.scholarship_id);
+    } else {
+      // Reflect locally so downstream LLM prompt + diff comparison use
+      // the cleaned values too — otherwise we'd compute a name diff on
+      // every pass.
+      if (typeof selfCleanUpdate.scholarship_name === "string") stored.scholarship_name = selfCleanUpdate.scholarship_name;
+      if (typeof selfCleanUpdate.provider_name === "string") stored.provider_name = selfCleanUpdate.provider_name;
+    }
   }
 
   // ─── Authoritative-source override ──────────────────────────────

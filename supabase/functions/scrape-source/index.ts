@@ -1071,7 +1071,19 @@ serve(async (req) => {
         if (diffSummary) {
           updatePayload.verification_status = "stale";
         }
-        await supa.from("scholarships").update(updatePayload as never).eq("scholarship_id", existingId);
+        // 2026-05-18: error-check the write. Silent failures on re-scrape
+        // updates mean fresh scrape data (new deadline, refreshed
+        // overview, reactivation flag) never lands but the function still
+        // returns "updatedCount++" success. The cron metrics report
+        // healthy throughput while the user-facing row stays stale.
+        const { error: updateErr } = await supa
+          .from("scholarships")
+          .update(updatePayload as never)
+          .eq("scholarship_id", existingId);
+        if (updateErr) {
+          console.warn("[scrape-source] update existing failed", updateErr.message, "id=", existingId);
+          continue;
+        }
         landedScholarshipId = existingId;
       } else {
         // 2026-05-18: CRITICAL fix. Previously this branch used
@@ -1128,9 +1140,13 @@ serve(async (req) => {
               .maybeSingle();
             if (conflictRow?.scholarship_id) {
               const conflictId = conflictRow.scholarship_id as string;
-              await supa.from("scholarships")
+              const { error: conflictUpdateErr } = await supa.from("scholarships")
                 .update({ ...insertPayload, ...reactivatePayload } as never)
                 .eq("scholarship_id", conflictId);
+              if (conflictUpdateErr) {
+                console.warn("[scrape-source] 23505-conflict update failed", conflictUpdateErr.message, "id=", conflictId);
+                continue;
+              }
               landedScholarshipId = conflictId;
               updatedCount++;
             } else {
@@ -1152,7 +1168,7 @@ serve(async (req) => {
         // auto-publish even when the publish succeeded — the admin
         // dashboard showed "auto_published with no target row" which
         // looked like a dead-letter even when the data was live.
-        if (landedScholarshipId) {
+        if (landedScholarshipId && runId) {
           await supa.from("scholarships_staging")
             .update({ scholarship_id: landedScholarshipId })
             .eq("source_id", src.source_id)

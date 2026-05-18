@@ -236,14 +236,23 @@ Output ONLY the JSON object. Begin with { and end with }.`;
   if (Object.keys(uniPatch).length > 0) {
     uniPatch.enrichment_metadata = newMeta;
     uniPatch.enriched_at = now;
-    await supa.from("universities").update(uniPatch as never).eq("university_id", university.university_id);
+    const { error: uniUpdErr } = await supa.from("universities")
+      .update(uniPatch as never)
+      .eq("university_id", university.university_id);
+    if (uniUpdErr) {
+      console.error("[enrich-university] update failed", uniUpdErr.message, "uni_id=", university.university_id);
+      return respondJson(500, { error: `university_update_failed: ${uniUpdErr.message}` }, corsHeaders);
+    }
     updatesUniversity = Object.keys(uniPatch).length - 2; // exclude metadata + enriched_at
   } else {
     // Even if we wrote no values, mark the row as scanned so the cron
     // doesn't re-pick it within the staleness window.
-    await supa.from("universities")
+    const { error: scanMarkErr } = await supa.from("universities")
       .update({ enriched_at: now })
       .eq("university_id", university.university_id);
+    if (scanMarkErr) {
+      console.warn("[enrich-university] scan-mark failed", scanMarkErr.message);
+    }
   }
 
   // ─── Apply program-level updates (admission_requirements + applications) ─

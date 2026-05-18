@@ -3343,14 +3343,12 @@ const Discover = ({ language = "en" }: Props) => {
       const q = deferredSearch.toLowerCase();
       list = list.filter(s => searchIndex.get(s.scholarship_id)?.includes(q));
     }
-    if (filters.coverage !== "all") {
-      // "Partial funding" collapses partial + stipend (also catches
-      // "travel" / "research" / any non-fullride non-tuition_only value
-      // for legacy rows that wrote different enum names).
-      list = list.filter(s => filters.coverage === "partial"
-        ? (s.coverage_type !== "full_ride" && s.coverage_type !== "tuition_only")
-        : s.coverage_type === filters.coverage);
-    }
+    // 2026-05-18: coverage filter retired. The "Full-ride / Tuition only /
+    // Partial" distinction is no longer surfaced — too many rows had thin
+    // coverage_type values that misrepresented the actual award, and the
+    // chip filtered out plausibly-good scholarships that simply hadn't
+    // been classified yet. Filter state field kept for backward
+    // compatibility on the FilterState type; the value is always "all".
     if (filters.degree !== "all") {
       // Tolerant degree match: the LLM populates target_degree_level
       // with all kinds of variants ("Master's", "Masters", "MA", "MS",

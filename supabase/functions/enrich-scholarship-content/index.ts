@@ -263,7 +263,18 @@ Output the JSON now.`;
   patch.embedding = null;
   patch.embedded_at = null;
 
-  await supa.from("scholarships").update(patch as never).eq("scholarship_id", row.scholarship_id);
+  // 2026-05-18: assert the write actually committed. Pre-fix this returned
+  // 200 OK status:"filled" even when the DB write silently errored — the
+  // staging-promote silent-success class of bug from earlier today. The
+  // cron metrics said "enrichment success" while the row stayed empty.
+  const { error: updErr } = await supa
+    .from("scholarships")
+    .update(patch as never)
+    .eq("scholarship_id", row.scholarship_id);
+  if (updErr) {
+    console.error("[enrich-scholarship-content] db update failed", row.scholarship_id, updErr);
+    return json(500, { error: `db_update_failed: ${updErr.message}` });
+  }
 
   return json(200, {
     ok: true,

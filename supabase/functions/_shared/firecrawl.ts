@@ -21,7 +21,7 @@ export interface FirecrawlScrapeOptions {
   onlyMainContent?: boolean;
   /** ms to wait after page load before capturing (lets late JS render). Default 0. */
   waitFor?: number;
-  /** Optional override of the standard timeout (ms). Default 30s. */
+  /** Optional override of the standard timeout (ms). Default 45s. */
   timeout?: number;
 }
 
@@ -40,7 +40,13 @@ export async function firecrawlScrape(opts: FirecrawlScrapeOptions): Promise<Fir
   if (!apiKey) throw new Error("FIRECRAWL_API_KEY not set in edge function secrets");
 
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), opts.timeout ?? 30_000);
+  // 2026-05-18: bumped 30s → 45s after observing 12 "signal aborted"
+  // failures/4h on slow government sites (moet.gov.vn, ocsc.go.th,
+  // icetex.gov.co — all hung at 30,062–30,230 ms exactly, the old
+  // ceiling). With flash-tier LLM calls now ~5s instead of pro's 15s,
+  // we have headroom against the 60s edge function wall: 45s scrape +
+  // 5–10s LLM + 5s DB ≈ 55–60s budget.
+  const timer = setTimeout(() => ctrl.abort(), opts.timeout ?? 45_000);
 
   try {
     const resp = await fetch(`${FIRECRAWL_BASE}/scrape`, {
