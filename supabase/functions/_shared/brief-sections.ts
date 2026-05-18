@@ -81,6 +81,7 @@ export interface SectionSpec {
 }
 
 import { EDITORIAL_RULES } from "./editorial-rules.ts";
+import { extractLlmJson } from "./llm-json.ts";
 
 const SHARED_JSON_RULES = `
 ${EDITORIAL_RULES}
@@ -124,9 +125,12 @@ const profileBlock = (ctx: BriefContext): string => {
 
 const dbBlock = (ctx: BriefContext): string => ctx.dbContext;
 
-/** Parse helper — returns the parsed object or null if not valid JSON. */
+/** Parse helper — returns the parsed object or null if not valid JSON.
+ * 2026-05-18: routed through the shared brace-walking helper so an LLM
+ * appending commentary after the JSON body doesn't silently drop the
+ * section (those bug rendered as a missing block in the brief). */
 const tryParse = (raw: string): unknown | null => {
-  try { return JSON.parse(raw); } catch { return null; }
+  try { return extractLlmJson(raw); } catch { return null; }
 };
 
 /* ─── Section specs (journey order) ──────────────────────────────────── */
