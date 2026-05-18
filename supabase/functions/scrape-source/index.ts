@@ -611,6 +611,20 @@ function validateExtracted(x: unknown): ExtractedScholarship | null {
   ].filter(Boolean).length;
   if (signalCount < 2) return null;
 
+  // 2026-05-18: minimum-value gate. The prompt says "tiny one-off
+  // grants under $3,000" should be omitted, but the LLM sometimes
+  // extracts them anyway (e.g. "$1000 Act of Kindness", "$750
+  // Canadian Journalism Scholarship"). Reject server-side: if the
+  // total value is known AND below $3K, the row isn't materially
+  // funding a degree. We only reject when value is KNOWN (NULL
+  // means "we don't have the value yet" which doesn't justify
+  // rejection — many flagships land with NULL value initially).
+  if (typeof o.estimated_total_value_usd === "number"
+      && o.estimated_total_value_usd > 0
+      && o.estimated_total_value_usd < 3000) {
+    return null;
+  }
+
   return o as unknown as ExtractedScholarship;
 }
 
