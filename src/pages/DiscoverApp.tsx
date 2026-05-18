@@ -115,10 +115,24 @@ const score = (s: Scholarship, p: Profile): Scored => {
     else { eligibility = "not_eligible"; match -= 40; reasons.push(`Not open to ${p.country}`); }
   }
 
-  // Degree
+  // Degree — bucket-tolerant compare. Pre-fix this used `.includes(p.degree)`
+  // which compared user-side ("PhD", "master's") against catalog-side ("phd",
+  // "masters") with a case-sensitive substring check — i.e. always false.
+  // Result: every applicant was marked `not_eligible` on every legit
+  // scholarship and the match score was uniformly tanked. Normalize both
+  // sides into one of three canonical buckets before comparing.
   if (s.target_degree_level && p.degree) {
-    if (s.target_degree_level.includes(p.degree)) { match += 10; reasons.push(`Matches ${p.degree} level`); }
-    else { eligibility = "not_eligible"; match -= 25; }
+    const bucket = (raw: string): string => {
+      const v = raw.toLowerCase().trim();
+      if (/(phd|doctora|dphil|d\.phil|postdoc)/.test(v)) return "phd";
+      if (/(master|graduate|m\.?[as]\b|m\.?phil|m\.?ba|m\.?sc|magistr|llm)/.test(v)) return "master";
+      if (/(bachelor|undergrad|b\.?[as]\b|b\.?sc|b\.?eng|llb|first[- ]degree)/.test(v)) return "undergraduate";
+      return "";
+    };
+    const want = bucket(p.degree);
+    const targets = s.target_degree_level.map(bucket).filter(Boolean);
+    if (want && targets.includes(want)) { match += 10; reasons.push(`Matches ${p.degree} level`); }
+    else if (targets.length > 0) { eligibility = "not_eligible"; match -= 25; }
   }
 
   // GPA
