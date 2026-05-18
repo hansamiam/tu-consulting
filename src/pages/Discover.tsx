@@ -3395,16 +3395,17 @@ const Discover = ({ language = "en" }: Props) => {
   const [wiz, setWiz] = useState<WizardData>(DEFAULT_WIZARD);
   const [openDetail, setOpenDetail] = useState<Scored | null>(null);
   const [expandedDetail, setExpandedDetail] = useState<Scored | null>(null);
-  /* 2026-05-18: detail-page route was hidden — the dedicated
-     /scholarships/:id surface had grown into a chaotic 7-accent-colour
-     wall of sections that wasn't ship-ready. Row clicks now open the
-     in-app ExpandedScholarshipDialog (the centered, max-w-4xl surface
-     mounted at the bottom of this page) — same dialog as the spotlight
-     expand-button used. Direct URLs to /scholarships/:id still work:
-     App.tsx's ScholarshipDetailRedirect bounces them here with
-     ?scholarship=<id>, which the effect below picks up. */
+  /* 2026-05-18 round 2: restored the ORIGINAL right-side DetailSheet
+     (the in-place quick-draw panel users had before 2026-05-17). Row
+     clicks now open `openDetail`, which mounts the DetailSheet — the
+     focused "is this for me?" sheet with overview + requirements +
+     strategy notes. The ExpandedScholarshipDialog (now a wider Sheet)
+     still exists for the deep-dive flow but is only reached via the
+     DetailSheet's "Open full deep dive" CTA, not by row click.
+     /scholarships/:id redirects route via ScholarshipDetailRedirect →
+     ?scholarship=<id> handler below; we map that to openDetail too. */
   const openDetailRoute = useCallback((s: Scored) => {
-    setExpandedDetail(s);
+    setOpenDetail(s);
   }, []);
   /* Application tracker — offline-first hook that mirrors localStorage
      and (when authed) syncs to Postgres `application_tracker`. Replaces
@@ -3847,7 +3848,7 @@ const Discover = ({ language = "en" }: Props) => {
     if (!want || ranked.length === 0) return;
     const match = ranked.find(r => r.scholarship_id === want);
     if (match) {
-      setExpandedDetail(match);
+      setOpenDetail(match);
       searchParams.delete("scholarship");
       setSearchParams(searchParams, { replace: true });
     }
@@ -5816,13 +5817,35 @@ const Discover = ({ language = "en" }: Props) => {
           </SheetContent>
         </Sheet>
 
-        {/* DetailSheet retired 2026-05-17 — the right-side vertical
-            drawer was the "tiny ugly popup" the user (and a friend)
-            flagged. Row clicks now navigate to the dedicated
-            /scholarships/:id route via the onSelect handlers below.
-            Keeping the component import + similarToOpen memo unused
-            for one ship cycle in case we need to roll back; will
-            delete cleanly in the next pass. */}
+        {/* 2026-05-18 round 2: restored the original right-side
+            DetailSheet (the quick-draw panel the user explicitly
+            asked for back). Mounted next to ExpandedScholarshipDialog
+            so the existing "open full deep dive" CTA inside DetailSheet
+            can still escalate to the wider deep-dive surface. */}
+
+        <DetailSheet
+          s={openDetail}
+          open={!!openDetail}
+          onClose={() => setOpenDetail(null)}
+          isBookmarked={openDetail ? shortlist.has(openDetail.scholarship_id) : false}
+          onBookmark={() => openDetail && toggleBookmark(openDetail.scholarship_id)}
+          profile={profile}
+          status={openDetail ? statusMap.get(openDetail.scholarship_id) : undefined}
+          onStatusChange={(st) => openDetail && setStatus(openDetail.scholarship_id, st)}
+          note={openDetail ? (notesMap.get(openDetail.scholarship_id) ?? "") : ""}
+          onNoteChange={(n) => openDetail && setNote(openDetail.scholarship_id, n)}
+          similar={similarToOpen}
+          onSwitchTo={(s) => setOpenDetail(s)}
+          isMember={isMember}
+          onUnlock={() => navigate(language === "ru" ? "/pricing/ru" : "/pricing")}
+          onExpand={() => {
+            if (openDetail) {
+              setExpandedDetail(openDetail);
+              setOpenDetail(null);
+            }
+          }}
+          lang={language}
+        />
 
         <ExpandedScholarshipDialog
           s={expandedDetail}
