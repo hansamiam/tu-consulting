@@ -30,22 +30,42 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { Lock, Video, ExternalLink, Notebook, Sparkles, CalendarClock } from "lucide-react";
-import { ENV } from "@/lib/env";
+import { supabase } from "@/integrations/supabase/client";
 
 const PASSWORD = "topuniacademy";
 const STORAGE_UNLOCK_KEY = "topuni-academy-live-unlocked";
 
-const SESSION = {
-  title: "TopUni Academy · Live Session",
-  // Hosts + agenda are session-specific. For now read from env vars so
-  // they can be flipped without a redeploy; fall back to safe defaults.
-  subtitle: (ENV as Record<string, string>).VITE_ACADEMY_LIVE_TITLE
-    ?? "Office hours with the alumni team",
-  hostsLine: (ENV as Record<string, string>).VITE_ACADEMY_LIVE_HOSTS
-    ?? "Samuel Han (Yale) · Nurzada Abdivalieva (Cambridge · Tsinghua)",
-  scheduledLine: (ENV as Record<string, string>).VITE_ACADEMY_LIVE_SCHEDULE
-    ?? "Drops here on session day — bookmark this page.",
-  meetingUrl: (ENV as Record<string, string>).VITE_ACADEMY_LIVE_URL ?? "",
+// 2026-05-19: Live session metadata comes from public.academy_workshops
+// (the same table /admin/academy uses to schedule workshops). The
+// founder picks the upcoming-soonest published workshop, drops in its
+// `join_url`, and the live room surfaces it here automatically — no
+// redeploy. We pick the row whose scheduled_for is closest to now and
+// within a +/- 4-hour window (session window grace).
+
+interface LiveSession {
+  id: string;
+  title: string;
+  subtitle: string;
+  hostsLine: string;
+  scheduledLine: string;
+  meetingUrl: string;
+}
+
+const DEFAULT_HOSTS = "Samuel Han (Yale) · Nurzada Abdivalieva (Cambridge · Tsinghua)";
+
+const formatScheduled = (iso: string | null | undefined): string => {
+  if (!iso) return "Drops here on session day — bookmark this page.";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "Drops here on session day — bookmark this page.";
+  const now = Date.now();
+  const diff = d.getTime() - now;
+  if (diff < -4 * 3600_000) return "This session has ended. Recording uploads soon.";
+  if (diff < 0) return "Live now — join in.";
+  const dateLine = d.toLocaleString(undefined, {
+    weekday: "long", month: "short", day: "numeric",
+    hour: "numeric", minute: "2-digit", timeZoneName: "short",
+  });
+  return `Scheduled for ${dateLine}.`;
 };
 
 const NotesPane = () => {
@@ -147,8 +167,13 @@ const PasswordGate = ({ onUnlock }: { onUnlock: () => void }) => {
   );
 };
 
-const LiveRoom = () => {
-  const url = SESSION.meetingUrl?.trim();
+const LiveRoom = ({ session, loading }: { session: LiveSession | null; loading: boolean }) => {
+  const url = session?.meetingUrl?.trim() ?? "";
+  const title = session?.title ?? "TopUni Academy · Live Session";
+  const subtitle = session?.subtitle ?? "Office hours with the alumni team";
+  const hostsLine = session?.hostsLine ?? DEFAULT_HOSTS;
+  const scheduledLine = session?.scheduledLine ?? "Drops here on session day — bookmark this page.";
+
   return (
     <section className="max-w-5xl mx-auto px-4 pt-24 sm:pt-28 pb-16">
       <motion.div
@@ -158,13 +183,13 @@ const LiveRoom = () => {
         className="text-center mb-10"
       >
         <div className="inline-flex items-center gap-2 bg-gold/15 border border-gold/40 px-3 py-1 rounded-full text-gold-dark text-[11px] uppercase tracking-[0.22em] font-semibold mb-5">
-          <Sparkles className="h-3.5 w-3.5" /> Live
+          <Sparkles className="h-3.5 w-3.5" /> {loading ? "Loading session…" : "Live"}
         </div>
         <h1 className="font-heading text-3xl sm:text-5xl font-bold text-foreground tracking-tight leading-[1.05]">
-          {SESSION.title}
+          {title}
         </h1>
         <p className="text-muted-foreground mt-3 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
-          {SESSION.subtitle}
+          {subtitle}
         </p>
       </motion.div>
 
@@ -204,7 +229,7 @@ const LiveRoom = () => {
                 No live session is scheduled right now.
               </p>
               <p className="text-primary-foreground/70 text-[13px] leading-relaxed">
-                {SESSION.scheduledLine}
+                {scheduledLine}
               </p>
             </>
           )}
@@ -224,10 +249,10 @@ const LiveRoom = () => {
             </span>
           </div>
           <p className="font-heading text-foreground text-[15px] leading-snug mb-3">
-            Hosts: <span className="font-medium">{SESSION.hostsLine}</span>
+            Hosts: <span className="font-medium">{hostsLine}</span>
           </p>
           <p className="text-muted-foreground text-[13.5px] leading-relaxed">
-            {SESSION.scheduledLine}
+            {scheduledLine}
           </p>
         </motion.div>
       </div>
@@ -249,6 +274,9 @@ interface AcademyLiveProps { language?: "en" | "ru"; }
 
 const AcademyLive = ({ language = "en" }: AcademyLiveProps) => {
   const [unlocked, setUnlocked] = useState<boolean>(false);
+  const [session, setSession] = useState<LiveSession | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
   useEffect(() => {
     try {
       if (sessionStorage.getItem(STORAGE_UNLOCK_KEY) === "1") setUnlocked(true);
@@ -259,11 +287,55 @@ const AcademyLive = ({ language = "en" }: AcademyLiveProps) => {
       : "Live session — TopUni Academy";
     return () => { document.title = prev; };
   }, [language]);
+
+  // Fetch the upcoming-soonest published workshop. Window: scheduled in
+  // the future, OR scheduled in the past but within the last 4 hours
+  // (live-during-session grace). Falls back to NULL → empty state.
+  useEffect(() => {
+    if (!unlocked) return;
+    (async () => {
+      try {
+        const fourHoursAgo = new Date(Date.now() - 4 * 3600_000).toISOString();
+        const { data, error } = await supabase
+          .from("academy_workshops")
+          .select("id, title, summary, join_url, scheduled_for, kind")
+          .eq("is_published", true)
+          .gte("scheduled_for", fourHoursAgo)
+          .order("scheduled_for", { ascending: true })
+          .limit(1);
+        if (error) throw error;
+        const row = (data && data[0]) as undefined | {
+          id: string; title: string; summary?: string | null;
+          join_url?: string | null; scheduled_for?: string | null; kind: string;
+        };
+        if (row) {
+          setSession({
+            id: row.id,
+            title: row.title,
+            subtitle: row.summary ?? (row.kind === "office_hours" ? "Office hours with the alumni team" : "Live workshop"),
+            hostsLine: DEFAULT_HOSTS,
+            scheduledLine: formatScheduled(row.scheduled_for ?? null),
+            meetingUrl: row.join_url ?? "",
+          });
+        } else {
+          setSession(null);
+        }
+      } catch (e) {
+        console.warn("[academy/live] workshop fetch failed", (e as Error).message);
+        setSession(null);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [unlocked]);
+
   return (
     <div className="min-h-screen relative bg-background">
       <div className="relative z-10">
         <Navigation language={language} variant="default" />
-        {unlocked ? <LiveRoom /> : <PasswordGate onUnlock={() => setUnlocked(true)} />}
+        {unlocked
+          ? <LiveRoom session={session} loading={loading} />
+          : <PasswordGate onUnlock={() => setUnlocked(true)} />}
         <Footer language={language} />
       </div>
     </div>
