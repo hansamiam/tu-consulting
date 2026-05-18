@@ -176,6 +176,32 @@ const TopUniAI = () => {
   // used when the draft is absent or partial.
   const draft = useMemo(() => loadDraft(), []);
 
+  // 2026-05-19: surface a toast when we restore a meaningful draft so
+  // the user understands why fields are pre-filled. Fires once on
+  // mount. "Meaningful" = at least 2 substantive fields filled — a
+  // draft with just a name we tagged 4 sessions ago doesn't warrant
+  // a toast at re-entry.
+  useEffect(() => {
+    if (!draft) return;
+    const filled = [
+      draft.fullName, draft.email, draft.nationality, draft.gradeLevel,
+      draft.gpa, draft.major, draft.ielts, draft.toefl, draft.sat,
+    ].filter((v) => typeof v === "string" && v.trim().length > 0).length;
+    if (filled >= 2) {
+      const minutes = draft.ts ? Math.max(1, Math.round((Date.now() - draft.ts) / 60_000)) : 0;
+      const timeLabel = minutes > 1440
+        ? `${Math.round(minutes / 1440)} day${Math.round(minutes / 1440) === 1 ? "" : "s"} ago`
+        : minutes > 60
+          ? `${Math.round(minutes / 60)} hour${Math.round(minutes / 60) === 1 ? "" : "s"} ago`
+          : `${minutes} min ago`;
+      toast.success(
+        `Welcome back — restored your progress from ${timeLabel}.`,
+        { duration: 4500 },
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [fullName, setFullName] = useState(draft?.fullName ?? "");
   const [email, setEmail] = useState(draft?.email ?? "");
   const [whatsapp, setWhatsapp] = useState(draft?.whatsapp ?? "");
