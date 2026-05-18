@@ -2797,7 +2797,31 @@ const Discover = ({ language = "en" }: Props) => {
       const [scholarshipsRes, statsRes, providersRes] = await Promise.all([
         supabase
           .from("scholarships")
-          .select("*")
+          // 2026-05-18: explicit column list (was select("*"), which pulled
+          // the 1536-dim `embedding` vector + `embedding_source_text` blob
+          // for every row — ~3 MB of useless payload at 180 rows because
+          // the embedding is only used server-side by match_scholarships().
+          // The UI never reads it. Stripping these alone cut initial-load
+          // network/parse cost by ~70%. If you add a new field to the
+          // Scholarship interface, add it here too.
+          .select(
+            "scholarship_id, scholarship_name, provider_name, official_url, host_country, " +
+            "eligible_countries, target_degree_level, target_fields, award_amount_text, " +
+            "estimated_total_value_usd, coverage_type, min_gpa, gpa_scale, min_ielts, " +
+            "min_toefl, min_sat, language_requirements, citizenship_requirements, " +
+            "application_deadline, deadline_type, required_documents, essay_required, " +
+            "recommendation_letters_required, interview_required, separate_application_required, " +
+            "application_fee_text, application_platform, partner_universities, selectivity_level, " +
+            "effort_level, effort_reason, ideal_candidate_profile, common_rejection_reasons, " +
+            "weak_candidate_warning, strategy_notes, best_for_tags, why_this_fits, " +
+            "target_demographics, how_to_win, what_to_prepare_first, next_step, risk_note, " +
+            "last_verified_date, last_verified_at, verification_status, source_url, data_source, " +
+            "url_check_status, url_consecutive_fails, url_resolved_to, canonical_overview, " +
+            "canonical_deadline_iso, canonical_funding_text, canonical_funding_usd, " +
+            "canonical_official_url, canonical_quality_score, canonical_key, cover_image_url, " +
+            "created_at, confidence, data_completeness_score, provider_id, consensus_score, " +
+            "lifecycle_status"
+          )
           .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
           // Lifecycle filter — closed-recent + closed-archived rows are
           // hidden from discovery automatically. The DB trigger keeps
