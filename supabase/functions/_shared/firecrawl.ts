@@ -39,14 +39,17 @@ export async function firecrawlScrape(opts: FirecrawlScrapeOptions): Promise<Fir
   const apiKey = Deno.env.get("FIRECRAWL_API_KEY");
   if (!apiKey) throw new Error("FIRECRAWL_API_KEY not set in edge function secrets");
 
+  const timeoutMs = opts.timeout ?? 45_000;
   const ctrl = new AbortController();
-  // 2026-05-18: bumped 30s → 45s after observing 12 "signal aborted"
-  // failures/4h on slow government sites (moet.gov.vn, ocsc.go.th,
-  // icetex.gov.co — all hung at 30,062–30,230 ms exactly, the old
-  // ceiling). With flash-tier LLM calls now ~5s instead of pro's 15s,
-  // we have headroom against the 60s edge function wall: 45s scrape +
-  // 5–10s LLM + 5s DB ≈ 55–60s budget.
-  const timer = setTimeout(() => ctrl.abort(), opts.timeout ?? 45_000);
+  // 2026-05-18 round 2: pass `timeout` to Firecrawl's REQUEST BODY in
+  // addition to running our own AbortController. Pre-fix only the
+  // AbortController was wired up, so Firecrawl used its internal 30s
+  // default — every slow site (UN Youth Scholarships, UNAM, Grace
+  // Hopper) hit Firecrawl's server-side 408 at ~30s and we never got
+  // to use our 45s client budget. We now ask Firecrawl to wait
+  // (timeoutMs - 2_000) ms before giving up; the local AbortController
+  // is the secondary guard if the round-trip itself wedges.
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
 
   try {
     const resp = await fetch(`${FIRECRAWL_BASE}/scrape`, {
@@ -60,6 +63,7 @@ export async function firecrawlScrape(opts: FirecrawlScrapeOptions): Promise<Fir
         formats: ["markdown"],
         onlyMainContent: opts.onlyMainContent ?? true,
         waitFor: opts.waitFor ?? 0,
+        timeout: Math.max(timeoutMs - 2_000, 15_000),
       }),
       signal: ctrl.signal,
     });
