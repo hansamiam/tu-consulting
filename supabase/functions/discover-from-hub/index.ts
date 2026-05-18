@@ -134,6 +134,24 @@ serve(async (req) => {
     return json(400, { error: "Either hub_source_id or hub_url required" });
   }
 
+  // 2026-05-18: Stamp last_crawled_at IMMEDIATELY for hub-source-id runs,
+  // BEFORE any work that could fail. Pre-fix the stamp lived at the end
+  // of the success path, so any early-return (empty markdown, fetch
+  // failed, LLM HTTP error, parse failed, zero candidates) left the
+  // hub at last_crawled_at=NULL. The hubs-cron's `NULLS FIRST` ordering
+  // then picked the SAME dead hub every 6h forever, while ~21 newly
+  // seeded hubs (including opportunitytracker.ug — user-priority) sat
+  // at NULL waiting for a slot they'd never get. last_success_at +
+  // consecutive_failures=0 still only flip on actual success at the
+  // bottom of this function.
+  if (body.hub_source_id) {
+    const { error: preStampErr } = await supa
+      .from("scholarship_sources")
+      .update({ last_crawled_at: new Date().toISOString() })
+      .eq("source_id", body.hub_source_id);
+    if (preStampErr) console.warn("[discover-from-hub] pre-stamp failed", preStampErr.message);
+  }
+
   // Fetch the hub page + up to 2 paginated successors. Most aggregator
   // hubs (especially WordPress-based ones — opportunitiesforyouth.org,
   // opportunitytracker.ug, opportunitydesk.org, scholars4dev.com,
