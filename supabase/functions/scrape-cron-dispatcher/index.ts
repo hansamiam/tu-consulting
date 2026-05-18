@@ -20,25 +20,20 @@ import { createServiceClient } from "../_shared/clients.ts";
 const json = (status: number, body: unknown) =>
   respondJson(status, body, corsHeaders);
 
-// 2026-05-18: dropped MAX_SOURCES_PER_TICK from 40 → 12 after
-// sustained gpt-4o TPM 30000 pressure burned through batches.
-// 12 sources × ~5K tokens each ≈ 60K total over the ~60s window,
-// still over the per-minute ceiling but the 429 retry inside
-// scrape-source recovers most of them within one window. Combined
-// with the existing cron schedule (every hour) this drains the
-// queue cleanly without sustained 429 thrash. Net throughput is
-// a bit slower per tick; reliability per source is much higher.
-const MAX_SOURCES_PER_TICK = 12;
+// 2026-05-18 round 3: MAX_SOURCES_PER_TICK back up to 30 now that
+// scrape-source runs on gpt-4o-mini flash (TPM 200K instead of 30K).
+// 30 sources × ~5K tokens ≈ 150K tokens per tick — fits comfortably
+// inside the 200K window even at concurrency=5. Net catalog growth
+// rate ~2.5x the conservative-pacing era we just left.
+const MAX_SOURCES_PER_TICK = 30;
 
-// 2026-05-18: dropped CONCURRENCY from 5 → 2 after a sustained
-// burst of OpenAI 429 (TPM 30000 / org-tier-1) wiped out 9 of 12
-// scrapes in a single tick. At 5 in flight × ~10K tokens/call =
-// 50K tokens burst, well over the 30K-per-minute window. With
-// concurrency 2 we average ~20K tokens/burst — comfortably under
-// the cap and the per-call 429 retry inside scrape-source can
-// ride out the rare spike. Net throughput drop is small because
-// the bottleneck is the LLM, not Firecrawl.
-const CONCURRENCY = 2;
+// 2026-05-18 round 3: CONCURRENCY back to 5 after the platform-wide
+// flash-tier switch (gpt-4o-mini, 200K TPM). 5 in flight × ~5K tokens
+// ≈ 25K-token burst — well inside the new headroom and ~5x the
+// Firecrawl req/s rate we were leaving idle. Burst safety guard
+// is still scrape-source's 429-retry-with-30s-backoff if a sustained
+// burst ever crosses the new ceiling.
+const CONCURRENCY = 5;
 
 // Stop hammering a source once it's failed this many times in a row.
 const FAILURE_CIRCUIT_BREAKER = 5;
