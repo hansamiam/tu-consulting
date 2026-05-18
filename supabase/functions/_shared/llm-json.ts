@@ -27,15 +27,26 @@
  * Returns the parsed value, or throws with a useful message.
  */
 export function extractLlmJson(raw: string): unknown {
+  return extractBalanced(raw, "{", "}");
+}
+
+/** Same idea, for LLM responses that return a top-level array. */
+export function extractLlmJsonArray(raw: string): unknown[] {
+  const parsed = extractBalanced(raw, "[", "]");
+  if (!Array.isArray(parsed)) throw new Error("Top-level JSON was not an array");
+  return parsed;
+}
+
+function extractBalanced(raw: string, open: "{" | "[", close: "}" | "]"): unknown {
   const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
   const candidate = (fenced ? fenced[1] : raw).trim();
   // Happy path: direct parse — works when the LLM returned ONLY JSON.
   try { return JSON.parse(candidate); } catch { /* fall through */ }
-  // Brace-balance walk from the first `{` to its matching `}`. Tracks
-  // string-literal context so a `}` inside a quoted value (e.g. a
-  // description with curly braces) doesn't close the object.
-  const start = candidate.indexOf("{");
-  if (start === -1) throw new Error("No JSON object in LLM response");
+  // Brace-balance walk from the first open bracket to its matching
+  // close. Tracks string-literal context so a `}` / `]` inside a
+  // quoted value doesn't close the structure.
+  const start = candidate.indexOf(open);
+  if (start === -1) throw new Error(`No JSON ${open === "{" ? "object" : "array"} in LLM response`);
   let depth = 0;
   let inString = false;
   let escape = false;
@@ -45,8 +56,8 @@ export function extractLlmJson(raw: string): unknown {
     if (c === "\\") { escape = true; continue; }
     if (c === '"') { inString = !inString; continue; }
     if (inString) continue;
-    if (c === "{") depth++;
-    else if (c === "}") {
+    if (c === open) depth++;
+    else if (c === close) {
       depth--;
       if (depth === 0) return JSON.parse(candidate.slice(start, i + 1));
     }

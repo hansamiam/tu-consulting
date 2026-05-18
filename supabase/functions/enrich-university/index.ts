@@ -71,7 +71,9 @@ const SCHEMA_DOC = `{
   ]
 }`;
 
-function isolateJson(raw: string): string {
+import { extractLlmJson } from "../_shared/llm-json.ts";
+
+function _isolateJson_RETIRED(raw: string): string {
   let s = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
   const first = s.indexOf("{");
   const last  = s.lastIndexOf("}");
@@ -199,7 +201,7 @@ Output ONLY the JSON object. Begin with { and end with }.`;
       ?? ""
     ) as string;
     if (!raw) return json(502, { error: "Empty completion" });
-    parsed = JSON.parse(isolateJson(raw)) as EnrichmentOutput;
+    parsed = extractLlmJson(raw) as EnrichmentOutput;
   } catch (e) {
     console.warn("[enrich-university] parse failed", (e as Error).message);
     return json(502, { error: "Parse failed" });

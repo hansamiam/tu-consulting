@@ -74,7 +74,9 @@ const SCHEMA_DOC = `{
   "strategy_notes": "string — 1-2 sentences of higher-order tactical insight that doesn't fit elsewhere. Application timing pattern, recommender selection, narrative thread, anything genuinely insider. Skip rather than fill with platitudes"
 }`;
 
-function isolateJson(raw: string): string {
+import { extractLlmJson } from "../_shared/llm-json.ts";
+
+function _isolateJson_RETIRED(raw: string): string {
   let s = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
   const first = s.indexOf("{");
   const last = s.lastIndexOf("}");
@@ -201,7 +203,7 @@ Output the JSON now.`;
       ?? ""
     ) as string;
     if (!raw) return json(502, { error: "Empty completion" });
-    parsed = JSON.parse(isolateJson(raw)) as EnrichmentOutput;
+    parsed = extractLlmJson(raw) as EnrichmentOutput;
   } catch (e) {
     console.warn("[enrich-scholarship-content] parse failed", (e as Error).message);
     return json(502, { error: "Parse failed" });
