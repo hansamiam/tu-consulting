@@ -987,6 +987,22 @@ serve(async (req) => {
         embedded_at:                     null,
       };
 
+      // 2026-05-18 — re-activate-on-fresh-confident-scrape rule.
+      // When a high-confidence scrape brings in a concrete future
+      // deadline, that's evidence the program is alive again. Carry
+      // a lifecycle_status='active' patch through so the upsert below
+      // can flip a previously closed_archived row back to visible.
+      // Without this, today's discovery sweep silently merged fresh
+      // DAAD/OFY data into archived rows by canonical_key and the
+      // user-facing catalog never gained the row.
+      const hasFutureDeadline =
+        typeof s.application_deadline === "string"
+        && /^\d{4}-\d{2}-\d{2}/.test(s.application_deadline)
+        && new Date(s.application_deadline).getTime() > Date.now();
+      const reactivatePayload: Record<string, unknown> = (isAutoPublish && hasFutureDeadline)
+        ? { lifecycle_status: "active" }
+        : {};
+
       let landedScholarshipId: string | null = null;
       if (existingId) {
         updatedCount++;
@@ -1011,7 +1027,7 @@ serve(async (req) => {
         // The update payload below is pure data — the verify-scholarship
         // cron picks up stale rows on its next tick and promotes them
         // back to 'verified' once it re-confirms the diff.
-        const updatePayload: Record<string, unknown> = { ...dataPayload };
+        const updatePayload: Record<string, unknown> = { ...dataPayload, ...reactivatePayload };
         if (diffSummary) {
           updatePayload.verification_status = "stale";
         }
@@ -1030,6 +1046,7 @@ serve(async (req) => {
         // — verify-scholarship and the URL-health cron own promotion.
         const insertPayload: Record<string, unknown> = {
           ...dataPayload,
+          ...reactivatePayload,
           verified: false,
           verification_status: "pending",
         };
@@ -1044,6 +1061,20 @@ serve(async (req) => {
         }
         newCount++;
         landedScholarshipId = (inserted as { scholarship_id?: string } | null)?.scholarship_id ?? null;
+        // Backfill the staging row's scholarship_id so downstream
+        // consumers (admin review UI, evidence trail, metrics) can join
+        // staging → scholarships. Pre-fix the staging row was written
+        // BEFORE the publish so scholarship_id was always NULL on
+        // auto-publish even when the publish succeeded — the admin
+        // dashboard showed "auto_published with no target row" which
+        // looked like a dead-letter even when the data was live.
+        if (landedScholarshipId) {
+          await supa.from("scholarships_staging")
+            .update({ scholarship_id: landedScholarshipId })
+            .eq("source_id", src.source_id)
+            .eq("run_id", runId)
+            .eq("fingerprint", fingerprint);
+        }
       }
 
       // ─── Record evidence — multi-source provenance trail ───────────
