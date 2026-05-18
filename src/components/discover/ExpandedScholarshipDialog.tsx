@@ -10,6 +10,7 @@
  * on mobile. Background scroll locked while open. The whole panel
  * scrolls internally; the hero strip pins to the top so the action
  * row stays reachable as the user scrolls the AI deep dive below. */
+import { useMemo } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import {
@@ -104,6 +105,30 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
   const award = compactAward(s) ?? (coverageLabel ? coverageLabel[ru ? "ru" : "en"] : null);
   const dl = fmtDays(s.application_deadline, lang);
   const accent = s.host_country ? accentForCountry(s.host_country) : "from-foreground/40 to-foreground/60";
+
+  // 2026-05-18: stable profile object for ScholarshipDeepDive's effect.
+  // Pre-fix this was an inline literal, so a fresh reference on every
+  // re-render of this component made the deep-dive's [profile] dep
+  // re-trigger — fired the LLM call (scholarship-deep-dive edge fn)
+  // on every Discover re-render while the panel was open (filter
+  // change, profile edit, etc). User-reported lag was traceable to
+  // this. Keys included verbatim from the prior literal.
+  const deepDiveProfile = useMemo(() => ({
+    fullName: undefined,
+    nationality: profile.country,
+    major: profile.field,
+    field: profile.field,
+    gradeLevel: profile.degrees?.[0] || "",
+    targetCountries: s.host_country ? [s.host_country] : undefined,
+    gpa: profile.gpa,
+    gpaScale: profile.gpaScale,
+    ielts: profile.ielts,
+    toefl: profile.toefl,
+    sat: profile.sat,
+  }), [
+    profile.country, profile.field, profile.degrees, s.host_country,
+    profile.gpa, profile.gpaScale, profile.ielts, profile.toefl, profile.sat,
+  ]);
 
   return (
     <Sheet open={!!s} onOpenChange={(o) => !o && onClose()}>
@@ -217,19 +242,7 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
               </h3>
               <ScholarshipDeepDive
                 scholarshipId={s.scholarship_id}
-                profile={{
-                  fullName: undefined,
-                  nationality: profile.country,
-                  major: profile.field,
-                  field: profile.field,
-                  gradeLevel: profile.degrees?.[0] || "",
-                  targetCountries: s.host_country ? [s.host_country] : undefined,
-                  gpa: profile.gpa,
-                  gpaScale: profile.gpaScale,
-                  ielts: profile.ielts,
-                  toefl: profile.toefl,
-                  sat: profile.sat,
-                }}
+                profile={deepDiveProfile}
               />
             </div>
           </div>
