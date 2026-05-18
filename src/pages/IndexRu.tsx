@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Crown } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/hero-campus.jpg";
 import samuelPhoto from "@/assets/samuel.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
@@ -37,6 +39,19 @@ const TEAM = [
 
 const IndexRu = () => {
   const navigate = useNavigate();
+  const [liveCount, setLiveCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const todayIso = new Date().toISOString().slice(0, 10);
+      const { count, error } = await supabase
+        .from("scholarships")
+        .select("scholarship_id", { count: "exact", head: true })
+        .in("lifecycle_status", ["active", "reopens_annually"])
+        .gte("application_deadline", todayIso);
+      if (!error && typeof count === "number") setLiveCount(count);
+    })();
+  }, []);
 
   return (
     <div className="min-h-screen relative bg-background text-foreground antialiased">
@@ -108,7 +123,7 @@ const IndexRu = () => {
                  · ДОСТУПНО НА РУССКОМ И АНГЛИЙСКОМ
               </motion.p>
 
-              <motion.div {...fadeUp(0.35)} className="flex flex-wrap items-center justify-center gap-3 mb-10">
+              <motion.div {...fadeUp(0.35)} className="flex flex-wrap items-center justify-center gap-3 mb-5">
                 <Button
                   variant="gold"
                   size="lg"
@@ -126,6 +141,13 @@ const IndexRu = () => {
                   Сразу к стипендиям
                 </Button>
               </motion.div>
+
+              {liveCount !== null && liveCount > 0 && (
+                <motion.p {...fadeUp(0.42)} className="text-[11.5px] sm:text-xs text-foreground/65 mb-10 inline-flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+                  Живая база <span className="font-semibold text-foreground tabular-nums">{liveCount}</span> активных стипендий, обновляется ежедневно.
+                </motion.p>
+              )}
             </div>
           </section>
 
