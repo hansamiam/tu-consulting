@@ -1034,16 +1034,31 @@ serve(async (req) => {
         await supa.from("scholarships").update(updatePayload as never).eq("scholarship_id", existingId);
         landedScholarshipId = existingId;
       } else {
-        // The 20260505060000 migration added a UNIQUE index on canonical_key.
-        // Use upsert with onConflict so concurrent scrapes that race past our
-        // SELECT-then-INSERT don't blow up on the constraint. The trigger
-        // computes canonical_key on insert, so we don't need to pass it.
+        // 2026-05-18: CRITICAL fix. Previously this branch used
+        //   .upsert(payload, { onConflict: "canonical_key", ignoreDuplicates: false })
+        // — but the canonical_key uniqueness is enforced by a PARTIAL
+        // index (uniq_scholarships_canonical_key_live), which only
+        // covers rows where lifecycle_status IN ('active','reopens_annually').
+        // Postgres rejects `ON CONFLICT (canonical_key)` against a
+        // partial index with 42P10 "no unique or exclusion constraint
+        // matching the ON CONFLICT specification" — every auto-publish
+        // INSERT has been silently 42P10'ing since the partial index
+        // landed, hitting the `continue` below and pretending nothing
+        // happened. Result: hundreds of "auto_published" staging rows
+        // with NULL scholarship_id and zero visible rows produced.
         //
-        // First-time INSERT initialises the trust state: 'pending' status
-        // means "newly discovered, awaiting first verification cron tick",
-        // and verified=false because the program hasn't passed a human or
-        // automated trust check yet. Both columns transition forward only
-        // — verify-scholarship and the URL-health cron own promotion.
+        // New approach: plain .insert(). On 23505 unique-violation
+        // (the partial index fires when our active-row insert hits
+        // an existing active row with the same canonical_key) we look
+        // up the conflicting row and UPDATE it instead. One extra
+        // round-trip on conflict, zero round-trips on the happy path.
+        //
+        // First-time INSERT initialises the trust state: 'pending'
+        // status means "newly discovered, awaiting first verification
+        // cron tick", verified=false because the program hasn't passed
+        // a human or automated trust check yet. Both columns transition
+        // forward only — verify-scholarship and the URL-health cron
+        // own promotion.
         const insertPayload: Record<string, unknown> = {
           ...dataPayload,
           ...reactivatePayload,
@@ -1052,15 +1067,44 @@ serve(async (req) => {
         };
         const { data: inserted, error: insertErr } = await supa
           .from("scholarships")
-          .upsert(insertPayload as never, { onConflict: "canonical_key", ignoreDuplicates: false })
+          .insert(insertPayload as never)
           .select("scholarship_id")
           .maybeSingle();
         if (insertErr) {
-          console.warn("[scrape-source] insert/upsert failed", insertErr.message, "name=", s.scholarship_name);
-          continue;
+          if ((insertErr as { code?: string }).code === "23505") {
+            // Active row already exists with the same canonical_key.
+            // Look it up and route this scrape through the UPDATE path.
+            // We canonicalise the same way the DB trigger does (lower-
+            // case + collapsed whitespace) — a perfect match isn't
+            // required because (name, provider, host_country) is a
+            // strong-enough proxy in practice.
+            const { data: conflictRow } = await supa
+              .from("scholarships")
+              .select("scholarship_id")
+              .eq("scholarship_name", s.scholarship_name)
+              .eq("provider_name", s.provider_name ?? "")
+              .in("lifecycle_status", ["active", "reopens_annually"])
+              .limit(1)
+              .maybeSingle();
+            if (conflictRow?.scholarship_id) {
+              const conflictId = conflictRow.scholarship_id as string;
+              await supa.from("scholarships")
+                .update({ ...insertPayload, ...reactivatePayload } as never)
+                .eq("scholarship_id", conflictId);
+              landedScholarshipId = conflictId;
+              updatedCount++;
+            } else {
+              console.warn("[scrape-source] 23505 but conflict row not found by name+provider:", s.scholarship_name);
+              continue;
+            }
+          } else {
+            console.warn("[scrape-source] insert failed", insertErr.message, "name=", s.scholarship_name);
+            continue;
+          }
+        } else {
+          newCount++;
+          landedScholarshipId = (inserted as { scholarship_id?: string } | null)?.scholarship_id ?? null;
         }
-        newCount++;
-        landedScholarshipId = (inserted as { scholarship_id?: string } | null)?.scholarship_id ?? null;
         // Backfill the staging row's scholarship_id so downstream
         // consumers (admin review UI, evidence trail, metrics) can join
         // staging → scholarships. Pre-fix the staging row was written
