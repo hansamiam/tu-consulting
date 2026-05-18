@@ -5373,9 +5373,12 @@ const Discover = ({ language = "en" }: Props) => {
                                     onClick={() => toggleSectionExpanded(key)}
                                     className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground hover:text-gold-dark transition-colors px-3 py-2 rounded-md border border-dashed border-border/60 hover:border-gold/40"
                                   >
+                                    {/* 2026-05-18 round 2: dropped the "(+N)"
+                                        count from grid-view expand affordance,
+                                        same reason as the list-view one. */}
                                     {expanded
                                       ? t("Show less", "Свернуть")
-                                      : t(`Show all (+${hidden})`, `Все (+${hidden})`)}
+                                      : t("Show more", "Показать ещё")}
                                   </button>
                                 )}
                               </>

@@ -1,22 +1,16 @@
-/* ExpandedScholarshipDialog — centered, enlarged detail surface that
- * opens from the right-side DetailSheet's "Personalized strategy" CTA.
+/* ExpandedScholarshipDialog — right-side slide-in detail surface
+ * (a "quick-draw panel"). Used to be a centered Dialog; 2026-05-18
+ * the product moved to a bulletin/dashboard reframe and the user
+ * specifically asked for the side-panel layout back, but with a
+ * polished visual format — wider than the old narrow strip, single
+ * gold accent, breathable typography, no chaotic multi-colored
+ * kickers.
  *
- * Why this exists: the right-side pull-up DetailSheet had grown to
- * include the full personalized deep dive (match breakdown, odds,
- * how-to-win, ideal-candidate), which made the panel stretch
- * vertically with text that cut off, wrapped weirdly, and felt dense.
- * The split:
- *
- *   · Right-side DetailSheet  → CONCISE, focused on "is this for me?"
- *     — overview + requirements + strategy notes only.
- *   · This dialog            → ENLARGED, centered, with the full deep
- *     dive AI analysis laid out with breathing room.
- *
- * Replaces what used to be a Link to /scholarships/:id (which yanked
- * users out of the Discover flow entirely). The /scholarships/:id
- * page still exists for SEO / direct shares; this dialog is the
- * in-app surface. */
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+ * Slides in from the right at max-w-[640px] on desktop / full width
+ * on mobile. Background scroll locked while open. The whole panel
+ * scrolls internally; the hero strip pins to the top so the action
+ * row stays reachable as the user scrolls the AI deep dive below. */
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import {
   Bookmark,
@@ -112,9 +106,12 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
   const accent = s.host_country ? accentForCountry(s.host_country) : "from-foreground/40 to-foreground/60";
 
   return (
-    <Dialog open={!!s} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[92vh] p-0 overflow-hidden gap-0 [&>button]:hidden">
-        <div className="flex flex-col max-h-[92vh]">
+    <Sheet open={!!s} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-[640px] p-0 overflow-hidden gap-0 [&>button]:hidden"
+      >
+        <div className="flex flex-col h-full">
           {/* Hero strip — 2026-05-10 cleaned up per user direction
               "really really clean up this section". Pre-fix the hero
               was a heavy region-coloured gradient with white text +
@@ -177,8 +174,12 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
             </div>
           </div>
 
-          {/* Headline facts row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 border-b border-border bg-card">
+          {/* Headline facts row. 2-up in the side sheet — 4-up at the
+              prior centered-dialog width was readable, but at 640px
+              column width the value strings ("£20,400/year stipend +
+              travel + visa…") were truncating mid-word. 2-up gives
+              each fact ~280px of horizontal room. */}
+          <div className="grid grid-cols-2 gap-0 border-b border-border bg-card">
             <Fact icon={<Wallet className="h-3.5 w-3.5" />} label={t("Award", "Финансирование")} value={award ?? "—"} />
             <Fact
               icon={<Calendar className="h-3.5 w-3.5" />}
@@ -233,8 +234,8 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
             </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 };
 
@@ -249,7 +250,7 @@ const Fact = ({
     : tone === "warn" ? "text-amber-700 dark:text-amber-400 font-medium"
     : "text-foreground";
   return (
-    <div className="px-5 py-3.5 border-r border-border last:border-r-0 [&:nth-child(2n)]:border-r-0 sm:[&:nth-child(2n)]:border-r sm:[&:nth-child(4n)]:border-r-0 [&:nth-child(n+3)]:border-t sm:[&:nth-child(n+3)]:border-t-0 min-w-0">
+    <div className="px-5 py-3.5 border-r border-border [&:nth-child(2n)]:border-r-0 [&:nth-child(n+3)]:border-t min-w-0">
       <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
         {icon}
         <span className="text-[10px] uppercase tracking-[0.18em] font-semibold">{label}</span>

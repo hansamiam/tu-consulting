@@ -3332,25 +3332,12 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
               </div>
               {pathwayGenerated && hasBrief && (
                 <div className="flex items-center gap-2 flex-wrap justify-end">
-                  {/* Premium upgrade nudge — visible only when the user
-                      ran the basic tier. Members see a quiet "Premium"
-                      badge instead. */}
-                  {isMember ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold uppercase tracking-[0.14em] bg-gold/10 text-gold-dark border border-gold/30">
-                      <Crown className="w-3 h-3" />
-                      {t("Pro report", "Pro отчёт")}
-                    </span>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="gap-1.5 text-gold-dark hover:bg-gold/10"
-                      onClick={() => navigate(isRu ? "/pricing/ru" : "/pricing")}
-                    >
-                      <Crown className="w-4 h-4" />
-                      {t("Upgrade for Pro report", "Pro отчёт")}
-                    </Button>
-                  )}
+                  {/* 2026-05-18: dropped the "Upgrade for Pro report" /
+                      "Pro report" pill that lived here. The report's job
+                      is to deliver the strategy — adding an upsell pill
+                      to the card header read as marketing chrome on top
+                      of substance. The masthead's badge already carries
+                      tier info if anyone needs it. */}
                   {/* Card-header Print button retired 2026-05-10 — the
                       BriefMasthead already exposes Share / Print /
                       Download PDF in its action row, which is the more
@@ -3507,13 +3494,12 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                       the place" feeling — the Live Matches grid below
                       already surfaces deadlines + funding inline, and
                       the BriefMasthead already shows the profile. */}
-                  {!pathwayLoading && (
-                    <BriefHeroStats
-                      liveMatches={allMatches}
-                      briefContent={pathwayContent}
-                      isRu={isRu}
-                    />
-                  )}
+                  {/* 2026-05-18: BriefHeroStats retired. The "scholarships
+                      matched / funding potential / closest deadline /
+                      report depth" KPI tile strip read as decorative
+                      chrome on top of the actual strategy content. The
+                      strategy IS the value; KPI dashboards on top of it
+                      pad the page vertically without adding signal. */}
 
                   {/* 2026-05-10: brief renders as a single continuous
                       ReportRenderer pass instead of being split into
@@ -3559,9 +3545,15 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             onAskCounselor={SHOW_COUNSELOR_TAB ? askCounselorWithPrefill : undefined}
                           />
                         )}
-                        {/* Live matches grid sits between the brief and the
-                            structured plan. */}
-                        {liveMatches.length > 0 && (() => {
+                        {/* 2026-05-18: "Your top scholarship matches" 6-card
+                            grid retired. The deadlines block ("5 deadlines
+                            in the next 30 days") + six condensed scholarship
+                            cards at the end of every brief duplicated work
+                            the Discover route does properly and added a lot
+                            of vertical scroll without adding signal. The
+                            final "Open the database" link below now carries
+                            the same handoff with one click. */}
+                        {false && liveMatches.length > 0 && (() => {
                     const now = Date.now();
                     const urgent = liveMatches.filter(m => {
                       if (!m.application_deadline) return false;
@@ -3728,83 +3720,43 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             Only shown to non-members; members get an
                             in-product counselor tab and don't need the
                             upsell here. */}
-                        {!pathwayLoading && (pathwayContent || Object.keys(magazineSections).length > 0) && !isMember && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.3 }}
-                            className="not-prose mt-12 rounded-xl border border-gold/40 bg-gradient-to-br from-gold/8 to-transparent p-5 sm:p-6 print:hidden"
-                          >
-                            <div className="flex items-start gap-4 flex-wrap">
-                              <div className="min-w-0 flex-1">
-                                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-[0.18em] uppercase bg-gradient-to-r from-gold-dark to-gold text-primary mb-2">
-                                  <Crown className="w-3 h-3" />
-                                  {t("Membership", "Подписка")}
-                                </div>
-                                <h3 className="font-heading text-lg sm:text-xl font-bold tracking-tight text-foreground mb-1.5">
-                                  {t("Want more tailored guidance from real counselors?",
-                                     "Нужны более точные рекомендации от консультантов?")}
-                                </h3>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                  {t("Membership unlocks live monthly workshops with our Yale, Cambridge, Tsinghua, Harvard alumni team plus unlimited counselor chat — real insight on your specific situation, not another auto-generated report.",
-                                     "Подписка открывает живые ежемесячные воркшопы с командой выпускников Yale, Cambridge, Tsinghua, Harvard и неограниченный чат с консультантом — реальные ответы на вашу ситуацию.")}
-                                </p>
-                              </div>
-                              <Button
-                                variant="gold"
-                                onClick={() => navigate(isRu ? "/pricing/ru" : "/pricing")}
-                                className="gap-1.5 shrink-0"
-                              >
-                                <Crown className="w-4 h-4" />
-                                {t("See membership", "Открыть подписку")}
-                              </Button>
-                            </div>
-                          </motion.div>
-                        )}
+                        {/* 2026-05-18: Membership upsell card retired
+                            from the end of the brief. It sat back-to-back
+                            with the Step 02/Step 03 "Discover + Academy"
+                            tiles + the "5 deadlines" + six scholarship
+                            cards above. Three near-identical "click here
+                            for more" surfaces in a row was the "everything
+                            so repetitive" feel the user flagged. /pricing
+                            still carries the membership pitch for users
+                            who arrive intending to upgrade. */}
                       </>
                     );
                   })()}
                   {pathwayLoading && <span className="inline-block w-2 h-4 bg-accent animate-pulse ml-1" />}
 
-                  {/* Next steps — drives users into the rest of the funnel */}
-                  {!pathwayLoading && (
-                    <div className="not-prose grid sm:grid-cols-2 gap-3 mt-12 pt-8 border-t border-border">
-                      <button
+                  {/* 2026-05-18: Step 02 (Discover) + Step 03 (Academy)
+                      two-tile block retired. Sat back-to-back with the
+                      now-retired membership card + 6-scholarship grid —
+                      three identical "next step" surfaces in a row.
+                      Replaced with a single tasteful link to the
+                      database; Academy gets its own promotion higher
+                      in the funnel. Anti-pattern: marketing chrome
+                      that bloats the page and competes with the
+                      strategy content for the user's attention. */}
+                  {!pathwayLoading && (pathwayContent || Object.keys(magazineSections).length > 0) && (
+                    <div className="not-prose mt-10 pt-6 border-t border-border/60 flex items-center justify-between gap-3 flex-wrap print:hidden">
+                      <p className="text-sm text-muted-foreground leading-snug max-w-md">
+                        {t("Ready to explore every scholarship that fits your profile?", "Готовы посмотреть все стипендии, подходящие вашему профилю?")}
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5"
                         onClick={() => navigate(isRu ? "/discover/ru" : "/discover")}
-                        className="group text-left bg-card border border-border rounded-2xl p-6 hover:border-gold/40 hover:shadow-md transition-all"
                       >
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="h-10 w-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center">
-                            <Search className="w-5 h-5 text-gold-dark" />
-                          </div>
-                          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Step 02</span>
-                        </div>
-                        <h4 className="font-heading font-bold text-lg text-foreground mb-1.5 tracking-tight">Discover</h4>
-                        <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-                          {t("See every ranked scholarship match, with how-to-win strategy notes and rejection patterns.", "Все ранжированные стипендии со стратегией и причинами отказов.")}
-                        </p>
-                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground group-hover:text-gold-dark transition-colors">
-                          {t("Open the database", "Открыть базу")} <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-                        </span>
-                      </button>
-                      <button
-                        onClick={() => navigate(isRu ? "/academy/ru" : "/academy")}
-                        className="group text-left bg-card border border-border rounded-2xl p-6 hover:border-gold/40 hover:shadow-md transition-all"
-                      >
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="h-10 w-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center">
-                            <BookOpen className="w-5 h-5 text-gold-dark" />
-                          </div>
-                          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Step 03</span>
-                        </div>
-                        <h4 className="font-heading font-bold text-lg text-foreground mb-1.5 tracking-tight">Academy</h4>
-                        <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-                          {t("Live monthly workshops with our founders. Refine the strategy with people who've been through it.", "Ежемесячные воркшопы с нашими основателями.")}
-                        </p>
-                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground group-hover:text-gold-dark transition-colors">
-                          {t("Preview Academy", "Открыть Academy")} <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-                        </span>
-                      </button>
+                        {t("Open the database", "Открыть базу")}
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Button>
                     </div>
                   )}
 
