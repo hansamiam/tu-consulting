@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence, useTransform, useScroll } from "framer-motion";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowRight,
   Award,
@@ -3395,17 +3395,17 @@ const Discover = ({ language = "en" }: Props) => {
   const [wiz, setWiz] = useState<WizardData>(DEFAULT_WIZARD);
   const [openDetail, setOpenDetail] = useState<Scored | null>(null);
   const [expandedDetail, setExpandedDetail] = useState<Scored | null>(null);
-  /* 2026-05-17: row clicks now navigate to the dedicated detail
-     route instead of opening the retired DetailSheet. The legacy
-     state above is kept for back-compat with the few remaining
-     callers (compare / shortlist / collection mounts) that still
-     call setOpenDetail; they no-op visually since the Sheet mount
-     was deleted, but the next iteration will rip out those references
-     entirely. */
+  /* 2026-05-18: detail-page route was hidden — the dedicated
+     /scholarships/:id surface had grown into a chaotic 7-accent-colour
+     wall of sections that wasn't ship-ready. Row clicks now open the
+     in-app ExpandedScholarshipDialog (the centered, max-w-4xl surface
+     mounted at the bottom of this page) — same dialog as the spotlight
+     expand-button used. Direct URLs to /scholarships/:id still work:
+     App.tsx's ScholarshipDetailRedirect bounces them here with
+     ?scholarship=<id>, which the effect below picks up. */
   const openDetailRoute = useCallback((s: Scored) => {
-    const path = language === "ru" ? `/scholarships/${s.scholarship_id}/ru` : `/scholarships/${s.scholarship_id}`;
-    navigate(path);
-  }, [language, navigate]);
+    setExpandedDetail(s);
+  }, []);
   /* Application tracker — offline-first hook that mirrors localStorage
      and (when authed) syncs to Postgres `application_tracker`. Replaces
      the four separate useState + useEffect blobs that lived here. */
@@ -3485,6 +3485,10 @@ const Discover = ({ language = "en" }: Props) => {
   // Postgres when authed) is handled there.
 
   useEffect(() => { localStorage.setItem("tu_view_mode", viewMode); }, [viewMode]);
+
+  // ?scholarship=<id> deep-link handler is mounted later (after `ranked`
+  // is in scope); see the matching useEffect below the ranked memo.
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Keyboard: "/" focuses the search box (skip when an input is focused)
   useEffect(() => {
@@ -3830,6 +3834,24 @@ const Discover = ({ language = "en" }: Props) => {
       return b.match - a.match;
     });
   }, [rows, profile, semantic.matches, saveCounts]);
+
+  /* Honour the ?scholarship=<id> query param landing here from
+   * ScholarshipDetailRedirect (App.tsx). Bookmarks + share links that
+   * pointed at the hidden /scholarships/:id route still resolve — the
+   * matching catalog row is looked up once `ranked` has hydrated, and
+   * the in-app ExpandedScholarshipDialog opens with it. The param is
+   * cleared from the URL after consumption so a refresh of /discover
+   * doesn't re-open the dialog. */
+  useEffect(() => {
+    const want = searchParams.get("scholarship");
+    if (!want || ranked.length === 0) return;
+    const match = ranked.find(r => r.scholarship_id === want);
+    if (match) {
+      setExpandedDetail(match);
+      searchParams.delete("scholarship");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, ranked, setSearchParams]);
 
   /* Available host countries + fields, derived from data.
    * Collapse all "Multiple (...)" / "Multiple (Worldwide)" / "Global" /

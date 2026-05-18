@@ -288,7 +288,20 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
   const tags: { icon: React.ReactNode; label: string; tone?: "primary" | "muted" }[] = [];
   if (r.host_country) tags.push({ icon: <MapPin className="w-3 h-3" />, label: shortCountry(r.host_country) });
   if (r.target_degree_level && r.target_degree_level.length > 0) {
-    const levels = r.target_degree_level.slice(0, 2).map((l) => (t.levels as Record<string, string>)[l.toLowerCase()] ?? l);
+    // Sort high → low (PhD, Master, Bachelor) before the slice so a
+    // scholarship open to all three levels surfaces its highest tier
+    // first. Pre-fix, slice(0,2) on the raw array could show
+    // "Bachelor's · Master's" for a PhD-eligible scholarship under a
+    // PhD filter — making it look like a misfiled masters award.
+    const rank = (l: string): number => {
+      const v = l.toLowerCase();
+      if (/(phd|doctora|dphil|d\.phil|postdoc)/.test(v)) return 0;
+      if (/(master|graduate|m\.?[as]\b|m\.?phil|m\.?ba|m\.?sc|magistr|llm)/.test(v)) return 1;
+      if (/(bachelor|undergrad|b\.?[as]\b|b\.?sc|b\.?eng|llb|first[- ]degree)/.test(v)) return 2;
+      return 3;
+    };
+    const sorted = [...r.target_degree_level].sort((a, b) => rank(a) - rank(b));
+    const levels = sorted.slice(0, 3).map((l) => (t.levels as Record<string, string>)[l.toLowerCase()] ?? l);
     tags.push({ icon: <GraduationCap className="w-3 h-3" />, label: levels.join(" · ") });
   }
   const fld = displayField(r.target_fields);

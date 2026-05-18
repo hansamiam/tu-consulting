@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider, QueryCache } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -52,7 +52,9 @@ const Pipeline             = lazy(() => import("./pages/Pipeline"));
 const ScholarshipsByFilter = lazy(() => import("./pages/ScholarshipsByFilter"));
 const ProviderHub          = lazy(() => import("./pages/ProviderHub"));
 const FundersIndex         = lazy(() => import("./pages/FundersIndex"));
-const ScholarshipDetail    = lazy(() => import("./pages/ScholarshipDetail"));
+// ScholarshipDetail page is currently hidden — /scholarships/:id redirects to
+// the in-app dialog via ScholarshipDetailRedirect below. Keep the file in the
+// tree for the next polish pass; this import was removed to drop dead bundle.
 const EssayCritique        = lazy(() => import("./pages/EssayCritique"));
 const Refer                = lazy(() => import("./pages/Refer"));
 const Admin                = lazy(() => import("./pages/Admin"));
@@ -76,6 +78,17 @@ const AdminAnalyticsFunnel       = lazy(() => import("./pages/admin/AnalyticsFun
 const AdminAcademy               = lazy(() => import("./pages/admin/Academy"));
 const AdminPartnerInquiries      = lazy(() => import("./pages/admin/PartnerInquiries"));
 const SubmitScholarship    = lazy(() => import("./pages/SubmitScholarship"));
+
+/* Pulls :id out of the legacy /scholarships/:id path and bounces the
+   visitor into Discover with the scholarship pre-opened in the
+   ExpandedScholarshipDialog. Preserves shareable URLs without the
+   detail page's chaotic visual state. */
+function ScholarshipDetailRedirect({ lang }: { lang: "en" | "ru" }) {
+  const { id } = useParams<{ id: string }>();
+  const base = lang === "ru" ? "/discover/ru" : "/discover";
+  const target = id ? `${base}?scholarship=${encodeURIComponent(id)}` : base;
+  return <Navigate to={target} replace />;
+}
 
 /* Query client with sane defaults + a single place to surface query
    failures. Before this, a failed background query was silent — no
@@ -195,9 +208,15 @@ const App = () => (
               in Germany". Renders as a single page with both filters
               applied. */}
           <Route path="/scholarships/in/:country/:field"  element={<ScholarshipsByFilter mode="country-field" />} />
-          {/* Per-scholarship detail page — also indexable, 200+ SEO surfaces */}
-          <Route path="/scholarships/:id"                 element={<ScholarshipDetail language="en" />} />
-          <Route path="/scholarships/:id/ru"              element={<ScholarshipDetail language="ru" />} />
+          {/* 2026-05-18: dedicated detail page hidden — UI was a mess of
+              7 accent colours + inconsistent typography + sections that
+              weren't ship-ready. The in-app ExpandedScholarshipDialog on
+              /discover is the single surface now; direct URLs and SEO
+              backlinks still land somewhere useful via a query-param
+              handoff. Leaving ScholarshipDetail.tsx in the tree
+              un-routed for the next polish pass. */}
+          <Route path="/scholarships/:id"                 element={<ScholarshipDetailRedirect lang="en" />} />
+          <Route path="/scholarships/:id/ru"              element={<ScholarshipDetailRedirect lang="ru" />} />
           {/* Essay critique — premium-gated reader-perspective AI feedback */}
           <Route path="/essay"                            element={<EssayCritique language="en" />} />
           <Route path="/essay/ru"                         element={<EssayCritique language="ru" />} />

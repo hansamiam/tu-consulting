@@ -1755,6 +1755,16 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   const [pathwayGenerated, setPathwayGenerated] = useState<boolean>(!!restored);
   const [pathwayGeneratedAt, setPathwayGeneratedAt] = useState<number | null>(restored?.generatedAt ?? null);
 
+  /* v6-magazine briefs stream as `{section, payload}` SSE events that
+   * land in `magazineSections` — they never write to `pathwayContent`.
+   * Pre-fix, the Strategy tab gated rendering on `pathwayContent`, so a
+   * fully-generated premium magazine brief rendered as an empty card
+   * (user reported "the strategy didn't generate"). Use `hasBrief` for
+   * every "is there a report to show" check; reserve raw `pathwayContent`
+   * only for things that need the legacy markdown specifically
+   * (word counts, masthead synthesis fallback). */
+  const hasBrief = pathwayContent.length > 0 || Object.keys(magazineSections).length > 0;
+
   // Interactive action plan: track which planned tasks the user has completed.
   // Keyed by stable hash of the task text (so the keys survive re-generation
   // as long as the AI keeps the same wording, and gracefully reset when
@@ -3320,7 +3330,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                   );
                 })()}
               </div>
-              {pathwayGenerated && pathwayContent && (
+              {pathwayGenerated && hasBrief && (
                 <div className="flex items-center gap-2 flex-wrap justify-end">
                   {/* Premium upgrade nudge — visible only when the user
                       ran the basic tier. Members see a quiet "Premium"
@@ -3360,7 +3370,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                     // explicitly clicks a section's regen icon and is
                     // only replacing one bucket.
                     onClick={() => {
-                      if (pathwayContent && !window.confirm(t(
+                      if (hasBrief && !window.confirm(t(
                         "Regenerate the full strategy report? Your current report will be replaced.",
                         "Сгенерировать отчёт заново? Текущий отчёт будет заменён.",
                       ))) return;
@@ -3376,7 +3386,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
               )}
             </CardHeader>
             <CardContent>
-              {!isProfileFilled && !pathwayContent && (
+              {!isProfileFilled && !hasBrief && (
                 <div className="text-center py-12 space-y-4">
                   <GraduationCap className="w-10 h-10 mx-auto text-muted-foreground/40" />
                   <p className="text-muted-foreground text-sm">{t("Complete your profile to generate a personalized pathway.", "Заполните профиль для персонального плана.")}</p>
@@ -3436,7 +3446,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
               )}
 
               <AnimatePresence>
-                {pathwayLoading && !pathwayContent && (
+                {pathwayLoading && !hasBrief && (
                   // Wrap in AnimatePresence so the pipeline gracefully fades
                   // out at the moment the first SSE chunk arrives — without
                   // this the pipeline JSX would just unmount and the brief
@@ -3460,7 +3470,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                   consume value. Render once the report is read; see the
                   "Pro upgrade — bottom of report" block below. */}
 
-              {pathwayContent && (
+              {hasBrief && (
                 <FocusScholarshipContext.Provider value={focusScholarship?.scholarshipId ?? null}>
                 <div className="grid xl:grid-cols-[1fr_220px] gap-x-10 print:block">
                 <div id="printable-report" className="min-w-0 prose prose-sm max-w-none dark:prose-invert [&_h2]:text-foreground [&_h2]:font-heading [&_h2]:text-xl [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:scroll-mt-24 [&_h2]:tracking-[-0.01em] [&_h3]:text-foreground [&_h3]:font-heading [&_h3]:text-lg [&_h3]:mt-6 [&_h3]:mb-2 [&_p]:text-muted-foreground [&_li]:text-muted-foreground [&_strong]:text-foreground">
