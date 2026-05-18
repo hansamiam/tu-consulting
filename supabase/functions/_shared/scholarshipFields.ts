@@ -525,6 +525,13 @@ export function cleanAwardText(raw: string | null | undefined): string | null {
   if (!raw) return null;
   let t = raw.trim();
   if (!t) return null;
+  // Hard-reject pure-placeholder values. Earlier ingestion sweeps let
+  // "TBD" / "TBA" / "Funding amount varies" / "See website" through into
+  // the catalog, and 2026-05-18 the user explicitly called this out as
+  // junk that shouldn't be visible. Returning null here means the row's
+  // award chip falls back to coverage_type (Full ride / Partial / etc.)
+  // which is at least a real signal.
+  if (/^(TBD|TBA|TBC|N\/A|none|null|funded|see\s+(website|details)|apply\s+for\s+details?|funding\s+amount\s+varies|varies|various|to\s+be\s+(determined|announced|advised|confirmed))$/i.test(t)) return null;
   // If a trailing parenthetical has no digits, drop it.
   t = t.replace(/\s*\(([^)]*)\)\s*$/, (m, inner) => /\d/.test(inner) ? m : "").trim();
   if (t.length > 200) t = t.slice(0, 198).trimEnd() + "…";
