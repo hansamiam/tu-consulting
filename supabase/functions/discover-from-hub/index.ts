@@ -197,11 +197,10 @@ serve(async (req) => {
   let extracted: DiscoveredScholarship[] = [];
   try {
     const resp = await chatCompletions({
-      // Pro tier — discovery happens once per hub crawl (plus ongoing
-      // re-discovery on cadence). Quality of URL extraction directly
-      // determines whether we're adding signal or noise to the registry,
-      // so the cost diff vs flash is the right trade. ~$0.005 per hub.
-      tier: "pro",
+      // 2026-05-18: pro → flash to drop OpenAI burn. URL extraction is
+      // pattern-matching not reasoning; flash handles it fine. The
+      // minConfidence floor (0.7) still gates noise out of the registry.
+      tier: "flash",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: `Hub page URL: ${hubUrl}\n\nPage markdown follows. Extract individual scholarship program URLs:\n\n${truncated}` },

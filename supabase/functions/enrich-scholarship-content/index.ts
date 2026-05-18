@@ -175,13 +175,14 @@ Output the JSON now.`;
 
   let parsed: EnrichmentOutput;
   try {
-    // Pro tier — these fields are written ONCE per scholarship and cached
-    // forever. Going from flash (~$0.0008) to pro (~$0.005) is ~$1 total
-    // across the whole catalogue and the difference between generic copy
-    // and counsellor-grade strategy notes is the entire value prop of
-    // the Strategy tab. Worth every cent.
+    // 2026-05-18: downgraded pro → flash to keep OpenAI burn off the
+    // user's card. Per-row enrichment runs ONCE and is cached; quality
+    // diff between flash and pro on a structured-schema task (filling
+    // why_this_fits / how_to_win / etc. from program metadata) is
+    // small — the heavy lift is the prompt, not the model. Re-enable
+    // pro later if specific fields read as generic.
     const resp = await chatCompletions({
-      tier: "pro",
+      tier: "flash",
       messages: [
         { role: "system", content: "You are a Yale/Cambridge/Harvard-trained admissions strategist writing for a verified scholarship database. Output only valid JSON matching the requested schema. Each field tells a real student whether to spend 20 hours on this application — generic content WASTES their time. Skip a field rather than fill it with platitudes." },
         { role: "user", content: prompt },

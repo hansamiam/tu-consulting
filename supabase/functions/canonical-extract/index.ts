@@ -217,8 +217,10 @@ Deno.serve(async (req: Request) => {
 
   let extraction: CanonicalExtraction | null = null;
   try {
+    // 2026-05-18: pro → flash. Canonical extraction is structured JSON
+    // fill from clean source markdown; flash handles it fine.
     const resp = await chatCompletions({
-      tier: "pro",
+      tier: "flash",
       messages: [
         { role: "system", content: "You return ONLY a JSON object matching the schema. No prose, no markdown fences, no commentary." },
         { role: "user", content: prompt },

@@ -176,14 +176,16 @@ Output ONLY the JSON object. Begin with { and end with }.`;
 
   let parsed: EnrichmentOutput;
   try {
+    // 2026-05-18: pro → flash for the same cost-control reason
+    // documented in enrich-scholarship-content. University enrichment
+    // is also a one-time-per-row structured fill.
     const resp = await chatCompletions({
-      tier: "pro",
+      tier: "flash",
       messages: [
         { role: "system", content: "You are a precise admissions data researcher. You output only valid JSON matching the requested schema." },
         { role: "user", content: prompt },
       ],
       stream: false,
-      reasoning: { effort: "medium" },
     });
     if (!resp.ok) {
       const t = await resp.text();

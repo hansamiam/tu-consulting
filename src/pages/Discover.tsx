@@ -2044,47 +2044,27 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
           })()}
         </div>
 
-        {/* Award amount — compactAward returns a tight label that fits
-            the chip without truncation: "Full ride" / "$80K" / "Tuition
-            covered" / "$1.2M" / etc. Long award_amount_text bodies live
-            in the DetailSheet's AWARD facts box (not the card). */}
-        {award && !isFullRide && (
+        {/* 2026-05-18: card award chip now renders ONLY when the row has
+            a concrete-dollar amount (digits present). Generic coverage
+            labels ("Full ride" / "Tuition only" / "Partial") were
+            retired alongside the coverage filter — they read as thin
+            signal at catalog scale. Rows without a specific number
+            just don't show the chip. */}
+        {award && /\d/.test(award) && (
           <div className="inline-flex self-start items-center gap-1.5 text-[12px] font-semibold text-foreground bg-muted/40 border border-border/60 px-2.5 py-1 rounded-md whitespace-nowrap">
             {award}
           </div>
         )}
 
-        {/* Summary — one tight line for the auto-blurb fallback, up to
-            three lines for a real editorial `why_this_fits` (those are
-            usually meatier per-row insight). The auto-blurb no longer
-            duplicates country / provider chrome that already sits in
-            the card surround, so a single line carries it. */}
-        {(() => {
-          // Canonical hierarchy 2026-05-10: prefer the institution-
-          // verified canonical_overview, then the per-user why_this_fits,
-          // then the auto-generated fallback blurb. The canonical
-          // pipeline (migration 20260510110000 + canonical-extract
-          // edge function) populates canonical_overview from the
-          // official program page so it's the most authoritative line.
-          const blurb = s.canonical_overview || why || buildScholarshipBlurb({
-            name: cleanScholarshipName(s.scholarship_name),
-            provider: cleanProvider(s.provider_name),
-            country: s.host_country,
-            coverage: s.coverage_type,
-            levels: s.target_degree_level,
-            fields: s.target_fields,
-            demographic: s.target_demographics?.[0],
-            isFullRide,
-            selectivity: s.selectivity_level,
-            partnerUniCount: s.partner_universities?.length,
-          });
-          if (!blurb) return <div className="flex-1" aria-hidden />;
-          return (
-            <p className={`text-[12px] leading-relaxed flex-1 ${why ? "line-clamp-3 text-foreground/70 italic" : "line-clamp-2 text-foreground/65"}`}>
-              {blurb.replace(/\.+$/, "")}.
-            </p>
-          );
-        })()}
+        {/* 2026-05-18: card description (canonical_overview / why_this_fits
+            / auto-blurb) retired. Per user direction: "lets get rid of the
+            description in the grid view entirely... we need to move away
+            from massive grids". Card now leads with the scholarship
+            name + country/level chips + deadline; the description lives
+            on the DetailSheet which opens on click. Keeps the grid
+            scannable and reduces vertical weight per row. */}
+        <div className="flex-1" aria-hidden />
+
 
         {/* Footer meta — deadline + field. Compact, scannable. Verified
             badge moved to top strip so this row stays focused on
@@ -2244,12 +2224,11 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
   // lights up a "Prestigious" tag on cards for the very-selective
   // programs, but it's no longer something the user filters AGAINST.
   const segmented: { label: string; key: keyof FilterState; opts: { v: string; l: string }[] }[] = [
-    { label: t("Coverage", "Финансирование"), key: "coverage", opts: [
-      { v: "all", l: t("All", "Все") },
-      { v: "full_ride", l: t("Full ride", "Полное") },
-      { v: "tuition_only", l: t("Tuition only", "Только обучение") },
-      { v: "partial", l: t("Partial", "Частичное") },
-    ] },
+    // Coverage filter retired 2026-05-18 — Full ride / Tuition only /
+    // Partial labels were thin signal at catalogue scale (most flagship
+    // rows tag full_ride, most niche rows tag partial, so the bucket
+    // was redundant with selectivity/tier). User wants the bulletin
+    // surface focused on concrete amounts, not generic coverage chips.
     { label: t("Degree", "Уровень"), key: "degree", opts: [
       { v: "all", l: t("All", "Все") },
       { v: "undergraduate", l: t("Bachelor's", "Бакалавриат") },
@@ -2425,7 +2404,7 @@ const ReqRow = ({ label, status, detail }: {
 };
 
 /* ─── Detail Sheet (tabbed, visual) ──────────────────────────────────── */
-const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, status, onStatusChange, note, onNoteChange, similar, onSwitchTo, isMember, onUnlock, onExpand, lang = "en" }: {
+const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, status, onStatusChange, onExpand, lang = "en" }: {
   s: Scored | null; open: boolean; onClose: () => void;
   isBookmarked: boolean; onBookmark: () => void;
   profile: Profile;
@@ -2440,747 +2419,138 @@ const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, stat
   onExpand: () => void;
   lang?: Lang;
 }) => {
-  const ru = lang === "ru";
-  const t = (en: string, ruText: string) => (ru ? ruText : en);
-  // Hook is unconditional — must run on every render even when s is null
-  // (Rules of Hooks). The track call is only fired with a real id later.
-  const trackEvent = useScholarshipTracking();
-  // Fire a 'viewed' event on detail-sheet open. Hook handles the 60s
-  // dedup so re-renders don't inflate counts.
+  // Hooks must run unconditionally (Rules of Hooks). The track call is
+  // safe with undefined id because useTrackView short-circuits.
   useTrackView(s?.scholarship_id, "detail-sheet");
   if (!s) return null;
+
+  const ru = lang === "ru";
+  const t = (en: string, ruText: string) => (ru ? ruText : en);
   const dl = deadlineDisplay(s.application_deadline, lang, s.deadline_type);
-  const [dc1, dc2] = dialColors(s.priority);
-  /* Why-it-fits text. Falls back to scoring reasons ONLY when at
-   * least one of them is a meaty insight (not a generic "Matches X
-   * level" auto-reason). Without this filter the card surfaces
-   * "Matches undergraduate level." as the editorial line for
-   * thousands of rows — looks half-baked. */
-  const meatyReasons = s.reasons.filter(r => !/^Matches \w+( level)?$/i.test(r) && !/^Open to /.test(r) && !/^Touches your field/i.test(r));
-  const why = s.why_this_fits || (meatyReasons.length > 0 ? meatyReasons.slice(0, 2).join(". ") : null);
-
-  // Build profile-vs-requirement checklist. Labels + details run through
-  // t() so the Russian sheet doesn't half-render in English (round 97
-  // translation pass — user flagged "more info in discover" still EN).
-  const reqs: { label: string; status: "met"|"miss"|"near"|"unknown"|"info"; detail: string }[] = [];
-  if (s.min_gpa != null) {
-    if (profile.gpa) {
-      const ug = normalizeGpa(parseFloat(profile.gpa), parseFloat(profile.gpaScale));
-      const rg = normalizeGpa(s.min_gpa, s.gpa_scale ?? 4.0);
-      const status = ug >= rg ? "met" : ug >= rg - 0.3 ? "near" : "miss";
-      reqs.push({ label: `GPA ≥ ${s.min_gpa}/${s.gpa_scale ?? 4.0}`, status, detail: `${t("Yours", "Ваш")}: ${profile.gpa}/${profile.gpaScale} (≈ ${ug.toFixed(2)}/4.0)` });
-    } else { reqs.push({ label: `GPA ≥ ${s.min_gpa}/${s.gpa_scale ?? 4.0}`, status: "unknown", detail: t("Add your GPA to check", "Добавьте GPA, чтобы проверить") }); }
-  }
-  if (s.min_ielts != null) {
-    if (profile.ielts) {
-      const u = parseFloat(profile.ielts);
-      reqs.push({ label: `IELTS ≥ ${s.min_ielts}`, status: u >= s.min_ielts ? "met" : "miss", detail: `${t("Yours", "Ваш")}: ${u}` });
-    } else { reqs.push({ label: `IELTS ≥ ${s.min_ielts}`, status: "unknown", detail: t("Add your IELTS to check", "Добавьте IELTS, чтобы проверить") }); }
-  }
-  if (s.min_toefl != null) {
-    if (profile.toefl) {
-      const u = parseFloat(profile.toefl);
-      reqs.push({ label: `TOEFL ≥ ${s.min_toefl}`, status: u >= s.min_toefl ? "met" : "miss", detail: `${t("Yours", "Ваш")}: ${u}` });
-    } else { reqs.push({ label: `TOEFL ≥ ${s.min_toefl}`, status: "unknown", detail: t("Add your TOEFL to check", "Добавьте TOEFL, чтобы проверить") }); }
-  }
-  if (s.min_sat != null) {
-    if (profile.sat) {
-      const u = parseFloat(profile.sat);
-      const status = u >= s.min_sat ? "met" : u >= s.min_sat - 80 ? "near" : "miss";
-      reqs.push({ label: `SAT ≥ ${s.min_sat}`, status, detail: `${t("Yours", "Ваш")}: ${u}` });
-    } else { reqs.push({ label: `SAT ≥ ${s.min_sat}`, status: "unknown", detail: t("Add your SAT to check", "Добавьте SAT, чтобы проверить") }); }
-  }
-  if (s.target_degree_level && profile.degrees && profile.degrees.length > 0) {
-    // Bucket-tolerant match — see degreeBucket comment in the scoring
-    // function. Without this the Requirements row showed "miss" for
-    // a Master's applicant against a scholarship listing "Graduate".
-    const targetBuckets = s.target_degree_level.map(d => degreeBucket(d)).filter(Boolean);
-    const ok = profile.degrees.some(pd => targetBuckets.includes(degreeBucket(pd)));
-    const status = targetBuckets.length === 0 ? "unknown" : ok ? "met" : "miss";
-    reqs.push({ label: `${t("Degree level", "Уровень")}: ${s.target_degree_level.map(humanizeDegree).join(", ")}`, status, detail: `${t("Your level", "Ваш уровень")}: ${profile.degrees.map(humanizeDegree).join(" / ")}` });
-  }
-  if (s.target_fields && s.target_fields.length > 0 && profile.field) {
-    const fm = fieldMatches(profile.field, s.target_fields);
-    reqs.push({ label: t("Field of study", "Направление"), status: fm === true ? "met" : fm === false ? "miss" : "unknown", detail: `${t("Funds", "Финансирует")}: ${s.target_fields.slice(0, 4).map(humanize).join(", ")}${s.target_fields.length > 4 ? "..." : ""}` });
-  }
-  // Nationality / citizenship — show ONE row, not two. Prefer the
-  // structured eligible_countries check (alias-aware, computes met/miss
-  // against the user's country). Fall back to citizenship_requirements
-  // text only when no structured list exists. Previously both rendered
-  // and overlapped — same fact twice.
-  const hasStructuredCountries = !!(s.eligible_countries && s.eligible_countries.length > 0);
-  if (hasStructuredCountries && profile.country) {
-    const list = s.eligible_countries!.map(c => c.toLowerCase());
-    const open = list.some(c => c.includes("all") || c.includes("any"));
-    const ok = open || matchesNationality(profile.country, s.eligible_countries!);
-    reqs.push({
-      label: open ? t("Open to all nationalities", "Открыто всем странам") : t("Nationality eligibility", "Гражданство"),
-      status: ok ? "met" : "miss",
-      detail: open ? "" : (ok ? t(`${profile.country} listed`, `${profile.country} в списке`) : t(`${profile.country} not in eligible list`, `${profile.country} нет в списке`)),
-    });
-  } else if (s.citizenship_requirements && !isInclusive(s.citizenship_requirements)) {
-    reqs.push({ label: t("Citizenship rule", "Правило гражданства"), status: "info", detail: s.citizenship_requirements });
-  }
-  if (s.language_requirements) reqs.push({ label: t("Language", "Язык"), status: "info", detail: s.language_requirements });
-
-  const days = daysUntil(s.application_deadline);
-  const deadlineDate = dateOnly(s.application_deadline);
-
-  // Last verified
-  const verifiedDate = (s as Scholarship & { last_verified_date?: string }).last_verified_date;
-  const verifiedDays = verifiedDate ? Math.floor((Date.now() - new Date(verifiedDate).getTime()) / 86400000) : null;
-  const isStale = verifiedDays !== null && verifiedDays > 60;
+  const country = s.host_country ? shortCountry(s.host_country) : null;
+  const provider = cleanProvider(s.provider_name);
+  // Show award amount text ONLY when concrete (has a digit). The old
+  // "Full ride / Tuition only / Partial" coverage_type label was
+  // retired 2026-05-18 — per user direction, those generic chips
+  // looked thin and the catalogue is moving to a bulletin format
+  // where each card spotlights real funding text or nothing.
+  const award = (s.award_amount_text && /\d/.test(s.award_amount_text))
+    ? s.award_amount_text
+    : null;
+  const levels = (s.target_degree_level ?? []).map(humanizeDegreeLabel).filter(Boolean).join(" · ");
+  const newish = isNewScholarship(s.created_at);
+  const aggregator = isAggregatorUrl(s.official_url);
 
   return (
-    <Sheet open={open} onOpenChange={o => !o && onClose()}>
-      <SheetContent side="right" className="w-full sm:w-[min(99vw,1400px)] overflow-y-auto p-0 flex flex-col text-[14px] sm:text-base">
-        {/* ── POSTCARD HERO — country gradient + gothic-arch campus pattern
-              + country landmark layered as a poster the student "flips
-              over" when they open the sheet. Sells the dream of being
-              there before any data hits the page. When a program-
-              specific cover_image_url has been enriched in, we render
-              that as the hero instead and overlay a dark gradient so
-              the country chip stays legible. */}
-        {/* Hero band — was h-20 sm:h-44 (a 176px desktop banner that
-            felt heavy without a cover image filled in). Now h-14 sm:h-24
-            so the country accent reads as a slim accent strip rather
-            than a tall, mostly-empty box. The country chip moves
-            into the header subtitle below; no need to render it inside
-            the band. When cover_image_url is enriched in (round-26
-            cron output), the band switches back to a taller treatment
-            so the photo has room to breathe. */}
-        {(() => {
-          const dsAccent = accentForCountry(s.host_country);
-          const cover = s.cover_image_url || null;
-          const heroH = cover ? "h-32 sm:h-44" : "h-14 sm:h-24";
-          return (
-            <div className={`relative ${heroH} overflow-hidden bg-gradient-to-r ${dsAccent} shrink-0`}>
-              {cover ? (
-                <img
-                  src={cover}
-                  alt=""
-                  loading="lazy"
-                  className="absolute inset-0 w-full h-full object-cover"
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                />
-              ) : (
-                <CountryArt country={s.host_country} className="absolute right-4 inset-y-0 h-full opacity-40 pointer-events-none" />
-              )}
-              <span className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/10 to-transparent pointer-events-none" />
-            </div>
-          );
-        })()}
-        {/* ── HEADER (premium editorial — drops the gold-ambient + linear
-              navy wash overlays from the previous build; both stacked on
-              top of the canvas-soft bg and read as fussy at sheet scale.
-              User feedback: "right panel pull up aesthetic UI just still
-              not satisfied revamp improve do whatever you need to do
-              still ugly." Now: clean canvas-soft surface, precise
-              typography, generous spacing, single visual focal point. */}
-        <div className="bg-canvas-soft px-6 sm:px-7 pt-4 sm:pt-5 pb-4 sm:pb-5 shrink-0 border-b border-border">
-          <SheetHeader className="space-y-3">
-            {/* Competitive/selectivity chip retired from the detail
-                sheet header 2026-05-10 per user direction "lets get
-                rid of the competitive bar thing for now". The data
-                still backs scoring + bucketing in the grid; just not
-                surfaced here. The "New" pill stays since it's a
-                time-bound discovery signal, not competitiveness. */}
-            {isNewScholarship(s.created_at) && (
-              <div>
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-[560px] p-0 overflow-y-auto flex flex-col gap-0"
+      >
+        {/* Header */}
+        <div className="px-6 sm:px-7 pt-6 pb-5 border-b border-border bg-canvas-soft">
+          {country && (
+            <div className="flex items-center gap-2 mb-2">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark">
+                {country}
+              </p>
+              {newish && (
                 <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 ring-1 ring-emerald-500/30 px-1.5 py-0.5 rounded">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   {ru ? "Новое" : "New"}
                 </span>
-              </div>
-            )}
-
-            <SheetTitle className="text-foreground font-heading text-[26px] sm:text-[30px] leading-[1.1] tracking-[-0.02em] text-left">
+              )}
+            </div>
+          )}
+          <SheetHeader className="space-y-1">
+            <SheetTitle className="font-heading text-[22px] sm:text-[26px] leading-[1.15] tracking-[-0.02em] text-left text-foreground">
               {cleanScholarshipName(s.scholarship_name)}
             </SheetTitle>
-            <p className="text-muted-foreground text-sm text-left -mt-1">
-              {[cleanProvider(s.provider_name), s.host_country && shortCountry(s.host_country)].filter(Boolean).join(" · ")}
-            </p>
-
-            {/* Eligibility framing reworked in round 6 — earlier copy
-                ('You qualify on paper' / 'Near miss' / 'Doesn't fit')
-                over-claimed certainty from a thin profile. Show only
-                the FACTUAL gaps when there are clear ones; otherwise
-                say nothing. */}
-            {s.eligibility === "missing" && s.warnings.length > 0 && (
-              <p className="text-muted-foreground text-xs">
-                {t("Watch", "Обратите внимание")}: {s.warnings.slice(0, 1)[0]}
-              </p>
-            )}
-            {s.eligibility === "not_eligible" && s.warnings.length > 0 && (
-              <p className="text-destructive/85 text-xs">
-                {s.warnings.slice(0, 1)[0]}
-              </p>
+            {provider && (
+              <p className="text-sm text-muted-foreground text-left line-clamp-2">{provider}</p>
             )}
           </SheetHeader>
 
-          {/* Key facts — clean 3-up grid (was an inline · separated line
-              that crowded long values). Each cell stacks its label
-              uppercase-eyebrow / value-bold-large for editorial weight.
-              Total cell only renders when distinct from the Award
-              compact label (round-22 dedup logic preserved). */}
-          {(() => {
-            const compact = compactAward(s) ?? COVERAGE_LABEL[s.coverage_type] ?? "—";
-            const totalDistinct = (() => {
-              if (!s.estimated_total_value_usd) return null;
-              const total = fmtValue(s.estimated_total_value_usd);
-              if (compact.replace(/\s/g, "") === total.replace(/\s/g, "")) return null;
-              return total;
-            })();
-            return (
-              <div className={`mt-5 grid ${totalDistinct ? "grid-cols-3" : "grid-cols-2"} gap-px rounded-xl bg-border/60 ring-1 ring-border/60 overflow-hidden`}>
-                <div className="bg-canvas-soft px-3.5 py-2.5">
-                  <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/85 mb-0.5">
-                    {t("Award", "Финансирование")}
-                  </p>
-                  <p className="font-heading font-bold text-foreground text-[15px] tabular-nums leading-tight truncate">
-                    {compact}
-                  </p>
-                </div>
-                <div className="bg-canvas-soft px-3.5 py-2.5">
-                  <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/85 mb-0.5">
-                    {t("Deadline", "Дедлайн")}
-                  </p>
-                  <p className={`font-heading font-bold text-[15px] tabular-nums leading-tight truncate ${dl.cls}`}>
-                    {dl.text}
-                  </p>
-                  {deadlineDate && (
-                    <p className="text-[10px] text-muted-foreground/70 leading-tight mt-0.5 truncate">{deadlineDate}</p>
-                  )}
-                </div>
-                {totalDistinct && (
-                  <div className="bg-canvas-soft px-3.5 py-2.5">
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/85 mb-0.5">
-                      {t("Total", "Итого")}
-                    </p>
-                    <p className="font-heading font-bold text-gold-dark text-[15px] tabular-nums leading-tight truncate">
-                      ≈ {totalDistinct}
-                    </p>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-          {s.award_amount_text && s.award_amount_text.length > 16 && (
-            <p className="text-[12px] text-muted-foreground/85 leading-snug mt-2">{s.award_amount_text}</p>
-          )}
-
-          {/* Header CTAs — Apply (gold), Bookmark, and an escape hatch
-              to the dedicated /scholarships/:id full-page view for
-              users who want a more elaborate read instead of the
-              side-sheet experience. The Apply click is tracked via
-              the scholarship-tracking hook so we can chart click-
-              through-to-apply per scholarship. */}
-          {/* Apply CTA. Three states:
-               1. Official URL present + not from a known aggregator →
-                  gold CTA, takes the user to the real provider page.
-               2. URL present but from an aggregator domain (round 32) →
-                  show "Verify with provider" so we don't pretend the
-                  aggregator is the official source. Same destination,
-                  honest framing.
-               3. URL missing → "No official link" disabled. */}
-          <div className="relative flex items-center gap-2 mt-4">
-            {(() => {
-              const aggregator = isAggregatorUrl(s.official_url);
-              if (!s.official_url) {
-                return (
-                  <Button variant="gold" size="sm" disabled className="flex-1 h-9">
-                    <span>{t("No official link", "Нет ссылки")}</span>
-                  </Button>
-                );
-              }
-              if (aggregator) {
-                return (
-                  <Button variant="outline" size="sm" asChild className="flex-1 h-9 border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/5">
-                    <a
-                      href={s.official_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => trackEvent(s.scholarship_id, "clicked", "discover-detail-apply-aggregator")}
-                    >
-                      {t("Open aggregator listing", "Открыть агрегатор")} <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
-                    </a>
-                  </Button>
-                );
-              }
-              return (
-                <Button variant="gold" size="sm" asChild className="flex-1 h-9">
-                  <a
-                    href={s.official_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => trackEvent(s.scholarship_id, "clicked", "discover-detail-apply")}
-                  >
-                    {t("Apply on official site", "Подать на официальном сайте")} <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
-                  </a>
-                </Button>
-              );
-            })()}
-            <Button variant="outline" size="sm" className="h-9" onClick={onBookmark}>
-              {isBookmarked ? <BookmarkCheck className="h-4 w-4 text-gold-dark" /> : <Bookmark className="h-4 w-4" />}
+          {/* Actions */}
+          <div className="flex items-center gap-2 mt-4">
+            {s.official_url ? (
+              <Button variant="gold" size="sm" asChild className="flex-1 gap-1.5">
+                <a href={s.official_url} target="_blank" rel="noopener noreferrer">
+                  {aggregator
+                    ? t("Verify with provider", "Проверить у провайдера")
+                    : t("Apply on official site", "Подать заявку")}
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </Button>
+            ) : (
+              <Button variant="gold" size="sm" disabled className="flex-1">
+                {t("No official link", "Нет ссылки")}
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={onBookmark} className="gap-1.5">
+              {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
+              {isBookmarked ? t("Saved", "Сохранено") : t("Save", "Сохранить")}
             </Button>
           </div>
-          {isAggregatorUrl(s.official_url) && (
-            <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-2 leading-snug flex items-start gap-1.5">
-              <ShieldAlert className="h-3 w-3 mt-0.5 shrink-0" />
-              {t(
-                "This link points to a third-party aggregator, not the official provider. Verify the program directly on the provider's site before applying.",
-                "Эта ссылка ведёт на сторонний агрегатор, а не на официальный сайт программы. Подтвердите детали на сайте провайдера перед подачей.",
-              )}
-            </p>
-          )}
-          {/* The "Personalized strategy" middle-of-header CTA was
-              removed — the Strategy → button now lives in the tab
-              strip below as the natural place to look for it (where
-              the old Strategy tab used to be). One CTA per affordance,
-              no duplication. */}
-
-          {/* URL health warning — surfaces the URL freshness checker's
-              verdict. 3+ consecutive fails = link probably moved.
-              Nothing renders for healthy or never-checked URLs. */}
-          {s.official_url && (s.url_consecutive_fails ?? 0) >= 3 && (
-            <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-500 leading-relaxed flex items-start gap-2">
-              <ShieldAlert className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-              <span>
-                {t(
-                  `Our weekly link-checker has failed to reach this URL ${s.url_consecutive_fails}+ times. The provider may have moved the page — verify before applying.`,
-                  `Наш еженедельный чекер не смог открыть эту ссылку ${s.url_consecutive_fails}+ раз. Возможно, провайдер перенёс страницу — проверьте перед подачей.`,
-                )}
-              </span>
-            </div>
-          )}
-          {s.url_check_status === "redirect" && s.url_resolved_to && s.url_resolved_to !== s.official_url && (
-            <div className="mt-3 rounded-lg border border-border bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground leading-relaxed">
-              {t("Note: this URL now redirects to", "Примечание: ссылка теперь ведёт на")} <code className="font-mono text-foreground/80">{s.url_resolved_to.slice(0, 80)}</code>
-            </div>
-          )}
-
         </div>
 
-        {/* ── TABS ──
-            The right-side panel is intentionally CONCISE — it's the
-            "is this for me?" surface. The heavier personalized
-            analysis (match breakdown, 30-day plan, odds, counsellor-
-            grade strategy) lives in the enlarged centered detail
-            modal opened from the "View full strategy" CTA above.
-            Without that split, the right panel stretched vertically
-            with cut-off text on every long deep-dive section. */}
-        {/* Tabs reduced to TWO (was three: Overview / Requirements /
-            Strategy). The Strategy tab and the "Personalized strategy"
-            CTA both opened the same deep-dive content — the user called
-            out the overlap ("the personalized strategy to open the more
-            detailed view and the strategy tab overlap in idea"). The
-            side sheet is now scan-mode (Overview = facts, Requirements
-            = checklist) and the focused dialog is the single home for
-            strategy depth. Cleaner mental model + the dialog has the
-            screen real estate the long-form strategy fields need. */}
-        <Tabs defaultValue="overview" className="flex-1 flex flex-col">
-          <div className="px-7 pt-5 border-b border-border bg-background sticky top-0 z-10 overflow-x-auto scrollbar-hide">
-            <TabsList className="bg-transparent p-0 h-auto gap-5 sm:gap-7 w-max sm:w-full justify-start rounded-none -mb-px">
-              {([
-                { v: "overview",     label: t("Overview",     "Обзор") },
-                { v: "requirements", label: t("Requirements", "Требования") },
-              ] as const).map((tab) => (
-                <TabsTrigger
-                  key={tab.v}
-                  value={tab.v}
-                  className="data-[state=active]:text-foreground data-[state=active]:border-foreground data-[state=active]:shadow-none border-b-2 border-transparent text-muted-foreground hover:text-foreground rounded-none px-0 pb-3 pt-0 text-sm font-medium bg-transparent"
-                >
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-              {/* Strategy — Pro/membership gating dropped 2026-05-10
-                  per user direction "we are dropping pro, it's
-                  members only". Authenticated users always get the
-                  full strategy panel; the paywall flow stays in the
-                  codebase but isn't reachable from this tab. */}
-              <button
-                type="button"
-                onClick={() => onExpand()}
-                className="inline-flex items-center gap-1.5 border-b-2 border-transparent text-muted-foreground hover:text-foreground rounded-none px-0 pb-3 pt-0 text-sm font-medium bg-transparent transition-colors"
-              >
-                {t("Strategy", "Стратегия")}
-              </button>
-            </TabsList>
-          </div>
-
-          {/* OVERVIEW */}
-          <TabsContent value="overview" className="px-5 sm:px-7 py-3 sm:py-4 space-y-3 sm:space-y-4 m-0 focus-visible:outline-none">
-            {/* Overview = ABOUT THE SCHOLARSHIP. Eligibility, citizenship,
-                language, profile-vs-requirements signals — all of that
-                lives in Requirements. The generic blurb fallback was
-                producing surface-level filler ("Funds need-based at the
-                master's level") so it's gone too — only render an
-                editorial line when the LLM actually wrote one. */}
-            {s.why_this_fits && s.why_this_fits.trim().length > 30 && (
-              <p className="text-[15px] leading-relaxed text-foreground/85">
-                {s.why_this_fits.replace(/\.+$/, "")}.
+        {/* Key facts */}
+        <div className="px-6 sm:px-7 py-5 space-y-4 text-sm">
+          {award && (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
+                {t("Award", "Финансирование")}
               </p>
-            )}
-
-            {s.ideal_candidate_profile && s.ideal_candidate_profile.trim().length > 30 && (
-              <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-3.5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">
-                  {t("Ideal candidate", "Идеальный кандидат")}
-                </p>
-                <p className="text-sm text-foreground/85 leading-relaxed">
-                  {s.ideal_candidate_profile.length > 500
-                    ? s.ideal_candidate_profile.slice(0, 480).trimEnd() + "…"
-                    : s.ideal_candidate_profile}
-                </p>
-              </div>
-            )}
-
-            {/* Combined tag rail — fields the program funds, best-for tags,
-                and duration as a labelled chip. No section headers; the
-                chips read on their own. Replaces three separate stacked
-                blocks (Funds / Best for / Duration in a white square),
-                each of which advertised a single fact behind a verbose
-                uppercase label. */}
-            {(() => {
-              const fieldChips: { kind: "field" | "tag" | "duration"; label: string }[] = [];
-
-              (s.target_fields ?? []).forEach(raw => {
-                if (!raw) return;
-                const splits = raw.split(/\s*[,/;]\s*/).filter(Boolean);
-                const items = splits.length > 1 ? splits : [raw];
-                items.forEach(item => {
-                  item = item.trim();
-                  if (!item || FIELD_JUNK.test(item) || item.length > 42) return;
-                  const titled = titleCaseField(item.replace(/[-_]+/g, " ").replace(/\s+/g, " "));
-                  if (!fieldChips.some(c => c.kind === "field" && c.label.toLowerCase() === titled.toLowerCase())) {
-                    fieldChips.push({ kind: "field", label: titled });
-                  }
-                });
-              });
-
-              (s.best_for_tags ?? []).forEach(tg => {
-                const labeled = humanize(tg);
-                if (!fieldChips.some(c => c.label.toLowerCase() === labeled.toLowerCase())) {
-                  fieldChips.push({ kind: "tag", label: labeled });
-                }
-              });
-
-              if (s.duration_text && s.duration_text.trim().length > 0) {
-                fieldChips.push({ kind: "duration", label: s.duration_text.trim() });
-              }
-
-              if (fieldChips.length === 0) return null;
-              // 2026-05-10: pill colours unified to a single neutral
-              // cream tone per user direction "im also still seeing
-              // tags in different colors... fix it". Pre-fix tag /
-              // duration / field used three different bg/border
-              // shades, plus partner universities used a primary tint
-              // — visually noisy. Now all chips read as one uniform
-              // family.
-              return (
-                <div className="flex flex-wrap gap-1.5">
-                  {fieldChips.slice(0, 14).map((c, i) => (
-                    <span
-                      key={`${c.kind}-${i}-${c.label}`}
-                      className="text-xs text-foreground/80 bg-muted/50 border border-border/70 px-2.5 py-1 rounded-md font-medium"
-                    >
-                      {c.label}
-                    </span>
-                  ))}
-                  {fieldChips.length > 14 && (
-                    <span className="text-xs text-muted-foreground self-center">+{fieldChips.length - 14}</span>
-                  )}
-                </div>
-              );
-            })()}
-
-            {Array.isArray(s.partner_universities) && s.partner_universities.length > 0 && (
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">
-                  {t("Partner universities", "Партнёрские университеты")}
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {s.partner_universities.slice(0, 12).map((u, i) => (
-                    <span key={i} className="text-xs text-foreground/80 bg-muted/50 border border-border/70 px-2.5 py-1 rounded-md font-medium">{u}</span>
-                  ))}
-                  {s.partner_universities.length > 12 && (
-                    <span className="text-xs text-muted-foreground self-center">+{s.partner_universities.length - 12} {t("more", "ещё")}</span>
-                  )}
-                </div>
-              </div>
-            )}
-          </TabsContent>
-
-          {/* REQUIREMENTS — eligibility, citizenship, profile-vs-thresholds,
-              application demands. All things "what does this need from
-              me" live here so Overview stays a clean program description. */}
-          <TabsContent value="requirements" className="px-5 sm:px-7 py-3 sm:py-4 space-y-4 m-0 focus-visible:outline-none">
-            {/* Eligibility narrative + language as a single flowing paragraph.
-                Headers stripped — at this point in the panel, the user is
-                inside the "Requirements" tab, so labelling each paragraph
-                "Eligibility (from program)" / "Language" was redundant
-                signage. */}
-            {(s.eligibility_requirements && s.eligibility_requirements.trim().length > 30) || s.language_requirements ? (
-              <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-3.5 space-y-2">
-                {s.eligibility_requirements && s.eligibility_requirements.trim().length > 30 && (
-                  <p className="text-sm text-foreground/85 leading-relaxed">
-                    {s.eligibility_requirements.length > 600
-                      ? s.eligibility_requirements.slice(0, 580).trimEnd() + "…"
-                      : s.eligibility_requirements}
-                  </p>
-                )}
-                {s.language_requirements && (
-                  <p className="text-sm text-foreground/75 leading-relaxed">
-                    <span className="text-muted-foreground">{t("Language", "Язык")}: </span>
-                    {s.language_requirements}
-                  </p>
-                )}
-              </div>
-            ) : null}
-
-            {/* Canonical structured requirements — only renders when
-                the canonical-extract pipeline has populated this row.
-                Reads as a clean checklist of citizenship / level /
-                field / GPA / language / age constraints, distinct
-                from the freeform eligibility prose above. */}
-            {(() => {
-              const cr = (s as { canonical_requirements?: {
-                citizenship?: string[]; levels?: string[]; fields?: string[];
-                min_gpa?: number | null; min_ielts?: number | null;
-                min_toefl?: number | null; min_sat?: number | null;
-                age_max?: number | null; other?: string[];
-              } | null }).canonical_requirements;
-              if (!cr || typeof cr !== "object") return null;
-              const rows: { label: string; value: string }[] = [];
-              if (Array.isArray(cr.citizenship) && cr.citizenship.length > 0) {
-                rows.push({ label: t("Citizenship", "Гражданство"), value: cr.citizenship.slice(0, 6).join(", ") + (cr.citizenship.length > 6 ? ` +${cr.citizenship.length - 6}` : "") });
-              }
-              if (Array.isArray(cr.levels) && cr.levels.length > 0) {
-                rows.push({ label: t("Levels", "Уровни"), value: cr.levels.join(", ") });
-              }
-              if (Array.isArray(cr.fields) && cr.fields.length > 0 && cr.fields.length <= 8) {
-                rows.push({ label: t("Fields", "Направления"), value: cr.fields.join(", ") });
-              }
-              if (cr.min_gpa != null && cr.min_gpa > 0) {
-                rows.push({ label: t("Min GPA", "Мин. GPA"), value: String(cr.min_gpa) });
-              }
-              if (cr.min_ielts != null && cr.min_ielts > 0) {
-                rows.push({ label: "IELTS", value: String(cr.min_ielts) });
-              }
-              if (cr.min_toefl != null && cr.min_toefl > 0) {
-                rows.push({ label: "TOEFL", value: String(cr.min_toefl) });
-              }
-              if (cr.min_sat != null && cr.min_sat > 0) {
-                rows.push({ label: "SAT", value: String(cr.min_sat) });
-              }
-              if (cr.age_max != null && cr.age_max > 0) {
-                rows.push({ label: t("Max age", "Макс. возраст"), value: String(cr.age_max) });
-              }
-              if (rows.length === 0 && (!cr.other || cr.other.length === 0)) return null;
-              return (
-                <div className="rounded-2xl border border-gold/25 bg-gold/[0.04] px-4 py-3.5 space-y-2">
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-gold-dark font-bold">
-                    {t("Verified requirements", "Подтверждённые требования")}
-                  </p>
-                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
-                    {rows.map((r) => (
-                      <div key={r.label} className="flex items-baseline gap-2 text-sm">
-                        <dt className="text-muted-foreground shrink-0 text-[11px] uppercase tracking-wide">{r.label}</dt>
-                        <dd className="text-foreground/85 font-medium truncate">{r.value}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                  {Array.isArray(cr.other) && cr.other.length > 0 && (
-                    <ul className="pt-1 space-y-1 text-sm text-foreground/80">
-                      {cr.other.slice(0, 4).map((o, i) => (
-                        <li key={i} className="flex items-start gap-2 leading-relaxed">
-                          <span className="text-gold-dark mt-1.5 shrink-0">·</span>
-                          <span>{o}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              );
-            })()}
-
-            {/* Application-demand chips + redundant warnings block
-                retired 2026-05-11 per user feedback ("random orange
-                bubbles … list of ielts tofl … then AGAIN some orange
-                ass 'not open to X nationals'"). The reqs[] checklist
-                below already encodes both the threshold facts (IELTS,
-                TOEFL, GPA, etc.) AND the eligibility status (met /
-                miss) per row, so the orange chips + warnings stack
-                was redundant signaling layered on top of the same
-                data. Single source of truth = the ReqRow list. */}
-
-            {reqs.length > 0 ? (
-              <div className="bg-muted/30 rounded-2xl px-4 py-1">
-                {reqs.map((r, i) => <ReqRow key={i} {...r} />)}
-              </div>
-            ) : (
-              !s.eligibility_requirements && (
-                <p className="text-sm text-muted-foreground">{t("No specific requirements recorded for this scholarship.", "Конкретные требования по этой стипендии не записаны.")}</p>
-              )
-            )}
-
-            {s.required_documents && s.required_documents.length > 0 && (
-              <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-3.5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">{t("Documents", "Документы")}</p>
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
-                  {s.required_documents.map((d, i) => (
-                    <div key={i} className="flex items-center gap-1.5 text-xs text-foreground/80">
-                      <div className="h-1.5 w-1.5 rounded-full bg-gold shrink-0" />{d}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Score-gap Prep CTA removed — Prep spun off as separate product */}
-
-            {/* Application logistics — folded in from the now-removed
-                Apply tab. These are pre-application-decision facts
-                ("when, where, how, fee, separate?, partners?") so they
-                live alongside the eligibility requirements rather than
-                getting their own tab that overlapped the gold "Apply
-                on official site" button in the header. */}
-            {(days !== null && days > 0 && days <= 90) && (
-              <div className={`rounded-2xl p-4 border ${days <= 30 ? "bg-destructive/5 border-destructive/20" : "bg-warning/5 border-warning/20"}`}>
-                <div className="flex items-center gap-2.5">
-                  <Flame className={`h-5 w-5 ${days <= 30 ? "text-destructive" : "text-warning"}`} />
-                  <div>
-                    <p className={`font-semibold text-sm ${days <= 30 ? "text-destructive" : "text-warning"}`}>{days} {t("days until deadline", "дней до дедлайна")}</p>
-                    <p className="text-xs text-muted-foreground">{deadlineDate}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-            {(() => {
-              // Deadline row dropped here 2026-05-11 — was duplicating
-              // the Deadline cell in the key-facts grid at the top of
-              // the sheet ("Deadline / Annual / Platform / UCA / ..."
-              // reading as repetition). Logistics box keeps only the
-              // facts NOT shown elsewhere: Platform + Application fee.
-              const rows = [
-                [t("Platform", "Платформа"), s.application_platform],
-                [t("Application fee", "Стоимость подачи"), s.application_fee_text],
-              ].filter(([, v]) => v) as [string, string][];
-              if (rows.length === 0) return null;
-              return (
-                <div className="bg-muted/40 rounded-2xl px-4 py-1">
-                  {rows.map(([label, val], i) => (
-                    <div key={i} className="flex items-start justify-between gap-3 py-2.5 border-b border-border/50 last:border-0">
-                      <span className="text-xs text-muted-foreground">{label}</span>
-                      <span className="text-sm font-medium text-foreground text-right">{val}</span>
-                    </div>
-                  ))}
-                </div>
-              );
-            })()}
-            {s.separate_application_required && (
-              <div className="bg-warning/5 border border-warning/20 rounded-2xl p-4 flex items-start gap-2.5">
-                <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-warning">{t("Separate application required", "Нужна отдельная заявка")}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {t(
-                      "You're not auto-considered when admitted — you must apply separately.",
-                      "При поступлении вас не рассмотрят автоматически — нужно подать отдельную заявку.",
-                    )}
-                  </p>
-                </div>
-              </div>
-            )}
-            {s.partner_universities && s.partner_universities.length > 0 && (
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2 flex items-center gap-2">
-                  <Users className="h-3 w-3" /> {t("Partner universities", "Университеты-партнёры")} · {s.partner_universities.length}
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {s.partner_universities.slice(0, 18).map((u, i) => (
-                    <span key={i} className="text-xs bg-muted/60 border border-border px-2.5 py-1 rounded-md text-foreground/80">{u}</span>
-                  ))}
-                  {s.partner_universities.length > 18 && (
-                    <span className="text-xs text-muted-foreground self-center">+{s.partner_universities.length - 18} {t("more", "ещё")}</span>
-                  )}
-                </div>
-              </div>
-            )}
-          </TabsContent>
-
-          {/* STRATEGY tab content removed — depth lives in
-              ExpandedScholarshipDialog. The history is in commit
-              c6a074f if a future build wants to re-extract the
-              previous Ideal Candidate / How to Win / Strategy Notes
-              markup. Marker block kept so jumping by anchor in this
-              file lines up with the block-comment landmarks. */}
-
-          {/* APPLY */}
-        </Tabs>
-
-        {/* ── SIMILAR SCHOLARSHIPS — Crunchbase/IMDB pattern: keep users moving ── */}
-        {similar.length > 0 && (
-          <div className="px-7 py-6 border-t border-border bg-canvas-soft/50">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-3">{t("If you like this, also look at", "Если нравится это, посмотрите ещё")}</p>
-            <div className="space-y-1.5">
-              {similar.map(sim => {
-                const simAccent = accentForCountry(sim.host_country);
-                const simIsFullRide = sim.coverage_type === "full_ride";
-                return (
-                  <button
-                    key={sim.scholarship_id}
-                    onClick={() => onSwitchTo(sim)}
-                    className="w-full flex items-center gap-3 p-2.5 rounded-lg bg-card border border-border/60 hover:border-gold/30 hover:shadow-sm transition-all text-left group"
-                  >
-                    {/* Country gradient + landmark — same visual language
-                        as the main cards/rows so similar items don't read
-                        as a different product. Replaces the meaningless
-                        2-letter initials slug ("UO", "NS", "UG"). */}
-                    <div className={`relative h-10 w-10 rounded-lg overflow-hidden bg-gradient-to-br ${simAccent} shrink-0 ${simIsFullRide ? "ring-2 ring-gold/40" : ""}`}>
-                      <CountryArt country={sim.host_country} className="absolute inset-0 h-full w-full opacity-50 text-white p-1" />
-                      {simIsFullRide && (
-                        <span className="absolute -top-1 -right-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-gold border border-card">
-                          <Award className="h-2.5 w-2.5 text-primary" />
-                        </span>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-foreground truncate group-hover:text-gold-dark transition-colors">{cleanScholarshipName(sim.scholarship_name)}</p>
-                      <p className="text-[11px] text-muted-foreground truncate">
-                        {[cleanProvider(sim.provider_name), sim.host_country && shortCountry(sim.host_country)].filter(Boolean).join(" · ")}
-                      </p>
-                    </div>
-                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 group-hover:translate-x-0.5 group-hover:text-gold-dark transition-all" />
-                  </button>
-                );
-              })}
+              <p className="text-foreground leading-snug">{award}</p>
             </div>
+          )}
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
+              {t("Deadline", "Дедлайн")}
+            </p>
+            <p className={`leading-snug ${dl.cls}`}>{dl.text}</p>
           </div>
-        )}
-
-        {/* ── FOOTER (data trust + provenance) ────────────────────────
-            Two lines of trust signal:
-            1. last_verified_date / "may be stale" — when we last looked at
-               the official source.
-            2. data_source pill — where the row came from. "Curated" =
-               hand-checked by us. "External research" = ingested from a
-               third-party report (Manus AI), not yet hand-verified. */}
-        {(() => {
-          return (
-            <div className="px-7 py-2.5 border-t border-border/60 bg-canvas-soft/50 flex items-center justify-between gap-3 shrink-0">
-              <span className="text-[10px] text-muted-foreground/70">
-                {t("Verify on the official site before applying.", "Проверьте на официальном сайте перед подачей.")}
-              </span>
-              <a
-                href={`mailto:hello@topuni.com?subject=${encodeURIComponent("Inaccurate scholarship data: " + s.scholarship_name)}&body=${encodeURIComponent("ID: " + s.scholarship_id + "\n\nWhat's wrong:\n")}`}
-                className="text-[10px] text-muted-foreground/70 hover:text-foreground underline underline-offset-4 shrink-0"
-              >
-                {t("Report inaccuracy", "Сообщить о неточности")}
-              </a>
+          {levels && (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
+                {t("Levels", "Уровни")}
+              </p>
+              <p className="text-foreground leading-snug">{levels}</p>
             </div>
-          );
-        })()}
+          )}
+          {s.citizenship_requirements && (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
+                {t("Eligibility", "Кто может подать")}
+              </p>
+              <p className="text-foreground/85 leading-relaxed">{s.citizenship_requirements}</p>
+            </div>
+          )}
+          {s.why_this_fits && (
+            <div className="pt-2 border-t border-border/60">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1.5">
+                {t("Why this fits", "Почему подходит")}
+              </p>
+              <p className="text-foreground/85 leading-relaxed">{s.why_this_fits}</p>
+            </div>
+          )}
+          {s.how_to_win && (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1.5">
+                {t("How to win", "Как выиграть")}
+              </p>
+              <p className="text-foreground/85 leading-relaxed">{s.how_to_win}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Deep dive link */}
+        <div className="mt-auto px-6 sm:px-7 py-4 border-t border-border/60 print:hidden">
+          <Button variant="ghost" size="sm" onClick={onExpand} className="w-full justify-between text-muted-foreground hover:text-foreground">
+            {t("Open full deep dive", "Полный разбор")}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </SheetContent>
     </Sheet>
   );
