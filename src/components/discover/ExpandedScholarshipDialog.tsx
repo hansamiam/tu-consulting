@@ -43,7 +43,7 @@ interface ScholarshipLite {
   target_fields: string[] | null;
   citizenship_requirements: string | null;
   official_url: string | null;
-  duration_text: string | null;
+  duration_text?: string | null;
   /* Optional program-specific cover image (renders as hero band when
    * present; country gradient + landmark silhouette is the fallback). */
   cover_image_url?: string | null;

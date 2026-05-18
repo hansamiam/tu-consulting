@@ -62,9 +62,7 @@ import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverPro
 import { track } from "@/lib/analytics";
 import { CuratedCollections } from "@/components/discover/CuratedCollections";
 import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
-// ExpandedScholarshipDialog import retired 2026-05-18 — the full-detail
-// dialog was flagged as not ship-ready; the right-side DetailSheet
-// is now the only detail surface.
+import { ExpandedScholarshipDialog } from "@/components/discover/ExpandedScholarshipDialog";
 // MatchScoreBreakdown import retired round 33 — the per-row hover
 // popover that wrapped the MatchGauge was removed; rows convey fit
 // via section bucketing + sort order now. Re-import if a future
@@ -2403,154 +2401,6 @@ const ReqRow = ({ label, status, detail }: {
   );
 };
 
-/* ─── Detail Sheet (tabbed, visual) ──────────────────────────────────── */
-const DetailSheet = ({ s, open, onClose, isBookmarked, onBookmark, profile, status, onStatusChange, lang = "en" }: {
-  s: Scored | null; open: boolean; onClose: () => void;
-  isBookmarked: boolean; onBookmark: () => void;
-  profile: Profile;
-  status: AppStatus | undefined;
-  onStatusChange: (s: AppStatus | null) => void;
-  note: string;
-  onNoteChange: (note: string) => void;
-  similar: Scored[];
-  onSwitchTo: (s: Scored) => void;
-  isMember: boolean;
-  onUnlock: () => void;
-  lang?: Lang;
-}) => {
-  // Hooks must run unconditionally (Rules of Hooks). The track call is
-  // safe with undefined id because useTrackView short-circuits.
-  useTrackView(s?.scholarship_id, "detail-sheet");
-  if (!s) return null;
-
-  const ru = lang === "ru";
-  const t = (en: string, ruText: string) => (ru ? ruText : en);
-  const dl = deadlineDisplay(s.application_deadline, lang, s.deadline_type);
-  const country = s.host_country ? shortCountry(s.host_country) : null;
-  const provider = cleanProvider(s.provider_name);
-  // Show award amount text ONLY when concrete (has a digit). The old
-  // "Full ride / Tuition only / Partial" coverage_type label was
-  // retired 2026-05-18 — per user direction, those generic chips
-  // looked thin and the catalogue is moving to a bulletin format
-  // where each card spotlights real funding text or nothing.
-  const award = (s.award_amount_text && /\d/.test(s.award_amount_text))
-    ? s.award_amount_text
-    : null;
-  const levels = (s.target_degree_level ?? []).map(humanizeDegree).filter(Boolean).join(" · ");
-  const newish = isNewScholarship(s.created_at);
-  const aggregator = isAggregatorUrl(s.official_url);
-
-  return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-[560px] p-0 overflow-y-auto flex flex-col gap-0"
-      >
-        {/* Header */}
-        <div className="px-6 sm:px-7 pt-6 pb-5 border-b border-border bg-canvas-soft">
-          {country && (
-            <div className="flex items-center gap-2 mb-2">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark">
-                {country}
-              </p>
-              {newish && (
-                <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 ring-1 ring-emerald-500/30 px-1.5 py-0.5 rounded">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  {ru ? "Новое" : "New"}
-                </span>
-              )}
-            </div>
-          )}
-          <SheetHeader className="space-y-1">
-            <SheetTitle className="font-heading text-[22px] sm:text-[26px] leading-[1.15] tracking-[-0.02em] text-left text-foreground">
-              {cleanScholarshipName(s.scholarship_name)}
-            </SheetTitle>
-            {provider && (
-              <p className="text-sm text-muted-foreground text-left line-clamp-2">{provider}</p>
-            )}
-          </SheetHeader>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2 mt-4">
-            {s.official_url ? (
-              <Button variant="gold" size="sm" asChild className="flex-1 gap-1.5">
-                <a href={s.official_url} target="_blank" rel="noopener noreferrer">
-                  {aggregator
-                    ? t("Verify with provider", "Проверить у провайдера")
-                    : t("Apply on official site", "Подать заявку")}
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </a>
-              </Button>
-            ) : (
-              <Button variant="gold" size="sm" disabled className="flex-1">
-                {t("No official link", "Нет ссылки")}
-              </Button>
-            )}
-            <Button variant="outline" size="sm" onClick={onBookmark} className="gap-1.5">
-              {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
-              {isBookmarked ? t("Saved", "Сохранено") : t("Save", "Сохранить")}
-            </Button>
-          </div>
-        </div>
-
-        {/* Key facts */}
-        <div className="px-6 sm:px-7 py-5 space-y-4 text-sm">
-          {award && (
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
-                {t("Award", "Финансирование")}
-              </p>
-              <p className="text-foreground leading-snug">{award}</p>
-            </div>
-          )}
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
-              {t("Deadline", "Дедлайн")}
-            </p>
-            <p className={`leading-snug ${dl.cls}`}>{dl.text}</p>
-          </div>
-          {levels && (
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
-                {t("Levels", "Уровни")}
-              </p>
-              <p className="text-foreground leading-snug">{levels}</p>
-            </div>
-          )}
-          {s.citizenship_requirements && (
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1">
-                {t("Eligibility", "Кто может подать")}
-              </p>
-              <p className="text-foreground/85 leading-relaxed">{s.citizenship_requirements}</p>
-            </div>
-          )}
-          {s.why_this_fits && (
-            <div className="pt-2 border-t border-border/60">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1.5">
-                {t("Why this fits", "Почему подходит")}
-              </p>
-              <p className="text-foreground/85 leading-relaxed">{s.why_this_fits}</p>
-            </div>
-          )}
-          {s.how_to_win && (
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1.5">
-                {t("How to win", "Как выиграть")}
-              </p>
-              <p className="text-foreground/85 leading-relaxed">{s.how_to_win}</p>
-            </div>
-          )}
-        </div>
-
-        {/* 2026-05-18: removed the "Open full deep dive" affordance —
-            it routed to ExpandedScholarshipDialog which the user
-            explicitly flagged as not ship-ready. The quick panel above
-            IS the detail view for now. */}
-      </SheetContent>
-    </Sheet>
-  );
-};
 
 /* ─── Inline animated stat ───────────────────────────────────────────── */
 /* ─── Section header ─────────────────────────────────────────────────── */
@@ -5182,36 +5032,22 @@ const Discover = ({ language = "en" }: Props) => {
           </SheetContent>
         </Sheet>
 
-        {/* 2026-05-18 round 2: restored the original right-side
-            DetailSheet (the quick-draw panel the user explicitly
-            asked for back). Mounted next to ExpandedScholarshipDialog
-            so the existing "open full deep dive" CTA inside DetailSheet
-            can still escalate to the wider deep-dive surface. */}
-
-        <DetailSheet
+        {/* 2026-05-18 final: restored ExpandedScholarshipDialog as the
+            single right-side detail surface (the "quick-draw panel
+            with the country gradient and country icon" the user
+            wanted back). The minimal DetailSheet I built earlier
+            today missed the visual chrome — gradient header, country
+            art silhouette, tabbed deep-dive — that makes this surface
+            feel like a real product. */}
+        <ExpandedScholarshipDialog
           s={openDetail}
-          open={!!openDetail}
-          onClose={() => setOpenDetail(null)}
-          isBookmarked={openDetail ? shortlist.has(openDetail.scholarship_id) : false}
-          onBookmark={() => openDetail && toggleBookmark(openDetail.scholarship_id)}
           profile={profile}
-          // statusMap + notesMap are `Record<string, T>` (plain objects),
-          // not Maps — must use bracket access. Calling `.get()` on them
-          // is what caused the "te.get is not a function" runtime crash
-          // users were hitting when opening any scholarship panel.
-          status={openDetail ? statusMap[openDetail.scholarship_id] : undefined}
-          onStatusChange={(st) => openDetail && setStatus(openDetail.scholarship_id, st)}
-          note={openDetail ? (notesMap[openDetail.scholarship_id] ?? "") : ""}
-          onNoteChange={(n) => openDetail && setNote(openDetail.scholarship_id, n)}
-          similar={similarToOpen}
-          onSwitchTo={(s) => setOpenDetail(s)}
-          isMember={isMember}
-          onUnlock={() => navigate(language === "ru" ? "/pricing/ru" : "/pricing")}
+          onClose={() => setOpenDetail(null)}
+          onApply={() => openDetail?.official_url && window.open(openDetail.official_url, "_blank", "noopener,noreferrer")}
+          onSave={() => openDetail && toggleBookmark(openDetail.scholarship_id)}
+          isBookmarked={openDetail ? shortlist.has(openDetail.scholarship_id) : false}
           lang={language}
         />
-        {/* 2026-05-18: ExpandedScholarshipDialog render removed. The
-            old full-detail dialog wasn't ship-ready and the new
-            DetailSheet above is the single source of detail view. */}
       </div>
     </div>
   );
