@@ -14,7 +14,12 @@
 
 /* ─── Field-of-study helpers ─────────────────────────────────────── */
 
-export const FIELD_JUNK = /^(any|all|open|various|n\/a|none|—|-|other|misc|miscellaneous)$/i;
+/* FIELD_JUNK — values that are "no field info" rather than a real field.
+ * Catches both bare junk ("any", "—") and the "all fields / all subjects /
+ * open to all" cohort that conveys nothing to the user. When this matches,
+ * the card omits the field chip entirely rather than showing "All Fields"
+ * as the most prominent meta after the deadline. */
+export const FIELD_JUNK = /^(any|all|open|various|n\/a|none|—|-|other|misc|miscellaneous|all\s*fields?|all\s*subjects?|all\s*disciplines?|open\s+to\s+all(\s+fields?)?|multiple)$/i;
 const FIELD_ACRONYMS = /^(IT|AI|ML|CS|MBA|PhD|STEM|UX|UI|HR|R&D|GIS|IoT|VR|AR)$/i;
 const FIELD_CONNECTORS = /^(of|and|the|in|for|to|with|on|at|a|an)$/i;
 
