@@ -395,7 +395,11 @@ Now output ONLY the JSON. Begin with { and end with }.`;
   }
 
   // Cache the result. Upsert so a re-fire (e.g. cache eviction) just overwrites.
-  await supa.from("scholarship_deep_dives").upsert({
+  // 2026-05-18: log cache-write failure so a sustained RLS misconfig or
+  // schema drift surfaces in edge logs. The user still gets their content;
+  // a failed cache write just means the next request regenerates from
+  // scratch (cost ~$0.005, not catastrophic).
+  const { error: cacheErr } = await supa.from("scholarship_deep_dives").upsert({
     scholarship_id: body.scholarshipId,
     profile_hash: profileHash,
     user_id: userId,
@@ -404,6 +408,9 @@ Now output ONLY the JSON. Begin with { and end with }.`;
     cost_estimate_usd: COST_ESTIMATE_USD,
     model_tag: Deno.env.get("AI_PROVIDER") || "lovable",
   }, { onConflict: "scholarship_id,profile_hash" });
+  if (cacheErr) {
+    console.warn("[scholarship-deep-dive] cache upsert failed", cacheErr.message);
+  }
 
   return json(200, { ...parsed, _cached: false, _generated_at: new Date().toISOString() });
 });

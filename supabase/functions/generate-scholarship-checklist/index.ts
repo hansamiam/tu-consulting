@@ -203,13 +203,18 @@ Begin output with [ and end with ].`;
   }
 
   // Upsert the cache so a re-fire just overwrites with the freshest version.
-  await supa.from("scholarship_checklists").upsert({
+  // 2026-05-18: log cache-write failure so a sustained RLS misconfig
+  // surfaces in edge logs. Same pattern as scholarship-deep-dive.
+  const { error: cacheErr } = await supa.from("scholarship_checklists").upsert({
     scholarship_id: body.scholarshipId,
     items: parsed as unknown as Json,
     schema_version: SCHEMA_VERSION,
     cost_estimate_usd: COST_ESTIMATE_USD,
     model_tag: Deno.env.get("AI_PROVIDER") || "lovable",
   }, { onConflict: "scholarship_id" });
+  if (cacheErr) {
+    console.warn("[generate-scholarship-checklist] cache upsert failed", cacheErr.message);
+  }
 
   return json(200, { items: parsed, _cached: false, _generated_at: new Date().toISOString() });
 });
