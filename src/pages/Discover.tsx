@@ -4322,6 +4322,26 @@ const Discover = ({ language = "en" }: Props) => {
                         </Link>
                       )}
 
+                      {/* 2026-05-19: Academy CTA card — bridges Discover →
+                          Academy for users who want live human help on top
+                          of the database. Quiet, sidebar-shaped, single
+                          accent line. Doesn't compete with the Browse /
+                          Shortlist nav above it. */}
+                      <Link
+                        to="/academy"
+                        className="block rounded-xl border border-primary/25 bg-gradient-to-br from-primary/[0.07] to-transparent hover:from-primary/[0.13] px-3 py-3 transition-colors group"
+                      >
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-primary font-semibold mb-1">
+                          {t("Need a human?", "Нужен человек?")}
+                        </p>
+                        <p className="text-[11.5px] text-foreground/80 leading-snug">
+                          {t("Live workshops + office hours with the alumni team.", "Прямые мастер-классы и office hours с командой выпускников.")}{" "}
+                          <span className="text-primary font-semibold group-hover:underline underline-offset-4">
+                            {t("Academy", "Академия")} →
+                          </span>
+                        </p>
+                      </Link>
+
                       {/* Local-state indicator — app feel */}
                       <div className="text-[10px] text-muted-foreground/70 px-2">
                         <span className="inline-flex items-center gap-1.5">
