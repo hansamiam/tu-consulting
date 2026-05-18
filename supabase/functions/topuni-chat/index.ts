@@ -482,19 +482,28 @@ CRITICAL — ANTI-HALLUCINATION RULES FOR SCHOLARSHIP NAMES:
           .eq("session_id", sessionId)
           .maybeSingle<{ session_id: string; user_id: string; message_count: number }>();
         if (sess && sess.user_id === userId) {
-          await admin.from("counselor_messages").insert({
+          // 2026-05-18: log on failure. A silent insert drops the user
+          // message from history — the next-turn LLM context call
+          // omits the prompt, which fractures the conversation thread.
+          const { error: userMsgErr } = await admin.from("counselor_messages").insert({
             session_id: sessionId,
             user_id: userId,
             role: "user",
             content: lastUser.content,
           });
+          if (userMsgErr) {
+            console.warn("[topuni-chat] persist user message failed", userMsgErr.message);
+          }
           // Auto-title from first user message if not yet set
           if (sess.message_count === 0) {
             const title = lastUser.content.slice(0, 80).trim();
-            await admin
+            const { error: titleErr } = await admin
               .from("counselor_sessions")
               .update({ title })
               .eq("session_id", sessionId);
+            if (titleErr) {
+              console.warn("[topuni-chat] auto-title failed", titleErr.message);
+            }
           }
 
           // Tee the streamed response: pass through to the client AND
