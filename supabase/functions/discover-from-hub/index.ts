@@ -291,6 +291,25 @@ serve(async (req) => {
     inserted = count ?? toInsert.length;
   }
 
+  // Stamp the hub row's last_crawled_at + last_success_at so the
+  // hubs-cron dispatcher rotates through every aggregator instead of
+  // re-grinding the same 12 every tick. Pre-fix every aggregator row
+  // sat at last_crawled_at = NULL, the `order(last_crawled_at,
+  // nullsFirst:true)` pull in discover-from-hubs-cron returned the
+  // same 12 every run, and seeds added after that (including the
+  // opportunitiesforyouth.org category feeds) were never visited —
+  // which is why recent OFY posts never made it into the catalogue.
+  // Best-effort: a failed stamp shouldn't fail the discovery response
+  // when we've already inserted source rows.
+  if (body.hub_source_id) {
+    const stampedAt = new Date().toISOString();
+    const { error: stampErr } = await supa
+      .from("scholarship_sources")
+      .update({ last_crawled_at: stampedAt, last_success_at: stampedAt, consecutive_failures: 0 })
+      .eq("source_id", body.hub_source_id);
+    if (stampErr) console.warn("[discover-from-hub] timestamp stamp failed", stampErr);
+  }
+
   return json(200, {
     ok: true,
     hub_name: hubName,
