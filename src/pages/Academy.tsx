@@ -24,7 +24,7 @@ const Academy = ({ language = "en" }: AcademyProps) => {
     const prev = document.title;
     document.title = ru
       ? "Академия — Прямые сессии с выпускниками · TopUni"
-      : "Academy — Live sessions with the alumni team · TopUni";
+      : "Academy — Live sessions with the team · TopUni";
     return () => { document.title = prev; };
   }, [ru]);
   return (

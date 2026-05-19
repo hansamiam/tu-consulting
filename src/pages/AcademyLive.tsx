@@ -312,7 +312,7 @@ const MeetShell = ({
 const LiveRoom = ({ session, loading }: { session: LiveSession | null; loading: boolean }) => {
   const url = session?.meetingUrl?.trim() ?? "";
   const title = session?.title ?? "TopUni Academy · Live Session";
-  const subtitle = session?.subtitle ?? "Office hours with the alumni team";
+  const subtitle = session?.subtitle ?? "Office hours with the team";
   const hostsLine = session?.hostsLine ?? DEFAULT_HOSTS;
   const scheduledLine = session?.scheduledLine ?? "Drops here on session day — bookmark this page.";
 
@@ -415,7 +415,7 @@ const AcademyLive = ({ language = "en" }: AcademyLiveProps) => {
           setSession({
             id: row.id,
             title: row.title,
-            subtitle: row.summary ?? (row.kind === "office_hours" ? "Office hours with the alumni team" : "Live workshop"),
+            subtitle: row.summary ?? (row.kind === "office_hours" ? "Office hours with the team" : "Live workshop"),
             hostsLine: DEFAULT_HOSTS,
             scheduledLine: formatScheduled(row.scheduled_for ?? null),
             meetingUrl: row.join_url ?? "",

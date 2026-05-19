@@ -4335,7 +4335,7 @@ const Discover = ({ language = "en" }: Props) => {
                           {t("Need a human?", "Нужен человек?")}
                         </p>
                         <p className="text-[11.5px] text-foreground/80 leading-snug">
-                          {t("Live workshops + office hours with the alumni team.", "Прямые мастер-классы и office hours с командой выпускников.")}{" "}
+                          {t("Live workshops + office hours with the team.", "Прямые мастер-классы и office hours с командой.")}{" "}
                           <span className="text-primary font-semibold group-hover:underline underline-offset-4">
                             {t("Academy", "Академия")} →
                           </span>

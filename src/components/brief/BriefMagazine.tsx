@@ -255,7 +255,7 @@ export const BriefMagazine: React.FC<Props> = (props) => {
                 Join Academy
               </h3>
               <p className="text-muted-foreground text-[13.5px] leading-relaxed mt-1.5">
-                Live workshops and office hours with the alumni team. Walk through your plan with humans.
+                Live workshops and office hours with the team. Walk through your plan with humans.
               </p>
               <span className="inline-flex items-center gap-1.5 text-primary text-[12.5px] font-semibold mt-3 group-hover:gap-2.5 transition-all">
                 See what's included <ArrowRight className="h-3.5 w-3.5" />
