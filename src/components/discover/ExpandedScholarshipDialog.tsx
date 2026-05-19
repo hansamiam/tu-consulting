@@ -113,7 +113,7 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
     <Sheet open={!!s} onOpenChange={(o) => !o && onClose()}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-[640px] p-0 overflow-hidden gap-0 [&>button]:hidden"
+        className="w-full sm:max-w-[520px] p-0 overflow-hidden gap-0 [&>button]:hidden"
       >
         <div className="flex flex-col h-full">
           {/* Hero strip — heavy country gradient + full-bleed CountryArt
@@ -183,27 +183,32 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
             </div>
           </div>
 
-          {/* Headline facts row — 3-up now (was 4-up with Award).
-              Award column retired 2026-05-18 final per user direction:
-              coverage tags dropped, free-form award text was redundant
-              with the AI deep dive below. */}
-          <div className="grid grid-cols-3 gap-0 border-b border-border bg-card">
-            <Fact
-              icon={<Calendar className="h-3.5 w-3.5" />}
-              label={t("Deadline", "Дедлайн")}
-              value={dl.text}
-              tone={dl.tone}
-            />
-            <Fact
-              icon={<GraduationCap className="h-3.5 w-3.5" />}
-              label={t("Levels", "Уровни")}
-              value={(s.target_degree_level ?? []).map(humanizeDegreeLabel).join(", ") || t("Any", "Любой")}
-            />
-            <Fact
-              icon={<Globe className="h-3.5 w-3.5" />}
-              label={t("Citizenship", "Гражданство")}
-              value={s.citizenship_requirements || t("Open", "Открыто всем")}
-            />
+          {/* 2026-05-19: simple bold-label list. Previous design was a
+              3-up grid of boxes; "Citizenship" + long values got
+              truncated and the square chrome read as heavy. Switched
+              to inline label-value pairs — easier to scan and never
+              clips text. */}
+          <div className="px-6 sm:px-9 py-4 border-b border-border bg-card space-y-1.5">
+            <p className="text-sm leading-relaxed text-foreground">
+              <span className="font-semibold">{t("Deadline", "Дедлайн")}:</span>{" "}
+              <span className={
+                dl.tone === "danger" ? "text-destructive font-semibold"
+                : dl.tone === "warn" ? "text-amber-700 dark:text-amber-400 font-medium"
+                : "text-foreground/85"
+              }>{dl.text}</span>
+            </p>
+            <p className="text-sm leading-relaxed text-foreground">
+              <span className="font-semibold">{t("Levels", "Уровни")}:</span>{" "}
+              <span className="text-foreground/85">
+                {(s.target_degree_level ?? []).map(humanizeDegreeLabel).join(", ") || t("Any", "Любой")}
+              </span>
+            </p>
+            <p className="text-sm leading-relaxed text-foreground">
+              <span className="font-semibold">{t("Citizenship", "Гражданство")}:</span>{" "}
+              <span className="text-foreground/85">
+                {s.citizenship_requirements || t("Open", "Открыто всем")}
+              </span>
+            </p>
           </div>
 
           {/* Scrollable body — ScholarshipDeepDive carries the personalised

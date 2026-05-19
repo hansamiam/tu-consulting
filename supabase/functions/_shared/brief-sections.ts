@@ -281,19 +281,20 @@ ABSOLUTE RULES:
   no 'Chevening', no 'Rhodes', no university-specific scholarship names.
   Only LANE labels. Reviewers will flag any specific award name.
 - Do NOT invent statistics or acceptance rates.
-- discoverCallout is REQUIRED.
 
 ${SHARED_JSON_RULES}`,
   validate: (raw) => {
     const obj = tryParse(raw) as Record<string, unknown> | null;
     if (!obj) return { ok: false, reason: "not valid JSON" };
     const entries = obj.entries as unknown[] | undefined;
-    if (!Array.isArray(entries) || entries.length < 3 || entries.length > 4) {
-      return { ok: false, reason: "entries must be array of 3-4 lanes" };
+    // 2026-05-19: loosened to 2-5. Flash was failing the 3-4 ceiling
+    // consistently (often produced 5 lanes) and the whole brief stream
+    // failed to complete. Renderer caps display at 5 anyway.
+    if (!Array.isArray(entries) || entries.length < 2 || entries.length > 5) {
+      return { ok: false, reason: "entries must be array of 2-5 lanes" };
     }
-    if (typeof obj.discoverCallout !== "string" || !obj.discoverCallout.trim()) {
-      return { ok: false, reason: "discoverCallout required" };
-    }
+    // discoverCallout is now optional. Renderer falls back to a default
+    // line so the CTA banner always shows.
     return { ok: true };
   },
 };

@@ -1203,6 +1203,12 @@ serve(async (req) => {
           // row, making it impossible to audit which rows came from
           // which pipeline.
           data_source: "scrape",
+          // 2026-05-19: New scrapes land 'inactive' instead of 'active'.
+          // User runs a fully manual approval flow from /admin — every
+          // single new row needs human sign-off before going live.
+          // reactivatePayload above may have set lifecycle_status='active',
+          // so explicitly override AFTER the spread.
+          lifecycle_status: "inactive",
         };
         const { data: inserted, error: insertErr } = await supa
           .from("scholarships")

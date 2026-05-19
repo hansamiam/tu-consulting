@@ -400,7 +400,7 @@ serve(async (req) => {
     // prompt_version mismatch and the row gets re-generated on first
     // hit. Basic tier still streams legacy markdown — only premium
     // moved to the magazine flow in v6.
-    const PROMPT_VERSION = "v7-funding-lanes-2026-05-18";
+    const PROMPT_VERSION = "v7-funding-lanes-relaxed-2026-05-19";
 
     // ─── Cache hit check ────────────────────────────────────────────────
     // Skip for regenSection (the user is explicitly asking us to redo
