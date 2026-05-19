@@ -1108,21 +1108,17 @@ serve(async (req) => {
         embedded_at:                     null,
       };
 
-      // 2026-05-18 — re-activate-on-fresh-confident-scrape rule.
-      // When a high-confidence scrape brings in a concrete future
-      // deadline, that's evidence the program is alive again. Carry
-      // a lifecycle_status='active' patch through so the upsert below
-      // can flip a previously closed_archived row back to visible.
-      // Without this, today's discovery sweep silently merged fresh
-      // DAAD/OFY data into archived rows by canonical_key and the
-      // user-facing catalog never gained the row.
-      const hasFutureDeadline =
-        typeof s.application_deadline === "string"
-        && /^\d{4}-\d{2}-\d{2}/.test(s.application_deadline)
-        && new Date(s.application_deadline).getTime() > Date.now();
-      const reactivatePayload: Record<string, unknown> = (isAutoPublish && hasFutureDeadline)
-        ? { lifecycle_status: "active" }
-        : {};
+      // 2026-05-19: Manual-curation mode. The user is approving every
+      // single row by hand from /admin/curate, so the scrape pipeline
+      // must NOT auto-promote rows to 'active' — no matter how confident
+      // the extraction or how concrete the deadline. New inserts land
+      // 'inactive' (see insertPayload below), and re-scrapes of
+      // existing rows do not touch lifecycle_status at all (the empty
+      // reactivatePayload below merges into update/insert payloads as
+      // a no-op). The old "re-activate-on-fresh-confident-scrape" rule
+      // is retired here — turn it back on by reverting this block once
+      // we move off manual curation.
+      const reactivatePayload: Record<string, unknown> = {};
 
       let landedScholarshipId: string | null = null;
       if (existingId) {
