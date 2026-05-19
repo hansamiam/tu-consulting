@@ -75,7 +75,7 @@ const DEMOGRAPHIC_LABEL: Record<string, string> = {
   "women": "Women",
   "men": "Men",
   "lgbtq": "LGBTQ+",
-  "first-generation": "First-generation",
+  "first-gen": "First-gen",
   "low-income": "Need-based",
   "refugee": "Refugees",
   "displaced": "Displaced",

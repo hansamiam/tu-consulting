@@ -57,19 +57,33 @@ export interface WhereYouCanLandPayload extends SectionCommon {
   entries?: SchoolEntry[];
 }
 
+/* 2026-05-18: Repurposed. Was per-scholarship row. Now a funding-LANE
+   row (govt scholarship, university merit, fellowship, etc.) since the
+   brief no longer lists specific awards — the live database at
+   /discover is the source of truth and updates daily. We kept the
+   field names so cached briefs still render. */
 export interface ScholarshipEntry {
+  /** Funding lane / category label. e.g. "Government scholarships",
+   *  "University merit aid", "Research fellowship". */
   name: string;
+  /** Typical coverage label. e.g. "Full tuition + stipend". */
   coverage?: string;
+  /** Typical award range. e.g. "$30K-50K / year". */
   awardText?: string;
-  /** ISO date YYYY-MM-DD, "Rolling", "TBA", or arbitrary string. */
+  /** Typical cycle window. e.g. "Fall cycle (Oct-Jan)", "Rolling". */
   deadline?: string;
+  /** Why this LANE fits THIS student's profile. */
   howProfileMaps?: string;
+  /** First step to start applying within this lane. */
   firstTask?: string;
 }
 
 export interface HowYoullPayPayload extends SectionCommon {
   entries?: ScholarshipEntry[];
   stackingNote?: string;
+  /** CTA copy directing the student to /discover for their live
+   *  personalized match list. */
+  discoverCallout?: string;
 }
 
 export interface EssayEntry {

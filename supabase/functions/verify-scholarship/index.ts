@@ -48,6 +48,10 @@ import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared
 import { respondJson } from "../_shared/http.ts";
 import { createServiceClient } from "../_shared/clients.ts";
 import type { Json } from "../_shared/database.types.ts";
+// 2026-05-18: shared brace-walking JSON parser. Replaces the local
+// greedy-lastIndexOf-} parser that grabbed too much when the LLM
+// appended commentary containing a `}`.
+import { extractLlmJson as extractJson } from "../_shared/llm-json.ts";
 
 const json = (status: number, body: unknown) =>
   respondJson(status, body, corsHeaders);
@@ -59,11 +63,19 @@ const MIN_CONFIDENCE_TO_TRUST = 0.7;
 /* Field-level diff threshold rules. We don't flag micro-changes (case
    diffs, trailing whitespace) — only material drift the user would
    notice. */
+// 2026-05-18: removed `award_amount_text` from DIFF_FIELDS. It's a
+// free-form prose string the LLM paraphrases slightly on every re-
+// extraction ("Full tuition + £20,400 stipend" vs "Full tuition + a
+// £20,400 stipend, plus travel"). That generated a false-positive
+// diff on EVERY re-verify and kept ~100 rows stuck in
+// verification_status='stale' indefinitely. estimated_total_value_usd
+// (a structured number) is the better amount-change signal — it
+// stays in the diff set so a genuine award change still triggers
+// staging.
 const DIFF_FIELDS = [
   "application_deadline",
   "deadline_type",
   "coverage_type",
-  "award_amount_text",
   "estimated_total_value_usd",
   "min_gpa",
   "min_ielts",
@@ -179,7 +191,17 @@ Re-extract from the page content below. Fields to populate (or leave null):
   "duration_text": "e.g. '1 year (taught master's)' or '2-4 years depending on degree'",
   "target_fields": ["Computer Science"],
   "target_degree_level": ["master","phd"],
-  "target_demographics": ["women","first-generation"],
+  "target_demographics": [],
+  // ↑ Empty by default. Only add a tag from this CONSTRAINED SET when the
+  //   program EXPLICITLY restricts to that group: "women","men","lgbtq",
+  //   "first-generation","low-income","refugee","displaced","indigenous",
+  //   "underrepresented-stem","underrepresented-minority","disability",
+  //   "military-veteran","rural","mature-student". Diversity / equal-
+  //   opportunity language ("welcomes underrepresented applicants",
+  //   "encourages women to apply") is NOT a restriction — leave the
+  //   array empty. Tagging a flagship merit award like Knight-Hennessy
+  //   as {women, first-generation} from boilerplate diversity language
+  //   has been the single biggest source of bad cards on /discover.
   "eligible_countries": ["India","Pakistan"],
   "partner_universities": ["Harvard University","MIT"],
   "confidence": 0.92
@@ -212,13 +234,7 @@ function rollForwardAnnualDeadline(iso: string): string {
   return date.toISOString().slice(0, 10);
 }
 
-function extractJson(s: string): unknown {
-  let t = s.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
-  const first = t.indexOf("{");
-  const last = t.lastIndexOf("}");
-  if (first !== -1 && last !== -1 && last > first) t = t.slice(first, last + 1);
-  return JSON.parse(t);
-}
+// extractJson moved to ../_shared/llm-json.ts; imported above.
 
 function diffMaterial(stored: Record<string, unknown>, fresh: ExtractedFields): { field: DiffField; was: unknown; now: unknown }[] {
   const diffs: { field: DiffField; was: unknown; now: unknown }[] = [];
@@ -317,12 +333,24 @@ Deno.serve(async (req) => {
     }
   }
   if (Object.keys(selfCleanUpdate).length > 0) {
-    await supa.from("scholarships").update(selfCleanUpdate as never).eq("scholarship_id", stored.scholarship_id);
-    // Reflect locally so downstream LLM prompt + diff comparison use
-    // the cleaned values too — otherwise we'd compute a name diff on
-    // every pass.
-    if (typeof selfCleanUpdate.scholarship_name === "string") stored.scholarship_name = selfCleanUpdate.scholarship_name;
-    if (typeof selfCleanUpdate.provider_name === "string") stored.provider_name = selfCleanUpdate.provider_name;
+    // 2026-05-18: error-check. A silently-failing self-clean (e.g. RLS
+    // surprise, type coercion error on target_demographics array)
+    // means user-relative phrasing keeps getting served to users
+    // forever and the diff loop computes the same "name needs cleaning"
+    // diff on every verify-cron tick — wasted LLM spend with no row
+    // ever moving.
+    const { error: selfCleanErr } = await supa.from("scholarships")
+      .update(selfCleanUpdate as never)
+      .eq("scholarship_id", stored.scholarship_id);
+    if (selfCleanErr) {
+      console.warn("[verify-scholarship] self-clean update failed", selfCleanErr.message, "id=", stored.scholarship_id);
+    } else {
+      // Reflect locally so downstream LLM prompt + diff comparison use
+      // the cleaned values too — otherwise we'd compute a name diff on
+      // every pass.
+      if (typeof selfCleanUpdate.scholarship_name === "string") stored.scholarship_name = selfCleanUpdate.scholarship_name;
+      if (typeof selfCleanUpdate.provider_name === "string") stored.provider_name = selfCleanUpdate.provider_name;
+    }
   }
 
   // ─── Authoritative-source override ──────────────────────────────
@@ -558,8 +586,11 @@ Deno.serve(async (req) => {
   if (diffs.length === 0) {
     // No material changes — clean re-verify. Promote to 'verified',
     // bump the timestamp, AND apply any opportunistic backfill so the
-    // additive learnings don't sit unused.
-    await supa.from("scholarships")
+    // additive learnings don't sit unused. 2026-05-18: error-check the
+    // promote — silently failing here means the row stays at 'pending'
+    // or 'stale' forever despite passing verification, blocking it from
+    // surfacing in user-facing results.
+    const { error: promoteErr } = await supa.from("scholarships")
       .update({
         verification_status: "verified",
         last_verified_at: now,
@@ -572,6 +603,10 @@ Deno.serve(async (req) => {
         ...backfillUpdates,
       })
       .eq("scholarship_id", stored.scholarship_id);
+    if (promoteErr) {
+      console.error("[verify-scholarship] verified-promote failed", promoteErr.message, "id=", stored.scholarship_id);
+      return json(500, { error: `promote_failed: ${promoteErr.message}` });
+    }
 
     // ─── Record evidence — re-verification keeps the source warm ───
     // Bumps last_confirmed_at on the scholarship_evidence row so the
@@ -614,7 +649,12 @@ Deno.serve(async (req) => {
   // generated schema; for self-heal stages there's no upstream source row,
   // so cast the row through `as never` to bypass the typed-insert check.
   // Runtime is fine — the columns are nullable in Postgres.
-  await supa.from("scholarships_staging").insert({
+  // 2026-05-18: error-check the staging insert. Pre-fix a silent failure
+  // here meant the diff was LOST (admin never sees it in the queue),
+  // while the main row update below still marked status='stale' and
+  // bumped confidence — leaving the user-facing row in a "you've been
+  // verified-but-stale-with-no-pending-diff" zombie state.
+  const { error: stagingErr } = await supa.from("scholarships_staging").insert({
     source_id: null,
     scholarship_id: stored.scholarship_id,
     fingerprint: null,
@@ -624,8 +664,12 @@ Deno.serve(async (req) => {
     diff_summary: diffs.map(d => `${d.field}: ${JSON.stringify(d.was)} → ${JSON.stringify(d.now)}`).join("; "),
     status: "pending",
   } as never).select("staging_id").maybeSingle();
+  if (stagingErr) {
+    console.error("[verify-scholarship] staging insert failed", stagingErr.message, "id=", stored.scholarship_id);
+    return json(500, { error: `staging_insert_failed: ${stagingErr.message}` });
+  }
 
-  await supa.from("scholarships")
+  const { error: staleUpdateErr } = await supa.from("scholarships")
     .update({
       verification_status: "stale",
       last_verified_at: now,
@@ -641,6 +685,11 @@ Deno.serve(async (req) => {
       ...backfillUpdates,
     })
     .eq("scholarship_id", stored.scholarship_id);
+  if (staleUpdateErr) {
+    console.error("[verify-scholarship] stale-update failed", staleUpdateErr.message, "id=", stored.scholarship_id);
+    // Don't return 500 — the diff already landed in staging, which is the
+    // important record for admin review. Mark this attempt and move on.
+  }
 
   return json(200, {
     ok: true,

@@ -162,6 +162,22 @@ INCLUSION SCOPE (decide whether to extract a scholarship at all):
 - EXCLUDE the same way for any country-domestic-only scholarship with no immigrant pathway (e.g., a Canadian scholarship purely for Canadian-born citizens).
 - When uncertain, LEAN INCLUDE if the program text mentions immigrant identity, country-of-origin heritage, refugee status, or international background as eligibility — those students need this product even if the program is hosted in a single country.
 
+WHAT IS A SCHOLARSHIP — REJECT NON-DEGREE FUNDING:
+This catalogue is for DEGREE PROGRAM scholarships (bachelor / master / PhD / postdoc). The product is "find scholarships to fund my degree." A program is in-scope ONLY when it pays for someone's bachelor/master/PhD/postdoc enrollment and tenure at a university.
+
+EXCLUDE — return {"scholarships":[]} or skip the row when the page describes any of:
+- Conference travel grants / conference scholarships / event-attendance funding (e.g. "Google Conference Scholarships", "AWS travel grant", "ACM SIGCHI conference scholarship"). These fund a trip to a conference, not a degree.
+- Hackathons / competitions / innovation challenges / pitch contests / prize-only awards with no associated degree enrollment. A $10K "innovation prize" given to a winner is not a scholarship.
+- Short-term research grants / short-stay fellowships / 1-3 month visiting programs (e.g. DAAD "Short-Term Research Grants", "1-month visiting scholar"). These fund a brief stay, not a degree.
+- Leadership / training / mentorship / cohort programs that don't enroll the recipient in a degree at a university (e.g. Vital Voices Engage Fellowship, Acumen Fellows, social-entrepreneur cohorts). Even if "fellowship" is in the name, if there's no degree, it's out.
+- Entrepreneurship / accelerator / incubator programs (e.g. "Aspiring entrepreneurs fellowship", "early-stage founders program"). Not degree funding.
+- Workshops / bootcamps / certificate programs / continuing-education programs that don't lead to a recognised bachelor/master/PhD/postdoc credential.
+- Tiny one-off grants under $3,000 USD total value — those aren't scholarships in the user's sense; they're book stipends or single-payment awards that don't materially fund a degree.
+- "Funding databases" or "scholarship lists" themselves — those are aggregators (categorise via the source category, not as a scholarship).
+
+If a page mixes a real degree scholarship with conference/training side-programs, extract ONLY the degree scholarship and skip the rest.
+If you're unsure whether a "fellowship" enrolls the recipient in a degree, lean EXCLUDE and OMIT the row rather than emit a guess.
+
 Field semantics:
 - coverage_type: "full_ride" = tuition + stipend + travel. "partial" = some funding. "tuition_only" = waiver. "stipend" = monthly allowance only. "other" = anything else.
 - target_degree_level: subset of ["bachelor","master","phd","postdoc"]
@@ -174,6 +190,8 @@ DEADLINE EXTRACTION (DATA QUALITY GATE — way too many rows landed with deadlin
 - The date may be in many formats: "November 5, 2026" / "5 November 2026" / "5/11/2026" / "11/05/2026" (assume US format on .com / .gov / .edu domains and DMY on UK / EU domains) / "2026-11-05". Always emit ISO YYYY-MM-DD.
 - If the page mentions a typical month/window without a specific date this year ("applications open in October", "deadline is in November each year"), DO NOT fabricate a date — leave application_deadline empty but DO set deadline_type="annual" with the month/window noted in the eligibility_requirements field.
 - Many program pages bury the deadline at the bottom (FAQ section, sidebar). Read past the marketing copy.
+- ANTI-EXTRAPOLATION: if the only deadline you can find is from a prior cycle (e.g. an old listing whose "2024-05-15" date has already passed), DO NOT roll it forward by 12 months and emit "2025-05-15" or "2026-05-15". That fabricates a deadline the program hasn't actually announced. Leave application_deadline EMPTY and set deadline_type="annual". The verify cron will re-fetch and pick up the real next-cycle date when the program publishes it.
+- ANTI-STALE-PAGE: if the page URL or content has a year marker more than 1 year in the past (e.g. /2023/01/..., "Class of 2023", "Application year 2022-2023"), the article is stale. Either skip the row entirely OR extract with deadline_type="unknown" and confidence ≤ 0.6. Articles from 2018-2024 vintage are almost certainly out-of-date.
 
 FINANCIAL VALUE EXTRACTION (DATA QUALITY GATE — too many rows show only generic "tuition covered" / "stipend" with no $$$ amount):
 - ALWAYS attempt to populate estimated_total_value_usd. The user wants a single number that represents the realistic FULL-CYCLE value (not per-month, not per-year — the full multi-year award) so the catalog can sort + sum.
@@ -192,7 +210,7 @@ Field hygiene (NON-NEGOTIABLE — these are the rules generic LLMs break):
 - target_fields: an ARRAY where each entry is exactly ONE field. ["Computer Science", "Engineering"], not ["Computer Science, Engineering"]. Don't comma-list inside one entry.
 - award_amount_text: a single concise phrase ("Full tuition + $35,000 stipend") — under 80 chars when possible. Drop trailing parentheticals that don't add unique numerical info ("(renewable upon satisfactory progress)" is junk; "($30,000/year × 4)" is fine).
 - host_country: a SINGLE country name. If the program is genuinely multi-country, use exactly "Multiple countries" — never "Multiple (Korea, Japan, etc.)" or "Various (primarily Africa)".
-- target_demographics: array of canonical tags from this CONSTRAINED SET ONLY (free text gets rejected): "women", "men", "lgbtq", "first-generation", "low-income", "refugee", "displaced", "indigenous", "underrepresented-stem", "underrepresented-minority", "disability", "military-veteran", "rural", "mature-student". Add a tag ONLY when the program text EXPLICITLY restricts to or specifically targets that group. Do NOT add tags as a vibe — a "leadership" scholarship that mentions women in passing is NOT "women"-targeted. citizenship_requirements is for COUNTRY of citizenship; demographic constraints (gender / identity / income / refugee status) belong here, not there.
+- target_demographics: array of canonical tags from this CONSTRAINED SET ONLY (free text gets rejected): "women", "men", "lgbtq", "first-gen", "low-income", "refugee", "displaced", "indigenous", "underrepresented-stem", "underrepresented-minority", "disability", "military-veteran", "rural", "mature-student". Add a tag ONLY when the program text EXPLICITLY restricts to or specifically targets that group. Do NOT add tags as a vibe — a "leadership" scholarship that mentions women in passing is NOT "women"-targeted. citizenship_requirements is for COUNTRY of citizenship; demographic constraints (gender / identity / income / refugee status) belong here, not there.
 
 Official URL extraction (DATA QUALITY GATE — get this wrong and we publish links to aggregator sites instead of apply pages):
 - official_url MUST be the page where students actually apply or read the program's authoritative description — typically the program's own .gov / .edu / foundation site.
@@ -226,7 +244,7 @@ Extract every scholarship program described on this page. Return strictly:
       "duration_text": "...",
       "target_degree_level": ["master","phd"],
       "target_fields": ["..."],
-      "target_demographics": ["women","first-generation"],
+      "target_demographics": [],
       "min_gpa": 3.5, "gpa_scale": 4.0,
       "min_ielts": 7.0, "min_toefl": 100,
       "citizenship_requirements": "...",
@@ -268,9 +286,33 @@ function extractJson(s: string): unknown {
   const candidate = (fenced ? fenced[1] : s).trim();
   // Try direct parse, else find the first { ... } block
   try { return JSON.parse(candidate); } catch { /* fall through */ }
-  const m = candidate.match(/\{[\s\S]*\}/);
-  if (!m) throw new Error("No JSON object in LLM response");
-  return JSON.parse(m[0]);
+  // 2026-05-18: handle "valid JSON followed by trailing junk" — gpt-4o-mini
+  // flash occasionally returns `{"scholarships":[]}\n\nNote: this page
+  // has no scholarships to extract.` which JSON.parse rejects with
+  // "Unexpected non-whitespace character after JSON at position 19".
+  // The previous regex `\{[\s\S]*\}` was greedy and grabbed straight
+  // through to a trailing `}` in the commentary, then re-parsed the
+  // whole compound and re-failed. Walk braces from the first `{` to
+  // its balanced match and parse just that prefix — handles both
+  // "junk after }" and "extra `}` in commentary" cases.
+  const start = candidate.indexOf("{");
+  if (start === -1) throw new Error("No JSON object in LLM response");
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  for (let i = start; i < candidate.length; i++) {
+    const c = candidate[i];
+    if (escape) { escape = false; continue; }
+    if (c === "\\") { escape = true; continue; }
+    if (c === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (c === "{") depth++;
+    else if (c === "}") {
+      depth--;
+      if (depth === 0) return JSON.parse(candidate.slice(start, i + 1));
+    }
+  }
+  throw new Error("Unbalanced JSON in LLM response");
 }
 
 /** Validate a single LLM-returned scholarship; returns null if it fails the
@@ -540,6 +582,31 @@ function validateExtracted(x: unknown): ExtractedScholarship | null {
     o.partner_universities = real.length > 0 ? real : undefined;
   }
 
+  // 2026-05-18: server-side guard against aggregator URLs being saved
+  // as the row's official_url. The prompt asks the LLM to omit
+  // aggregator URLs, but the LLM still slips them through ~6% of the
+  // time (it copies the scrape source URL). Net result: user clicks
+  // "Apply on official site" and lands on a third-party listicle, not
+  // the funder's authoritative page. NULL the field here so the row
+  // doesn't ship with a misleading URL.
+  const AGG_DOMAINS = /(scholars4dev|opportunitiesforyouth|opportunit(ies)?tracker|opportunitydesk|scholarship-positions|scholarshipsdb|scholarshipsads|opportunitiescorner|after\.|buddy4study|mladiinfo|afterschoolafrica|opportunitiesforafricans)\./i;
+  if (typeof o.official_url === "string" && AGG_DOMAINS.test(o.official_url)) {
+    o.official_url = undefined;
+  }
+
+  // 2026-05-18: US-citizens-only filter. TopUni's audience is international
+  // students from Central Asia / global south — US-citizen-restricted
+  // awards (AAUW American Doctoral, DoD NDSE, Switzer, Veterans Foundation,
+  // Fulbright U.S. Student Program, etc.) are noise. Reject rows whose
+  // citizenship_requirements names US/American restriction without an
+  // explicit "international" / "worldwide" / "all nationalities" carve-out.
+  if (typeof o.citizenship_requirements === "string") {
+    const cr = o.citizenship_requirements;
+    const isUsRestricted = /\b(U\.?S\.?|United States|American)\s+(citizen|citizenship|national)/i.test(cr);
+    const hasInternationalCarveout = /\b(international|worldwide|global|all nationalit|non[- ]?US|outside the (US|United States))/i.test(cr);
+    if (isUsRestricted && !hasInternationalCarveout) return null;
+  }
+
   // Minimum-information gate. Name + provider + country alone aren't
   // enough — that just means a page mentioned a scholarship's title.
   // Require at least 2 of the substantive signals below before we
@@ -570,6 +637,20 @@ function validateExtracted(x: unknown): ExtractedScholarship | null {
     hasDeadline, hasFunding, hasDegree, hasFields, hasEligibility, hasNarrative,
   ].filter(Boolean).length;
   if (signalCount < 2) return null;
+
+  // 2026-05-18: minimum-value gate. The prompt says "tiny one-off
+  // grants under $3,000" should be omitted, but the LLM sometimes
+  // extracts them anyway (e.g. "$1000 Act of Kindness", "$750
+  // Canadian Journalism Scholarship"). Reject server-side: if the
+  // total value is known AND below $3K, the row isn't materially
+  // funding a degree. We only reject when value is KNOWN (NULL
+  // means "we don't have the value yet" which doesn't justify
+  // rejection — many flagships land with NULL value initially).
+  if (typeof o.estimated_total_value_usd === "number"
+      && o.estimated_total_value_usd > 0
+      && o.estimated_total_value_usd < 3000) {
+    return null;
+  }
 
   return o as unknown as ExtractedScholarship;
 }
@@ -743,36 +824,76 @@ serve(async (req) => {
   }
 
   // ─── LLM extraction ──────────────────────────────────────────────────────
+  // 2026-05-18: added retry-on-429 + don't burn the source's failure
+  // counter for our own rate limits. Pre-fix, an OpenAI TPM 429
+  // counted as a source failure — and the dispatcher hides sources
+  // after 5 consecutive failures via the circuit breaker. Result:
+  // popular hubs like OFY would get rate-limited by US, then quietly
+  // banned for being "broken." Two bugs at once: a misattributed
+  // failure mode AND a self-DoS amplifier.
   const truncated = pageMarkdown.slice(0, MAX_MARKDOWN_CHARS);
   let extracted: ExtractedScholarship[] = [];
-  try {
-    const resp = await chatCompletions({
-      // Pro tier — see LLM_COST_PER_EXTRACTION_USD comment. Higher
-      // extraction fidelity → more rows clear the 0.85 confidence gate
-      // for auto-publish, fewer rows pile up in staging. Auto-published
-      // rows feed the verified database directly; staged rows wait for
-      // admin review. The cost diff is paid once per content-changed
-      // crawl, not per request — content-hash short-circuit makes the
-      // amortized cost negligible at steady state.
-      tier: "pro",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: USER_PROMPT_TEMPLATE(src.name, src.url, src.category, src.parser_hint, truncated) },
-      ],
-    });
-    if (!resp.ok) throw new Error(`LLM HTTP ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
-    const data = await resp.json();
-    const text = data?.choices?.[0]?.message?.content as string | undefined;
-    if (!text) throw new Error("LLM returned empty content");
-    const parsed = extractJson(text) as LLMExtractionResponse;
-    const candidates = Array.isArray(parsed?.scholarships) ? parsed.scholarships : [];
-    extracted = candidates.map(validateExtracted).filter((x): x is ExtractedScholarship => !!x);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    await logError("llm_failed", msg);
-    await bumpFailure();
-    await finalize("failed", { error_message: msg });
-    return json(200, { ok: false, reason: "LLM extraction failed", error: msg });
+  let rateLimitedRetries = 0;
+  const MAX_LLM_RETRIES = 2;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    try {
+      const resp = await chatCompletions({
+        // 2026-05-18: downgraded pro → flash. Pro (gpt-4o) hits a
+        // 30K TPM cap from the org-tier-1 OpenAI account, which the
+        // scrape pipeline kept blowing through under sustained load.
+        // Flash (gpt-4o-mini) has ~200K TPM (6.6x), >10x cheaper,
+        // and produces structured JSON of comparable quality on the
+        // straightforward "extract scholarship fields from a known
+        // schema" task — most of the win from pro was on freeform
+        // prose, which we don't need here. The confidence floor
+        // (0.85) gates auto-publish either way; below it goes to
+        // staging for admin review.
+        tier: "flash",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: USER_PROMPT_TEMPLATE(src.name, src.url, src.category, src.parser_hint, truncated) },
+        ],
+      });
+      if (!resp.ok) {
+        if (resp.status === 429 && rateLimitedRetries < MAX_LLM_RETRIES) {
+          // 2026-05-18: extended sleep 13s → 30s. The per-minute TPM
+          // bucket resets every 60s, so a 30s sleep gives us a clean
+          // half-window to retry into. 13s was too tight under sustained
+          // burst load — most retries landed back in the same hot window
+          // and 429'd again. With MAX_SOURCES_PER_TICK=12 and 30s
+          // backoff, a worker's max wait is 60s per tick which still
+          // fits inside the function's timeout.
+          rateLimitedRetries++;
+          await new Promise(r => setTimeout(r, 30_000));
+          continue;
+        }
+        const body = (await resp.text()).slice(0, 300);
+        const isRateLimit = resp.status === 429;
+        const msg = `LLM HTTP ${resp.status}: ${body}`;
+        await logError(isRateLimit ? "llm_rate_limited" : "llm_failed", msg, undefined, resp.status);
+        // Don't penalize the SOURCE for OUR rate-limit cap. The
+        // circuit-breaker should only fire when the SOURCE itself is
+        // unreliable (Firecrawl returning empty, LLM unable to
+        // extract structured data from the page, etc.).
+        if (!isRateLimit) await bumpFailure();
+        await finalize(isRateLimit ? "rate_limited" : "failed", { error_message: msg });
+        return json(200, { ok: false, reason: isRateLimit ? "rate-limited (no source penalty)" : "LLM extraction failed", error: msg });
+      }
+      const data = await resp.json();
+      const text = data?.choices?.[0]?.message?.content as string | undefined;
+      if (!text) throw new Error("LLM returned empty content");
+      const parsed = extractJson(text) as LLMExtractionResponse;
+      const candidates = Array.isArray(parsed?.scholarships) ? parsed.scholarships : [];
+      extracted = candidates.map(validateExtracted).filter((x): x is ExtractedScholarship => !!x);
+      break;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      await logError("llm_failed", msg);
+      await bumpFailure();
+      await finalize("failed", { error_message: msg });
+      return json(200, { ok: false, reason: "LLM extraction failed", error: msg });
+    }
   }
 
   if (extracted.length === 0) {
@@ -987,6 +1108,22 @@ serve(async (req) => {
         embedded_at:                     null,
       };
 
+      // 2026-05-18 — re-activate-on-fresh-confident-scrape rule.
+      // When a high-confidence scrape brings in a concrete future
+      // deadline, that's evidence the program is alive again. Carry
+      // a lifecycle_status='active' patch through so the upsert below
+      // can flip a previously closed_archived row back to visible.
+      // Without this, today's discovery sweep silently merged fresh
+      // DAAD/OFY data into archived rows by canonical_key and the
+      // user-facing catalog never gained the row.
+      const hasFutureDeadline =
+        typeof s.application_deadline === "string"
+        && /^\d{4}-\d{2}-\d{2}/.test(s.application_deadline)
+        && new Date(s.application_deadline).getTime() > Date.now();
+      const reactivatePayload: Record<string, unknown> = (isAutoPublish && hasFutureDeadline)
+        ? { lifecycle_status: "active" }
+        : {};
+
       let landedScholarshipId: string | null = null;
       if (existingId) {
         updatedCount++;
@@ -1011,39 +1148,126 @@ serve(async (req) => {
         // The update payload below is pure data — the verify-scholarship
         // cron picks up stale rows on its next tick and promotes them
         // back to 'verified' once it re-confirms the diff.
-        const updatePayload: Record<string, unknown> = { ...dataPayload };
+        const updatePayload: Record<string, unknown> = { ...dataPayload, ...reactivatePayload };
         if (diffSummary) {
           updatePayload.verification_status = "stale";
         }
-        await supa.from("scholarships").update(updatePayload as never).eq("scholarship_id", existingId);
+        // 2026-05-18: error-check the write. Silent failures on re-scrape
+        // updates mean fresh scrape data (new deadline, refreshed
+        // overview, reactivation flag) never lands but the function still
+        // returns "updatedCount++" success. The cron metrics report
+        // healthy throughput while the user-facing row stays stale.
+        const { error: updateErr } = await supa
+          .from("scholarships")
+          .update(updatePayload as never)
+          .eq("scholarship_id", existingId);
+        if (updateErr) {
+          console.warn("[scrape-source] update existing failed", updateErr.message, "id=", existingId);
+          continue;
+        }
         landedScholarshipId = existingId;
       } else {
-        // The 20260505060000 migration added a UNIQUE index on canonical_key.
-        // Use upsert with onConflict so concurrent scrapes that race past our
-        // SELECT-then-INSERT don't blow up on the constraint. The trigger
-        // computes canonical_key on insert, so we don't need to pass it.
+        // 2026-05-18: CRITICAL fix. Previously this branch used
+        //   .upsert(payload, { onConflict: "canonical_key", ignoreDuplicates: false })
+        // — but the canonical_key uniqueness is enforced by a PARTIAL
+        // index (uniq_scholarships_canonical_key_live), which only
+        // covers rows where lifecycle_status IN ('active','reopens_annually').
+        // Postgres rejects `ON CONFLICT (canonical_key)` against a
+        // partial index with 42P10 "no unique or exclusion constraint
+        // matching the ON CONFLICT specification" — every auto-publish
+        // INSERT has been silently 42P10'ing since the partial index
+        // landed, hitting the `continue` below and pretending nothing
+        // happened. Result: hundreds of "auto_published" staging rows
+        // with NULL scholarship_id and zero visible rows produced.
         //
-        // First-time INSERT initialises the trust state: 'pending' status
-        // means "newly discovered, awaiting first verification cron tick",
-        // and verified=false because the program hasn't passed a human or
-        // automated trust check yet. Both columns transition forward only
-        // — verify-scholarship and the URL-health cron own promotion.
+        // New approach: plain .insert(). On 23505 unique-violation
+        // (the partial index fires when our active-row insert hits
+        // an existing active row with the same canonical_key) we look
+        // up the conflicting row and UPDATE it instead. One extra
+        // round-trip on conflict, zero round-trips on the happy path.
+        //
+        // First-time INSERT initialises the trust state: 'pending'
+        // status means "newly discovered, awaiting first verification
+        // cron tick", verified=false because the program hasn't passed
+        // a human or automated trust check yet. Both columns transition
+        // forward only — verify-scholarship and the URL-health cron
+        // own promotion.
         const insertPayload: Record<string, unknown> = {
           ...dataPayload,
+          ...reactivatePayload,
           verified: false,
           verification_status: "pending",
+          // 2026-05-18: Tag the provenance so legacy hand-curated rows
+          // are distinguishable from fresh scraper output. Without this
+          // the DB default ('hand_curated') was masking every scraped
+          // row, making it impossible to audit which rows came from
+          // which pipeline.
+          data_source: "scrape",
+          // 2026-05-19: New scrapes land 'inactive' instead of 'active'.
+          // User runs a fully manual approval flow from /admin — every
+          // single new row needs human sign-off before going live.
+          // reactivatePayload above may have set lifecycle_status='active',
+          // so explicitly override AFTER the spread.
+          lifecycle_status: "inactive",
         };
         const { data: inserted, error: insertErr } = await supa
           .from("scholarships")
-          .upsert(insertPayload as never, { onConflict: "canonical_key", ignoreDuplicates: false })
+          .insert(insertPayload as never)
           .select("scholarship_id")
           .maybeSingle();
         if (insertErr) {
-          console.warn("[scrape-source] insert/upsert failed", insertErr.message, "name=", s.scholarship_name);
-          continue;
+          if ((insertErr as { code?: string }).code === "23505") {
+            // Active row already exists with the same canonical_key.
+            // Look it up and route this scrape through the UPDATE path.
+            // We canonicalise the same way the DB trigger does (lower-
+            // case + collapsed whitespace) — a perfect match isn't
+            // required because (name, provider, host_country) is a
+            // strong-enough proxy in practice.
+            const { data: conflictRow } = await supa
+              .from("scholarships")
+              .select("scholarship_id")
+              .eq("scholarship_name", s.scholarship_name)
+              .eq("provider_name", s.provider_name ?? "")
+              .in("lifecycle_status", ["active", "reopens_annually"])
+              .limit(1)
+              .maybeSingle();
+            if (conflictRow?.scholarship_id) {
+              const conflictId = conflictRow.scholarship_id as string;
+              const { error: conflictUpdateErr } = await supa.from("scholarships")
+                .update({ ...insertPayload, ...reactivatePayload } as never)
+                .eq("scholarship_id", conflictId);
+              if (conflictUpdateErr) {
+                console.warn("[scrape-source] 23505-conflict update failed", conflictUpdateErr.message, "id=", conflictId);
+                continue;
+              }
+              landedScholarshipId = conflictId;
+              updatedCount++;
+            } else {
+              console.warn("[scrape-source] 23505 but conflict row not found by name+provider:", s.scholarship_name);
+              continue;
+            }
+          } else {
+            console.warn("[scrape-source] insert failed", insertErr.message, "name=", s.scholarship_name);
+            continue;
+          }
+        } else {
+          newCount++;
+          landedScholarshipId = (inserted as { scholarship_id?: string } | null)?.scholarship_id ?? null;
         }
-        newCount++;
-        landedScholarshipId = (inserted as { scholarship_id?: string } | null)?.scholarship_id ?? null;
+        // Backfill the staging row's scholarship_id so downstream
+        // consumers (admin review UI, evidence trail, metrics) can join
+        // staging → scholarships. Pre-fix the staging row was written
+        // BEFORE the publish so scholarship_id was always NULL on
+        // auto-publish even when the publish succeeded — the admin
+        // dashboard showed "auto_published with no target row" which
+        // looked like a dead-letter even when the data was live.
+        if (landedScholarshipId && runId) {
+          await supa.from("scholarships_staging")
+            .update({ scholarship_id: landedScholarshipId })
+            .eq("source_id", src.source_id)
+            .eq("run_id", runId)
+            .eq("fingerprint", fingerprint);
+        }
       }
 
       // ─── Record evidence — multi-source provenance trail ───────────

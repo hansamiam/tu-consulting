@@ -48,7 +48,7 @@ const COPY = {
      *  price tags. The whole point is to NOT play stacked-value
      *  arithmetic. */
     includes: [
-      { title: "Personalised strategy report",          body: "Built by AI from your profile + reviewed against the alumni team's frameworks." },
+      { title: "Personalised strategy report",          body: "Built by AI from your profile + reviewed against the team's frameworks." },
       { title: "Full Discover scholarship database",     body: "Verified programs, ranked against your profile, with strategy notes the rest of the internet doesn't have." },
       { title: "Workspace + essay critique",             body: "Save scholarships, draft essays, get reader-perspective AI feedback. Deadlines emailed before each one." },
       { title: "Live monthly workshops with founders",   body: "Yale · Cambridge & Tsinghua · Harvard alumni run live sessions every month — essay clinics, scholarship strategy, country deep-dives." },

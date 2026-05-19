@@ -1,12 +1,15 @@
 /**
- * 03 · How You'll Pay — 3-5 scholarships chronological by deadline.
+ * 03 · How You'll Pay — 3-4 funding LANES.
  *
- * Each scholarship is a row-shaped EditorialCard: left rail with
- * deadline countdown, right body with name + coverage + how-profile-maps
- * + "Start with:" first-task. Stacking note rendered as PullQuote at
- * section bottom.
+ * 2026-05-18: Reframed from per-scholarship listing to per-lane strategy.
+ * Each entry now describes a funding category (govt / uni merit / fellow-
+ * ship / etc.) the student should pursue, not a specific named award.
+ * Bottom CTA banner sends them to /discover for the live personalized
+ * match list, which is the source of truth and refreshes daily.
  */
 import React from "react";
+import { Link } from "react-router-dom";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { SectionDivider } from "../primitives/SectionDivider";
 import { LeadParagraph } from "../primitives/LeadParagraph";
 import { EditorialCard } from "../primitives/EditorialCard";
@@ -90,6 +93,7 @@ export const HowYoullPay: React.FC<{ payload: HowYoullPayPayload }> = ({ payload
   const kicker = payload.kicker ?? SECTION_KICKERS.howYoullPay;
   const headline = payload.headline ?? "How you'll pay";
   const entries = payload.entries ?? [];
+  const callout = payload.discoverCallout?.trim();
   return (
     <section id="brief-how-youll-pay">
       <SectionDivider kicker={kicker} headline={headline} />
@@ -102,6 +106,33 @@ export const HowYoullPay: React.FC<{ payload: HowYoullPayPayload }> = ({ payload
       {payload.stackingNote && (
         <PullQuote text={payload.stackingNote} label="How to stack" />
       )}
+      {/* 2026-05-18: Live-database CTA. The brief teaches lanes; the
+          actual award list lives at /discover, filtered to the student's
+          profile and refreshed daily. */}
+      <div className="mt-10 max-w-3xl mx-auto">
+        <Link
+          to="/discover"
+          className="group block bg-gradient-to-br from-gold/15 via-gold/8 to-transparent border border-gold/40 rounded-xl p-6 sm:p-7 hover:from-gold/25 hover:via-gold/12 transition-colors"
+        >
+          <div className="flex items-start gap-4">
+            <div className="shrink-0 w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-gold-dark" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-heading text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-1.5">
+                Your live match list
+              </p>
+              <p className="font-heading text-foreground text-[16px] sm:text-[17px] leading-snug">
+                {callout || "Your personalized scholarship matches are in the live database — filtered to your profile and refreshed daily."}
+              </p>
+              <div className="mt-3 inline-flex items-center gap-1.5 text-gold-dark text-[13.5px] font-semibold group-hover:gap-2.5 transition-all">
+                Open Discover
+                <ArrowRight className="w-3.5 h-3.5" />
+              </div>
+            </div>
+          </div>
+        </Link>
+      </div>
     </section>
   );
 };

@@ -74,7 +74,9 @@ const SCHEMA_DOC = `{
   "strategy_notes": "string — 1-2 sentences of higher-order tactical insight that doesn't fit elsewhere. Application timing pattern, recommender selection, narrative thread, anything genuinely insider. Skip rather than fill with platitudes"
 }`;
 
-function isolateJson(raw: string): string {
+import { extractLlmJson } from "../_shared/llm-json.ts";
+
+function _isolateJson_RETIRED(raw: string): string {
   let s = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
   const first = s.indexOf("{");
   const last = s.lastIndexOf("}");
@@ -175,13 +177,14 @@ Output the JSON now.`;
 
   let parsed: EnrichmentOutput;
   try {
-    // Pro tier — these fields are written ONCE per scholarship and cached
-    // forever. Going from flash (~$0.0008) to pro (~$0.005) is ~$1 total
-    // across the whole catalogue and the difference between generic copy
-    // and counsellor-grade strategy notes is the entire value prop of
-    // the Strategy tab. Worth every cent.
+    // 2026-05-18: downgraded pro → flash to keep OpenAI burn off the
+    // user's card. Per-row enrichment runs ONCE and is cached; quality
+    // diff between flash and pro on a structured-schema task (filling
+    // why_this_fits / how_to_win / etc. from program metadata) is
+    // small — the heavy lift is the prompt, not the model. Re-enable
+    // pro later if specific fields read as generic.
     const resp = await chatCompletions({
-      tier: "pro",
+      tier: "flash",
       messages: [
         { role: "system", content: "You are a Yale/Cambridge/Harvard-trained admissions strategist writing for a verified scholarship database. Output only valid JSON matching the requested schema. Each field tells a real student whether to spend 20 hours on this application — generic content WASTES their time. Skip a field rather than fill it with platitudes." },
         { role: "user", content: prompt },
@@ -200,7 +203,7 @@ Output the JSON now.`;
       ?? ""
     ) as string;
     if (!raw) return json(502, { error: "Empty completion" });
-    parsed = JSON.parse(isolateJson(raw)) as EnrichmentOutput;
+    parsed = extractLlmJson(raw) as EnrichmentOutput;
   } catch (e) {
     console.warn("[enrich-scholarship-content] parse failed", (e as Error).message);
     return json(502, { error: "Parse failed" });
@@ -262,7 +265,18 @@ Output the JSON now.`;
   patch.embedding = null;
   patch.embedded_at = null;
 
-  await supa.from("scholarships").update(patch as never).eq("scholarship_id", row.scholarship_id);
+  // 2026-05-18: assert the write actually committed. Pre-fix this returned
+  // 200 OK status:"filled" even when the DB write silently errored — the
+  // staging-promote silent-success class of bug from earlier today. The
+  // cron metrics said "enrichment success" while the row stayed empty.
+  const { error: updErr } = await supa
+    .from("scholarships")
+    .update(patch as never)
+    .eq("scholarship_id", row.scholarship_id);
+  if (updErr) {
+    console.error("[enrich-scholarship-content] db update failed", row.scholarship_id, updErr);
+    return json(500, { error: `db_update_failed: ${updErr.message}` });
+  }
 
   return json(200, {
     ok: true,

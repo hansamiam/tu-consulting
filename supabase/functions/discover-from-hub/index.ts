@@ -33,6 +33,7 @@ import { requireAdminOrService } from "../_shared/auth.ts";
 import { CORS_HEADERS_BASIC as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
 import { respondJson } from "../_shared/http.ts";
 import { createServiceClient } from "../_shared/clients.ts";
+import { extractLlmJson } from "../_shared/llm-json.ts";
 
 const json = (status: number, body: unknown) =>
   respondJson(status, body, corsHeaders);
@@ -54,7 +55,7 @@ interface DiscoveredScholarship {
   confidence: number;
 }
 
-const SYSTEM_PROMPT = `You read scholarship aggregator / directory pages and extract URLs that point to INDIVIDUAL scholarship programs (not category indexes, not the directory's home page, not navigation).
+const SYSTEM_PROMPT = `You read scholarship aggregator / directory pages and extract URLs that point to INDIVIDUAL DEGREE-PROGRAM scholarships (not category indexes, not the directory's home page, not navigation, NOT non-degree opportunities).
 
 For each individual scholarship link you find on the page, output a JSON entry with the program name, its absolute URL, an optional 1-line parser_hint, and a confidence score 0-1.
 
@@ -69,17 +70,30 @@ CRITICAL RULES:
 3. Only include URLs that look like a real scholarship program page (a single program with a deadline, eligibility, and application info — even if you can't see it from the listing snippet).
 4. confidence is HIGH (0.85+) only when the link text + surrounding context clearly names a specific scholarship and you can confirm the URL points to a per-program page (not a listing).
 5. Output a JSON object: { "scholarships": [{name, url, hint, confidence}...] }. No markdown fences, no preamble.
-6. Cap your output at the 50 highest-confidence URLs. Skip generic ones.`;
+6. Cap your output at the 50 highest-confidence URLs. Skip generic ones.
 
-function isolateJson(raw: string): string {
-  let s = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
-  const first = s.indexOf("{");
-  const last = s.lastIndexOf("}");
-  if (first !== -1 && last !== -1 && last > first) s = s.slice(first, last + 1);
-  return s;
-}
+WHAT IS A DEGREE SCHOLARSHIP — REJECT NON-DEGREE FUNDING:
+This catalogue is for DEGREE PROGRAM scholarships (bachelor / master / PhD / postdoc). A link is in-scope ONLY when it points at a program that pays for someone's degree enrollment at a university.
 
-function isLikelyScholarshipUrl(url: string): boolean {
+EXCLUDE — DO NOT extract URLs for any of these patterns, even if "scholarship" / "fellowship" / "fund" appears in the name:
+- Conference travel grants / conference scholarships / event-attendance funding (e.g. "Google Conference Scholarships", "ACM SIGCHI travel grant").
+- Hackathons / competitions / pitch contests / prize-only awards (e.g. "Sony World Photography Awards", "Kofi Annan NextGen Democracy Prize"). Prize money ≠ degree funding.
+- Short courses / winter schools / summer schools / workshops / bootcamps / certificate programs (e.g. "UNESCO Winter School", "Summer Programme in X").
+- Mentorship programs / leadership cohorts / training fellowships that don't enroll the recipient in a degree (e.g. "Vital Voices Engage Fellowship", "Youth4Climate Mentorship").
+- Career / mid-career / professional fellowships (e.g. "Buffett Fund for Women Journalists", journalism fellowships, "Early-Career Fellowship Program").
+- Entrepreneur / accelerator / incubator programs (e.g. "Savvy Global Fellowship for Aspiring Entrepreneurs").
+- Internships / research-associate positions / staff jobs (e.g. "Tech and Operations Research Associate at Harvard", "Economics Intern at Insurance Europe").
+- Reporting grants / journalism grants / one-off project grants (e.g. "Rainforest Reporting Grant").
+- Anything obviously stale-vintage (year in title like 2018, 2019, 2020, 2021).
+- One-time tiny grants under $5K total value.
+
+If the URL's path or surrounding name has any of these signals — skip it. Better to extract 5 confident degree-scholarship URLs than 50 mixed-quality URLs that bloat the catalogue. The downstream scrape-source LLM will re-filter against the page content, but URLs we never insert never burn a Firecrawl credit.`;
+
+// isolateJson retired 2026-05-18; replaced by the shared
+// extractLlmJson helper which walks balanced braces. See its import
+// in the top-of-file imports block.
+
+function isLikelyScholarshipUrl(url: string, name?: string): boolean {
   // Heuristic gate before insertion. Block the categories of bad URL the
   // LLM occasionally returns despite the prompt.
   try {
@@ -90,6 +104,24 @@ function isLikelyScholarshipUrl(url: string): boolean {
     if (path === "/" || path === "" || path.match(/^\/(en|us|uk|au)?\/?$/)) return false;
     // Block file-extension downloads (we want HTML pages, not PDFs from the hub itself).
     if (/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip|jpg|jpeg|png|gif|mp4|mp3)$/i.test(path)) return false;
+
+    // 2026-05-18: extended non-degree-scholarship URL/name patterns.
+    // Caught 7-out-of-10 hub-cron-discovered URLs that were jobs /
+    // internships / conferences / journalism grants / winter schools —
+    // patterns the user explicitly flagged as polluting the catalogue.
+    // Check BOTH the URL path and (when supplied) the program name —
+    // the LLM sometimes embeds the giveaway in the name only.
+    const haystack = `${path} ${(name ?? "").toLowerCase()}`;
+    const NON_DEGREE_PATTERNS = [
+      /\b(internship|intern[- ]position|research[- ]associate|fellow position|job opening|hiring|career[- ]opportunity)\b/,
+      /\b(winter[- ]school|summer[- ]school|short[- ]course|bootcamp|workshop|webinar|seminar|symposium|conference[- ]grant|conference[- ]scholarship|travel[- ]grant|travel[- ]scholarship)\b/,
+      /\b(photography[- ]award|reporting[- ]grant|journalism[- ](grant|fund)|writing[- ]grant)\b/,
+      /\b(mentorship[- ]program|mentorship[- ]programme|young[- ]leaders|youth[- ]programme)\b/,
+      /\b(entrepreneur[- ]?(ship|s)?[- ]program|early[- ]stage[- ]founders|accelerator|incubator|pitch[- ]contest|hackathon|competition)\b/,
+      /\b20(0[5-9]|1[0-9]|20|21)\b/,  // stale-year markers
+    ];
+    if (NON_DEGREE_PATTERNS.some((r) => r.test(haystack))) return false;
+
     return true;
   } catch {
     return false;
@@ -132,6 +164,24 @@ serve(async (req) => {
     hubUrl = body.hub_url;
   } else {
     return json(400, { error: "Either hub_source_id or hub_url required" });
+  }
+
+  // 2026-05-18: Stamp last_crawled_at IMMEDIATELY for hub-source-id runs,
+  // BEFORE any work that could fail. Pre-fix the stamp lived at the end
+  // of the success path, so any early-return (empty markdown, fetch
+  // failed, LLM HTTP error, parse failed, zero candidates) left the
+  // hub at last_crawled_at=NULL. The hubs-cron's `NULLS FIRST` ordering
+  // then picked the SAME dead hub every 6h forever, while ~21 newly
+  // seeded hubs (including opportunitytracker.ug — user-priority) sat
+  // at NULL waiting for a slot they'd never get. last_success_at +
+  // consecutive_failures=0 still only flip on actual success at the
+  // bottom of this function.
+  if (body.hub_source_id) {
+    const { error: preStampErr } = await supa
+      .from("scholarship_sources")
+      .update({ last_crawled_at: new Date().toISOString() })
+      .eq("source_id", body.hub_source_id);
+    if (preStampErr) console.warn("[discover-from-hub] pre-stamp failed", preStampErr.message);
   }
 
   // Fetch the hub page + up to 2 paginated successors. Most aggregator
@@ -197,11 +247,10 @@ serve(async (req) => {
   let extracted: DiscoveredScholarship[] = [];
   try {
     const resp = await chatCompletions({
-      // Pro tier — discovery happens once per hub crawl (plus ongoing
-      // re-discovery on cadence). Quality of URL extraction directly
-      // determines whether we're adding signal or noise to the registry,
-      // so the cost diff vs flash is the right trade. ~$0.005 per hub.
-      tier: "pro",
+      // 2026-05-18: pro → flash to drop OpenAI burn. URL extraction is
+      // pattern-matching not reasoning; flash handles it fine. The
+      // minConfidence floor (0.7) still gates noise out of the registry.
+      tier: "flash",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: `Hub page URL: ${hubUrl}\n\nPage markdown follows. Extract individual scholarship program URLs:\n\n${truncated}` },
@@ -211,7 +260,7 @@ serve(async (req) => {
     const data = await resp.json();
     const text = data?.choices?.[0]?.message?.content as string | undefined;
     if (!text) return json(502, { error: "Empty completion" });
-    const parsed = JSON.parse(isolateJson(text)) as { scholarships?: DiscoveredScholarship[] };
+    const parsed = extractLlmJson(text) as { scholarships?: DiscoveredScholarship[] };
     extracted = Array.isArray(parsed.scholarships) ? parsed.scholarships : [];
   } catch (e) {
     return json(502, { error: `Parse failed: ${(e as Error).message}` });
@@ -225,7 +274,7 @@ serve(async (req) => {
       && typeof d.url === "string" && d.url.trim().length > 10
       && typeof d.confidence === "number" && d.confidence >= minConfidence
     )
-    .filter((d) => isLikelyScholarshipUrl(d.url))
+    .filter((d) => isLikelyScholarshipUrl(d.url, d.name))
     .slice(0, MAX_DISCOVERED_PER_HUB);
 
   if (candidates.length === 0) {
@@ -235,7 +284,7 @@ serve(async (req) => {
       discovered: extracted.length,
       inserted: 0,
       skipped_low_confidence: extracted.filter((d) => (d.confidence ?? 0) < minConfidence).length,
-      skipped_invalid_url: extracted.filter((d) => !isLikelyScholarshipUrl(d.url ?? "")).length,
+      skipped_invalid_url: extracted.filter((d) => !isLikelyScholarshipUrl(d.url ?? "", d.name)).length,
       cost_estimate_usd: FIRECRAWL_COST_PER_SCRAPE_USD + LLM_COST_PER_DISCOVERY_USD,
     });
   }
@@ -289,6 +338,25 @@ serve(async (req) => {
       return json(500, { error: `Insert: ${insertErr.message}` });
     }
     inserted = count ?? toInsert.length;
+  }
+
+  // Stamp the hub row's last_crawled_at + last_success_at so the
+  // hubs-cron dispatcher rotates through every aggregator instead of
+  // re-grinding the same 12 every tick. Pre-fix every aggregator row
+  // sat at last_crawled_at = NULL, the `order(last_crawled_at,
+  // nullsFirst:true)` pull in discover-from-hubs-cron returned the
+  // same 12 every run, and seeds added after that (including the
+  // opportunitiesforyouth.org category feeds) were never visited —
+  // which is why recent OFY posts never made it into the catalogue.
+  // Best-effort: a failed stamp shouldn't fail the discovery response
+  // when we've already inserted source rows.
+  if (body.hub_source_id) {
+    const stampedAt = new Date().toISOString();
+    const { error: stampErr } = await supa
+      .from("scholarship_sources")
+      .update({ last_crawled_at: stampedAt, last_success_at: stampedAt, consecutive_failures: 0 })
+      .eq("source_id", body.hub_source_id);
+    if (stampErr) console.warn("[discover-from-hub] timestamp stamp failed", stampErr);
   }
 
   return json(200, {

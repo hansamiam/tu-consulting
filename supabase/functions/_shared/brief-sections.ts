@@ -81,6 +81,7 @@ export interface SectionSpec {
 }
 
 import { EDITORIAL_RULES } from "./editorial-rules.ts";
+import { extractLlmJson } from "./llm-json.ts";
 
 const SHARED_JSON_RULES = `
 ${EDITORIAL_RULES}
@@ -124,9 +125,12 @@ const profileBlock = (ctx: BriefContext): string => {
 
 const dbBlock = (ctx: BriefContext): string => ctx.dbContext;
 
-/** Parse helper — returns the parsed object or null if not valid JSON. */
+/** Parse helper — returns the parsed object or null if not valid JSON.
+ * 2026-05-18: routed through the shared brace-walking helper so an LLM
+ * appending commentary after the JSON body doesn't silently drop the
+ * section (those bug rendered as a missing block in the brief). */
 const tryParse = (raw: string): unknown | null => {
-  try { return JSON.parse(raw); } catch { return null; }
+  try { return extractLlmJson(raw); } catch { return null; }
 };
 
 /* ─── Section specs (journey order) ──────────────────────────────────── */
@@ -233,44 +237,64 @@ const howYoullPay: SectionSpec = {
   id: "howYoullPay",
   heading: "How you'll pay",
   reasoning: { effort: "high" },
+  // 2026-05-18: User direction — "without listing a bunch of scholarships
+  // unnecessarily don't list any just checkout what's available and then
+  // go to discover database". The brief no longer enumerates specific
+  // awards (those go stale fast and are already personalized in
+  // /discover). Instead it teaches the student the FUNDING LANES that
+  // apply to their profile, then redirects to /discover for the live
+  // matchlist. The renderer keeps the same row shape; only the semantics
+  // shifted from "row = one scholarship" to "row = one funding lane".
   buildPrompt: (ctx) => `
-You are writing the FUNDING section — 3 to 5 scholarships ranked by best-
-fit-for-this-student × urgency. Pull from LIVE CONTEXT only; do not
-invent. Order by application_deadline ASCENDING (closest deadline first).
+You are writing the FUNDING STRATEGY section. CRITICAL: do NOT list
+specific scholarships by name. The student's personalized live list is
+in our database at /discover and refreshes daily — naming individual
+awards here just creates stale duplication. Instead, teach them the 3
+to 4 FUNDING LANES (award categories) that fit their profile, why each
+one fits, and what to do first to start applying within each.
 
 STUDENT PROFILE:
 ${profileBlock(ctx)}
 
-LIVE CONTEXT (use these scholarships):
-${dbBlock(ctx)}
-
 OUTPUT — emit a JSON object exactly matching this shape:
 {
   "kicker": "03 · How you'll pay",
-  "headline": "string — 4-8 word display line capturing the funding strategy. Example: 'Stack three awards, cover four years.'",
+  "headline": "string — 4-8 word display line capturing the funding stack approach. Example: 'Stack three lanes, layer one safety net.'",
   "lead": "string — ONE sentence (max ~30 words) framing the funding picture for this student. Drop-cap rendered.",
   "entries": [
     {
-      "name": "string — exact scholarship name from LIVE CONTEXT",
-      "coverage": "string — short coverage label: 'Full ride' | 'Tuition only' | 'Stipend' | 'Partial' | 'Travel grant' | 'Research funding'",
-      "awardText": "string — short award value: '$50K/year' or '~$310K total' or 'Full tuition + stipend'",
-      "deadline": "string — ISO date YYYY-MM-DD, or 'Rolling', or 'TBA'",
-      "howProfileMaps": "string — 1-2 sentences naming the SPECIFIC profile elements this student should lead with on this application. Cite the angle. Skip generic 'strong applicants'.",
-      "firstTask": "string — ONE concrete action they should take FIRST this week. Example: 'Request the supervisor letter from Prof. Chen — 4-week lead time.'"
+      "name": "string — funding LANE label, NOT a specific award. Choose from: 'Government scholarships (home country)', 'Government scholarships (host country)', 'University merit aid', 'University need-based aid', 'Department TA/RA / assistantship', 'Research / PhD fellowship', 'External private grant', 'Travel & conference grant', 'Bilateral exchange program'. Pick the 3-4 lanes that actually apply to this profile.",
+      "coverage": "string — typical coverage at this lane: 'Full ride' | 'Tuition + stipend' | 'Tuition only' | 'Partial / merit' | 'Living costs' | 'Travel grant'",
+      "awardText": "string — typical award range. Example: '$30K-50K / year' or '~$200K total package' or 'Variable, often partial'",
+      "deadline": "string — typical cycle window for THIS lane. Example: 'Fall cycle (Oct-Jan)', 'Rolling', 'Annual, spring deadlines', 'Aligns with school app'",
+      "howProfileMaps": "string — 1-2 sentences naming the SPECIFIC profile elements that make THIS lane strong for THIS student. Cite the angle. Skip generic 'strong applicants'.",
+      "firstTask": "string — ONE concrete action they should take FIRST this week to start working this lane. Example: 'Search topuni.com/discover with the Government filter on, sort by deadline.' or 'Email three potential PhD advisors before requesting a fellowship nomination.'"
     },
-    ... 3 to 5 entries total ...
+    ... 3 to 4 lane entries total ...
   ],
-  "stackingNote": "string — 1-2 sentences explaining how these awards combine (or compete) for THIS student. Pattern: 'These three are stackable; together they'd cover X. The fourth is mutually exclusive with the first because both restrict to Y.' Skip if there's no real stacking insight."
+  "stackingNote": "string — 1-2 sentences explaining how these lanes combine for THIS student. Pattern: 'Government + university merit usually stack; private grants typically reduce university aid one-for-one — start with the bigger one.' Skip if there's no real stacking insight.",
+  "discoverCallout": "string — ONE sentence directing them to topuni.com/discover for the live, personalized match list filtered to their profile. Required field."
 }
+
+ABSOLUTE RULES:
+- Do NOT name any specific scholarship, fellowship, or award. No 'DAAD',
+  no 'Chevening', no 'Rhodes', no university-specific scholarship names.
+  Only LANE labels. Reviewers will flag any specific award name.
+- Do NOT invent statistics or acceptance rates.
 
 ${SHARED_JSON_RULES}`,
   validate: (raw) => {
     const obj = tryParse(raw) as Record<string, unknown> | null;
     if (!obj) return { ok: false, reason: "not valid JSON" };
     const entries = obj.entries as unknown[] | undefined;
-    if (!Array.isArray(entries) || entries.length < 3 || entries.length > 5) {
-      return { ok: false, reason: "entries must be array of 3-5" };
+    // 2026-05-19: loosened to 2-5. Flash was failing the 3-4 ceiling
+    // consistently (often produced 5 lanes) and the whole brief stream
+    // failed to complete. Renderer caps display at 5 anyway.
+    if (!Array.isArray(entries) || entries.length < 2 || entries.length > 5) {
+      return { ok: false, reason: "entries must be array of 2-5 lanes" };
     }
+    // discoverCallout is now optional. Renderer falls back to a default
+    // line so the CTA banner always shows.
     return { ok: true };
   },
 };

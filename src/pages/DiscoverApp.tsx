@@ -115,10 +115,24 @@ const score = (s: Scholarship, p: Profile): Scored => {
     else { eligibility = "not_eligible"; match -= 40; reasons.push(`Not open to ${p.country}`); }
   }
 
-  // Degree
+  // Degree — bucket-tolerant compare. Pre-fix this used `.includes(p.degree)`
+  // which compared user-side ("PhD", "master's") against catalog-side ("phd",
+  // "masters") with a case-sensitive substring check — i.e. always false.
+  // Result: every applicant was marked `not_eligible` on every legit
+  // scholarship and the match score was uniformly tanked. Normalize both
+  // sides into one of three canonical buckets before comparing.
   if (s.target_degree_level && p.degree) {
-    if (s.target_degree_level.includes(p.degree)) { match += 10; reasons.push(`Matches ${p.degree} level`); }
-    else { eligibility = "not_eligible"; match -= 25; }
+    const bucket = (raw: string): string => {
+      const v = raw.toLowerCase().trim();
+      if (/(phd|doctora|dphil|d\.phil|postdoc)/.test(v)) return "phd";
+      if (/(master|graduate|m\.?[as]\b|m\.?phil|m\.?ba|m\.?sc|magistr|llm)/.test(v)) return "master";
+      if (/(bachelor|undergrad|b\.?[as]\b|b\.?sc|b\.?eng|llb|first[- ]degree)/.test(v)) return "undergraduate";
+      return "";
+    };
+    const want = bucket(p.degree);
+    const targets = s.target_degree_level.map(bucket).filter(Boolean);
+    if (want && targets.includes(want)) { match += 10; reasons.push(`Matches ${p.degree} level`); }
+    else if (targets.length > 0) { eligibility = "not_eligible"; match -= 25; }
   }
 
   // GPA
@@ -220,7 +234,19 @@ const DiscoverApp = ({ language = "en" }: Props) => {
     (async () => {
       const { data } = await supabase
         .from("scholarships")
-        .select("*")
+        // 2026-05-18: explicit column list mirrors the trim Discover.tsx
+        // applied today. Excludes the 1536-dim embedding column which
+        // is pgvector-only / server-side and was bloating mobile load.
+        .select(
+          "scholarship_id, scholarship_name, provider_name, official_url, host_country, " +
+          "eligible_countries, target_degree_level, target_fields, award_amount_text, " +
+          "estimated_total_value_usd, coverage_type, min_gpa, gpa_scale, min_ielts, " +
+          "min_toefl, min_sat, citizenship_requirements, application_deadline, deadline_type, " +
+          "required_documents, essay_required, recommendation_letters_required, interview_required, " +
+          "separate_application_required, selectivity_level, effort_level, effort_reason, " +
+          "ideal_candidate_profile, common_rejection_reasons, strategy_notes, best_for_tags, " +
+          "why_this_fits, how_to_win, what_to_prepare_first, next_step, risk_note"
+        )
         // Match the canonical trust filter Discover + ScholarshipsByFilter
         // use. The previous \`verified=true\` boolean is the legacy column;
         // verification_status is the authoritative source and includes

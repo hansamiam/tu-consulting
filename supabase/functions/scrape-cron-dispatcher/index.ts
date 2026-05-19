@@ -20,19 +20,19 @@ import { createServiceClient } from "../_shared/clients.ts";
 const json = (status: number, body: unknown) =>
   respondJson(status, body, corsHeaders);
 
-// Don't try to scrape more than this in one dispatcher tick — keeps us
-// under the 60s function timeout and avoids burning Firecrawl credits
-// in a runaway burst. With CONCURRENCY=5, 40 sources × ~5s avg / 5 ≈
-// 40s — fits inside the timeout with headroom and ~doubles throughput
-// vs the serial 20-source ceiling.
-const MAX_SOURCES_PER_TICK = 40;
+// 2026-05-18 round 3: MAX_SOURCES_PER_TICK back up to 30 now that
+// scrape-source runs on gpt-4o-mini flash (TPM 200K instead of 30K).
+// 30 sources × ~5K tokens ≈ 150K tokens per tick — fits comfortably
+// inside the 200K window even at concurrency=5. Net catalog growth
+// rate ~2.5x the conservative-pacing era we just left.
+const MAX_SOURCES_PER_TICK = 30;
 
-// Concurrent scrape-source calls. Firecrawl's free tier allows ~10
-// req/s, paid ~50 req/s. Each scrape-source call holds a Firecrawl
-// connection for ~2-5s, so 5 in flight averages ~1-3 req/s — well
-// under both tier limits with headroom for OpenAI rate-limits too.
-// (Pre-rewrite: serial = 1 in flight = 1 req/source-burst, leaving
-// most of Firecrawl's bandwidth idle.)
+// 2026-05-18 round 3: CONCURRENCY back to 5 after the platform-wide
+// flash-tier switch (gpt-4o-mini, 200K TPM). 5 in flight × ~5K tokens
+// ≈ 25K-token burst — well inside the new headroom and ~5x the
+// Firecrawl req/s rate we were leaving idle. Burst safety guard
+// is still scrape-source's 429-retry-with-30s-backoff if a sustained
+// burst ever crosses the new ceiling.
 const CONCURRENCY = 5;
 
 // Stop hammering a source once it's failed this many times in a row.
@@ -86,12 +86,18 @@ serve(async (req) => {
   // here and get scraped on normal cadence.
   let query = supa
     .from("scholarship_sources")
-    .select("source_id, name, url, last_crawled_at, frequency_hours, consecutive_failures, health_status, category")
+    .select("source_id, name, url, last_crawled_at, last_success_at, frequency_hours, consecutive_failures, health_status, category")
     .eq("is_active", true)
     .neq("health_status", "quarantined")
     .neq("category", "aggregator")
     .lt("consecutive_failures", FAILURE_CIRCUIT_BREAKER)
-    .order("last_crawled_at", { ascending: true, nullsFirst: true })
+    // Order by last_success_at (oldest unsuccessful first) so sources
+    // that have been crawled but never successfully extracted surface
+    // BEFORE freshly-successful sources. Pre-2026-05-18 the sort was
+    // by last_crawled_at which considered a failed crawl "recent" and
+    // skipped it for the next frequency_hours window — a 429-failed
+    // source could go invisible to the dispatcher for days.
+    .order("last_success_at", { ascending: true, nullsFirst: true })
     .limit(MAX_SOURCES_PER_TICK);
 
   if (Array.isArray(body.source_ids) && body.source_ids.length > 0) {
@@ -102,11 +108,24 @@ serve(async (req) => {
   if (error) return json(500, { error: `Load sources: ${error.message}` });
 
   const now = Date.now();
+  // Short cooldown between retries on never-succeeded sources to prevent
+  // a persistent failure (e.g. broken URL) from thrashing the queue.
+  // 30 min strikes a balance between recovering from transient 429s
+  // and not burning Firecrawl/AI budget on a dead source.
+  const RETRY_COOLDOWN_MS = 30 * 60_000;
   const due = (candidates ?? []).filter((s) => {
     if (body.force_all) return true;
-    if (!s.last_crawled_at) return true;
-    const elapsed = now - new Date(s.last_crawled_at).getTime();
-    // Degraded sources scrape at half frequency (2× the cadence in hours).
+    // Sources without ANY successful crawl re-tick on RETRY_COOLDOWN_MS,
+    // gated on last_crawled_at (to honor the claim) rather than the
+    // full frequency_hours window — they need to keep trying.
+    if (!s.last_success_at) {
+      if (!s.last_crawled_at) return true;
+      return now - new Date(s.last_crawled_at).getTime() >= RETRY_COOLDOWN_MS;
+    }
+    // Successful sources tick on their normal frequency_hours cadence
+    // measured from the LAST SUCCESS (not last attempt). Degraded
+    // sources scrape at half frequency.
+    const elapsed = now - new Date(s.last_success_at).getTime();
     const baseCadenceHrs = s.frequency_hours ?? 24;
     const effectiveCadenceHrs = s.health_status === "degraded" ? baseCadenceHrs * 2 : baseCadenceHrs;
     return elapsed >= effectiveCadenceHrs * 3_600_000;

@@ -137,7 +137,12 @@ async function computeProfileHash(p: InboundProfile): Promise<string> {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
 }
 
-function isolateJson(raw: string): string {
+import { extractLlmJson } from "../_shared/llm-json.ts";
+
+// isolateJson retired 2026-05-18; shared brace-walker used directly.
+// Keeping the local function as a thin wrapper purely so the existing
+// call-site downstream doesn't need to be re-typed.
+function _isolateJson_RETIRED(raw: string): string {
   let s = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
   const first = s.indexOf("{");
   const last = s.lastIndexOf("}");
@@ -374,7 +379,7 @@ Now output ONLY the JSON. Begin with { and end with }.`;
       ?? (Array.isArray(data?.content) ? data.content.map((c: any) => c?.text ?? "").join("") : "")
       ?? "";
     if (!raw) return json(502, { error: "Empty completion" });
-    parsed = JSON.parse(isolateJson(raw)) as DeepDiveOutput;
+    parsed = extractLlmJson(raw) as DeepDiveOutput;
     // Soft validation — match/strategy/odds are required; thirty_day was
     // intentionally retired (the prompt instructs the LLM to skip it),
     // so we MUST NOT require it here or every faithful response gets
@@ -395,7 +400,11 @@ Now output ONLY the JSON. Begin with { and end with }.`;
   }
 
   // Cache the result. Upsert so a re-fire (e.g. cache eviction) just overwrites.
-  await supa.from("scholarship_deep_dives").upsert({
+  // 2026-05-18: log cache-write failure so a sustained RLS misconfig or
+  // schema drift surfaces in edge logs. The user still gets their content;
+  // a failed cache write just means the next request regenerates from
+  // scratch (cost ~$0.005, not catastrophic).
+  const { error: cacheErr } = await supa.from("scholarship_deep_dives").upsert({
     scholarship_id: body.scholarshipId,
     profile_hash: profileHash,
     user_id: userId,
@@ -404,6 +413,9 @@ Now output ONLY the JSON. Begin with { and end with }.`;
     cost_estimate_usd: COST_ESTIMATE_USD,
     model_tag: Deno.env.get("AI_PROVIDER") || "lovable",
   }, { onConflict: "scholarship_id,profile_hash" });
+  if (cacheErr) {
+    console.warn("[scholarship-deep-dive] cache upsert failed", cacheErr.message);
+  }
 
   return json(200, { ...parsed, _cached: false, _generated_at: new Date().toISOString() });
 });

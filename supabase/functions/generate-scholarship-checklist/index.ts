@@ -53,13 +53,11 @@ const SCHEMA_DOC = `[
 const json = (status: number, body: unknown) =>
   respondJson(status, body, corsHeaders);
 
-function isolateJsonArray(raw: string): string {
-  let s = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
-  const first = s.indexOf("[");
-  const last  = s.lastIndexOf("]");
-  if (first === -1 || last === -1 || last <= first) return s;
-  return s.slice(first, last + 1);
-}
+import { extractLlmJsonArray } from "../_shared/llm-json.ts";
+
+// isolateJsonArray retired 2026-05-18; shared bracket-walker handles
+// both the LLM's `[...]` happy path and the "valid JSON followed by
+// commentary that contains a `]`" failure mode.
 
 Deno.serve(async (req) => {
   const pre = handleCorsOptions(req, corsHeaders);
@@ -167,9 +165,7 @@ Begin output with [ and end with ].`;
       ?? ""
     ) as string;
     if (!raw) return json(502, { error: "Empty completion" });
-    const isolated = isolateJsonArray(raw);
-    const candidate = JSON.parse(isolated);
-    if (!Array.isArray(candidate)) throw new Error("Not an array");
+    const candidate = extractLlmJsonArray(raw);
     // Soft validation: drop malformed items, keep the rest.
     const validCategories = new Set(["documents", "tests", "essays", "recommendations", "portal", "logistics"]);
     const seenIds = new Set<string>();
@@ -203,13 +199,18 @@ Begin output with [ and end with ].`;
   }
 
   // Upsert the cache so a re-fire just overwrites with the freshest version.
-  await supa.from("scholarship_checklists").upsert({
+  // 2026-05-18: log cache-write failure so a sustained RLS misconfig
+  // surfaces in edge logs. Same pattern as scholarship-deep-dive.
+  const { error: cacheErr } = await supa.from("scholarship_checklists").upsert({
     scholarship_id: body.scholarshipId,
     items: parsed as unknown as Json,
     schema_version: SCHEMA_VERSION,
     cost_estimate_usd: COST_ESTIMATE_USD,
     model_tag: Deno.env.get("AI_PROVIDER") || "lovable",
   }, { onConflict: "scholarship_id" });
+  if (cacheErr) {
+    console.warn("[generate-scholarship-checklist] cache upsert failed", cacheErr.message);
+  }
 
   return json(200, { items: parsed, _cached: false, _generated_at: new Date().toISOString() });
 });

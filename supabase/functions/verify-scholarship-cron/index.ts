@@ -96,10 +96,21 @@ Deno.serve(async (req) => {
   // soft via the existing completeness-score ordering — broken rows
   // typically have low completeness scores, so they naturally bubble
   // to the front of the queue without a special clause.
+  // 2026-05-18: 30-minute grace window before a freshly-discovered row
+  // gets re-verified. Pre-fix, verify-scholarship picked up new
+  // 'pending' rows within minutes of insertion — and because LLM
+  // extractions vary slightly run-to-run, the diff-check almost always
+  // produced "material diffs" → status flipped from 'pending' to
+  // 'stale' on rows that were minutes old. UX paper cut: brand-new
+  // entries appeared with a "stale" verification status. Skip rows
+  // created < 30 min ago; they'll be picked up on the next cron tick
+  // once the catalog has had a moment to settle.
+  const graceCutoff = new Date(Date.now() - 30 * 60_000).toISOString();
   const { data: candidates, error: candErr } = await supa
     .from("scholarships")
     .select("scholarship_id, scholarship_name, last_verified_at, verification_status, data_completeness_score")
     .not("source_url", "is", null)
+    .lt("created_at", graceCutoff)
     .order("data_completeness_score", { ascending: true, nullsFirst: true })
     .order("last_verified_at", { ascending: true, nullsFirst: true })
     .limit(MAX_PER_RUN);

@@ -36,8 +36,16 @@ import { respondJson } from "../_shared/http.ts";
 const json = (status: number, body: unknown) =>
   respondJson(status, body, corsHeaders);
 
-const MAX_PER_RUN = 80;
-const THROTTLE_MS = 1200;
+// 2026-05-19: dropped from 80 → 12. Each verify-scholarship invocation
+// costs ~5-15s (Firecrawl fetch + Flash LLM round-trip + DB writes), so
+// 80 candidates × ~10s = 13 min — well past the Supabase edge function
+// worker compute ceiling of ~150s. The cron was 504/546'ing on every
+// run, draining maybe 12-15 rows before crash-exit while reporting the
+// run as "failed" upstream. New ceiling: 12 × ~10s = ~120s with the
+// wall-clock budget as a backstop.
+const MAX_PER_RUN = 12;
+const THROTTLE_MS = 800;
+const WALL_CLOCK_BUDGET_MS = 130_000;
 
 Deno.serve(async (req) => {
   const pre = handleCorsOptions(req);
@@ -103,8 +111,14 @@ Deno.serve(async (req) => {
     other: 0,
   };
   const errors: string[] = [];
+  const runStart = Date.now();
+  let timedOutEarly = false;
 
   for (let i = 0; i < candidates.length; i++) {
+    if (Date.now() - runStart > WALL_CLOCK_BUDGET_MS) {
+      timedOutEarly = true;
+      break;
+    }
     const c = candidates[i];
     if (i > 0) await new Promise(r => setTimeout(r, THROTTLE_MS));
 
@@ -137,6 +151,8 @@ Deno.serve(async (req) => {
     ok: true,
     candidates: candidates.length,
     results: counters,
+    timedOutEarly,
+    elapsedMs: Date.now() - runStart,
     errors_preview: errors.slice(0, 5),
   });
 });

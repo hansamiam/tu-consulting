@@ -26,7 +26,7 @@ export const scholarshipPageSeo: Record<string, ScholarshipPageSeoEntry> = {
     title: "UK Scholarships for International Students | Top Uni 2026-2027",
     metaDescription: "Find fully-funded UK scholarships for international students — Chevening, Commonwealth, university awards. Match your profile in minutes with Top Uni AI.",
     h1: "Scholarships in the UK for international students",
-    intro: "Every year UK universities and the British government fund thousands of international students through Chevening, Commonwealth, GREAT, and university-specific awards — and most applicants from Central Asia never apply because the rules look opaque. Top Uni indexes verified UK scholarships for international students with live deadlines, eligibility, and award size, so you see what you actually qualify for. Built by a Yale, Cambridge and Harvard alumni team for students applying out of Almaty, Bishkek, and the wider region.",
+    intro: "Every year UK universities and the British government fund thousands of international students through Chevening, Commonwealth, GREAT, and university-specific awards — and most applicants from Central Asia never apply because the rules look opaque. Top Uni indexes verified UK scholarships for international students with live deadlines, eligibility, and award size, so you see what you actually qualify for. Built by a Yale, Cambridge and Harvard team for students applying out of Almaty, Bishkek, and the wider region.",
   },
   "by-country/united-states": {
     title: "US Scholarships for International Students | Top Uni 2026-2027",
@@ -44,7 +44,7 @@ export const scholarshipPageSeo: Record<string, ScholarshipPageSeoEntry> = {
     title: "Germany Scholarships for International Students | Top Uni 2026-2027",
     metaDescription: "Fully-funded Germany scholarships for international students — DAAD, Erasmus+, and university awards. Many programs in English with no tuition.",
     h1: "Scholarships in Germany for international students",
-    intro: "German public universities charge zero tuition for almost every international student, but living costs of around 11,900 EUR per year still need a plan — that is where Germany scholarships for international students come in. Top Uni indexes DAAD, Deutschlandstipendium, Erasmus+, and university-funded awards, with English-taught masters programs flagged so you do not waste time on German-only options. Built by an alumni team from Yale, Cambridge, and Harvard who have helped students from Almaty and Bishkek land at TUM, Heidelberg, and RWTH Aachen.",
+    intro: "German public universities charge zero tuition for almost every international student, but living costs of around 11,900 EUR per year still need a plan — that is where Germany scholarships for international students come in. Top Uni indexes DAAD, Deutschlandstipendium, Erasmus+, and university-funded awards, with English-taught masters programs flagged so you do not waste time on German-only options. Built by a team from Yale, Cambridge, and Harvard who have helped students from Almaty and Bishkek land at TUM, Heidelberg, and RWTH Aachen.",
   },
   "by-country/south-korea": {
     title: "South Korea Scholarships for International Students | Top Uni 2026-2027",
@@ -62,7 +62,7 @@ export const scholarshipPageSeo: Record<string, ScholarshipPageSeoEntry> = {
     title: "Computer Science Scholarships Abroad | Top Uni 2026-2027",
     metaDescription: "Top computer science scholarships for international students — full-ride and partial CS awards at MIT, ETH, NUS, KAIST. Free AI strategy plan.",
     h1: "Computer science scholarships for international students",
-    intro: "Computer science is the most over-applied and the most over-funded major in international admissions — top CS programs at MIT, Stanford, ETH Zurich, NUS, KAIST, and TUM all run dedicated funding for strong international applicants. Top Uni indexes verified computer science scholarships abroad — including AI/ML-specialist awards and women-in-tech programs — and ranks each against your GPA, math olympiad record, and project portfolio. Built by a Yale, Cambridge, and Harvard alumni team that knows how CS admissions actually weights Central Asian applicants.",
+    intro: "Computer science is the most over-applied and the most over-funded major in international admissions — top CS programs at MIT, Stanford, ETH Zurich, NUS, KAIST, and TUM all run dedicated funding for strong international applicants. Top Uni indexes verified computer science scholarships abroad — including AI/ML-specialist awards and women-in-tech programs — and ranks each against your GPA, math olympiad record, and project portfolio. Built by a Yale, Cambridge, and Harvard team that knows how CS admissions actually weights Central Asian applicants.",
   },
   "by-field/business": {
     title: "Business & MBA Scholarships Abroad | Top Uni 2026-2027",
@@ -86,7 +86,7 @@ export const scholarshipPageSeo: Record<string, ScholarshipPageSeoEntry> = {
     title: "Scholarships for Kazakhstan Students Abroad | Top Uni 2026-2027",
     metaDescription: "Verified scholarships for Kazakhstan students applying to universities abroad — Chevening, Fulbright, DAAD, MEXT, and more. Free AI strategy plan from an Almaty-based team.",
     h1: "Scholarships for Kazakhstan students applying abroad",
-    intro: "Every year Kazakh students win Chevening, Fulbright, DAAD, MEXT, GKS, and dozens of university-funded awards — but most KZ applicants never see the full list because eligibility rules are spread across hundreds of program sites in three languages. Top Uni indexes scholarships for Kazakhstan students with verified eligibility, current deadlines, and award amounts in one place. Built by a Yale, Cambridge, and Harvard alumni team with roots in Almaty, so the matching understands the KZ context — Bolashak alumni networks, NIS / KTL backgrounds, and the realities of applying out of a CIS country.",
+    intro: "Every year Kazakh students win Chevening, Fulbright, DAAD, MEXT, GKS, and dozens of university-funded awards — but most KZ applicants never see the full list because eligibility rules are spread across hundreds of program sites in three languages. Top Uni indexes scholarships for Kazakhstan students with verified eligibility, current deadlines, and award amounts in one place. Built by a Yale, Cambridge, and Harvard team with roots in Almaty, so the matching understands the KZ context — Bolashak alumni networks, NIS / KTL backgrounds, and the realities of applying out of a CIS country.",
   },
   "theme/for-kyrgyzstan-students": {
     title: "Scholarships for Kyrgyzstan Students Abroad | Top Uni 2026-2027",

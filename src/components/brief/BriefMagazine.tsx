@@ -14,6 +14,8 @@
  * skeletons reserve the same vertical space as the real sections.
  */
 import React, { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { ArrowRight, Compass, GraduationCap, Sparkles } from "lucide-react";
 import { MagazineMasthead } from "./primitives/MagazineMasthead";
 import { SectionSkeleton } from "./primitives/SectionSkeleton";
 import { WhereYouStand } from "./sections/WhereYouStand";
@@ -197,6 +199,77 @@ export const BriefMagazine: React.FC<Props> = (props) => {
         }
         return null;
       })}
+
+      {/* 2026-05-19: End-of-brief handoff card. The brief itself sketches
+          the strategy; the live scholarship list and live workshops
+          live elsewhere in the product. Surface both as clear next
+          steps so the brief doesn't end in a dead end. Only renders
+          once at least one section has arrived — avoids flashing
+          during initial stream skeleton state. */}
+      {Object.keys(sections).length > 0 && !streamError && (
+        <section className="mt-16 sm:mt-20 mb-8">
+          <div className="text-center mb-8">
+            <p className="font-heading text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">
+              What's next
+            </p>
+            <h2 className="font-heading text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight">
+              Take the next step.
+            </h2>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
+            <Link
+              to="/discover"
+              className="group block bg-gradient-to-br from-gold/12 via-gold/6 to-transparent border border-gold/40 rounded-2xl p-6 hover:from-gold/22 hover:via-gold/10 transition-colors"
+            >
+              <div className="flex items-start gap-3 mb-2.5">
+                <div className="shrink-0 w-9 h-9 rounded-full bg-gold/20 flex items-center justify-center">
+                  <Compass className="h-4.5 w-4.5 text-gold-dark" />
+                </div>
+                <p className="font-heading text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mt-1.5">
+                  Your live matches
+                </p>
+              </div>
+              <h3 className="font-heading text-lg font-bold text-foreground tracking-tight leading-tight">
+                Open Discover
+              </h3>
+              <p className="text-muted-foreground text-[13.5px] leading-relaxed mt-1.5">
+                Your personalized scholarship list — filtered to your profile, refreshed daily.
+              </p>
+              <span className="inline-flex items-center gap-1.5 text-gold-dark text-[12.5px] font-semibold mt-3 group-hover:gap-2.5 transition-all">
+                Browse now <ArrowRight className="h-3.5 w-3.5" />
+              </span>
+            </Link>
+            <Link
+              to="/academy"
+              className="group block bg-gradient-to-br from-primary/8 via-primary/4 to-transparent border border-primary/30 rounded-2xl p-6 hover:from-primary/15 hover:via-primary/7 transition-colors"
+            >
+              <div className="flex items-start gap-3 mb-2.5">
+                <div className="shrink-0 w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center">
+                  <GraduationCap className="h-4.5 w-4.5 text-primary" />
+                </div>
+                <p className="font-heading text-[11px] uppercase tracking-[0.22em] text-primary font-semibold mt-1.5">
+                  Get live help
+                </p>
+              </div>
+              <h3 className="font-heading text-lg font-bold text-foreground tracking-tight leading-tight">
+                Join Academy
+              </h3>
+              <p className="text-muted-foreground text-[13.5px] leading-relaxed mt-1.5">
+                Live workshops and office hours with the team. Walk through your plan with humans.
+              </p>
+              <span className="inline-flex items-center gap-1.5 text-primary text-[12.5px] font-semibold mt-3 group-hover:gap-2.5 transition-all">
+                See what's included <ArrowRight className="h-3.5 w-3.5" />
+              </span>
+            </Link>
+          </div>
+          <div className="text-center mt-6">
+            <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1.5">
+              <Sparkles className="h-3 w-3 text-gold-dark" />
+              Your report is saved — return to it anytime from your account.
+            </p>
+          </div>
+        </section>
+      )}
     </div>
   );
 };

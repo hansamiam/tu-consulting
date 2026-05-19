@@ -267,12 +267,20 @@ Deno.serve(async (req) => {
     );
   }
 
-  // Settle all updates; partial failures don't abort
-  await Promise.allSettled(updates);
+  // Settle all updates; partial failures don't abort. 2026-05-18: log the
+  // rejected settlements so a silently-failing batch (RLS surprise,
+  // network blip) shows up in edge logs instead of being entirely
+  // invisible — the function used to discard `settled` without inspection.
+  const settled = await Promise.allSettled(updates);
+  const writeFailures = settled.filter((r) => r.status === "rejected").length;
+  if (writeFailures > 0) {
+    console.warn(`[scholarship-url-health-cron] ${writeFailures}/${settled.length} DB updates failed`);
+  }
 
   return respondJson(200, {
     checked: queue.length,
     ok, redirect, fail,
+    write_failures: writeFailures,
     duration_ms: Date.now() - startedAt,
   }, corsHeaders);
 });

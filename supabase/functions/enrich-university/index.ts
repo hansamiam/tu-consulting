@@ -71,7 +71,9 @@ const SCHEMA_DOC = `{
   ]
 }`;
 
-function isolateJson(raw: string): string {
+import { extractLlmJson } from "../_shared/llm-json.ts";
+
+function _isolateJson_RETIRED(raw: string): string {
   let s = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
   const first = s.indexOf("{");
   const last  = s.lastIndexOf("}");
@@ -176,14 +178,16 @@ Output ONLY the JSON object. Begin with { and end with }.`;
 
   let parsed: EnrichmentOutput;
   try {
+    // 2026-05-18: pro → flash for the same cost-control reason
+    // documented in enrich-scholarship-content. University enrichment
+    // is also a one-time-per-row structured fill.
     const resp = await chatCompletions({
-      tier: "pro",
+      tier: "flash",
       messages: [
         { role: "system", content: "You are a precise admissions data researcher. You output only valid JSON matching the requested schema." },
         { role: "user", content: prompt },
       ],
       stream: false,
-      reasoning: { effort: "medium" },
     });
     if (!resp.ok) {
       const t = await resp.text();
@@ -197,7 +201,7 @@ Output ONLY the JSON object. Begin with { and end with }.`;
       ?? ""
     ) as string;
     if (!raw) return json(502, { error: "Empty completion" });
-    parsed = JSON.parse(isolateJson(raw)) as EnrichmentOutput;
+    parsed = extractLlmJson(raw) as EnrichmentOutput;
   } catch (e) {
     console.warn("[enrich-university] parse failed", (e as Error).message);
     return json(502, { error: "Parse failed" });
@@ -234,14 +238,23 @@ Output ONLY the JSON object. Begin with { and end with }.`;
   if (Object.keys(uniPatch).length > 0) {
     uniPatch.enrichment_metadata = newMeta;
     uniPatch.enriched_at = now;
-    await supa.from("universities").update(uniPatch as never).eq("university_id", university.university_id);
+    const { error: uniUpdErr } = await supa.from("universities")
+      .update(uniPatch as never)
+      .eq("university_id", university.university_id);
+    if (uniUpdErr) {
+      console.error("[enrich-university] update failed", uniUpdErr.message, "uni_id=", university.university_id);
+      return respondJson(500, { error: `university_update_failed: ${uniUpdErr.message}` }, corsHeaders);
+    }
     updatesUniversity = Object.keys(uniPatch).length - 2; // exclude metadata + enriched_at
   } else {
     // Even if we wrote no values, mark the row as scanned so the cron
     // doesn't re-pick it within the staleness window.
-    await supa.from("universities")
+    const { error: scanMarkErr } = await supa.from("universities")
       .update({ enriched_at: now })
       .eq("university_id", university.university_id);
+    if (scanMarkErr) {
+      console.warn("[enrich-university] scan-mark failed", scanMarkErr.message);
+    }
   }
 
   // ─── Apply program-level updates (admission_requirements + applications) ─

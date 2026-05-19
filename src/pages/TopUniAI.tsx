@@ -9,6 +9,7 @@ import TopUniDashboard from "@/components/TopUniDashboard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -98,6 +99,13 @@ interface WizardDraft {
   careerRoi: number;
   visaAccess: number;
   locationPref: number;
+  /* 2026-05-18 Step 4 optional intake. All skippable. Sharpen the
+   * brief's personalisation when filled; absent ⇒ brief just leans on
+   * Step 1-3 fields like before. */
+  careerGoal?: string;
+  extracurriculars?: string;
+  background?: string;
+  namedSchools?: string;
   /** Wall-clock ms — drafts older than 14 days are dropped on read. */
   ts?: number;
 }
@@ -168,6 +176,32 @@ const TopUniAI = () => {
   // used when the draft is absent or partial.
   const draft = useMemo(() => loadDraft(), []);
 
+  // 2026-05-19: surface a toast when we restore a meaningful draft so
+  // the user understands why fields are pre-filled. Fires once on
+  // mount. "Meaningful" = at least 2 substantive fields filled — a
+  // draft with just a name we tagged 4 sessions ago doesn't warrant
+  // a toast at re-entry.
+  useEffect(() => {
+    if (!draft) return;
+    const filled = [
+      draft.fullName, draft.email, draft.nationality, draft.gradeLevel,
+      draft.gpa, draft.major, draft.ielts, draft.toefl, draft.sat,
+    ].filter((v) => typeof v === "string" && v.trim().length > 0).length;
+    if (filled >= 2) {
+      const minutes = draft.ts ? Math.max(1, Math.round((Date.now() - draft.ts) / 60_000)) : 0;
+      const timeLabel = minutes > 1440
+        ? `${Math.round(minutes / 1440)} day${Math.round(minutes / 1440) === 1 ? "" : "s"} ago`
+        : minutes > 60
+          ? `${Math.round(minutes / 60)} hour${Math.round(minutes / 60) === 1 ? "" : "s"} ago`
+          : `${minutes} min ago`;
+      toast.success(
+        `Welcome back — restored your progress from ${timeLabel}.`,
+        { duration: 4500 },
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [fullName, setFullName] = useState(draft?.fullName ?? "");
   const [email, setEmail] = useState(draft?.email ?? "");
   const [whatsapp, setWhatsapp] = useState(draft?.whatsapp ?? "");
@@ -207,11 +241,16 @@ const TopUniAI = () => {
   const [visaAccess, setVisaAccess] = useState<number[]>([typeof draft?.visaAccess === "number" ? draft.visaAccess : 3]);
   const [locationPref, setLocationPref] = useState<number[]>([typeof draft?.locationPref === "number" ? draft.locationPref : 3]);
 
-  // Pro-depth questions (top achievement, personal story, named
-  // schools) live entirely in the after-brief ProBriefUnlock dialog
-  // now — keeping the intake to a fast 3-step flow and putting the
-  // depth ask AFTER the user has seen what the free brief delivers,
-  // which converts better than asking up-front.
+  // 2026-05-18 Step 4 optional fields. All skippable — Pro upsell
+  // dialog retired in favour of in-flow optional questions so the
+  // brief can be personalised without paywalling the depth signal.
+  // Users who want a quick pass click "Skip" and never see them; users
+  // who want a sharper brief fill them in. Each maps directly into
+  // the topuni-ai-pathway prompt's PROFILE section.
+  const [careerGoal, setCareerGoal] = useState<string>(draft?.careerGoal ?? "");
+  const [extracurriculars, setExtracurriculars] = useState<string>(draft?.extracurriculars ?? "");
+  const [background, setBackground] = useState<string>(draft?.background ?? "");
+  const [namedSchools, setNamedSchools] = useState<string>(draft?.namedSchools ?? "");
 
   // Draft-restore auto-jump retired round 10 alongside the landing
   // screen — the page now always opens directly in 'intake' so there's
@@ -300,6 +339,11 @@ const TopUniAI = () => {
   // specific scholarship — the country gets added to the saved profile
   // even though there's no UI affordance for it).
 
+  // 2026-05-19: surface "saving / saved" beneath the progress pips.
+  // Auto-save has always written silently; adding a quiet reassurance
+  // signals that closing the tab is safe.
+  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
+
   /* Auto-save the wizard draft to localStorage whenever any field
      changes. This way the user can close the tab mid-wizard and come
      back to where they were instead of losing 5 minutes of profile
@@ -317,15 +361,22 @@ const TopUniAI = () => {
         targetCountries, major, budget, scholarshipNeeded, timeline,
         prestige: prestige[0], scholarship: scholarship[0],
         careerRoi: careerRoi[0], visaAccess: visaAccess[0], locationPref: locationPref[0],
+        // Optional Step 4 — persist only when filled.
+        careerGoal: careerGoal || undefined,
+        extracurriculars: extracurriculars || undefined,
+        background: background || undefined,
+        namedSchools: namedSchools || undefined,
         ts: Date.now(),
       };
       localStorage.setItem(WIZARD_DRAFT_KEY, JSON.stringify(draftPayload));
+      setDraftSavedAt(Date.now());
     } catch { /* ignore quota / private-mode errors */ }
   }, [
     screen,
     fullName, email, whatsapp, nationality, gradeLevel, gpa, gpaScale, ielts, toefl, sat,
     targetCountries, major, budget, scholarshipNeeded, timeline,
     prestige, scholarship, careerRoi, visaAccess, locationPref,
+    careerGoal, extracurriculars, background, namedSchools,
   ]);
 
   /* Once the user transitions to the dashboard the wizard answers are
@@ -405,17 +456,24 @@ const TopUniAI = () => {
                   stage instead of three abstract bars. Active step's
                   label gets a subtle gold tint; completed steps get
                   the canvas-foreground colour; upcoming stay muted. */}
+              {/* 2026-05-19: Progress now spans 4 steps. The 4th is the
+                  optional context step (career goal, ECs, background,
+                  named schools). User direction was to redesign the
+                  flow so the extras are part of the journey, not tacked
+                  on the end of Step 3 as a collapsible. Step 4 has a
+                  prominent Skip path for users who want the fast lane. */}
               <div className="flex items-start justify-center gap-3 mb-10">
                 {[
                   { n: 1, label: "Profile" },
                   { n: 2, label: "Goals" },
                   { n: 3, label: "Priorities" },
+                  { n: 4, label: "Sharpen" },
                 ].map(s => {
                   const isActive = s.n === step;
                   const isDone = s.n < step;
                   return (
                     <div key={s.n} className="flex flex-col items-center gap-1.5 min-w-0">
-                      <div className="h-1.5 w-14 sm:w-16 rounded-full overflow-hidden bg-border/60">
+                      <div className="h-1.5 w-12 sm:w-14 rounded-full overflow-hidden bg-border/60">
                         <motion.div
                           className="h-full bg-gold-dark"
                           initial={false}
@@ -432,6 +490,19 @@ const TopUniAI = () => {
                   );
                 })}
               </div>
+
+              {/* "Saved" indicator — quiet, sits beneath the progress bar.
+                  Renders only when the auto-save has fired at least once,
+                  so on first-render an empty draft doesn't claim to be
+                  saved. */}
+              {draftSavedAt && (
+                <div className="flex items-center justify-center mb-7 -mt-3">
+                  <span className="text-[10.5px] text-muted-foreground/80 inline-flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-success" />
+                    Progress auto-saved on this device
+                  </span>
+                </div>
+              )}
 
               {/* Hub-context indicator — confirms to the user why a field
                   in this wizard is pre-filled. Cleared by the user with
@@ -911,32 +982,118 @@ const TopUniAI = () => {
 
                     <div className="flex justify-between pt-4">
                       <Button variant="outline" onClick={() => goToStep(2)}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
-                      <Button
-                        variant="gold"
-                        size="lg"
-                        onClick={() => {
-                          // Seed Discover with the same profile so the user
-                          // never has to re-answer the nationality / level /
-                          // GPA / IELTS questions inside Discover. Once this
-                          // fires, /discover skips its wizard and lands
-                          // straight on personalized results. saveProfile
-                          // also fires the cross-device sync to
-                          // student_profiles, so signing in on another
-                          // device pulls the same profile back down.
-                          try {
-                            saveProfile(projectToDiscoverProfile({
-                              fullName, email, nationality, gradeLevel,
-                              gpa, gpaScale, ielts, toefl, sat, major, budget,
-                              targetCountries,
-                            }));
-                          } catch { /* localStorage may be unavailable; brief still renders */ }
-                          setScreen("dashboard");
-                        }}
-                      >
-                        Generate my plan
-                        <ArrowRight className="ml-2 w-5 h-5" />
+                      <Button variant="gold" onClick={() => goToStep(4)}>
+                        Continue <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
                     </div>
+                  </motion.div>
+                )}
+
+                {step === 4 && (
+                  <motion.div
+                    key="step4"
+                    initial={stepEnter}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={stepExit}
+                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                    className="space-y-7"
+                  >
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Step 04 · Sharpen</p>
+                      <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight">
+                        Tell us more — or skip ahead.
+                      </h2>
+                      <p className="text-muted-foreground mt-2 text-sm">
+                        Optional. Each detail makes your essay angles and shortlist sharper. Anything you share stays private to your report.
+                      </p>
+                    </div>
+                    <div className="space-y-5">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="careerGoal" className="text-xs uppercase tracking-wider font-medium">Career goal</Label>
+                        <Textarea
+                          id="careerGoal"
+                          placeholder="e.g. data scientist focused on climate modeling"
+                          value={careerGoal}
+                          onChange={(e) => setCareerGoal(e.target.value)}
+                          className="min-h-[70px] resize-none bg-card"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="extracurriculars" className="text-xs uppercase tracking-wider font-medium">Extracurriculars &amp; achievements</Label>
+                        <Textarea
+                          id="extracurriculars"
+                          placeholder="e.g. founded a community library, IMO bronze, 200 hrs neuroscience research"
+                          value={extracurriculars}
+                          onChange={(e) => setExtracurriculars(e.target.value)}
+                          className="min-h-[90px] resize-none bg-card"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="background" className="text-xs uppercase tracking-wider font-medium">Background context</Label>
+                        <Textarea
+                          id="background"
+                          placeholder="e.g. first-gen, raised in Bishkek, parents both teachers"
+                          value={background}
+                          onChange={(e) => setBackground(e.target.value)}
+                          className="min-h-[70px] resize-none bg-card"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="namedSchools" className="text-xs uppercase tracking-wider font-medium">Schools you have in mind</Label>
+                        <Textarea
+                          id="namedSchools"
+                          placeholder="e.g. Stanford, U of Toronto, KAIST"
+                          value={namedSchools}
+                          onChange={(e) => setNamedSchools(e.target.value)}
+                          className="min-h-[60px] resize-none bg-card"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Generate handler shared by Skip + Generate buttons.
+                        Same as old Step 3 Generate but moved here so the
+                        optional context fields are guaranteed-persisted
+                        before the brief streams. */}
+                    {(() => {
+                      const onGenerate = () => {
+                        try {
+                          saveProfile(projectToDiscoverProfile({
+                            fullName, email, nationality, gradeLevel,
+                            gpa, gpaScale, ielts, toefl, sat, major, budget,
+                            targetCountries,
+                            careerGoal, extracurriculars, background, namedSchools,
+                          }));
+                        } catch { /* localStorage may be unavailable; brief still renders */ }
+                        setScreen("dashboard");
+                      };
+                      const filled = [careerGoal, extracurriculars, background, namedSchools]
+                        .filter((v) => v && v.trim().length > 0).length;
+                      return (
+                        <>
+                          <div className="text-center pt-2">
+                            <p className="text-[11.5px] text-muted-foreground">
+                              {filled === 0
+                                ? "Skip to generate — your report will use the basics you've already shared."
+                                : `${filled} of 4 fields added · sharpens essay angles and fit notes.`}
+                            </p>
+                          </div>
+                          <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
+                            <Button variant="outline" onClick={() => goToStep(3)}>
+                              <ArrowLeft className="mr-2 w-4 h-4" /> Back
+                            </Button>
+                            <div className="flex gap-2 sm:gap-3">
+                              <Button variant="ghost" onClick={onGenerate} className="text-muted-foreground hover:text-foreground">
+                                Skip for now
+                              </Button>
+                              <Button variant="gold" size="lg" onClick={onGenerate}>
+                                Generate my plan
+                                <ArrowRight className="ml-2 w-5 h-5" />
+                              </Button>
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </motion.div>
                 )}
 

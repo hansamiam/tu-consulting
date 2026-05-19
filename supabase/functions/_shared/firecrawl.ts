@@ -21,17 +21,31 @@ export interface FirecrawlScrapeOptions {
   onlyMainContent?: boolean;
   /** ms to wait after page load before capturing (lets late JS render). Default 0. */
   waitFor?: number;
-  /** Optional override of the standard timeout (ms). Default 30s. */
+  /** Optional override of the standard timeout (ms). Default 45s. */
   timeout?: number;
+  /** When true, also request rawHtml (rendered HTML including head meta).
+   *  Used by enrich-cover-images-cron to scrape og:image off the
+   *  post-JS-render head — Firecrawl's metadata.ogImage isn't reliable. */
+  withRawHtml?: boolean;
 }
 
 export interface FirecrawlScrapeResult {
   markdown: string;
+  /** Post-JS-render raw HTML when withRawHtml=true was requested. */
+  rawHtml?: string;
   metadata?: {
     title?: string;
     description?: string;
     statusCode?: number;
     sourceURL?: string;
+    // Firecrawl sometimes populates these from the JS-rendered head, but
+    // coverage is inconsistent — many sites end up with metadata.{} even
+    // when og:image is present. For reliable og:image extraction, request
+    // withRawHtml and parse the head yourself.
+    ogImage?: string;
+    ogTitle?: string;
+    ogDescription?: string;
+    twitterImage?: string;
   };
 }
 
@@ -39,8 +53,17 @@ export async function firecrawlScrape(opts: FirecrawlScrapeOptions): Promise<Fir
   const apiKey = Deno.env.get("FIRECRAWL_API_KEY");
   if (!apiKey) throw new Error("FIRECRAWL_API_KEY not set in edge function secrets");
 
+  const timeoutMs = opts.timeout ?? 45_000;
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), opts.timeout ?? 30_000);
+  // 2026-05-18 round 2: pass `timeout` to Firecrawl's REQUEST BODY in
+  // addition to running our own AbortController. Pre-fix only the
+  // AbortController was wired up, so Firecrawl used its internal 30s
+  // default — every slow site (UN Youth Scholarships, UNAM, Grace
+  // Hopper) hit Firecrawl's server-side 408 at ~30s and we never got
+  // to use our 45s client budget. We now ask Firecrawl to wait
+  // (timeoutMs - 2_000) ms before giving up; the local AbortController
+  // is the secondary guard if the round-trip itself wedges.
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
 
   try {
     const resp = await fetch(`${FIRECRAWL_BASE}/scrape`, {
@@ -51,9 +74,10 @@ export async function firecrawlScrape(opts: FirecrawlScrapeOptions): Promise<Fir
       },
       body: JSON.stringify({
         url: opts.url,
-        formats: ["markdown"],
+        formats: opts.withRawHtml ? ["markdown", "rawHtml"] : ["markdown"],
         onlyMainContent: opts.onlyMainContent ?? true,
         waitFor: opts.waitFor ?? 0,
+        timeout: Math.max(timeoutMs - 2_000, 15_000),
       }),
       signal: ctrl.signal,
     });
@@ -69,6 +93,7 @@ export async function firecrawlScrape(opts: FirecrawlScrapeOptions): Promise<Fir
 
     return {
       markdown: data.data?.markdown ?? "",
+      rawHtml: data.data?.rawHtml,
       metadata: data.data?.metadata,
     };
   } finally {
