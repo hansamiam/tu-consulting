@@ -228,12 +228,25 @@ Deno.serve(async (req) => {
     return respondJson(200, { success: false, reason: 'email_suppressed' }, corsHeaders)
   }
 
-  // 4. Render React Email template to HTML and plain text
+  // 4. Render React Email template to HTML and plain text.
+  //
+  // Inject the mint'd unsubscribe token URL into templateData if the
+  // caller hasn't provided one. Most authed callers wire their own
+  // account/pause-nudges link; anon-lead nudges (brief-lead-nudge)
+  // can't, so they rely on this default. Token URL points at the
+  // token-validating /unsubscribe page so the click works without a
+  // login session.
+  const SITE_URL = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://topuni.org'
+  const tokenUnsubUrl = `${SITE_URL}/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`
+  const renderData = {
+    ...templateData,
+    unsubscribeUrl: templateData?.unsubscribeUrl || tokenUnsubUrl,
+  }
   const html = await renderAsync(
-    React.createElement(template.component, templateData)
+    React.createElement(template.component, renderData)
   )
   const plainText = await renderAsync(
-    React.createElement(template.component, templateData),
+    React.createElement(template.component, renderData),
     { plainText: true }
   )
 

@@ -8,6 +8,7 @@ import { Award } from "lucide-react";
 import { motion } from "framer-motion";
 import samuelPhoto from "@/assets/samuel.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
+import AcademyResourceList from "@/components/academy/AcademyResourceList";
 
 const FOUNDERS = [
   { name: "Samuel Han",          credential: "Yale",                  photo: samuelPhoto },
@@ -93,6 +94,27 @@ const Academy = ({ language = "en" }: AcademyProps) => {
       {/* /academy/live retired 2026-05-20 — was a fake video-chrome
           surface that didn't work without real Zoom/Meet embed. The
           member-access card here pointed at it; removed alongside. */}
+
+      {/* RESOURCES — members-only file/link library. The list renders
+          even when empty so members know the system is live; the
+          actual download is gated by academy-resource-url. */}
+      <section className="max-w-3xl mx-auto px-4 pt-6 pb-14">
+        <div className="mb-8 text-center">
+          <p className="text-[10.5px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">
+            {t("Resources", "Ресурсы")}
+          </p>
+          <h2 className="font-heading text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+            {t("Templates, frameworks, deep dives.", "Шаблоны, фреймворки, разборы.")}
+          </h2>
+          <p className="text-muted-foreground text-sm mt-2 max-w-md mx-auto">
+            {t(
+              "Members get the working files we use with private clients.",
+              "Участники получают рабочие файлы, которые мы используем с частными клиентами.",
+            )}
+          </p>
+        </div>
+        <AcademyResourceList language={language} />
+      </section>
 
       {/* Original CTA section retired here per user direction — "less is more".
           The "Doors open in June" callout + Build-strategy/Open-Discover
