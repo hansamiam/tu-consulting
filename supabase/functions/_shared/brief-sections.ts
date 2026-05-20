@@ -441,10 +441,14 @@ ${SHARED_JSON_RULES}`,
   },
 };
 
+// 2026-05-20: howYoullPay dropped from the rendered brief — the live
+// /discover database is the funding source of truth. The new
+// BriefMinimal renderer doesn't include this section either. Keep
+// the section definition above for cached briefs that still reference
+// it, but stop generating it on new runs.
 export const PREMIUM_SECTIONS: SectionSpec[] = [
   whereYouStand,
   whereYouCanLand,
-  howYoullPay,
   whatToWrite,
   whatsBlockingYou,
   whatToDoThisMonth,
