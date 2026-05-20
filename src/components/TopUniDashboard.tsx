@@ -3473,14 +3473,13 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
 
               {hasBrief && (
                 <FocusScholarshipContext.Provider value={focusScholarship?.scholarshipId ?? null}>
-                {/* 2026-05-20: brief now lives inside a clean white card,
-                    not the cream Card background of the dashboard wrapper.
-                    Reads as a real PDF/report document instead of "more
-                    page content". The `bg-white` + `border` + `rounded-xl`
-                    + `shadow-sm` chrome separates the brief visually so
-                    the user reads it as a deliverable, not scattered text. */}
+                {/* 2026-05-20 redesign #2: McKinsey/Admissionado-style
+                    slide deck. BriefDeck renders its own slide chrome
+                    (yellow header bands, tables, slide numbers) so we
+                    drop the prose wrapper entirely — the wrapper was
+                    fighting the deck's own typography. */}
                 <div className="grid xl:grid-cols-[1fr_220px] gap-x-10 print:block">
-                <div id="printable-report" className="min-w-0 bg-white dark:bg-neutral-950 rounded-xl border border-neutral-200 dark:border-neutral-800 shadow-sm px-6 sm:px-10 py-10 sm:py-14 prose prose-sm max-w-none dark:prose-invert [&_h2]:text-neutral-900 [&_h2]:font-heading [&_h2]:text-xl [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:scroll-mt-24 [&_h2]:tracking-[-0.01em] [&_h3]:text-neutral-900 [&_h3]:font-heading [&_h3]:text-lg [&_h3]:mt-6 [&_h3]:mb-2 [&_p]:text-neutral-700 [&_li]:text-neutral-700 [&_strong]:text-neutral-900">
+                <div id="printable-report" className="min-w-0">
                   {/* 2026-05-20: BriefMasthead block ripped out per user.
                       Was rendering "TopUni · Strategy report / Generated
                       [date] / [Name] / From [country] · [level] · [field]
