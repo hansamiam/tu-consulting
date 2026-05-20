@@ -19,6 +19,38 @@ import { respondError, respondJson } from "../_shared/http.ts";
 import { createServiceClient, createUserClient } from "../_shared/clients.ts";
 
 const EMBEDDING_MODEL = "text-embedding-3-small";
+const SITE = Deno.env.get("PUBLIC_SITE_URL") ?? "https://topuni.org";
+
+/* Queue the brief-generated welcome email to authed users. Idempotency
+   key is per-user — they get exactly one of these regardless of how
+   many times they regenerate. Fire-and-forget; never blocks the
+   stream. Called from the cache-persist closures so the email lands
+   only after the brief is actually saved. */
+async function queueBriefGeneratedEmail(
+  admin: ReturnType<typeof createServiceClient>,
+  userId: string,
+  email: string,
+  fullName: string | null,
+  language: "en" | "ru",
+  briefSlug?: string,
+) {
+  try {
+    await admin.functions.invoke("send-transactional-email", {
+      body: {
+        recipientEmail: email,
+        templateName: "brief-generated",
+        idempotencyKey: `brief-generated-${userId}`,
+        templateData: {
+          firstName: fullName?.split(" ")[0] || undefined,
+          briefUrl: briefSlug ? `${SITE}/brief/${briefSlug}` : `${SITE}/topuni-ai${language === "ru" ? "/ru" : ""}`,
+          language,
+        },
+      },
+    });
+  } catch (e) {
+    console.warn("[brief-generated] enqueue failed", e);
+  }
+}
 
 /* ─── Profile → canonical query string ─────────────────────────────
    Used for embedding. Same shape as match-scholarships' profileToQuery
@@ -900,6 +932,31 @@ ${EDITORIAL_RULES}`;
               prompt_version: PROMPT_VERSION,
               generated_at: new Date().toISOString(),
             } as never, { onConflict: "profile_hash,language,grade" });
+
+            // Fire the brief-generated email to the authed user (if any).
+            // Anon users are handled by the brief_leads → lifecycle-emails-
+            // cron path. Resolved here (not at the top of the function)
+            // so cache-hit branches don't re-send.
+            try {
+              const auth = req.headers.get("Authorization");
+              if (auth?.startsWith("Bearer ")) {
+                const { data: { user } } = await createUserClient(auth).auth.getUser();
+                if (user?.id && user.email) {
+                  const { data: prof } = await supabase
+                    .from("student_profiles")
+                    .select("full_name")
+                    .eq("user_id", user.id)
+                    .maybeSingle();
+                  await queueBriefGeneratedEmail(
+                    supabase, user.id, user.email,
+                    prof?.full_name ?? null,
+                    cacheLang === "ru" ? "ru" : "en",
+                  );
+                }
+              }
+            } catch (e) {
+              console.warn("[brief-generated] post-magazine notify failed", e);
+            }
           }
         } catch (e) {
           console.warn("[brief-cache] persist failed", (e as Error).message);
@@ -989,6 +1046,29 @@ ${grade === "premium" ? premiumSections : basicSections}`;
             prompt_version: PROMPT_VERSION,
             generated_at: new Date().toISOString(),
           }, { onConflict: "profile_hash,language,grade" });
+
+          // Mirror of the magazine path — fire brief-generated to authed
+          // users only. Anon path covered by brief_leads → lifecycle.
+          try {
+            const auth = req.headers.get("Authorization");
+            if (auth?.startsWith("Bearer ")) {
+              const { data: { user } } = await createUserClient(auth).auth.getUser();
+              if (user?.id && user.email) {
+                const { data: prof } = await supabase
+                  .from("student_profiles")
+                  .select("full_name")
+                  .eq("user_id", user.id)
+                  .maybeSingle();
+                await queueBriefGeneratedEmail(
+                  supabase, user.id, user.email,
+                  prof?.full_name ?? null,
+                  cacheLang === "ru" ? "ru" : "en",
+                );
+              }
+            }
+          } catch (e) {
+            console.warn("[brief-generated] post-basic notify failed", e);
+          }
         }
       } catch (e) {
         console.warn("[brief-cache] basic persist failed", (e as Error).message);
