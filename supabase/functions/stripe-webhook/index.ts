@@ -119,6 +119,41 @@ async function syncSubscription(
   return { userId, userEmail };
 }
 
+async function queueCancellationEmail(
+  admin: ReturnType<typeof createServiceClient>,
+  email: string,
+  subId: string,
+  periodEndIso: string | null,
+  language: "en" | "ru" = "en",
+) {
+  // One email per subscription cancellation cycle. If the user
+  // reactivates and then cancels again, the new cancellation gets
+  // a new period_end so we re-key on it.
+  const periodKey = periodEndIso?.slice(0, 10) ?? "unknown";
+  const periodEndDate = periodEndIso
+    ? new Date(periodEndIso).toLocaleDateString(language === "ru" ? "ru-RU" : "en-US", {
+        month: "long", day: "numeric", year: "numeric",
+      })
+    : (language === "ru" ? "конец оплаченного периода" : "end of your billing period");
+  try {
+    await admin.functions.invoke("send-transactional-email", {
+      body: {
+        recipientEmail: email,
+        templateName: "cancellation-recovery",
+        idempotencyKey: `cancellation-recovery-${subId}-${periodKey}`,
+        templateData: {
+          periodEndDate,
+          reactivateUrl: `${SITE}/account`,
+          surveyUrl: `${SITE}/account?action=cancel-survey`,
+          language,
+        },
+      },
+    });
+  } catch (e) {
+    console.warn("[stripe-webhook] cancellation-recovery enqueue failed", e);
+  }
+}
+
 async function queuePaymentFailedEmail(
   admin: ReturnType<typeof createServiceClient>,
   email: string,
@@ -179,10 +214,29 @@ Deno.serve(async (req) => {
   try {
     switch (event.type) {
       case "customer.subscription.created":
-      case "customer.subscription.updated":
       case "customer.subscription.deleted": {
         const sub = event.data.object as Stripe.Subscription;
         await syncSubscription(stripe, admin, sub);
+        break;
+      }
+
+      case "customer.subscription.updated": {
+        const sub = event.data.object as Stripe.Subscription;
+        // Stripe diffs the prior state in `previous_attributes` so we
+        // can detect a transition rather than firing the cancellation
+        // email on every subsequent update. We only care about the
+        // false→true flip on cancel_at_period_end (user clicked cancel).
+        const prev = (event.data as unknown as { previous_attributes?: { cancel_at_period_end?: boolean } })
+          .previous_attributes;
+        const justCanceled =
+          prev?.cancel_at_period_end === false && sub.cancel_at_period_end === true;
+
+        const { userEmail } = await syncSubscription(stripe, admin, sub);
+        if (justCanceled && userEmail) {
+          const periodEnd = (sub as unknown as { current_period_end?: number }).current_period_end;
+          const periodEndIso = periodEnd ? new Date(periodEnd * 1000).toISOString() : null;
+          await queueCancellationEmail(admin, userEmail, sub.id, periodEndIso);
+        }
         break;
       }
 
