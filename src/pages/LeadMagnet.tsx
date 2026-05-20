@@ -171,9 +171,11 @@ const LeadMagnet = ({ language = "en" }: LeadMagnetProps) => {
 
         {/* Bottom ramp dropped 2026-05-20 — the no-navy direction on
             this page means we no longer need the gradient bridge into a
-            navy footer. Footer renders directly on cream. */}
+            navy footer. Footer flipped to variant="light" so it reads
+            as a quiet legal/links strip on cream rather than slamming
+            into the colorful slides with a navy block underneath. */}
 
-        <Footer language={language} />
+        <Footer language={language} variant="light" />
       </div>
     </div>
   );
