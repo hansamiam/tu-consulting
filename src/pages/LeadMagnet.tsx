@@ -107,14 +107,6 @@ const LeadMagnet = ({ language = "en" }: LeadMagnetProps) => {
             colorful and visually distinct on their own; the page needs
             a clean cream background so they pop. Single simple title
             line above the panes. */}
-        {/* 2026-05-20: page restructured around a "cinema stage" — the
-            video + slides sit on a dark navy backdrop (theater-mode
-            style) so the colorful slides + the video pop against a
-            single dark canvas instead of floating on cream. The title
-            sits above the stage on cream; CTA + footer return to cream
-            below. Three bands total: cream title → navy stage → cream
-            CTA + footer. */}
-
         {/* TITLE — cream, simple. */}
         <section className="max-w-3xl mx-auto px-4 pt-14 sm:pt-20 pb-10 sm:pb-12 text-center">
           <motion.h1
@@ -141,36 +133,20 @@ const LeadMagnet = ({ language = "en" }: LeadMagnetProps) => {
           </motion.p>
         </section>
 
-        {/* STAGE — navy theater backdrop. Cream → navy → cream gradient
-            ramps soften the transitions on the top + bottom edges so
-            the band doesn't feel like a brutal slab. The dark canvas
-            gives the panes a stage-light feel — like YouTube theater
-            mode — without us darkening individual element colors. */}
-        <section className="relative bg-gradient-to-b from-primary via-primary to-primary/95 py-10 sm:py-14">
-          {/* Soft glow halo behind the panes — subtle gold radial,
-              centered, fades out toward the edges. Adds depth without
-              touching the panes themselves. */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            aria-hidden
-            style={{
-              backgroundImage:
-                "radial-gradient(ellipse at center, hsl(var(--gold) / 0.12) 0%, transparent 60%)",
-            }}
-          />
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-            className="relative max-w-7xl mx-auto px-4"
-          >
-            <div className="grid gap-5 sm:gap-6 lg:grid-cols-2 lg:items-start">
-              <VideoPane videoId={videoId} tCommon={t} ru={ru} />
-              <ContainedDeck lang={slideLang} onLangChange={setSlideLang} tCommon={t} />
-            </div>
-          </motion.div>
-        </section>
+        {/* STAGE — "lights off" cinema mode. On mount the section starts
+            cream-blank and after a short pause animates to a deep
+            theater shadow (NOT pitch black — a deep cool neutral with
+            a slight gold halo behind the panes for depth). Top nav and
+            bottom footer remain lit because they sit outside this
+            band. User can toggle off via the small "lights" button in
+            the corner if they want to read the title text above without
+            the dim. */}
+        <CinemaStage>
+          <div className="grid gap-5 sm:gap-6 lg:grid-cols-2 lg:items-start">
+            <VideoPane videoId={videoId} tCommon={t} ru={ru} />
+            <ContainedDeck lang={slideLang} onLangChange={setSlideLang} tCommon={t} />
+          </div>
+        </CinemaStage>
 
         {/* Hand-off CTA — single line, two buttons. Cream band between
             the navy stage and the navy footer. */}
@@ -369,6 +345,72 @@ const ContainedDeck = ({ lang, onLangChange, tCommon }: ContainedDeckProps) => {
         )}
       </div>
     </div>
+  );
+};
+
+// ───────────────────────────────────────────────────────────────────────
+// CinemaStage — "lights off" animation that fades the section
+// background from cream → deep theater shadow shortly after the page
+// loads. The top nav + footer sit OUTSIDE this section so they stay
+// fully lit. Inside the section the panes pop against the dark canvas
+// without us touching their own colors. NOT pitch black — a deep
+// cool-neutral (slight navy undertone) so colorful slides stay
+// readable. Respects prefers-reduced-motion (skips the fade).
+// ───────────────────────────────────────────────────────────────────────
+const CinemaStage = ({ children }: { children: React.ReactNode }) => {
+  const [dim, setDim] = useState<boolean>(false);
+  useEffect(() => {
+    if (typeof window !== "undefined" &&
+        window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      setDim(true); // skip animation, just stay dim
+      return;
+    }
+    // Small delay so the visitor sees the cream-blank state for a beat
+    // BEFORE the lights drop. Reads as deliberate vs flickered.
+    const timer = window.setTimeout(() => setDim(true), 650);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  return (
+    <section
+      className="relative transition-colors duration-[1200ms] ease-out"
+      style={{
+        backgroundColor: dim ? "hsl(222 28% 11%)" : "hsl(var(--background))",
+      }}
+    >
+      {/* Top fade — soft gradient so the dim edge doesn't read as a
+          hard horizontal line at the top of the section. */}
+      <div
+        className="absolute top-0 inset-x-0 h-10 sm:h-14 pointer-events-none transition-opacity duration-[1200ms] ease-out"
+        aria-hidden
+        style={{
+          opacity: dim ? 1 : 0,
+          backgroundImage: "linear-gradient(to bottom, hsl(var(--background)) 0%, transparent 100%)",
+        }}
+      />
+      {/* Bottom fade — same idea on the lower edge. */}
+      <div
+        className="absolute bottom-0 inset-x-0 h-10 sm:h-14 pointer-events-none transition-opacity duration-[1200ms] ease-out"
+        aria-hidden
+        style={{
+          opacity: dim ? 1 : 0,
+          backgroundImage: "linear-gradient(to top, hsl(var(--background)) 0%, transparent 100%)",
+        }}
+      />
+      {/* Subtle gold spotlight halo behind the panes. Only shown when
+          dim is true — adds the "stage light" feel. */}
+      <div
+        className="absolute inset-0 pointer-events-none transition-opacity duration-[1200ms] ease-out"
+        aria-hidden
+        style={{
+          opacity: dim ? 1 : 0,
+          backgroundImage: "radial-gradient(ellipse at center, hsl(var(--gold) / 0.10) 0%, transparent 60%)",
+        }}
+      />
+      <div className="relative max-w-7xl mx-auto px-4 py-10 sm:py-14">
+        {children}
+      </div>
+    </section>
   );
 };
 
