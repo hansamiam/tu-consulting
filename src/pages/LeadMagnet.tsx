@@ -37,7 +37,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Play, Sparkles, Video as VideoIcon, Volume2, Settings } from "lucide-react";
+import { Play, Sparkles, Video as VideoIcon, Volume2, Settings, ChevronUp, ChevronDown, Maximize2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -98,61 +98,38 @@ const LeadMagnet = ({ language = "en" }: LeadMagnetProps) => {
   return (
     <div className="min-h-screen relative bg-background">
       <div className="relative z-10">
-        <Navigation language={language} variant="overlay" overlaySentinelId="lesson-hero-end" />
+        {/* Cream nav on cream page — no overlay variant. The slides
+            below carry the color; a navy hero would clash with them. */}
+        <Navigation language={language} variant="default" />
 
-        {/* HERO — short navy band so the page reads as a destination, not
-            a leaked admin tool. Mirrors Academy.tsx's hero treatment but
-            tighter (we want the video + slides above the fold on laptop
-            screens, not pushed below a tall hero). */}
-        <section className="relative -mt-16 bg-gradient-to-br from-primary via-primary to-primary/90 pt-28 sm:pt-32 pb-12 sm:pb-14 overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(var(--gold)/0.10),_transparent_60%)]" />
-          <div className="relative max-w-4xl mx-auto px-4 text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center gap-2 bg-gold/15 border border-gold/40 px-3 py-1 rounded-full text-gold text-[11px] uppercase tracking-[0.22em] font-semibold mb-5"
-            >
-              <Sparkles className="h-3.5 w-3.5" /> {t("Free lesson", "Бесплатный урок")}
-            </motion.div>
-            <motion.h1
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 }}
-              className="text-3xl sm:text-5xl font-heading font-bold text-primary-foreground leading-[1.05] tracking-tight"
-            >
-              {t(
-                "How to get in abroad and win a grant in 2026",
-                "Как поступить заграницу и получить грант в 2026",
-              )}
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-primary-foreground/75 text-sm sm:text-base max-w-2xl mx-auto mt-4 leading-relaxed"
-            >
-              {t(
-                "Watch the lesson on the left. Scroll the deck on the right. The strategy that actually works in 2026 — what the platform is, why the old way burns a year, and how to apply without it.",
-                "Слушайте урок слева. Прокручивайте слайды справа. Какая стратегия работает в 2026, что за платформа, почему старый путь сжигает год и как поступить без этого.",
-              )}
-            </motion.p>
-          </div>
-          <div id="lesson-hero-end" aria-hidden className="h-px w-full" />
+        {/* HERO retired 2026-05-20: navy band + "Free lesson" badge +
+            verbose subtitle dropped per user direction. Slides are
+            colorful and visually distinct on their own; the page needs
+            a clean cream background so they pop. Single simple title
+            line above the panes. */}
+        <section className="max-w-6xl mx-auto px-4 pt-14 sm:pt-20 pb-6 sm:pb-8 text-center">
+          <motion.h1
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="font-heading text-3xl sm:text-5xl font-bold text-foreground tracking-[-0.02em] leading-[1.05]"
+          >
+            {t(
+              "How to go abroad on a grant in 2026",
+              "Как уехать учиться за границу на гранте в 2026",
+            )}
+          </motion.h1>
         </section>
 
-        {/* MAIN — video LEFT (sticky on lg+), scrolling deck RIGHT.
-            The 12-column grid lets the video take 5/12 and the deck 7/12,
-            so the slides have visual primacy (they're what the viewer
-            spends most time on) while the video stays comfortably
-            readable beside them. */}
-        <section className="max-w-7xl mx-auto px-4 pt-10 sm:pt-14 pb-12">
-          <div className="grid gap-6 sm:gap-8 lg:grid-cols-12 lg:items-start">
-            <div className="lg:col-span-5 lg:sticky lg:top-24 lg:self-start">
-              <VideoPane videoId={videoId} tCommon={t} ru={ru} />
-            </div>
-            <div className="lg:col-span-7">
-              <ScrollDeck lang={slideLang} onLangChange={setSlideLang} tCommon={t} />
-            </div>
+        {/* MAIN — video LEFT, deck RIGHT, equal halves on lg+, stacked
+            on mobile. Both panes share the same chrome and the same
+            16:9 aspect — the deck pane shows ONE slide at a time via an
+            internal scroll-snap container, not the entire scroll the
+            old vertical stack used to produce. */}
+        <section className="max-w-6xl mx-auto px-4 pt-10 sm:pt-14 pb-12">
+          <div className="grid gap-5 sm:gap-6 lg:grid-cols-2 lg:items-start">
+            <VideoPane videoId={videoId} tCommon={t} ru={ru} />
+            <ContainedDeck lang={slideLang} onLangChange={setSlideLang} tCommon={t} />
           </div>
         </section>
 
@@ -192,17 +169,9 @@ const LeadMagnet = ({ language = "en" }: LeadMagnetProps) => {
           </div>
         </section>
 
-        {/* Bottom ramp into the navy footer — matches Academy.tsx. */}
-        <div
-          className="h-12 sm:h-16"
-          style={{
-            backgroundImage: `linear-gradient(180deg,
-              transparent 0%,
-              hsl(var(--primary) / 0.10) 50%,
-              hsl(var(--primary)) 100%)`,
-          }}
-          aria-hidden="true"
-        />
+        {/* Bottom ramp dropped 2026-05-20 — the no-navy direction on
+            this page means we no longer need the gradient bridge into a
+            navy footer. Footer renders directly on cream. */}
 
         <Footer language={language} />
       </div>
@@ -211,131 +180,178 @@ const LeadMagnet = ({ language = "en" }: LeadMagnetProps) => {
 };
 
 // ───────────────────────────────────────────────────────────────────────
-// ScrollDeck — vertical scroll of all slides as one continuous column.
-// Live counter pill ("12 / 30") tracks the most-visible slide via
-// IntersectionObserver. No prev/next, no carousel — scroll IS the nav.
+// ContainedDeck — 2026-05-20 redesign. Same chrome + same 16:9 aspect
+// as VideoPane, so the two panes sit side-by-side balanced. The slide
+// area is a single 16:9 viewport with internal scroll-snap so exactly
+// ONE slide is visible at a time — scroll-wheel (or touch swipe) inside
+// the pane snaps to the next slide; the outer page does NOT need to
+// scroll to reveal more slides (the old behaviour the user hated).
+//
+// Active-slide tracking: a scroll listener watches scrollTop / clientHeight
+// to compute the most-visible index. IntersectionObserver is overkill for
+// snap containers — the scroll position directly indexes the slide.
 // ───────────────────────────────────────────────────────────────────────
 
-interface ScrollDeckProps {
+interface ContainedDeckProps {
   lang: SlideLang;
   onLangChange: (l: SlideLang) => void;
   tCommon: (en: string, ru: string) => string;
 }
 
-const ScrollDeck = ({ lang, onLangChange, tCommon }: ScrollDeckProps) => {
+const ContainedDeck = ({ lang, onLangChange, tCommon }: ContainedDeckProps) => {
   const deck = DECKS[lang];
   const hasSlides = deck.count > 0;
   const [activeSlide, setActiveSlide] = useState<number>(1);
-  const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
-  // Reset visible-slide state whenever the deck changes language.
-  useEffect(() => { setActiveSlide(1); }, [lang]);
+  // Reset to slide 1 on language flip.
+  useEffect(() => {
+    setActiveSlide(1);
+    scrollRef.current?.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  }, [lang]);
 
-  // Watch each slide's visibility — the slide with the largest visible
-  // area becomes "active" and feeds the counter pill. rootMargin pulls
-  // the trigger zone up by 30% so the counter switches just before a
-  // slide reaches centre-screen rather than only after it passes it.
+  // Scroll-position → active slide index. scrollTop divided by slide
+  // height (which equals the container's clientHeight in a 1-slide-at-a-
+  // time snap layout) plus rounding gives the index reliably across
+  // browsers without an IntersectionObserver dance.
   useEffect(() => {
     if (!hasSlides) return;
-    const refs = slideRefs.current.filter(Boolean) as HTMLDivElement[];
-    if (refs.length === 0) return;
-    const visibilityByIdx = new Map<number, number>();
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          const idx = Number((e.target as HTMLElement).dataset.slide);
-          if (!Number.isFinite(idx)) continue;
-          visibilityByIdx.set(idx, e.isIntersecting ? e.intersectionRatio : 0);
-        }
-        let bestIdx = 1, bestRatio = -1;
-        for (const [idx, ratio] of visibilityByIdx) {
-          if (ratio > bestRatio) { bestRatio = ratio; bestIdx = idx; }
-        }
-        if (bestRatio > 0) setActiveSlide(bestIdx);
-      },
-      { rootMargin: "-30% 0px -30% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] },
-    );
-    for (const el of refs) observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasSlides, lang, deck.count]);
+    const el = scrollRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const h = el.clientHeight || 1;
+      const idx = Math.round(el.scrollTop / h) + 1;
+      setActiveSlide(Math.min(Math.max(idx, 1), deck.count));
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [hasSlides, deck.count]);
+
+  const scrollToSlide = (n: number) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const target = Math.min(Math.max(n, 1), deck.count) - 1;
+    el.scrollTo({ top: target * el.clientHeight, behavior: "smooth" });
+  };
 
   return (
-    <div className="relative">
-      {/* Floating toolbar — sticks to the top of the deck column on lg+
-          so the counter + lang switcher are always within reach as the
-          viewer scrolls. Glass effect so it floats over slides without
-          obscuring them. */}
-      <div className="sticky top-20 z-20 mb-4 flex items-center justify-between gap-3 px-3 sm:px-4 py-2.5 rounded-full bg-card/85 backdrop-blur-md border border-border shadow-sm">
-        <div className="flex items-center gap-1.5">
-          <LangPill
-            active={lang === "ru"}
-            disabled={DECKS.ru.count === 0}
-            onClick={() => onLangChange("ru")}
-            label="RU"
-          />
-          <LangPill
-            active={lang === "en"}
-            disabled={DECKS.en.count === 0}
-            onClick={() => onLangChange("en")}
-            label="EN"
-            comingSoon={DECKS.en.count === 0}
-          />
+    <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg flex flex-col">
+      {/* Header bar — mirrors VideoPane's header chrome (same height,
+          same vertical padding, same border treatment) so both panes
+          read as identical container shapes. */}
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 border-b border-border bg-background/60">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-3.5 w-3.5 text-gold-dark" />
+          <p className="text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
+            {tCommon("Slides", "Слайды")}
+          </p>
         </div>
-        {hasSlides && (
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-[12px] tabular-nums text-foreground/80 font-semibold">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1">
+            <LangPill
+              active={lang === "ru"}
+              disabled={DECKS.ru.count === 0}
+              onClick={() => onLangChange("ru")}
+              label="RU"
+            />
+            <LangPill
+              active={lang === "en"}
+              disabled={DECKS.en.count === 0}
+              onClick={() => onLangChange("en")}
+              label="EN"
+              comingSoon={DECKS.en.count === 0}
+            />
+          </div>
+          {hasSlides && (
+            <span className="font-mono text-[11.5px] tabular-nums text-foreground/75 font-semibold whitespace-nowrap">
               {activeSlide}
-              <span className="text-muted-foreground/60 mx-1">/</span>
+              <span className="text-muted-foreground/50 mx-0.5">/</span>
               {deck.count}
             </span>
+          )}
+        </div>
+      </div>
+
+      {/* 16:9 viewport — same aspect as the video iframe so both panes
+          end up the same size on screen. Slide scroller fills the
+          viewport via absolute positioning. */}
+      <div className="relative aspect-video bg-neutral-900">
+        {hasSlides ? (
+          <>
+            <div
+              ref={scrollRef}
+              className="absolute inset-0 overflow-y-auto snap-y snap-mandatory scrollbar-hide"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" } as React.CSSProperties}
+            >
+              {Array.from({ length: deck.count }, (_, i) => i + 1).map((n) => (
+                <div
+                  key={`${lang}-${n}`}
+                  data-slide={n}
+                  className="snap-start h-full w-full shrink-0 flex items-center justify-center bg-neutral-900"
+                >
+                  <img
+                    src={slideUrl(lang, n)}
+                    alt={tCommon(`Slide ${n} of ${deck.count}`, `Слайд ${n} из ${deck.count}`)}
+                    className="block max-h-full max-w-full object-contain"
+                    loading={n <= 2 ? "eager" : "lazy"}
+                    decoding="async"
+                    draggable={false}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Prev / next nav buttons. Sit half-transparent on the
+                right edge — desktop hover reveals fully, mobile keeps
+                them visible for swipe-free advance. */}
+            <div className="absolute inset-y-0 right-2 sm:right-3 flex flex-col items-center justify-center gap-2 pointer-events-none">
+              <button
+                type="button"
+                aria-label={tCommon("Previous slide", "Предыдущий слайд")}
+                onClick={() => scrollToSlide(activeSlide - 1)}
+                disabled={activeSlide <= 1}
+                className="pointer-events-auto h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-black/45 hover:bg-black/65 text-white/85 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-sm flex items-center justify-center transition-colors"
+              >
+                <ChevronUp className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
+              </button>
+              <button
+                type="button"
+                aria-label={tCommon("Next slide", "Следующий слайд")}
+                onClick={() => scrollToSlide(activeSlide + 1)}
+                disabled={activeSlide >= deck.count}
+                className="pointer-events-auto h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-black/45 hover:bg-black/65 text-white/85 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-sm flex items-center justify-center transition-colors"
+              >
+                <ChevronDown className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
+              </button>
+            </div>
+
+            {/* Slide-number watermark bottom-left — quiet marker, hidden
+                on very small screens to avoid covering the slide. */}
+            <span className="hidden sm:inline-block absolute bottom-3 left-3 font-mono text-[10.5px] tabular-nums bg-black/55 text-white/85 px-2 py-0.5 rounded-full backdrop-blur-sm pointer-events-none">
+              {activeSlide} / {deck.count}
+            </span>
+
+            {/* Fullscreen affordance bottom-right — opens the current
+                slide image in a new tab for high-res view. Cheap nicety. */}
+            <a
+              href={slideUrl(lang, activeSlide)}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={tCommon("Open slide full-size", "Открыть слайд во весь размер")}
+              className="absolute bottom-3 right-12 sm:right-14 h-7 w-7 rounded-full bg-black/45 hover:bg-black/65 text-white/85 hover:text-white backdrop-blur-sm flex items-center justify-center transition-colors"
+            >
+              <Maximize2 className="h-3 w-3" />
+            </a>
+          </>
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-neutral-400 text-sm px-6 text-center">
+            {tCommon(
+              "English slides coming soon. Switch to RU to view the deck.",
+              "Английские слайды скоро. Переключитесь на RU.",
+            )}
           </div>
         )}
       </div>
-
-      {/* Slide column — all 30 slides stacked vertically. Each slide
-          gets a soft shadow + rounded corners; a vertical gap between
-          slides acts as natural section breaks. Browser-native lazy
-          loading keeps the initial paint quick (only the first 2-3
-          images are decoded immediately).
-          We avoid framer-motion's `whileInView` here because it doesn't
-          gracefully handle programmatic scroll jumps — opacity gets
-          stuck mid-transition if a slide is scrolled into view before
-          framer's observer attaches. Plain visible slides + the scroll
-          motion itself carry the polish. */}
-      {hasSlides ? (
-        <div className="flex flex-col gap-4 sm:gap-5">
-          {Array.from({ length: deck.count }, (_, i) => i + 1).map((n) => (
-            <div
-              key={`${lang}-${n}`}
-              ref={(el) => { slideRefs.current[n - 1] = el; }}
-              data-slide={n}
-              className="relative rounded-xl overflow-hidden shadow-md ring-1 ring-border bg-neutral-900"
-            >
-              <img
-                src={slideUrl(lang, n)}
-                alt={tCommon(`Slide ${n} of ${deck.count}`, `Слайд ${n} из ${deck.count}`)}
-                className="block w-full h-auto"
-                loading={n <= 2 ? "eager" : "lazy"}
-                decoding="async"
-                draggable={false}
-              />
-              {/* Subtle slide-number marker bottom-right — adds polish
-                  without being distracting. Hidden under sm to keep
-                  mobile clean. */}
-              <span className="hidden sm:inline-block absolute bottom-3 right-3 font-mono text-[10.5px] tabular-nums bg-black/55 text-white/85 px-2 py-0.5 rounded-full backdrop-blur-sm">
-                {n} / {deck.count}
-              </span>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="rounded-xl bg-card border border-border p-10 text-center text-muted-foreground text-sm">
-          {tCommon(
-            "English slides coming soon. Switch to RU to view the deck.",
-            "Английские слайды скоро. Переключитесь на RU.",
-          )}
-        </div>
-      )}
     </div>
   );
 };
