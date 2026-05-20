@@ -107,18 +107,29 @@ const LeadMagnet = ({ language = "en" }: LeadMagnetProps) => {
             colorful and visually distinct on their own; the page needs
             a clean cream background so they pop. Single simple title
             line above the panes. */}
-        <section className="max-w-6xl mx-auto px-4 pt-14 sm:pt-20 pb-6 sm:pb-8 text-center">
+        <section className="max-w-3xl mx-auto px-4 pt-14 sm:pt-20 pb-6 sm:pb-8 text-center">
           <motion.h1
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="font-heading text-3xl sm:text-5xl font-bold text-foreground tracking-[-0.02em] leading-[1.05]"
+            className="font-heading text-[28px] sm:text-5xl font-bold text-foreground tracking-[-0.02em] leading-[1.08] text-balance"
           >
             {t(
               "How to go abroad on a grant in 2026",
-              "Как уехать учиться за границу на гранте в 2026",
+              "Как поступить за рубеж на грант в 2026",
             )}
           </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.08 }}
+            className="text-foreground/65 text-[14.5px] sm:text-[16px] mt-3 sm:mt-4 leading-relaxed max-w-xl mx-auto"
+          >
+            {t(
+              "A free lesson by Nurzada Abdivalieva — Cambridge · Tsinghua.",
+              "Бесплатный урок от Нурзады Абдивалиевой — Кембридж · Цинхуа.",
+            )}
+          </motion.p>
         </section>
 
         {/* MAIN — video LEFT, deck RIGHT, equal halves on lg+, stacked
@@ -406,14 +417,8 @@ const VideoPlaceholder = ({ tCommon }: { tCommon: (en: string, ru: string) => st
         <div className="mx-auto h-16 w-16 rounded-full bg-gold/15 border border-gold/40 flex items-center justify-center mb-4">
           <Play className="h-6 w-6 text-gold fill-gold ml-1" />
         </div>
-        <p className="text-neutral-100 text-base font-semibold mb-2 leading-tight">
-          {tCommon("Video drops soon", "Видео скоро появится")}
-        </p>
-        <p className="text-neutral-400 text-[12.5px] leading-relaxed">
-          {tCommon(
-            "Filming wraps this week. Save this page — the lesson loads here automatically the moment it goes live.",
-            "Съёмки идут сейчас. Сохраните страницу — урок появится здесь автоматически как только выйдет.",
-          )}
+        <p className="text-neutral-100 text-base font-semibold leading-tight">
+          {tCommon("Video coming soon", "Видео скоро")}
         </p>
       </div>
     </div>

@@ -34,7 +34,27 @@ interface Row {
   source_url: string | null;
   estimated_total_value_usd: number | null;
   target_degree_level: string[] | null;
+  created_at: string | null;
+  data_source: string | null;
 }
+
+const fmtRelative = (iso: string | null): string => {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const days = Math.floor((Date.now() - d.getTime()) / 86_400_000);
+  if (days < 1) return "today";
+  if (days < 2) return "1d ago";
+  if (days < 30) return `${days}d ago`;
+  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
+  return `${Math.floor(days / 365)}y ago`;
+};
+
+const hostnameFrom = (url: string | null): string => {
+  if (!url) return "";
+  try { return new URL(url).hostname.replace(/^www\./, ""); }
+  catch { return url.slice(0, 30); }
+};
 
 type StatusFilter = "all" | "inactive" | "active" | "reopens_annually" | "superseded" | "closed_archived";
 const FILTERS: { key: StatusFilter; label: string }[] = [
@@ -83,7 +103,7 @@ const Curate = () => {
     const { data, error } = await supabase
       .from("scholarships")
       .select(
-        "scholarship_id, scholarship_name, provider_name, host_country, application_deadline, lifecycle_status, verification_status, official_url, source_url, estimated_total_value_usd, target_degree_level"
+        "scholarship_id, scholarship_name, provider_name, host_country, application_deadline, lifecycle_status, verification_status, official_url, source_url, estimated_total_value_usd, target_degree_level, created_at, data_source"
       )
       .order("application_deadline", { ascending: true, nullsFirst: false })
       .limit(2000);
@@ -219,6 +239,8 @@ const Curate = () => {
                       <th className="py-2 px-3 font-medium text-[11px] uppercase tracking-wider text-muted-foreground">Provider</th>
                       <th className="py-2 px-3 font-medium text-[11px] uppercase tracking-wider text-muted-foreground">Country</th>
                       <th className="py-2 px-3 font-medium text-[11px] uppercase tracking-wider text-muted-foreground">Deadline</th>
+                      <th className="py-2 px-3 font-medium text-[11px] uppercase tracking-wider text-muted-foreground">Source</th>
+                      <th className="py-2 px-3 font-medium text-[11px] uppercase tracking-wider text-muted-foreground">Scraped</th>
                       <th className="py-2 px-3 font-medium text-[11px] uppercase tracking-wider text-muted-foreground">Status</th>
                       <th className="py-2 pl-3 font-medium text-[11px] uppercase tracking-wider text-muted-foreground text-right">Action</th>
                     </tr>
@@ -253,6 +275,27 @@ const Curate = () => {
                           </td>
                           <td className="py-2.5 px-3 text-foreground/80 whitespace-nowrap">
                             {fmtDeadline(r.application_deadline)}
+                          </td>
+                          <td className="py-2.5 px-3 max-w-[180px]">
+                            {r.source_url ? (
+                              <a
+                                href={r.source_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-muted-foreground hover:text-gold-dark transition-colors text-[12.5px] truncate max-w-full"
+                                title={r.source_url}
+                              >
+                                <span className="truncate">{hostnameFrom(r.source_url)}</span>
+                                <ExternalLink className="h-3 w-3 shrink-0" />
+                              </a>
+                            ) : (
+                              <span className="text-muted-foreground/60 text-[12.5px]">
+                                {r.data_source === "hand_curated" ? "manual" : "—"}
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 text-muted-foreground text-[12.5px] whitespace-nowrap" title={r.created_at ?? ""}>
+                            {fmtRelative(r.created_at)}
                           </td>
                           <td className="py-2.5 px-3">
                             <Badge variant="outline" className={`text-[10.5px] uppercase tracking-wider ${statusBadgeClass(r.lifecycle_status)}`}>
