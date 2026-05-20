@@ -25,7 +25,7 @@
  */
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Compass, GraduationCap, AlertTriangle, MapPin, BookOpenText, Calendar } from "lucide-react";
+import { ArrowRight, Compass, GraduationCap, AlertTriangle, MapPin, Calendar } from "lucide-react";
 import {
   SECTION_ORDER,
   type BriefSections,
@@ -344,13 +344,19 @@ const Masthead: React.FC<{
   // "Built for ." with an empty span.
   const firstName = (studentName ?? "").trim().split(/\s+/)[0] || "you";
   return (
-    <header className="mb-14 sm:mb-20 text-center">
-      <div className="flex items-center justify-center gap-2 mb-5 text-[10.5px] uppercase tracking-[0.22em] text-muted-foreground font-medium">
-        <BookOpenText className="h-3 w-3" />
-        Strategy report
-        {gradeLabel && <span className="text-gold-dark">· {gradeLabel}</span>}
-      </div>
-      <h1 className="font-heading text-[34px] sm:text-5xl font-bold text-foreground tracking-[-0.02em] leading-[1.05] max-w-[18ch] mx-auto">
+    <header className="mb-12 sm:mb-16 text-center">
+      {/* "Strategy report" kicker dropped 2026-05-20: the dashboard
+          wraps the brief in a CardHeader that already says "Your
+          strategy report" — repeating the label here read as duplicate
+          signaling. Masthead now opens straight into the name headline
+          (with optional grade pill) so the brief feels like a personal
+          letter rather than a labeled document. */}
+      {gradeLabel && (
+        <p className="text-[10.5px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-4">
+          {gradeLabel}
+        </p>
+      )}
+      <h1 className="font-heading text-[32px] sm:text-5xl font-bold text-foreground tracking-[-0.02em] leading-[1.05] max-w-[18ch] mx-auto">
         Built for{" "}
         <span className="text-gold-dark">{firstName}</span>.
       </h1>
@@ -360,7 +366,7 @@ const Masthead: React.FC<{
         </p>
       )}
       {dateLine && (
-        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-medium mt-6 inline-flex items-center gap-1.5">
+        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-medium mt-5 inline-flex items-center gap-1.5">
           <Calendar className="h-3 w-3" /> {dateLine}
         </p>
       )}
