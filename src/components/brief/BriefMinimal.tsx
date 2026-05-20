@@ -339,6 +339,10 @@ const Masthead: React.FC<{
   const dateLine = generatedAt
     ? new Date(generatedAt).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })
     : null;
+  // Use just the first name so the headline doesn't wrap on full
+  // multi-part names. Falls back to "you" so the headline never reads
+  // "Built for ." with an empty span.
+  const firstName = (studentName ?? "").trim().split(/\s+/)[0] || "you";
   return (
     <header className="mb-14 sm:mb-20 text-center">
       <div className="flex items-center justify-center gap-2 mb-5 text-[10.5px] uppercase tracking-[0.22em] text-muted-foreground font-medium">
@@ -348,7 +352,7 @@ const Masthead: React.FC<{
       </div>
       <h1 className="font-heading text-[34px] sm:text-5xl font-bold text-foreground tracking-[-0.02em] leading-[1.05] max-w-[18ch] mx-auto">
         Built for{" "}
-        <span className="text-gold-dark">{studentName}</span>.
+        <span className="text-gold-dark">{firstName}</span>.
       </h1>
       {synthesisLine && (
         <p className="text-foreground/70 text-[15px] sm:text-[16px] leading-relaxed mt-5 max-w-[52ch] mx-auto">
