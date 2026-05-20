@@ -29,6 +29,7 @@ import {
   Quote,
   Check,
   Share2,
+  Printer,
   Copy,
   Mail,
   Crown,
@@ -51,7 +52,9 @@ import { ProBriefUnlock, type ProBriefDepth } from "@/components/ProBriefUnlock"
 import { PremiumGate } from "@/components/PremiumGate";
 import { BriefHeroStats } from "@/components/brief/BriefHeroStats";
 import { BriefChapterNav } from "@/components/brief/BriefChapterNav";
-import { BriefMasthead } from "@/components/brief/BriefMasthead";
+// BriefMasthead retired 2026-05-20 — read as ugly chrome on top of
+// the report. Brief now opens straight into the McKinsey-style
+// numbered sections. Import dropped.
 // ProSectionsTeaser import retired 2026-05-10 — paywall chrome
 // consolidated to the single Pro brief upgrade card below the brief.
 import { SavedDeadlineBanner } from "@/components/SavedDeadlineBanner";
@@ -3335,20 +3338,28 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
               </div>
               {pathwayGenerated && hasBrief && (
                 <div className="flex items-center gap-2 flex-wrap justify-end">
-                  {/* 2026-05-18: dropped the "Upgrade for Pro report" /
-                      "Pro report" pill that lived here. The report's job
-                      is to deliver the strategy — adding an upsell pill
-                      to the card header read as marketing chrome on top
-                      of substance. The masthead's badge already carries
-                      tier info if anyone needs it. */}
-                  {/* Card-header Print button retired 2026-05-10 — the
-                      BriefMasthead already exposes Share / Print /
-                      Download PDF in its action row, which is the more
-                      contextual placement (right where the report
-                      actually starts). Two Print buttons in the same
-                      surface was chrome duplication. Regenerate stays
-                      here because it's a card-level action, not a
-                      report-cover action. */}
+                  {/* 2026-05-20: BriefMasthead retired entirely. Action
+                      buttons (Share / Print / Regenerate) now live here
+                      in the Card header — the brief itself stays
+                      content-only, no chrome competing with the report. */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={openShare}
+                    className="gap-1.5"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    {t("Share", "Поделиться")}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.print()}
+                    className="gap-1.5"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    {t("Print", "Печать")}
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -3462,31 +3473,22 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
 
               {hasBrief && (
                 <FocusScholarshipContext.Provider value={focusScholarship?.scholarshipId ?? null}>
+                {/* 2026-05-20: brief now lives inside a clean white card,
+                    not the cream Card background of the dashboard wrapper.
+                    Reads as a real PDF/report document instead of "more
+                    page content". The `bg-white` + `border` + `rounded-xl`
+                    + `shadow-sm` chrome separates the brief visually so
+                    the user reads it as a deliverable, not scattered text. */}
                 <div className="grid xl:grid-cols-[1fr_220px] gap-x-10 print:block">
-                <div id="printable-report" className="min-w-0 prose prose-sm max-w-none dark:prose-invert [&_h2]:text-foreground [&_h2]:font-heading [&_h2]:text-xl [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:scroll-mt-24 [&_h2]:tracking-[-0.01em] [&_h3]:text-foreground [&_h3]:font-heading [&_h3]:text-lg [&_h3]:mt-6 [&_h3]:mb-2 [&_p]:text-muted-foreground [&_li]:text-muted-foreground [&_strong]:text-foreground">
-                  {/* Editorial masthead — frames the brief as a real report
-                      deliverable. Renders for both screen and print. Pulls
-                      a synthesis sentence from the AI's strategic-positioning
-                      paragraph (or falls back to a profile-derived line while
-                      the brief is still streaming). Hosts the Share / Print /
-                      Download actions inline so the user can act from the
-                      cover without scrolling back to the card header. */}
-                  <BriefMasthead
-                    studentName={profile.fullName}
-                    profile={{
-                      gradeLevel: profile.gradeLevel,
-                      major: profile.major,
-                      targetCountries: profile.targetCountries,
-                      nationality: profile.nationality,
-                    }}
-                    briefContent={pathwayContent}
-                    isStreaming={pathwayLoading}
-                    isRu={isRu}
-                    isPro={isMember}
-                    onShare={openShare}
-                    onPrint={() => window.print()}
-                    onDownloadPdf={() => window.print()}
-                  />
+                <div id="printable-report" className="min-w-0 bg-white dark:bg-neutral-950 rounded-xl border border-neutral-200 dark:border-neutral-800 shadow-sm px-6 sm:px-10 py-10 sm:py-14 prose prose-sm max-w-none dark:prose-invert [&_h2]:text-neutral-900 [&_h2]:font-heading [&_h2]:text-xl [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:scroll-mt-24 [&_h2]:tracking-[-0.01em] [&_h3]:text-neutral-900 [&_h3]:font-heading [&_h3]:text-lg [&_h3]:mt-6 [&_h3]:mb-2 [&_p]:text-neutral-700 [&_li]:text-neutral-700 [&_strong]:text-neutral-900">
+                  {/* 2026-05-20: BriefMasthead block ripped out per user.
+                      Was rendering "TopUni · Strategy report / Generated
+                      [date] / [Name] / From [country] · [level] · [field]
+                      / Share Print Download" — too much chrome, scattered
+                      across the cream background, read as "ugly ass block".
+                      Brief now opens straight into the McKinsey-style
+                      numbered sections (BriefMinimal). Share / Print /
+                      Download moved to the Card header up top. */}
 
                   {/* Hero KPI strip — single concise widget the user sees
                       when the brief lands. Round 96: removed the

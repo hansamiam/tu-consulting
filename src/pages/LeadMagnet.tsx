@@ -132,12 +132,13 @@ const LeadMagnet = ({ language = "en" }: LeadMagnetProps) => {
           </motion.p>
         </section>
 
-        {/* MAIN — video LEFT, deck RIGHT, equal halves on lg+, stacked
-            on mobile. Both panes share the same chrome and the same
-            16:9 aspect — the deck pane shows ONE slide at a time via an
-            internal scroll-snap container, not the entire scroll the
-            old vertical stack used to produce. */}
-        <section className="max-w-6xl mx-auto px-4 pt-10 sm:pt-14 pb-12">
+        {/* MAIN — wider container so the panes are bigger on lg+.
+            max-w-7xl gives the two 16:9 panes ~600px width each at
+            standard laptop sizes (was ~480px at max-w-6xl). Premium
+            elevation via stronger shadow + ring; rounded-3xl for the
+            cleaner radius. No new color — same cream surface, just
+            bigger and visually weightier. */}
+        <section className="max-w-7xl mx-auto px-4 pt-8 sm:pt-12 pb-12 sm:pb-16">
           <div className="grid gap-5 sm:gap-6 lg:grid-cols-2 lg:items-start">
             <VideoPane videoId={videoId} tCommon={t} ru={ru} />
             <ContainedDeck lang={slideLang} onLangChange={setSlideLang} tCommon={t} />
@@ -374,7 +375,7 @@ interface VideoPaneProps {
 
 const VideoPane = ({ videoId, tCommon, ru }: VideoPaneProps) => {
   return (
-    <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg">
+    <div className="bg-card rounded-3xl overflow-hidden shadow-[0_18px_50px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.06]">
       {/* Fixed h-11 so this matches ContainedDeck's header exactly —
           previously py-2.5 with mixed-height child elements made the
           two panes a few px off from each other. */}
