@@ -554,11 +554,16 @@ const TopUniAI = () => {
                     className="space-y-7"
                   >
                     <div>
-                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Step 01 · Who you are</p>
-                      <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight">
+                      <div className="flex items-baseline gap-3 mb-3">
+                        <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">01</span>
+                        <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">Who you are</span>
+                      </div>
+                      <h2 className="font-heading text-[28px] sm:text-4xl font-bold text-foreground tracking-[-0.015em] leading-[1.15]">
                         Let's start with you.
                       </h2>
-                      <p className="text-muted-foreground mt-2 text-sm">The basics that shape every program match — about a minute.</p>
+                      <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[50ch]">
+                        The basics that shape every program match — takes about a minute.
+                      </p>
                     </div>
                     <div className="grid gap-5">
                       <div className="grid sm:grid-cols-2 gap-4">
@@ -833,11 +838,16 @@ const TopUniAI = () => {
                     className="space-y-7"
                   >
                     <div>
-                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Step 02 · Goals</p>
-                      <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight">
-                        Direction & priorities.
+                      <div className="flex items-baseline gap-3 mb-3">
+                        <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">02</span>
+                        <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">Direction</span>
+                      </div>
+                      <h2 className="font-heading text-[28px] sm:text-4xl font-bold text-foreground tracking-[-0.015em] leading-[1.15]">
+                        What are you chasing?
                       </h2>
-                      <p className="text-muted-foreground mt-2 text-sm">Field, timeline, and what matters most — we'll match programs across every geography that fits.</p>
+                      <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[52ch]">
+                        Field, timeline, and what matters most. We'll match across every geography that fits.
+                      </p>
                     </div>
                     <div className="space-y-6">
                       {/* Target countries removed entirely 2026-05-10.
@@ -978,11 +988,14 @@ const TopUniAI = () => {
                     className="space-y-7"
                   >
                     <div>
-                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Step 03 · Sharpen</p>
-                      <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight">
+                      <div className="flex items-baseline gap-3 mb-3">
+                        <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">03</span>
+                        <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">Sharpen</span>
+                      </div>
+                      <h2 className="font-heading text-[28px] sm:text-4xl font-bold text-foreground tracking-[-0.015em] leading-[1.15]">
                         Tell us more — or skip ahead.
                       </h2>
-                      <p className="text-muted-foreground mt-2 text-sm">
+                      <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[54ch]">
                         Optional. Each detail makes your essay angles and shortlist sharper. Anything you share stays private to your report.
                       </p>
                     </div>
