@@ -37,7 +37,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Play, Sparkles, Video as VideoIcon, Volume2, Settings, ChevronUp, ChevronDown, Maximize2 } from "lucide-react";
+import { Play, Video as VideoIcon, Volume2, Settings, ChevronUp, ChevronDown, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -133,36 +133,28 @@ const LeadMagnet = ({ language = "en" }: LeadMagnetProps) => {
           </div>
         </section>
 
-        {/* HAND-OFF CTA — soft funnel into the rest of TopUni. We don't
-            gate the lesson behind a signup (the IG visitor is cold and
-            would bounce); instead, every visitor gets the lesson AND a
-            single forward step at the bottom. */}
+        {/* Hand-off CTA — single line, two buttons. The IG visitor knows
+            what they came for; no value-prop block needed. */}
         <section className="max-w-3xl mx-auto px-4 pb-16 sm:pb-20">
-          <div className="bg-card border border-border rounded-2xl p-6 sm:p-8 text-center">
-            <p className="font-heading text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">
+          <div className="bg-card border border-border rounded-2xl p-6 sm:p-7 text-center">
+            <p className="font-heading text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-2.5">
               {t("Next step", "Следующий шаг")}
             </p>
-            <h2 className="font-heading text-xl sm:text-2xl font-bold text-foreground tracking-tight leading-tight">
+            <p className="font-heading text-foreground text-lg sm:text-xl font-bold tracking-tight leading-snug">
               {t(
-                "The platform Nurzada talks about is TopUni.",
-                "Та самая платформа, о которой говорит Нурзада — это TopUni.",
-              )}
-            </h2>
-            <p className="text-muted-foreground text-sm sm:text-[15px] leading-relaxed mt-3 max-w-xl mx-auto">
-              {t(
-                "Tell us your profile in 60 seconds. You get a personalised list of universities and scholarships you can actually win this cycle — and a one-shot AI brief on how to position yourself.",
-                "Расскажите о своём профиле за 60 секунд. Получите персональный список вузов и стипендий, которые реально выиграть в этом цикле — и AI-разбор того, как себя позиционировать.",
+                "Tell us your profile in 60 seconds.",
+                "Расскажите о профиле за 60 секунд.",
               )}
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center mt-6">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center mt-5">
               <Link to={ru ? "/topuni-ai/ru" : "/topuni-ai"}>
                 <Button variant="gold" size="lg" className="w-full sm:w-auto">
-                  {t("Build my strategy", "Построить мою стратегию")}
+                  {t("Build my strategy", "Построить стратегию")}
                 </Button>
               </Link>
               <Link to={ru ? "/discover/ru" : "/discover"}>
                 <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                  {t("Browse scholarships", "Посмотреть стипендии")}
+                  {t("Browse scholarships", "К стипендиям")}
                 </Button>
               </Link>
             </div>
@@ -238,39 +230,30 @@ const ContainedDeck = ({ lang, onLangChange, tCommon }: ContainedDeckProps) => {
 
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg flex flex-col">
-      {/* Header bar — mirrors VideoPane's header chrome (same height,
-          same vertical padding, same border treatment) so both panes
-          read as identical container shapes. */}
-      <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 border-b border-border bg-background/60">
+      {/* Header bar — fixed h-11 to MATCH VideoPane exactly. Drops the
+          Sparkles icon + slide counter per user direction; just the
+          label on the left + language pills on the right. */}
+      <div className="flex items-center justify-between h-11 px-3 sm:px-4 border-b border-border bg-background/60">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-3.5 w-3.5 text-gold-dark" />
+          <FileText className="h-3.5 w-3.5 text-gold-dark" />
           <p className="text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
             {tCommon("Slides", "Слайды")}
           </p>
         </div>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex items-center gap-1">
-            <LangPill
-              active={lang === "ru"}
-              disabled={DECKS.ru.count === 0}
-              onClick={() => onLangChange("ru")}
-              label="RU"
-            />
-            <LangPill
-              active={lang === "en"}
-              disabled={DECKS.en.count === 0}
-              onClick={() => onLangChange("en")}
-              label="EN"
-              comingSoon={DECKS.en.count === 0}
-            />
-          </div>
-          {hasSlides && (
-            <span className="font-mono text-[11.5px] tabular-nums text-foreground/75 font-semibold whitespace-nowrap">
-              {activeSlide}
-              <span className="text-muted-foreground/50 mx-0.5">/</span>
-              {deck.count}
-            </span>
-          )}
+        <div className="flex items-center gap-1">
+          <LangPill
+            active={lang === "ru"}
+            disabled={DECKS.ru.count === 0}
+            onClick={() => onLangChange("ru")}
+            label="RU"
+          />
+          <LangPill
+            active={lang === "en"}
+            disabled={DECKS.en.count === 0}
+            onClick={() => onLangChange("en")}
+            label="EN"
+            comingSoon={DECKS.en.count === 0}
+          />
         </div>
       </div>
 
@@ -327,23 +310,6 @@ const ContainedDeck = ({ lang, onLangChange, tCommon }: ContainedDeckProps) => {
               </button>
             </div>
 
-            {/* Slide-number watermark bottom-left — quiet marker, hidden
-                on very small screens to avoid covering the slide. */}
-            <span className="hidden sm:inline-block absolute bottom-3 left-3 font-mono text-[10.5px] tabular-nums bg-black/55 text-white/85 px-2 py-0.5 rounded-full backdrop-blur-sm pointer-events-none">
-              {activeSlide} / {deck.count}
-            </span>
-
-            {/* Fullscreen affordance bottom-right — opens the current
-                slide image in a new tab for high-res view. Cheap nicety. */}
-            <a
-              href={slideUrl(lang, activeSlide)}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={tCommon("Open slide full-size", "Открыть слайд во весь размер")}
-              className="absolute bottom-3 right-12 sm:right-14 h-7 w-7 rounded-full bg-black/45 hover:bg-black/65 text-white/85 hover:text-white backdrop-blur-sm flex items-center justify-center transition-colors"
-            >
-              <Maximize2 className="h-3 w-3" />
-            </a>
           </>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-neutral-400 text-sm px-6 text-center">
@@ -398,7 +364,10 @@ interface VideoPaneProps {
 const VideoPane = ({ videoId, tCommon, ru }: VideoPaneProps) => {
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg">
-      <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 border-b border-border bg-background/60">
+      {/* Fixed h-11 so this matches ContainedDeck's header exactly —
+          previously py-2.5 with mixed-height child elements made the
+          two panes a few px off from each other. */}
+      <div className="flex items-center justify-between h-11 px-3 sm:px-4 border-b border-border bg-background/60">
         <div className="flex items-center gap-2">
           <VideoIcon className="h-3.5 w-3.5 text-gold-dark" />
           <p className="text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
