@@ -4,8 +4,7 @@
 import { useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import { Award, Video } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Award } from "lucide-react";
 import { motion } from "framer-motion";
 import samuelPhoto from "@/assets/samuel.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
@@ -91,39 +90,9 @@ const Academy = ({ language = "en" }: AcademyProps) => {
         </div>
       </section>
 
-      {/* Live session entry — member-only path. The Academy page itself
-          stays public-marketing; the live-session room lives at
-          /academy/live behind a password gate. This card is the only
-          visible pointer to it from the public landing. */}
-      <section className="max-w-3xl mx-auto px-4 pb-16 sm:pb-20">
-        <Link
-          to={ru ? "/academy/live/ru" : "/academy/live"}
-          className="group block bg-card border border-border rounded-2xl p-5 sm:p-6 hover:border-gold/60 transition-colors"
-        >
-          <div className="flex items-start gap-4">
-            <div className="shrink-0 w-11 h-11 rounded-full bg-gold/15 border border-gold/40 flex items-center justify-center">
-              <Video className="h-5 w-5 text-gold-dark" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-heading text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-1">
-                {t("Member access", "Доступ для участников")}
-              </p>
-              <h3 className="font-heading text-lg sm:text-xl font-bold text-foreground tracking-tight leading-tight">
-                {t("Enter the live session", "Войти в прямую сессию")}
-              </h3>
-              <p className="text-muted-foreground text-[13.5px] leading-relaxed mt-1.5">
-                {t(
-                  "Live workshops and office hours stream through here. Members enter with the session password.",
-                  "Прямые мастер-классы и office hours идут здесь. Участники входят по паролю сессии.",
-                )}
-              </p>
-              <span className="inline-flex items-center gap-1.5 text-gold-dark text-[12.5px] font-semibold mt-3 group-hover:gap-2.5 transition-all">
-                {t("Open the live room", "Открыть комнату")} →
-              </span>
-            </div>
-          </div>
-        </Link>
-      </section>
+      {/* /academy/live retired 2026-05-20 — was a fake video-chrome
+          surface that didn't work without real Zoom/Meet embed. The
+          member-access card here pointed at it; removed alongside. */}
 
       {/* Original CTA section retired here per user direction — "less is more".
           The "Doors open in June" callout + Build-strategy/Open-Discover

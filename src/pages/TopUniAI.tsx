@@ -99,9 +99,10 @@ interface WizardDraft {
   careerRoi: number;
   visaAccess: number;
   locationPref: number;
-  /* 2026-05-18 Step 4 optional intake. All skippable. Sharpen the
-   * brief's personalisation when filled; absent ⇒ brief just leans on
-   * Step 1-3 fields like before. */
+  /* 2026-05-18 Sharpen-step optional intake (was Step 4, became Step 3
+   * when the wizard collapsed 4 → 3 on 2026-05-20). All skippable.
+   * Sharpens the brief's personalisation when filled; absent ⇒ brief
+   * just leans on Step 1-2 fields like before. */
   careerGoal?: string;
   extracurriculars?: string;
   background?: string;
@@ -241,9 +242,10 @@ const TopUniAI = () => {
   const [visaAccess, setVisaAccess] = useState<number[]>([typeof draft?.visaAccess === "number" ? draft.visaAccess : 3]);
   const [locationPref, setLocationPref] = useState<number[]>([typeof draft?.locationPref === "number" ? draft.locationPref : 3]);
 
-  // 2026-05-18 Step 4 optional fields. All skippable — Pro upsell
-  // dialog retired in favour of in-flow optional questions so the
-  // brief can be personalised without paywalling the depth signal.
+  // 2026-05-18 Sharpen-step (Step 3) optional fields. All skippable —
+  // Pro upsell dialog retired in favour of in-flow optional questions
+  // so the brief can be personalised without paywalling the depth
+  // signal.
   // Users who want a quick pass click "Skip" and never see them; users
   // who want a sharper brief fill them in. Each maps directly into
   // the topuni-ai-pathway prompt's PROFILE section.
@@ -361,7 +363,7 @@ const TopUniAI = () => {
         targetCountries, major, budget, scholarshipNeeded, timeline,
         prestige: prestige[0], scholarship: scholarship[0],
         careerRoi: careerRoi[0], visaAccess: visaAccess[0], locationPref: locationPref[0],
-        // Optional Step 4 — persist only when filled.
+        // Optional Sharpen-step fields — persist only when filled.
         careerGoal: careerGoal || undefined,
         extracurriculars: extracurriculars || undefined,
         background: background || undefined,
@@ -456,18 +458,16 @@ const TopUniAI = () => {
                   stage instead of three abstract bars. Active step's
                   label gets a subtle gold tint; completed steps get
                   the canvas-foreground colour; upcoming stay muted. */}
-              {/* 2026-05-19: Progress now spans 4 steps. The 4th is the
-                  optional context step (career goal, ECs, background,
-                  named schools). User direction was to redesign the
-                  flow so the extras are part of the journey, not tacked
-                  on the end of Step 3 as a collapsible. Step 4 has a
-                  prominent Skip path for users who want the fast lane. */}
+              {/* 2026-05-20: Consolidated 4 → 3 steps per user direction
+                  ("the 4 pages are too long"). Old Step 2 (direction:
+                  major + timeline) merged into old Step 3 (priorities:
+                  3 sliders) on one "Goals" page. Sharpen is the optional
+                  textareas page, still with a prominent Skip path. */}
               <div className="flex items-start justify-center gap-3 mb-10">
                 {[
                   { n: 1, label: "Profile" },
                   { n: 2, label: "Goals" },
-                  { n: 3, label: "Priorities" },
-                  { n: 4, label: "Sharpen" },
+                  { n: 3, label: "Sharpen" },
                 ].map(s => {
                   const isActive = s.n === step;
                   const isDone = s.n < step;
@@ -833,11 +833,11 @@ const TopUniAI = () => {
                     className="space-y-7"
                   >
                     <div>
-                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Step 02 · Direction</p>
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Step 02 · Goals</p>
                       <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight">
-                        What are you studying?
+                        Direction & priorities.
                       </h2>
-                      <p className="text-muted-foreground mt-2 text-sm">Tell us your field and when you'd start — we'll match programs across every geography that fits your profile.</p>
+                      <p className="text-muted-foreground mt-2 text-sm">Field, timeline, and what matters most — we'll match programs across every geography that fits.</p>
                     </div>
                     <div className="space-y-6">
                       {/* Target countries removed entirely 2026-05-10.
@@ -918,6 +918,43 @@ const TopUniAI = () => {
                         </Select>
                       </div>
                     </div>
+                    {/* Priorities sliders — folded into Step 02 on 2026-05-20
+                        when 4 steps collapsed to 3. Three sliders that
+                        shape the brief: prestige, scholarship need, visa
+                        accessibility. Header sets a soft divider between
+                        the "direction" half above and "priorities" below
+                        so the merged step still reads as two intents. */}
+                    <div className="pt-2">
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark/80 font-medium mb-1.5">What matters most</p>
+                      <p className="text-muted-foreground text-sm mb-4">Weight each on a 1-5 scale.</p>
+                      <div className="space-y-5">
+                        {[
+                          { label: "Prestige", value: prestige, set: setPrestige, icon: GraduationCap, low: "Any school", high: "Top 50 only" },
+                          { label: "Scholarship need", value: scholarship, set: setScholarship, icon: Shield, low: "Self-fund OK", high: "Must be free" },
+                          { label: "Visa accessibility", value: visaAccess, set: setVisaAccess, icon: CheckCircle2, low: "Don't mind", high: "Easy access" },
+                        ].map(item => (
+                          <div key={item.label} className="bg-card border border-border/70 rounded-xl p-5">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2.5">
+                                <item.icon className="w-4 h-4 text-gold-dark" />
+                                <span className="text-sm font-semibold text-foreground">{item.label}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                {[1, 2, 3, 4, 5].map(n => (
+                                  <span key={n} className={`h-1.5 w-1.5 rounded-full transition-colors ${n <= item.value[0] ? "bg-gold-dark" : "bg-border"}`} />
+                                ))}
+                                <span className="text-xs font-bold text-gold-dark tabular-nums ml-1.5">{item.value[0]}/5</span>
+                              </div>
+                            </div>
+                            <Slider min={1} max={5} step={1} value={item.value} onValueChange={item.set} className="w-full" />
+                            <div className="flex justify-between mt-2 text-[11px] text-muted-foreground font-medium">
+                              <span>{item.low}</span>
+                              <span>{item.high}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                     <div className="flex justify-between pt-4">
                       <Button variant="outline" onClick={() => goToStep(1)}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
                       <Button
@@ -933,64 +970,6 @@ const TopUniAI = () => {
 
                 {step === 3 && (
                   <motion.div
-                    key="step3"
-                    initial={stepEnter}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={stepExit}
-                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                    className="space-y-7"
-                  >
-                    <div>
-                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Step 03 · Priorities</p>
-                      <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight">
-                        What matters most?
-                      </h2>
-                      <p className="text-muted-foreground mt-2 text-sm">Weight each on a 1-5 scale.</p>
-                    </div>
-                    <div className="space-y-5">
-                      {/* Reverted to the simple 1-5 sliders 2026-05-10
-                          per user direction "REVERT" — the tier-picker /
-                          money-signal / 3-tile creative redesign didn't
-                          land. Three sliders that shape the brief:
-                          prestige, scholarship need, visa accessibility. */}
-                      {[
-                        { label: "Prestige", value: prestige, set: setPrestige, icon: GraduationCap, low: "Any school", high: "Top 50 only" },
-                        { label: "Scholarship need", value: scholarship, set: setScholarship, icon: Shield, low: "Self-fund OK", high: "Must be free" },
-                        { label: "Visa accessibility", value: visaAccess, set: setVisaAccess, icon: CheckCircle2, low: "Don't mind", high: "Easy access" },
-                      ].map(item => (
-                        <div key={item.label} className="bg-card border border-border/70 rounded-xl p-5">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2.5">
-                              <item.icon className="w-4 h-4 text-gold-dark" />
-                              <span className="text-sm font-semibold text-foreground">{item.label}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              {[1, 2, 3, 4, 5].map(n => (
-                                <span key={n} className={`h-1.5 w-1.5 rounded-full transition-colors ${n <= item.value[0] ? "bg-gold-dark" : "bg-border"}`} />
-                              ))}
-                              <span className="text-xs font-bold text-gold-dark tabular-nums ml-1.5">{item.value[0]}/5</span>
-                            </div>
-                          </div>
-                          <Slider min={1} max={5} step={1} value={item.value} onValueChange={item.set} className="w-full" />
-                          <div className="flex justify-between mt-2 text-[11px] text-muted-foreground font-medium">
-                            <span>{item.low}</span>
-                            <span>{item.high}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="flex justify-between pt-4">
-                      <Button variant="outline" onClick={() => goToStep(2)}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
-                      <Button variant="gold" onClick={() => goToStep(4)}>
-                        Continue <ArrowRight className="ml-2 w-4 h-4" />
-                      </Button>
-                    </div>
-                  </motion.div>
-                )}
-
-                {step === 4 && (
-                  <motion.div
                     key="step4"
                     initial={stepEnter}
                     animate={{ opacity: 1, x: 0 }}
@@ -999,7 +978,7 @@ const TopUniAI = () => {
                     className="space-y-7"
                   >
                     <div>
-                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Step 04 · Sharpen</p>
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark font-medium mb-3">Step 03 · Sharpen</p>
                       <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight">
                         Tell us more — or skip ahead.
                       </h2>
@@ -1078,7 +1057,7 @@ const TopUniAI = () => {
                             </p>
                           </div>
                           <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
-                            <Button variant="outline" onClick={() => goToStep(3)}>
+                            <Button variant="outline" onClick={() => goToStep(2)}>
                               <ArrowLeft className="mr-2 w-4 h-4" /> Back
                             </Button>
                             <div className="flex gap-2 sm:gap-3">
