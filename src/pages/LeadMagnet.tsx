@@ -107,7 +107,16 @@ const LeadMagnet = ({ language = "en" }: LeadMagnetProps) => {
             colorful and visually distinct on their own; the page needs
             a clean cream background so they pop. Single simple title
             line above the panes. */}
-        <section className="max-w-3xl mx-auto px-4 pt-14 sm:pt-20 pb-6 sm:pb-8 text-center">
+        {/* 2026-05-20: page restructured around a "cinema stage" — the
+            video + slides sit on a dark navy backdrop (theater-mode
+            style) so the colorful slides + the video pop against a
+            single dark canvas instead of floating on cream. The title
+            sits above the stage on cream; CTA + footer return to cream
+            below. Three bands total: cream title → navy stage → cream
+            CTA + footer. */}
+
+        {/* TITLE — cream, simple. */}
+        <section className="max-w-3xl mx-auto px-4 pt-14 sm:pt-20 pb-10 sm:pb-12 text-center">
           <motion.h1
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -126,28 +135,46 @@ const LeadMagnet = ({ language = "en" }: LeadMagnetProps) => {
             className="text-foreground/65 text-[14.5px] sm:text-[16px] mt-3 sm:mt-4 leading-relaxed max-w-xl mx-auto"
           >
             {t(
-              "A free lesson by Nurzada Abdivalieva — Cambridge · Tsinghua.",
-              "Бесплатный урок от Нурзады Абдивалиевой — Кембридж · Цинхуа.",
+              "By Nurzada Abdivalieva — Cambridge · Tsinghua.",
+              "От Нурзады Абдивалиевой — Кембридж · Цинхуа.",
             )}
           </motion.p>
         </section>
 
-        {/* MAIN — wider container so the panes are bigger on lg+.
-            max-w-7xl gives the two 16:9 panes ~600px width each at
-            standard laptop sizes (was ~480px at max-w-6xl). Premium
-            elevation via stronger shadow + ring; rounded-3xl for the
-            cleaner radius. No new color — same cream surface, just
-            bigger and visually weightier. */}
-        <section className="max-w-7xl mx-auto px-4 pt-8 sm:pt-12 pb-12 sm:pb-16">
-          <div className="grid gap-5 sm:gap-6 lg:grid-cols-2 lg:items-start">
-            <VideoPane videoId={videoId} tCommon={t} ru={ru} />
-            <ContainedDeck lang={slideLang} onLangChange={setSlideLang} tCommon={t} />
-          </div>
+        {/* STAGE — navy theater backdrop. Cream → navy → cream gradient
+            ramps soften the transitions on the top + bottom edges so
+            the band doesn't feel like a brutal slab. The dark canvas
+            gives the panes a stage-light feel — like YouTube theater
+            mode — without us darkening individual element colors. */}
+        <section className="relative bg-gradient-to-b from-primary via-primary to-primary/95 py-10 sm:py-14">
+          {/* Soft glow halo behind the panes — subtle gold radial,
+              centered, fades out toward the edges. Adds depth without
+              touching the panes themselves. */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            aria-hidden
+            style={{
+              backgroundImage:
+                "radial-gradient(ellipse at center, hsl(var(--gold) / 0.12) 0%, transparent 60%)",
+            }}
+          />
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+            className="relative max-w-7xl mx-auto px-4"
+          >
+            <div className="grid gap-5 sm:gap-6 lg:grid-cols-2 lg:items-start">
+              <VideoPane videoId={videoId} tCommon={t} ru={ru} />
+              <ContainedDeck lang={slideLang} onLangChange={setSlideLang} tCommon={t} />
+            </div>
+          </motion.div>
         </section>
 
-        {/* Hand-off CTA — single line, two buttons. The IG visitor knows
-            what they came for; no value-prop block needed. */}
-        <section className="max-w-3xl mx-auto px-4 pb-16 sm:pb-20">
+        {/* Hand-off CTA — single line, two buttons. Cream band between
+            the navy stage and the navy footer. */}
+        <section className="max-w-3xl mx-auto px-4 pt-10 sm:pt-14 pb-12 sm:pb-16">
           <div className="bg-card border border-border rounded-2xl p-6 sm:p-7 text-center">
             <p className="font-heading text-[11px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-2.5">
               {t("Next step", "Следующий шаг")}
@@ -173,13 +200,22 @@ const LeadMagnet = ({ language = "en" }: LeadMagnetProps) => {
           </div>
         </section>
 
-        {/* Bottom ramp dropped 2026-05-20 — the no-navy direction on
-            this page means we no longer need the gradient bridge into a
-            navy footer. Footer flipped to variant="light" so it reads
-            as a quiet legal/links strip on cream rather than slamming
-            into the colorful slides with a navy block underneath. */}
+        {/* 2026-05-20 (later): bring back navy footer with a soft cream
+            → navy gradient ramp. The cinema-stage section above already
+            uses navy, so the footer returning to navy completes the
+            "framed in navy" look without dumping it on the whole page. */}
+        <div
+          className="h-12 sm:h-16"
+          style={{
+            backgroundImage: `linear-gradient(180deg,
+              transparent 0%,
+              hsl(var(--primary) / 0.10) 50%,
+              hsl(var(--primary)) 100%)`,
+          }}
+          aria-hidden="true"
+        />
 
-        <Footer language={language} variant="light" />
+        <Footer language={language} />
       </div>
     </div>
   );
