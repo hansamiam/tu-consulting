@@ -131,7 +131,19 @@ const loadDraft = (): Partial<WizardDraft> | null => {
   } catch { return null; }
 };
 
-const TopUniAI = () => {
+interface TopUniAIProps {
+  /** Language for visible copy. RU also flips the document title +
+   *  the saveProfile redirect target to /discover/ru. */
+  language?: "en" | "ru";
+}
+
+const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
+  const ru = language === "ru";
+  // Inline translation helper — only English literals live in the JSX
+  // by default; RU strings get added as `t("English", "Русский")` as
+  // we touch each piece of copy. Keeps the two languages in lock-step
+  // via the same source of truth (one component, both renderings).
+  const t = (en: string, rText: string) => (ru ? rText : en);
   const navigate = useNavigate();
   // Auth combined with intake (2026-05-10): the wizard now invites the
   // user to set a password OR continue with Google on Step 1 so the
@@ -164,11 +176,13 @@ const TopUniAI = () => {
   const stepExit = { x: -stepDir * 24, opacity: 0 };
 
   useEffect(() => {
-    trackPageView("/topuni-ai");
+    trackPageView(ru ? "/topuni-ai/ru" : "/topuni-ai");
     const prev = document.title;
-    document.title = "TopUni AI — Your personalized scholarship strategy";
+    document.title = ru
+      ? "TopUni AI — Ваша персональная стратегия поступления"
+      : "TopUni AI — Your personalized scholarship strategy";
     return () => { document.title = prev; };
-  }, []);
+  }, [ru]);
 
   // Load any in-progress draft on first render. The hub-context handoff
   // effect runs separately and may overwrite specific fields (country
@@ -200,7 +214,9 @@ const TopUniAI = () => {
         ? `${Math.round(minutes / 60)} hour${Math.round(minutes / 60) === 1 ? "" : "s"} ago`
         : `${minutes} min ago`;
     toast.success(
-      `Welcome back — restored your progress from ${timeLabel}.`,
+      ru
+        ? `С возвращением — восстановили ваш прогресс (${timeLabel}).`
+        : `Welcome back — restored your progress from ${timeLabel}.`,
       { duration: 4500 },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -468,9 +484,9 @@ const TopUniAI = () => {
                   textareas page, still with a prominent Skip path. */}
               <div className="flex items-start justify-center gap-3 mb-10">
                 {[
-                  { n: 1, label: "Profile" },
-                  { n: 2, label: "Goals" },
-                  { n: 3, label: "Sharpen" },
+                  { n: 1, label: t("Profile", "Профиль") },
+                  { n: 2, label: t("Goals", "Цели") },
+                  { n: 3, label: t("Sharpen", "Детали") },
                 ].map(s => {
                   const isActive = s.n === step;
                   const isDone = s.n < step;
@@ -502,7 +518,7 @@ const TopUniAI = () => {
                 <div className="flex items-center justify-center mb-7 -mt-3">
                   <span className="text-[10.5px] text-muted-foreground/80 inline-flex items-center gap-1.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-success" />
-                    Progress auto-saved on this device
+                    {t("Progress auto-saved on this device", "Прогресс сохранён на этом устройстве")}
                   </span>
                 </div>
               )}
@@ -559,23 +575,25 @@ const TopUniAI = () => {
                     <div>
                       <div className="flex items-baseline gap-3 mb-3">
                         <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">01</span>
-                        <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">Who you are</span>
+                        <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">
+                          {t("Who you are", "Кто вы")}
+                        </span>
                       </div>
                       <h2 className="font-heading text-[28px] sm:text-4xl font-bold text-foreground tracking-[-0.015em] leading-[1.15]">
-                        Let's start with you.
+                        {t("Let's start with you.", "Начнём с вас.")}
                       </h2>
                       <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[50ch]">
-                        The basics that shape every program match — takes about a minute.
+                        {t("The basics that shape every program match — takes about a minute.", "Основы для подбора программ — займёт минуту.")}
                       </p>
                     </div>
                     <div className="grid gap-5">
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">Full name *</Label>
-                          <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Your name" className="h-11 bg-card" />
+                          <Label className="text-xs uppercase tracking-wider font-medium">{t("Full name *", "Полное имя *")}</Label>
+                          <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder={t("Your name", "Ваше имя")} className="h-11 bg-card" />
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">Email *</Label>
+                          <Label className="text-xs uppercase tracking-wider font-medium">{t("Email *", "Email *")}</Label>
                           <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@email.com" className="h-11 bg-card" />
                         </div>
                       </div>
@@ -583,11 +601,11 @@ const TopUniAI = () => {
                         {/* WhatsApp field retired — never used by the
                             brief generator and the extra "give us your
                             phone" ask was friction with no payoff. */}
-                        <Label className="text-xs uppercase tracking-wider font-medium">Nationality *</Label>
+                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Nationality *", "Гражданство *")}</Label>
                         <Input
                           value={nationality}
                           onChange={e => setNationality(e.target.value)}
-                          placeholder="Type any country (Kazakhstan, Nigeria, …)"
+                          placeholder={t("Type any country (Kazakhstan, Nigeria, …)", "Любая страна (Казахстан, Кыргызстан, …)")}
                           className="h-11 bg-card"
                         />
                         {(() => {
@@ -615,26 +633,26 @@ const TopUniAI = () => {
                         })()}
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-xs uppercase tracking-wider font-medium">Current stage *</Label>
+                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Current stage *", "Текущий этап *")}</Label>
                         <Select value={gradeLevel} onValueChange={setGradeLevel}>
-                          <SelectTrigger className="h-11 bg-card"><SelectValue placeholder="Pick your stage" /></SelectTrigger>
+                          <SelectTrigger className="h-11 bg-card"><SelectValue placeholder={t("Pick your stage", "Выберите этап")} /></SelectTrigger>
                           <SelectContent>
-                            {[
-                              "High School",
-                              "Gap Year",
-                              "Bachelor's",
-                              "Master's",
-                              "PhD applicant",
-                              "Working professional",
-                            ].map(g => (
-                              <SelectItem key={g} value={g}>{g}</SelectItem>
+                            {([
+                              ["High School", "Школа"],
+                              ["Gap Year", "Gap Year"],
+                              ["Bachelor's", "Бакалавр"],
+                              ["Master's", "Магистр"],
+                              ["PhD applicant", "Аспирант / PhD"],
+                              ["Working professional", "Работаю"],
+                            ] as const).map(([val, ruLabel]) => (
+                              <SelectItem key={val} value={val}>{t(val, ruLabel)}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">GPA *</Label>
+                          <Label className="text-xs uppercase tracking-wider font-medium">{t("GPA *", "Средний балл *")}</Label>
                           {/* Paired input + scale picker — covers the four
                               common bases (US 4.0, post-Soviet 5.0,
                               Continental Europe 10.0, percentage 100) so
@@ -708,15 +726,15 @@ const TopUniAI = () => {
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-xs uppercase tracking-wider font-medium">IELTS</Label>
-                          <Input value={ielts} onChange={e => setIelts(e.target.value)} placeholder="Optional · e.g. 7.0" className="h-11 bg-card" />
+                          <Input value={ielts} onChange={e => setIelts(e.target.value)} placeholder={t("Optional · e.g. 7.0", "По желанию · напр. 7.0")} className="h-11 bg-card" />
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-xs uppercase tracking-wider font-medium">TOEFL</Label>
-                          <Input value={toefl} onChange={e => setToefl(e.target.value)} placeholder="Optional · e.g. 100" className="h-11 bg-card" />
+                          <Input value={toefl} onChange={e => setToefl(e.target.value)} placeholder={t("Optional · e.g. 100", "По желанию · напр. 100")} className="h-11 bg-card" />
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-xs uppercase tracking-wider font-medium">SAT</Label>
-                          <Input value={sat} onChange={e => setSat(e.target.value)} placeholder="Optional · e.g. 1450" className="h-11 bg-card" />
+                          <Input value={sat} onChange={e => setSat(e.target.value)} placeholder={t("Optional · e.g. 1450", "По желанию · напр. 1450")} className="h-11 bg-card" />
                         </div>
                       </div>
                     </div>
@@ -742,10 +760,10 @@ const TopUniAI = () => {
                           <Shield className="w-4 h-4 text-gold-dark shrink-0 mt-0.5" />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-foreground leading-tight">
-                              Save your report
+                              {t("Save your report", "Сохраните ваш отчёт")}
                             </p>
                             <p className="text-[11px] text-foreground/70 leading-snug mt-0.5">
-                              Set a password to create an account.
+                              {t("Set a password to create an account.", "Задайте пароль чтобы создать аккаунт.")}
                             </p>
                           </div>
                         </div>
@@ -754,7 +772,7 @@ const TopUniAI = () => {
                             type="password"
                             value={accountPassword}
                             onChange={e => setAccountPassword(e.target.value)}
-                            placeholder="Pick a password (8+ chars · optional)"
+                            placeholder={t("Pick a password (8+ chars · optional)", "Пароль (от 8 символов · по желанию)")}
                             className="h-10 bg-card text-sm"
                           />
                           <Button
@@ -784,18 +802,13 @@ const TopUniAI = () => {
                     )}
 
                     <div className="flex justify-between pt-4">
-                      <Button variant="outline" onClick={() => navigate("/")}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
+                      <Button variant="outline" onClick={() => navigate(ru ? "/ru" : "/")}><ArrowLeft className="mr-2 w-4 h-4" /> {t("Back", "Назад")}</Button>
                       <Button
                         variant="gold"
                         onClick={async () => {
-                          // If the user typed a password and isn't yet
-                          // signed in, attempt sign-up before advancing.
-                          // On success the AuthContext picks up the new
-                          // session; on failure (email taken, weak pwd)
-                          // we surface a toast and keep them on Step 1.
                           if (!user && accountPassword.trim().length > 0) {
                             if (accountPassword.length < 8) {
-                              toast.error("Password needs at least 8 characters.");
+                              toast.error(t("Password needs at least 8 characters.", "Пароль должен быть от 8 символов."));
                               return;
                             }
                             setAccountSubmitting(true);
@@ -803,29 +816,24 @@ const TopUniAI = () => {
                             setAccountSubmitting(false);
                             if (error) {
                               toast.error(/already|exists|registered/i.test(error)
-                                ? "That email already has an account — leave the password blank to continue, or sign in from Account."
+                                ? t("That email already has an account — leave the password blank to continue, or sign in from Account.",
+                                    "На этот email уже есть аккаунт — оставьте пароль пустым или войдите через Аккаунт.")
                                 : error);
                               return;
                             }
-                            // When Supabase email-confirmation is on the
-                            // session isn't created until the user clicks
-                            // the verification link, so we can't sync the
-                            // brief to their account yet. Surface the
-                            // confirm-email case explicitly + still let
-                            // them advance — the brief generates on
-                            // localStorage and will adopt the account
-                            // once they verify and come back.
                             if (needsConfirmation) {
-                              toast.success("Account created — check your email to confirm. Your report saves to this device meanwhile.");
+                              toast.success(t("Account created — check your email to confirm. Your report saves to this device meanwhile.",
+                                              "Аккаунт создан — подтвердите email. Отчёт пока сохраняется локально."));
                             } else {
-                              toast.success("Account created — your report will save automatically.");
+                              toast.success(t("Account created — your report will save automatically.",
+                                              "Аккаунт создан — отчёт сохранится автоматически."));
                             }
                           }
                           goToStep(2);
                         }}
                         disabled={accountSubmitting || !fullName.trim() || !email.trim() || !nationality.trim() || !gradeLevel || !gpa.trim()}
                       >
-                        Continue <ArrowRight className="ml-2 w-4 h-4" />
+                        {t("Continue", "Дальше")} <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
                     </div>
                   </motion.div>
@@ -843,13 +851,13 @@ const TopUniAI = () => {
                     <div>
                       <div className="flex items-baseline gap-3 mb-3">
                         <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">02</span>
-                        <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">Direction</span>
+                        <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{t("Direction", "Направление")}</span>
                       </div>
                       <h2 className="font-heading text-[28px] sm:text-4xl font-bold text-foreground tracking-[-0.015em] leading-[1.15]">
-                        What are you chasing?
+                        {t("What are you chasing?", "К чему вы стремитесь?")}
                       </h2>
                       <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[52ch]">
-                        Field, timeline, and what matters most. We'll match across every geography that fits.
+                        {t("Field, timeline, and what matters most. We'll match across every geography that fits.", "Область, сроки и приоритеты. Подберём программы по всему миру.")}
                       </p>
                     </div>
                     <div className="space-y-6">
@@ -871,7 +879,7 @@ const TopUniAI = () => {
                           a specialty not in the canonical list (e.g.
                           "Quantum Biophysics") aren't blocked. */}
                       <div className="space-y-1.5">
-                        <Label className="text-xs uppercase tracking-wider font-medium">Intended major *</Label>
+                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Intended major *", "Будущая специальность *")}</Label>
                         {(() => {
                           const MAJORS = [
                             "Undecided",
@@ -895,17 +903,17 @@ const TopUniAI = () => {
                                 value={selectValue}
                                 onValueChange={v => setMajor(v === "__other__" ? (isOther ? major : "") : v)}
                               >
-                                <SelectTrigger className="h-11 bg-card"><SelectValue placeholder="Select your major" /></SelectTrigger>
+                                <SelectTrigger className="h-11 bg-card"><SelectValue placeholder={t("Select your major", "Выберите специальность")} /></SelectTrigger>
                                 <SelectContent className="max-h-72">
                                   {MAJORS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                                  <SelectItem value="__other__">Other (type below)</SelectItem>
+                                  <SelectItem value="__other__">{t("Other (type below)", "Другое (ввести ниже)")}</SelectItem>
                                 </SelectContent>
                               </Select>
                               {selectValue === "__other__" && (
                                 <Input
                                   value={isOther ? major : ""}
                                   onChange={e => setMajor(e.target.value)}
-                                  placeholder="e.g. Quantum Biophysics"
+                                  placeholder={t("e.g. Quantum Biophysics", "напр. Квантовая биофизика")}
                                   className="h-11 bg-card mt-2"
                                   autoFocus
                                 />
@@ -918,9 +926,9 @@ const TopUniAI = () => {
                           with the "Scholarship need" 1–5 slider on step 3.
                           Budget is now derived from that slider downstream. */}
                       <div className="space-y-1.5">
-                        <Label className="text-xs uppercase tracking-wider font-medium">When you'd start</Label>
+                        <Label className="text-xs uppercase tracking-wider font-medium">{t("When you'd start", "Когда планируете начать")}</Label>
                         <Select value={timeline} onValueChange={setTimeline}>
-                          <SelectTrigger className="h-11 bg-card"><SelectValue placeholder="Select" /></SelectTrigger>
+                          <SelectTrigger className="h-11 bg-card"><SelectValue placeholder={t("Select", "Выберите")} /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="Fall 2026">Fall 2026</SelectItem>
                             <SelectItem value="Spring 2027">Spring 2027</SelectItem>
@@ -938,13 +946,13 @@ const TopUniAI = () => {
                         the "direction" half above and "priorities" below
                         so the merged step still reads as two intents. */}
                     <div className="pt-2">
-                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark/80 font-medium mb-1.5">What matters most</p>
-                      <p className="text-muted-foreground text-sm mb-4">Weight each on a 1-5 scale.</p>
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark/80 font-medium mb-1.5">{t("What matters most", "Что важно")}</p>
+                      <p className="text-muted-foreground text-sm mb-4">{t("Weight each on a 1-5 scale.", "Оцените каждое по шкале 1–5.")}</p>
                       <div className="space-y-5">
                         {[
-                          { label: "Prestige", value: prestige, set: setPrestige, icon: GraduationCap, low: "Any school", high: "Top 50 only" },
-                          { label: "Scholarship need", value: scholarship, set: setScholarship, icon: Shield, low: "Self-fund OK", high: "Must be free" },
-                          { label: "Visa accessibility", value: visaAccess, set: setVisaAccess, icon: CheckCircle2, low: "Don't mind", high: "Easy access" },
+                          { label: t("Prestige", "Престиж"), value: prestige, set: setPrestige, icon: GraduationCap, low: t("Any school", "Любой вуз"), high: t("Top 50 only", "Только топ-50") },
+                          { label: t("Scholarship need", "Нужна стипендия"), value: scholarship, set: setScholarship, icon: Shield, low: t("Self-fund OK", "Готов(а) платить"), high: t("Must be free", "Только бесплатно") },
+                          { label: t("Visa accessibility", "Доступность визы"), value: visaAccess, set: setVisaAccess, icon: CheckCircle2, low: t("Don't mind", "Не важно"), high: t("Easy access", "Простая виза") },
                         ].map(item => (
                           <div key={item.label} className="bg-card border border-border/70 rounded-xl p-5">
                             <div className="flex items-center justify-between mb-3">
@@ -969,13 +977,13 @@ const TopUniAI = () => {
                       </div>
                     </div>
                     <div className="flex justify-between pt-4">
-                      <Button variant="outline" onClick={() => goToStep(1)}><ArrowLeft className="mr-2 w-4 h-4" /> Back</Button>
+                      <Button variant="outline" onClick={() => goToStep(1)}><ArrowLeft className="mr-2 w-4 h-4" /> {t("Back", "Назад")}</Button>
                       <Button
                         variant="gold"
                         onClick={() => goToStep(3)}
                         disabled={!major.trim()}
                       >
-                        Continue <ArrowRight className="ml-2 w-4 h-4" />
+                        {t("Continue", "Дальше")} <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
                     </div>
                   </motion.div>
