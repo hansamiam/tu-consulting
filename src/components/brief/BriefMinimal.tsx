@@ -25,7 +25,7 @@
  */
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Compass, GraduationCap, AlertTriangle, MapPin, BookOpenText, Calendar } from "lucide-react";
+import { ArrowRight, Compass, GraduationCap, AlertTriangle, MapPin } from "lucide-react";
 import {
   SECTION_ORDER,
   type BriefSections,
@@ -328,45 +328,11 @@ const NextStepsCard: React.FC = () => (
   </section>
 );
 
-// ─── Masthead — simple, no magazine chrome ──────────────────────────
-
-const Masthead: React.FC<{
-  studentName: string;
-  gradeLabel?: string;
-  generatedAt?: string;
-  synthesisLine?: string;
-}> = ({ studentName, gradeLabel, generatedAt, synthesisLine }) => {
-  const dateLine = generatedAt
-    ? new Date(generatedAt).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })
-    : null;
-  // Use just the first name so the headline doesn't wrap on full
-  // multi-part names. Falls back to "you" so the headline never reads
-  // "Built for ." with an empty span.
-  const firstName = (studentName ?? "").trim().split(/\s+/)[0] || "you";
-  return (
-    <header className="mb-14 sm:mb-20 text-center">
-      <div className="flex items-center justify-center gap-2 mb-5 text-[10.5px] uppercase tracking-[0.22em] text-muted-foreground font-medium">
-        <BookOpenText className="h-3 w-3" />
-        Strategy report
-        {gradeLabel && <span className="text-gold-dark">· {gradeLabel}</span>}
-      </div>
-      <h1 className="font-heading text-[34px] sm:text-5xl font-bold text-foreground tracking-[-0.02em] leading-[1.05] max-w-[18ch] mx-auto">
-        Built for{" "}
-        <span className="text-gold-dark">{firstName}</span>.
-      </h1>
-      {synthesisLine && (
-        <p className="text-foreground/70 text-[15px] sm:text-[16px] leading-relaxed mt-5 max-w-[52ch] mx-auto">
-          {synthesisLine}
-        </p>
-      )}
-      {dateLine && (
-        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-medium mt-6 inline-flex items-center gap-1.5">
-          <Calendar className="h-3 w-3" /> {dateLine}
-        </p>
-      )}
-    </header>
-  );
-};
+// 2026-05-20: BriefMinimal's own Masthead was dropped — the dashboard
+// already renders BriefMasthead above this component (with the same
+// "Built for [name]" headline + synthesis line + share/print actions).
+// Stacking both produced two mastheads in a row which read as heavy.
+// BriefMinimal now starts directly at the first section divider.
 
 // ─── Stream / Static orchestrator ───────────────────────────────────
 
@@ -437,7 +403,6 @@ export const BriefMinimal: React.FC<Props> = (props) => {
   }, []);
 
   const stand = sections.whereYouStand;
-  const synthesisLine = stand?.lead ?? stand?.headline;
   const topGap = sections.whatsBlockingYou?.entries?.find((g) => g.priority === "high")
     ?? sections.whatsBlockingYou?.entries?.[0];
 
@@ -449,13 +414,8 @@ export const BriefMinimal: React.FC<Props> = (props) => {
   const streaming = props.mode === "stream" && !streamError;
 
   return (
-    <div id="printable-report" className="max-w-2xl mx-auto px-5 sm:px-8 py-16 sm:py-20 text-foreground">
-      <Masthead
-        studentName={props.studentName}
-        gradeLabel={props.gradeLabel}
-        generatedAt={props.generatedAt}
-        synthesisLine={synthesisLine}
-      />
+    <div id="printable-report-inner" className="max-w-2xl mx-auto px-1 sm:px-2 py-6 sm:py-8 text-foreground">
+      {/* No masthead — see comment above; dashboard wraps with BriefMasthead. */}
 
       {streamError && (
         <div className="my-10 mx-auto max-w-md text-center text-rose-500 text-sm">
