@@ -1001,51 +1001,52 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                     <div>
                       <div className="flex items-baseline gap-3 mb-3">
                         <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">03</span>
-                        <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">Sharpen</span>
+                        <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{t("Sharpen", "Детали")}</span>
                       </div>
                       <h2 className="font-heading text-[28px] sm:text-4xl font-bold text-foreground tracking-[-0.015em] leading-[1.15]">
-                        Tell us more — or skip ahead.
+                        {t("Tell us more — or skip ahead.", "Расскажите больше — или пропустите.")}
                       </h2>
                       <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[54ch]">
-                        Optional. Each detail makes your essay angles and shortlist sharper. Anything you share stays private to your report.
+                        {t("Optional. Each detail makes your essay angles and shortlist sharper. Anything you share stays private to your report.",
+                           "По желанию. Каждая деталь усиливает идеи эссе и подбор. Всё остаётся приватным в вашем отчёте.")}
                       </p>
                     </div>
                     <div className="space-y-5">
                       <div className="space-y-1.5">
-                        <Label htmlFor="careerGoal" className="text-xs uppercase tracking-wider font-medium">Career goal</Label>
+                        <Label htmlFor="careerGoal" className="text-xs uppercase tracking-wider font-medium">{t("Career goal", "Карьерная цель")}</Label>
                         <Textarea
                           id="careerGoal"
-                          placeholder="e.g. data scientist focused on climate modeling"
+                          placeholder={t("e.g. data scientist focused on climate modeling", "напр. data scientist в климатическом моделировании")}
                           value={careerGoal}
                           onChange={(e) => setCareerGoal(e.target.value)}
                           className="min-h-[70px] resize-none bg-card"
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="extracurriculars" className="text-xs uppercase tracking-wider font-medium">Extracurriculars &amp; achievements</Label>
+                        <Label htmlFor="extracurriculars" className="text-xs uppercase tracking-wider font-medium">{t("Extracurriculars & achievements", "Внеучебка и достижения")}</Label>
                         <Textarea
                           id="extracurriculars"
-                          placeholder="e.g. founded a community library, IMO bronze, 200 hrs neuroscience research"
+                          placeholder={t("e.g. founded a community library, IMO bronze, 200 hrs neuroscience research", "напр. основал библиотеку, бронза IMO, 200 часов нейронауки")}
                           value={extracurriculars}
                           onChange={(e) => setExtracurriculars(e.target.value)}
                           className="min-h-[90px] resize-none bg-card"
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="background" className="text-xs uppercase tracking-wider font-medium">Background context</Label>
+                        <Label htmlFor="background" className="text-xs uppercase tracking-wider font-medium">{t("Background context", "Контекст")}</Label>
                         <Textarea
                           id="background"
-                          placeholder="e.g. first-gen, raised in Bishkek, parents both teachers"
+                          placeholder={t("e.g. first-gen, raised in Bishkek, parents both teachers", "напр. первый в семье в вузе, из Бишкека, родители учителя")}
                           value={background}
                           onChange={(e) => setBackground(e.target.value)}
                           className="min-h-[70px] resize-none bg-card"
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="namedSchools" className="text-xs uppercase tracking-wider font-medium">Schools you have in mind</Label>
+                        <Label htmlFor="namedSchools" className="text-xs uppercase tracking-wider font-medium">{t("Schools you have in mind", "Вузы на примете")}</Label>
                         <Textarea
                           id="namedSchools"
-                          placeholder="e.g. Stanford, U of Toronto, KAIST"
+                          placeholder={t("e.g. Stanford, U of Toronto, KAIST", "напр. Stanford, U of Toronto, KAIST")}
                           value={namedSchools}
                           onChange={(e) => setNamedSchools(e.target.value)}
                           className="min-h-[60px] resize-none bg-card"
@@ -1076,23 +1077,26 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           <div className="text-center pt-2">
                             <p className="text-[11.5px] text-muted-foreground">
                               {filled === 0
-                                ? "Skip to generate — your report will use the basics you've already shared."
-                                : `${filled} of 4 fields added · sharpens essay angles and fit notes.`}
+                                ? t("Optional — leave blank to use the basics you've already shared.",
+                                     "По желанию — можно пропустить, отчёт построится по уже заполненному.")
+                                : t(`${filled} of 4 fields added · sharpens essay angles and fit notes.`,
+                                     `Заполнено ${filled} из 4 · улучшит идеи эссе и подбор.`)}
                             </p>
                           </div>
+                          {/* 2026-05-20: dropped the redundant "Skip for
+                              now" ghost button — it called the same
+                              onGenerate handler as the primary CTA, so
+                              two buttons doing the same thing read as
+                              clutter. The label hint above already
+                              tells users they can leave fields blank. */}
                           <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
                             <Button variant="outline" onClick={() => goToStep(2)}>
-                              <ArrowLeft className="mr-2 w-4 h-4" /> Back
+                              <ArrowLeft className="mr-2 w-4 h-4" /> {t("Back", "Назад")}
                             </Button>
-                            <div className="flex gap-2 sm:gap-3">
-                              <Button variant="ghost" onClick={onGenerate} className="text-muted-foreground hover:text-foreground">
-                                Skip for now
-                              </Button>
-                              <Button variant="gold" size="lg" onClick={onGenerate}>
-                                Generate my plan
-                                <ArrowRight className="ml-2 w-5 h-5" />
-                              </Button>
-                            </div>
+                            <Button variant="gold" size="lg" onClick={onGenerate}>
+                              {t("Generate my plan", "Сгенерировать план")}
+                              <ArrowRight className="ml-2 w-5 h-5" />
+                            </Button>
                           </div>
                         </>
                       );
