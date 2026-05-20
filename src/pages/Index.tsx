@@ -163,16 +163,12 @@ const Index = () => {
               </Button>
             </motion.div>
 
-            {/* Live-catalog freshness line. Renders only when the count
-                read succeeds — falls back to invisible rather than
-                showing a static placeholder, so a stale number can't
-                be misleading. */}
-            {liveCount !== null && liveCount > 0 && (
-              <motion.p {...fadeUp(0.42)} className="text-[11.5px] sm:text-xs text-foreground/65 mb-10 inline-flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-                Built on a live database of <span className="font-semibold text-foreground tabular-nums">{liveCount}</span> active scholarships, refreshed daily.
-              </motion.p>
-            )}
+            {/* Live-catalog freshness line retired 2026-05-20 per user
+                direction — the count was reading too low for the claim
+                ("live database of 10") and undermined credibility. The
+                `liveCount` state + fetch stay in place for now in case
+                we re-introduce a different surfacing of the same number
+                downstream (e.g. on /discover). */}
           </div>
         </section>
 

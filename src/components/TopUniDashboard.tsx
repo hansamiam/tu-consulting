@@ -66,7 +66,10 @@ import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import { ENV, EDGE_FUNCTIONS_URL } from "@/lib/env";
 import { cleanScholarshipName, cleanProvider, compactAward } from "@/lib/scholarshipFields";
-import { BriefMagazine } from "@/components/brief/BriefMagazine";
+// 2026-05-20: switched to BriefMinimal — clean 4-section layout, no
+// magazine chrome. BriefMagazine.tsx kept in tree as historical
+// reference until BriefMinimal proves out, but no longer imported.
+import { BriefMagazine } from "@/components/brief/BriefMinimal";
 import type { BriefSections, SectionId } from "@/components/brief/types";
 import { serializeBriefForCounselor } from "@/components/brief/serializeForCounselor";
 

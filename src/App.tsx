@@ -61,7 +61,12 @@ const Admin                = lazy(() => import("./pages/Admin"));
 const FunnelDashboard      = lazy(() => import("./pages/FunnelDashboard"));
 const AdminInsights        = lazy(() => import("./pages/AdminInsights"));
 const Academy              = lazy(() => import("./pages/Academy"));
-const AcademyLive          = lazy(() => import("./pages/AcademyLive"));
+// /academy/live retired 2026-05-20 — real Zoom/Meet embed isn't viable
+// and the fake video-shell chrome was visual dead weight. The route is
+// kept and now redirects to /lesson (the lead-magnet page with the
+// video + slide deck pattern) so any existing inbound links don't 404.
+// AcademyLive page file kept in tree as scratch; not imported.
+const LeadMagnet           = lazy(() => import("./pages/LeadMagnet"));
 const CountryGuide         = lazy(() => import("./pages/CountryGuide"));
 const NotFound             = lazy(() => import("./pages/NotFound"));
 const PaymentCanceled      = lazy(() => import("./pages/PaymentCanceled"));
@@ -244,8 +249,10 @@ const App = () => (
           <Route path="/admin/partner-inquiries" element={<AdminPartnerInquiries />} />
           <Route path="/academy" element={<Academy language="en" />} />
           <Route path="/academy/ru" element={<Academy language="ru" />} />
-          <Route path="/academy/live" element={<AcademyLive language="en" />} />
-          <Route path="/academy/live/ru" element={<AcademyLive language="ru" />} />
+          <Route path="/academy/live"    element={<Navigate to="/lesson" replace />} />
+          <Route path="/academy/live/ru" element={<Navigate to="/lesson/ru" replace />} />
+          <Route path="/lesson" element={<LeadMagnet language="en" />} />
+          <Route path="/lesson/ru" element={<LeadMagnet language="ru" />} />
           <Route path="/blog/guide/:slug" element={<CountryGuide language="en" />} />
           <Route path="/blog/guide/:slug/ru" element={<CountryGuide language="ru" />} />
           {/* /prep/* routes removed — Prep is spinning off as its own product */}

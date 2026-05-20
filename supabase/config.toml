@@ -114,6 +114,14 @@ verify_jwt = false
 [functions.topuni-counselor-greeting]
 verify_jwt = false
 
+# 2026-05-20: topuni-ai-pathway was implicitly verify_jwt=true (platform
+# default). Anon callers and even some signed-in sessions hit gateway-
+# level 401s before the function ran (~125ms reject). The function
+# already self-gates via createUserClient + getUser, handles both authed
+# and anon paths. Let it own auth.
+[functions.topuni-ai-pathway]
+verify_jwt = false
+
 [functions.discover-from-hub]
 verify_jwt = false
 
