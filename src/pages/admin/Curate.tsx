@@ -268,7 +268,10 @@ const Curate = () => {
                                 disabled={isPending}
                                 className="gap-1.5 text-muted-foreground hover:text-destructive h-7 px-2"
                               >
-                                <EyeOff className="h-3 w-3" /> Hide
+                                {isPending
+                                  ? <Loader2 className="h-3 w-3 animate-spin" />
+                                  : <EyeOff className="h-3 w-3" />}
+                                Hide
                               </Button>
                             ) : (
                               <Button
@@ -278,7 +281,10 @@ const Curate = () => {
                                 disabled={isPending}
                                 className="gap-1.5 text-success border-success/40 hover:bg-success/10 h-7 px-2.5"
                               >
-                                <CheckCircle2 className="h-3 w-3" /> Make active
+                                {isPending
+                                  ? <Loader2 className="h-3 w-3 animate-spin" />
+                                  : <CheckCircle2 className="h-3 w-3" />}
+                                Make active
                               </Button>
                             )}
                           </td>
