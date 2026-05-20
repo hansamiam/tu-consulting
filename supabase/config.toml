@@ -16,7 +16,10 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.process-email-queue]
-verify_jwt = true
+# 2026-05-20: was verify_jwt=true so the new */2-min cron schedule
+# hit gateway-level 401 before any code ran. Function self-gates via
+# requireAdminOrService(req). Letting it own auth.
+verify_jwt = false
 
 [functions.send-transactional-email]
 verify_jwt = true
