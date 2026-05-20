@@ -25,6 +25,7 @@ import { template as activationDay7 } from './activation-day-7.tsx'
 import { template as inactiveWinback } from './inactive-winback.tsx'
 import { template as paymentFailedRecovery } from './payment-failed-recovery.tsx'
 import { template as cancellationRecovery } from './cancellation-recovery.tsx'
+import { template as membershipWelcome } from './membership-welcome.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'booking-confirmation': bookingConfirmation,
@@ -43,4 +44,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'inactive-winback': inactiveWinback,
   'payment-failed-recovery': paymentFailedRecovery,
   'cancellation-recovery': cancellationRecovery,
+  'membership-welcome': membershipWelcome,
 }

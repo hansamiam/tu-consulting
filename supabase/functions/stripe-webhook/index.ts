@@ -119,6 +119,37 @@ async function syncSubscription(
   return { userId, userEmail };
 }
 
+async function queueMembershipWelcomeEmail(
+  admin: ReturnType<typeof createServiceClient>,
+  email: string,
+  subId: string,
+  tier: "pro" | "founding",
+) {
+  try {
+    await admin.functions.invoke("send-transactional-email", {
+      body: {
+        recipientEmail: email,
+        templateName: "membership-welcome",
+        // One welcome per subscription. If the user cancels and
+        // resubscribes later, the new sub_id rekey means they get
+        // a fresh welcome — by design.
+        idempotencyKey: `membership-welcome-${subId}`,
+        templateData: {
+          tier,
+          briefUrl: `${SITE}/topuni-ai`,
+          resourcesUrl: `${SITE}/academy`,
+          discoverUrl: `${SITE}/discover`,
+          pipelineUrl: `${SITE}/pipeline`,
+          accountUrl: `${SITE}/account`,
+          language: "en",
+        },
+      },
+    });
+  } catch (e) {
+    console.warn("[stripe-webhook] membership-welcome enqueue failed", e);
+  }
+}
+
 async function queueCancellationEmail(
   admin: ReturnType<typeof createServiceClient>,
   email: string,
@@ -213,7 +244,19 @@ Deno.serve(async (req) => {
 
   try {
     switch (event.type) {
-      case "customer.subscription.created":
+      case "customer.subscription.created": {
+        const sub = event.data.object as Stripe.Subscription;
+        const { userEmail } = await syncSubscription(stripe, admin, sub);
+        const item = sub.items.data[0];
+        const priceId = item?.price?.id;
+        const tier = priceId && PRICE_MAP[priceId]?.tier;
+        const isActive = ["active", "trialing"].includes(sub.status);
+        if (userEmail && tier && isActive) {
+          await queueMembershipWelcomeEmail(admin, userEmail, sub.id, tier);
+        }
+        break;
+      }
+
       case "customer.subscription.deleted": {
         const sub = event.data.object as Stripe.Subscription;
         await syncSubscription(stripe, admin, sub);
