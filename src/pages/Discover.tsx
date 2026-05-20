@@ -56,6 +56,7 @@ import {
   Globe,
   ShieldCheck,
   RefreshCw,
+  Sparkles,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
@@ -4418,28 +4419,59 @@ const Discover = ({ language = "en" }: Props) => {
                         ))}
                       </div>
                     ) : filtered.length === 0 ? (
-                      <div className="border border-dashed border-border rounded-3xl p-12 sm:p-16 text-center bg-muted/10">
-                        <Search className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />
-                        <h3 className="font-heading font-semibold text-lg text-foreground mb-1.5">
-                          {t("Nothing matches these filters", "Ничего не подходит под эти фильтры")}
-                        </h3>
-                        <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto leading-relaxed">
-                          {t(
-                            "Loosen a filter, or — if you know a scholarship that fits but we're missing it — submit it. Approved submissions land in the database within 72 hours.",
-                            "Ослабьте фильтр или — если знаете стипендию, которой у нас нет — предложите её. Одобренные попадают в базу в течение 72 часов.",
-                          )}
-                        </p>
-                        <div className="flex flex-wrap items-center justify-center gap-3">
-                          <Button variant="outline" size="sm" onClick={() => setFilters(DEFAULT_FILTERS)}>
-                            {t("Clear filters", "Сбросить фильтры")}
-                          </Button>
-                          <Button asChild variant="gold" size="sm" className="gap-1.5">
-                            <Link to={language === "ru" ? "/submit/ru" : "/submit"}>
-                              {t("Submit a scholarship", "Предложить стипендию")}
-                            </Link>
-                          </Button>
+                      // 2026-05-20: distinguish "catalog empty" vs "filters
+                      // too restrictive". Right now the catalog is in manual-
+                      // curation mode (0 active rows) so the previous
+                      // "Nothing matches these filters" copy was misleading.
+                      rows.length === 0 ? (
+                        <div className="border border-dashed border-border rounded-3xl p-12 sm:p-16 text-center bg-muted/10">
+                          <Sparkles className="h-12 w-12 text-gold-dark/40 mx-auto mb-4" />
+                          <h3 className="font-heading font-semibold text-lg text-foreground mb-1.5">
+                            {t("Catalog is in curation", "Каталог в работе")}
+                          </h3>
+                          <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto leading-relaxed">
+                            {t(
+                              "We're hand-reviewing every entry to make sure only legit, currently-open scholarships make the cut. New programs come back on rolling, fast — check back soon, or build your strategy now and we'll surface matches as they go live.",
+                              "Мы вручную проверяем каждую запись, чтобы в каталоге были только реальные, открытые стипендии. Новые программы возвращаются постепенно — загляните позже или начните свою стратегию сейчас, мы покажем совпадения по мере открытия.",
+                            )}
+                          </p>
+                          <div className="flex flex-wrap items-center justify-center gap-3">
+                            <Button asChild variant="gold" size="sm" className="gap-1.5">
+                              <Link to={language === "ru" ? "/topuni-ai/ru" : "/topuni-ai"}>
+                                {t("Build my strategy", "Построить стратегию")}
+                              </Link>
+                            </Button>
+                            <Button asChild variant="outline" size="sm">
+                              <Link to={language === "ru" ? "/submit/ru" : "/submit"}>
+                                {t("Submit a scholarship", "Предложить стипендию")}
+                              </Link>
+                            </Button>
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="border border-dashed border-border rounded-3xl p-12 sm:p-16 text-center bg-muted/10">
+                          <Search className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />
+                          <h3 className="font-heading font-semibold text-lg text-foreground mb-1.5">
+                            {t("Nothing matches these filters", "Ничего не подходит под эти фильтры")}
+                          </h3>
+                          <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto leading-relaxed">
+                            {t(
+                              "Loosen a filter, or — if you know a scholarship that fits but we're missing it — submit it. Approved submissions land in the database within 72 hours.",
+                              "Ослабьте фильтр или — если знаете стипендию, которой у нас нет — предложите её. Одобренные попадают в базу в течение 72 часов.",
+                            )}
+                          </p>
+                          <div className="flex flex-wrap items-center justify-center gap-3">
+                            <Button variant="outline" size="sm" onClick={() => setFilters(DEFAULT_FILTERS)}>
+                              {t("Clear filters", "Сбросить фильтры")}
+                            </Button>
+                            <Button asChild variant="gold" size="sm" className="gap-1.5">
+                              <Link to={language === "ru" ? "/submit/ru" : "/submit"}>
+                                {t("Submit a scholarship", "Предложить стипендию")}
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      )
                     ) : (
                       <div className="space-y-12">
                         {/* Section header — context for the active workspace section */}
