@@ -372,6 +372,50 @@ serve(async (req) => {
     const grade = reportGrade || "basic";
     const cacheLang = language || "en";
 
+    /* ─── Funnel capture (anon brief leads + authed brief timestamp) ──────
+       Runs BEFORE the cache check so that:
+        a) anon users completing the wizard get their email persisted to
+           brief_leads even when their profile matches a cached brief,
+        b) authed users have last_brief_generated_at refreshed on every
+           re-render so the pro-upgrade-nudge cron's N-day window is
+           computed against the most recent read, not the original
+           cache write.
+       Fire-and-forget — never blocks the streaming response.       */
+    (async () => {
+      try {
+        const auth = req.headers.get("Authorization");
+        if (auth?.startsWith("Bearer ")) {
+          const userClient = createUserClient(auth);
+          const { data: { user } } = await userClient.auth.getUser();
+          if (user?.id) {
+            await supabase
+              .from("student_profiles")
+              .update({ last_brief_generated_at: new Date().toISOString() })
+              .eq("user_id", user.id);
+            return;
+          }
+        }
+        const email = typeof profile?.email === "string" ? profile.email.trim() : "";
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+        // Cast: brief_leads is a fresh table — types regen hasn't shipped
+        // yet. The shape matches the migration 1:1.
+        await (supabase as any).from("brief_leads").insert({
+          email: email.toLowerCase(),
+          full_name: profile?.fullName ?? null,
+          nationality: profile?.nationality ?? null,
+          grade_level: profile?.gradeLevel ?? null,
+          gpa: profile?.gpa ?? null,
+          major: profile?.major ?? null,
+          target_countries: Array.isArray(profile?.targetCountries) ? profile.targetCountries : null,
+          language: cacheLang === "ru" ? "ru" : "en",
+          source_path: req.headers.get("referer") ?? null,
+          user_agent: req.headers.get("user-agent")?.slice(0, 500) ?? null,
+        });
+      } catch (e) {
+        console.warn("funnel-capture failed:", e);
+      }
+    })();
+
     // Bumped whenever the brief prompt structure changes (sections
     // cut/added, validators changed, output contract bumped). Edge
     // function writes this on every cache insert; lookup requires a
@@ -467,28 +511,9 @@ serve(async (req) => {
     // AI gateway env validated lazily inside chatCompletions / gatewayEmbeddings —
     // see _shared/ai-gateway.ts. Provider chosen via AI_PROVIDER env var.
 
-    /* ─── Brief-generation timestamp (retention loop signal) ──────────────
-       Stamp last_brief_generated_at on student_profiles for authed users.
-       The pro-upgrade-nudge cron uses this column to find users whose
-       brief is N days old and queue the conversion email. Fire-and-forget
-       so it never blocks the streaming response.
-       Service-role client doesn't carry user identity, so we resolve the
-       userId via a separate anon client + the inbound JWT. */
-    (async () => {
-      try {
-        const auth = req.headers.get("Authorization");
-        if (!auth?.startsWith("Bearer ")) return;
-        const userClient = createUserClient(auth);
-        const { data: { user } } = await userClient.auth.getUser();
-        if (!user?.id) return;
-        await supabase
-          .from("student_profiles")
-          .update({ last_brief_generated_at: new Date().toISOString() })
-          .eq("user_id", user.id);
-      } catch (e) {
-        console.warn("brief-generation timestamp update failed:", e);
-      }
-    })();
+    // Funnel capture moved earlier — see block right after the request
+    // body parse. Both anon-lead and authed-timestamp writes now fire
+    // even on cache hits.
 
     const targetCountries = profile.targetCountries || [];
     const studentGpa = parseFloat(profile.gpa) || null;
