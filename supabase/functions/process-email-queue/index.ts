@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { respondJson } from '../_shared/http.ts'
 import { createServiceClient } from '../_shared/clients.ts'
+import { requireAdminOrService } from '../_shared/auth.ts'
 
 /* ─── Email sender — Resend by default, with optional fallback ─────
    Replaces the previous @lovable.dev/email-js dependency so the email
@@ -175,19 +176,16 @@ Deno.serve(async (req) => {
     return respondJson(500, { error: 'Server configuration error' })
   }
 
-  const authHeader = req.headers.get('Authorization')
-  if (!authHeader?.startsWith('Bearer ')) {
-    return respondJson(401, { error: 'Unauthorized' })
-  }
-
-  // Defense in depth: verify_jwt=true already requires a valid JWT at the
-  // gateway layer. This adds an explicit role check so only service-role
-  // callers can trigger queue processing.
-  const token = authHeader.slice('Bearer '.length).trim()
-  const claims = parseJwtClaims(token)
-  if (claims?.role !== 'service_role') {
-    return respondJson(403, { error: 'Forbidden' })
-  }
+  // 2026-05-20: unified with the rotation-resilient auth pattern the
+  // other crons use (verify-scholarship-cron, scrape-cron-dispatcher,
+  // etc.). Accepts service-role JWT in Bearer, sb_secret_* keys in
+  // apikey, OR the cron_token from private.app_secrets — same gate as
+  // every other internal scheduled function. Previously this required
+  // a bearer JWT with role=service_role specifically, which the
+  // pg_cron schedule couldn't supply (it sends app_cron_token via the
+  // apikey header).
+  const auth = await requireAdminOrService(req)
+  if (!auth.ok) return respondJson(401, { error: auth.reason ?? 'unauthorized' })
 
   const supabase = createServiceClient()
 
