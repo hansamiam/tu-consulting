@@ -193,3 +193,10 @@ verify_jwt = false
 # pattern so we never get bitten by gateway-401-before-code-runs again.
 [functions.academy-resource-url]
 verify_jwt = false
+
+# Stripe webhook — auth is the Stripe-Signature HMAC header, verified
+# in-body via stripe.webhooks.constructEventAsync. verify_jwt MUST be
+# false: Stripe doesn't send a Supabase JWT, and the gateway-level
+# auth would reject every webhook before constructEvent ran.
+[functions.stripe-webhook]
+verify_jwt = false
