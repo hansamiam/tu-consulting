@@ -179,27 +179,30 @@ const TopUniAI = () => {
 
   // 2026-05-19: surface a toast when we restore a meaningful draft so
   // the user understands why fields are pre-filled. Fires once on
-  // mount. "Meaningful" = at least 2 substantive fields filled — a
-  // draft with just a name we tagged 4 sessions ago doesn't warrant
-  // a toast at re-entry.
+  // mount. "Meaningful" = at least 2 substantive fields filled AND
+  // at least 5 minutes since the last save — a draft from a refresh
+  // 30 seconds ago doesn't warrant a toast. (2026-05-20 tightened from
+  // "any age" to "≥5 min" to suppress toast spam on accidental
+  // reloads / dev-mode hot module swaps.)
   useEffect(() => {
     if (!draft) return;
     const filled = [
       draft.fullName, draft.email, draft.nationality, draft.gradeLevel,
       draft.gpa, draft.major, draft.ielts, draft.toefl, draft.sat,
     ].filter((v) => typeof v === "string" && v.trim().length > 0).length;
-    if (filled >= 2) {
-      const minutes = draft.ts ? Math.max(1, Math.round((Date.now() - draft.ts) / 60_000)) : 0;
-      const timeLabel = minutes > 1440
-        ? `${Math.round(minutes / 1440)} day${Math.round(minutes / 1440) === 1 ? "" : "s"} ago`
-        : minutes > 60
-          ? `${Math.round(minutes / 60)} hour${Math.round(minutes / 60) === 1 ? "" : "s"} ago`
-          : `${minutes} min ago`;
-      toast.success(
-        `Welcome back — restored your progress from ${timeLabel}.`,
-        { duration: 4500 },
-      );
-    }
+    if (filled < 2) return;
+    const ageMs = draft.ts ? Date.now() - draft.ts : 0;
+    if (ageMs < 5 * 60_000) return;
+    const minutes = Math.max(1, Math.round(ageMs / 60_000));
+    const timeLabel = minutes > 1440
+      ? `${Math.round(minutes / 1440)} day${Math.round(minutes / 1440) === 1 ? "" : "s"} ago`
+      : minutes > 60
+        ? `${Math.round(minutes / 60)} hour${Math.round(minutes / 60) === 1 ? "" : "s"} ago`
+        : `${minutes} min ago`;
+    toast.success(
+      `Welcome back — restored your progress from ${timeLabel}.`,
+      { duration: 4500 },
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
