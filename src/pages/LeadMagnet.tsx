@@ -107,26 +107,38 @@ const LeadMagnet = ({ language = "en" }: LeadMagnetProps) => {
             colorful and visually distinct on their own; the page needs
             a clean cream background so they pop. Single simple title
             line above the panes. */}
-        <section className="max-w-6xl mx-auto px-4 pt-14 sm:pt-20 pb-6 sm:pb-8 text-center">
+        <section className="max-w-3xl mx-auto px-4 pt-14 sm:pt-20 pb-6 sm:pb-8 text-center">
           <motion.h1
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="font-heading text-3xl sm:text-5xl font-bold text-foreground tracking-[-0.02em] leading-[1.05]"
+            className="font-heading text-[28px] sm:text-5xl font-bold text-foreground tracking-[-0.02em] leading-[1.08] text-balance"
           >
             {t(
               "How to go abroad on a grant in 2026",
-              "Как уехать учиться за границу на гранте в 2026",
+              "Как поступить за рубеж на грант в 2026",
             )}
           </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.08 }}
+            className="text-foreground/65 text-[14.5px] sm:text-[16px] mt-3 sm:mt-4 leading-relaxed max-w-xl mx-auto"
+          >
+            {t(
+              "A free lesson by Nurzada Abdivalieva — Cambridge · Tsinghua.",
+              "Бесплатный урок от Нурзады Абдивалиевой — Кембридж · Цинхуа.",
+            )}
+          </motion.p>
         </section>
 
-        {/* MAIN — video LEFT, deck RIGHT, equal halves on lg+, stacked
-            on mobile. Both panes share the same chrome and the same
-            16:9 aspect — the deck pane shows ONE slide at a time via an
-            internal scroll-snap container, not the entire scroll the
-            old vertical stack used to produce. */}
-        <section className="max-w-6xl mx-auto px-4 pt-10 sm:pt-14 pb-12">
+        {/* MAIN — wider container so the panes are bigger on lg+.
+            max-w-7xl gives the two 16:9 panes ~600px width each at
+            standard laptop sizes (was ~480px at max-w-6xl). Premium
+            elevation via stronger shadow + ring; rounded-3xl for the
+            cleaner radius. No new color — same cream surface, just
+            bigger and visually weightier. */}
+        <section className="max-w-7xl mx-auto px-4 pt-8 sm:pt-12 pb-12 sm:pb-16">
           <div className="grid gap-5 sm:gap-6 lg:grid-cols-2 lg:items-start">
             <VideoPane videoId={videoId} tCommon={t} ru={ru} />
             <ContainedDeck lang={slideLang} onLangChange={setSlideLang} tCommon={t} />
@@ -363,7 +375,7 @@ interface VideoPaneProps {
 
 const VideoPane = ({ videoId, tCommon, ru }: VideoPaneProps) => {
   return (
-    <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg">
+    <div className="bg-card rounded-3xl overflow-hidden shadow-[0_18px_50px_-18px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.06]">
       {/* Fixed h-11 so this matches ContainedDeck's header exactly —
           previously py-2.5 with mixed-height child elements made the
           two panes a few px off from each other. */}
@@ -406,14 +418,8 @@ const VideoPlaceholder = ({ tCommon }: { tCommon: (en: string, ru: string) => st
         <div className="mx-auto h-16 w-16 rounded-full bg-gold/15 border border-gold/40 flex items-center justify-center mb-4">
           <Play className="h-6 w-6 text-gold fill-gold ml-1" />
         </div>
-        <p className="text-neutral-100 text-base font-semibold mb-2 leading-tight">
-          {tCommon("Video drops soon", "Видео скоро появится")}
-        </p>
-        <p className="text-neutral-400 text-[12.5px] leading-relaxed">
-          {tCommon(
-            "Filming wraps this week. Save this page — the lesson loads here automatically the moment it goes live.",
-            "Съёмки идут сейчас. Сохраните страницу — урок появится здесь автоматически как только выйдет.",
-          )}
+        <p className="text-neutral-100 text-base font-semibold leading-tight">
+          {tCommon("Video coming soon", "Видео скоро")}
         </p>
       </div>
     </div>
