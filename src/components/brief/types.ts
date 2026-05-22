@@ -8,6 +8,12 @@
  */
 
 export type SectionId =
+  /** v7 Phase 2: the archetype hook card. Emitted first by the
+   *  topuni-ai-pathway when the pre-plan call resolves; renders
+   *  above the 5 substantive sections. Payload is
+   *  ArchetypePayload (below) — name + tagline + color come from
+   *  the closed library (archetype-library.ts) on the server. */
+  | "archetype"
   | "whereYouStand"
   | "whereYouCanLand"
   | "howYoullPay"
@@ -16,6 +22,7 @@ export type SectionId =
   | "whatToDoThisMonth";
 
 export const SECTION_ORDER: SectionId[] = [
+  "archetype",
   "whereYouStand",
   "whereYouCanLand",
   "howYoullPay",
@@ -25,6 +32,7 @@ export const SECTION_ORDER: SectionId[] = [
 ];
 
 export const SECTION_KICKERS: Record<SectionId, string> = {
+  archetype: "00 · Your archetype",
   whereYouStand: "01 · Where you stand",
   whereYouCanLand: "02 · Where you can land",
   howYoullPay: "03 · How you'll pay",
@@ -120,7 +128,22 @@ export interface WhatToDoThisMonthPayload extends SectionCommon {
   closingLine?: string;
 }
 
+/** v7 Phase 2: the archetype-card payload streamed before any
+ *  section event. Server populates name/tagline/color from the
+ *  closed library lookup; the renderer never invents these or
+ *  ships the library. Confidence is informational — when < 60
+ *  the render can lean lighter on the identity claim. */
+export interface ArchetypePayload {
+  id: string;
+  name: string;
+  tagline: string;
+  color: string;
+  confidence?: number;
+  reason?: string;
+}
+
 export type AnySectionPayload =
+  | ArchetypePayload
   | WhereYouStandPayload
   | WhereYouCanLandPayload
   | HowYoullPayPayload
@@ -129,6 +152,7 @@ export type AnySectionPayload =
   | WhatToDoThisMonthPayload;
 
 export type BriefSections = Partial<{
+  archetype: ArchetypePayload;
   whereYouStand: WhereYouStandPayload;
   whereYouCanLand: WhereYouCanLandPayload;
   howYoullPay: HowYoullPayPayload;
