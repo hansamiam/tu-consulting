@@ -130,34 +130,62 @@ RULES:
    - Programs with a year marker before 2024 (stale)
 5. Output up to 50 highest-confidence URLs per call. Skip generic ones — better 10 confident URLs than 50 mixed.`;
 
-const ARTICLE_RESOLVE_SYSTEM_PROMPT = `You read one aggregator article page about a scholarship and extract the program's TRUE OFFICIAL URL and metadata.
+const ARTICLE_RESOLVE_SYSTEM_PROMPT = `You read one aggregator article page about a scholarship and extract the program's TRUE OFFICIAL URL and metadata. This catalog is for STUDENTS choosing degree programs — every accepted entry must fund someone's enrollment in a bachelor / master / PhD / postdoc program at a recognised university.
 
-CRITICAL — official URL extraction (D4 invariant):
+═══ SCOPE GATE — apply this FIRST, before extracting anything ═══
+
+Read the article and ask: does this program fund a student's enrollment in a named degree program?
+
+PASS the scope gate ONLY IF the article describes:
+- A tuition-or-better scholarship awarded to admitted students of a bachelor/master/PhD program
+- A funded PhD position at a university (Swiss/Dutch/German PhD-as-employment IS in scope if the role is enrollment-tied)
+- A funded postdoc directly attached to a research school's PhD pipeline
+- A fully-funded summer/pre-college program tied to admissions
+
+FAIL the scope gate (set extraction_confidence to 0.0 and add reason to extraction_notes) when the article describes ANY of these — even if "fellowship" / "scholar" / "scholarship" appears in the name:
+- "Leadership fellowship" / "leadership scholars" for established professionals or mid-career adults (e.g. Presidential Leadership Scholars, Barr Foundation Fellowship). Tell: applicant must already have "senior leadership experience" / "10+ years" / "established nonprofit leader" / "mid-career."
+- "Career fellowship" / "professional fellowship" / "practitioner fellowship" not tied to a university degree (e.g. NGFP, Atlantic Fellows, Aspen Fellows). Tell: applicant works in their field already; no university enrollment.
+- Artist / writer / journalist / curator residencies (e.g. TOKAS Research Residency). Tell: "studio space", "exhibition opportunity", "residency program."
+- Staff job postings dressed as "fellowships" — postdoc HR roles, research-associate positions, lecturer hires. URL Tell: taleo.net, careersection, workday.com, greenhouse.io, lever.co, jobs.<institution>/, /careers/, /hr/, /job-detail.
+- Internships, summer associate programs, paid student-worker gigs (paid ≠ enrollment).
+- Hackathons / competitions / pitch contests / accelerator cohorts.
+- Conference travel grants, attendance scholarships, registration waivers.
+- Short courses, winter schools, workshops, bootcamps — anything under one semester that doesn't issue degree credit.
+- Calls for proposals, calls for papers, grants to existing organizations.
+- Mentorship programs / youth leadership cohorts not tied to degree enrollment.
+
+When in doubt: FAIL the scope gate. The cost of a false-positive (admin has to reject) is higher than a false-negative (program re-appears on a future hub scan).
+
+═══ D4 INVARIANT — official URL extraction ═══
+
 - The "official URL" is the program's own page on the funder/university website (e.g. chevening.org, daad.de, ox.ac.uk/scholarships/...).
-- The article you're reading is hosted on an AGGREGATOR (opportunitiesforyouth.org, opportunitiestracker.ug). The aggregator's URL is NOT the official URL.
+- The article you're reading is hosted on an AGGREGATOR (opportunitiesforyouth.org, opportunitiestracker.ug). The aggregator's URL is NEVER the official URL.
 - Look for "Visit official page", "Apply here", "Official website", "Apply on official site", or a domain link in the article body that points OUTSIDE the aggregator domain.
+- If the only off-aggregator link points to a job board (taleo.net, careersection, workday, greenhouse, lever), this is a staff hire — fail the scope gate.
 - If you cannot find a URL pointing to the program's actual host institution, return official_url=null and extraction_confidence ≤ 0.4. Do not fabricate. Do not return the aggregator article URL as official_url.
 
-Output JSON (single object, no fences):
+═══ Output ═══
+
+JSON (single object, no fences):
 {
   "official_url": "https://...",     // null if no off-aggregator URL found
   "name": "Program name",            // cleaned, no "| Aggregator" suffix
   "provider": "Funding org / university",
-  "host_country": "ISO country name or null",
+  "host_country": "Country name (REQUIRED for any confidence > 0.7; if you can't determine, leave null and cap confidence at 0.65)",
   "deadline_iso": "YYYY-MM-DD or null",  // application deadline, single fixed date
   "coverage_type": "full_ride | tuition_only | stipend | partial | null",
   "award_amount_text": "Short funding summary or null",
-  "extraction_confidence": 0.0-1.0,  // your confidence the official_url is correct
-  "extraction_notes": "Optional: what was ambiguous or worth flagging for admin"
+  "extraction_confidence": 0.0-1.0,  // see rubric below
+  "degree_evidence": "One sentence: what in the article shows this funds a degree program? Required for confidence > 0.7. Examples: 'Article states scholarship is for admitted Masters students at LSE', 'PhD position with tuition + CHF 50k stipend at ETH', 'Tuition-only award for incoming Law School students'. If you cannot produce this sentence, scope gate fails.",
+  "extraction_notes": "Optional: anything ambiguous, or reason for low confidence / scope gate failure"
 }
 
-Confidence rubric:
-- 0.85+ : Clear off-aggregator link + matching program name + clear deadline
-- 0.70-0.85 : Off-aggregator URL extracted but one of {deadline, coverage, provider} missing or vague
-- 0.40-0.70 : Article mentions the program but the official URL is uncertain
-- ≤ 0.40 : Cannot find an off-aggregator official URL
+═══ Confidence rubric ═══
 
-If the article describes anything other than a degree-program scholarship (conferences, jobs, internships, calls-for-proposals, training, short courses), set extraction_confidence to 0 and add "non_degree_scholarship" to extraction_notes.`;
+- 0.85+ : Scope gate PASSED + clear off-aggregator link + named degree program + clear deadline + populated host_country + degree_evidence sentence
+- 0.70-0.85 : Scope gate PASSED + off-aggregator URL + degree_evidence + ONE of {deadline, coverage, provider, host_country} missing
+- 0.40-0.70 : Article mentions a degree program but the official URL is uncertain OR scope gate is borderline
+- 0.0 : Scope gate FAILED (career fellowship, residency, staff job, etc.) — also explicitly set degree_evidence="scope_gate_failed: <reason>"`;
 
 // ─── URL filtering heuristics ──────────────────────────────────────────────
 const NON_DEGREE_URL_PATTERNS: RegExp[] = [
@@ -183,6 +211,42 @@ function isLikelyScholarshipUrl(url: string, name?: string): boolean {
   } catch {
     return false;
   }
+}
+
+// Post-resolve URL gate: applied to the RESOLVED official_url after LLM extraction.
+// The hub-scan-side filter (isLikelyScholarshipUrl) operates on aggregator article
+// URLs whose path encodes the program name. The official URL, in contrast, often
+// has a clean path but lives on a job-board / HR domain — Durham's Taleo posting
+// passed the hub filter but resolved to a careersection URL the hub filter never
+// sees. This second gate catches that.
+//
+// Returns null if the URL is acceptable; otherwise returns a short rejection
+// reason that gets attached to the source_candidate's extraction_notes so admin
+// can see why the row was filtered.
+const OFFICIAL_URL_REJECT_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
+  { pattern: /\btaleo\.net\b/i,                        reason: "official_url_is_taleo_jobs_board" },
+  { pattern: /\/careersection\//i,                     reason: "official_url_is_careersection_jobs_board" },
+  { pattern: /\bworkday(jobs)?\.com\b/i,               reason: "official_url_is_workday_jobs_board" },
+  { pattern: /\bgreenhouse\.io\b/i,                    reason: "official_url_is_greenhouse_jobs_board" },
+  { pattern: /\blever\.co\b/i,                         reason: "official_url_is_lever_jobs_board" },
+  { pattern: /\bsmartrecruiters\.com\b/i,              reason: "official_url_is_smartrecruiters_jobs_board" },
+  { pattern: /\bbamboohr\.com\b/i,                     reason: "official_url_is_bamboohr_jobs_board" },
+  { pattern: /\bicims\.com\b/i,                        reason: "official_url_is_icims_jobs_board" },
+  { pattern: /\bbrassring\.com\b/i,                    reason: "official_url_is_brassring_jobs_board" },
+  { pattern: /\/jobdetail/i,                           reason: "official_url_is_jobdetail_path" },
+  { pattern: /\/job\/view\//i,                         reason: "official_url_is_job_view_path" },
+  { pattern: /\/job-postings?\//i,                     reason: "official_url_is_job_postings_path" },
+  { pattern: /^https?:\/\/jobs\./i,                    reason: "official_url_is_jobs_subdomain" },
+  { pattern: /\/(staff|hr|hiring|recruitment)\//i,     reason: "official_url_is_hr_recruitment_path" },
+  { pattern: /\/(careers?|positions?)\b/i,             reason: "official_url_is_careers_positions_path" },
+  { pattern: /\b(residency-program|artist-in-residence|writers-in-residence)\b/i, reason: "official_url_is_artist_residency" },
+];
+
+function reasonToRejectOfficialUrl(url: string): string | null {
+  for (const { pattern, reason } of OFFICIAL_URL_REJECT_PATTERNS) {
+    if (pattern.test(url)) return reason;
+  }
+  return null;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -445,6 +509,8 @@ serve(async (req) => {
   let droppedLowConfidence = 0;
   let droppedNoOfficialUrl = 0;
   let droppedAggregatorOfficialUrl = 0;
+  let droppedOfficialUrlPattern = 0;
+  let droppedMissingHostCountry = 0;
   let droppedOutsideWindow = 0;
   const candidatesToInsert: Array<{
     article: DiscoveredArticleUrl;
@@ -490,6 +556,23 @@ serve(async (req) => {
     if (r.extraction_confidence < minExtractionConfidence) continue;
     if (!r.official_url) continue;
     if (aggregatorOfficialUrlSet.has(r.official_url)) { droppedAggregatorOfficialUrl++; continue; }
+    // Defense-in-depth post-resolve URL gate: catches job-board / staff-hiring
+    // URLs the LLM resolved despite the scope-gate prompt rejecting them.
+    const urlRejectReason = reasonToRejectOfficialUrl(r.official_url);
+    if (urlRejectReason) {
+      droppedOfficialUrlPattern++;
+      // Mutate extraction_notes so the post-mortem in source_candidates (when
+      // we DO insert in future runs that pass) shows which gate fired.
+      r.extraction_notes = [r.extraction_notes, urlRejectReason].filter(Boolean).join(" | ");
+      continue;
+    }
+    // Require host_country at high confidence. Missing host_country is a
+    // signal of vagueness — NGFP came back as a "fellowship" with host_country=null
+    // and that's exactly the under-specified shape we want to drop.
+    if (!r.host_country && r.extraction_confidence >= 0.7) {
+      droppedMissingHostCountry++;
+      continue;
+    }
     if (existingSourceUrlSet.has(r.official_url)) { duplicatesAgainstSources++; continue; }
     if (existingScholarshipUrlSet.has(r.official_url)) { duplicatesAgainstScholarships++; continue; }
     const deadline = parseDeadline(r.deadline_iso);
@@ -570,6 +653,8 @@ serve(async (req) => {
     dropped_low_confidence: droppedLowConfidence,
     dropped_no_official_url: droppedNoOfficialUrl,
     dropped_aggregator_official_url: droppedAggregatorOfficialUrl,
+    dropped_official_url_pattern: droppedOfficialUrlPattern,
+    dropped_missing_host_country: droppedMissingHostCountry,
     dropped_outside_deadline_window: droppedOutsideWindow,
     duplicates_against_scholarship_sources: duplicatesAgainstSources,
     duplicates_against_scholarships: duplicatesAgainstScholarships,
