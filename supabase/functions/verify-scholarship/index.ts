@@ -278,7 +278,7 @@ Deno.serve(async (req) => {
   const { data: stored, error: loadErr } = await supa
     .from("scholarships")
     .select(
-      `scholarship_id, scholarship_name, provider_name, host_country, application_deadline, deadline_type, coverage_type, award_amount_text, estimated_total_value_usd, min_gpa, min_ielts, min_toefl, min_sat, essay_required, recommendation_letters_required, interview_required, citizenship_requirements, eligibility_requirements, language_requirements, duration_text, target_fields, target_degree_level, eligible_countries, target_demographics, partner_universities, why_this_fits, how_to_win, ideal_candidate_profile, what_to_prepare_first, strategy_notes, weak_candidate_warning, source_url, official_url, verification_status, last_verified_at`
+      `scholarship_id, scholarship_name, provider_name, host_country, application_deadline, deadline_type, coverage_type, award_amount_text, estimated_total_value_usd, min_gpa, min_ielts, min_toefl, min_sat, essay_required, recommendation_letters_required, interview_required, citizenship_requirements, eligibility_requirements, language_requirements, duration_text, target_fields, target_degree_level, eligible_countries, target_demographics, partner_universities, why_this_fits, how_to_win, ideal_candidate_profile, what_to_prepare_first, strategy_notes, weak_candidate_warning, source_url, official_url, verification_status, last_verified_at, lifecycle_status`
     )
     .eq("scholarship_id", body.scholarship_id)
     .maybeSingle();
@@ -590,6 +590,20 @@ Deno.serve(async (req) => {
     // promote — silently failing here means the row stays at 'pending'
     // or 'stale' forever despite passing verification, blocking it from
     // surfacing in user-facing results.
+    //
+    // 2026-05-23: also flip lifecycle_status='inactive' → 'active' on
+    // clean re-verify. Pre-fix, newly-scraped rows landed at lifecycle
+    // 'inactive' (the schema default), got promoted to verification_status
+    // 'verified' by this very block, but nothing ever turned the lifecycle
+    // bit on — leaving 64 verified-but-invisible rows in catalog. Audit on
+    // 2026-05-23 found 33 of those 64 also passed every other G1-G11 gate,
+    // so the launch catalog was sitting one field away from publishable.
+    // We only touch 'inactive' — 'superseded' / 'closed_archived' are
+    // terminal states an admin set deliberately and must NOT be undone
+    // by a verify pass.
+    const lifecyclePromotion = stored.lifecycle_status === 'inactive'
+      ? { lifecycle_status: 'active' as const }
+      : {};
     const { error: promoteErr } = await supa.from("scholarships")
       .update({
         verification_status: "verified",
@@ -600,6 +614,7 @@ Deno.serve(async (req) => {
         // read of how well-grounded this row is. Counts as a quality
         // update, not a material diff (no DIFF_FIELDS membership).
         confidence: fresh.confidence,
+        ...lifecyclePromotion,
         ...backfillUpdates,
       })
       .eq("scholarship_id", stored.scholarship_id);
