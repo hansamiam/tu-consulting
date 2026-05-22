@@ -410,66 +410,124 @@ ${dbBlock(ctx)}
 
 ${visaNote}
 
-STRUCTURE — exactly 3 entries, each one a "place where you'd thrive":
-  - The tier field is wire-only (renderer expects reach/target/safety).
-    Treat the labels as: reach = the stretch place, target = the home
-    place, safety = the sure place. Do NOT use the words reach/target/
-    safety in any string field (banned).
-  - Each entry names ONE school. For each school, write the whyItFits
-    field as the school's PERSONALITY — what kind of student thrives
-    there, who they sit next to in the dorm, what the campus rhythm
-    is. Grounded in THIS student's specific identity from Card 01.
-  - Cite ONE specific intake field across the 3 entries (their major,
-    their named schools, their country of origin, etc.).
+v7 Phase 3 (#13 part 2) reshape: produce country BUCKETS (1-3
+countries, each with 1-3 schools + one lore sentence per school).
+No reach/target/safety. The renderer's fallback path still accepts
+the v6 entries[] shape for cached briefs; new generations are
+pure v7. Country choices come from the BRIEF PLAN's countryBuckets
+(a subset of intake.targetCountries) so the LLM cannot drift into
+countries the student didn't ask about.
+
+STRUCTURE:
+  - Pull country selection from the BRIEF PLAN's countryBuckets if
+    available. Otherwise pick 1-3 from intake.targetCountries that
+    are visa-plausible for the student's nationality.
+  - 1 to 3 schools per country. Each school comes from LIVE CONTEXT
+    (do not invent). Each gets a one-line lore sentence — the
+    school's PERSONALITY for THIS student, anchored to Card 01's
+    identity claim + Card 02 archetype.
+  - No reach/target/safety vocabulary anywhere. No selectivity-%
+    mentions. No "elite" / "top-10" framing. No Crimson-Education
+    elite-only vibes.
 
 GOLD EXEMPLAR — match this prose-quality bar:
-  Student: Yerlan (same as Card 01), targetCountries: Canada / UK / Singapore
+  Student: Yerlan, targetCountries: Canada / UK / Singapore (KZ passport — visa realism applies)
   Output:
-    headline: "Three places that fit how you actually move."
+    kicker:   "02 · Where you belong"
+    headline: "Three kinds of places that fit how you actually move."
     lead:     "Pulled from your countries, with your file in mind."
-    entries:
-      [reach] University of Toronto, Canada
-        whyItFits: "Where the kid running policy resolutions on weekends finds three other people doing the same in the same dorm. Big enough to disappear into when you need to, dense enough that the overlap shows up at lunch."
-      [target] McGill, Canada
-        whyItFits: "Policy-school energy without giving up the math. The dual-major kids here aren't unusual — they're the ones who pick the program."
-      [safety] University of Edinburgh, UK
-        whyItFits: "Where the STEM-with-policy combination isn't unusual, it's the standard. Quieter prestige, lower selectivity, better fit. Not Oxbridge — the smarter middle."
+    buckets:
+      [0] country: "Canada"
+          cities:  "Toronto, Vancouver, Montreal"
+          schools:
+            - { name: "University of Toronto", lore: "Where the kid running policy resolutions on weekends finds three other people doing the same in the same dorm. Big enough to disappear into when you need to, dense enough that the overlap shows up at lunch." }
+            - { name: "McGill",                lore: "Policy-school energy without giving up the math. The dual-major kids here aren't unusual — they're the ones who pick the program." }
+      [1] country: "United Kingdom"
+          cities:  "Edinburgh, Glasgow"
+          schools:
+            - { name: "University of Edinburgh", lore: "Where the STEM-with-policy combination isn't unusual, it's the standard. Quieter prestige, lower selectivity, better fit. Not Oxbridge — the smarter middle." }
+      [2] country: "Singapore"
+          cities:  null
+          schools:
+            - { name: "NUS", lore: "English-medium, scholarship-heavy, six-hour flight from home. The place that gets your visa stamped the first time you ask." }
 
 OUTPUT — emit a JSON object exactly matching this shape:
 {
-  "kicker": "02 · Where you can land",
-  "headline": "string — 4-8 word display line. NO banned vocab (no 'reach' / 'target' / 'safety' words in headline).",
-  "lead": "string — ONE sentence (max ~25 words) framing the trio. Drop-cap rendered.",
-  "entries": [
+  "kicker": "02 · Where you belong",
+  "headline": "string — 4-8 word display line. NO banned vocab (no 'reach' / 'target' / 'safety' anywhere).",
+  "lead": "string — ONE sentence (max ~20 words) framing the buckets. Drop-cap rendered.",
+  "buckets": [
     {
-      "tier": "reach",
-      "name": "string — exact school name from LIVE CONTEXT",
-      "country": "string — short country name",
-      "whyItFits": "string — 1 to 2 sentences. The school's PERSONALITY for THIS student. Plain English. NO banned vocab.",
-      "threshold": "string — 1 line on the admissions bar with REAL numbers from context where present. No 'reach' wording.",
-      "careerAnchor": "string — 1 line naming WHERE alumni actually go. Real names beat categories. Specific numbers if in context."
-    },
-    { "tier": "target", ... same shape ... },
-    { "tier": "safety", ... same shape ... }
+      "country": "string — short country name (matches a country from BRIEF PLAN's countryBuckets / intake.targetCountries)",
+      "cities": "string — 1-3 comma-separated city anchors. Optional but recommended for mechta-energy.",
+      "schools": [
+        {
+          "name": "string — exact school name from LIVE CONTEXT (do not invent)",
+          "lore": "string — 1 to 2 sentences. The school's PERSONALITY for THIS student. Plain English. References Card 01's identity claim or the archetype. NO banned vocab."
+        }
+        // 1 to 3 schools per bucket
+      ]
+    }
+    // 1 to 3 buckets total
   ]
 }
 
-EXACTLY 3 entries in order: reach, target, safety (tier field only —
-the words must not appear in any prose field).
+ABSOLUTE RULES:
+- 1 to 3 buckets. 1 to 3 schools per bucket. ≤ 9 schools total.
+- Every school MUST exist in LIVE CONTEXT. Do not invent.
+- Every lore sentence MUST reference at least one specific element
+  from Card 01 (identity claim / pile contrast) or the archetype.
+- No 'reach' / 'target' / 'safety' / 'elite' / 'top-10' anywhere.
+- Country selection MUST come from BRIEF PLAN's countryBuckets if
+  the plan is present in the context above; otherwise pick from
+  intake.targetCountries (case-insensitive subset).
+- DO NOT also emit an "entries" field. The v6 three-tier shape is
+  intentionally retired in new generations.
 
 ${SHARED_JSON_RULES}`;
   },
   validate: (raw, ctx) => {
     const obj = tryParse(raw) as Record<string, unknown> | null;
     if (!obj) return { ok: false, reason: "not valid JSON" };
-    const entries = obj.entries as unknown[] | undefined;
-    if (!Array.isArray(entries) || entries.length !== 3) {
-      return { ok: false, reason: "entries must be array of length 3" };
+    const buckets = obj.buckets as unknown[] | undefined;
+    if (!Array.isArray(buckets) || buckets.length < 1 || buckets.length > 3) {
+      return { ok: false, reason: "buckets must be a 1-3 element array" };
     }
-    const tiers = entries.map((e) => (e as { tier?: string }).tier);
-    if (!tiers.includes("reach") || !tiers.includes("target") || !tiers.includes("safety")) {
-      return { ok: false, reason: "entries must include reach + target + safety tier slots" };
+    let totalSchools = 0;
+    for (const b of buckets) {
+      const country = (b as { country?: unknown }).country;
+      if (typeof country !== "string" || country.trim().length === 0) {
+        return { ok: false, reason: "each bucket must name a country" };
+      }
+      const schools = (b as { schools?: unknown[] }).schools;
+      if (!Array.isArray(schools) || schools.length < 1 || schools.length > 3) {
+        return { ok: false, reason: `bucket "${country}" must have 1-3 schools` };
+      }
+      totalSchools += schools.length;
+      for (const s of schools) {
+        const name = (s as { name?: unknown }).name;
+        if (typeof name !== "string" || name.trim().length === 0) {
+          return { ok: false, reason: "every school must have a name" };
+        }
+      }
     }
+    if (totalSchools > 9) {
+      return { ok: false, reason: "total schools across buckets must be ≤ 9" };
+    }
+    // Validate against intake.targetCountries when present (case-insensitive subset)
+    const intakeCountries = (ctx.profile.targetCountries ?? []).map((c) => c.toLowerCase());
+    if (intakeCountries.length > 0) {
+      for (const b of buckets) {
+        const c = ((b as { country: string }).country).toLowerCase();
+        if (!intakeCountries.includes(c)) {
+          return {
+            ok: false,
+            reason: `bucket country "${(b as { country: string }).country}" not in intake.targetCountries (${intakeCountries.join(", ")})`,
+          };
+        }
+      }
+    }
+    // Banned vocab in any string field — scanBannedVocab via semanticCheck handles it.
     return semanticCheck(obj, ctx, { mustNameIntakeField: true });
   },
 };
@@ -491,68 +549,76 @@ name the SINGLE primary essay seed this student is uniquely positioned
 to develop, plus 2 alternate angles for breadth. The seed must connect
 to the specific identity claim from Card 01.
 
-CRITICAL RULE — SPECULATIVE TENSE for the primary seed:
+CRITICAL RULE — SPECULATIVE TENSE for the seed:
 The brief cannot KNOW specific moments from the student's life. So the
-primary essay seed must propose a TYPE of moment they could find,
-using speculative tense: "sometime in the last two years...", "maybe
-X, maybe Y...", "there was likely a moment when...". The student
-finds the moment; the brief names where to look. Never assert a
-specific moment happened.
+essay seed must propose a TYPE of moment they could find, using
+speculative tense: "sometime in the last two years...", "maybe X,
+maybe Y...", "there was likely a moment when...". The student finds
+the moment; the brief names where to look. Never assert a specific
+moment happened.
+
+v7 Phase 3 (#13 part 2) reshape: produce ONE essay seed (not three
+angles). The renderer's fallback path still accepts the v6 entries[]
+shape from old cached briefs; new generations are pure v7.
 
 STUDENT PROFILE:
 ${profileBlock(ctx)}
 
 ${planBlock(ctx)}
 
-GOLD EXEMPLAR (primary seed, first entry):
+GOLD EXEMPLAR — match this prose-quality bar:
   Student: Yerlan (same as Cards 01-02)
-  title: "The math-in-debate moment"
-  whyItWorks: "Sometime in the last two years, something from a math
-    class showed up inside a debate round you were running. Maybe a
-    stat that turned the room. Maybe a calculation you did
-    mid-rebuttal. Maybe a piece of game theory that explained why a
-    strategy worked. Find that exact moment."
-  anchorItWith: "The specific round / opponent / topic — one named
-    instance only. The essay starts where the math and the argument
-    met for the first time."
-  playsBestTo: "Schools that want cross-domain thinkers, especially
-    the policy-strong programs at U of T, McGill, Edinburgh."
-
-The remaining 2 entries are ALTERNATE angles in case the primary seed
-doesn't pan out — same shape, different pulls from the profile.
+  Output:
+    kicker:  "04 · The essay only you can write"
+    headline: "The essay you should write doesn't exist yet — but the seed for it does."
+    lead:     "One specific kind of moment to find. Then it starts itself."
+    essaySeed.title: "The math-in-debate moment"
+    essaySeed.body: "Sometime in the last two years, something from a math class showed up inside a debate round you were running. Maybe a stat that turned the room. Maybe a calculation you did mid-rebuttal that made the other side stop. Maybe a piece of game theory that explained why a strategy worked. Find that exact moment — the one where the two halves of you actually met."
+    essaySeed.closer: "That's where the essay starts."
 
 OUTPUT — emit a JSON object exactly matching this shape:
 {
-  "kicker": "04 · What to write",
-  "headline": "string — 4-8 word display line. Example shape: 'The essay only you can write.'",
-  "lead": "string — ONE sentence (max ~25 words). Drop-cap rendered.",
-  "entries": [
-    {
-      "title": "string — short evocative angle title, max 6 words.",
-      "whyItWorks": "string — for the FIRST entry, the primary seed in SPECULATIVE TENSE (sometime / maybe / probably) referencing Card 01's identity claim. For entries 2-3, why this alternate angle would land.",
-      "anchorItWith": "string — 1 sentence naming the type of concrete moment the student should find. NEVER assert a specific moment happened — use speculative tense.",
-      "playsBestTo": "string — 1 sentence naming WHICH schools (from Card 02) this angle plays best to. Real names, not 'top schools'."
-    },
-    ... 3 entries total (1 primary + 2 alternates) ...
-  ]
+  "kicker": "04 · The essay only you can write",
+  "headline": "string — 8 to 14 words. Names the essay's existence as a possibility, not a finished thing. 'The essay you should write doesn't exist yet — but the seed for it does.' is the template shape.",
+  "lead": "string — ONE sentence (max ~15 words). Drop-cap rendered.",
+  "essaySeed": {
+    "title": "string — short evocative title for the seed, max 6 words. ('The math-in-debate moment')",
+    "body": "string — 3 to 5 sentences in SPECULATIVE TENSE. Anchors to Card 02's pile-contrast / Card 01's identity claim. Proposes a TYPE of moment to find, without naming a specific moment we can't know existed. Uses 'sometime' / 'maybe' / 'probably' / 'there was likely' markers — at least 2 of them.",
+    "closer": "string — 1 sentence, 5 to 12 words. Imperative-with-permission: 'Find that moment.' / 'That's where it starts.' NOT coercive: 'Write this essay now' is forbidden."
+  }
 }
 
-EXACTLY 3 entries. The FIRST entry MUST use speculative tense ("sometime",
-"maybe", "probably", "there was likely") in the whyItWorks field. No
-fake biographical specifics in any entry.
+ABSOLUTE RULES:
+- Single seed. No alternate angles, no "or instead try..." chaining.
+- body MUST contain ≥ 2 speculative-tense markers (sometime / maybe / probably / there was likely / there's likely / likely a moment / might have been / may have been).
+- No fake biographical specifics. All particulars must be intake-grounded.
+- DO NOT also emit an "entries" field. The v6 three-angles shape is intentionally retired in new generations.
 
 ${SHARED_JSON_RULES}`,
   validate: (raw, ctx) => {
     const obj = tryParse(raw) as Record<string, unknown> | null;
     if (!obj) return { ok: false, reason: "not valid JSON" };
-    const entries = obj.entries as unknown[] | undefined;
-    if (!Array.isArray(entries) || entries.length !== 3) {
-      return { ok: false, reason: "entries must be exactly 3 angles" };
+    const seed = obj.essaySeed as Record<string, unknown> | undefined;
+    if (!seed || typeof seed !== "object") {
+      return { ok: false, reason: "essaySeed object missing" };
     }
-    // First entry MUST use speculative tense in whyItWorks
-    const firstWhy = ((entries[0] as { whyItWorks?: string })?.whyItWorks ?? "").toLowerCase();
-    if (!/\b(sometime|maybe|probably|there was likely|there's likely|likely a moment|might have been|may have been)\b/.test(firstWhy)) {
-      return { ok: false, reason: "first essay seed must use speculative tense (sometime/maybe/probably) — concrete biography is forbidden" };
+    const body = typeof seed.body === "string" ? seed.body : "";
+    if (body.trim().length < 30) {
+      return { ok: false, reason: "essaySeed.body missing or too short" };
+    }
+    // Body MUST use speculative tense in at least 2 places.
+    const specRe = /\b(sometime|maybe|probably|there was likely|there's likely|likely a moment|might have been|may have been)\b/gi;
+    const matches = body.match(specRe) ?? [];
+    if (matches.length < 2) {
+      return {
+        ok: false,
+        reason: `essaySeed.body must use speculative tense ≥ 2 times (sometime/maybe/probably/there was likely) — found ${matches.length}. Concrete biographical assertions are forbidden.`,
+      };
+    }
+    // Closer must NOT be a coercive imperative.
+    const closer = typeof seed.closer === "string" ? seed.closer.trim() : "";
+    if (closer && /^(Write this|Submit|Send|Publish)\b/i.test(closer)) {
+      return { ok: false, reason: "essaySeed.closer too coercive — use suggestion mood (e.g., 'Find that moment.' / 'That's where it starts.')" };
     }
     return semanticCheck(obj, ctx, { mustNameIntakeField: true });
   },
@@ -683,33 +749,31 @@ ${SHARED_JSON_RULES}`;
 };
 
 /* 05 — MONDAY MOVE (renderer-wire ID: whatToDoThisMonth)
-   Payload shape keeps 4 weeks (renderer wire-compat). Prompt asks for
-   week 1 to be the SINGLE Monday Move (one verb + one artifact + low
-   bar) and weeks 2-4 to be the chain it opens. Each week still has
-   3-5 tasks but week 1 leads with ONE specific low-bar artifact-
-   building task and the rest support it. Closing line is the spec's
-   "once X exists, Y starts" pattern. */
+   v7 Phase 3 (#13 part 2) reshape — payload now produces ONE
+   mondayMove object instead of a 4-week schedule. The renderer
+   still accepts the v6 weeks shape via its fallback path so old
+   cached briefs continue to render; new generations are pure v7. */
 const whatToDoThisMonth: SectionSpec = {
   id: "whatToDoThisMonth",
   heading: "What to do this month",
   reasoning: { effort: "high" },
   buildPrompt: (ctx) => `
-You are writing CARD 05 of a 5-card admissions strategy brief in the
-v7 spec. This card is called YOUR MONDAY MOVE. Its job: name ONE move
-this week — verb + artifact + low bar — that opens the chain of work
-the rest of the brief set up. Week 1's first task IS the Monday Move.
+You are writing CARD 06 (renderer-wire id: whatToDoThisMonth) of the
+v7 admissions strategy brief. This card is called YOUR MONDAY MOVE.
+Its job: name ONE move this week — verb + artifact + low bar — that
+opens the chain of work the rest of the brief set up. Not a 4-week
+plan. Not a list of three actions. ONE thing.
 
 KEY DESIGN PRINCIPLE — executive-dysfunction-friendly:
-- Week 1's first task must be ≤ 1 hour to complete.
-- Week 1's first task must be CONCRETE (an artifact: a doc, a file,
-  a list, a draft, an email). NOT abstract ("brainstorm", "reflect",
+- The move must be doable in under 1 hour.
+- The move must be CONCRETE (an artifact: a doc, a file, a list,
+  a draft, an email). NOT abstract ("brainstorm", "reflect",
   "research").
-- Week 1's first task must EXPLICITLY LOWER THE BAR — include one
-  permission phrase like "don't polish", "don't make it good", "just
-  list", "stop when you have three", "no need to share with anyone".
-- Subsequent tasks (week 1 task 2-5, weeks 2-4) BUILD on that
-  artifact. The week 1 first task is the keystone; everything else
-  is downstream.
+- The body must EXPLICITLY LOWER THE BAR — include one permission
+  phrase like "don't polish", "don't make it good", "just list",
+  "stop when you have three", "no need to share with anyone".
+- Anchor to the BRIEF PLAN's monday-move artifact and the Card 03
+  essay seed type. The move starts the chain those two set up.
 
 LOCALLY-EXECUTABLE rule:
 - Do NOT prescribe actions that require US-only infrastructure (SAT
@@ -721,66 +785,63 @@ ${profileBlock(ctx)}
 
 ${planBlock(ctx)}
 
-CONTEXT FROM EARLIER CARDS — anchor tasks to the schools/essay/gaps
-named earlier so the plan is grounded, not generic:
+CONTEXT FROM EARLIER CARDS — anchor the move to the schools / essay
+seed / archetype named earlier so the move is grounded, not generic:
 ${dbBlock(ctx)}
 
-GOLD EXEMPLAR (week 1, task 1 = the Monday Move):
+GOLD EXEMPLAR — match this prose-quality bar:
   Student: Yerlan (same as Cards 01-04)
-  Week 1 focus: "Open the doc that becomes the essay."
-  Week 1 task 1: "Open a Google Doc titled 'math in debate.' List three specific times something from math class showed up in a debate round you ran. Don't polish."
-  Week 1 task 2-3: support the artifact-building. ("Add the dates / opponents / topic for each moment.")
-  closingLine: "Once those three lines exist on the page, the essay has somewhere to start."
+  Output:
+    kicker:    "06 · Your Monday Move"
+    headline:  "Open a Google Doc this week. Title it 'math in debate.'"
+    lead:      "One move that opens the rest."
+    mondayMove.body: "Inside, list three specific times something from a math class showed up in a debate round you ran. Don't polish. Don't make them sound profound. Just three lines, one per moment. Stop when you have three."
+    mondayMove.closer: "Once those three lines exist on the page, the essay has somewhere to start."
 
 OUTPUT — emit a JSON object exactly matching this shape:
 {
-  "kicker": "06 · What to do this month",
-  "headline": "string — 4-8 word display line. Example shape: 'Your next 28 days.' NO banned vocab.",
-  "lead": "string — ONE sentence (max ~25 words). Drop-cap rendered.",
-  "weeks": [
-    {
-      "label": "Week 1",
-      "focus": "string — ONE sentence. The week's focus, anchored to the artifact week 1 task 1 builds.",
-      "tasks": [
-        "string — TASK 1 = THE MONDAY MOVE. ≤14 words, verb + artifact + low-bar permission. (e.g., 'Open a Google Doc titled X. List three Ys. Don't polish.')",
-        "...3-5 tasks per week, all anchored to specific intake fields/schools..."
-      ]
-    },
-    { "label": "Week 2", ... },
-    { "label": "Week 3", ... },
-    { "label": "Week 4", ... }
-  ],
-  "closingLine": "string — ONE sentence in 'Once X exists, Y starts' or 'Once X is done, Y follows' pattern. Quiet confidence, NOT hype."
+  "kicker": "06 · Your Monday Move",
+  "headline": "string — 6 to 12 words. The move, named as a verb-led instruction. Concrete artifact. Example shape: 'Open a Google Doc this week. Title it [X].'",
+  "lead": "string — ONE sentence (max ~12 words) framing the move. Drop-cap rendered.",
+  "mondayMove": {
+    "headline": "string — same as the section headline above (for renderer convenience — emit it again so the card component doesn't need to peek upstream).",
+    "body": "string — 3 to 5 sentences, 50 to 80 words. Explains the move, anchors to Cards 02-03 anchors, includes AT LEAST ONE low-bar permission phrase ('don't polish' / 'just list' / 'don't make it good' / 'no need to' / 'stop when').",
+    "closer": "string — ONE sentence in 'Once X exists, Y starts' or 'Once X is done, Y follows' pattern. Quiet confidence, NOT hype. NO imperative."
+  }
 }
 
-EXACTLY 4 weeks. Each week MUST have 3-5 tasks. Week 1 task 1 MUST
-contain a low-bar permission phrase ("don't polish" / "just list" /
-"don't make it good" / "no need to" / "stop when").
+ABSOLUTE RULES:
+- ONE move only. No "and then" / "after that" chaining in the headline.
+- Time-cost implicit ≤ 1 hour. No "register for the SAT" / "email three professors."
+- body MUST contain a low-bar permission phrase.
+- closer does NOT prescribe additional actions.
+- DO NOT also emit a "weeks" field. The v6 shape is intentionally retired in new generations.
 
 ${SHARED_JSON_RULES}`,
   validate: (raw, ctx) => {
     const obj = tryParse(raw) as Record<string, unknown> | null;
     if (!obj) return { ok: false, reason: "not valid JSON" };
-    const weeks = obj.weeks as unknown[] | undefined;
-    if (!Array.isArray(weeks) || weeks.length !== 4) {
-      return { ok: false, reason: "weeks must be array of length 4" };
+    const mondayMove = obj.mondayMove as Record<string, unknown> | undefined;
+    if (!mondayMove || typeof mondayMove !== "object") {
+      return { ok: false, reason: "mondayMove object missing" };
     }
-    for (const w of weeks) {
-      const tasks = (w as { tasks?: unknown[] }).tasks;
-      if (!Array.isArray(tasks) || tasks.length < 3 || tasks.length > 5) {
-        return { ok: false, reason: "each week must have 3-5 tasks" };
-      }
+    const body = typeof mondayMove.body === "string" ? mondayMove.body : "";
+    if (body.trim().length < 30) {
+      return { ok: false, reason: "mondayMove.body missing or too short" };
     }
-    // Week 1 task 1 MUST contain a low-bar permission phrase
-    const w1tasks = (weeks[0] as { tasks?: string[] }).tasks ?? [];
-    const w1t1 = String(w1tasks[0] ?? "").toLowerCase();
+    // Body MUST contain a low-bar permission phrase.
     if (
-      !/(don'?t polish|just list|don'?t make it good|no need to|stop when|don'?t worry about|don'?t edit)/.test(w1t1)
+      !/(don'?t polish|just list|don'?t make it good|no need to|stop when|don'?t worry about|don'?t edit)/i.test(body)
     ) {
       return {
         ok: false,
-        reason: "Monday Move (week 1 task 1) must include a low-bar permission phrase (don't polish / just list / etc.)",
+        reason: "mondayMove.body must include a low-bar permission phrase (don't polish / just list / stop when ... / etc.)",
       };
+    }
+    // Closer must NOT use a bare imperative (preserved from v6 rules).
+    const closer = typeof mondayMove.closer === "string" ? mondayMove.closer : "";
+    if (closer && /^(Stop|Do this|Don't|Begin|Start now)\.?\s/i.test(closer.trim())) {
+      return { ok: false, reason: "mondayMove.closer uses bare imperative — must be suggestion mood" };
     }
     return semanticCheck(obj, ctx, { mustNameIntakeField: true });
   },
