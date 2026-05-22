@@ -98,6 +98,12 @@ export interface BriefContext {
    *  extraction is ambiguous, "unknown" — and no card may make a
    *  confident I/E claim. */
   personalityAxis?: "introvert" | "extrovert" | "mixed" | "unknown";
+  /** v7 Phase 2 (#12): the pre-plan output. When present, every
+   *  section's prompt receives the plan as context, enforcing
+   *  narrative throughline across cards. When undefined (legacy /
+   *  fallback / pre-deploy), sections degrade to v7-without-plan
+   *  behavior — same prompts, no cross-card anchors. */
+  briefPlan?: import("./brief-plan.ts").BriefPlan;
 }
 
 export interface ValidatorResult {
@@ -189,6 +195,34 @@ const profileBlock = (ctx: BriefContext): string => {
 
 const dbBlock = (ctx: BriefContext): string => ctx.dbContext;
 
+/** v7 Phase 2 (#12): when a brief plan is present, surface its
+ *  cross-card anchors so the section prompts can render against
+ *  them. Empty string when no plan — sections fall back to their
+ *  v7-without-plan behavior (still good, just no cross-card
+ *  throughline). */
+const planBlock = (ctx: BriefContext): string => {
+  const p = ctx.briefPlan;
+  if (!p) return "";
+  const gapLine =
+    p.primaryGap.type === "library-entry"
+      ? `library-entry #${p.primaryGap.libraryEntryId} — ${p.primaryGap.reason}`
+      : `major-uncertainty — ${p.primaryGap.reason}`;
+  return `
+BRIEF PLAN (canonical narrative throughline — every card must respect it):
+- Archetype: ${p.archetype.id} (confidence ${p.archetype.confidence})
+- Identity claim (Card 01 anchor): "${p.identityClaim}"
+- Pile contrast (Cards 01-02 anchor): "${p.pileContrast}"
+- Essay seed type (Card 03 anchor): "${p.essaySeedType}"
+- Primary gap (Card 04 anchor): ${gapLine}
+- Country buckets (Card 05 anchor): ${p.countryBuckets.join(", ")}
+- Monday-move artifact (Card 06 anchor): "${p.mondayMoveArtifact}"
+
+Your section MUST anchor to the plan field(s) relevant to it. Do not
+contradict the plan; do not paraphrase the anchors into vagueness;
+do not invent specifics the plan doesn't establish.
+`.trim();
+};
+
 /** Parse helper — returns the parsed object or null if not valid JSON.
  * 2026-05-18: routed through the shared brace-walking helper so an LLM
  * appending commentary after the JSON body doesn't silently drop the
@@ -275,6 +309,8 @@ feel SEEN. Name them in a way they hadn't articulated themselves.
 
 STUDENT PROFILE:
 ${profileBlock(ctx)}
+
+${planBlock(ctx)}
 
 LIVE CONTEXT (cohort + matched programs for your reference):
 ${dbBlock(ctx)}
@@ -366,6 +402,8 @@ reach/target/safety odds list — those words are banned.
 
 STUDENT PROFILE:
 ${profileBlock(ctx)}
+
+${planBlock(ctx)}
 
 LIVE CONTEXT (use these schools — pick from the matched list, do not invent):
 ${dbBlock(ctx)}
@@ -463,6 +501,8 @@ specific moment happened.
 
 STUDENT PROFILE:
 ${profileBlock(ctx)}
+
+${planBlock(ctx)}
 
 GOLD EXEMPLAR (primary seed, first entry):
   Student: Yerlan (same as Cards 01-02)
@@ -564,6 +604,8 @@ has been editing out of his own self-description.
 
 STUDENT PROFILE:
 ${profileBlock(ctx)}
+
+${planBlock(ctx)}
 
 ${branchSpecific}
 
@@ -676,6 +718,8 @@ LOCALLY-EXECUTABLE rule:
 
 STUDENT PROFILE:
 ${profileBlock(ctx)}
+
+${planBlock(ctx)}
 
 CONTEXT FROM EARLIER CARDS — anchor tasks to the schools/essay/gaps
 named earlier so the plan is grounded, not generic:
