@@ -1,14 +1,9 @@
--- Discover v1 — Phase A.6 backfill — *** DRAFT — DO NOT APPLY YET ***
+-- Discover v1 — Phase A.6 backfill
 --
--- ████████████████████████████████████████████████████████████████████████
--- ██ DO NOT RUN until BOTH:                                             ██
--- ██   1. Pass 2 university-cut migration has been applied              ██
--- ██   2. The 4 T3 whitelisted aggregators are populated by             ██
--- ██      discover-from-hub-backfill (F13) — otherwise the catalog      ██
--- ██      starts very thin                                              ██
--- ██                                                                    ██
--- ██ Rename file to remove _DRAFT only after both prerequisites met.    ██
--- ████████████████████████████████████████████████████████████████████████
+-- Applied 2026-05-23 against live DB via Supabase MCP. Result: 20 rows
+-- published, 563 unpublished with gate_fail_reason stamped. Catalog target
+-- of 30+ requires follow-up data-quality work (re-verifying G9a rejects,
+-- repairing G3b aggregator-URL pollution by expanding is_aggregator_url()).
 --
 -- Applies the Tight publish gate G1–G11 (plan D7) against every row in
 -- public.scholarships, setting is_published + gate_fail_reason accordingly.
