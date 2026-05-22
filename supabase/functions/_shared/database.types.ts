@@ -1,10 +1,3 @@
-// AUTO-GENERATED — do not edit by hand.
-// Regenerate with: npm run gen:types
-//
-// This file mirrors the public schema of the live Supabase project.
-// After any migration that changes the schema, re-run the generator
-// so the TypeScript types stay in sync.
-
 export type Json =
   | string
   | number
@@ -21,6 +14,140 @@ export type Database = {
   }
   public: {
     Tables: {
+      academy_resources: {
+        Row: {
+          access_tier: string
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          external_url: string | null
+          file_path: string | null
+          file_size_bytes: number | null
+          id: string
+          is_published: boolean
+          language: string
+          mime_type: string | null
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          access_tier?: string
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          external_url?: string | null
+          file_path?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          is_published?: boolean
+          language?: string
+          mime_type?: string | null
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          access_tier?: string
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          external_url?: string | null
+          file_path?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          is_published?: boolean
+          language?: string
+          mime_type?: string | null
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      academy_waitlist: {
+        Row: {
+          confirmation_sent_at: string | null
+          email: string
+          full_name: string | null
+          ip_hash: string | null
+          joined_academy_at: string | null
+          match_run_id: string | null
+          profile_snapshot: Json | null
+          referring_scholarship_id: string | null
+          signed_up_at: string
+          source: string
+          unsubscribed_at: string | null
+          user_agent_hash: string | null
+          user_id: string | null
+          waitlist_id: string
+        }
+        Insert: {
+          confirmation_sent_at?: string | null
+          email: string
+          full_name?: string | null
+          ip_hash?: string | null
+          joined_academy_at?: string | null
+          match_run_id?: string | null
+          profile_snapshot?: Json | null
+          referring_scholarship_id?: string | null
+          signed_up_at?: string
+          source: string
+          unsubscribed_at?: string | null
+          user_agent_hash?: string | null
+          user_id?: string | null
+          waitlist_id?: string
+        }
+        Update: {
+          confirmation_sent_at?: string | null
+          email?: string
+          full_name?: string | null
+          ip_hash?: string | null
+          joined_academy_at?: string | null
+          match_run_id?: string | null
+          profile_snapshot?: Json | null
+          referring_scholarship_id?: string | null
+          signed_up_at?: string
+          source?: string
+          unsubscribed_at?: string | null
+          user_agent_hash?: string | null
+          user_id?: string | null
+          waitlist_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_waitlist_referring_scholarship_id_fkey"
+            columns: ["referring_scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "academy_waitlist_referring_scholarship_id_fkey"
+            columns: ["referring_scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships_active_v"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "academy_waitlist_referring_scholarship_id_fkey"
+            columns: ["referring_scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships_needing_embedding"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "academy_waitlist_referring_scholarship_id_fkey"
+            columns: ["referring_scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships_url_check_queue"
+            referencedColumns: ["scholarship_id"]
+          },
+        ]
+      }
       academy_workshops: {
         Row: {
           created_at: string
@@ -450,6 +577,99 @@ export type Database = {
           retrieval_method?: string | null
           scholarship_ids?: string[]
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      brief_hallucinations: {
+        Row: {
+          best_fuzzy_match_against_name: string | null
+          best_fuzzy_match_score: number | null
+          created_at: string
+          flagged_text: string
+          hallucination_id: string
+          match_run_id: string | null
+          profile_hash: string | null
+          retrieved_scholarship_ids: string[]
+          source_function: string
+          user_id: string | null
+          was_redacted: boolean
+        }
+        Insert: {
+          best_fuzzy_match_against_name?: string | null
+          best_fuzzy_match_score?: number | null
+          created_at?: string
+          flagged_text: string
+          hallucination_id?: string
+          match_run_id?: string | null
+          profile_hash?: string | null
+          retrieved_scholarship_ids?: string[]
+          source_function: string
+          user_id?: string | null
+          was_redacted?: boolean
+        }
+        Update: {
+          best_fuzzy_match_against_name?: string | null
+          best_fuzzy_match_score?: number | null
+          created_at?: string
+          flagged_text?: string
+          hallucination_id?: string
+          match_run_id?: string | null
+          profile_hash?: string | null
+          retrieved_scholarship_ids?: string[]
+          source_function?: string
+          user_id?: string | null
+          was_redacted?: boolean
+        }
+        Relationships: []
+      }
+      brief_leads: {
+        Row: {
+          converted_at: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          gpa: string | null
+          grade_level: string | null
+          id: string
+          language: string
+          major: string | null
+          nationality: string | null
+          nudge_sent_at: string | null
+          source_path: string | null
+          target_countries: string[] | null
+          user_agent: string | null
+        }
+        Insert: {
+          converted_at?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          gpa?: string | null
+          grade_level?: string | null
+          id?: string
+          language?: string
+          major?: string | null
+          nationality?: string | null
+          nudge_sent_at?: string | null
+          source_path?: string | null
+          target_countries?: string[] | null
+          user_agent?: string | null
+        }
+        Update: {
+          converted_at?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          gpa?: string | null
+          grade_level?: string | null
+          id?: string
+          language?: string
+          major?: string | null
+          nationality?: string | null
+          nudge_sent_at?: string | null
+          source_path?: string | null
+          target_countries?: string[] | null
+          user_agent?: string | null
         }
         Relationships: []
       }
@@ -900,6 +1120,71 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      featured_rotations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          override_headline: string | null
+          override_subhead: string | null
+          rotation_id: string
+          scholarship_id: string
+          slot_index: number
+          updated_at: string
+          week_start_date: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          override_headline?: string | null
+          override_subhead?: string | null
+          rotation_id?: string
+          scholarship_id: string
+          slot_index: number
+          updated_at?: string
+          week_start_date: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          override_headline?: string | null
+          override_subhead?: string | null
+          rotation_id?: string
+          scholarship_id?: string
+          slot_index?: number
+          updated_at?: string
+          week_start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "featured_rotations_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "featured_rotations_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships_active_v"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "featured_rotations_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships_needing_embedding"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "featured_rotations_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships_url_check_queue"
+            referencedColumns: ["scholarship_id"]
+          },
+        ]
       }
       founding_member_counter: {
         Row: {
@@ -1625,6 +1910,9 @@ export type Database = {
           category: string | null
           consecutive_failures: number
           created_at: string
+          deactivated_at: string | null
+          deactivation_policy_version: string | null
+          deactivation_reason: string | null
           frequency_hours: number
           health_reason: string | null
           health_status: string
@@ -1637,7 +1925,9 @@ export type Database = {
           parser_hint: string | null
           region: string | null
           source_id: string
+          source_tier: string | null
           source_type: string
+          sub_tier: string | null
           updated_at: string
           url: string
         }
@@ -1645,6 +1935,9 @@ export type Database = {
           category?: string | null
           consecutive_failures?: number
           created_at?: string
+          deactivated_at?: string | null
+          deactivation_policy_version?: string | null
+          deactivation_reason?: string | null
           frequency_hours?: number
           health_reason?: string | null
           health_status?: string
@@ -1657,7 +1950,9 @@ export type Database = {
           parser_hint?: string | null
           region?: string | null
           source_id?: string
+          source_tier?: string | null
           source_type?: string
+          sub_tier?: string | null
           updated_at?: string
           url: string
         }
@@ -1665,6 +1960,9 @@ export type Database = {
           category?: string | null
           consecutive_failures?: number
           created_at?: string
+          deactivated_at?: string | null
+          deactivation_policy_version?: string | null
+          deactivation_reason?: string | null
           frequency_hours?: number
           health_reason?: string | null
           health_status?: string
@@ -1677,7 +1975,9 @@ export type Database = {
           parser_hint?: string | null
           region?: string | null
           source_id?: string
+          source_tier?: string | null
           source_type?: string
+          sub_tier?: string | null
           updated_at?: string
           url?: string
         }
@@ -1895,13 +2195,16 @@ export type Database = {
           estimated_total_value_usd: number | null
           extracurricular_required: boolean | null
           financial_need_required: boolean | null
+          gate_fail_reason: string | null
           gpa_scale: number | null
           host_country: string | null
           how_to_win: string | null
           ideal_candidate_profile: string | null
           interview_required: boolean | null
           is_featured: boolean
+          is_published: boolean
           language_requirements: string | null
+          last_gate_checked_at: string | null
           last_verified_at: string | null
           last_verified_date: string | null
           leadership_required: boolean | null
@@ -1991,13 +2294,16 @@ export type Database = {
           estimated_total_value_usd?: number | null
           extracurricular_required?: boolean | null
           financial_need_required?: boolean | null
+          gate_fail_reason?: string | null
           gpa_scale?: number | null
           host_country?: string | null
           how_to_win?: string | null
           ideal_candidate_profile?: string | null
           interview_required?: boolean | null
           is_featured?: boolean
+          is_published?: boolean
           language_requirements?: string | null
+          last_gate_checked_at?: string | null
           last_verified_at?: string | null
           last_verified_date?: string | null
           leadership_required?: boolean | null
@@ -2087,13 +2393,16 @@ export type Database = {
           estimated_total_value_usd?: number | null
           extracurricular_required?: boolean | null
           financial_need_required?: boolean | null
+          gate_fail_reason?: string | null
           gpa_scale?: number | null
           host_country?: string | null
           how_to_win?: string | null
           ideal_candidate_profile?: string | null
           interview_required?: boolean | null
           is_featured?: boolean
+          is_published?: boolean
           language_requirements?: string | null
+          last_gate_checked_at?: string | null
           last_verified_at?: string | null
           last_verified_date?: string | null
           leadership_required?: boolean | null
@@ -2294,7 +2603,7 @@ export type Database = {
           confidence: number
           created_at: string
           diff_summary: string | null
-          fingerprint: string
+          fingerprint: string | null
           parsed_data: Json
           raw_text: string | null
           rejection_reason: string | null
@@ -2302,7 +2611,7 @@ export type Database = {
           reviewed_by: string | null
           run_id: string | null
           scholarship_id: string | null
-          source_id: string
+          source_id: string | null
           staging_id: string
           status: string
         }
@@ -2310,7 +2619,7 @@ export type Database = {
           confidence: number
           created_at?: string
           diff_summary?: string | null
-          fingerprint: string
+          fingerprint?: string | null
           parsed_data: Json
           raw_text?: string | null
           rejection_reason?: string | null
@@ -2318,7 +2627,7 @@ export type Database = {
           reviewed_by?: string | null
           run_id?: string | null
           scholarship_id?: string | null
-          source_id: string
+          source_id?: string | null
           staging_id?: string
           status?: string
         }
@@ -2326,7 +2635,7 @@ export type Database = {
           confidence?: number
           created_at?: string
           diff_summary?: string | null
-          fingerprint?: string
+          fingerprint?: string | null
           parsed_data?: Json
           raw_text?: string | null
           rejection_reason?: string | null
@@ -2334,7 +2643,7 @@ export type Database = {
           reviewed_by?: string | null
           run_id?: string | null
           scholarship_id?: string | null
-          source_id?: string
+          source_id?: string | null
           staging_id?: string
           status?: string
         }
@@ -2561,6 +2870,101 @@ export type Database = {
           view_count?: number
         }
         Relationships: []
+      }
+      source_candidates: {
+        Row: {
+          candidate_id: string
+          candidate_official_url: string
+          created_at: string
+          discovered_from_source_id: string | null
+          discovered_from_url: string
+          extraction_confidence: number | null
+          extraction_notes: string | null
+          promoted_to_source_id: string | null
+          proposed_award_amount_text: string | null
+          proposed_coverage_type: string | null
+          proposed_deadline: string | null
+          proposed_host_country: string | null
+          proposed_name: string | null
+          proposed_provider: string | null
+          rejected_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          candidate_id?: string
+          candidate_official_url: string
+          created_at?: string
+          discovered_from_source_id?: string | null
+          discovered_from_url: string
+          extraction_confidence?: number | null
+          extraction_notes?: string | null
+          promoted_to_source_id?: string | null
+          proposed_award_amount_text?: string | null
+          proposed_coverage_type?: string | null
+          proposed_deadline?: string | null
+          proposed_host_country?: string | null
+          proposed_name?: string | null
+          proposed_provider?: string | null
+          rejected_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          candidate_id?: string
+          candidate_official_url?: string
+          created_at?: string
+          discovered_from_source_id?: string | null
+          discovered_from_url?: string
+          extraction_confidence?: number | null
+          extraction_notes?: string | null
+          promoted_to_source_id?: string | null
+          proposed_award_amount_text?: string | null
+          proposed_coverage_type?: string | null
+          proposed_deadline?: string | null
+          proposed_host_country?: string | null
+          proposed_name?: string | null
+          proposed_provider?: string | null
+          rejected_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "source_candidates_discovered_from_source_id_fkey"
+            columns: ["discovered_from_source_id"]
+            isOneToOne: false
+            referencedRelation: "scholarship_sources"
+            referencedColumns: ["source_id"]
+          },
+          {
+            foreignKeyName: "source_candidates_discovered_from_source_id_fkey"
+            columns: ["discovered_from_source_id"]
+            isOneToOne: false
+            referencedRelation: "source_quality_v"
+            referencedColumns: ["source_id"]
+          },
+          {
+            foreignKeyName: "source_candidates_promoted_to_source_id_fkey"
+            columns: ["promoted_to_source_id"]
+            isOneToOne: false
+            referencedRelation: "scholarship_sources"
+            referencedColumns: ["source_id"]
+          },
+          {
+            foreignKeyName: "source_candidates_promoted_to_source_id_fkey"
+            columns: ["promoted_to_source_id"]
+            isOneToOne: false
+            referencedRelation: "source_quality_v"
+            referencedColumns: ["source_id"]
+          },
+        ]
       }
       student_documents: {
         Row: {
@@ -3063,16 +3467,19 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          source: string
         }
         Insert: {
           created_at?: string
           email: string
           id?: string
+          source?: string
         }
         Update: {
           created_at?: string
           email?: string
           id?: string
+          source?: string
         }
         Relationships: []
       }
@@ -3556,6 +3963,7 @@ export type Database = {
         Returns: string
       }
       normalize_tags: { Args: { p_tags: string[] }; Returns: string[] }
+      normalize_target_field: { Args: { raw: string }; Returns: string }
       provider_slug: { Args: { p_name: string }; Returns: string }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
