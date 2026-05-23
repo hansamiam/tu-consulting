@@ -49,6 +49,9 @@ import {
   type EssayEntry,
   type GapEntry,
   type WeekBlock,
+  type CountryBucket,
+  type EssaySeed,
+  type MondayMove,
 } from "./types";
 
 interface CommonProps {
@@ -364,6 +367,79 @@ const ActionPlan: React.FC<{ weeks: WeekBlock[]; closingLine?: string }> = ({ we
   </Slide>
 );
 
+// ─── v7 Phase 3 (#13 part 2) reshape components ───────────────────────
+// These replace Shortlist / EssayAngles / ActionPlan when the brief
+// generator emits the new payload shapes. The old components remain
+// in place as the fallback for cached schema-2 briefs.
+
+const WhereYouBelongBuckets: React.FC<{ buckets: CountryBucket[] }> = ({ buckets }) => (
+  <Slide number={3} kicker="Where you belong" title="Three kinds of places that fit you.">
+    <div className="divide-y divide-neutral-100">
+      {buckets.map((b, i) => (
+        <section key={`${b.country}-${i}`} className="py-7 sm:py-8">
+          <div className="flex items-baseline gap-3 flex-wrap">
+            <h3 className="font-heading text-neutral-900 font-bold text-[18px] sm:text-[19px] tracking-[-0.01em]">
+              {b.country}
+            </h3>
+            {b.cities && (
+              <span className="text-neutral-400 text-[12.5px]">{b.cities}</span>
+            )}
+          </div>
+          <div className="mt-3 space-y-3.5">
+            {b.schools.map((s, j) => (
+              <div key={`${s.name}-${j}`} className="grid grid-cols-[auto,1fr] gap-x-4">
+                <span className="text-gold-dark/60 select-none pt-2 flex-none">
+                  <span className="block h-1 w-1 rounded-full bg-gold-dark/70" />
+                </span>
+                <div>
+                  <p className="font-heading text-neutral-900 font-semibold text-[15.5px] sm:text-[16px] tracking-[-0.005em]">
+                    {s.name}
+                  </p>
+                  {s.lore && (
+                    <p className="text-neutral-700 text-[14px] leading-[1.7] mt-1 max-w-[58ch]">
+                      {s.lore}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  </Slide>
+);
+
+const EssaySeedSlide: React.FC<{ seed: EssaySeed }> = ({ seed }) => (
+  <Slide number={4} kicker="What to write" title={seed.title ?? "The essay only you can write."}>
+    <div className="max-w-[58ch]">
+      <p className="text-neutral-800 text-[15.5px] leading-[1.75]">
+        {seed.body}
+      </p>
+      {seed.closer && (
+        <p className="mt-8 font-heading italic text-neutral-700 text-[16px] leading-snug tracking-tight">
+          {seed.closer}
+        </p>
+      )}
+    </div>
+  </Slide>
+);
+
+const MondayMoveSlide: React.FC<{ move: MondayMove }> = ({ move }) => (
+  <Slide number={5} kicker="Your Monday move" title={move.headline ?? "One move this week."}>
+    <div className="max-w-[58ch]">
+      <p className="text-neutral-800 text-[15.5px] leading-[1.75]">
+        {move.body}
+      </p>
+      {move.closer && (
+        <p className="mt-8 font-heading italic text-neutral-700 text-[16px] leading-snug tracking-tight">
+          {move.closer}
+        </p>
+      )}
+    </div>
+  </Slide>
+);
+
 // ─── Next-steps card (non-deck, post-brief CTAs) ──────────────────────
 
 const NextStepsCard: React.FC = () => (
@@ -474,46 +550,276 @@ export const BriefDeck: React.FC<Props> = (props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const archetype = sections.archetype;
   const stand = sections.whereYouStand;
   const gaps = sections.whatsBlockingYou?.entries ?? [];
+  // v6 shapes — fallback path for old cached briefs (schema 2)
   const schoolEntries = sections.whereYouCanLand?.entries ?? [];
   const essayEntries = sections.whatToWrite?.entries ?? [];
   const weeks = sections.whatToDoThisMonth?.weeks ?? [];
+  // v7 shapes — pure-v7 generations after the brief-v7-payload-reshape PR
+  const buckets = sections.whereYouCanLand?.buckets ?? [];
+  const essaySeed = sections.whatToWrite?.essaySeed;
+  const mondayMove = sections.whatToDoThisMonth?.mondayMove;
 
   const streaming = props.mode === "stream" && !streamError;
   const anyLoaded = Object.keys(sections).length > 0;
 
+  /* v7 Phase 3 (#13): card-stack swipe nav.
+     Each substantive section becomes a self-contained card; the user
+     swipes horizontally (mobile) or arrows through them (desktop).
+     Print path bypasses the swipe container via `print:` utilities —
+     PDFs still render vertically as one document. */
+  const archetypeNode =
+    archetype?.id && archetype?.name ? (
+      <section
+        aria-label="Your archetype"
+        className="rounded-2xl px-8 py-10 text-center shadow-sm"
+        style={{
+          background: `linear-gradient(135deg, ${archetype.color}1A, ${archetype.color}33)`,
+          borderTop: `4px solid ${archetype.color}`,
+        }}
+      >
+        <div className="text-[10px] uppercase tracking-[0.28em] text-foreground/60 font-medium">
+          You are
+        </div>
+        <h2
+          className="mt-3 text-[clamp(1.75rem,4vw,2.5rem)] font-serif font-bold leading-tight tracking-tight"
+          style={{ color: archetype.color }}
+        >
+          {archetype.name}
+        </h2>
+        {archetype.tagline && (
+          <p className="mt-4 text-base sm:text-lg text-foreground/80 italic font-serif max-w-md mx-auto leading-snug">
+            {archetype.tagline}
+          </p>
+        )}
+      </section>
+    ) : null;
+
+  type CardEntry = { id: string; kicker: string; node: React.ReactNode };
+  const cards: CardEntry[] = [
+    { id: "cover", kicker: "Brief", node: <Cover studentName={props.studentName} gradeLabel={props.gradeLabel} generatedAt={props.generatedAt} /> },
+  ];
+  if (archetypeNode) cards.push({ id: "archetype", kicker: "Your archetype", node: archetypeNode });
+  if (stand?.body || stand?.lead || gaps.length > 0) {
+    cards.push({
+      id: "stand",
+      kicker: "Where you stand",
+      node: <StartingLine thesis={stand?.headline ?? stand?.lead} body={stand?.body ?? stand?.lead} gaps={gaps} />,
+    });
+  } else if (streaming) {
+    cards.push({ id: "stand-skeleton", kicker: "Where you stand", node: <SlideSkeleton number={2} kicker="The starting line" title="Where you stand today." /> });
+  }
+  // v7 buckets win when present; fall back to v6 reach/target/safety
+  // entries for old cached briefs.
+  if (buckets.length > 0) {
+    cards.push({ id: "buckets", kicker: "Where you belong", node: <WhereYouBelongBuckets buckets={buckets} /> });
+  } else if (schoolEntries.length > 0) {
+    cards.push({ id: "shortlist", kicker: "Where you can land", node: <Shortlist entries={schoolEntries} /> });
+  } else if (streaming) {
+    cards.push({ id: "shortlist-skeleton", kicker: "Where you belong", node: <SlideSkeleton number={3} kicker="Where you belong" title="Places that fit how you actually move." /> });
+  }
+  // v7 essaySeed wins when present; fall back to v6 three-entries
+  // shape for cached briefs.
+  if (essaySeed?.body) {
+    cards.push({ id: "essay-seed", kicker: "What to write", node: <EssaySeedSlide seed={essaySeed} /> });
+  } else if (essayEntries.length > 0) {
+    cards.push({ id: "essays", kicker: "What to write", node: <EssayAngles entries={essayEntries} /> });
+  } else if (streaming) {
+    cards.push({ id: "essays-skeleton", kicker: "What to write", node: <SlideSkeleton number={4} kicker="What to write" title="The essay only you can write." /> });
+  }
+  // v7 mondayMove wins when present; fall back to v6 4-week plan.
+  if (mondayMove?.body) {
+    cards.push({ id: "monday-move", kicker: "Your Monday move", node: <MondayMoveSlide move={mondayMove} /> });
+  } else if (weeks.length > 0) {
+    cards.push({ id: "plan", kicker: "Your next 28 days", node: <ActionPlan weeks={weeks} closingLine={sections.whatToDoThisMonth?.closingLine} /> });
+  } else if (streaming) {
+    cards.push({ id: "plan-skeleton", kicker: "Your Monday move", node: <SlideSkeleton number={5} kicker="Your Monday move" title="One move this week." /> });
+  }
+  if (anyLoaded && !streamError) {
+    cards.push({ id: "next", kicker: "What next", node: <NextStepsCard /> });
+  }
+
   return (
-    <div id="printable-report-inner" className="max-w-3xl mx-auto">
+    <div id="printable-report-inner" className="relative">
       {streamError && (
         <div className="my-6 mx-auto max-w-md text-center text-rose-500 text-sm">
           Brief generation failed: {streamError}. Try regenerating.
         </div>
       )}
+      <CardStack cards={cards} archetypeColor={archetype?.color} />
+    </div>
+  );
+};
 
-      <Cover studentName={props.studentName} gradeLabel={props.gradeLabel} generatedAt={props.generatedAt} />
+/* ─── CardStack ───────────────────────────────────────────────────────
+   v7 Phase 3 (#13). Horizontal scroll-snap container with progress
+   dots + keyboard nav + a Share button per card. Each card fills the
+   viewport (or near-viewport on mobile) and scrolls internally when
+   its content overflows. Print mode falls back to vertical block
+   flow so the PDF export still renders as one document. */
+interface CardStackProps {
+  cards: Array<{ id: string; kicker: string; node: React.ReactNode }>;
+  archetypeColor?: string;
+}
 
-      {(stand?.body || stand?.lead || gaps.length > 0) ? (
-        <StartingLine
-          thesis={stand?.headline ?? stand?.lead}
-          body={stand?.body ?? stand?.lead}
-          gaps={gaps}
-        />
-      ) : streaming ? <SlideSkeleton number={2} kicker="The starting line" title="Where you stand today." /> : null}
+const CardStack: React.FC<CardStackProps> = ({ cards, archetypeColor }) => {
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
 
-      {schoolEntries.length > 0 ? (
-        <Shortlist entries={schoolEntries} />
-      ) : streaming ? <SlideSkeleton number={3} kicker="Where you can land" title="Three schools to anchor on." /> : null}
+  // Scroll handler tracks which card is centered in the viewport so
+  // the progress dots stay in sync. Uses the container's scrollLeft
+  // and the first card's offsetWidth as the per-card stride.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const cardWidth = el.firstElementChild instanceof HTMLElement ? el.firstElementChild.offsetWidth : 1;
+        const idx = Math.round(el.scrollLeft / Math.max(cardWidth, 1));
+        setActiveIdx(Math.min(Math.max(idx, 0), cards.length - 1));
+      });
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(raf);
+      el.removeEventListener("scroll", onScroll);
+    };
+  }, [cards.length]);
 
-      {essayEntries.length > 0 ? (
-        <EssayAngles entries={essayEntries} />
-      ) : streaming ? <SlideSkeleton number={4} kicker="What to write" title="Three angles only you can write." /> : null}
+  const scrollToCard = (i: number) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const target = el.children[i] as HTMLElement | undefined;
+    if (target) target.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
+  };
 
-      {weeks.length > 0 ? (
-        <ActionPlan weeks={weeks} closingLine={sections.whatToDoThisMonth?.closingLine} />
-      ) : streaming ? <SlideSkeleton number={5} kicker="Your next 28 days" title="A 4-week plan, mapped." /> : null}
+  // Arrow-key nav on desktop. Capture-phase listener so the buttons
+  // inside each card don't swallow the keystroke when focused.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // Ignore when focus is inside an editable field — users typing
+      // shouldn't get their cursor stolen.
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if ((e.target as HTMLElement | null)?.isContentEditable) return;
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        scrollToCard(Math.min(activeIdx + 1, cards.length - 1));
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        scrollToCard(Math.max(activeIdx - 1, 0));
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [activeIdx, cards.length]);
 
-      {anyLoaded && !streamError && <NextStepsCard />}
+  const handleShare = async (cardKicker: string) => {
+    // Minimal share — opens the OS share sheet with the current URL +
+    // a per-card suggested message. The full IG-Story-frictionless
+    // deep link via instagram-stories:// is the work of #14.
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    const shareData = {
+      title: `TopUni AI · ${cardKicker}`,
+      text: `My TopUni AI brief said: ${cardKicker}. topuni.kz/ai`,
+      url,
+    };
+    if (typeof navigator !== "undefined" && (navigator as Navigator & { share?: (d: ShareData) => Promise<void> }).share) {
+      try {
+        await (navigator as Navigator & { share: (d: ShareData) => Promise<void> }).share(shareData);
+        return;
+      } catch {
+        // user-cancelled share — fall through to clipboard fallback
+      }
+    }
+    // Clipboard fallback.
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch { /* ignore */ }
+    }
+  };
+
+  return (
+    <div className="relative">
+      {/* Progress dots — sticky at top, hidden in print. */}
+      <div className="sticky top-0 z-20 print:hidden bg-background/80 backdrop-blur-sm py-3">
+        <div className="flex items-center justify-center gap-1.5">
+          {cards.map((c, i) => (
+            <button
+              key={c.id}
+              onClick={() => scrollToCard(i)}
+              aria-label={`Go to ${c.kicker}`}
+              className="h-1.5 rounded-full transition-all"
+              style={{
+                width: i === activeIdx ? 24 : 6,
+                background: i === activeIdx ? (archetypeColor ?? "currentColor") : "rgba(0,0,0,0.2)",
+              }}
+            />
+          ))}
+        </div>
+        <div className="mt-1.5 text-center text-[10px] uppercase tracking-[0.22em] text-foreground/60 font-medium">
+          {String(activeIdx + 1).padStart(2, "0")} / {String(cards.length).padStart(2, "0")} · {cards[activeIdx]?.kicker}
+        </div>
+      </div>
+
+      {/* The swipe container. Horizontal scroll-snap on interactive;
+          vertical block flow in print. */}
+      <div
+        ref={scrollRef}
+        className="
+          flex overflow-x-auto snap-x snap-mandatory
+          [&::-webkit-scrollbar]:hidden
+          [-ms-overflow-style:none] [scrollbar-width:none]
+          print:block print:overflow-visible
+        "
+      >
+        {cards.map((card, i) => (
+          <div
+            key={card.id}
+            className="
+              flex-shrink-0 w-full snap-start
+              min-h-[calc(100vh-5rem)]
+              overflow-y-auto
+              px-4 sm:px-8 py-6
+              print:flex-shrink print:w-auto print:min-h-0 print:overflow-visible print:break-inside-avoid print:px-0 print:py-0
+            "
+          >
+            <div className="max-w-3xl mx-auto">{card.node}</div>
+
+            {/* Card footer — share + next button. Hidden in print. */}
+            <div className="print:hidden mt-6 max-w-3xl mx-auto flex items-center justify-between gap-3">
+              <button
+                onClick={() => handleShare(card.kicker)}
+                className="text-xs font-medium text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1.5"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                  <polyline points="16 6 12 2 8 6" />
+                  <line x1="12" y1="2" x2="12" y2="15" />
+                </svg>
+                Share
+              </button>
+              {i < cards.length - 1 ? (
+                <button
+                  onClick={() => scrollToCard(i + 1)}
+                  className="text-xs font-medium text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1.5"
+                >
+                  Next
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </button>
+              ) : null}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

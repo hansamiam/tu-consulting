@@ -280,8 +280,14 @@ const DiscoverApp = ({ language = "en" }: Props) => {
     return <Navigate to={isRu ? "/discover/ru" : "/discover"} replace />;
   }
 
-  const visible = isPro ? ranked : ranked.slice(0, 3);
-  const locked = isPro ? 0 : Math.max(0, ranked.length - 3);
+  // Stage-2 spec (2026-05-23): Discover database stays free for all
+  // users — the 3-gate Membership unlocks Discover SAVES, not visibility.
+  // Previously this capped free users at 3 visible rows; removed to
+  // align /discover/app with the main /discover route. The "+N more
+  // scholarships" teaser block below renders only when locked > 0, so
+  // it becomes a no-op without needing to delete the JSX.
+  const visible = ranked;
+  const locked = 0;
 
   const handleResetProfile = () => {
     localStorage.removeItem("topuni_discover_profile");
@@ -557,12 +563,12 @@ const DiscoverApp = ({ language = "en" }: Props) => {
                     </h3>
                     <p className="text-sm text-muted-foreground max-w-xl mx-auto">
                       {isRu
-                        ? "Pro открывает полный список с матч-скорами, стратегиями подачи и причинами отказов."
-                        : "Pro unlocks the full ranked list with strategy notes, rejection patterns, and the rest of the database."}
+                        ? "Участники видят полный ранжированный список и сохраняют каждую подходящую стипендию."
+                        : "Members see the full ranked list and save every scholarship that fits."}
                     </p>
                     <div className="flex gap-3 justify-center flex-wrap pt-1">
                       <Button asChild className="rounded-full bg-foreground text-background hover:bg-foreground/90">
-                        <Link to="/pricing">{isRu ? "Открыть Pro" : "Unlock full access"}</Link>
+                        <Link to="/pricing">{isRu ? "Смотреть Membership" : "See Membership"}</Link>
                       </Button>
                     </div>
                   </div>

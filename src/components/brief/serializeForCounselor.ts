@@ -69,8 +69,19 @@ export function serializeBriefForCounselor(sections: BriefSections): string {
 
   if (sections.whereYouCanLand) {
     out.push(headings(sections.whereYouCanLand, "Where you can land"));
-    for (const e of sections.whereYouCanLand.entries ?? []) {
-      out.push(formatSchool(e));
+    // v7 country-buckets shape wins when present; old reach/target/safety
+    // entries are the fallback path for cached briefs.
+    if (sections.whereYouCanLand.buckets && sections.whereYouCanLand.buckets.length > 0) {
+      for (const b of sections.whereYouCanLand.buckets) {
+        out.push(`**${b.country}${b.cities ? ` — ${b.cities}` : ""}**`);
+        for (const s of b.schools) {
+          out.push(`- ${s.name}${s.lore ? ` — ${s.lore}` : ""}`);
+        }
+      }
+    } else {
+      for (const e of sections.whereYouCanLand.entries ?? []) {
+        out.push(formatSchool(e));
+      }
     }
   }
 
@@ -84,7 +95,14 @@ export function serializeBriefForCounselor(sections: BriefSections): string {
 
   if (sections.whatToWrite) {
     out.push(headings(sections.whatToWrite, "What to write"));
-    (sections.whatToWrite.entries ?? []).forEach((e, i) => out.push(formatEssay(e, i)));
+    if (sections.whatToWrite.essaySeed) {
+      const s = sections.whatToWrite.essaySeed;
+      if (s.title) out.push(`**${s.title}**`);
+      if (s.body) out.push(s.body);
+      if (s.closer) out.push(`> ${s.closer}`);
+    } else {
+      (sections.whatToWrite.entries ?? []).forEach((e, i) => out.push(formatEssay(e, i)));
+    }
   }
 
   if (sections.whatsBlockingYou) {
@@ -94,10 +112,17 @@ export function serializeBriefForCounselor(sections: BriefSections): string {
 
   if (sections.whatToDoThisMonth) {
     out.push(headings(sections.whatToDoThisMonth, "What to do this month"));
-    for (const w of sections.whatToDoThisMonth.weeks ?? []) {
-      out.push(formatWeek(w));
+    if (sections.whatToDoThisMonth.mondayMove) {
+      const m = sections.whatToDoThisMonth.mondayMove;
+      if (m.headline) out.push(`**${m.headline}**`);
+      if (m.body) out.push(m.body);
+      if (m.closer) out.push(`> ${m.closer}`);
+    } else {
+      for (const w of sections.whatToDoThisMonth.weeks ?? []) {
+        out.push(formatWeek(w));
+      }
+      if (sections.whatToDoThisMonth.closingLine) out.push(`> ${sections.whatToDoThisMonth.closingLine}`);
     }
-    if (sections.whatToDoThisMonth.closingLine) out.push(`> ${sections.whatToDoThisMonth.closingLine}`);
   }
 
   return out.join("\n\n");
