@@ -7,7 +7,7 @@ import {
   type SectionSpec,
   type BriefContext,
 } from "../_shared/brief-sections.ts";
-import { EDITORIAL_RULES } from "../_shared/editorial-rules.ts";
+import { EDITORIAL_RULES, resolveCulturalContext } from "../_shared/editorial-rules.ts";
 import {
   cleanScholarshipName,
   cleanProvider,
@@ -887,6 +887,17 @@ ${EDITORIAL_RULES}`;
         profile,
         lang,
         audienceLine,
+        // v7 spec: resolve cultural-context bucket from nationality so
+        // section prompts can branch on locally-salient peer piles.
+        // For Central Asia: never "pre-med", use IT/CS/engineering/
+        // finance/IR. For other contexts: "default" (no branching).
+        culturalContext: resolveCulturalContext(profile.nationality) as
+          | "central_asia"
+          | "default",
+        // personalityAxis is left undefined for now — Phase 2 follow-up
+        // will extract it from the Step 3 free-text via the covert-
+        // intake placeholder. Until then, prompts treat it as unknown
+        // and no card may make a confident I/E claim.
       };
 
       // Per-section regen path — caller passed a section id; we run just
