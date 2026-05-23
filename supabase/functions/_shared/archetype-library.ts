@@ -86,7 +86,7 @@ export const ARCHETYPE_LIBRARY: ReadonlyArray<Archetype> = [
   {
     id: "bridge-domain-kid",
     name: "The Bridge-Domain Kid",
-    tagline: "Both halves of you are the point.",
+    tagline: "You don't pick a lane — both lanes are yours.",
     color: "#3A4E66", // slate navy — sophisticated cross-domain blue
   },
   {
@@ -104,7 +104,7 @@ export const ARCHETYPE_LIBRARY: ReadonlyArray<Archetype> = [
   {
     id: "foreign-lane-native",
     name: "The Foreign-Lane Native",
-    tagline: "Cross-cultural is where you already live.",
+    tagline: "Cross-cultural is your default, not your stretch.",
     color: "#3F575F", // teal-navy — cool, in-between
   },
   {
