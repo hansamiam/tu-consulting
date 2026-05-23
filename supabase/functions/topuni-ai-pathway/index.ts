@@ -16,6 +16,7 @@ import {
 } from "../_shared/scholarshipFields.ts";
 import { CORS_HEADERS_EXTENDED as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
 import { respondError, respondJson } from "../_shared/http.ts";
+import { findHallucinations } from "../_shared/hallucination-guard.ts";
 import { createServiceClient, createUserClient } from "../_shared/clients.ts";
 
 const EMBEDDING_MODEL = "text-embedding-3-small";
@@ -885,6 +886,9 @@ ${EDITORIAL_RULES}`;
       // keyed by section id; persisted as { schema: 2, sections: {...} }.
       const { client, accumulated } = teeMagazineStreamForCache(stream);
       const scholarshipIdList = scholarshipRows.map((r: any) => r.scholarship_id).filter(Boolean);
+      const retrievedNames: string[] = scholarshipRows
+        .map((r: any) => (typeof r.scholarship_name === "string" ? r.scholarship_name : null))
+        .filter((n: string | null): n is string => !!n);
       (async () => {
         try {
           const sections = await accumulated;
@@ -900,6 +904,29 @@ ${EDITORIAL_RULES}`;
               prompt_version: PROMPT_VERSION,
               generated_at: new Date().toISOString(),
             } as never, { onConflict: "profile_hash,language,grade" });
+
+            // F11 anti-hallucination guard. Phase 1: log-only. Stringify
+            // the full sections payload (all text fields, including nested
+            // bullet text) and scan for bold-formatted scholarship-name-
+            // shaped phrases. Any candidate that doesn't fuzzy-match a
+            // retrieved scholarship name lands in brief_hallucinations.
+            // Once a week's worth of log data tunes the matcher, Phase 2
+            // flips to actual redaction by calling redactHallucinations()
+            // before the stream client sees the text.
+            const flags = findHallucinations(JSON.stringify(sections), retrievedNames);
+            if (flags.length > 0) {
+              await supabase.from("brief_hallucinations").insert(
+                flags.map((f) => ({
+                  source_function: "topuni-ai-pathway:premium",
+                  flagged_text: f.flagged_text,
+                  retrieved_scholarship_ids: scholarshipIdList,
+                  was_redacted: false,
+                  best_fuzzy_match_score: f.best_fuzzy_match_score,
+                  best_fuzzy_match_against_name: f.best_fuzzy_match_against_name,
+                  profile_hash: briefProfileHash,
+                })) as never,
+              );
+            }
           }
         } catch (e) {
           console.warn("[brief-cache] persist failed", (e as Error).message);
@@ -974,6 +1001,9 @@ ${grade === "premium" ? premiumSections : basicSections}`;
     }
     const { client: basicClient, accumulated: basicAccum } = teeStreamForCache(response.body);
     const basicScholarshipIds = scholarshipRows.map((r: any) => r.scholarship_id).filter(Boolean);
+    const basicRetrievedNames: string[] = scholarshipRows
+      .map((r: any) => (typeof r.scholarship_name === "string" ? r.scholarship_name : null))
+      .filter((n: string | null): n is string => !!n);
     (async () => {
       try {
         const raw = await basicAccum;
@@ -989,6 +1019,23 @@ ${grade === "premium" ? premiumSections : basicSections}`;
             prompt_version: PROMPT_VERSION,
             generated_at: new Date().toISOString(),
           }, { onConflict: "profile_hash,language,grade" });
+
+          // F11 anti-hallucination guard, basic tier path. Same log-only
+          // semantics as the premium block above.
+          const flags = findHallucinations(content, basicRetrievedNames);
+          if (flags.length > 0) {
+            await supabase.from("brief_hallucinations").insert(
+              flags.map((f) => ({
+                source_function: "topuni-ai-pathway:basic",
+                flagged_text: f.flagged_text,
+                retrieved_scholarship_ids: basicScholarshipIds,
+                was_redacted: false,
+                best_fuzzy_match_score: f.best_fuzzy_match_score,
+                best_fuzzy_match_against_name: f.best_fuzzy_match_against_name,
+                profile_hash: briefProfileHash,
+              })) as never,
+            );
+          }
         }
       } catch (e) {
         console.warn("[brief-cache] basic persist failed", (e as Error).message);
