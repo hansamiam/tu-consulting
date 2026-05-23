@@ -214,10 +214,10 @@ LIVE DB CONTEXT (matched scholarships + universities — real options only):
 ${ctx.dbContext}
 
 THE 16-ARCHETYPE LIBRARY (you may pick any id):
-- bridge-domain-kid     The Bridge-Domain Kid     — "You don't pick a lane — both lanes are yours."
+- bridge-domain-kid     The Bridge-Domain Kid     — "Both halves of you are the point."
 - quiet-builder         The Quiet Builder         — "You've built it. You haven't claimed it yet."
 - late-bloomer          The Late Bloomer          — "Most of your run hasn't happened yet."
-- foreign-lane-native   The Foreign-Lane Native   — "Cross-cultural is your default, not your stretch."
+- foreign-lane-native   The Foreign-Lane Native   — "Cross-cultural is where you already live."
 - quiet-athlete         The Quiet Athlete         — "Discipline you don't talk about is still discipline."
 - competition-kid       The Competition Kid       — "You've been measured. You held up."
 - community-anchor      The Community Anchor      — "You're the one who shows up. That's information."

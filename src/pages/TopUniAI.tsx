@@ -455,7 +455,15 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
     //
     // Footer stays hidden during intake — keeps the page reading as a
     // focused product surface, not a website page with a footer.
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    //
+    // Q2=C cream background (2026-05-23 polish): the wizard now sits
+    // on a soft cream off-white instead of the default neutral
+    // `--background`. Aligns with the brief's Wrapped-Bold tinted
+    // surfaces and the editorial design system Samuel locked. The
+    // bg-card insets (input fields, dropdowns) still render as the
+    // standard card color so they read as clean foreground against
+    // the cream. Inline style so it doesn't bleed into other pages.
+    <div className="min-h-screen relative overflow-hidden" style={{ background: "hsl(38 35% 97%)" }}>
       <TopUniAIEntrance language="en" />
       <div className="relative z-10">
         <Navigation language="en" />

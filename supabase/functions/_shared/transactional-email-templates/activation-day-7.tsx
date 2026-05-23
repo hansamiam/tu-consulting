@@ -25,7 +25,7 @@ const COPY = {
     leadZero: "A week in. You haven't saved anything yet — totally fine, it just means we don't have a plan to react to. The fastest way out of \"thinking about it\" is to save 3 scholarships and let Pipeline do the deadline-tracking for you.",
     leadOne: "A week in. One scholarship saved. The students who actually convert tend to have 5–8 in active rotation — gives the pipeline real signal and means you're not pinning everything on a single decision.",
     leadMany: (count: number, urgent: number) =>
-      `A week in. ${count} scholarships saved${urgent > 0 ? `, ${urgent} with deadlines in the next 30 days` : ''}. Now the work is iterating on essays + tracking status — the membership is built for exactly this stretch.`,
+      `A week in. ${count} scholarships saved${urgent > 0 ? `, ${urgent} with deadlines in the next 30 days` : ''}. Now the work is iterating on essays + tracking status — the membership is built for exactly this phase.`,
     nextStepKicker: 'Most-leveraged next step',
     nextStepZero: 'Open Discover and save 3',
     nextStepFew: 'Add 2-3 more to Pipeline',

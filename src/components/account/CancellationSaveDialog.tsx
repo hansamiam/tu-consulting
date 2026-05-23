@@ -238,7 +238,7 @@ export const CancellationSaveDialog = ({ open, onOpenChange, onContinue, languag
                     ? t("1 day away", "через 1 день")
                     : `${nextDeadline.d} ${t("days away", "дн. впереди")}`}
                   {" · "}
-                  {t("Cancelling now means losing your Pro retrieval right before you need it.", "Отмена сейчас — потерять Pro как раз когда он нужен.")}
+                  {t("Cancelling now means losing your deadline workspace right before you need it.", "Отмена сейчас — потерять рабочее пространство с дедлайнами как раз когда оно нужно.")}
                 </p>
               </div>
             )}
