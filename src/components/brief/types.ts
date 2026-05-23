@@ -210,6 +210,20 @@ export interface ArchetypePayload {
   reason?: string;
 }
 
+/** v7 Phase 2: the archetype-card payload streamed before any
+ *  section event. Server populates name/tagline/color from the
+ *  closed library lookup; the renderer never invents these or
+ *  ships the library. Confidence is informational — when < 60
+ *  the render can lean lighter on the identity claim. */
+export interface ArchetypePayload {
+  id: string;
+  name: string;
+  tagline: string;
+  color: string;
+  confidence?: number;
+  reason?: string;
+}
+
 export type AnySectionPayload =
   | ArchetypePayload
   | WhereYouStandPayload
