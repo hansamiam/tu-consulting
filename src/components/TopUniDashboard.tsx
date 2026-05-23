@@ -3780,7 +3780,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                           <span className="text-muted-foreground/30">·</span>
                           <span>
                             {reportGrade === "premium"
-                              ? <span className="inline-flex items-center gap-1 font-semibold text-gold-dark"><Crown className="w-2.5 h-2.5" /> {t("Pro tier", "Pro-уровень")}</span>
+                              ? <span className="inline-flex items-center gap-1 font-semibold text-gold-dark"><Crown className="w-2.5 h-2.5" /> {t("Member tier", "Уровень Membership")}</span>
                               : <span>{t("Standard tier", "Базовый уровень")}</span>}
                           </span>
                         </div>
@@ -4194,21 +4194,18 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                       // soft Pro upgrade card. PremiumGate fires gate_seen
                       // + gate_upgrade_clicked into the analytics_events
                       // table for funnel telemetry.
-                      <PremiumGate
-                        gateId="counselor-free-limit"
-                        headline={t(
-                          `You've sent ${COUNSELOR_FREE_MESSAGE_LIMIT} free counselor messages — unlock unlimited with Pro`,
-                          `Вы отправили ${COUNSELOR_FREE_MESSAGE_LIMIT} бесплатных сообщений — Pro даёт безлимит`,
+                      // 2026-05-23 stage-2: counselor chat dropped from
+                      // the Membership pitch (per "ChatGPT eats this
+                      // lunch" decision). Show a simple deactivated
+                      // notice instead of upselling. The route still
+                      // works for users who hit it directly; just don't
+                      // pitch it as a perk.
+                      <div className="h-32 rounded-xl border border-border bg-background flex items-center justify-center text-sm text-muted-foreground">
+                        {t(
+                          `You've reached the ${COUNSELOR_FREE_MESSAGE_LIMIT}-message limit.`,
+                          `Вы достигли лимита ${COUNSELOR_FREE_MESSAGE_LIMIT} сообщений.`,
                         )}
-                        subline={t(
-                          "Pro lets you keep iterating with the counselor on essay drafts, deadline plans, country pivots — no limit.",
-                          "Pro даёт безлимит общения с советником: эссе, дедлайны, смена стран — без ограничений.",
-                        )}
-                      >
-                        <div className="h-32 rounded-xl border border-border bg-background opacity-50 flex items-center justify-center text-sm text-muted-foreground">
-                          {t("Continue the conversation with Pro", "Продолжите общение с Pro")}
-                        </div>
-                      </PremiumGate>
+                      </div>
                     ) : (
                       <>
                         <form

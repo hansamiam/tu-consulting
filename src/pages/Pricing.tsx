@@ -47,11 +47,16 @@ const COPY = {
     /** Membership inclusions — short, scannable, no individual
      *  price tags. The whole point is to NOT play stacked-value
      *  arithmetic. */
+    /* 2026-05-23 polish: rewrote the includes list to match the
+       locked Membership bundle from the stage-2 spec. The brief +
+       Discover database STAY FREE (traffic acquisition surface) —
+       Membership unlocks the three gates: unlimited saves, per-
+       scholarship insights, workspace tools. Plus Academy. */
     includes: [
-      { title: "Personalised strategy report",          body: "Built by AI from your profile + reviewed against the team's frameworks." },
-      { title: "Full Discover scholarship database",     body: "Verified programs, ranked against your profile, with strategy notes the rest of the internet doesn't have." },
-      { title: "Workspace + essay critique",             body: "Save scholarships, draft essays, get reader-perspective AI feedback. Deadlines emailed before each one." },
-      { title: "Live monthly workshops with founders",   body: "Yale · Cambridge & Tsinghua · Harvard alumni run live sessions every month — essay clinics, scholarship strategy, country deep-dives." },
+      { title: "Unlimited Discover saves",               body: "Save every scholarship that matches your profile — not just the first five." },
+      { title: "Per-scholarship insights",               body: "\"Why this fits you\" + \"How to win this one\" pointers on every saved row. Specific, not generic." },
+      { title: "Workspace — kanban + deadlines",         body: "Track your applications. Calendar view of every deadline, synced to Google / Apple Calendar." },
+      { title: "Live monthly workshops",                 body: "Yale · Cambridge & Tsinghua · Harvard alumni run live sessions every month — essay clinics, scholarship strategy, country deep-dives." },
       { title: "Recordings library, kept forever",       body: "Miss one? Catch up. The library compounds with every cohort." },
       { title: "Direct line to the team",                body: "Submit questions, vote on what the next workshop covers, get product input rights." },
     ],
@@ -94,9 +99,9 @@ const COPY = {
     tier: "Членство TopUni",
     tierTagline: "Всё необходимое чтобы спланировать, подать и выиграть.",
     includes: [
-      { title: "Персональная стратегия",                  body: "AI составляет на основе вашего профиля + проверена под фреймворки команды выпускников." },
-      { title: "Полная база Discover",                    body: "Проверенные программы, ранжированные под ваш профиль, со стратегическими заметками которых нет в открытом интернете." },
-      { title: "Рабочая зона + AI-критика эссе",          body: "Сохраняйте стипендии, пишите эссе, получайте обратную связь читателя. Дедлайны на почту заранее." },
+      { title: "Без лимита сохранений в Discover",        body: "Сохраняйте любую стипендию из подбора — не только первые пять." },
+      { title: "Инсайты по каждой стипендии",             body: "«Почему подходит именно тебе» + «Как выиграть эту» — конкретные указания, не общие фразы." },
+      { title: "Рабочая зона — канбан + дедлайны",        body: "Отслеживайте заявки. Календарь дедлайнов, синхронизированный с Google / Apple Calendar." },
       { title: "Воркшопы с основателями вживую",          body: "Выпускники Yale, Cambridge & Tsinghua, Harvard ведут сессии каждый месяц — эссе-клиники, стратегия, страновые разборы." },
       { title: "Библиотека записей навсегда",             body: "Пропустили? Догоните в своём ритме. Библиотека пополняется каждый месяц." },
       { title: "Прямая линия с командой",                 body: "Задавайте вопросы, голосуйте за темы воркшопов, влияйте на продукт." },
@@ -153,19 +158,12 @@ const Pricing = ({ language = "en" }: PricingProps) => {
 
   useEffect(() => {
     const prev = document.title;
-    // Title reflects whether the full pricing page is gated. While
-    // SHOW_FULL_PRICING=false renders the Coming Soon stub, surfacing
-    // "TopUni Pro · pricing" in the tab is misleading. Once the flag
-    // flips the full membership title returns. Keep the two branches
-    // co-located so they stay in lockstep with the page state below.
-    const isComingSoon = true; // mirrors SHOW_FULL_PRICING=false below
-    document.title = isComingSoon
-      ? (language === "ru"
-          ? "Подписка скоро — TopUni"
-          : "Membership coming soon — TopUni")
-      : (language === "ru"
-          ? "Цены — TopUni Pro · Стратегия поступления и стипендий"
-          : "Pricing — TopUni Pro · Admissions + scholarship strategy");
+    // 2026-05-23: SHOW_FULL_PRICING flipped to true (see below) —
+    // the Membership page is live. Title now reflects the real
+    // Membership offer; the legacy Coming Soon branch is removed.
+    document.title = language === "ru"
+      ? "Цены — TopUni Membership · Стратегия поступления и стипендий"
+      : "Pricing — TopUni Membership · Admissions + scholarship strategy";
     supabase.from("founding_member_counter")
       .select("claimed_count, cap")
       .eq("id", 1)
@@ -222,14 +220,11 @@ const Pricing = ({ language = "en" }: PricingProps) => {
     : foundingLeft === 0 ? t.cta.soldOut
     : t.cta.claim;
 
-  // Pricing page placeheld behind a Coming Soon screen per founder
-  // direction — the full membership offer (tiers, included items,
-  // founding-cohort scarcity) isn't internally locked in yet, and
-  // shipping a half-baked page undermines the rest of the product.
-  // The full implementation below is intentionally kept intact so we
-  // can flip this flag back to true once pricing is finalised — no
-  // re-build, just a one-line change.
-  const SHOW_FULL_PRICING = false;
+  // 2026-05-23 stage-2 flip: Membership offer locked (single
+  // tier, founding-cohort scarcity, 6 perks aligned with the 3
+  // gates + Academy). Full pricing live. Coming-soon branch
+  // below kept dormant for fast rollback if needed.
+  const SHOW_FULL_PRICING = true;
   if (!SHOW_FULL_PRICING) {
     const isRu = language === "ru";
     return (
