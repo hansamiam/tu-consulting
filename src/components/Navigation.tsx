@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Menu, Crown, User as UserIcon, Settings } from "lucide-react";
@@ -129,18 +129,22 @@ const Navigation = ({ language = "en", variant = "default", overlayThreshold = 8
     )}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
-          {/* Logo — gold in overlay mode for brand presence on the navy band */}
-          <button
-            onClick={() => navigate(basePath)}
+          {/* Logo — gold in overlay mode for brand presence on the navy band.
+              Real <Link> (not a styled button) so the user gets right-click
+              "open in new tab", middle-click, copy-link, and proper href
+              semantics for screen readers. */}
+          <Link
+            to={basePath}
+            aria-label="TopUni — home"
             className={cn(
-              "font-heading text-lg sm:text-xl font-bold tracking-tight transition-colors",
+              "font-heading text-lg sm:text-xl font-bold tracking-tight transition-colors rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50",
               isOverlay
                 ? "text-gold-light hover:text-gold"
                 : "text-primary hover:text-gold-dark"
             )}
           >
             TopUni
-          </button>
+          </Link>
 
           {/* Desktop nav */}
           <div className="hidden lg:flex items-center gap-1">
