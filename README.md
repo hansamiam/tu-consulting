@@ -85,7 +85,9 @@ Set on the Supabase project (Settings → Edge Functions → Secrets, or `supaba
 | `ANTHROPIC_API_KEY` | Anthropic direct | `AI_PROVIDER=anthropic` (vision/embeddings still need OpenAI) |
 | `AI_PROVIDER` | `lovable` (default) / `openai` / `anthropic` | always |
 | `STRIPE_SECRET_KEY` | Stripe billing | for Pricing / subscriptions |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature verification | when Stripe webhooks are wired to `verify-payment` |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature verification | required by `stripe-webhook` (subscription/dunning events) |
+| `RESEND_API_KEY` | Transactional email send | required by `process-email-queue` |
+| `PUBLIC_SITE_URL` | Used in transactional email links (defaults to `https://topuni.org`) | recommended whenever the prod URL differs |
 
 `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DB_URL` are auto-injected by Supabase — no manual setup.
 
@@ -126,7 +128,10 @@ If you change the project's URL or service-role key, re-apply the cron migration
    ```
    This embeds every scholarship missing a vector (~$0.20 of OpenAI cost for 200 rows).
 5. Confirm on `/admin/insights` → "Embeddings ready" should match the catalog count.
-6. Wire the Stripe webhook → `https://<project>.supabase.co/functions/v1/verify-payment`.
+6. Wire the Stripe webhook → `https://<project>.supabase.co/functions/v1/stripe-webhook`. Events to send:
+   `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`,
+   `invoice.payment_failed`, `invoice.payment_succeeded`. Copy the signing secret into
+   `STRIPE_WEBHOOK_SECRET` in Supabase function secrets.
 
 ## Routes
 

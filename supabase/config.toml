@@ -186,3 +186,17 @@ verify_jwt = false
 
 [functions.lifecycle-emails-cron]
 verify_jwt = false
+
+# Self-gates via Bearer JWT inside the function. Verify_jwt could be
+# true here — the function is only ever called by authed members — but
+# we keep parity with the rest of the codebase's "function owns auth"
+# pattern so we never get bitten by gateway-401-before-code-runs again.
+[functions.academy-resource-url]
+verify_jwt = false
+
+# Stripe webhook — auth is the Stripe-Signature HMAC header, verified
+# in-body via stripe.webhooks.constructEventAsync. verify_jwt MUST be
+# false: Stripe doesn't send a Supabase JWT, and the gateway-level
+# auth would reject every webhook before constructEvent ran.
+[functions.stripe-webhook]
+verify_jwt = false
