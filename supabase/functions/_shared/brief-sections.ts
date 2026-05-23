@@ -128,6 +128,12 @@ export interface BriefContext {
    *  request-time so no extra DB query is needed in the section
    *  builder. */
   fallbackCountries?: string[];
+  /** Sparse-input pass (2026-05-23): true when the student's Step 3
+   *  free-text fields are all very short or empty. Cards 01, 03, 05
+   *  use this to switch into sparse-aware prompt branches that lean
+   *  on grade / GPA / scores / nationality / foreign languages
+   *  instead of inventing activities. Pre-computed in the pathway. */
+  isSparseProfile?: boolean;
 }
 
 export interface ValidatorResult {
@@ -155,6 +161,8 @@ export interface SectionSpec {
 
 import { EDITORIAL_RULES, scanBannedVocab } from "./editorial-rules.ts";
 import { extractLlmJson } from "./llm-json.ts";
+import { firstAbroadFramingFor, FRAMING_MARKERS } from "./cultural-context.ts";
+import { normalizeNationality } from "./nationality-normalize.ts";
 
 const SHARED_JSON_RULES = `
 ${EDITORIAL_RULES}
@@ -208,6 +216,14 @@ const profileBlock = (ctx: BriefContext): string => {
   if (pf(p.topActivity, "")) lines.push(`- Top activity / achievement: ${p.topActivity}`);
   if (pf(p.personalStory, "")) lines.push(`- Personal story (their own words): ${p.personalStory}`);
   if (pf(p.namedSchools, "")) lines.push(`- Specific schools on their list: ${p.namedSchools}`);
+  if (p.foreignLanguages && p.foreignLanguages.length > 0) {
+    // Above-baseline by form-level pre-filter (chip set excludes English
+    // + CIS native). Brief celebrates these as distinctive signals.
+    lines.push(`- Foreign languages (distinctive — picked from chip set that excludes baseline): ${p.foreignLanguages.join(", ")}`);
+  }
+  if (p.firstToApplyAbroad) {
+    lines.push(`- First in family to apply abroad: ${p.firstToApplyAbroad} (apply cultural-context framing per sparseAndFramingNote / editorial-rules)`);
+  }
   if (ctx.personalityAxis && ctx.personalityAxis !== "unknown") {
     lines.push(`- Personality lean (extracted, best-effort): ${ctx.personalityAxis}`);
   }
@@ -314,6 +330,81 @@ const semanticCheck = (
   return { ok: true };
 };
 
+/* 2026-05-23 sparse-input pass: shared prompt block injected into
+ * Cards 01, 03, 05 that:
+ *  1. Warns the LLM when the profile is sparse (Step 3 mostly empty)
+ *     and tells it which fields ARE present to anchor to — instead of
+ *     inventing biographical specifics or defaulting to "your profile
+ *     is interesting" generic prose.
+ *  2. Tells the LLM how to frame first-in-family-abroad signals when
+ *     profile.firstToApplyAbroad === "yes" — uses
+ *     cultural-context.firstAbroadFramingFor() to pick the right
+ *     tone (CIS = "leaving home", US/LatAm = "first-gen college",
+ *     unmapped = generic "first step"). Per the editorial rule.
+ *  3. Mentions foreign languages (above baseline by form-level pre-
+ *     filter) so the brief celebrates them where natural.
+ *
+ * Empty string when nothing to add — keeps existing prompts unchanged
+ * for non-sparse / non-first-abroad cases. */
+const sparseAndFramingNote = (ctx: BriefContext): string => {
+  const parts: string[] = [];
+
+  if (ctx.isSparseProfile) {
+    const p = ctx.profile;
+    const present: string[] = [];
+    if (p.gradeLevel) present.push(`grade level (${p.gradeLevel})`);
+    if (p.gpa) present.push(`GPA (${p.gpa})`);
+    if (p.ielts) present.push(`IELTS (${p.ielts})`);
+    if (p.sat) present.push(`SAT (${p.sat})`);
+    if (p.nationality) present.push(`nationality (${p.nationality})`);
+    if (p.major) present.push(`intended major (${p.major})`);
+    if (p.foreignLanguages && p.foreignLanguages.length > 0) {
+      present.push(`foreign languages learned (${p.foreignLanguages.join(", ")})`);
+    }
+    parts.push(`
+SPARSE-PROFILE BRANCH (the student gave very short / empty Step 3
+answers — careerGoal, extracurriculars, background, namedSchools are
+all blank or one-line):
+- DO NOT invent biographical specifics, activities, or moments. The
+  brief cannot know what isn't in the intake.
+- ANCHOR to the fields that ARE present: ${present.join(", ") || "[bare minimum: grade level + GPA only]"}.
+- Lead with structural truths about this cohort + this profile shape,
+  not invented personal narrative. ("Students at your grade in {country}
+  applying to {major} typically...")
+- The specific-anchor rule still applies — every section MUST name at
+  least one present field by value. With sparse input, that anchor is
+  necessarily one of the structural fields above.
+- Closer can be a soft invite to come back with more detail: "When you
+  have a feel for [X], come back and we'll sharpen this."
+`);
+  }
+
+  if (ctx.profile.firstToApplyAbroad === "yes") {
+    const framing = firstAbroadFramingFor(normalizeNationality(ctx.profile.nationality));
+    const markerLang = ctx.lang.toLowerCase().startsWith("rus") ? "ru" : "en";
+    const markers = FRAMING_MARKERS[framing][markerLang];
+    parts.push(`
+FIRST-ABROAD FRAMING (profile.firstToApplyAbroad === "yes"):
+- This student is the first in their family to apply abroad.
+- Cultural-context framing for nationality "${ctx.profile.nationality ?? "unknown"}" = "${framing}".
+- Use one of these marker phrases (or close paraphrases) in Card 01 or
+  Card 03 to honor the framing — these are the locked-in language
+  patterns for this cohort: ${markers.map((m) => `"${m}"`).join(" / ")}.
+- For "first_to_leave_home" (CIS / MENA): DO NOT use "first-generation
+  college" framing — school completion is high in these regions and
+  parents often graduated university. Use "leaving home / first to step
+  out / first to go abroad" angles instead.
+- For "first_gen_college" (US / LatAm / parts of SE Asia / Africa):
+  standard first-generation framing is correct and lands.
+- For "first_global_step" (unmapped nationality): generic "first to take
+  this step" framing; no claims about family education history.
+`);
+  }
+
+  if (parts.length === 0) return "";
+  return `\n${parts.join("\n")}\n`;
+};
+
 /* ─── Section specs (journey order) ──────────────────────────────────── */
 
 /* 01 — WHO YOU ARE (renderer-wire ID: whereYouStand) */
@@ -330,7 +421,7 @@ const whereYouStand: SectionSpec = {
 You are writing CARD 01 of a 5-card admissions strategy brief in the
 v7 spec. This card is called WHO YOU ARE. Its job: make ${ctx.audienceLine}
 feel SEEN. Name them in a way they hadn't articulated themselves.
-
+${sparseAndFramingNote(ctx)}
 STUDENT PROFILE:
 ${profileBlock(ctx)}
 
@@ -613,7 +704,7 @@ moment happened.
 v7 Phase 3 (#13 part 2) reshape: produce ONE essay seed (not three
 angles). The renderer's fallback path still accepts the v6 entries[]
 shape from old cached briefs; new generations are pure v7.
-
+${sparseAndFramingNote(ctx)}
 STUDENT PROFILE:
 ${profileBlock(ctx)}
 
@@ -832,7 +923,7 @@ LOCALLY-EXECUTABLE rule:
 - Do NOT prescribe actions that require US-only infrastructure (SAT
   testing centers, Common App accounts, AP testing centers) unless
   the intake clearly indicates the student has access.
-
+${sparseAndFramingNote(ctx)}
 STUDENT PROFILE:
 ${profileBlock(ctx)}
 
