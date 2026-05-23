@@ -47,6 +47,12 @@ import {
   firstAbroadLabel,
   type FirstAbroadOption,
 } from "@/lib/language-chips";
+import {
+  EC_BROAD_CHIPS,
+  EC_ELITE_EXPANDABLE,
+  ecChipLabel,
+  composeExtracurriculars,
+} from "@/lib/ec-chips";
 import { useNavigate } from "react-router-dom";
 import { saveProfile } from "@/components/discover/DiscoverProfileGate";
 import { projectToDiscoverProfile } from "@/lib/topuniIntakeProjection";
@@ -136,6 +142,9 @@ interface WizardDraft {
    *  cultural-context.firstAbroadFramingFor() in the brief generator —
    *  CIS = "leaving home" angle, US/LatAm = "first-gen college" angle. */
   firstToApplyAbroad?: "yes" | "siblings_have" | "parents_have" | "unsure";
+  /** Sparse-input pass (2026-05-23). Step 3 broad-first EC chip
+   *  selections. Prepended to extracurriculars textarea on Generate. */
+  selectedECTags?: string[];
   /** Wall-clock ms — drafts older than 14 days are dropped on read. */
   ts?: number;
 }
@@ -296,6 +305,20 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
   const [firstToApplyAbroad, setFirstToApplyAbroad] = useState<
     FirstAbroadOption["token"] | undefined
   >(draft?.firstToApplyAbroad);
+  // 2026-05-23 sparse-input pass: Step 3 EC chips. Broad-first defaults
+  // visible; elite-coded (Olympiads, Debate, etc.) hidden behind a
+  // "+ More activities…" expand. Selected tokens are PREPENDED to the
+  // extracurriculars textarea on Generate via composeExtracurriculars()
+  // — backend reads the combined string as a single field.
+  const [selectedECTags, setSelectedECTags] = useState<string[]>(
+    Array.isArray(draft?.selectedECTags) ? draft!.selectedECTags! : [],
+  );
+  const [showMoreECChips, setShowMoreECChips] = useState(false);
+  const toggleECTag = (token: string) => {
+    setSelectedECTags((prev) =>
+      prev.includes(token) ? prev.filter((t) => t !== token) : [...prev, token],
+    );
+  };
   // countrySearch state retired with the target-countries section.
   // ALL_COUNTRIES still imported for the nationality typeahead.
   const [major, setMajor] = useState(draft?.major ?? "");
@@ -448,6 +471,8 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
         // Sparse-input pass — Step 1 chip fields.
         foreignLanguages: foreignLanguages.length > 0 ? foreignLanguages : undefined,
         firstToApplyAbroad,
+        // Sparse-input pass — Step 3 EC chip selections.
+        selectedECTags: selectedECTags.length > 0 ? selectedECTags : undefined,
         ts: Date.now(),
       };
       localStorage.setItem(WIZARD_DRAFT_KEY, JSON.stringify(draftPayload));
@@ -459,7 +484,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
     targetCountries, major, budget, scholarshipNeeded, timeline,
     prestige, scholarship, careerRoi, visaAccess, locationPref,
     careerGoal, extracurriculars, background, namedSchools,
-    foreignLanguages, firstToApplyAbroad,
+    foreignLanguages, firstToApplyAbroad, selectedECTags,
   ]);
 
   /* Once the user transitions to the dashboard the wizard answers are
@@ -1260,11 +1285,77 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           className="min-h-[70px] resize-none bg-card"
                         />
                       </div>
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         <Label htmlFor="extracurriculars" className="text-xs uppercase tracking-wider font-medium">{t("What have you actually been doing outside class?", "Чем ты реально занимаешься помимо учёбы?")}</Label>
+                        {/* 2026-05-23 sparse-input pass: broad-first EC chip
+                            row. Leads with culturally inclusive options
+                            (Tutoring, Part-time job, Family responsibilities,
+                            Creating online, Self-taught skill). Elite-coded
+                            chips (Olympiads, Debate, Research, etc.) live
+                            behind "+ More activities…" so they're reachable
+                            but don't telegraph the Crimson Education default.
+                            On Generate the selected tokens are prepended to
+                            this textarea as `tags: ...` so the backend reads
+                            them as a single extracurriculars field. */}
+                        <div className="space-y-1.5">
+                          <p className="text-muted-foreground text-xs">{t("Quick picks — tap any that apply.", "Быстрый выбор — отметь подходящее.")}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {EC_BROAD_CHIPS.map((c) => {
+                              const selected = selectedECTags.includes(c.token);
+                              return (
+                                <button
+                                  key={c.token}
+                                  type="button"
+                                  onClick={() => toggleECTag(c.token)}
+                                  aria-pressed={selected}
+                                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[34px] ${
+                                    selected
+                                      ? "bg-gold-dark text-cream border-gold-dark"
+                                      : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
+                                  }`}
+                                >
+                                  {selected && <Check className="w-3 h-3" />}
+                                  {ecChipLabel(c.token, language === "ru" ? "ru" : "en")}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {!showMoreECChips && (
+                            <button
+                              type="button"
+                              onClick={() => setShowMoreECChips(true)}
+                              className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline mt-1"
+                            >
+                              + {t("More activities…", "Ещё активности…")}
+                            </button>
+                          )}
+                          {showMoreECChips && (
+                            <div className="flex flex-wrap gap-2 pt-1">
+                              {EC_ELITE_EXPANDABLE.map((c) => {
+                                const selected = selectedECTags.includes(c.token);
+                                return (
+                                  <button
+                                    key={c.token}
+                                    type="button"
+                                    onClick={() => toggleECTag(c.token)}
+                                    aria-pressed={selected}
+                                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[34px] ${
+                                      selected
+                                        ? "bg-gold-dark text-cream border-gold-dark"
+                                        : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
+                                    }`}
+                                  >
+                                    {selected && <Check className="w-3 h-3" />}
+                                    {ecChipLabel(c.token, language === "ru" ? "ru" : "en")}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                         <Textarea
                           id="extracurriculars"
-                          placeholder={t("e.g. founded a community library, IMO bronze, 200 hrs neuroscience research", "напр. основал библиотеку, бронза IMO, 200 часов нейронауки")}
+                          placeholder={t("e.g. tutored my cousins for 2 years, ran a small reselling IG, IMO bronze, photography", "напр. репетировал сестру 2 года, веду IG-магазин, бронза IMO, фотография")}
                           value={extracurriculars}
                           onChange={(e) => setExtracurriculars(e.target.value)}
                           className="min-h-[90px] resize-none bg-card"
@@ -1303,7 +1394,14 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                             fullName, email, nationality, gradeLevel,
                             gpa, gpaScale, ielts, toefl, sat, major, budget,
                             targetCountries,
-                            careerGoal, extracurriculars, background, namedSchools,
+                            careerGoal,
+                            // 2026-05-23: chip tag-line prepended to free
+                            // text so backend reads a single combined
+                            // extracurriculars field. Tags-only path also
+                            // covered (sparse fillers picking chips with
+                            // empty textarea still feed the brief).
+                            extracurriculars: composeExtracurriculars(selectedECTags, extracurriculars) || undefined,
+                            background, namedSchools,
                             foreignLanguages: foreignLanguages.length > 0 ? foreignLanguages : undefined,
                             firstToApplyAbroad,
                           }));
