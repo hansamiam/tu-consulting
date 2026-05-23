@@ -257,54 +257,47 @@ function paginatedUrls(hubUrl: string, maxPages: number): string[] {
   return out;
 }
 
-async function scanHub(
+// Per-page LLM URL extraction. Pre-refactor scanHub() concatenated up
+// to maxPages of markdown into a single 60k-char-truncated blob and ran
+// ONE LLM call per hub. With WordPress hubs running ~12k chars/page,
+// only the first ~5 pages survived truncation — pages 6-10 were
+// invisible to the LLM. That's why earlier session probes capped at
+// ~10-17 articles per full run regardless of how deep we paginated.
+//
+// New design: per-page LLM extraction. Each page is its own LLM call
+// at ~12k input chars (well within flash-tier comfort). Cross-page
+// dedup happens at scanHub level on the LLM-returned article URLs.
+//
+// Cost shift: ~5× more LLM calls per hub but each call uses far fewer
+// tokens, so total LLM spend stays around $0.02-0.04 per hub. Firecrawl
+// usage is unchanged (still one fetch per page).
+//
+// Failure-isolation win: a single bad page no longer corrupts the
+// other pages' extraction. We continue past parse errors with a warn.
+async function extractArticleUrlsFromPageMarkdown(
   hub: T3Hub,
-  maxPages: number,
+  pageUrl: string,
+  pageMarkdown: string,
   minConfidence: number,
-): Promise<{ articles: DiscoveredArticleUrl[]; pagesWalked: number; firecrawlCalls: number; llmCalls: number }> {
-  const pageUrls = paginatedUrls(hub.url, maxPages);
-  let combinedMarkdown = "";
-  let pagesWalked = 0;
-  let firecrawlCalls = 0;
-
-  for (const url of pageUrls) {
-    try {
-      const result = await firecrawlScrape({ url, onlyMainContent: false });
-      firecrawlCalls++;
-      const md = result.markdown ?? "";
-      if (pagesWalked === 0 && !md.trim()) break;
-      if (pagesWalked > 0 && md.trim().length < SHORT_PAGE_THRESHOLD) break;
-      combinedMarkdown += (pagesWalked > 0 ? "\n\n=== PAGE BREAK ===\n\n" : "") + md;
-      pagesWalked++;
-    } catch (e) {
-      console.warn(`[F13][hub:${hub.name}] firecrawl error on ${url}: ${(e as Error).message}`);
-      if (pagesWalked === 0) break;
-      break;
-    }
-  }
-
-  if (!combinedMarkdown.trim()) return { articles: [], pagesWalked, firecrawlCalls, llmCalls: 0 };
-
-  const truncated = combinedMarkdown.slice(0, MAX_MARKDOWN_CHARS_HUB);
-  let articles: DiscoveredArticleUrl[] = [];
+): Promise<DiscoveredArticleUrl[]> {
   try {
     const resp = await chatCompletions({
       tier: "flash",
       messages: [
         { role: "system", content: HUB_SCAN_SYSTEM_PROMPT },
-        { role: "user", content: `Hub URL: ${hub.url}\n\nPage markdown follows. Extract individual scholarship program article URLs:\n\n${truncated}` },
+        { role: "user", content: `Hub URL: ${hub.url}\nPage URL: ${pageUrl}\n\nPage markdown follows. Extract individual scholarship program article URLs from THIS page only:\n\n${pageMarkdown}` },
       ],
     });
     if (!resp.ok) {
-      console.warn(`[F13][hub:${hub.name}] LLM HTTP ${resp.status}`);
-      return { articles: [], pagesWalked, firecrawlCalls, llmCalls: 1 };
+      console.warn(`[F13][hub:${hub.name}][page] LLM HTTP ${resp.status} on ${pageUrl}`);
+      return [];
     }
     const data = await resp.json();
     const text = data?.choices?.[0]?.message?.content as string | undefined;
-    if (!text) return { articles: [], pagesWalked, firecrawlCalls, llmCalls: 1 };
+    if (!text) return [];
     const parsed = extractLlmJson(text) as { scholarships?: Array<{ name?: string; url?: string; hint?: string; confidence?: number }> };
     const raw = Array.isArray(parsed.scholarships) ? parsed.scholarships : [];
-    articles = raw
+    return raw
       .filter((d) => d && typeof d.url === "string" && d.url.trim().length > 10)
       .filter((d) => typeof d.confidence === "number" && d.confidence! >= minConfidence)
       .filter((d) => isLikelyScholarshipUrl(d.url!, d.name))
@@ -317,10 +310,60 @@ async function scanHub(
         discovered_from_url: hub.url,
       }));
   } catch (e) {
-    console.warn(`[F13][hub:${hub.name}] LLM parse error: ${(e as Error).message}`);
-    return { articles: [], pagesWalked, firecrawlCalls, llmCalls: 1 };
+    console.warn(`[F13][hub:${hub.name}][page] LLM parse error on ${pageUrl}: ${(e as Error).message}`);
+    return [];
   }
-  return { articles, pagesWalked, firecrawlCalls, llmCalls: 1 };
+}
+
+async function scanHub(
+  hub: T3Hub,
+  maxPages: number,
+  minConfidence: number,
+): Promise<{ articles: DiscoveredArticleUrl[]; pagesWalked: number; firecrawlCalls: number; llmCalls: number }> {
+  const pageUrls = paginatedUrls(hub.url, maxPages);
+  const allArticles: DiscoveredArticleUrl[] = [];
+  const seenUrls = new Set<string>();
+  let pagesWalked = 0;
+  let firecrawlCalls = 0;
+  let llmCalls = 0;
+
+  for (const url of pageUrls) {
+    let markdown = "";
+    try {
+      const result = await firecrawlScrape({ url, onlyMainContent: false });
+      firecrawlCalls++;
+      markdown = result.markdown ?? "";
+    } catch (e) {
+      console.warn(`[F13][hub:${hub.name}] firecrawl error on ${url}: ${(e as Error).message}`);
+      // First-page fetch failure is fatal — without page 1 we have
+      // nothing to extract. Subsequent failures just stop pagination
+      // (signal we ran out of real pages).
+      if (pagesWalked === 0) break;
+      break;
+    }
+
+    if (pagesWalked === 0 && !markdown.trim()) break;
+    if (pagesWalked > 0 && markdown.trim().length < SHORT_PAGE_THRESHOLD) break;
+
+    pagesWalked++;
+    // Per-page extraction. Truncate just in case a single page is
+    // unusually large; the per-page cap is much smaller than the
+    // multi-page combined limit so we still avoid runaway token cost
+    // on edge cases.
+    const pageMarkdown = markdown.slice(0, MAX_MARKDOWN_CHARS_HUB);
+    const pageArticles = await extractArticleUrlsFromPageMarkdown(hub, url, pageMarkdown, minConfidence);
+    llmCalls++;
+
+    // Cross-page dedup at the URL key — the same scholarship can appear
+    // on multiple WordPress pages (e.g. via "featured" sidebar).
+    for (const a of pageArticles) {
+      if (seenUrls.has(a.url)) continue;
+      seenUrls.add(a.url);
+      allArticles.push(a);
+    }
+  }
+
+  return { articles: allArticles, pagesWalked, firecrawlCalls, llmCalls };
 }
 
 async function resolveCandidate(
