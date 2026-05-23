@@ -23,6 +23,7 @@ import { template as newMatchesDigest } from './new-matches-digest.tsx'
 import { template as activationDay1 } from './activation-day-1.tsx'
 import { template as activationDay7 } from './activation-day-7.tsx'
 import { template as inactiveWinback } from './inactive-winback.tsx'
+import { template as academyWaitlistConfirmation } from './academy-waitlist-confirmation.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'booking-confirmation': bookingConfirmation,
@@ -39,4 +40,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'activation-day-1': activationDay1,
   'activation-day-7': activationDay7,
   'inactive-winback': inactiveWinback,
+  'academy-waitlist-confirmation': academyWaitlistConfirmation,
 }
