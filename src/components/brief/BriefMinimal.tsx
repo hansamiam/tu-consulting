@@ -64,6 +64,7 @@ import {
   SHARE_CARD_WIDTH,
   SHARE_CARD_HEIGHT,
 } from "./ShareAsset";
+import { HandoffBridge } from "./HandoffBridge";
 
 interface CommonProps {
   studentName: string;
@@ -832,7 +833,22 @@ export const BriefDeck: React.FC<Props> = (props) => {
     cards.push({ id: "plan-skeleton", kicker: "Your Monday move", node: <SlideSkeleton number={5} kicker="Your Monday move" title="One move this week." /> });
   }
   if (anyLoaded && !streamError) {
-    cards.push({ id: "next", kicker: "What next", node: <NextStepsCard /> });
+    // v7 Phase 3 stage-2 (#20): if the brief generator emitted a
+    // handoff payload (archetype-personalized bridge with live
+    // matched scholarships), render HandoffBridge instead of the
+    // generic NextStepsCard. Falls back to NextStepsCard when no
+    // handoff is available — legacy schema-2 cached briefs, sparse
+    // intake without matched scholarships, or the pre-#20 pathway.
+    const handoff = sections.handoff;
+    if (handoff && (handoff.topMatches?.length ?? 0) > 0) {
+      cards.push({
+        id: "handoff",
+        kicker: "What's next",
+        node: <HandoffBridge payload={handoff} archetypeColor={archetypeColorForShare} />,
+      });
+    } else {
+      cards.push({ id: "next", kicker: "What next", node: <NextStepsCard /> });
+    }
   }
 
   return (
