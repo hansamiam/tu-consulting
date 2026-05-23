@@ -150,6 +150,68 @@ async function queueMembershipWelcomeEmail(
   }
 }
 
+// Phase B2 v2 — membership-perk model. After membership-welcome, look up
+// the cohort the new subscriber gets dropped into and fire cohort-welcome.
+// "The cohort" = the next-starting cohort whose window includes or is
+// within 60 days of now() and whose status is open/in_progress.
+//
+// Skips silently if there's no current/upcoming cohort (admin hasn't
+// created one yet, transition gap between cycles, etc.) — they'll get
+// the next cohort's welcome when one opens via a separate trigger we'll
+// wire as a later iteration.
+async function queueCohortWelcomeEmail(
+  admin: ReturnType<typeof createServiceClient>,
+  email: string,
+  subId: string,
+  firstName: string | null,
+) {
+  try {
+    // Casts through any until gen:types catches up with the cohorts
+    // schema (added in 20260524120000_cohorts_schema.sql, PR #63).
+    // deno-lint-ignore no-explicit-any
+    const db = admin as any;
+    const { data: cohort, error } = await db
+      .from("cohorts")
+      .select("cohort_id, name, slug, starts_at")
+      .in("status", ["open", "in_progress"])
+      .gte("ends_at", new Date().toISOString())
+      // 60-day lookahead so members joining ahead of a cycle still get
+      // welcomed into the next one; tweak if cycles grow longer-spaced.
+      .lte("starts_at", new Date(Date.now() + 60 * 24 * 3600 * 1000).toISOString())
+      .order("starts_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      console.warn("[stripe-webhook] cohort lookup failed (non-fatal)", error.message);
+      return;
+    }
+    if (!cohort) {
+      // No current/upcoming cohort — fine, skip the welcome.
+      return;
+    }
+    await admin.functions.invoke("send-transactional-email", {
+      body: {
+        recipientEmail: email,
+        templateName: "cohort-welcome",
+        // Idempotency keyed by (subscription, cohort) — a user keeping
+        // their sub across multiple cohorts will get a fresh welcome
+        // each time a new cohort opens (the cohort_id rotates).
+        idempotencyKey: `cohort-welcome-${subId}-${cohort.cohort_id}`,
+        templateData: {
+          cohortName: cohort.name,
+          startsAt: cohort.starts_at,
+          cohortSlug: cohort.slug,
+          siteUrl: SITE,
+          firstName: firstName ?? undefined,
+          language: "en",
+        },
+      },
+    });
+  } catch (e) {
+    console.warn("[stripe-webhook] cohort-welcome enqueue failed (non-fatal)", e);
+  }
+}
+
 async function queueCancellationEmail(
   admin: ReturnType<typeof createServiceClient>,
   email: string,
@@ -253,6 +315,24 @@ Deno.serve(async (req) => {
         const isActive = ["active", "trialing"].includes(sub.status);
         if (userEmail && tier && isActive) {
           await queueMembershipWelcomeEmail(admin, userEmail, sub.id, tier);
+          // Phase B2 v2 — cohort welcome rides on the membership welcome.
+          // Stripe customer name (if present) becomes firstName for the
+          // greeting; otherwise the email greets neutrally.
+          const customerId = typeof sub.customer === "string"
+            ? sub.customer
+            : sub.customer.id;
+          let firstName: string | null = null;
+          try {
+            const customer = await stripe.customers.retrieve(customerId);
+            if (customer && !(customer as Stripe.DeletedCustomer).deleted) {
+              const fullName = (customer as Stripe.Customer).name ?? null;
+              firstName = fullName ? fullName.split(" ")[0] : null;
+            }
+          } catch (_) {
+            // Customer fetch failure is non-fatal — fall through with
+            // null firstName and the email uses the neutral greeting.
+          }
+          await queueCohortWelcomeEmail(admin, userEmail, sub.id, firstName);
         }
         break;
       }
