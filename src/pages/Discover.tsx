@@ -62,6 +62,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
 import { track } from "@/lib/analytics";
 import { CuratedCollections } from "@/components/discover/CuratedCollections";
+import { HeroCard } from "@/components/discover/HeroCard";
 import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
 import { ExpandedScholarshipDialog } from "@/components/discover/ExpandedScholarshipDialog";
 // MatchScoreBreakdown import retired round 33 — the per-row hover
@@ -4058,14 +4059,59 @@ const Discover = ({ language = "en" }: Props) => {
                   past the fold and competed with the toolbar count. The
                   pill rail keeps the same intents but stays visually
                   light — text + count, no gradients, no heavy borders. */}
-              {!loading && ranked.length > 0 && (
-                <CuratedCollections
-                  rows={ranked}
-                  filters={filters as unknown as Record<string, unknown>}
-                  onApply={(patch) => setFilters(f => ({ ...f, ...patch as Partial<FilterState> }))}
-                  lang={language}
-                />
-              )}
+              {!loading && ranked.length > 0 && (() => {
+                // F4 "mechta mode" HeroCard — features the top-ranked
+                // scholarship above the existing curated pill rail. This
+                // initial wiring renders HeroCard in editorial fallback
+                // mode (no LLM hero_reason fetch yet — the match-
+                // scholarships?mode=hero call lives in F1 and the
+                // frontend fetch is a follow-up). profile_quality is
+                // derived heuristically from what we already have in
+                // local profile state; once the F1 fetch lands the
+                // backend's inferred quality will override.
+                const hero = ranked[0];
+                const heroScholarship = hero ? {
+                  scholarship_id: hero.scholarship_id,
+                  scholarship_name: hero.scholarship_name,
+                  provider_name: hero.provider_name ?? null,
+                  host_country: hero.host_country ?? null,
+                  coverage_type: hero.coverage_type ?? null,
+                  award_amount_text: hero.award_amount_text ?? null,
+                  application_deadline: hero.application_deadline ?? null,
+                  cover_image_url: hero.cover_image_url ?? null,
+                  official_url: hero.official_url ?? null,
+                } : null;
+                // Heuristic profile_quality — 0 signals = empty;
+                // 1-3 = sparse; 4+ = partial. "rich" only after F1
+                // wires in the LLM hero_reason path.
+                const sigs = [
+                  profile.country, profile.field,
+                  profile.degrees?.length ? "x" : "",
+                  profile.targetCountries?.length ? "x" : "",
+                  profile.gpa, profile.ielts || profile.toefl || profile.sat,
+                ].filter(Boolean).length;
+                const profileQuality: "rich" | "partial" | "sparse" | "empty" =
+                  sigs === 0 ? "empty" : sigs <= 3 ? "sparse" : "partial";
+                return (
+                  <>
+                    {heroScholarship && (
+                      <HeroCard
+                        scholarship={heroScholarship}
+                        heroReason={null}
+                        profileQuality={profileQuality}
+                        onExpand={() => setOpenDetail(hero)}
+                        lang={language}
+                      />
+                    )}
+                    <CuratedCollections
+                      rows={ranked}
+                      filters={filters as unknown as Record<string, unknown>}
+                      onApply={(patch) => setFilters(f => ({ ...f, ...patch as Partial<FilterState> }))}
+                      lang={language}
+                    />
+                  </>
+                );
+              })()}
 
               {/* Sticky toolbar — search · filters · sort · view-mode · hidden · compare.
                   Sticks below the global Nav (h-16 = 64px) so the filter row is always
