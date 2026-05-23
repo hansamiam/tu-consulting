@@ -48,6 +48,16 @@ export interface DiscoverProfile {
   extracurriculars?: string;
   background?: string;
   namedSchools?: string;
+  /** v7 brief-spec signal (2026-05-22). Gates the WHAT-YOU'RE-AVOIDING
+   *  branch of the brief — when "not_at_all" / "some_idea", the brief
+   *  surfaces the indecision itself as the load-bearing gap (named
+   *  warmly, not as a flaw). When "pretty_sure" / "certain", the brief
+   *  picks from a closed library of named gaps instead. Also gates the
+   *  Open Question + Tight Lane applicant-archetype detection in the
+   *  Phase 2 follow-up. Optional — defaults downstream to "some_idea"
+   *  (most-common case, fires the major-uncertainty branch which works
+   *  for the largest cohort). */
+  majorCertainty?: "not_at_all" | "some_idea" | "pretty_sure" | "certain";
 }
 
 const STORAGE_KEY = "topuni_discover_profile";
@@ -123,6 +133,11 @@ interface StudentProfileRow {
   field_of_study?: string | null;
   budget?: string | null;
   target_countries?: string[] | null;
+  /** v7 brief spec: 4-level major-certainty enum stored as text so the
+   *  DB doesn't pin us to a specific Postgres enum that's a pain to
+   *  migrate when the spec evolves. The application validates the
+   *  legal-values set in code. */
+  major_certainty?: string | null;
   updated_at?: string | null;
 }
 
@@ -145,6 +160,7 @@ const profileToDbColumns = (p: DiscoverProfile): StudentProfileRow => {
     field_of_study: p.fieldOfInterest || null,
     budget: p.budgetRange || null,
     target_countries: p.targetCountries && p.targetCountries.length > 0 ? p.targetCountries : null,
+    major_certainty: p.majorCertainty || null,
   };
 };
 
@@ -164,6 +180,12 @@ const dbColumnsToProfile = (row: StudentProfileRow): Partial<DiscoverProfile> =>
   if (row.major || row.field_of_study) out.fieldOfInterest = row.major || row.field_of_study || undefined;
   if (row.budget) out.budgetRange = row.budget;
   if (Array.isArray(row.target_countries) && row.target_countries.length > 0) out.targetCountries = row.target_countries;
+  if (row.major_certainty) {
+    const v = row.major_certainty as string;
+    if (v === "not_at_all" || v === "some_idea" || v === "pretty_sure" || v === "certain") {
+      out.majorCertainty = v;
+    }
+  }
   return out;
 };
 
@@ -197,7 +219,7 @@ export async function pullProfileFromDb(userId: string): Promise<DiscoverProfile
   try {
     const { data, error } = await supabase
       .from("student_profiles")
-      .select("full_name, email, nationality, grade_level, gpa, ielts, toefl, sat, major, field_of_study, budget, target_countries, updated_at")
+      .select("full_name, email, nationality, grade_level, gpa, ielts, toefl, sat, major, field_of_study, budget, target_countries, major_certainty, updated_at")
       .eq("user_id", userId)
       .maybeSingle<StudentProfileRow>();
     if (error || !data) return null;
