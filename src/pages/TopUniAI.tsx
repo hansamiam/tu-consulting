@@ -12,6 +12,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   ArrowRight,
   ArrowLeft,
@@ -26,7 +29,17 @@ import {
   Map,
   Zap,
   Crown,
+  Plus,
+  Check,
+  X,
 } from "lucide-react";
+import {
+  COUNTRY_DEFAULT_CHIPS,
+  COUNTRY_MASTER,
+  countryLabel,
+  COUNTRY_PICK_CAP,
+  OTHER_TOKEN,
+} from "@/lib/country-chips";
 import { useNavigate } from "react-router-dom";
 import { saveProfile } from "@/components/discover/DiscoverProfileGate";
 import { projectToDiscoverProfile } from "@/lib/topuniIntakeProjection";
@@ -238,6 +251,20 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
   const [toefl, setToefl] = useState(draft?.toefl ?? "");
   const [sat, setSat] = useState(draft?.sat ?? "");
   const [targetCountries, setTargetCountries] = useState<string[]>(Array.isArray(draft?.targetCountries) ? draft!.targetCountries! : []);
+  // 2026-05-23: country chips restored. Step 2 renders 11 default chips
+  // + an "Other" chip that opens a typeahead modal. Cap at 3 per
+  // COUNTRY_PICK_CAP — matches the brief-plan countryBuckets slice.
+  // The synthetic OTHER_TOKEN is intercepted in toggleCountry so it
+  // never lands in targetCountries state — it only opens the modal.
+  const [showCountrySearch, setShowCountrySearch] = useState(false);
+  const toggleCountry = (token: string) => {
+    if (token === OTHER_TOKEN) { setShowCountrySearch(true); return; }
+    setTargetCountries((prev) => {
+      if (prev.includes(token)) return prev.filter((c) => c !== token);
+      if (prev.length >= COUNTRY_PICK_CAP) return prev;
+      return [...prev, token];
+    });
+  };
   // countrySearch state retired with the target-countries section.
   // ALL_COUNTRIES still imported for the nationality typeahead.
   const [major, setMajor] = useState(draft?.major ?? "");
@@ -947,6 +974,113 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         </Select>
                       </div>
                     </div>
+                    {/* 2026-05-23: country chip multi-select restored.
+                        Pre-PR-#54 this UI existed but was removed. The
+                        brief generator still references targetCountries
+                        in Card 02 ("Where you belong"); without a UI input
+                        direct visitors always passed [], and Card 02 either
+                        invented countries or fell back to broken ["Open"].
+                        Same silent-failure pattern as PR #10. Chip defaults
+                        intentionally include Hungary / Türkiye / China to
+                        teach Top Uni's anti-Crimson positioning. */}
+                    <div className="pt-2">
+                      <Label className="text-xs uppercase tracking-wider font-medium">{t("Where do you want to study?", "Куда хочешь поступать?")}</Label>
+                      <p className="text-muted-foreground text-xs mt-1 mb-3">{t(`Pick up to ${COUNTRY_PICK_CAP} — optional.`, `Выбери до ${COUNTRY_PICK_CAP} — по желанию.`)}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {[...COUNTRY_DEFAULT_CHIPS, OTHER_TOKEN].map((token) => {
+                          const isOther = token === OTHER_TOKEN;
+                          const selected = !isOther && targetCountries.includes(token);
+                          const atCap = !selected && !isOther && targetCountries.length >= COUNTRY_PICK_CAP;
+                          const label = isOther
+                            ? t("Other…", "Другое…")
+                            : countryLabel(token, language === "ru" ? "ru" : "en");
+                          return (
+                            <button
+                              key={token}
+                              type="button"
+                              onClick={() => toggleCountry(token)}
+                              disabled={atCap}
+                              aria-pressed={selected}
+                              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[36px] ${
+                                selected
+                                  ? "bg-gold-dark text-cream border-gold-dark"
+                                  : isOther
+                                    ? "bg-card text-foreground border-dashed border-border hover:border-gold-dark/60"
+                                    : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
+                              } ${atCap ? "opacity-40 cursor-not-allowed" : ""}`}
+                            >
+                              {selected && <Check className="w-3 h-3" />}
+                              {isOther && !selected && <Plus className="w-3 h-3" />}
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {/* Selected-but-not-in-defaults chips — render below
+                          so users see their typeahead picks alongside the
+                          default-chip selections. */}
+                      {targetCountries.some((t2) => !COUNTRY_DEFAULT_CHIPS.includes(t2)) && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {targetCountries.filter((t2) => !COUNTRY_DEFAULT_CHIPS.includes(t2)).map((token) => (
+                            <button
+                              key={token}
+                              type="button"
+                              onClick={() => toggleCountry(token)}
+                              aria-pressed={true}
+                              className="inline-flex items-center gap-1.5 rounded-full border bg-gold-dark text-cream border-gold-dark px-3 py-1.5 text-xs font-medium min-h-[36px]"
+                            >
+                              <Check className="w-3 h-3" />
+                              {countryLabel(token, language === "ru" ? "ru" : "en")}
+                              <X className="w-3 h-3 opacity-70 ml-0.5" />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {/* Typeahead modal for the long-tail countries.
+                        cmdk-backed Command filters as the user types. */}
+                    <Dialog open={showCountrySearch} onOpenChange={setShowCountrySearch}>
+                      <DialogContent className="max-w-md p-0 overflow-hidden">
+                        <DialogHeader className="px-4 pt-4">
+                          <DialogTitle className="text-base">{t("More countries", "Больше стран")}</DialogTitle>
+                        </DialogHeader>
+                        <Command>
+                          <CommandInput placeholder={t("Search countries…", "Поиск стран…")} />
+                          <CommandList className="max-h-80">
+                            <CommandEmpty>{t("No matches.", "Ничего не найдено.")}</CommandEmpty>
+                            <CommandGroup>
+                              {COUNTRY_MASTER.map((c) => {
+                                const selected = targetCountries.includes(c.token);
+                                const atCap = !selected && targetCountries.length >= COUNTRY_PICK_CAP;
+                                const label = language === "ru" ? c.ru : c.en;
+                                return (
+                                  <CommandItem
+                                    key={c.token}
+                                    value={`${c.en} ${c.ru}`}
+                                    disabled={atCap}
+                                    onSelect={() => {
+                                      if (atCap) return;
+                                      toggleCountry(c.token);
+                                      if (!selected) setShowCountrySearch(false);
+                                    }}
+                                    className={atCap ? "opacity-40" : ""}
+                                  >
+                                    {selected && <Check className="w-4 h-4 mr-2 text-gold-dark" />}
+                                    {!selected && <span className="w-4 mr-2" />}
+                                    {label}
+                                  </CommandItem>
+                                );
+                              })}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                        {targetCountries.length >= COUNTRY_PICK_CAP && (
+                          <div className="px-4 py-2 text-xs text-muted-foreground border-t border-border/60">
+                            {t(`Up to ${COUNTRY_PICK_CAP} — remove one to add another.`, `Максимум ${COUNTRY_PICK_CAP} — удали одну, чтобы добавить другую.`)}
+                          </div>
+                        )}
+                      </DialogContent>
+                    </Dialog>
                     {/* Priorities sliders — folded into Step 02 on 2026-05-20
                         when 4 steps collapsed to 3. Three sliders that
                         shape the brief: prestige, scholarship need, visa
