@@ -54,34 +54,20 @@ const json = (status: number, body: unknown) =>
 const COST_ESTIMATE_USD = 0.0020 + FIRECRAWL_COST_PER_SCRAPE_USD;
 const MAX_MARKDOWN_CHARS = 25_000;
 
-/* Aggregator domain detection — mirrors src/lib/aggregatorUrls.ts.
-   Kept inline here to avoid a server-side dependency on the client
-   bundle. Round-up sites where the scrape would yield "list of 50
-   scholarships" rather than program-canonical content. */
-const AGGREGATOR_DOMAINS = new Set<string>([
-  "scholars4dev.com",
-  "opportunitiesforyouth.org",
-  "opportunitiestracker.ug",
-  "opportunitydesk.org",
-  "scholarshipsdb.net",
-  "scholarship-positions.com",
-  "after12.in",
-  "buddy4study.com",
-]);
+/* Aggregator domain detection — pulled from _shared/aggregator-hosts.ts.
+   Previously kept inline with 8 entries, drifted out of sync with the
+   verify-scholarship + is_aggregator_url() lists (which grew to 25 by
+   2026-05-23). Result: iefa.org / fastweb.com URLs got written into
+   canonical_official_url because this 8-domain list didn't catch them.
+   See _shared/aggregator-hosts.ts for the canonical list + sync rules. */
+import { isAggregatorHostname } from "../_shared/aggregator-hosts.ts";
 
 const domainOf = (url: string | null | undefined): string | null => {
   if (!url) return null;
   try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return null; }
 };
 
-const isAggregator = (url: string | null | undefined): boolean => {
-  const d = domainOf(url);
-  if (!d) return false;
-  for (const agg of AGGREGATOR_DOMAINS) {
-    if (d === agg || d.endsWith(`.${agg}`)) return true;
-  }
-  return false;
-};
+const isAggregator = (url: string | null | undefined): boolean => isAggregatorHostname(url);
 
 interface CanonicalExtraction {
   canonical_overview: string | null;
