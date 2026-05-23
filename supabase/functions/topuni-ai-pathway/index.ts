@@ -1112,6 +1112,18 @@ ${EDITORIAL_RULES}`;
       const fallbackCountries = noCountries
         ? topCountriesOrDefault(scholarshipRows)
         : undefined;
+      // Sparse-profile signal for Cards 01, 03, 05. Threshold mirrors
+      // verify-brief.ts intakeAnchorTokens() — when the combined Step 3
+      // free-text corpus is thin, the LLM gets explicit sparse-aware
+      // guidance to avoid inventing biographical specifics.
+      const corpusLen = [
+        profile.careerGoal, profile.extracurriculars,
+        profile.background, profile.namedSchools,
+      ].map((s: unknown) => (typeof s === "string" ? s.trim().length : 0))
+       .reduce((a: number, b: number) => a + b, 0);
+      const isSparseProfile = corpusLen < 80
+        || !profile.extracurriculars
+        || (typeof profile.extracurriculars === "string" && profile.extracurriculars.trim().length === 0);
 
       const briefCtx: BriefContext = {
         dbContext,
@@ -1122,6 +1134,7 @@ ${EDITORIAL_RULES}`;
         personalityAxis,
         noCountries,
         fallbackCountries,
+        isSparseProfile,
       };
 
       // Per-section regen path — caller passed a section id; we run just

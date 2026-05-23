@@ -133,7 +133,15 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
             ) : (
               <CountryArt country={s.host_country} className="absolute inset-0 h-full w-full opacity-20 text-white" />
             )}
-            <span className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/15 to-black/55" aria-hidden />
+            {/* Two-layer scrim — a flat dark base sits under a vertical
+                gradient. The base (black/35) guarantees minimum
+                contrast against bright cover images (light skies,
+                pale campus shots) where the prior gradient's mid-band
+                (15%) let bright pixels bleed through and clobber the
+                white headline. The vertical gradient still concentrates
+                shading at the top (eyebrow) and bottom (CTAs). */}
+            <span className="absolute inset-0 bg-black/35" aria-hidden />
+            <span className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/55" aria-hidden />
             <button
               type="button"
               onClick={onClose}
@@ -142,7 +150,7 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
             >
               <X className="h-4 w-4" />
             </button>
-            <div className="relative px-6 sm:px-9 py-7 sm:py-9">
+            <div className="relative px-6 sm:px-9 py-5 sm:py-6">
               <div className="flex items-center gap-2 mb-2.5">
                 {country && (
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/85">
