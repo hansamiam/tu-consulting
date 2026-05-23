@@ -1,0 +1,45 @@
+{
+  "_comment": "Deliberately-broken sample to verify the verify-brief.ts harness catches failures. Contains: banned vocab (moat, bridge metaphor, stand out), invented school not in dbContext, wrong gap branch (library-entry when intake says not_at_all), pre-med reference for a CIS student.",
+  "intake": {
+    "fullName": "Yerlan Tursynbek",
+    "nationality": "Kazakhstan",
+    "majorCertainty": "not_at_all",
+    "targetCountries": ["Canada", "United Kingdom"],
+    "topActivity": "Math Olympiad bronze, debate captain"
+  },
+  "dbContext": "University of Toronto (Canada). University of Edinburgh (United Kingdom). McGill (Canada).",
+  "brief": {
+    "schema": 3,
+    "plan": {
+      "archetype": { "id": "made-up-archetype", "confidence": 90, "reason": "fake" },
+      "identityClaim": "you have a competitive moat",
+      "pileContrast": "Most pre-meds in your year just want to stand out",
+      "primaryGap": { "type": "library-entry", "libraryEntryId": 7, "reason": "fake" },
+      "countryBuckets": ["France", "Australia"],
+      "mondayMoveArtifact": "trust the process"
+    },
+    "sections": {
+      "whereYouStand": {
+        "kicker": "01",
+        "headline": "Your moat is bigger than you realize",
+        "lead": "Your competitive position is differentiated.",
+        "body": "You stand out among the pre-meds applying this year. The bridge between math and humanities is your edge. Build the bridge.",
+        "pullquote": "Stop hiding it."
+      },
+      "whereYouCanLand": {
+        "buckets": [
+          {
+            "country": "France",
+            "schools": [{ "name": "Imaginary University of Paris", "lore": "This school does not exist in the dbContext." }]
+          }
+        ]
+      },
+      "whatToWrite": {
+        "essaySeed": { "body": "Write something about France.", "closer": "Submit it." }
+      },
+      "whatToDoThisMonth": {
+        "mondayMove": { "body": "Trust the process.", "closer": "Begin." }
+      }
+    }
+  }
+}
