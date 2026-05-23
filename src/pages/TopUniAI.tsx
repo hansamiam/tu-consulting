@@ -579,7 +579,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           {t("Who you are", "Кто вы")}
                         </span>
                       </div>
-                      <h2 className="font-heading text-[28px] sm:text-4xl font-bold text-foreground tracking-[-0.015em] leading-[1.15]">
+                      <h2 className="font-heading text-[32px] sm:text-[44px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
                         {t("Let's start with you.", "Начнём с вас.")}
                       </h2>
                       <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[50ch]">
@@ -590,10 +590,10 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                           <Label className="text-xs uppercase tracking-wider font-medium">{t("Full name *", "Полное имя *")}</Label>
-                          <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder={t("Your name", "Ваше имя")} className="h-11 bg-card" />
+                          <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder={t("What should we call you?", "Как тебя зовут?")} className="h-11 bg-card" />
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">{t("Email *", "Email *")}</Label>
+                          <Label className="text-xs uppercase tracking-wider font-medium">{t("Where do we send your strategy?", "Куда отправить твою стратегию?")}</Label>
                           <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@email.com" className="h-11 bg-card" />
                         </div>
                       </div>
@@ -601,7 +601,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         {/* WhatsApp field retired — never used by the
                             brief generator and the extra "give us your
                             phone" ask was friction with no payoff. */}
-                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Nationality *", "Гражданство *")}</Label>
+                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Where are you from?", "Откуда ты?")}</Label>
                         <Input
                           value={nationality}
                           onChange={e => setNationality(e.target.value)}
@@ -635,7 +635,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                       <div className="space-y-1.5">
                         <Label className="text-xs uppercase tracking-wider font-medium">{t("Current stage *", "Текущий этап *")}</Label>
                         <Select value={gradeLevel} onValueChange={setGradeLevel}>
-                          <SelectTrigger className="h-11 bg-card"><SelectValue placeholder={t("Pick your stage", "Выберите этап")} /></SelectTrigger>
+                          <SelectTrigger className="h-11 bg-card"><SelectValue placeholder={t("Where are you in school right now?", "На каком ты этапе?")} /></SelectTrigger>
                           <SelectContent>
                             {([
                               ["High School", "Школа"],
@@ -652,7 +652,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                       </div>
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">{t("GPA *", "Средний балл *")}</Label>
+                          <Label className="text-xs uppercase tracking-wider font-medium">{t("What's your GPA looking like?", "Какой у тебя средний балл?")}</Label>
                           {/* Paired input + scale picker — covers the four
                               common bases (US 4.0, post-Soviet 5.0,
                               Continental Europe 10.0, percentage 100) so
@@ -833,7 +833,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         }}
                         disabled={accountSubmitting || !fullName.trim() || !email.trim() || !nationality.trim() || !gradeLevel || !gpa.trim()}
                       >
-                        {t("Continue", "Дальше")} <ArrowRight className="ml-2 w-4 h-4" />
+                        {t("Nice. Two more pieces.", "Хорошо. Ещё два шага.")} <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
                     </div>
                   </motion.div>
@@ -853,7 +853,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">02</span>
                         <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{t("Direction", "Направление")}</span>
                       </div>
-                      <h2 className="font-heading text-[28px] sm:text-4xl font-bold text-foreground tracking-[-0.015em] leading-[1.15]">
+                      <h2 className="font-heading text-[32px] sm:text-[44px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
                         {t("What are you chasing?", "К чему вы стремитесь?")}
                       </h2>
                       <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[52ch]">
@@ -879,7 +879,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           a specialty not in the canonical list (e.g.
                           "Quantum Biophysics") aren't blocked. */}
                       <div className="space-y-1.5">
-                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Intended major *", "Будущая специальность *")}</Label>
+                        <Label className="text-xs uppercase tracking-wider font-medium">{t("What do you (think you) want to study?", "Что ты (думаешь, что) хочешь изучать?")}</Label>
                         {(() => {
                           const MAJORS = [
                             "Undecided",
@@ -926,7 +926,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           with the "Scholarship need" 1–5 slider on step 3.
                           Budget is now derived from that slider downstream. */}
                       <div className="space-y-1.5">
-                        <Label className="text-xs uppercase tracking-wider font-medium">{t("When you'd start", "Когда планируете начать")}</Label>
+                        <Label className="text-xs uppercase tracking-wider font-medium">{t("When are you starting?", "Когда стартуешь?")}</Label>
                         <Select value={timeline} onValueChange={setTimeline}>
                           <SelectTrigger className="h-11 bg-card"><SelectValue placeholder={t("Select", "Выберите")} /></SelectTrigger>
                           <SelectContent>
@@ -983,7 +983,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         onClick={() => goToStep(3)}
                         disabled={!major.trim()}
                       >
-                        {t("Continue", "Дальше")} <ArrowRight className="ml-2 w-4 h-4" />
+                        {t("Good. Last bit's optional.", "Отлично. Последнее — по желанию.")} <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
                     </div>
                   </motion.div>
@@ -1003,7 +1003,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">03</span>
                         <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{t("Sharpen", "Детали")}</span>
                       </div>
-                      <h2 className="font-heading text-[28px] sm:text-4xl font-bold text-foreground tracking-[-0.015em] leading-[1.15]">
+                      <h2 className="font-heading text-[32px] sm:text-[44px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
                         {t("Tell us more — or skip ahead.", "Расскажите больше — или пропустите.")}
                       </h2>
                       <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[54ch]">
@@ -1013,7 +1013,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                     </div>
                     <div className="space-y-5">
                       <div className="space-y-1.5">
-                        <Label htmlFor="careerGoal" className="text-xs uppercase tracking-wider font-medium">{t("Career goal", "Карьерная цель")}</Label>
+                        <Label htmlFor="careerGoal" className="text-xs uppercase tracking-wider font-medium">{t("Where do you want this to lead?", "К чему ты идёшь?")}</Label>
                         <Textarea
                           id="careerGoal"
                           placeholder={t("e.g. data scientist focused on climate modeling", "напр. data scientist в климатическом моделировании")}
@@ -1023,7 +1023,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="extracurriculars" className="text-xs uppercase tracking-wider font-medium">{t("Extracurriculars & achievements", "Внеучебка и достижения")}</Label>
+                        <Label htmlFor="extracurriculars" className="text-xs uppercase tracking-wider font-medium">{t("What have you actually been doing outside class?", "Чем ты реально занимаешься помимо учёбы?")}</Label>
                         <Textarea
                           id="extracurriculars"
                           placeholder={t("e.g. founded a community library, IMO bronze, 200 hrs neuroscience research", "напр. основал библиотеку, бронза IMO, 200 часов нейронауки")}
@@ -1033,7 +1033,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="background" className="text-xs uppercase tracking-wider font-medium">{t("Background context", "Контекст")}</Label>
+                        <Label htmlFor="background" className="text-xs uppercase tracking-wider font-medium">{t("Tell us about you — the version your closest friend would describe", "Расскажи о себе — так, как описал бы твой лучший друг")}</Label>
                         <Textarea
                           id="background"
                           placeholder={t("e.g. first-gen, raised in Bishkek, parents both teachers", "напр. первый в семье в вузе, из Бишкека, родители учителя")}
@@ -1043,7 +1043,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="namedSchools" className="text-xs uppercase tracking-wider font-medium">{t("Schools you have in mind", "Вузы на примете")}</Label>
+                        <Label htmlFor="namedSchools" className="text-xs uppercase tracking-wider font-medium">{t("Schools already on your list?", "Вузы, которые ты уже присмотрел(а)?")}</Label>
                         <Textarea
                           id="namedSchools"
                           placeholder={t("e.g. Stanford, U of Toronto, KAIST", "напр. Stanford, U of Toronto, KAIST")}
@@ -1094,7 +1094,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               <ArrowLeft className="mr-2 w-4 h-4" /> {t("Back", "Назад")}
                             </Button>
                             <Button variant="gold" size="lg" onClick={onGenerate}>
-                              {t("Generate my plan", "Сгенерировать план")}
+                              {t("That's enough — write it up", "Хватит — напиши мне план")}
                               <ArrowRight className="ml-2 w-5 h-5" />
                             </Button>
                           </div>
