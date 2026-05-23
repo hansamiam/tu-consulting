@@ -3098,6 +3098,76 @@ const Discover = ({ language = "en" }: Props) => {
     });
   }, [rows, profile, semantic.matches, saveCounts]);
 
+  /* F1 hero-mode fetch — populates HeroCard's hero_reason +
+   * hero_confidence + backend-computed profile_quality. Fires when
+   * profile signals or the top of ranked changes. Heuristic
+   * profile_quality computed in the render IIFE stays as a fallback
+   * for the first render before this resolves. */
+  const [heroData, setHeroData] = useState<{
+    scholarship_id: string;
+    hero_reason: string | null;
+    hero_confidence: number | null;
+    profile_quality: "rich" | "partial" | "sparse" | "empty";
+  } | null>(null);
+  const topRankedId = ranked[0]?.scholarship_id;
+  const heroProfileSignature = useMemo(
+    () => JSON.stringify({
+      country: profile.country,
+      field: profile.field,
+      degrees: profile.degrees,
+      targetCountries: profile.targetCountries,
+      gpa: profile.gpa,
+      ielts: profile.ielts,
+      toefl: profile.toefl,
+    }),
+    [profile.country, profile.field, profile.degrees, profile.targetCountries, profile.gpa, profile.ielts, profile.toefl],
+  );
+  useEffect(() => {
+    if (!topRankedId) { setHeroData(null); return; }
+    // Only fire when we actually have profile signal — anonymous /
+    // empty-profile sessions render the editorial-mode HeroCard with
+    // heroReason=null and don't burn an LLM call.
+    const hasSignal = !!profile.country || !!profile.field || (profile.degrees?.length ?? 0) > 0;
+    if (!hasSignal) { setHeroData(null); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke<{
+          matches?: Array<{ scholarship_id: string }>;
+          hero_reason?: string | null;
+          hero_confidence?: number | null;
+          profile_quality?: "rich" | "partial" | "sparse" | "empty";
+        }>("match-scholarships", {
+          body: {
+            profile: {
+              field: profile.field || undefined,
+              degree: profile.degrees?.[0],
+              targetCountries: profile.targetCountries,
+            },
+            filters: {
+              nationality: profile.country || undefined,
+              min_gpa: profile.gpa ? Number(profile.gpa) : undefined,
+              min_ielts: profile.ielts ? Number(profile.ielts) : undefined,
+              min_toefl: profile.toefl ? Number(profile.toefl) : undefined,
+              degree_level: profile.degrees?.[0],
+            },
+            mode: "hero",
+          },
+        });
+        if (cancelled || error || !data?.matches?.[0]) return;
+        setHeroData({
+          scholarship_id: data.matches[0].scholarship_id,
+          hero_reason: data.hero_reason ?? null,
+          hero_confidence: data.hero_confidence ?? null,
+          profile_quality: data.profile_quality ?? "partial",
+        });
+      } catch (e) {
+        if (!cancelled) console.warn("[Discover][hero] fetch failed", (e as Error).message);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [topRankedId, heroProfileSignature, profile.country, profile.field, profile.degrees, profile.targetCountries, profile.gpa, profile.ielts, profile.toefl]);
+
   /* Honour the ?scholarship=<id> query param landing here from
    * ScholarshipDetailRedirect (App.tsx). Bookmarks + share links that
    * pointed at the hidden /scholarships/:id route still resolve — the
@@ -4060,16 +4130,15 @@ const Discover = ({ language = "en" }: Props) => {
                   pill rail keeps the same intents but stays visually
                   light — text + count, no gradients, no heavy borders. */}
               {!loading && ranked.length > 0 && (() => {
-                // F4 "mechta mode" HeroCard — features the top-ranked
-                // scholarship above the existing curated pill rail. This
-                // initial wiring renders HeroCard in editorial fallback
-                // mode (no LLM hero_reason fetch yet — the match-
-                // scholarships?mode=hero call lives in F1 and the
-                // frontend fetch is a follow-up). profile_quality is
-                // derived heuristically from what we already have in
-                // local profile state; once the F1 fetch lands the
-                // backend's inferred quality will override.
-                const hero = ranked[0];
+                // F4 "mechta mode" HeroCard. Prefers the backend's hero
+                // pick (from match-scholarships?mode=hero) when the
+                // fetch in the useEffect above has resolved AND its
+                // scholarship_id maps to a row currently in ranked.
+                // Otherwise falls back to ranked[0] in editorial mode.
+                const fetchedHero = heroData
+                  ? ranked.find((r) => r.scholarship_id === heroData.scholarship_id) ?? null
+                  : null;
+                const hero = fetchedHero ?? ranked[0];
                 const heroScholarship = hero ? {
                   scholarship_id: hero.scholarship_id,
                   scholarship_name: hero.scholarship_name,
@@ -4081,23 +4150,27 @@ const Discover = ({ language = "en" }: Props) => {
                   cover_image_url: hero.cover_image_url ?? null,
                   official_url: hero.official_url ?? null,
                 } : null;
-                // Heuristic profile_quality — 0 signals = empty;
-                // 1-3 = sparse; 4+ = partial. "rich" only after F1
-                // wires in the LLM hero_reason path.
+                // Heuristic profile_quality fallback when the F1 fetch
+                // hasn't resolved yet. Once heroData lands the backend's
+                // inferred quality wins.
                 const sigs = [
                   profile.country, profile.field,
                   profile.degrees?.length ? "x" : "",
                   profile.targetCountries?.length ? "x" : "",
                   profile.gpa, profile.ielts || profile.toefl || profile.sat,
                 ].filter(Boolean).length;
-                const profileQuality: "rich" | "partial" | "sparse" | "empty" =
+                const heuristicQuality: "rich" | "partial" | "sparse" | "empty" =
                   sigs === 0 ? "empty" : sigs <= 3 ? "sparse" : "partial";
+                const profileQuality = heroData?.profile_quality ?? heuristicQuality;
+                const heroReason = fetchedHero ? heroData?.hero_reason ?? null : null;
+                const heroConfidence = fetchedHero ? heroData?.hero_confidence ?? null : null;
                 return (
                   <>
                     {heroScholarship && (
                       <HeroCard
                         scholarship={heroScholarship}
-                        heroReason={null}
+                        heroReason={heroReason}
+                        heroConfidence={heroConfidence}
                         profileQuality={profileQuality}
                         onExpand={() => setOpenDetail(hero)}
                         lang={language}
