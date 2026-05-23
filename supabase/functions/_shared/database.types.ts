@@ -3839,6 +3839,10 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      evaluate_publish_gate_for: {
+        Args: { p_scholarship_id: string }
+        Returns: undefined
+      }
       evaluate_source_health: {
         Args: never
         Returns: {

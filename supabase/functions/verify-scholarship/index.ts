@@ -644,6 +644,20 @@ Deno.serve(async (req) => {
       return json(500, { error: `promote_failed: ${promoteErr.message}` });
     }
 
+    // 2026-05-23: silent failure #4 fix. After promoting verification_status
+    // + lifecycle_status, re-run the publish gate so is_published tracks the
+    // row's current state. Pre-fix the gate was only stamped by a one-shot
+    // backfill migration — verified+active rows never flipped to published
+    // until somebody manually re-ran the migration. Now every clean
+    // re-verify also re-evaluates the gate for this single row.
+    // Safe to fire-and-forget — gate logic is idempotent + the row's
+    // last_gate_checked_at gets updated either way.
+    try {
+      await supa.rpc("evaluate_publish_gate_for", { p_scholarship_id: stored.scholarship_id });
+    } catch (e) {
+      console.warn("[verify-scholarship] publish-gate re-eval failed", (e as Error).message);
+    }
+
     // ─── Record evidence — re-verification keeps the source warm ───
     // Bumps last_confirmed_at on the scholarship_evidence row so the
     // consensus_score reflects continued source attestation. New URL?
