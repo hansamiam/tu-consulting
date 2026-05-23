@@ -18,7 +18,7 @@ interface Props {
   /** One-line italicized subtitle. Pulled from the brief's first
    *  section synthesis. Optional — falls back to a static line. */
   synthesisLine?: string;
-  /** "Basic" | "Pro" | undefined */
+  /** "Basic" | "Member" | undefined */
   gradeLabel?: string;
   /** ISO date string of when this brief was generated. */
   generatedAt?: string;

@@ -1,0 +1,113 @@
+{
+  "_comment": "TIGHT LANE fixture — Kazakh kid certain about Computer Science from middle school, single-country focus. Tests that the brief handles decided students well: archetype should resolve to Tight Lane, primary gap should come from the library (not major-uncertainty), Card 04 should fire single-country tunnel vision since targetCountries.length === 1.",
+  "intake": {
+    "fullName": "Daniyar Bekenov",
+    "nationality": "Kazakhstan",
+    "gpa": "3.9",
+    "ielts": "7.5",
+    "sat": "1480",
+    "major": "Computer Science",
+    "majorCertainty": "certain",
+    "targetCountries": ["United States"],
+    "topActivity": "competitive programming club president since 9th grade, ICPC regional honors, taught Python summer camp two years running",
+    "background": "since middle school I've known I want to build software. parents are engineers, supportive of US tech path"
+  },
+  "dbContext": "MIT (United States) — top CS program globally. Stanford (United States) — strong CS + entrepreneurship culture. Carnegie Mellon (United States) — School of Computer Science is its own faculty. UIUC (United States) — top public CS, strong financial aid for internationals. Georgia Tech (United States) — affordable + ranked top-10 CS.",
+  "brief": {
+    "schema": 3,
+    "plan": {
+      "archetype": {
+        "id": "tight-lane",
+        "confidence": 85,
+        "reason": "majorCertainty=certain + intake narrative confirms early focus ('since middle school'). Stacked CS achievements (ICPC, club president, taught Python). Knows what he wants."
+      },
+      "identityClaim": "the CS kid who's known since middle school",
+      "pileContrast": "Most kids in your year are still picking. You picked in 7th grade and never looked back. Your file shows it — competitive programming, ICPC, taught Python two summers. That's six years of commitment showing through.",
+      "essaySeedType": "a specific bug or problem that took you three days to solve and what changed after you did",
+      "primaryGap": {
+        "type": "library-entry",
+        "libraryEntryId": 3,
+        "reason": "targetCountries.length === 1 (United States only). Tight Lane kids tend to single-track on the country too — but the US visa picture is rough for international CS undergrads right now, and the smartest move is widening the funnel to Canada/UK/Singapore CS programs that have higher visa-success + lower tuition."
+      },
+      "countryBuckets": ["United States"],
+      "mondayMoveArtifact": "a Google Doc listing the 3 CS programs you'd actually apply to outside the US, no commitment required"
+    },
+    "sections": {
+      "whereYouStand": {
+        "kicker": "01 · Where you stand",
+        "headline": "You've known since middle school. Most kids your year haven't picked yet.",
+        "lead": "Daniyar, your file is the rare one that reads as decided.",
+        "body": "Competitive programming club president since 9th grade. ICPC regional honors. Taught Python summer camp two years. That's six years of stacked, on-brand evidence — not a profile, an argument. Most admissions readers see kids who picked CS in junior year because the salaries looked good. You picked in 7th grade and built the case ever since.\n\nThe risk isn't that you're unfocused. It's that you're too focused.",
+        "pullquote": "You don't need more proof. You need a wider funnel."
+      },
+      "whereYouCanLand": {
+        "kicker": "02 · Where you belong",
+        "headline": "Top US CS isn't your only path — and the visa math says it shouldn't be.",
+        "lead": "Pulled from your country, with the visa-realism filter on.",
+        "buckets": [
+          {
+            "country": "United States",
+            "cities": "Cambridge MA, Pittsburgh PA, Urbana IL",
+            "schools": [
+              { "name": "MIT", "lore": "The benchmark. ICPC + Python-teaching + GPA 3.9 + 1480 SAT puts you in the pile they actually read. Visa picture for KZ undergrads is rough but not impossible." },
+              { "name": "Carnegie Mellon", "lore": "School of Computer Science is its own faculty — kids who've been building since middle school find their cohort here." },
+              { "name": "Georgia Tech", "lore": "Top-10 CS at half the cost. Generous to international STEM applicants. The smarter middle for a profile this strong." }
+            ]
+          }
+        ]
+      },
+      "whatToWrite": {
+        "kicker": "04 · The essay only you can write",
+        "headline": "The essay you should write doesn't exist yet — but the seed for it does.",
+        "lead": "One specific bug, problem, or breakthrough that took days to solve.",
+        "essaySeed": {
+          "title": "The bug that took three days",
+          "body": "Sometime in the last two years, you ran into a specific bug or algorithmic problem that took you three days (or longer) to solve. Maybe in competitive programming. Maybe teaching Python summer camp — a kid asked something you couldn't answer on the spot. Maybe a personal project. Find that exact moment — the bug that made you doubt yourself, then the moment of solving it. That moment is the essay.",
+          "closer": "What you noticed about yourself between day 1 and day 3 is what schools want to read."
+        }
+      },
+      "whatsBlockingYou": {
+        "kicker": "05 · What's blocking you",
+        "headline": "Every school on your list is in one country.",
+        "lead": "That's a choice — but it might not be the one you actually made.",
+        "entries": [
+          {
+            "priority": "high",
+            "title": "Single-country tunnel vision (United States only)",
+            "whyItMatters": "Daniyar, US is your only target. The CS visa picture is rough right now — top US schools accept a small percentage of international CS undergrads, and the post-grad H1-B lottery hits you again at year 4. Profile this strong opens doors at top Canada, UK, Singapore CS programs that have higher visa-success + meaningful financial aid. Not picking US is fine. Not having alternatives is the risk.",
+            "actionThisMonth": "List 3 CS programs outside the US you'd actually apply to. No commitment to choose — just don't enter the cycle with one country on your application list.",
+            "next60Days": "Apply to at least one non-US CS program. The diversification costs ~3 days of application work and changes your year-after-graduation math significantly."
+          }
+        ]
+      },
+      "whatToDoThisMonth": {
+        "kicker": "06 · Your Monday Move",
+        "headline": "Open a Google Doc this week. Title it 'CS programs outside the US.'",
+        "lead": "List three you'd apply to. Don't commit.",
+        "mondayMove": {
+          "headline": "Open a Google Doc titled 'CS programs outside the US.'",
+          "body": "Inside, list three CS programs in Canada, UK, or Singapore you'd actually apply to. Just three. Don't research deeply — just write the name of the school and the program. Stop when you have three. The point is to break the single-country anchor, not to plan the alternative right now.",
+          "closer": "Once those three names exist on the page, the application list has options instead of one path."
+        }
+      },
+      "handoff": {
+        "archetypeId": "tight-lane",
+        "countryBuckets": ["United States"],
+        "topMatches": [
+          { "id": "1", "name": "MIT Open Admission Aid", "country": "United States", "awardText": "Need-based, up to full ride", "deadlineISO": "2026-11-01", "fitNote": "MIT is need-blind for internationals from low/middle income families. Your profile + family income may unlock significant aid." },
+          { "id": "2", "name": "Stanford Knight-Hennessy Scholars", "country": "United States", "awardText": "Full ride + stipend", "deadlineISO": "2026-10-12", "fitNote": "Graduate-only — file this for after undergrad. ICPC + teaching experience = candidate profile." },
+          { "id": "3", "name": "Schwarzman Scholars", "country": "China", "awardText": "Full ride at Tsinghua", "deadlineISO": "2026-09-15", "fitNote": "1-year master's. Open to CS + leadership profiles. Note: this is China-based — adds the alternative country you don't have on your list yet." }
+        ]
+      }
+    },
+    "handoff": {
+      "archetypeId": "tight-lane",
+      "countryBuckets": ["United States"],
+      "topMatches": [
+        { "id": "1", "name": "MIT Open Admission Aid", "country": "United States", "awardText": "Need-based, up to full ride", "deadlineISO": "2026-11-01", "fitNote": "MIT is need-blind for internationals from low/middle income families. Your profile + family income may unlock significant aid." },
+        { "id": "2", "name": "Stanford Knight-Hennessy Scholars", "country": "United States", "awardText": "Full ride + stipend", "deadlineISO": "2026-10-12", "fitNote": "Graduate-only — file this for after undergrad. ICPC + teaching experience = candidate profile." },
+        { "id": "3", "name": "Schwarzman Scholars", "country": "China", "awardText": "Full ride at Tsinghua", "deadlineISO": "2026-09-15", "fitNote": "1-year master's. Open to CS + leadership profiles. Note: this is China-based — adds the alternative country you don't have on your list yet." }
+      ]
+    }
+  }
+}

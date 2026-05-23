@@ -19,7 +19,13 @@ export type SectionId =
   | "howYoullPay"
   | "whatToWrite"
   | "whatsBlockingYou"
-  | "whatToDoThisMonth";
+  | "whatToDoThisMonth"
+  /** v7 Phase 3 stage-2: brief → Discover handoff card. Emitted
+   *  LAST in the SSE stream after the 6 section events. Payload
+   *  is HandoffPayload — archetype id + country buckets + 3 live
+   *  matched scholarships. Replaces the generic NextStepsCard at
+   *  the tail of the brief. */
+  | "handoff";
 
 export const SECTION_ORDER: SectionId[] = [
   "archetype",
@@ -29,6 +35,7 @@ export const SECTION_ORDER: SectionId[] = [
   "whatToWrite",
   "whatsBlockingYou",
   "whatToDoThisMonth",
+  "handoff",
 ];
 
 export const SECTION_KICKERS: Record<SectionId, string> = {
@@ -39,6 +46,7 @@ export const SECTION_KICKERS: Record<SectionId, string> = {
   whatToWrite: "04 · What to write",
   whatsBlockingYou: "05 · What's blocking you",
   whatToDoThisMonth: "06 · What to do this month",
+  handoff: "07 · What's next",
 };
 
 interface SectionCommon {
@@ -210,8 +218,38 @@ export interface ArchetypePayload {
   reason?: string;
 }
 
+/** v7 Phase 3 stage-2: the brief → Discover handoff payload.
+ *  Streamed as the LAST SSE event after every section completes.
+ *  HandoffBridge.tsx consumes it: builds a personalized headline
+ *  from buildHandoffHeadline(archetypeId, countryBuckets) and
+ *  renders 3 ScholarshipPreview rows + an Open Discover CTA. */
+export interface ScholarshipPreview {
+  id: string;
+  name: string;
+  /** Short country name — used for the flag emoji + label. */
+  country?: string;
+  /** Display string for the award amount, e.g. "$50K / year". */
+  awardText?: string;
+  /** ISO date or YYYY-MM-DD; renderer computes "Deadline in N days". */
+  deadlineISO?: string;
+  /** Optional 1-sentence "why this fits you" pulled from the
+   *  scholarship's why_this_fits column (or generated later). */
+  fitNote?: string;
+}
+
+export interface HandoffPayload {
+  /** Archetype id from the closed library — used to pick the
+   *  headline template via buildHandoffHeadline(). */
+  archetypeId?: string;
+  /** Subset of intake.targetCountries from the brief plan. */
+  countryBuckets?: string[];
+  /** Up to 3 matched scholarships from the live DB. */
+  topMatches?: ScholarshipPreview[];
+}
+
 export type AnySectionPayload =
   | ArchetypePayload
+  | HandoffPayload
   | WhereYouStandPayload
   | WhereYouCanLandPayload
   | HowYoullPayPayload
@@ -227,4 +265,5 @@ export type BriefSections = Partial<{
   whatToWrite: WhatToWritePayload;
   whatsBlockingYou: WhatsBlockingYouPayload;
   whatToDoThisMonth: WhatToDoThisMonthPayload;
+  handoff: HandoffPayload;
 }>;
