@@ -60,6 +60,11 @@ interface IntakeFields {
   extracurriculars?: string;
   background?: string;
   namedSchools?: string;
+  /** v7 brief spec (2026-05-22): how sure the student is about their
+   *  intended major. Gates the brief's WHAT-YOU'RE-AVOIDING branch +
+   *  Open Question / Tight Lane archetype detection. Optional; brief
+   *  defaults to "some_idea" if missing. */
+  majorCertainty?: "not_at_all" | "some_idea" | "pretty_sure" | "certain";
 }
 
 /** Project the wizard's intake into the DiscoverProfile shape that
@@ -94,4 +99,5 @@ export const projectToDiscoverProfile = (intake: IntakeFields): DiscoverProfile 
   extracurriculars: intake.extracurriculars?.trim() || undefined,
   background: intake.background?.trim() || undefined,
   namedSchools: intake.namedSchools?.trim() || undefined,
+  majorCertainty: intake.majorCertainty,
 });
