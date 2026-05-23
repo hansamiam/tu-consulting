@@ -280,8 +280,14 @@ const DiscoverApp = ({ language = "en" }: Props) => {
     return <Navigate to={isRu ? "/discover/ru" : "/discover"} replace />;
   }
 
-  const visible = isPro ? ranked : ranked.slice(0, 3);
-  const locked = isPro ? 0 : Math.max(0, ranked.length - 3);
+  // Stage-2 spec (2026-05-23): Discover database stays free for all
+  // users — the 3-gate Membership unlocks Discover SAVES, not visibility.
+  // Previously this capped free users at 3 visible rows; removed to
+  // align /discover/app with the main /discover route. The "+N more
+  // scholarships" teaser block below renders only when locked > 0, so
+  // it becomes a no-op without needing to delete the JSX.
+  const visible = ranked;
+  const locked = 0;
 
   const handleResetProfile = () => {
     localStorage.removeItem("topuni_discover_profile");
