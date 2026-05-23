@@ -268,11 +268,110 @@ Deno.serve(async (req) => {
     skipped++;
   }
 
+  /* ─── brief_leads: anon wizard email recovery ────────────────────────
+     Two passes over the brief_leads table:
+       1. Mark converted_at on any open lead whose email now has an
+          auth.users record — they signed up after the brief, so we
+          stop nudging them. The cron is the right place for this
+          stamp (rather than the auth signup webhook) because we
+          already paginate every auth user here, and the conversion
+          stamp doesn't need to be real-time.
+       2. Send brief-lead-nudge to open leads created 24-48h ago that
+          haven't been nudged yet. Once-only: nudge_sent_at gates the
+          send.
+     The Suppression list (email_suppressions) is already honored by
+     send-transactional-email, so we don't double-check here. */
+  let leadsConverted = 0;
+  let leadsNudged = 0;
+  try {
+    // Pass 1 — convert
+    const emailToUserId = new Map<string, string>();
+    for (const u of allUsers) {
+      if (u.email) emailToUserId.set(u.email.toLowerCase(), u.id);
+    }
+    const { data: openLeads } = await (supa as unknown as { from: (t: string) => any })
+      .from("brief_leads")
+      .select("id, email, full_name, created_at, language, nudge_sent_at")
+      .is("converted_at", null);
+    const leads = (openLeads ?? []) as Array<{
+      id: string;
+      email: string;
+      full_name: string | null;
+      created_at: string;
+      language: string;
+      nudge_sent_at: string | null;
+    }>;
+    const nowIso = new Date().toISOString();
+    const toConvert: string[] = [];
+    for (const l of leads) {
+      if (emailToUserId.has(l.email.toLowerCase())) toConvert.push(l.id);
+    }
+    if (toConvert.length > 0) {
+      const { error: convErr } = await (supa as unknown as { from: (t: string) => any })
+        .from("brief_leads")
+        .update({ converted_at: nowIso })
+        .in("id", toConvert);
+      if (convErr) {
+        errors.push(`brief_leads convert: ${convErr.message}`);
+      } else {
+        leadsConverted = toConvert.length;
+      }
+    }
+
+    // Pass 2 — nudge once. 24-48h window relative to lead created_at.
+    const unsubscribeBase = `${SITE}/unsubscribe`;
+    for (const l of leads) {
+      if (l.nudge_sent_at) continue;
+      if (emailToUserId.has(l.email.toLowerCase())) continue;
+      const ageHours = hoursBetween(new Date(l.created_at), now);
+      if (ageHours < 24 || ageHours >= 48) continue;
+
+      if (await alreadySent(supa, "brief-lead-nudge", l.email)) {
+        await (supa as unknown as { from: (t: string) => any })
+          .from("brief_leads")
+          .update({ nudge_sent_at: nowIso })
+          .eq("id", l.id);
+        continue;
+      }
+
+      const firstName = l.full_name?.split(" ")[0]?.trim() || undefined;
+      const lang: "en" | "ru" = l.language === "ru" ? "ru" : "en";
+      try {
+        const { error: sendErr } = await supa.functions.invoke("send-transactional-email", {
+          body: {
+            recipientEmail: l.email,
+            templateName: "brief-lead-nudge",
+            idempotencyKey: `brief-lead-nudge-${l.id}`,
+            templateData: {
+              name: firstName,
+              recoverUrl: lang === "ru" ? `${SITE}/topuni-ai/ru` : `${SITE}/topuni-ai`,
+              unsubscribeUrl: `${unsubscribeBase}?email=${encodeURIComponent(l.email)}`,
+              language: lang,
+            },
+          },
+        });
+        if (sendErr) throw new Error(sendErr.message);
+        await (supa as unknown as { from: (t: string) => any })
+          .from("brief_leads")
+          .update({ nudge_sent_at: nowIso })
+          .eq("id", l.id);
+        leadsNudged++;
+      } catch (e) {
+        failed++;
+        errors.push(`brief-lead-nudge ${l.id}: ${(e as Error).message}`);
+      }
+    }
+  } catch (e) {
+    errors.push(`brief_leads block: ${(e as Error).message}`);
+  }
+
   return respondJson(200, {
     candidates: allUsers.length,
     sent,
     skipped,
     failed,
+    leads_converted: leadsConverted,
+    leads_nudged: leadsNudged,
     first_errors: errors.slice(0, 5),
     duration_ms: Date.now() - startedAt,
   }, corsHeaders);
