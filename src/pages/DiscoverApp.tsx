@@ -557,12 +557,12 @@ const DiscoverApp = ({ language = "en" }: Props) => {
                     </h3>
                     <p className="text-sm text-muted-foreground max-w-xl mx-auto">
                       {isRu
-                        ? "Pro открывает полный список с матч-скорами, стратегиями подачи и причинами отказов."
-                        : "Pro unlocks the full ranked list with strategy notes, rejection patterns, and the rest of the database."}
+                        ? "Участники видят полный ранжированный список и сохраняют каждую подходящую стипендию."
+                        : "Members see the full ranked list and save every scholarship that fits."}
                     </p>
                     <div className="flex gap-3 justify-center flex-wrap pt-1">
                       <Button asChild className="rounded-full bg-foreground text-background hover:bg-foreground/90">
-                        <Link to="/pricing">{isRu ? "Открыть Pro" : "Unlock full access"}</Link>
+                        <Link to="/pricing">{isRu ? "Смотреть Membership" : "See Membership"}</Link>
                       </Button>
                     </div>
                   </div>
