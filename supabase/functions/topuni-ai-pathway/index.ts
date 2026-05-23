@@ -17,6 +17,7 @@ import {
 } from "../_shared/brief-plan.ts";
 import { getArchetype } from "../_shared/archetype-library.ts";
 import { extractPersonalityAxisFromFields } from "../_shared/personality-axis.ts";
+import { topCountriesOrDefault } from "../_shared/country-scholarship-volume.ts";
 import {
   cleanScholarshipName,
   cleanProvider,
@@ -1100,6 +1101,18 @@ ${EDITORIAL_RULES}`;
         profile.extracurriculars,
       ]).axis;
 
+      // 2026-05-23 sparse-input pass: when the student didn't pick any
+      // targetCountries on Step 2, Card 02 used to either invent
+      // countries or fall back to broken ["Open"]. Now we compute the
+      // top-3 host countries from the already-matched scholarshipRows
+      // for THIS nationality and feed them to Card 02 as a fallback
+      // basis. Same silent-failure pattern as PR #10 — fixed.
+      const noCountries = !Array.isArray(profile.targetCountries)
+        || profile.targetCountries.length === 0;
+      const fallbackCountries = noCountries
+        ? topCountriesOrDefault(scholarshipRows)
+        : undefined;
+
       const briefCtx: BriefContext = {
         dbContext,
         profile,
@@ -1107,6 +1120,8 @@ ${EDITORIAL_RULES}`;
         audienceLine,
         culturalContext,
         personalityAxis,
+        noCountries,
+        fallbackCountries,
       };
 
       // Per-section regen path — caller passed a section id; we run just

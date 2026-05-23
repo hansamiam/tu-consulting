@@ -115,6 +115,19 @@ export interface BriefContext {
    *  fallback / pre-deploy), sections degrade to v7-without-plan
    *  behavior — same prompts, no cross-card anchors. */
   briefPlan?: import("./brief-plan.ts").BriefPlan;
+  /** Sparse-input pass (2026-05-23): true when profile.targetCountries
+   *  is empty. Card 02 branches on this to acknowledge the gap in the
+   *  lead prose AND to relax the "subset of intake.targetCountries"
+   *  constraint so it can suggest fallbackCountries instead. Pre-
+   *  fix Card 02 either invented countries or fell back to broken
+   *  ["Open"] — same silent-failure pattern as PR #10. */
+  noCountries?: boolean;
+  /** Sparse-input pass (2026-05-23): top-3 host countries from the
+   *  pathway's matched scholarshipRows (with GLOBAL_DEFAULT top-up).
+   *  Only consumed by Card 02 when noCountries=true. Pre-computed at
+   *  request-time so no extra DB query is needed in the section
+   *  builder. */
+  fallbackCountries?: string[];
 }
 
 export interface ValidatorResult {
@@ -404,12 +417,37 @@ const whereYouCanLand: SectionSpec = {
     const visaNote = isCIS
       ? `VISA REALISM: this student has a CIS passport. Exclude destinations that historically don't grant student visas easily to CIS passports. Be honest about visa-tier when naming countries.`
       : `VISA REALISM: confirm any destination is plausibly visa-attainable for this student's nationality.`;
+    // 2026-05-23 sparse-input pass: when the student didn't pick any
+    // targetCountries, we relax the subset rule and steer the prompt to
+    // acknowledge the gap warmly. The fallbackCountries come from the
+    // pathway's matched scholarshipRows (top-3 host countries for THIS
+    // nationality), so the suggestions are still real + grounded.
+    const noCountriesNote = ctx.noCountries
+      ? `
+
+NO-TARGETCOUNTRIES BRANCH (the student didn't pick any countries on Step 2):
+- LEAD prose MUST acknowledge this warmly. Open with something like
+  "You didn't tell us where you're aiming yet — fair, that's one of the
+  hardest calls." Then transition into the suggestions below.
+- Country selection comes from the FALLBACK COUNTRIES list below —
+  the top-3 host countries for students of this nationality based on
+  the LIVE CONTEXT pool. NOT from intake.targetCountries (which is
+  empty by design here).
+- Close the lead with a soft invite: "Pick one that feels right, come
+  back, and we'll redo this with real fit notes." (In RU brief: "Выбери
+  ту, что кажется правильной, вернись — и пересоберём отчёт.")
+
+FALLBACK COUNTRIES (use these, in order, for the buckets):
+${(ctx.fallbackCountries ?? []).map((c, i) => `  ${i + 1}. ${c}`).join("\n") || "  (none — fall through to LIVE CONTEXT host countries)"}
+`
+      : "";
     return `
 You are writing CARD 02 of a 5-card admissions strategy brief in the
 v7 spec. This card is called WHERE YOU BELONG. Its job: trigger
 imagination + mechta (the dream of being there). It names cities /
 schools where THIS student's profile actually thrives. NOT a
 reach/target/safety odds list — those words are banned.
+${noCountriesNote}
 
 STUDENT PROFILE:
 ${profileBlock(ctx)}
@@ -489,9 +527,13 @@ ABSOLUTE RULES:
 - Every lore sentence MUST reference at least one specific element
   from Card 01 (identity claim / pile contrast) or the archetype.
 - No 'reach' / 'target' / 'safety' / 'elite' / 'top-10' anywhere.
-- Country selection MUST come from BRIEF PLAN's countryBuckets if
-  the plan is present in the context above; otherwise pick from
-  intake.targetCountries (case-insensitive subset).
+- Country selection rules:
+  · If the NO-TARGETCOUNTRIES BRANCH note above is present, use the
+    FALLBACK COUNTRIES list (in order). The lead prose MUST follow
+    the acknowledgment + invite pattern described there.
+  · Otherwise: countries MUST come from BRIEF PLAN's countryBuckets
+    if the plan is present, else from intake.targetCountries
+    (case-insensitive subset).
 - DO NOT also emit an "entries" field. The v6 three-tier shape is
   intentionally retired in new generations.
 
