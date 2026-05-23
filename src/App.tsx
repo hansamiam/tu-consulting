@@ -85,6 +85,7 @@ const AdminWaitlist              = lazy(() => import("./pages/admin/Waitlist"));
 const AdminCurate                = lazy(() => import("./pages/admin/Curate"));
 const AdminAcademy               = lazy(() => import("./pages/admin/Academy"));
 const AdminPartnerInquiries      = lazy(() => import("./pages/admin/PartnerInquiries"));
+const AdminSourceCandidates      = lazy(() => import("./pages/admin/SourceCandidates"));
 const SubmitScholarship    = lazy(() => import("./pages/SubmitScholarship"));
 
 /* Pulls :id out of the legacy /scholarships/:id path and bounces the
@@ -247,6 +248,7 @@ const App = () => (
           <Route path="/admin/waitlist" element={<AdminWaitlist />} />
           <Route path="/admin/curate" element={<AdminCurate />} />
           <Route path="/admin/partner-inquiries" element={<AdminPartnerInquiries />} />
+          <Route path="/admin/source-candidates" element={<AdminSourceCandidates />} />
           <Route path="/academy" element={<Academy language="en" />} />
           <Route path="/academy/ru" element={<Academy language="ru" />} />
           <Route path="/academy/live"    element={<Navigate to="/lesson" replace />} />
