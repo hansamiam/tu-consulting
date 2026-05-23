@@ -62,7 +62,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
 import { track } from "@/lib/analytics";
 import { CuratedCollections } from "@/components/discover/CuratedCollections";
-import { HeroCard } from "@/components/discover/HeroCard";
 import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
 import { ExpandedScholarshipDialog } from "@/components/discover/ExpandedScholarshipDialog";
 // MatchScoreBreakdown import retired round 33 — the per-row hover
@@ -3098,76 +3097,6 @@ const Discover = ({ language = "en" }: Props) => {
     });
   }, [rows, profile, semantic.matches, saveCounts]);
 
-  /* F1 hero-mode fetch — populates HeroCard's hero_reason +
-   * hero_confidence + backend-computed profile_quality. Fires when
-   * profile signals or the top of ranked changes. Heuristic
-   * profile_quality computed in the render IIFE stays as a fallback
-   * for the first render before this resolves. */
-  const [heroData, setHeroData] = useState<{
-    scholarship_id: string;
-    hero_reason: string | null;
-    hero_confidence: number | null;
-    profile_quality: "rich" | "partial" | "sparse" | "empty";
-  } | null>(null);
-  const topRankedId = ranked[0]?.scholarship_id;
-  const heroProfileSignature = useMemo(
-    () => JSON.stringify({
-      country: profile.country,
-      field: profile.field,
-      degrees: profile.degrees,
-      targetCountries: profile.targetCountries,
-      gpa: profile.gpa,
-      ielts: profile.ielts,
-      toefl: profile.toefl,
-    }),
-    [profile.country, profile.field, profile.degrees, profile.targetCountries, profile.gpa, profile.ielts, profile.toefl],
-  );
-  useEffect(() => {
-    if (!topRankedId) { setHeroData(null); return; }
-    // Only fire when we actually have profile signal — anonymous /
-    // empty-profile sessions render the editorial-mode HeroCard with
-    // heroReason=null and don't burn an LLM call.
-    const hasSignal = !!profile.country || !!profile.field || (profile.degrees?.length ?? 0) > 0;
-    if (!hasSignal) { setHeroData(null); return; }
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke<{
-          matches?: Array<{ scholarship_id: string }>;
-          hero_reason?: string | null;
-          hero_confidence?: number | null;
-          profile_quality?: "rich" | "partial" | "sparse" | "empty";
-        }>("match-scholarships", {
-          body: {
-            profile: {
-              field: profile.field || undefined,
-              degree: profile.degrees?.[0],
-              targetCountries: profile.targetCountries,
-            },
-            filters: {
-              nationality: profile.country || undefined,
-              min_gpa: profile.gpa ? Number(profile.gpa) : undefined,
-              min_ielts: profile.ielts ? Number(profile.ielts) : undefined,
-              min_toefl: profile.toefl ? Number(profile.toefl) : undefined,
-              degree_level: profile.degrees?.[0],
-            },
-            mode: "hero",
-          },
-        });
-        if (cancelled || error || !data?.matches?.[0]) return;
-        setHeroData({
-          scholarship_id: data.matches[0].scholarship_id,
-          hero_reason: data.hero_reason ?? null,
-          hero_confidence: data.hero_confidence ?? null,
-          profile_quality: data.profile_quality ?? "partial",
-        });
-      } catch (e) {
-        if (!cancelled) console.warn("[Discover][hero] fetch failed", (e as Error).message);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [topRankedId, heroProfileSignature, profile.country, profile.field, profile.degrees, profile.targetCountries, profile.gpa, profile.ielts, profile.toefl]);
-
   /* Honour the ?scholarship=<id> query param landing here from
    * ScholarshipDetailRedirect (App.tsx). Bookmarks + share links that
    * pointed at the hidden /scholarships/:id route still resolve — the
@@ -4129,62 +4058,14 @@ const Discover = ({ language = "en" }: Props) => {
                   past the fold and competed with the toolbar count. The
                   pill rail keeps the same intents but stays visually
                   light — text + count, no gradients, no heavy borders. */}
-              {!loading && ranked.length > 0 && (() => {
-                // F4 "mechta mode" HeroCard. Prefers the backend's hero
-                // pick (from match-scholarships?mode=hero) when the
-                // fetch in the useEffect above has resolved AND its
-                // scholarship_id maps to a row currently in ranked.
-                // Otherwise falls back to ranked[0] in editorial mode.
-                const fetchedHero = heroData
-                  ? ranked.find((r) => r.scholarship_id === heroData.scholarship_id) ?? null
-                  : null;
-                const hero = fetchedHero ?? ranked[0];
-                const heroScholarship = hero ? {
-                  scholarship_id: hero.scholarship_id,
-                  scholarship_name: hero.scholarship_name,
-                  provider_name: hero.provider_name ?? null,
-                  host_country: hero.host_country ?? null,
-                  coverage_type: hero.coverage_type ?? null,
-                  award_amount_text: hero.award_amount_text ?? null,
-                  application_deadline: hero.application_deadline ?? null,
-                  cover_image_url: hero.cover_image_url ?? null,
-                  official_url: hero.official_url ?? null,
-                } : null;
-                // Heuristic profile_quality fallback when the F1 fetch
-                // hasn't resolved yet. Once heroData lands the backend's
-                // inferred quality wins.
-                const sigs = [
-                  profile.country, profile.field,
-                  profile.degrees?.length ? "x" : "",
-                  profile.targetCountries?.length ? "x" : "",
-                  profile.gpa, profile.ielts || profile.toefl || profile.sat,
-                ].filter(Boolean).length;
-                const heuristicQuality: "rich" | "partial" | "sparse" | "empty" =
-                  sigs === 0 ? "empty" : sigs <= 3 ? "sparse" : "partial";
-                const profileQuality = heroData?.profile_quality ?? heuristicQuality;
-                const heroReason = fetchedHero ? heroData?.hero_reason ?? null : null;
-                const heroConfidence = fetchedHero ? heroData?.hero_confidence ?? null : null;
-                return (
-                  <>
-                    {heroScholarship && (
-                      <HeroCard
-                        scholarship={heroScholarship}
-                        heroReason={heroReason}
-                        heroConfidence={heroConfidence}
-                        profileQuality={profileQuality}
-                        onExpand={() => setOpenDetail(hero)}
-                        lang={language}
-                      />
-                    )}
-                    <CuratedCollections
-                      rows={ranked}
-                      filters={filters as unknown as Record<string, unknown>}
-                      onApply={(patch) => setFilters(f => ({ ...f, ...patch as Partial<FilterState> }))}
-                      lang={language}
-                    />
-                  </>
-                );
-              })()}
+              {!loading && ranked.length > 0 && (
+                <CuratedCollections
+                  rows={ranked}
+                  filters={filters as unknown as Record<string, unknown>}
+                  onApply={(patch) => setFilters(f => ({ ...f, ...patch as Partial<FilterState> }))}
+                  lang={language}
+                />
+              )}
 
               {/* Sticky toolbar — search · filters · sort · view-mode · hidden · compare.
                   Sticks below the global Nav (h-16 = 64px) so the filter row is always
@@ -5191,8 +5072,8 @@ const Discover = ({ language = "en" }: Props) => {
                       `Вы использовали бесплатные ${SHORTLIST_FREE_LIMIT} сохранений. Участники Membership — без лимита, плюс инсайты по каждой стипендии и рабочее пространство для трекинга.`,
                     )}
                     {paywallOpen === "strategy" && t(
-                      "Strategy notes — ideal-candidate profile, how-to-win approach, common rejection reasons, weak-candidate warnings — are part of TopUni Membership.",
-                      "Стратегические заметки — портрет идеального кандидата, как выиграть, типичные причины отказа и кому не стоит подавать — входят в TopUni Membership.",
+                      "Per-scholarship insights — \"Why this fits you\" + \"How to win this one\" — are part of TopUni Membership.",
+                      "Инсайты по каждой стипендии — «Почему подходит именно тебе» + «Как выиграть эту» — входят в TopUni Membership.",
                     )}
                     {paywallOpen === "compare" && t(
                       "Compare up to three scholarships side-by-side with TopUni Membership.",
@@ -5206,15 +5087,21 @@ const Discover = ({ language = "en" }: Props) => {
               <div className="space-y-2.5 text-sm text-foreground/85">
                 {[
                   t(
-                    `Full live feed — every active opportunity with strategy notes, rejection patterns, and how-to-win approaches. Updated continuously, not a stale once-a-year catalog.`,
-                    `Полная live-лента — каждая актуальная возможность со стратегическими заметками, причинами отказов и подходами к победе. Обновляется постоянно — не статичный каталог.`,
+                    `Unlimited saves — save every scholarship that fits your profile, not just five.`,
+                    `Без лимита сохранений — сохраняй каждую подходящую стипендию, а не только пять.`,
                   ),
                   t(
-                    "Live monthly workshops with our founders — Yale, Cambridge & Tsinghua, Harvard.",
-                    "Ежемесячные воркшопы с основателями — Yale, Cambridge & Tsinghua, Harvard.",
+                    `Per-scholarship insights — "Why this fits you" + "How to win this one" on every saved row.`,
+                    `Инсайты по каждой стипендии — «Почему подходит» + «Как выиграть» на каждой сохранённой строке.`,
                   ),
-                  t("Recordings library — every workshop saved for you.", "Библиотека записей — каждый воркшоп сохранён."),
-                  t("Unlimited shortlist + status tracking + notes.", "Без лимита: сохранения, статусы, заметки."),
+                  t(
+                    "Workspace — kanban for tracking applications, deadline calendar synced to Google / Apple Calendar.",
+                    "Рабочая зона — канбан-доска, календарь дедлайнов с синхронизацией в Google / Apple Calendar.",
+                  ),
+                  t(
+                    "Live monthly workshops — Yale, Cambridge & Tsinghua, Harvard alumni. Recordings library kept forever.",
+                    "Воркшопы вживую каждый месяц — выпускники Yale, Cambridge & Tsinghua, Harvard. Архив записей навсегда.",
+                  ),
                 ].map((b, i) => (
                   <div key={i} className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-gold-dark shrink-0 mt-0.5" />

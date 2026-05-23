@@ -5,17 +5,24 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 
+// File + template-key name kept as `pro-upgrade-nudge` to avoid
+// renaming the cron function (`pro-upgrade-nudge-cron`) and the
+// DB column (`pro_nudge_sent_at`). Content is the locked
+// Membership pitch per the stage-2 spec (Brief stays free; the
+// nudge sells the Membership bundle: unlimited saves +
+// per-scholarship insights + Pipeline + Academy).
+
 interface Props {
   /** First name if known. */
   firstName?: string
-  /** URL back to /topuni-ai with the brief loaded. */
+  /** URL back to /topuni-ai with the brief loaded (re-read entry point). */
   briefUrl: string
   /** URL to /pricing — the conversion target. */
   pricingUrl: string
   /** What the student is targeting, surfaced in the body for personalization. */
   major?: string
   targetCountries?: string[]
-  /** N days since their basic brief was generated. */
+  /** N days since their brief was generated. */
   daysSinceBrief?: number
   /** Whether founding-cohort discount is still available. Caller decides. */
   foundingDiscountActive?: boolean
@@ -25,93 +32,93 @@ interface Props {
 const COPY = {
   en: {
     htmlLang: 'en',
-    preview: 'The Pro brief adds Career ROI, Visa Pathway, Combined Funding scenarios — all the strategy depth premium consultants charge $5K for.',
-    kicker: 'TopUni Pro · Strategy Brief Upgrade',
-    headingNamed: (n: string) => `${n}, your basic brief is just the surface.`,
-    headingNeutral: 'Your basic brief is just the surface.',
+    preview: 'Brief stays yours, free. Membership is what happens next — unlimited Discover saves, per-scholarship insights, and the workspace to track every deadline.',
+    kicker: 'TopUni Membership · Discover · Pipeline · Academy',
+    headingNamed: (n: string) => `${n}, your brief is yours. Membership is what comes after.`,
+    headingNeutral: 'Your brief is yours. Membership is what comes after.',
     sublineFn: (target: string, days: number | undefined) =>
-      `You read your basic brief${days ? ` ${days} days ago` : ''} — built for ${target}.`,
+      `You read your strategy${days ? ` ${days} days ago` : ''}${target ? ` — built for ${target}` : ''}.`,
     forCountries: (cs: string) => `for ${cs}`,
-    intro: "The basic brief gave you a strategic positioning paragraph, a university shortlist, and a funding pathway. That's the table-stakes. The full brief goes much deeper, and it's what every student we've talked to says made the difference between \"I have a list\" and \"I have a strategy.\"",
-    introBoldMarker: 'full brief',
-    diffTitle: 'What Pro adds on top',
-    diff1Label: 'Career ROI breakdown',
+    intro: 'The brief told you who you already are and where to look. Members do the next part — saving every scholarship that fits, getting personalized "why this fits / how to win" notes on each, and tracking deadlines without losing one.',
+    introBoldMarker: 'who you already are',
+    diffTitle: 'What Membership unlocks',
+    diff1Label: 'Unlimited Discover saves',
     diff1Desc: (m: string) =>
-      `For each of your top-3 universities: starting salary range in ${m}, employment rate within 6 months, notable employers, where alumni are 5–10 years later.`,
-    diff2Label: 'Combined funding scenarios',
-    diff2Desc: '2–3 plausible stacks of scholarships + need-based aid + country-specific programs that could fully fund you. Total funding for each scenario.',
-    diff3Label: 'Visa & post-graduation pathway',
-    diff3Desc: 'Per-country visa difficulty for your nationality, post-study work permit details, path to permanent residency. Realistic challenges to plan for.',
-    diff4Label: 'Three personalized essay angles',
-    diff4Desc: 'Anchored to your specific profile + activities. Each angle is matched to which 2–3 target universities it plays best to and why.',
-    diff5Label: 'Monthly budget breakdown',
-    diff5Desc: 'For your top 3 cities: rent, food, transport, insurance — realistic ranges. Part-time work options. How scholarship coverage maps onto total cost.',
-    ctaWithDiscount: 'Upgrade — see early-access discount',
-    ctaPlain: 'Upgrade to Pro',
-    rereadCta: 'Reread your basic brief →',
+      `Save every scholarship that matches your ${m || 'profile'} — not just the first five. The Discover scoring engine keeps surfacing new ones every week.`,
+    diff2Label: 'Per-scholarship insights',
+    diff2Desc: '"Why this fits you" + "How to win this one" on every row you save. Specific pointers ("your IELTS 7.0 is below their 7.5 threshold — bump it or skip"), not generic fluff.',
+    diff3Label: 'Workspace — kanban + deadlines',
+    diff3Desc: 'Drag scholarships through the application stages. Calendar view of every deadline, synced to your Google or Apple Calendar so the dates fire on your phone.',
+    diff4Label: 'Live monthly workshops',
+    diff4Desc: 'Yale, Cambridge & Tsinghua, Harvard alumni run live sessions every month — essay clinics, scholarship strategy, country deep-dives.',
+    diff5Label: 'Recordings library, kept forever',
+    diff5Desc: 'Miss one? Catch up. The library compounds with every cohort — search past sessions by country, by scholarship, by topic.',
+    ctaWithDiscount: 'Become a member — early-access discount applies',
+    ctaPlain: 'Become a member',
+    rereadCta: 'Reread your strategy →',
     mathTitle: 'The math',
     mathConsultantsBold: 'Private consultants:',
-    mathConsultantsBody: ' $5,000–$15,000 for one application year, single-shot strategy session, no live workshops.',
-    mathProBold: 'TopUni Pro:',
-    mathProBody: ' $39/month, the full strategy report, the verified scholarship database with how-to-win notes, monthly live workshops with founders from Yale / Cambridge / Harvard, and the recordings library forever. 30-day money-back guarantee.',
-    secondOpinion: "Reply to this email if you want a second opinion before upgrading — we'll read your basic brief and tell you honestly whether Pro is worth it for your situation.",
-    teamSignoff: '— The TopUni AI Team',
-    fieldFallback: 'your field',
+    mathConsultantsBody: ' $5,000–$15,000 for one application cycle, single-shot strategy session, no recurring access.',
+    mathProBold: 'TopUni Membership:',
+    mathProBody: ' $39/month — unlimited Discover saves, per-scholarship insights, the workspace, the monthly workshops, the recordings library. 30-day money-back guarantee.',
+    secondOpinion: "Reply to this email if you want a second opinion before becoming a member — we'll read your strategy and tell you honestly whether the saves + insights + workspace would change anything in your cycle.",
+    teamSignoff: '— The TopUni Team',
+    fieldFallback: 'profile',
     subjectFn: (n: string, founding: boolean) =>
       founding
         ? n
-          ? `${n}, your Pro brief upgrade is waiting (early-access discount)`
-          : `Your Pro brief upgrade is waiting (early-access discount)`
+          ? `${n}, members save 5+ scholarships (early-access discount still on)`
+          : `Members save 5+ scholarships (early-access discount still on)`
         : n
-          ? `${n}, ready for the Pro version of your brief?`
-          : `Ready for the Pro version of your brief?`,
+          ? `${n}, ready to save more than 5 scholarships?`
+          : `Ready to save more than 5 scholarships?`,
   },
   ru: {
     htmlLang: 'ru',
-    preview: 'Pro-брифинг добавляет Career ROI, визовый путь, сценарии комбинированного финансирования — глубину стратегии, за которую частные консультанты берут $5K.',
-    kicker: 'TopUni Pro · Апгрейд брифинга',
-    headingNamed: (n: string) => `${n}, базовый брифинг — это только поверхность.`,
-    headingNeutral: 'Базовый брифинг — это только поверхность.',
+    preview: 'Брифинг — твой, бесплатно. Членство — это то, что дальше: безлимит сохранений в Discover, инсайты по каждой стипендии и рабочая зона со всеми дедлайнами.',
+    kicker: 'TopUni Membership · Discover · Pipeline · Academy',
+    headingNamed: (n: string) => `${n}, брифинг — твой. Членство — это то, что дальше.`,
+    headingNeutral: 'Брифинг — твой. Членство — это то, что дальше.',
     sublineFn: (target: string, days: number | undefined) =>
-      `Вы прочитали базовый брифинг${days ? ` ${days} дн. назад` : ''} — подготовлен для: ${target}.`,
+      `Ты прочитал стратегию${days ? ` ${days} дн. назад` : ''}${target ? ` — подготовлена для: ${target}` : ''}.`,
     forCountries: (cs: string) => `для ${cs}`,
-    intro: 'Базовый брифинг дал вам стратегическое позиционирование, шорт-лист университетов и план финансирования. Это база. Полный брифинг идёт намного глубже — каждый студент, с которым мы общались, говорит, что именно он сделал разницу между «у меня есть список» и «у меня есть стратегия».',
-    introBoldMarker: 'Полный брифинг',
-    diffTitle: 'Что добавляет Pro',
-    diff1Label: 'Career ROI — карьерный возврат',
+    intro: 'Брифинг назвал, кто ты уже сейчас, и куда смотреть. Участники делают следующий шаг — сохраняют каждую подходящую стипендию, получают персональные заметки «почему подходит / как выиграть» по каждой и не теряют ни одного дедлайна.',
+    introBoldMarker: 'кто ты уже сейчас',
+    diffTitle: 'Что открывает Членство',
+    diff1Label: 'Безлимит сохранений в Discover',
     diff1Desc: (m: string) =>
-      `Для каждого из топ-3 университетов: стартовая зарплата в области «${m}», % трудоустройства за 6 месяцев, ключевые работодатели, где выпускники через 5–10 лет.`,
-    diff2Label: 'Сценарии комбинированного финансирования',
-    diff2Desc: '2–3 реалистичных набора стипендий + need-based aid + страновых программ, которые могут полностью покрыть учёбу. Сумма по каждому сценарию.',
-    diff3Label: 'Визовый путь и пост-учёба',
-    diff3Desc: 'Сложность визы для вашей национальности по странам, пост-учебное разрешение на работу, путь к ПМЖ. Реальные сложности на пути.',
-    diff4Label: 'Три персональных угла для эссе',
-    diff4Desc: 'Привязаны к вашему профилю и активностям. Каждый угол сопоставлен с 2–3 университетами, где он сработает лучше всего.',
-    diff5Label: 'Месячный бюджет',
-    diff5Desc: 'Для топ-3 городов: аренда, еда, транспорт, страховка — реальные диапазоны. Варианты подработки. Как покрытие стипендии ложится на общую стоимость.',
-    ctaWithDiscount: 'Апгрейд — со скидкой раннего доступа',
-    ctaPlain: 'Перейти на Pro',
-    rereadCta: 'Перечитать базовый брифинг →',
+      `Сохраняй каждую стипендию, подходящую твоему ${m || 'профилю'} — не только первые пять. Discover каждую неделю подгоняет новые.`,
+    diff2Label: 'Инсайты по каждой стипендии',
+    diff2Desc: '«Почему подходит именно тебе» + «Как выиграть эту» на каждой сохранённой строке. Конкретные указания («твой IELTS 7.0 ниже их порога 7.5 — подтяни или пропусти»), а не общие фразы.',
+    diff3Label: 'Рабочая зона — канбан + дедлайны',
+    diff3Desc: 'Перетаскивай стипендии по этапам подачи. Календарь дедлайнов, синхронизированный с Google или Apple Calendar — даты приходят на телефон.',
+    diff4Label: 'Воркшопы с основателями вживую',
+    diff4Desc: 'Выпускники Yale, Cambridge & Tsinghua, Harvard ведут сессии каждый месяц — эссе-клиники, стратегия, страновые разборы.',
+    diff5Label: 'Библиотека записей навсегда',
+    diff5Desc: 'Пропустил? Догонишь. Библиотека пополняется каждую когорту — ищи прошлые сессии по стране, стипендии, теме.',
+    ctaWithDiscount: 'Стать участником — скидка раннего доступа в силе',
+    ctaPlain: 'Стать участником',
+    rereadCta: 'Перечитать стратегию →',
     mathTitle: 'Математика',
     mathConsultantsBold: 'Частные консультанты:',
-    mathConsultantsBody: ' $5 000–$15 000 за один цикл подачи, одна стратегическая сессия, без живых воркшопов.',
-    mathProBold: 'TopUni Pro:',
-    mathProBody: ' $39/мес, полный стратегический отчёт, проверенная база стипендий с заметками «как выиграть», ежемесячные живые воркшопы с выпускниками Yale / Cambridge / Harvard и архив записей навсегда. Возврат денег в течение 30 дней.',
-    secondOpinion: 'Ответьте на это письмо, если хотите второе мнение перед апгрейдом — мы прочитаем ваш базовый брифинг и честно скажем, стоит ли Pro в вашей ситуации.',
-    teamSignoff: '— Команда TopUni AI',
-    fieldFallback: 'вашей области',
+    mathConsultantsBody: ' $5 000–$15 000 за один цикл подачи, одна стратегическая сессия, без регулярного доступа.',
+    mathProBold: 'TopUni Membership:',
+    mathProBody: ' $39/мес — безлимит сохранений в Discover, инсайты по каждой стипендии, рабочая зона, ежемесячные воркшопы, архив записей. Возврат денег в течение 30 дней.',
+    secondOpinion: 'Ответь на это письмо, если хочешь второе мнение перед оплатой — прочитаем твою стратегию и честно скажем, изменит ли что-то в твоём цикле членство.',
+    teamSignoff: '— Команда TopUni',
+    fieldFallback: 'профилю',
     subjectFn: (n: string, founding: boolean) =>
       founding
         ? n
-          ? `${n}, апгрейд на Pro ждёт (скидка раннего доступа)`
-          : `Апгрейд на Pro ждёт (скидка раннего доступа)`
+          ? `${n}, участники сохраняют 5+ стипендий (скидка раннего доступа ещё в силе)`
+          : `Участники сохраняют 5+ стипендий (скидка раннего доступа ещё в силе)`
         : n
-          ? `${n}, готовы к Pro-версии брифинга?`
-          : `Готовы к Pro-версии брифинга?`,
+          ? `${n}, готов сохранять больше 5 стипендий?`
+          : `Готов сохранять больше 5 стипендий?`,
   },
 } as const
 
-const ProUpgradeNudgeEmail = ({
+const MembershipUpgradeNudgeEmail = ({
   firstName,
   briefUrl,
   pricingUrl,
@@ -131,7 +138,6 @@ const ProUpgradeNudgeEmail = ({
     return parts.join(' ')
   })()
 
-  // Render the intro with the bold marker emphasized.
   const introParts = c.intro.split(c.introBoldMarker)
 
   return (
@@ -207,13 +213,13 @@ const ProUpgradeNudgeEmail = ({
 }
 
 export const template = {
-  component: ProUpgradeNudgeEmail,
+  component: MembershipUpgradeNudgeEmail,
   subject: ((data: Record<string, any>) => {
     const c = COPY[data.language === 'ru' ? 'ru' : 'en']
     const name = data.firstName ? String(data.firstName) : ''
     return c.subjectFn(name, !!data.foundingDiscountActive)
   }),
-  displayName: 'Pro brief upgrade nudge (Day 5)',
+  displayName: 'Membership upgrade nudge (Day 5)',
   previewData: {
     firstName: 'Aizada',
     briefUrl: 'https://topuni.org/topuni-ai',
