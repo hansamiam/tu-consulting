@@ -726,15 +726,15 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-xs uppercase tracking-wider font-medium">IELTS</Label>
-                          <Input value={ielts} onChange={e => setIelts(e.target.value)} placeholder={t("Optional · e.g. 7.0", "По желанию · напр. 7.0")} className="h-11 bg-card" />
+                          <Input value={ielts} onChange={e => setIelts(e.target.value)} placeholder={t("Score or skip · e.g. 7.0", "Балл или пропусти · напр. 7.0")} className="h-11 bg-card" />
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-xs uppercase tracking-wider font-medium">TOEFL</Label>
-                          <Input value={toefl} onChange={e => setToefl(e.target.value)} placeholder={t("Optional · e.g. 100", "По желанию · напр. 100")} className="h-11 bg-card" />
+                          <Input value={toefl} onChange={e => setToefl(e.target.value)} placeholder={t("Score or skip · e.g. 100", "Балл или пропусти · напр. 100")} className="h-11 bg-card" />
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-xs uppercase tracking-wider font-medium">SAT</Label>
-                          <Input value={sat} onChange={e => setSat(e.target.value)} placeholder={t("Optional · e.g. 1450", "По желанию · напр. 1450")} className="h-11 bg-card" />
+                          <Input value={sat} onChange={e => setSat(e.target.value)} placeholder={t("Score or skip · e.g. 1450", "Балл или пропусти · напр. 1450")} className="h-11 bg-card" />
                         </div>
                       </div>
                     </div>

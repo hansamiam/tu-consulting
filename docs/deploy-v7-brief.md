@@ -140,37 +140,78 @@ extractor are pure-deterministic with no new env deps).
 ## Step 3 — Smoke test against a real student profile
 
 Open `/topuni-ai` on your phone (mobile experience is the primary
-target). Walk through the wizard for a representative
-cross-domain Kazakh student:
+target). Walk through the wizard for a **typical** Kazakh launch
+student — single-focus, somewhat undecided, normal extracurriculars:
 
 - Step 1: any plausible name, your email, "Kazakhstan", a grade
   level (11th Grade is fine)
-- Step 2: GPA 3.7, IELTS 7.0, **major_certainty = "Not at all"**,
-  target countries Canada + UK + Singapore, major "Computer
-  Science"
-- Step 3: career goal "policy + tech", extracurriculars "debate
-  captain, Math Olympiad regional bronze", background
-  "**introverted** policy nerd who reads more than I should"
+- Step 2: GPA 3.6, IELTS 6.5, **major_certainty = "Some idea, not
+  confident"**, target countries Canada + Singapore, major
+  "Business"
+- Step 3: career goal "still figuring it out", extracurriculars
+  "captain of girls' volleyball, MUN delegate, tutor for younger
+  students", background "first in family to apply abroad, parents
+  both work in retail"
+
+Why this profile instead of a cross-domain superkid: most launch
+students are like this — single-focus, generic major picked as
+placeholder, normal-shaped extracurriculars, no Olympiad medals.
+The brief needs to land for THIS kid, not just for the
+Bridge-Domain Kid edge case. Archetype should resolve to **Open
+Question** (the Barnum default for undecided + normal-leadership
+profiles) or **Quiet Builder**.
+
+**Second smoke test** if you have time — a kid certain about their
+major (Tight Lane archetype):
+
+- Major "Computer Science", **major_certainty = "Certain"**,
+  targetCountries `["United States"]` only (single-country
+  tunnel-vision = library-entry gap fires), extracurriculars
+  "competitive programming club president since 9th grade, ICPC
+  honors, taught Python summer camp two years"
+- Should resolve archetype = **Tight Lane**, primary gap =
+  library-entry (NOT major-uncertainty)
+
+Both pre-built fixtures live in `scripts/sample-brief-typical.test.json`
+and `scripts/sample-brief-tight-lane.test.json` if you want to
+run the harness against a synthetic brief without going through
+the wizard first.
 
 Click "Generate my plan." Watch the brief stream.
 
 ### What you should see (visual)
 
-1. Archetype card appears FIRST with the archetype name + tagline
-   on a saturated color background. Likely "The Bridge-Domain
-   Kid" (#5B7CFA periwinkle).
-2. Where you stand card uses the v7 prose: identity claim
+1. **Archetype card** appears FIRST with the archetype name + tagline
+   on a saturated brand-tinted background (navy or warm-gold family
+   per PR #36 palette). For the typical Aigerim profile, likely
+   "The Open Question" (warm graphite #6F6963). For the Tight Lane
+   Daniyar profile, likely "The Tight Lane" (ink navy #122A47).
+2. **Where you stand card** uses the v7 prose: identity claim
    headline + pile-contrast body referencing IT-track/engineering/
    finance piles (NEVER pre-med — that's the CIS rule).
-3. Where you belong card uses country buckets (not
-   reach/target/safety). Canada / UK / Singapore as you intaked,
-   1-3 schools per country, each with a one-line lore.
-4. The essay only you can write: ONE seed in speculative tense
-   ("sometime in the last two years..."). Not 3 angles.
-5. What you're avoiding: the major-uncertainty branch, named
-   warmly as information not a flaw.
-6. Your Monday Move: ONE move with a verb + artifact + low-bar
-   permission phrase ("don't polish" / "just list" / etc.).
+3. **Where you belong card** uses country buckets (not
+   reach/target/safety). Matches the intake targetCountries, 1-3
+   schools per country, each with a one-line lore.
+4. **The essay only you can write**: ONE seed in speculative tense
+   ("sometime in the last two years...", "find that exact moment").
+   Not 3 angles.
+5. **What you're avoiding**: for the typical Aigerim profile, the
+   major-uncertainty branch (named warmly as information not a
+   flaw). For the Tight Lane Daniyar profile, the single-country
+   tunnel-vision library entry (because targetCountries.length === 1).
+6. **Your Monday Move**: ONE move with a verb + artifact + low-bar
+   permission phrase ("don't polish" / "just list" / "stop when
+   you have three").
+7. **Handoff Bridge** at the end: archetype-personalized headline
+   ("The Open Question kids tend to save 4-6 scholarships across
+   Canada & Singapore..." / "Tight-Lane kids usually save 4-5...")
+   + 3 live matched scholarships + Open Discover CTA in the
+   archetype color.
+
+Most cards should display **closed by default** (Q1=A Wrapped pivot
+— big headline on tinted background, body hidden); tap "Read the
+reasoning" / "See the schools" / "Read the seed" / "See the move"
+to expand each card's editorial body.
 
 ### What you should see (network / DevTools)
 
@@ -203,7 +244,21 @@ preceding `[brief-plan] attempt N invalid: ...` line).
 
 ## Step 4 — Capture + run verify-brief.ts
 
-In the Supabase dashboard:
+You can either capture a real brief OR run the harness against the
+pre-built fixtures already in the repo:
+
+```sh
+# Quick: prove the harness works against the typical-student fixture
+deno run --allow-read scripts/verify-brief.ts scripts/sample-brief-typical.test.json
+# expected: 6 / 6 passed
+
+# Or against the tight-lane fixture (decided major)
+deno run --allow-read scripts/verify-brief.ts scripts/sample-brief-tight-lane.test.json
+# expected: 6 / 6 passed
+```
+
+To validate a REAL brief from your deployment, capture from
+Supabase dashboard:
 
 1. Open the `brief_cache` table
 2. Find the row from your test brief (sort by `generated_at desc`
