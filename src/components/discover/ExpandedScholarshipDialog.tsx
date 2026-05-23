@@ -21,6 +21,7 @@ import {
   Globe,
 } from "lucide-react";
 import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
+import { AcademyHookCta } from "@/components/discover/AcademyHookCta";
 import {
   cleanScholarshipName, cleanProvider, humanizeDegreeLabel,
 } from "@/lib/scholarshipFields";
@@ -223,6 +224,11 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
                 profile={deepDiveProfile}
               />
             </div>
+            {/* F12 stitch — Academy upsell below the deep-dive analysis.
+                Soft "want help winning this?" pointer to the strategy
+                brief wizard. Doesn't require Academy infra to ship — it
+                nudges to /topuni-ai which is live today. */}
+            <AcademyHookCta variant="detail_sheet" lang={lang} />
           </div>
         </div>
       </SheetContent>

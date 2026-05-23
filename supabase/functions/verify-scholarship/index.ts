@@ -60,6 +60,12 @@ const COST_ESTIMATE_USD = 0.0015 + FIRECRAWL_COST_PER_SCRAPE_USD;
 const MAX_MARKDOWN_CHARS = 25_000;
 const MIN_CONFIDENCE_TO_TRUST = 0.7;
 
+// Aggregator-hostname check used to pick which URL to re-fetch during
+// verification. Sourced from _shared/aggregator-hosts.ts — single source
+// of truth for the project. (Previously inlined here as a 25-entry list;
+// extracted 2026-05-23 after a third copy was found in canonical-extract.)
+import { isAggregatorHostname as isAggregatorHostnameLocal } from "../_shared/aggregator-hosts.ts";
+
 /* Field-level diff threshold rules. We don't flag micro-changes (case
    diffs, trailing whitespace) — only material drift the user would
    notice. */
@@ -278,7 +284,7 @@ Deno.serve(async (req) => {
   const { data: stored, error: loadErr } = await supa
     .from("scholarships")
     .select(
-      `scholarship_id, scholarship_name, provider_name, host_country, application_deadline, deadline_type, coverage_type, award_amount_text, estimated_total_value_usd, min_gpa, min_ielts, min_toefl, min_sat, essay_required, recommendation_letters_required, interview_required, citizenship_requirements, eligibility_requirements, language_requirements, duration_text, target_fields, target_degree_level, eligible_countries, target_demographics, partner_universities, why_this_fits, how_to_win, ideal_candidate_profile, what_to_prepare_first, strategy_notes, weak_candidate_warning, source_url, official_url, verification_status, last_verified_at`
+      `scholarship_id, scholarship_name, provider_name, host_country, application_deadline, deadline_type, coverage_type, award_amount_text, estimated_total_value_usd, min_gpa, min_ielts, min_toefl, min_sat, essay_required, recommendation_letters_required, interview_required, citizenship_requirements, eligibility_requirements, language_requirements, duration_text, target_fields, target_degree_level, eligible_countries, target_demographics, partner_universities, why_this_fits, how_to_win, ideal_candidate_profile, what_to_prepare_first, strategy_notes, weak_candidate_warning, source_url, official_url, verification_status, last_verified_at, lifecycle_status`
     )
     .eq("scholarship_id", body.scholarship_id)
     .maybeSingle();
@@ -383,7 +389,22 @@ Deno.serve(async (req) => {
     // Soft-fail; we'll fall back to source_url below.
   }
 
-  const targetUrl = authoritativeUrl || stored.source_url || stored.official_url;
+  // 2026-05-23: when source_url is an aggregator article and official_url is
+  // the resolved program page (typical for Manus-era rows + F13-promoted rows),
+  // verify against the program page, not the aggregator article. Pre-fix the
+  // verifier was re-fetching opportunitytracker.ug / iefa.org / fastweb.com
+  // article pages and the LLM (correctly) returned confidence 0.4 ("this
+  // aggregator article isn't the program's official page"), which left 100+
+  // rows stuck at G9a forever.
+  const sourceIsAggregator = isAggregatorHostnameLocal(stored.source_url);
+  const officialIsAggregator = isAggregatorHostnameLocal(stored.official_url);
+  const targetUrl =
+    authoritativeUrl
+    || (sourceIsAggregator && stored.official_url && !officialIsAggregator
+        ? stored.official_url
+        : null)
+    || stored.source_url
+    || stored.official_url;
   if (!targetUrl) {
     // Nothing to verify against — leave status alone but stamp last_verified_at
     // to push this row to the back of the queue for next cron pass.
@@ -590,6 +611,20 @@ Deno.serve(async (req) => {
     // promote — silently failing here means the row stays at 'pending'
     // or 'stale' forever despite passing verification, blocking it from
     // surfacing in user-facing results.
+    //
+    // 2026-05-23: also flip lifecycle_status='inactive' → 'active' on
+    // clean re-verify. Pre-fix, newly-scraped rows landed at lifecycle
+    // 'inactive' (the schema default), got promoted to verification_status
+    // 'verified' by this very block, but nothing ever turned the lifecycle
+    // bit on — leaving 64 verified-but-invisible rows in catalog. Audit on
+    // 2026-05-23 found 33 of those 64 also passed every other G1-G11 gate,
+    // so the launch catalog was sitting one field away from publishable.
+    // We only touch 'inactive' — 'superseded' / 'closed_archived' are
+    // terminal states an admin set deliberately and must NOT be undone
+    // by a verify pass.
+    const lifecyclePromotion = stored.lifecycle_status === 'inactive'
+      ? { lifecycle_status: 'active' as const }
+      : {};
     const { error: promoteErr } = await supa.from("scholarships")
       .update({
         verification_status: "verified",
@@ -600,12 +635,27 @@ Deno.serve(async (req) => {
         // read of how well-grounded this row is. Counts as a quality
         // update, not a material diff (no DIFF_FIELDS membership).
         confidence: fresh.confidence,
+        ...lifecyclePromotion,
         ...backfillUpdates,
       })
       .eq("scholarship_id", stored.scholarship_id);
     if (promoteErr) {
       console.error("[verify-scholarship] verified-promote failed", promoteErr.message, "id=", stored.scholarship_id);
       return json(500, { error: `promote_failed: ${promoteErr.message}` });
+    }
+
+    // 2026-05-23: silent failure #4 fix. After promoting verification_status
+    // + lifecycle_status, re-run the publish gate so is_published tracks the
+    // row's current state. Pre-fix the gate was only stamped by a one-shot
+    // backfill migration — verified+active rows never flipped to published
+    // until somebody manually re-ran the migration. Now every clean
+    // re-verify also re-evaluates the gate for this single row.
+    // Safe to fire-and-forget — gate logic is idempotent + the row's
+    // last_gate_checked_at gets updated either way.
+    try {
+      await supa.rpc("evaluate_publish_gate_for", { p_scholarship_id: stored.scholarship_id });
+    } catch (e) {
+      console.warn("[verify-scholarship] publish-gate re-eval failed", (e as Error).message);
     }
 
     // ─── Record evidence — re-verification keeps the source warm ───

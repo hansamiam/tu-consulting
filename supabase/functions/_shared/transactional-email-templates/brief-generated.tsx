@@ -165,8 +165,8 @@ export const template = {
         : `Ваш${major ? ' брифинг' : ' стратегический брифинг'} готов`
     }
     return name
-      ? `${name}, your${major} admissions brief is ready`
-      : `Your${major} admissions brief is ready`
+      ? `${name}, your${major} strategy brief is ready`
+      : `Your${major} strategy brief is ready`
   }),
   displayName: 'Brief generated — open it now',
   previewData: {
