@@ -65,6 +65,9 @@ interface IntakeFields {
    *  Open Question / Tight Lane archetype detection. Optional; brief
    *  defaults to "some_idea" if missing. */
   majorCertainty?: "not_at_all" | "some_idea" | "pretty_sure" | "certain";
+  /** Sparse-input pass (2026-05-23) — see DiscoverProfile fields. */
+  foreignLanguages?: string[];
+  firstToApplyAbroad?: "yes" | "siblings_have" | "parents_have" | "unsure";
 }
 
 /** Project the wizard's intake into the DiscoverProfile shape that
@@ -100,4 +103,7 @@ export const projectToDiscoverProfile = (intake: IntakeFields): DiscoverProfile 
   background: intake.background?.trim() || undefined,
   namedSchools: intake.namedSchools?.trim() || undefined,
   majorCertainty: intake.majorCertainty,
+  foreignLanguages: intake.foreignLanguages && intake.foreignLanguages.length > 0
+    ? intake.foreignLanguages : undefined,
+  firstToApplyAbroad: intake.firstToApplyAbroad,
 });

@@ -58,6 +58,18 @@ export interface DiscoverProfile {
    *  (most-common case, fires the major-uncertainty branch which works
    *  for the largest cohort). */
   majorCertainty?: "not_at_all" | "some_idea" | "pretty_sure" | "certain";
+  /** Foreign languages chip multi-select on Step 1. Form deliberately
+   *  excludes English + CIS native languages (Russian/Kazakh/Kyrgyz/
+   *  Uzbek/Tajik) — anything stored IS distinctive by definition.
+   *  The brief celebrates whatever's here without per-nationality
+   *  baseline filtering. */
+  foreignLanguages?: string[];
+  /** First-in-family-to-apply-abroad chip single-select on Step 1.
+   *  Drives firstAbroadFramingFor() in supabase/functions/_shared/
+   *  cultural-context.ts — CIS = "first to leave home" framing,
+   *  US/LatAm = "first-gen college" framing, default = "first global
+   *  step." Nullable. */
+  firstToApplyAbroad?: "yes" | "siblings_have" | "parents_have" | "unsure";
 }
 
 const STORAGE_KEY = "topuni_discover_profile";
@@ -138,6 +150,9 @@ interface StudentProfileRow {
    *  migrate when the spec evolves. The application validates the
    *  legal-values set in code. */
   major_certainty?: string | null;
+  /** Sparse-input pass (2026-05-23) — see DiscoverProfile fields above. */
+  foreign_languages_learned?: string[] | null;
+  first_to_apply_abroad?: string | null;
   updated_at?: string | null;
 }
 
@@ -161,6 +176,8 @@ const profileToDbColumns = (p: DiscoverProfile): StudentProfileRow => {
     budget: p.budgetRange || null,
     target_countries: p.targetCountries && p.targetCountries.length > 0 ? p.targetCountries : null,
     major_certainty: p.majorCertainty || null,
+    foreign_languages_learned: p.foreignLanguages && p.foreignLanguages.length > 0 ? p.foreignLanguages : null,
+    first_to_apply_abroad: p.firstToApplyAbroad || null,
   };
 };
 
@@ -184,6 +201,15 @@ const dbColumnsToProfile = (row: StudentProfileRow): Partial<DiscoverProfile> =>
     const v = row.major_certainty as string;
     if (v === "not_at_all" || v === "some_idea" || v === "pretty_sure" || v === "certain") {
       out.majorCertainty = v;
+    }
+  }
+  if (Array.isArray(row.foreign_languages_learned) && row.foreign_languages_learned.length > 0) {
+    out.foreignLanguages = row.foreign_languages_learned;
+  }
+  if (row.first_to_apply_abroad) {
+    const v = row.first_to_apply_abroad as string;
+    if (v === "yes" || v === "siblings_have" || v === "parents_have" || v === "unsure") {
+      out.firstToApplyAbroad = v;
     }
   }
   return out;
@@ -219,7 +245,7 @@ export async function pullProfileFromDb(userId: string): Promise<DiscoverProfile
   try {
     const { data, error } = await supabase
       .from("student_profiles")
-      .select("full_name, email, nationality, grade_level, gpa, ielts, toefl, sat, major, field_of_study, budget, target_countries, major_certainty, updated_at")
+      .select("full_name, email, nationality, grade_level, gpa, ielts, toefl, sat, major, field_of_study, budget, target_countries, major_certainty, foreign_languages_learned, first_to_apply_abroad, updated_at")
       .eq("user_id", userId)
       .maybeSingle<StudentProfileRow>();
     if (error || !data) return null;

@@ -40,6 +40,13 @@ import {
   COUNTRY_PICK_CAP,
   OTHER_TOKEN,
 } from "@/lib/country-chips";
+import {
+  LANGUAGE_CHIPS,
+  languageLabel,
+  FIRST_ABROAD_CHIPS,
+  firstAbroadLabel,
+  type FirstAbroadOption,
+} from "@/lib/language-chips";
 import { useNavigate } from "react-router-dom";
 import { saveProfile } from "@/components/discover/DiscoverProfileGate";
 import { projectToDiscoverProfile } from "@/lib/topuniIntakeProjection";
@@ -120,6 +127,15 @@ interface WizardDraft {
   extracurriculars?: string;
   background?: string;
   namedSchools?: string;
+  /** Sparse-input pass (2026-05-23). Step 1 chip multi-select for
+   *  foreign languages learned (excludes English + CIS native — anything
+   *  here is distinctive by definition). Drives brief celebration of
+   *  language fluency. */
+  foreignLanguages?: string[];
+  /** Sparse-input pass (2026-05-23). Step 1 chip single-select. Drives
+   *  cultural-context.firstAbroadFramingFor() in the brief generator —
+   *  CIS = "leaving home" angle, US/LatAm = "first-gen college" angle. */
+  firstToApplyAbroad?: "yes" | "siblings_have" | "parents_have" | "unsure";
   /** Wall-clock ms — drafts older than 14 days are dropped on read. */
   ts?: number;
 }
@@ -265,6 +281,21 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
       return [...prev, token];
     });
   };
+  // 2026-05-23 sparse-input pass: Step 1 captures foreign languages
+  // (chip multi-select, no cap) + first-in-family-abroad (chip single-
+  // select). Both feed the brief's cultural-context lens. Defaults:
+  // empty array / undefined → brief skips the framing branch entirely.
+  const [foreignLanguages, setForeignLanguages] = useState<string[]>(
+    Array.isArray(draft?.foreignLanguages) ? draft!.foreignLanguages! : [],
+  );
+  const toggleForeignLanguage = (token: string) => {
+    setForeignLanguages((prev) =>
+      prev.includes(token) ? prev.filter((t) => t !== token) : [...prev, token],
+    );
+  };
+  const [firstToApplyAbroad, setFirstToApplyAbroad] = useState<
+    FirstAbroadOption["token"] | undefined
+  >(draft?.firstToApplyAbroad);
   // countrySearch state retired with the target-countries section.
   // ALL_COUNTRIES still imported for the nationality typeahead.
   const [major, setMajor] = useState(draft?.major ?? "");
@@ -414,6 +445,9 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
         extracurriculars: extracurriculars || undefined,
         background: background || undefined,
         namedSchools: namedSchools || undefined,
+        // Sparse-input pass — Step 1 chip fields.
+        foreignLanguages: foreignLanguages.length > 0 ? foreignLanguages : undefined,
+        firstToApplyAbroad,
         ts: Date.now(),
       };
       localStorage.setItem(WIZARD_DRAFT_KEY, JSON.stringify(draftPayload));
@@ -425,6 +459,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
     targetCountries, major, budget, scholarshipNeeded, timeline,
     prestige, scholarship, careerRoi, visaAccess, locationPref,
     careerGoal, extracurriculars, background, namedSchools,
+    foreignLanguages, firstToApplyAbroad,
   ]);
 
   /* Once the user transitions to the dashboard the wizard answers are
@@ -770,6 +805,67 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         <div className="space-y-1.5">
                           <Label className="text-xs uppercase tracking-wider font-medium">SAT</Label>
                           <Input value={sat} onChange={e => setSat(e.target.value)} placeholder={t("Score or skip · e.g. 1450", "Балл или пропусти · напр. 1450")} className="h-11 bg-card" />
+                        </div>
+                      </div>
+                    </div>
+                    {/* 2026-05-23 sparse-input pass — two 1-tap fields
+                        that sharpen the brief's voice without adding
+                        textareas. Foreign-languages chip set deliberately
+                        omits English + CIS native languages so anything
+                        picked IS distinctive (no cultural-baseline
+                        filtering needed in the brief). First-in-family
+                        drives cultural-context.firstAbroadFramingFor()
+                        on the brief side — CIS = "leaving home" angle,
+                        US/LatAm = "first-gen college" angle. */}
+                    <div className="pt-2 space-y-5">
+                      <div>
+                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Foreign languages you're learning or speak", "Иностранные языки")}</Label>
+                        <p className="text-muted-foreground text-xs mt-1 mb-3">{t("Beyond your native and English. Pick all that apply — optional.", "Помимо родного и английского. Отметь все — по желанию.")}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {LANGUAGE_CHIPS.map((c) => {
+                            const selected = foreignLanguages.includes(c.token);
+                            return (
+                              <button
+                                key={c.token}
+                                type="button"
+                                onClick={() => toggleForeignLanguage(c.token)}
+                                aria-pressed={selected}
+                                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[36px] ${
+                                  selected
+                                    ? "bg-gold-dark text-cream border-gold-dark"
+                                    : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
+                                }`}
+                              >
+                                {selected && <Check className="w-3 h-3" />}
+                                {languageLabel(c.token, language === "ru" ? "ru" : "en")}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs uppercase tracking-wider font-medium">{t("First in your family to apply abroad?", "Первый в семье поступает за рубеж?")}</Label>
+                        <p className="text-muted-foreground text-xs mt-1 mb-3">{t("Pick one — optional.", "Выбери один — по желанию.")}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {FIRST_ABROAD_CHIPS.map((c) => {
+                            const selected = firstToApplyAbroad === c.token;
+                            return (
+                              <button
+                                key={c.token}
+                                type="button"
+                                onClick={() => setFirstToApplyAbroad(selected ? undefined : c.token)}
+                                aria-pressed={selected}
+                                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[36px] ${
+                                  selected
+                                    ? "bg-gold-dark text-cream border-gold-dark"
+                                    : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
+                                }`}
+                              >
+                                {selected && <Check className="w-3 h-3" />}
+                                {firstAbroadLabel(c.token, language === "ru" ? "ru" : "en")}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     </div>
@@ -1208,6 +1304,8 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                             gpa, gpaScale, ielts, toefl, sat, major, budget,
                             targetCountries,
                             careerGoal, extracurriculars, background, namedSchools,
+                            foreignLanguages: foreignLanguages.length > 0 ? foreignLanguages : undefined,
+                            firstToApplyAbroad,
                           }));
                         } catch { /* localStorage may be unavailable; brief still renders */ }
                         setScreen("dashboard");
