@@ -140,41 +140,51 @@ extractor are pure-deterministic with no new env deps).
 ## Step 3 — Smoke test against a real student profile
 
 Open `/topuni-ai` on your phone (mobile experience is the primary
-target). Walk through the wizard for a **typical** Kazakh launch
-student — single-focus, somewhat undecided, normal extracurriculars:
+target). Walk through the wizard for the **Yerlan** profile (the
+canonical Bridge-Domain Kid case — cross-domain student, undecided
+major, the gold-standard exemplar the v7 spec was built around):
 
-- Step 1: any plausible name, your email, "Kazakhstan", a grade
-  level (11th Grade is fine)
-- Step 2: GPA 3.6, IELTS 6.5, **major_certainty = "Some idea, not
-  confident"**, target countries Canada + Singapore, major
-  "Business"
-- Step 3: career goal "still figuring it out", extracurriculars
-  "captain of girls' volleyball, MUN delegate, tutor for younger
-  students", background "first in family to apply abroad, parents
-  both work in retail"
+- Step 1: "Yerlan Bekov", your email, "Kazakhstan", 11th Grade
+- Step 2: GPA 3.7, IELTS 7.0, **major_certainty = "Not at all"**,
+  target countries Canada + United Kingdom + Singapore, major
+  "Computer Science" (placeholder — the brief should call this out)
+- Step 3: career goal "build something policy-shaped, not sure
+  what yet", extracurriculars "debate captain since 9th grade,
+  Math Olympiad regional bronze, ran a small coding club for
+  middle-schoolers", background "introverted policy nerd who reads
+  more than he should — got into debate because it was the one
+  place arguing wasn't rude"
 
-Why this profile instead of a cross-domain superkid: most launch
-students are like this — single-focus, generic major picked as
-placeholder, normal-shaped extracurriculars, no Olympiad medals.
-The brief needs to land for THIS kid, not just for the
-Bridge-Domain Kid edge case. Archetype should resolve to **Open
-Question** (the Barnum default for undecided + normal-leadership
-profiles) or **Quiet Builder**.
+Archetype should resolve to **Bridge-Domain Kid** (cross-domain
+debate + math intersection) or **Open Question** (undecided major
+overrides). Primary gap should be **major-uncertainty** (warm
+naming) because `major_certainty = "not at all"`.
 
-**Second smoke test** if you have time — a kid certain about their
-major (Tight Lane archetype):
+**Additional smoke tests** if you want broader archetype coverage:
 
-- Major "Computer Science", **major_certainty = "Certain"**,
+- **Aigerim Tolegen (Open Question, normal-shaped profile)** —
+  GPA 3.6, IELTS 6.5, major_certainty = "Some idea, not confident",
+  target countries Canada + Singapore, major "Business",
+  extracurriculars "captain of girls' volleyball, MUN delegate,
+  tutor for younger students", background "first in family to apply
+  abroad, parents both work in retail". Tests that the brief works
+  for the typical single-focus undecided kid without cross-domain
+  ECs. Should resolve archetype = **Open Question** or **Quiet
+  Builder**.
+
+- **Daniyar Bekenov (Tight Lane, decided major)** — Major
+  "Computer Science", **major_certainty = "Certain"**,
   targetCountries `["United States"]` only (single-country
   tunnel-vision = library-entry gap fires), extracurriculars
   "competitive programming club president since 9th grade, ICPC
-  honors, taught Python summer camp two years"
-- Should resolve archetype = **Tight Lane**, primary gap =
-  library-entry (NOT major-uncertainty)
+  honors, taught Python summer camp two years". Should resolve
+  archetype = **Tight Lane**, primary gap = library-entry (NOT
+  major-uncertainty).
 
-Both pre-built fixtures live in `scripts/sample-brief-typical.test.json`
-and `scripts/sample-brief-tight-lane.test.json` if you want to
-run the harness against a synthetic brief without going through
+All three pre-built fixtures live in `scripts/sample-brief.test.json`
+(Yerlan), `scripts/sample-brief-typical.test.json` (Aigerim) and
+`scripts/sample-brief-tight-lane.test.json` (Daniyar) if you want
+to run the harness against a synthetic brief without going through
 the wizard first.
 
 Click "Generate my plan." Watch the brief stream.
@@ -183,9 +193,10 @@ Click "Generate my plan." Watch the brief stream.
 
 1. **Archetype card** appears FIRST with the archetype name + tagline
    on a saturated brand-tinted background (navy or warm-gold family
-   per PR #36 palette). For the typical Aigerim profile, likely
-   "The Open Question" (warm graphite #6F6963). For the Tight Lane
-   Daniyar profile, likely "The Tight Lane" (ink navy #122A47).
+   per PR #36 palette). For the Yerlan profile, likely "The
+   Bridge-Domain Kid" (navy `#1F3A6B`) or "The Open Question" (warm
+   graphite `#6F6963`). For Aigerim, likely "The Open Question."
+   For Daniyar, likely "The Tight Lane" (ink navy `#122A47`).
 2. **Where you stand card** uses the v7 prose: identity claim
    headline + pile-contrast body referencing IT-track/engineering/
    finance piles (NEVER pre-med — that's the CIS rule).
@@ -195,16 +206,18 @@ Click "Generate my plan." Watch the brief stream.
 4. **The essay only you can write**: ONE seed in speculative tense
    ("sometime in the last two years...", "find that exact moment").
    Not 3 angles.
-5. **What you're avoiding**: for the typical Aigerim profile, the
-   major-uncertainty branch (named warmly as information not a
-   flaw). For the Tight Lane Daniyar profile, the single-country
-   tunnel-vision library entry (because targetCountries.length === 1).
+5. **What you're avoiding**: for Yerlan and Aigerim (both have
+   `majorCertainty in {not_at_all, some_idea}`), the major-uncertainty
+   branch fires — named warmly as information not a flaw. For
+   Daniyar (Tight Lane), the single-country tunnel-vision library
+   entry fires instead (because targetCountries.length === 1).
 6. **Your Monday Move**: ONE move with a verb + artifact + low-bar
    permission phrase ("don't polish" / "just list" / "stop when
    you have three").
 7. **Handoff Bridge** at the end: archetype-personalized headline
-   ("The Open Question kids tend to save 4-6 scholarships across
-   Canada & Singapore..." / "Tight-Lane kids usually save 4-5...")
+   ("Bridge-Domain Kids like you usually save 3-5 in Canada / UK
+   / Singapore..." / "The Open Question kids tend to save 4-6
+   across [countries]..." / "Tight-Lane kids usually save 4-5...")
    + 3 live matched scholarships + Open Discover CTA in the
    archetype color.
 
@@ -248,11 +261,15 @@ You can either capture a real brief OR run the harness against the
 pre-built fixtures already in the repo:
 
 ```sh
-# Quick: prove the harness works against the typical-student fixture
+# Quick: prove the harness works against the canonical Yerlan fixture
+deno run --allow-read scripts/verify-brief.ts scripts/sample-brief.test.json
+# expected: 6 / 6 passed
+
+# Then the typical-student fixture (Aigerim, normal-shaped profile)
 deno run --allow-read scripts/verify-brief.ts scripts/sample-brief-typical.test.json
 # expected: 6 / 6 passed
 
-# Or against the tight-lane fixture (decided major)
+# And the tight-lane fixture (Daniyar, decided major)
 deno run --allow-read scripts/verify-brief.ts scripts/sample-brief-tight-lane.test.json
 # expected: 6 / 6 passed
 ```
