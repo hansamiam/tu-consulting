@@ -21,9 +21,9 @@ import { ProComparisonModal } from "@/components/ProComparisonModal";
  * Usage:
  *
  *   <PremiumGate
- *     gateId="brief-funding-extra-matches"
- *     headline="Unlock all 23 matches with Pro"
- *     subline="Top 3 are free; the rest open with TopUni Pro."
+ *     gateId="discover-saves-unlimited"
+ *     headline="Members save every match — not just the first five"
+ *     subline="Unlock with TopUni Membership."
  *   >
  *     <div>{lockedContent}</div>
  *   </PremiumGate>

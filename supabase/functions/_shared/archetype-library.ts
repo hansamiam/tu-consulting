@@ -74,101 +74,110 @@ export interface Archetype {
  * Domain Kid needs two strong fields colliding) to "most-default"
  * (Open Question fits a huge cohort). */
 export const ARCHETYPE_LIBRARY: ReadonlyArray<Archetype> = [
+  // v7 PR brand-palette pass (Q2=C, 2026-05-23): every color is now
+  // anchored to Top Uni's navy + gold family (HSL navy 210 70% 20%,
+  // gold 41 61% 47% per src/index.css). Cool archetypes live in the
+  // navy hue range (195–225 H, 12–60% S); warm archetypes live in
+  // the gold range (15–40 H, 35–55% S); neutrals sit between. Each
+  // hex stays distinct enough to differentiate at thumbnail size in
+  // a grid, but the eye reads the whole set as "this is TopUni" —
+  // not the periwinkle/terracotta/mulberry rainbow the prior random
+  // palette produced.
   {
     id: "bridge-domain-kid",
     name: "The Bridge-Domain Kid",
-    tagline: "You don't pick a lane — both lanes are yours.",
-    color: "#5B7CFA", // periwinkle / cross-domain blue
+    tagline: "Both halves of you are the point.",
+    color: "#3A4E66", // slate navy — sophisticated cross-domain blue
   },
   {
     id: "quiet-builder",
     name: "The Quiet Builder",
     tagline: "You've built it. You haven't claimed it yet.",
-    color: "#6B8E7F", // forest sage
+    color: "#586B62", // sage-navy — soft, growing, understated
   },
   {
     id: "late-bloomer",
     name: "The Late Bloomer",
     tagline: "Most of your run hasn't happened yet.",
-    color: "#E89B5E", // amber sunrise
+    color: "#BC8F61", // peach gold — sunrise, lifting
   },
   {
     id: "foreign-lane-native",
     name: "The Foreign-Lane Native",
-    tagline: "Cross-cultural is your default, not your stretch.",
-    color: "#D8645E", // terracotta
+    tagline: "Cross-cultural is where you already live.",
+    color: "#3F575F", // teal-navy — cool, in-between
   },
   {
     id: "quiet-athlete",
     name: "The Quiet Athlete",
     tagline: "Discipline you don't talk about is still discipline.",
-    color: "#3A5D6E", // deep teal
+    color: "#57636B", // stone-navy — disciplined neutral
   },
   {
     id: "competition-kid",
     name: "The Competition Kid",
     tagline: "You've been measured. You held up.",
-    color: "#B33951", // crimson
+    color: "#836241", // bronze gold — achievement, slightly tarnished from use
   },
   {
     id: "community-anchor",
     name: "The Community Anchor",
     tagline: "You're the one who shows up. That's information.",
-    color: "#C2843C", // warm gold
+    color: "#B58838", // signature warm amber — the brand gold itself
   },
   {
     id: "self-taught",
     name: "The Self-Taught",
     tagline: "You built your own scaffolding. Most waited for theirs.",
-    color: "#4A6FA5", // cobalt
+    color: "#3F557B", // cobalt-navy — independent, slightly cooler blue
   },
   {
     id: "storyteller",
     name: "The Storyteller",
     tagline: "You can name what others only feel.",
-    color: "#9C5B9B", // mulberry
+    color: "#B07866", // rose-gold — warmer, narrative-soft
   },
   {
     id: "quant",
     name: "The Quant",
     tagline: "You're not 'good at math.' You're inside it.",
-    color: "#2E5C4E", // pine
+    color: "#1D3A5C", // deep navy — analytical, precise
   },
   {
     id: "operator",
     name: "The Operator",
     tagline: "You don't theorize. You move people.",
-    color: "#D17B3F", // burnt orange
+    color: "#946D32", // burnt gold — commanding, action-warm
   },
   {
     id: "translator",
     name: "The Translator",
     tagline: "You sit between groups on purpose.",
-    color: "#7B6CA8", // dusk lavender
+    color: "#4A546F", // dusk-navy — between cool and warm, mediating
   },
   {
     id: "open-question",
     name: "The Open Question",
     tagline: "You're still asking. That's the position.",
-    color: "#8C8C8C", // neutral graphite (the default)
+    color: "#6F6963", // warm graphite — the neutral default, slightly gold-tinted
   },
   {
     id: "tight-lane",
     name: "The Tight Lane",
     tagline: "You knew in 8th grade. Some never do.",
-    color: "#1F4D6B", // deep indigo
+    color: "#122A47", // ink navy — committed, dark certainty
   },
   {
     id: "recoverer",
     name: "The Recoverer",
     tagline: "You kept moving. That's the part most kids skip.",
-    color: "#A36B5B", // copper rose
+    color: "#9E6650", // copper-rose — warm earth, resilient
   },
   {
     id: "contrarian",
     name: "The Contrarian",
     tagline: "You argue with the room. Schools eventually need that.",
-    color: "#3D6B3A", // moss
+    color: "#3A414E", // charcoal-navy — independent, gray-blue dissent
   },
 ];
 

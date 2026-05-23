@@ -30,66 +30,43 @@ interface Row {
   pro: string;
 }
 
-// Comparison rows reworked 2026-05-10. Cut the Career ROI / Visa /
-// Monthly-Budget rows — those sections were retired from the brief
-// (they diluted the report rather than adding decision-grade value).
-// Pro now differentiates on DEPTH and BREADTH of the surviving five
-// sections (positioning, shortlist, funding, essays, gaps), plus the
-// regen + structured-data + workshops moats.
+// 2026-05-23 stage-2 reshape: dropped TopUni Counselor + Essay
+// Critique rows entirely (per Samuel's "ChatGPT eats counselor"
+// + "essay critique not pursuing" decisions). The brief + Discover
+// database are now FREE for traffic; Membership unlocks ONLY the
+// three gates Samuel locked plus Academy. Five rows total — every
+// row is something Members get that free users don't, no more
+// shallow-free-vs-deep-pro depth tiering.
 const ROWS: Row[] = [
   {
-    id: "brief-shortlist-depth",
-    label: "University shortlist",
-    free: "6-8 universities, tight one-line fit notes",
-    pro: "15-20 universities with admission thresholds, named programs, and a real career anchor per top fit",
+    id: "discover-saves-unlimited",
+    label: "Discover saves",
+    free: "First 5 saves",
+    pro: "Unlimited — save every scholarship that fits",
   },
   {
-    id: "brief-funding-extra-matches",
-    label: "Funding pathway",
-    free: "Top 3-4 scholarships + a 'Stack:' callout",
-    pro: "All ranked matches with per-factor match-score breakdown + multi-pass funding scenarios",
-  },
-  {
-    id: "brief-pro-regen",
-    label: "Regenerate any section",
+    id: "discover-per-row-insights",
+    label: "Per-scholarship insights",
     free: false,
-    pro: "Re-run any section if the analysis missed something — positioning, essays, gaps, all of it",
+    pro: "\"Why this fits you\" + \"How to win this one\" on every saved row",
   },
   {
-    id: "brief-pro-structured-charts",
-    label: "Funding scenario chart",
+    id: "workspace-pipeline",
+    label: "Workspace + deadlines",
     free: false,
-    pro: "Visual stack of plausible scholarship combinations and total funding per scenario",
-  },
-  {
-    id: "counselor-free-limit",
-    label: "TopUni Counselor",
-    free: "5 messages",
-    pro: "Unlimited messages with cross-session memory",
-  },
-  {
-    id: "discover-strategy-notes",
-    label: "Discover database",
-    free: "Browse + match",
-    pro: "Strategy notes (how-to-win, ideal candidate, rejection patterns) on every row",
+    pro: "Kanban for tracking applications, calendar view, sync to Google / Apple Calendar",
   },
   {
     id: "live-workshops",
-    label: "Live workshops with founders",
+    label: "Live monthly workshops",
     free: false,
-    pro: "Monthly with Yale · Cambridge & Tsinghua · Harvard alumni — recordings yours forever",
+    pro: "Yale · Cambridge & Tsinghua · Harvard alumni — recordings yours forever",
   },
   {
-    id: "essay-critique",
-    label: "Essay critique tool",
-    free: "1 critique / week",
-    pro: "Unlimited critiques + tone polish",
-  },
-  {
-    id: "pdf-export",
-    label: "Strategy report PDF",
+    id: "direct-line",
+    label: "Direct line to the team",
     free: false,
-    pro: "Downloadable, share-ready PDF for parents and counselors",
+    pro: "Submit questions, vote on workshop topics, get product input rights",
   },
 ];
 
@@ -166,7 +143,7 @@ export const ProComparisonModal = ({ open, onOpenChange, gateId }: Props) => {
           <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 sm:gap-x-6 gap-y-1 items-start">
             <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground pb-2">Feature</div>
             <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground text-center w-20 sm:w-24 pb-2">Free</div>
-            <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-gold-dark text-center w-32 sm:w-44 pb-2">Pro</div>
+            <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-gold-dark text-center w-32 sm:w-44 pb-2">Membership</div>
 
             {ROWS.map((r) => {
               const highlight = r.id === gateId;
@@ -220,7 +197,7 @@ export const ProComparisonModal = ({ open, onOpenChange, gateId }: Props) => {
               size="lg"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
-              Upgrade to Pro
+              Become a member
               {!loading && <ArrowRight className="w-4 h-4" />}
             </Button>
             <Button
