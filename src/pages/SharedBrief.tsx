@@ -372,7 +372,7 @@ const SharedBriefPage = () => {
                   mode="static"
                   sections={magazine}
                   studentName={brief.profile_first_name || (isRu ? "Стратегический брифинг" : "Strategy report")}
-                  gradeLabel={brief.report_grade === "premium" ? "Pro" : "Basic"}
+                  gradeLabel={brief.report_grade === "premium" ? "Member" : "Basic"}
                   generatedAt={brief.created_at}
                 />
               );

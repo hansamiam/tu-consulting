@@ -39,7 +39,7 @@ import {
 
 interface CommonProps {
   studentName: string;
-  /** "Basic" | "Pro" | undefined */
+  /** "Basic" | "Member" | undefined */
   gradeLabel?: string;
   generatedAt?: string;
   onShare?: () => void;
