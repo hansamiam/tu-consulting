@@ -107,10 +107,6 @@ interface WizardDraft {
   extracurriculars?: string;
   background?: string;
   namedSchools?: string;
-  /** v7 brief spec (2026-05-22): captured on Step 2 alongside the
-   *  major selector so the brief can branch warmly between the
-   *  "you don't know yet" reading and the closed-library gap reading. */
-  majorCertainty?: "not_at_all" | "some_idea" | "pretty_sure" | "certain";
   /** Wall-clock ms — drafts older than 14 days are dropped on read. */
   ts?: number;
 }
@@ -245,14 +241,6 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
   // countrySearch state retired with the target-countries section.
   // ALL_COUNTRIES still imported for the nationality typeahead.
   const [major, setMajor] = useState(draft?.major ?? "");
-  // v7 brief spec: 4-level major-certainty signal. Empty string in
-  // state when unselected — projected to undefined downstream so the
-  // brief defaults to "some_idea" rather than treating empty as a
-  // distinct enum value. Drafts pre-v7 don't have this field; the
-  // wizard simply opens with no selection.
-  const [majorCertainty, setMajorCertainty] = useState<
-    "" | "not_at_all" | "some_idea" | "pretty_sure" | "certain"
-  >(draft?.majorCertainty ?? "");
   // Normalize legacy drafts: the budget option used to be labeled
   // "Full scholarship needed" — renamed to "Need full scholarship" when
   // the standalone scholarshipNeeded yes/no question was folded into
@@ -399,7 +387,6 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
         extracurriculars: extracurriculars || undefined,
         background: background || undefined,
         namedSchools: namedSchools || undefined,
-        majorCertainty: majorCertainty || undefined,
         ts: Date.now(),
       };
       localStorage.setItem(WIZARD_DRAFT_KEY, JSON.stringify(draftPayload));
@@ -411,7 +398,6 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
     targetCountries, major, budget, scholarshipNeeded, timeline,
     prestige, scholarship, careerRoi, visaAccess, locationPref,
     careerGoal, extracurriculars, background, namedSchools,
-    majorCertainty,
   ]);
 
   /* Once the user transitions to the dashboard the wizard answers are
@@ -593,7 +579,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           {t("Who you are", "Кто вы")}
                         </span>
                       </div>
-                      <h2 className="font-heading text-[28px] sm:text-4xl font-bold text-foreground tracking-[-0.015em] leading-[1.15]">
+                      <h2 className="font-heading text-[32px] sm:text-[44px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
                         {t("Let's start with you.", "Начнём с вас.")}
                       </h2>
                       <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[50ch]">
@@ -604,10 +590,10 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                           <Label className="text-xs uppercase tracking-wider font-medium">{t("Full name *", "Полное имя *")}</Label>
-                          <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder={t("Your name", "Ваше имя")} className="h-11 bg-card" />
+                          <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder={t("What should we call you?", "Как тебя зовут?")} className="h-11 bg-card" />
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">{t("Email *", "Email *")}</Label>
+                          <Label className="text-xs uppercase tracking-wider font-medium">{t("Where do we send your strategy?", "Куда отправить твою стратегию?")}</Label>
                           <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@email.com" className="h-11 bg-card" />
                         </div>
                       </div>
@@ -615,7 +601,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         {/* WhatsApp field retired — never used by the
                             brief generator and the extra "give us your
                             phone" ask was friction with no payoff. */}
-                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Nationality *", "Гражданство *")}</Label>
+                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Where are you from?", "Откуда ты?")}</Label>
                         <Input
                           value={nationality}
                           onChange={e => setNationality(e.target.value)}
@@ -649,7 +635,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                       <div className="space-y-1.5">
                         <Label className="text-xs uppercase tracking-wider font-medium">{t("Current stage *", "Текущий этап *")}</Label>
                         <Select value={gradeLevel} onValueChange={setGradeLevel}>
-                          <SelectTrigger className="h-11 bg-card"><SelectValue placeholder={t("Pick your stage", "Выберите этап")} /></SelectTrigger>
+                          <SelectTrigger className="h-11 bg-card"><SelectValue placeholder={t("Where are you in school right now?", "На каком ты этапе?")} /></SelectTrigger>
                           <SelectContent>
                             {([
                               ["High School", "Школа"],
@@ -666,7 +652,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                       </div>
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">{t("GPA *", "Средний балл *")}</Label>
+                          <Label className="text-xs uppercase tracking-wider font-medium">{t("What's your GPA looking like?", "Какой у тебя средний балл?")}</Label>
                           {/* Paired input + scale picker — covers the four
                               common bases (US 4.0, post-Soviet 5.0,
                               Continental Europe 10.0, percentage 100) so
@@ -847,7 +833,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         }}
                         disabled={accountSubmitting || !fullName.trim() || !email.trim() || !nationality.trim() || !gradeLevel || !gpa.trim()}
                       >
-                        {t("Continue", "Дальше")} <ArrowRight className="ml-2 w-4 h-4" />
+                        {t("Nice. Two more pieces.", "Хорошо. Ещё два шага.")} <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
                     </div>
                   </motion.div>
@@ -867,7 +853,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">02</span>
                         <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{t("Direction", "Направление")}</span>
                       </div>
-                      <h2 className="font-heading text-[28px] sm:text-4xl font-bold text-foreground tracking-[-0.015em] leading-[1.15]">
+                      <h2 className="font-heading text-[32px] sm:text-[44px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
                         {t("What are you chasing?", "К чему вы стремитесь?")}
                       </h2>
                       <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[52ch]">
@@ -893,7 +879,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           a specialty not in the canonical list (e.g.
                           "Quantum Biophysics") aren't blocked. */}
                       <div className="space-y-1.5">
-                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Intended major *", "Будущая специальность *")}</Label>
+                        <Label className="text-xs uppercase tracking-wider font-medium">{t("What do you (think you) want to study?", "Что ты (думаешь, что) хочешь изучать?")}</Label>
                         {(() => {
                           const MAJORS = [
                             "Undecided",
@@ -936,54 +922,11 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           );
                         })()}
                       </div>
-                      {/* v7 brief spec (2026-05-22): major-certainty
-                          signal. Gates the WHAT-YOU'RE-AVOIDING card's
-                          warm major-uncertainty branch vs the closed-
-                          library named-gap branch. The brief never
-                          fabricates indecision for kids who ARE sure —
-                          this select is how it knows. Optional; brief
-                          defaults to "some_idea" if user skips. */}
-                      <div className="space-y-1.5">
-                        <Label className="text-xs uppercase tracking-wider font-medium">
-                          {t("How sure are you?", "Насколько ты уверен(а)?")}
-                        </Label>
-                        <Select
-                          value={majorCertainty || ""}
-                          onValueChange={(v) =>
-                            setMajorCertainty(
-                              v as "" | "not_at_all" | "some_idea" | "pretty_sure" | "certain",
-                            )
-                          }
-                        >
-                          <SelectTrigger className="h-11 bg-card">
-                            <SelectValue
-                              placeholder={t(
-                                "How sure are you about what you want to study?",
-                                "Насколько ты уверен(а) в том, что хочешь изучать?",
-                              )}
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="not_at_all">
-                              {t("Not at all — still figuring it out", "Совсем не уверен(а) — ещё думаю")}
-                            </SelectItem>
-                            <SelectItem value="some_idea">
-                              {t("Some idea, not confident", "Есть мысли, но не уверенно")}
-                            </SelectItem>
-                            <SelectItem value="pretty_sure">
-                              {t("Pretty sure", "Довольно уверен(а)")}
-                            </SelectItem>
-                            <SelectItem value="certain">
-                              {t("Certain — I've known a while", "Точно знаю — давно решил(а)")}
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
                       {/* Self-fund Select retired 2026-05-09 — overlapped
                           with the "Scholarship need" 1–5 slider on step 3.
                           Budget is now derived from that slider downstream. */}
                       <div className="space-y-1.5">
-                        <Label className="text-xs uppercase tracking-wider font-medium">{t("When you'd start", "Когда планируете начать")}</Label>
+                        <Label className="text-xs uppercase tracking-wider font-medium">{t("When are you starting?", "Когда стартуешь?")}</Label>
                         <Select value={timeline} onValueChange={setTimeline}>
                           <SelectTrigger className="h-11 bg-card"><SelectValue placeholder={t("Select", "Выберите")} /></SelectTrigger>
                           <SelectContent>
@@ -1040,7 +983,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         onClick={() => goToStep(3)}
                         disabled={!major.trim()}
                       >
-                        {t("Continue", "Дальше")} <ArrowRight className="ml-2 w-4 h-4" />
+                        {t("Good. Last bit's optional.", "Отлично. Последнее — по желанию.")} <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
                     </div>
                   </motion.div>
@@ -1060,7 +1003,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">03</span>
                         <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{t("Sharpen", "Детали")}</span>
                       </div>
-                      <h2 className="font-heading text-[28px] sm:text-4xl font-bold text-foreground tracking-[-0.015em] leading-[1.15]">
+                      <h2 className="font-heading text-[32px] sm:text-[44px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
                         {t("Tell us more — or skip ahead.", "Расскажите больше — или пропустите.")}
                       </h2>
                       <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[54ch]">
@@ -1070,7 +1013,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                     </div>
                     <div className="space-y-5">
                       <div className="space-y-1.5">
-                        <Label htmlFor="careerGoal" className="text-xs uppercase tracking-wider font-medium">{t("Career goal", "Карьерная цель")}</Label>
+                        <Label htmlFor="careerGoal" className="text-xs uppercase tracking-wider font-medium">{t("Where do you want this to lead?", "К чему ты идёшь?")}</Label>
                         <Textarea
                           id="careerGoal"
                           placeholder={t("e.g. data scientist focused on climate modeling", "напр. data scientist в климатическом моделировании")}
@@ -1080,7 +1023,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="extracurriculars" className="text-xs uppercase tracking-wider font-medium">{t("Extracurriculars & achievements", "Внеучебка и достижения")}</Label>
+                        <Label htmlFor="extracurriculars" className="text-xs uppercase tracking-wider font-medium">{t("What have you actually been doing outside class?", "Чем ты реально занимаешься помимо учёбы?")}</Label>
                         <Textarea
                           id="extracurriculars"
                           placeholder={t("e.g. founded a community library, IMO bronze, 200 hrs neuroscience research", "напр. основал библиотеку, бронза IMO, 200 часов нейронауки")}
@@ -1090,34 +1033,17 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="background" className="text-xs uppercase tracking-wider font-medium">{t("Background context", "Контекст")}</Label>
-                        {/* v7 brief spec (2026-05-22): the placeholder
-                            here is the covert-intake mechanism for
-                            personality axis. Users naturally pattern-
-                            match against placeholder examples when
-                            self-describing — by including both an
-                            introvert and an extrovert exemplar we
-                            pull personality lean into a field that
-                            previously only captured family/socioeconomic
-                            context. The pre-flight LLM extracts an
-                            introvert | extrovert | mixed | unknown
-                            signal from this text; cards then adjust
-                            tone (or stay neutral if the extraction is
-                            unknown — no card may make a confident
-                            I/E claim without signal). */}
+                        <Label htmlFor="background" className="text-xs uppercase tracking-wider font-medium">{t("Tell us about you — the version your closest friend would describe", "Расскажи о себе — так, как описал бы твой лучший друг")}</Label>
                         <Textarea
                           id="background"
-                          placeholder={t(
-                            "e.g. introverted policy nerd who reads more than they should, raised in Bishkek by two teachers — or extrovert who can't sit still without organizing the group around them",
-                            "напр. интроверт-полит-задрот, читаю больше, чем стоит, из Бишкека, родители учителя — или экстраверт, который не может усидеть, не организовав всех вокруг",
-                          )}
+                          placeholder={t("e.g. first-gen, raised in Bishkek, parents both teachers", "напр. первый в семье в вузе, из Бишкека, родители учителя")}
                           value={background}
                           onChange={(e) => setBackground(e.target.value)}
                           className="min-h-[70px] resize-none bg-card"
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="namedSchools" className="text-xs uppercase tracking-wider font-medium">{t("Schools you have in mind", "Вузы на примете")}</Label>
+                        <Label htmlFor="namedSchools" className="text-xs uppercase tracking-wider font-medium">{t("Schools already on your list?", "Вузы, которые ты уже присмотрел(а)?")}</Label>
                         <Textarea
                           id="namedSchools"
                           placeholder={t("e.g. Stanford, U of Toronto, KAIST", "напр. Stanford, U of Toronto, KAIST")}
@@ -1140,7 +1066,6 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                             gpa, gpaScale, ielts, toefl, sat, major, budget,
                             targetCountries,
                             careerGoal, extracurriculars, background, namedSchools,
-                            majorCertainty: majorCertainty || undefined,
                           }));
                         } catch { /* localStorage may be unavailable; brief still renders */ }
                         setScreen("dashboard");
@@ -1169,7 +1094,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               <ArrowLeft className="mr-2 w-4 h-4" /> {t("Back", "Назад")}
                             </Button>
                             <Button variant="gold" size="lg" onClick={onGenerate}>
-                              {t("Generate my plan", "Сгенерировать план")}
+                              {t("That's enough — write it up", "Хватит — напиши мне план")}
                               <ArrowRight className="ml-2 w-5 h-5" />
                             </Button>
                           </div>
