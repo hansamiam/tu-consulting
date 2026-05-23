@@ -1,0 +1,117 @@
+{
+  "_comment": "Sparse-input-pass fixture. Hypothetical US student with firstToApplyAbroad='yes'. Card 01 includes one of the 'first_gen_college' framing markers. Locks Test 7 for US students — they MUST get standard first-gen-college framing, NOT the 'first to leave home' angle (which is reserved for CIS / MENA per cultural-context.ts).",
+  "intake": {
+    "fullName": "Maya Rodriguez",
+    "nationality": "USA",
+    "gpa": "3.6",
+    "ielts": null,
+    "sat": "1380",
+    "major": "Public Policy",
+    "majorCertainty": "pretty_sure",
+    "targetCountries": ["UK", "Germany", "Netherlands"],
+    "topActivity": "student council president, immigration clinic volunteer",
+    "background": "first-generation, raised in El Paso, parents immigrated from Juarez",
+    "extracurriculars": "student council president 2 years, immigration legal clinic 200 hours, debate state semifinalist",
+    "firstToApplyAbroad": "yes"
+  },
+  "dbContext": "London School of Economics (UK) — public policy + government powerhouse, strong financial aid for US applicants. SOAS University of London (UK) — international relations + development focus. Hertie School (Germany) — English-medium public-policy master's-style undergrad option. University of Amsterdam (Netherlands) — strong politics + international relations programs in English. Leiden University (Netherlands) — international studies in The Hague campus.",
+  "brief": {
+    "schema": 3,
+    "plan": {
+      "archetype": {
+        "id": "tight-lane",
+        "confidence": 80,
+        "reason": "intake names a clear major + sustained domain commitment (student council + clinic) — Tight Lane archetype fits"
+      },
+      "identityClaim": "a public-policy kid who already knows the work",
+      "pileContrast": "Most kids in your year name 'PoliSci' as a major because it sounds serious, not because they've sat in a clinic for 200 hours.",
+      "essaySeedType": "a single client moment from the immigration clinic that changed how she frames the work",
+      "primaryGap": {
+        "type": "library-entry",
+        "libraryEntryId": 3,
+        "reason": "Maya picked 3 countries but they're all Europe — tunnel-vision-3 lane risk; widen consideration to programs that fit her file."
+      },
+      "countryBuckets": ["UK", "Germany", "Netherlands"],
+      "mondayMoveArtifact": "a Google Doc titled 'one clinic story' listing three specific client encounters that mattered"
+    },
+    "sections": {
+      "whereYouStand": {
+        "kicker": "01 · Where you stand",
+        "headline": "You're a public-policy kid who already knows the work.",
+        "lead": "Maya, your file reads like someone who's been doing this for years.",
+        "body": "Most kids in your year name PoliSci as a major because it sounds serious — they haven't sat in a clinic for 200 hours. You have. Student council president for two years, immigration legal clinic intake worker, debate state semifinalist — that's a specific track most admissions readers don't see at your school level. And you'd be the first-generation college applicant going abroad — first in your family to attend university outside the US. That's not a footnote; that's a framing the application benefits from.",
+        "pullquote": "The clinic hours aren't a side project — they're the spine of the file."
+      },
+      "whereYouCanLand": {
+        "kicker": "02 · Where you belong",
+        "headline": "Three kinds of places where the clinic hours are the headline.",
+        "lead": "Pulled from your countries, with your file in mind.",
+        "buckets": [
+          {
+            "country": "UK",
+            "cities": "London",
+            "schools": [
+              {
+                "name": "London School of Economics",
+                "lore": "Where 'I worked in a legal clinic for 200 hours' lands as the headline, not the side note. They're built to read first-gen public-policy applicants well."
+              }
+            ]
+          },
+          {
+            "country": "Germany",
+            "cities": "Berlin",
+            "schools": [
+              {
+                "name": "Hertie School",
+                "lore": "English-medium, fee-free public-policy track. The Berlin location adds context to a first-gen application that names policy as the through-line."
+              }
+            ]
+          },
+          {
+            "country": "Netherlands",
+            "schools": [
+              {
+                "name": "University of Amsterdam",
+                "lore": "Strong politics + international-relations track in English, with a clear path for students whose application is already domain-specific."
+              }
+            ]
+          }
+        ]
+      },
+      "whatToWrite": {
+        "kicker": "04 · The essay only you can write",
+        "headline": "The essay you should write doesn't exist yet — but the seed for it does.",
+        "lead": "One specific kind of moment from the clinic. Then it starts itself.",
+        "essaySeed": {
+          "title": "The one client moment",
+          "body": "Sometime in the last two years, a client in the immigration clinic said something that changed how Maya thought about the work. Maybe a question that didn't have a clean answer. Probably a moment where the legal form Maya was helping with felt insufficient. Maybe a phrase the client used that didn't translate the way the intake sheet expected. Find that exact moment — the one where Maya's idea of public-policy got more specific.",
+          "closer": "That's where the essay starts."
+        }
+      },
+      "whatsBlockingYou": {
+        "kicker": "05 · What's blocking you",
+        "headline": "All three target countries are in Europe.",
+        "lead": "Tunnel-vision risk — widen the consideration set, not the application list.",
+        "entries": [
+          {
+            "priority": "high",
+            "title": "Three-country tunnel vision",
+            "whyItMatters": "Maya, the UK + Germany + Netherlands set reads like one geography. For a first-gen-college applicant with strong clinic hours, the file plays equally well in Canada or Ireland — programs that explicitly recruit US first-gen applicants for policy depth.",
+            "actionThisMonth": "Add two countries to the consideration set this week — even just reading their public-policy programs adds context. The application list stays narrow; the consideration set widens.",
+            "next60Days": "Decide whether one of the wider countries actually fits, or whether the Europe-3 framing was the right call after all."
+          }
+        ]
+      },
+      "whatToDoThisMonth": {
+        "kicker": "06 · Your Monday Move",
+        "headline": "Open a Google Doc titled 'one clinic story' this week.",
+        "lead": "One move that opens the rest.",
+        "mondayMove": {
+          "headline": "Open a Google Doc titled 'one clinic story' this week.",
+          "body": "Inside, list three specific client encounters from the immigration clinic that mattered. Don't polish. Don't make them sound profound. Just three lines, one per encounter. Stop when you have three.",
+          "closer": "Once those three lines exist, the essay has somewhere to start."
+        }
+      }
+    }
+  }
+}

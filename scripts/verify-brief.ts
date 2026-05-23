@@ -45,6 +45,11 @@ import {
   resolveCulturalContext,
 } from "../supabase/functions/_shared/editorial-rules.ts";
 import { ARCHETYPE_LIBRARY } from "../supabase/functions/_shared/archetype-library.ts";
+import {
+  firstAbroadFramingFor,
+  FRAMING_MARKERS,
+} from "../supabase/functions/_shared/cultural-context.ts";
+import { normalizeNationality } from "../supabase/functions/_shared/nationality-normalize.ts";
 
 // ─── Types mirroring the captured-brief JSON ──────────────────────
 
@@ -64,6 +69,11 @@ interface IntakeProfile {
   extracurriculars?: string;
   careerGoal?: string;
   namedSchools?: string;
+  /** Sparse-input pass (2026-05-23). Drives Test 7 — when "yes",
+   *  Card 01 or 03 prose MUST contain a FRAMING_MARKERS phrase that
+   *  matches firstAbroadFramingFor(normalizeNationality(nationality)). */
+  firstToApplyAbroad?: "yes" | "siblings_have" | "parents_have" | "unsure";
+  foreignLanguages?: string[];
 }
 
 interface BriefPlan {
@@ -390,6 +400,65 @@ function testShareAssetPlaceholder(sample: SampleBrief): TestResult {
 
 // ─── Test 6: Narrative throughline ───────────────────────────────
 
+// ─── Test 7: First-abroad framing matches cultural-context lens ──
+//
+// Sparse-input pass (2026-05-23). When the intake captures
+// firstToApplyAbroad === "yes", the brief MUST honor the per-
+// nationality framing — CIS / MENA gets "first to leave home" angle,
+// US / LatAm / parts of SE Asia gets "first-gen college" angle,
+// unmapped gets generic "first step" angle. The brief NEVER defaults
+// to first-gen-college for CIS students (that's factually wrong
+// for the region — school completion is high, parents often
+// graduated university).
+//
+// Asserts that at least ONE FRAMING_MARKERS phrase for the resolved
+// framing (in EITHER language — the brief may render in EN or RU)
+// appears in Card 01 (whereYouStand) or Card 03 (whatToWrite) prose.
+//
+// Passes vacuously when firstToApplyAbroad is not "yes" — the brief
+// doesn't need to acknowledge first-abroad status that wasn't captured.
+
+function testFirstAbroadFraming(sample: SampleBrief): TestResult {
+  const name = "7 · First-abroad framing matches cultural lens";
+  const { intake, brief } = sample;
+  if (intake.firstToApplyAbroad !== "yes") {
+    return pass(name, "intake.firstToApplyAbroad is not 'yes' — framing branch not required");
+  }
+  const framing = firstAbroadFramingFor(normalizeNationality(intake.nationality));
+  const markers = [
+    ...FRAMING_MARKERS[framing].en,
+    ...FRAMING_MARKERS[framing].ru,
+  ].map((m) => m.toLowerCase());
+
+  const card01 = brief.sections["whereYouStand"];
+  const card03 = brief.sections["whatToWrite"];
+  const prose = [card01, card03]
+    .filter((s) => s)
+    .flatMap((s) => collectStrings(s))
+    .join(" \n ")
+    .toLowerCase();
+
+  if (prose.length === 0) {
+    return fail(name, "Card 01 + Card 03 prose is empty — cannot verify framing");
+  }
+
+  const hit = markers.find((m) => prose.includes(m));
+  if (!hit) {
+    return fail(
+      name,
+      `nationality "${intake.nationality ?? "(unset)"}" → framing "${framing}"`,
+      `expected at least one of: ${markers.map((m) => `"${m}"`).join(", ")}`,
+      "found none in Card 01 / Card 03 prose",
+    );
+  }
+
+  return pass(
+    name,
+    `nationality "${intake.nationality ?? "(unset)"}" → framing "${framing}"`,
+    `marker found: "${hit}"`,
+  );
+}
+
 function testNarrativeThroughline(sample: SampleBrief): TestResult {
   const name = "6 · Narrative throughline";
   const { intake, brief } = sample;
@@ -504,6 +573,7 @@ async function main(): Promise<void> {
     testSpecificAnchorReality,
     testShareAssetPlaceholder,
     testNarrativeThroughline,
+    testFirstAbroadFraming,
   ];
 
   let passCount = 0;

@@ -77,3 +77,9 @@ jobs:
 
       - name: Verify brief — Daniyar (Tight Lane fixture)
         run: deno run --allow-read scripts/verify-brief.ts scripts/sample-brief-tight-lane.test.json
+
+      - name: Verify brief — KZ first-abroad (CIS "leaving home" framing)
+        run: deno run --allow-read scripts/verify-brief.ts scripts/sample-brief-kz-first-abroad.test.json
+
+      - name: Verify brief — US first-abroad ("first-gen college" framing)
+        run: deno run --allow-read scripts/verify-brief.ts scripts/sample-brief-us-first-abroad.test.json

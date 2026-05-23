@@ -1,0 +1,120 @@
+{
+  "_comment": "Sparse-input-pass fixture. Same Yerlan profile as sample-brief.test.json BUT with firstToApplyAbroad='yes'. Card 01 prose includes one of the 'first_to_leave_home' framing markers (FRAMING_MARKERS in cultural-context.ts). Locks the Test 7 behavior for CIS students — they must NEVER get the 'first-gen college' framing.",
+  "intake": {
+    "fullName": "Yerlan Tursynbek",
+    "nationality": "Kazakhstan",
+    "gpa": "3.7",
+    "ielts": "7.0",
+    "major": "Computer Science",
+    "majorCertainty": "not_at_all",
+    "targetCountries": ["Canada", "United Kingdom", "Singapore"],
+    "topActivity": "Math Olympiad regional bronze, debate captain",
+    "background": "introverted policy nerd who reads more than I should, raised in Astana by two engineers",
+    "extracurriculars": "debate captain since 11th grade, regional Math Olympiad bronze, ran a study group for AP Calc kids",
+    "firstToApplyAbroad": "yes",
+    "foreignLanguages": ["german"]
+  },
+  "dbContext": "University of Toronto (Canada) — large research university with strong CS and policy programs. McGill (Canada) — bilingual research university, dual-degree friendly. University of British Columbia (Canada) — West-Coast tech-with-humanities crossover. University of Edinburgh (United Kingdom) — Scotland's flagship, STEM-with-policy depth. University of Glasgow (United Kingdom) — strong economics + computer science. NUS Singapore — English-medium, scholarship-heavy, visa-realistic for CIS students.",
+  "brief": {
+    "schema": 3,
+    "plan": {
+      "archetype": {
+        "id": "bridge-domain-kid",
+        "confidence": 85,
+        "reason": "intake mentions both Math Olympiad (STEM) and debate captain (humanities/policy) — strong cross-domain signal"
+      },
+      "identityClaim": "a policy-leaning STEM kid who hasn't told anyone yet",
+      "pileContrast": "Most kids in your year go in the IT-track pile or the engineering kids being pushed into Western banking since 9th grade.",
+      "essaySeedType": "a moment where math showed up inside a debate round",
+      "primaryGap": {
+        "type": "major-uncertainty",
+        "reason": "Yerlan put CS on the intake but picked not_at_all on certainty. The indecision is the load-bearing thing to surface warmly."
+      },
+      "countryBuckets": ["Canada", "United Kingdom", "Singapore"],
+      "mondayMoveArtifact": "a Google Doc titled 'math in debate' listing three specific moments"
+    },
+    "sections": {
+      "whereYouStand": {
+        "kicker": "01 · Where you stand",
+        "headline": "You're a policy-leaning STEM kid who hasn't told anyone yet.",
+        "lead": "Yerlan, your profile is more interesting than you're treating it.",
+        "body": "Most kids in your year go in one pile. The IT-track pile, the engineering kids being pushed into Western banking since 9th grade, the finance kids. Your file shows AP Calc and a Math Olympiad bronze AND a debate captain title — two things that don't normally appear together in your school's outbound applicants. That puts you in a smaller pile most admissions readers don't get to see often. And you'd be the first to step out — first in your family to go abroad for school. That's not a flaw to apologize for; it's a feature of the application.",
+        "pullquote": "The time will come to lead with that overlap."
+      },
+      "whereYouCanLand": {
+        "kicker": "02 · Where you belong",
+        "headline": "Three kinds of places that fit how you actually move.",
+        "lead": "Pulled from your countries, with your file in mind.",
+        "buckets": [
+          {
+            "country": "Canada",
+            "cities": "Toronto, Vancouver",
+            "schools": [
+              {
+                "name": "University of Toronto",
+                "lore": "Where the kid running policy resolutions on weekends finds three other people doing the same in the same dorm."
+              },
+              {
+                "name": "McGill",
+                "lore": "Policy-school energy without giving up the math. The dual-major kids here aren't unusual — they're the ones who pick the program."
+              }
+            ]
+          },
+          {
+            "country": "United Kingdom",
+            "cities": "Edinburgh",
+            "schools": [
+              {
+                "name": "University of Edinburgh",
+                "lore": "Where the STEM-with-policy combination isn't unusual, it's the standard. Not Oxbridge. The smarter middle."
+              }
+            ]
+          },
+          {
+            "country": "Singapore",
+            "schools": [
+              {
+                "name": "NUS Singapore",
+                "lore": "English-medium, scholarship-heavy, six-hour flight from Astana. The place that gets your visa stamped the first time you ask."
+              }
+            ]
+          }
+        ]
+      },
+      "whatToWrite": {
+        "kicker": "04 · The essay only you can write",
+        "headline": "The essay you should write doesn't exist yet — but the seed for it does.",
+        "lead": "One specific kind of moment to find. Then it starts itself.",
+        "essaySeed": {
+          "title": "The math-in-debate moment",
+          "body": "Sometime in the last two years, something from a math class showed up inside a debate round Yerlan was running. Maybe a stat that turned the room. Probably a calculation done mid-rebuttal that made the other side stop. Maybe a piece of game theory that explained why a strategy worked. Find that exact moment.",
+          "closer": "That's where the essay starts."
+        }
+      },
+      "whatsBlockingYou": {
+        "kicker": "05 · What's blocking you",
+        "headline": "You don't know what you want to study yet.",
+        "lead": "Not really — and that's information, not a flaw.",
+        "entries": [
+          {
+            "priority": "high",
+            "title": "You don't know what you want to study yet",
+            "whyItMatters": "Yerlan, you put 'CS' on the intake because that's what people expect when you're good at math. That's not the same as wanting it. The major-uncertainty is the load-bearing question to surface — not hide.",
+            "actionThisMonth": "Stop hiding the question. The essay seed next to this one names where to start writing — let the unanswered question be part of the application.",
+            "next60Days": "As Yerlan talks to more schools, the question sharpens."
+          }
+        ]
+      },
+      "whatToDoThisMonth": {
+        "kicker": "06 · Your Monday Move",
+        "headline": "Open a Google Doc titled 'math in debate' this week.",
+        "lead": "One move that opens the rest.",
+        "mondayMove": {
+          "headline": "Open a Google Doc titled 'math in debate' this week.",
+          "body": "Inside, list three specific times something from a math class showed up in a debate round Yerlan ran. Don't polish. Don't make them sound profound. Just three lines, one per moment. Stop when you have three.",
+          "closer": "Once those three lines exist, the essay has somewhere to start."
+        }
+      }
+    }
+  }
+}
