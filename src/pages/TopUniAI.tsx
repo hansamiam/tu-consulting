@@ -107,6 +107,10 @@ interface WizardDraft {
   extracurriculars?: string;
   background?: string;
   namedSchools?: string;
+  /** v7 brief spec (2026-05-22): captured on Step 2 alongside the
+   *  major selector so the brief can branch warmly between the
+   *  "you don't know yet" reading and the closed-library gap reading. */
+  majorCertainty?: "not_at_all" | "some_idea" | "pretty_sure" | "certain";
   /** Wall-clock ms — drafts older than 14 days are dropped on read. */
   ts?: number;
 }
@@ -241,6 +245,14 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
   // countrySearch state retired with the target-countries section.
   // ALL_COUNTRIES still imported for the nationality typeahead.
   const [major, setMajor] = useState(draft?.major ?? "");
+  // v7 brief spec: 4-level major-certainty signal. Empty string in
+  // state when unselected — projected to undefined downstream so the
+  // brief defaults to "some_idea" rather than treating empty as a
+  // distinct enum value. Drafts pre-v7 don't have this field; the
+  // wizard simply opens with no selection.
+  const [majorCertainty, setMajorCertainty] = useState<
+    "" | "not_at_all" | "some_idea" | "pretty_sure" | "certain"
+  >(draft?.majorCertainty ?? "");
   // Normalize legacy drafts: the budget option used to be labeled
   // "Full scholarship needed" — renamed to "Need full scholarship" when
   // the standalone scholarshipNeeded yes/no question was folded into
@@ -387,6 +399,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
         extracurriculars: extracurriculars || undefined,
         background: background || undefined,
         namedSchools: namedSchools || undefined,
+        majorCertainty: majorCertainty || undefined,
         ts: Date.now(),
       };
       localStorage.setItem(WIZARD_DRAFT_KEY, JSON.stringify(draftPayload));
@@ -398,6 +411,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
     targetCountries, major, budget, scholarshipNeeded, timeline,
     prestige, scholarship, careerRoi, visaAccess, locationPref,
     careerGoal, extracurriculars, background, namedSchools,
+    majorCertainty,
   ]);
 
   /* Once the user transitions to the dashboard the wizard answers are
@@ -922,6 +936,49 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           );
                         })()}
                       </div>
+                      {/* v7 brief spec (2026-05-22): major-certainty
+                          signal. Gates the WHAT-YOU'RE-AVOIDING card's
+                          warm major-uncertainty branch vs the closed-
+                          library named-gap branch. The brief never
+                          fabricates indecision for kids who ARE sure —
+                          this select is how it knows. Optional; brief
+                          defaults to "some_idea" if user skips. */}
+                      <div className="space-y-1.5">
+                        <Label className="text-xs uppercase tracking-wider font-medium">
+                          {t("How sure are you?", "Насколько ты уверен(а)?")}
+                        </Label>
+                        <Select
+                          value={majorCertainty || ""}
+                          onValueChange={(v) =>
+                            setMajorCertainty(
+                              v as "" | "not_at_all" | "some_idea" | "pretty_sure" | "certain",
+                            )
+                          }
+                        >
+                          <SelectTrigger className="h-11 bg-card">
+                            <SelectValue
+                              placeholder={t(
+                                "How sure are you about what you want to study?",
+                                "Насколько ты уверен(а) в том, что хочешь изучать?",
+                              )}
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="not_at_all">
+                              {t("Not at all — still figuring it out", "Совсем не уверен(а) — ещё думаю")}
+                            </SelectItem>
+                            <SelectItem value="some_idea">
+                              {t("Some idea, not confident", "Есть мысли, но не уверенно")}
+                            </SelectItem>
+                            <SelectItem value="pretty_sure">
+                              {t("Pretty sure", "Довольно уверен(а)")}
+                            </SelectItem>
+                            <SelectItem value="certain">
+                              {t("Certain — I've known a while", "Точно знаю — давно решил(а)")}
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                       {/* Self-fund Select retired 2026-05-09 — overlapped
                           with the "Scholarship need" 1–5 slider on step 3.
                           Budget is now derived from that slider downstream. */}
@@ -1034,9 +1091,26 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                       </div>
                       <div className="space-y-1.5">
                         <Label htmlFor="background" className="text-xs uppercase tracking-wider font-medium">{t("Background context", "Контекст")}</Label>
+                        {/* v7 brief spec (2026-05-22): the placeholder
+                            here is the covert-intake mechanism for
+                            personality axis. Users naturally pattern-
+                            match against placeholder examples when
+                            self-describing — by including both an
+                            introvert and an extrovert exemplar we
+                            pull personality lean into a field that
+                            previously only captured family/socioeconomic
+                            context. The pre-flight LLM extracts an
+                            introvert | extrovert | mixed | unknown
+                            signal from this text; cards then adjust
+                            tone (or stay neutral if the extraction is
+                            unknown — no card may make a confident
+                            I/E claim without signal). */}
                         <Textarea
                           id="background"
-                          placeholder={t("e.g. first-gen, raised in Bishkek, parents both teachers", "напр. первый в семье в вузе, из Бишкека, родители учителя")}
+                          placeholder={t(
+                            "e.g. introverted policy nerd who reads more than they should, raised in Bishkek by two teachers — or extrovert who can't sit still without organizing the group around them",
+                            "напр. интроверт-полит-задрот, читаю больше, чем стоит, из Бишкека, родители учителя — или экстраверт, который не может усидеть, не организовав всех вокруг",
+                          )}
                           value={background}
                           onChange={(e) => setBackground(e.target.value)}
                           className="min-h-[70px] resize-none bg-card"
@@ -1066,6 +1140,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                             gpa, gpaScale, ielts, toefl, sat, major, budget,
                             targetCountries,
                             careerGoal, extracurriculars, background, namedSchools,
+                            majorCertainty: majorCertainty || undefined,
                           }));
                         } catch { /* localStorage may be unavailable; brief still renders */ }
                         setScreen("dashboard");
