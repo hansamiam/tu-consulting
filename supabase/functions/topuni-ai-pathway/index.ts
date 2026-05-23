@@ -115,6 +115,7 @@ async function computeBriefHash(profile: any, grade: string, lang: string): Prom
 function replayMagazineCachedAsSse(
   sections: Record<string, unknown>,
   plan: BriefPlan | null,
+  handoff: unknown | null,
 ): ReadableStream<Uint8Array> {
   const enc = new TextEncoder();
   return new ReadableStream({
@@ -128,6 +129,9 @@ function replayMagazineCachedAsSse(
           const payload = sections[spec.id];
           if (payload === undefined) continue;
           c.enqueue(enc.encode(`data: ${JSON.stringify({ section: spec.id, payload })}\n\n`));
+        }
+        if (handoff && typeof handoff === "object") {
+          c.enqueue(enc.encode(`data: ${JSON.stringify({ section: "handoff", payload: handoff })}\n\n`));
         }
         c.enqueue(enc.encode(`data: [DONE]\n\n`));
       } finally {
@@ -394,6 +398,45 @@ function buildArchetypePayload(plan: BriefPlan): {
   };
 }
 
+/** Build the handoff SSE payload from the plan + the top 3 matched
+ *  scholarship rows. Renderer (HandoffBridge.tsx) consumes this to
+ *  show the archetype-personalized headline + 3 scholarship cards
+ *  + Open Discover CTA. Returns null when there are no matches to
+ *  surface — caller skips emitting the event and the renderer
+ *  falls back to the generic NextStepsCard.
+ *
+ *  Each ScholarshipPreview row picks just the display fields the
+ *  bridge card needs — not the full scholarship row. Keeps the SSE
+ *  payload light + the cached brief small. */
+function buildHandoffPayload(
+  plan: BriefPlan,
+  scholarshipRows: any[],
+): { archetypeId: string; countryBuckets: string[]; topMatches: Array<{ id: string; name: string; country?: string; awardText?: string; deadlineISO?: string; fitNote?: string }> } | null {
+  if (!Array.isArray(scholarshipRows) || scholarshipRows.length === 0) return null;
+  const topMatches = scholarshipRows.slice(0, 3).map((r) => {
+    const fit = typeof r.why_this_fits === "string" && r.why_this_fits.trim().length > 0
+      ? String(r.why_this_fits).trim().slice(0, 240)
+      : undefined;
+    // Coerce the cleanX helper return values from `string | null` to
+    // `string | undefined` so the typed object matches the payload
+    // shape (null isn't part of HandoffPayload.topMatches[].country).
+    return {
+      id: String(r.scholarship_id ?? ""),
+      name: cleanScholarshipName(r.scholarship_name ?? "") || "Scholarship",
+      country: (r.host_country ? cleanHostCountry(r.host_country) : undefined) ?? undefined,
+      awardText: (r.award_amount_text ? cleanAwardText(r.award_amount_text) : undefined) ?? undefined,
+      deadlineISO: r.application_deadline ? String(r.application_deadline) : undefined,
+      fitNote: fit,
+    };
+  }).filter((m) => m.id.length > 0);
+  if (topMatches.length === 0) return null;
+  return {
+    archetypeId: plan.archetype.id,
+    countryBuckets: plan.countryBuckets ?? [],
+    topMatches,
+  };
+}
+
 /* v6 magazine stream — emits one SSE event per completed section as
    `data: {"section":"<id>","payload":{...}}`. Sections are awaited in
    PREMIUM_SECTIONS order so the client renders in journey order. The
@@ -402,10 +445,17 @@ function buildArchetypePayload(plan: BriefPlan): {
    v7 Phase 2: accepts optional `priorEvents` — fully-resolved
    {section, payload} pairs that emit BEFORE any of the section
    promises resolve. Used for the archetype card (rendered from the
-   pre-plan output, no LLM call of its own). */
+   pre-plan output, no LLM call of its own).
+
+   v7 Phase 3 stage-2 (#20): accepts optional `tailEvents` — emitted
+   AFTER every section completes, before [DONE]. Used for the
+   handoff payload (archetype + countryBuckets + top 3 matched
+   scholarships) so the renderer's HandoffBridge has everything it
+   needs when the last section closes. */
 function buildOrderedSectionStream(
   promises: Array<Promise<SectionResult>>,
   priorEvents: Array<{ section: string; payload: unknown }> = [],
+  tailEvents: Array<{ section: string; payload: unknown }> = [],
 ): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
   return new ReadableStream<Uint8Array>({
@@ -427,6 +477,9 @@ function buildOrderedSectionStream(
           if (result.regenerated) {
             console.log(`[brief-sections-v6] section ${result.spec.id} regenerated`);
           }
+        }
+        for (const ev of tailEvents) {
+          emit(ev.section, ev.payload);
         }
         controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
       } catch (e) {
@@ -560,6 +613,7 @@ serve(async (req) => {
           //   legacy basic: content is a markdown string
           let magazineSections: Record<string, unknown> | null = null;
           let cachedPlan: BriefPlan | null = null;
+          let cachedHandoff: unknown | null = null;
           if (grade === "premium") {
             try {
               const obj = typeof cached.content === "string"
@@ -568,6 +622,7 @@ serve(async (req) => {
                   schema?: number;
                   plan?: BriefPlan;
                   sections?: Record<string, unknown>;
+                  handoff?: unknown;
                 });
               if (obj && typeof obj === "object" && obj.sections) {
                 magazineSections = obj.sections as Record<string, unknown>;
@@ -575,10 +630,18 @@ serve(async (req) => {
               if (obj && typeof obj === "object" && obj.plan && obj.schema === 3) {
                 cachedPlan = obj.plan as BriefPlan;
               }
+              // v7 Phase 3 stage-2 (#20): handoff persists in
+              // schema-3 cache entries written after the PR landed.
+              // Pre-#20 schema-3 entries don't have handoff —
+              // replay skips the event and the renderer falls back
+              // to NextStepsCard, same as schema-2.
+              if (obj && typeof obj === "object" && obj.handoff && typeof obj.handoff === "object") {
+                cachedHandoff = obj.handoff;
+              }
             } catch { /* fall through to legacy replay */ }
           }
           const stream = magazineSections
-            ? replayMagazineCachedAsSse(magazineSections, cachedPlan)
+            ? replayMagazineCachedAsSse(magazineSections, cachedPlan, cachedHandoff)
             : replayCachedAsSse(typeof cached.content === "string" ? cached.content : "");
           return new Response(stream, {
             headers: {
@@ -1053,11 +1116,21 @@ ${EDITORIAL_RULES}`;
       // Full premium build — sections run in parallel with the plan in
       // context. Archetype event is emitted FIRST as a prior event so
       // the client renders the archetype card while section generators
-      // are still working.
+      // are still working. Handoff event is emitted LAST (after every
+      // section completes, before [DONE]) so HandoffBridge has the
+      // archetype + countries + top matches available when the brief
+      // closes — Beat 7 of the v7 customer journey, per the locked
+      // Q-HANDOFF decision (2026-05-23).
+      const handoffPayload = buildHandoffPayload(planResult.plan, scholarshipRows);
+      const tailEvents = handoffPayload
+        ? [{ section: "handoff", payload: handoffPayload }]
+        : [];
       const sectionPromises = PREMIUM_SECTIONS.map(spec => generateSection(spec, briefCtx));
-      const stream = buildOrderedSectionStream(sectionPromises, [
-        { section: "archetype", payload: archetypePayload },
-      ]);
+      const stream = buildOrderedSectionStream(
+        sectionPromises,
+        [{ section: "archetype", payload: archetypePayload }],
+        tailEvents,
+      );
       // Tee for cache persistence — accumulator collects JSON payloads
       // keyed by section id; persisted as { schema: 3, plan, sections }.
       // Old schema-2 caches (no plan) still replay correctly via the
@@ -1076,6 +1149,7 @@ ${EDITORIAL_RULES}`;
                 schema: 3,
                 plan: planResult.plan,
                 sections,
+                handoff: handoffPayload ?? null,
               }),
               brief_schema_version: 3,
               scholarship_ids: scholarshipIdList,
