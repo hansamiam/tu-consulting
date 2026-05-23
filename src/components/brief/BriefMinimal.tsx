@@ -52,19 +52,7 @@ import {
   type CountryBucket,
   type EssaySeed,
   type MondayMove,
-  type ArchetypePayload,
 } from "./types";
-import {
-  ArchetypeShareCard,
-  WhereYouStandShareCard,
-  WhereYouBelongShareCard,
-  EssaySeedShareCard,
-  MondayMoveShareCard,
-  shareCardAsImage,
-  SHARE_CARD_WIDTH,
-  SHARE_CARD_HEIGHT,
-} from "./ShareAsset";
-import { HandoffBridge } from "./HandoffBridge";
 
 interface CommonProps {
   studentName: string;
@@ -186,15 +174,8 @@ const StartingLine: React.FC<{
   thesis?: string;
   body?: string;
   gaps: GapEntry[];
-  color?: string;
-}> = ({ thesis, body, gaps, color }) => (
-  <WrappedCard
-    kicker="01 · Where you stand"
-    headline={thesis ?? "Where you stand today."}
-    color={color}
-    expandLabel="Read the reasoning"
-    collapseLabel="Hide the reasoning"
-  >
+}> = ({ thesis, body, gaps }) => (
+  <Slide number={2} kicker="The starting line" title={thesis ?? "Where you stand today."}>
     {body && (
       <div className="space-y-4 text-neutral-700 text-[15px] leading-[1.75] max-w-[64ch]">
         {body.split(/\n\n+/).map((p, i) => (
@@ -229,7 +210,7 @@ const StartingLine: React.FC<{
         </ol>
       </div>
     )}
-  </WrappedCard>
+  </Slide>
 );
 
 // ─── Slide 03 — Where you can land ────────────────────────────────────
@@ -391,215 +372,72 @@ const ActionPlan: React.FC<{ weeks: WeekBlock[]; closingLine?: string }> = ({ we
 // generator emits the new payload shapes. The old components remain
 // in place as the fallback for cached schema-2 briefs.
 
-/* ─── WrappedCard ─────────────────────────────────────────────────
-   Q1=A polish (2026-05-23): Wrapped-style first impression for the
-   substantive brief cards. The big quote-shaped headline + minimal
-   subhead sit on a tinted archetype-color background; the editorial
-   body is revealed via tap-to-expand below. Print path always shows
-   the expanded body (so PDF export still has the full prose).
-
-   Each v7 card component (Card 01-06) renders through this shell.
-   The kicker is the small all-caps label on top; headline is the
-   pull-quote-sized typography that does the actual visual work;
-   subhead is the smaller italic line below; children is whatever
-   the card's editorial body would be in non-Wrapped mode.
-
-   The "Read more" / "Show less" toggle is a button at the bottom
-   of the closed card. Clicking it animates the body open or shut.
-   Closed by default — tap to reveal substance. */
-interface WrappedCardProps {
-  kicker?: string;
-  headline?: string;
-  subhead?: string;
-  /** Hex from archetype-library.ts. Defaults to a neutral navy
-   *  if absent (legacy schema-2 cached briefs with no archetype). */
-  color?: string;
-  /** The editorial body — revealed when expanded. Always shown
-   *  in print so PDFs include the full prose. */
-  children?: React.ReactNode;
-  /** Override the expand-button labels if the card wants
-   *  surface-specific copy (e.g., "Read the reasoning"). Defaults
-   *  to "Read more" / "Show less". */
-  expandLabel?: string;
-  collapseLabel?: string;
-}
-
-const WrappedCard: React.FC<WrappedCardProps> = ({
-  kicker,
-  headline,
-  subhead,
-  color = "#1A3B66",
-  children,
-  expandLabel = "Read more",
-  collapseLabel = "Show less",
-}) => {
-  const [expanded, setExpanded] = useState(false);
-  const hasBody = !!children;
-  // Color tinting: convert hex to rgba with low alpha so the card
-  // reads as Wrapped-saturated but the kicker / read-more button
-  // text stay legible. Use the same hex for the top border (full
-  // saturation) as the visual anchor.
-  const rgb = hexToRgb(color);
-  const tintBg = rgb ? `linear-gradient(180deg, rgba(${rgb}, 0.14) 0%, rgba(${rgb}, 0.06) 60%, rgba(${rgb}, 0.03) 100%)` : "white";
-  return (
-    <article
-      className="bg-white border border-neutral-200/80 rounded-lg overflow-hidden mb-10 sm:mb-14 break-inside-avoid print:mb-0 print:rounded-none print:border-x-0"
-      style={{ background: tintBg, borderTop: `4px solid ${color}` }}
-    >
-      <div className="px-8 sm:px-14 pt-14 sm:pt-20 pb-10 sm:pb-12">
-        {kicker && (
-          <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] font-semibold mb-6" style={{ color }}>
-            {kicker}
-          </p>
-        )}
-        {headline && (
-          <h2
-            className="font-heading font-bold tracking-[-0.025em] leading-[1.05] text-[clamp(2rem,5vw,3.5rem)] max-w-[20ch]"
-            style={{ color: "hsl(222 30% 12%)" }}
-          >
-            {headline}
-          </h2>
-        )}
-        {subhead && (
-          <p className="mt-6 sm:mt-8 font-heading italic text-neutral-700 text-[clamp(1.125rem,2vw,1.5rem)] leading-snug tracking-tight max-w-[40ch]">
-            {subhead}
-          </p>
-        )}
-        {hasBody && (
-          <>
-            {/* Body: collapsed in interactive mode, always-open in
-                print. The print: utility forces the body block to
-                display regardless of `expanded` state, since PDF
-                readers can't tap to expand. */}
-            <div
-              className={`overflow-hidden transition-all duration-300 print:!max-h-none print:!opacity-100 print:!mt-10 ${
-                expanded ? "max-h-[5000px] opacity-100 mt-10 sm:mt-12" : "max-h-0 opacity-0 mt-0"
-              }`}
-              aria-hidden={!expanded}
-            >
-              <div className="border-t border-neutral-200/70 pt-8">
-                {children}
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setExpanded((v) => !v)}
-              className="mt-8 inline-flex items-center gap-1.5 text-[12px] font-medium uppercase tracking-[0.18em] hover:opacity-80 transition-opacity print:hidden"
-              style={{ color }}
-            >
-              {expanded ? collapseLabel : expandLabel}
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-                style={{ transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
-          </>
-        )}
-      </div>
-    </article>
-  );
-};
-
-/** Convert a #RRGGBB hex to "R, G, B" suitable for embedding in
- *  rgba(). Returns null if the input doesn't parse — caller
- *  should fall back to a literal color. */
-function hexToRgb(hex: string): string | null {
-  if (!hex || typeof hex !== "string") return null;
-  const m = hex.replace(/^#/, "").match(/^([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
-  if (!m) return null;
-  return `${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}`;
-}
-
-const WhereYouBelongBuckets: React.FC<{ buckets: CountryBucket[]; color?: string }> = ({ buckets, color }) => {
-  const countryList = buckets.slice(0, 3).map((b) => b.country).join(" · ");
-  return (
-    <WrappedCard
-      kicker="02 · Where you belong"
-      headline={`Three places that fit how you actually move.`}
-      subhead={countryList ? `${countryList} — pulled from your countries with your file in mind.` : undefined}
-      color={color}
-      expandLabel="See the schools"
-      collapseLabel="Hide the schools"
-    >
-      <div className="divide-y divide-neutral-100">
-        {buckets.map((b, i) => (
-          <section key={`${b.country}-${i}`} className="py-7 sm:py-8 first:pt-0">
-            <div className="flex items-baseline gap-3 flex-wrap">
-              <h3 className="font-heading text-neutral-900 font-bold text-[18px] sm:text-[19px] tracking-[-0.01em]">
-                {b.country}
-              </h3>
-              {b.cities && (
-                <span className="text-neutral-400 text-[12.5px]">{b.cities}</span>
-              )}
-            </div>
-            <div className="mt-3 space-y-3.5">
-              {b.schools.map((s, j) => (
-                <div key={`${s.name}-${j}`} className="grid grid-cols-[auto,1fr] gap-x-4">
-                  <span className="select-none pt-2 flex-none">
-                    <span className="block h-1 w-1 rounded-full" style={{ background: color ?? "hsl(38 58% 35%)" }} />
-                  </span>
-                  <div>
-                    <p className="font-heading text-neutral-900 font-semibold text-[15.5px] sm:text-[16px] tracking-[-0.005em]">
-                      {s.name}
+const WhereYouBelongBuckets: React.FC<{ buckets: CountryBucket[] }> = ({ buckets }) => (
+  <Slide number={3} kicker="Where you belong" title="Three kinds of places that fit you.">
+    <div className="divide-y divide-neutral-100">
+      {buckets.map((b, i) => (
+        <section key={`${b.country}-${i}`} className="py-7 sm:py-8">
+          <div className="flex items-baseline gap-3 flex-wrap">
+            <h3 className="font-heading text-neutral-900 font-bold text-[18px] sm:text-[19px] tracking-[-0.01em]">
+              {b.country}
+            </h3>
+            {b.cities && (
+              <span className="text-neutral-400 text-[12.5px]">{b.cities}</span>
+            )}
+          </div>
+          <div className="mt-3 space-y-3.5">
+            {b.schools.map((s, j) => (
+              <div key={`${s.name}-${j}`} className="grid grid-cols-[auto,1fr] gap-x-4">
+                <span className="text-gold-dark/60 select-none pt-2 flex-none">
+                  <span className="block h-1 w-1 rounded-full bg-gold-dark/70" />
+                </span>
+                <div>
+                  <p className="font-heading text-neutral-900 font-semibold text-[15.5px] sm:text-[16px] tracking-[-0.005em]">
+                    {s.name}
+                  </p>
+                  {s.lore && (
+                    <p className="text-neutral-700 text-[14px] leading-[1.7] mt-1 max-w-[58ch]">
+                      {s.lore}
                     </p>
-                    {s.lore && (
-                      <p className="text-neutral-700 text-[14px] leading-[1.7] mt-1 max-w-[58ch]">
-                        {s.lore}
-                      </p>
-                    )}
-                  </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
-    </WrappedCard>
-  );
-};
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  </Slide>
+);
 
-const EssaySeedSlide: React.FC<{ seed: EssaySeed; color?: string }> = ({ seed, color }) => (
-  <WrappedCard
-    kicker="03 · The essay only you can write"
-    headline={seed.title ?? "The essay you should write doesn't exist yet."}
-    subhead={seed.closer ?? "Find the moment that already lives somewhere in your head."}
-    color={color}
-    expandLabel="Read the seed"
-    collapseLabel="Hide the seed"
-  >
+const EssaySeedSlide: React.FC<{ seed: EssaySeed }> = ({ seed }) => (
+  <Slide number={4} kicker="What to write" title={seed.title ?? "The essay only you can write."}>
     <div className="max-w-[58ch]">
       <p className="text-neutral-800 text-[15.5px] leading-[1.75]">
         {seed.body}
       </p>
+      {seed.closer && (
+        <p className="mt-8 font-heading italic text-neutral-700 text-[16px] leading-snug tracking-tight">
+          {seed.closer}
+        </p>
+      )}
     </div>
-  </WrappedCard>
+  </Slide>
 );
 
-const MondayMoveSlide: React.FC<{ move: MondayMove; color?: string }> = ({ move, color }) => (
-  <WrappedCard
-    kicker="06 · Your Monday move"
-    headline={move.headline ?? "One move this week."}
-    subhead={move.closer ?? "It opens the rest."}
-    color={color}
-    expandLabel="See the move"
-    collapseLabel="Hide the move"
-  >
+const MondayMoveSlide: React.FC<{ move: MondayMove }> = ({ move }) => (
+  <Slide number={5} kicker="Your Monday move" title={move.headline ?? "One move this week."}>
     <div className="max-w-[58ch]">
       <p className="text-neutral-800 text-[15.5px] leading-[1.75]">
         {move.body}
       </p>
+      {move.closer && (
+        <p className="mt-8 font-heading italic text-neutral-700 text-[16px] leading-snug tracking-tight">
+          {move.closer}
+        </p>
+      )}
     </div>
-  </WrappedCard>
+  </Slide>
 );
 
 // ─── Next-steps card (non-deck, post-brief CTAs) ──────────────────────
@@ -759,34 +597,16 @@ export const BriefDeck: React.FC<Props> = (props) => {
       </section>
     ) : null;
 
-  type CardEntry = {
-    id: string;
-    kicker: string;
-    node: React.ReactNode;
-    /** v7 Phase 3 (#14): Wrapped-Bold variant rendered off-screen for
-     *  the share-to-Story PNG capture. Omit for cards without a
-     *  sensible share shape (Cover, NextStepsCard) — the share button
-     *  on those falls back to the URL-only path. */
-    shareAsset?: React.ReactNode;
-  };
-  const archetypeColorForShare = archetype?.color;
+  type CardEntry = { id: string; kicker: string; node: React.ReactNode };
   const cards: CardEntry[] = [
     { id: "cover", kicker: "Brief", node: <Cover studentName={props.studentName} gradeLabel={props.gradeLabel} generatedAt={props.generatedAt} /> },
   ];
-  if (archetypeNode && archetype) {
-    cards.push({
-      id: "archetype",
-      kicker: "Your archetype",
-      node: archetypeNode,
-      shareAsset: <ArchetypeShareCard payload={archetype as ArchetypePayload} />,
-    });
-  }
+  if (archetypeNode) cards.push({ id: "archetype", kicker: "Your archetype", node: archetypeNode });
   if (stand?.body || stand?.lead || gaps.length > 0) {
     cards.push({
       id: "stand",
       kicker: "Where you stand",
-      node: <StartingLine thesis={stand?.headline ?? stand?.lead} body={stand?.body ?? stand?.lead} gaps={gaps} color={archetypeColorForShare} />,
-      shareAsset: stand ? <WhereYouStandShareCard color={archetypeColorForShare} payload={stand} /> : undefined,
+      node: <StartingLine thesis={stand?.headline ?? stand?.lead} body={stand?.body ?? stand?.lead} gaps={gaps} />,
     });
   } else if (streaming) {
     cards.push({ id: "stand-skeleton", kicker: "Where you stand", node: <SlideSkeleton number={2} kicker="The starting line" title="Where you stand today." /> });
@@ -794,12 +614,7 @@ export const BriefDeck: React.FC<Props> = (props) => {
   // v7 buckets win when present; fall back to v6 reach/target/safety
   // entries for old cached briefs.
   if (buckets.length > 0) {
-    cards.push({
-      id: "buckets",
-      kicker: "Where you belong",
-      node: <WhereYouBelongBuckets buckets={buckets} color={archetypeColorForShare} />,
-      shareAsset: <WhereYouBelongShareCard color={archetypeColorForShare} buckets={buckets} />,
-    });
+    cards.push({ id: "buckets", kicker: "Where you belong", node: <WhereYouBelongBuckets buckets={buckets} /> });
   } else if (schoolEntries.length > 0) {
     cards.push({ id: "shortlist", kicker: "Where you can land", node: <Shortlist entries={schoolEntries} /> });
   } else if (streaming) {
@@ -808,12 +623,7 @@ export const BriefDeck: React.FC<Props> = (props) => {
   // v7 essaySeed wins when present; fall back to v6 three-entries
   // shape for cached briefs.
   if (essaySeed?.body) {
-    cards.push({
-      id: "essay-seed",
-      kicker: "What to write",
-      node: <EssaySeedSlide seed={essaySeed} color={archetypeColorForShare} />,
-      shareAsset: <EssaySeedShareCard color={archetypeColorForShare} seed={essaySeed} />,
-    });
+    cards.push({ id: "essay-seed", kicker: "What to write", node: <EssaySeedSlide seed={essaySeed} /> });
   } else if (essayEntries.length > 0) {
     cards.push({ id: "essays", kicker: "What to write", node: <EssayAngles entries={essayEntries} /> });
   } else if (streaming) {
@@ -821,34 +631,14 @@ export const BriefDeck: React.FC<Props> = (props) => {
   }
   // v7 mondayMove wins when present; fall back to v6 4-week plan.
   if (mondayMove?.body) {
-    cards.push({
-      id: "monday-move",
-      kicker: "Your Monday move",
-      node: <MondayMoveSlide move={mondayMove} color={archetypeColorForShare} />,
-      shareAsset: <MondayMoveShareCard color={archetypeColorForShare} move={mondayMove} />,
-    });
+    cards.push({ id: "monday-move", kicker: "Your Monday move", node: <MondayMoveSlide move={mondayMove} /> });
   } else if (weeks.length > 0) {
     cards.push({ id: "plan", kicker: "Your next 28 days", node: <ActionPlan weeks={weeks} closingLine={sections.whatToDoThisMonth?.closingLine} /> });
   } else if (streaming) {
     cards.push({ id: "plan-skeleton", kicker: "Your Monday move", node: <SlideSkeleton number={5} kicker="Your Monday move" title="One move this week." /> });
   }
   if (anyLoaded && !streamError) {
-    // v7 Phase 3 stage-2 (#20): if the brief generator emitted a
-    // handoff payload (archetype-personalized bridge with live
-    // matched scholarships), render HandoffBridge instead of the
-    // generic NextStepsCard. Falls back to NextStepsCard when no
-    // handoff is available — legacy schema-2 cached briefs, sparse
-    // intake without matched scholarships, or the pre-#20 pathway.
-    const handoff = sections.handoff;
-    if (handoff && (handoff.topMatches?.length ?? 0) > 0) {
-      cards.push({
-        id: "handoff",
-        kicker: "What's next",
-        node: <HandoffBridge payload={handoff} archetypeColor={archetypeColorForShare} />,
-      });
-    } else {
-      cards.push({ id: "next", kicker: "What next", node: <NextStepsCard /> });
-    }
+    cards.push({ id: "next", kicker: "What next", node: <NextStepsCard /> });
   }
 
   return (
@@ -870,20 +660,13 @@ export const BriefDeck: React.FC<Props> = (props) => {
    its content overflows. Print mode falls back to vertical block
    flow so the PDF export still renders as one document. */
 interface CardStackProps {
-  cards: Array<{ id: string; kicker: string; node: React.ReactNode; shareAsset?: React.ReactNode }>;
+  cards: Array<{ id: string; kicker: string; node: React.ReactNode }>;
   archetypeColor?: string;
 }
 
 const CardStack: React.FC<CardStackProps> = ({ cards, archetypeColor }) => {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [activeIdx, setActiveIdx] = useState(0);
-  /* v7 Phase 3 (#14): refs to each card's hidden Wrapped-Bold variant.
-     Populated as the hidden container renders below; consumed by the
-     share button to feed shareCardAsImage(). Cards without a
-     shareAsset (Cover, NextStepsCard) get no ref — their share
-     button falls back to the URL-only path. */
-  const shareAssetRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
-  const [isSharing, setIsSharing] = useState<string | null>(null);
 
   // Scroll handler tracks which card is centered in the viewport so
   // the progress dots stay in sync. Uses the container's scrollLeft
@@ -935,47 +718,25 @@ const CardStack: React.FC<CardStackProps> = ({ cards, archetypeColor }) => {
     return () => window.removeEventListener("keydown", onKey);
   }, [activeIdx, cards.length]);
 
-  const handleShare = async (card: { id: string; kicker: string; shareAsset?: React.ReactNode }) => {
-    // v7 Phase 3 (#14): if this card has a Wrapped-Bold shareAsset
-    // mounted off-screen, capture it to PNG and share via the
-    // platform's native share sheet (which on iOS/Android includes
-    // Instagram Stories as a destination). Otherwise fall back to
-    // the URL-only share (Cover / NextStepsCard cards).
+  const handleShare = async (cardKicker: string) => {
+    // Minimal share — opens the OS share sheet with the current URL +
+    // a per-card suggested message. The full IG-Story-frictionless
+    // deep link via instagram-stories:// is the work of #14.
     const url = typeof window !== "undefined" ? window.location.href : "";
-    const text = `My TopUni AI brief said: ${card.kicker}. topuni.kz/ai`;
-
-    const shareEl = shareAssetRefs.current.get(card.id);
-    if (card.shareAsset && shareEl) {
-      setIsSharing(card.id);
+    const shareData = {
+      title: `TopUni AI · ${cardKicker}`,
+      text: `My TopUni AI brief said: ${cardKicker}. topuni.kz/ai`,
+      url,
+    };
+    if (typeof navigator !== "undefined" && (navigator as Navigator & { share?: (d: ShareData) => Promise<void> }).share) {
       try {
-        const ok = await shareCardAsImage(shareEl, {
-          title: `TopUni AI · ${card.kicker}`,
-          text,
-          url,
-          filename: `topuni-${card.id}.png`,
-        });
-        if (ok) {
-          setIsSharing(null);
-          return;
-        }
-      } catch (err) {
-        console.warn("[card-stack] share-with-asset failed, falling back:", (err as Error).message);
-      }
-      setIsSharing(null);
-    }
-
-    // Fallback A: native share sheet without image
-    const nav = navigator as Navigator & { share?: (d: ShareData) => Promise<void> };
-    if (typeof nav !== "undefined" && nav.share) {
-      try {
-        await nav.share({ title: `TopUni AI · ${card.kicker}`, text, url });
+        await (navigator as Navigator & { share: (d: ShareData) => Promise<void> }).share(shareData);
         return;
       } catch {
-        // user-cancelled — fall through to clipboard
+        // user-cancelled share — fall through to clipboard fallback
       }
     }
-
-    // Fallback B: copy URL to clipboard so the user can paste it.
+    // Clipboard fallback.
     if (typeof navigator !== "undefined" && navigator.clipboard) {
       try {
         await navigator.clipboard.writeText(url);
@@ -1033,16 +794,15 @@ const CardStack: React.FC<CardStackProps> = ({ cards, archetypeColor }) => {
             {/* Card footer — share + next button. Hidden in print. */}
             <div className="print:hidden mt-6 max-w-3xl mx-auto flex items-center justify-between gap-3">
               <button
-                onClick={() => handleShare(card)}
-                disabled={isSharing === card.id}
-                className="text-xs font-medium text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-wait"
+                onClick={() => handleShare(card.kicker)}
+                className="text-xs font-medium text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1.5"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
                   <polyline points="16 6 12 2 8 6" />
                   <line x1="12" y1="2" x2="12" y2="15" />
                 </svg>
-                {isSharing === card.id ? "Preparing…" : card.shareAsset ? "Share to Story" : "Share"}
+                Share
               </button>
               {i < cards.length - 1 ? (
                 <button
@@ -1059,39 +819,6 @@ const CardStack: React.FC<CardStackProps> = ({ cards, archetypeColor }) => {
             </div>
           </div>
         ))}
-      </div>
-
-      {/* v7 Phase 3 (#14): hidden off-screen render of each card's
-          Wrapped-Bold share asset at full 1080×1920. The share
-          button captures the matching ref via html-to-image into a
-          PNG and hands it to the native share sheet. Hidden via
-          fixed-position-left-far-offscreen (NOT display:none —
-          html-to-image needs the element to compute styles and
-          paint dimensions, which display:none breaks). */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: "fixed",
-          left: -99999,
-          top: 0,
-          pointerEvents: "none",
-          opacity: 0,
-        }}
-      >
-        {cards
-          .filter((c) => c.shareAsset)
-          .map((card) => (
-            <div
-              key={`share-${card.id}`}
-              ref={(el) => {
-                if (el) shareAssetRefs.current.set(card.id, el);
-                else shareAssetRefs.current.delete(card.id);
-              }}
-              style={{ width: SHARE_CARD_WIDTH, height: SHARE_CARD_HEIGHT }}
-            >
-              {card.shareAsset}
-            </div>
-          ))}
       </div>
     </div>
   );
