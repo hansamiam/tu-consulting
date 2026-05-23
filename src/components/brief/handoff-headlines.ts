@@ -42,8 +42,8 @@ const TEMPLATES: Record<ArchetypeId, HeadlineTemplates> = {
     multi: "Quiet Builders typically map 4-6 scholarships across {countries} before they apply.",
   },
   "late-bloomer": {
-    single: "Late Bloomers tend to save 3-4 stretch scholarships in {countries}.",
-    multi: "Late Bloomers tend to save 3-4 stretch scholarships across {countries}.",
+    single: "Late Bloomers tend to save 3-4 scholarships in {countries} — the ones that judge trajectory, not just numbers.",
+    multi: "Late Bloomers tend to save 3-4 scholarships across {countries} — the ones that judge trajectory, not just numbers.",
   },
   "foreign-lane-native": {
     single: "Foreign-Lane Natives usually shortlist 4-7 scholarships in {countries}.",
