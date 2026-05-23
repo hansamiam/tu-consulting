@@ -18,6 +18,7 @@ import { checkRateLimit, clientIp } from "../_shared/rate-limit.ts";
 import { EDITORIAL_RULES_TIGHT } from "../_shared/editorial-rules.ts";
 import { CORS_HEADERS_EXTENDED as corsHeaders, handleCorsOptions } from "../_shared/cors.ts";
 import { respondError } from "../_shared/http.ts";
+import { findHallucinations } from "../_shared/hallucination-guard.ts";
 import { createServiceClient, createUserClient } from "../_shared/clients.ts";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -99,12 +100,12 @@ interface TrackerEntry {
 
 async function buildLiveCaseContext(
   authHeader: string,
-): Promise<{ context: string; userId: string | null }> {
+): Promise<{ context: string; userId: string | null; retrievedScholarshipNames: string[]; retrievedScholarshipIds: string[] }> {
   // Resolve user_id from JWT
   const userClient = createUserClient(authHeader);
   const { data: u } = await userClient.auth.getUser();
   const userId = u.user?.id ?? null;
-  if (!userId) return { context: "", userId: null };
+  if (!userId) return { context: "", userId: null, retrievedScholarshipNames: [], retrievedScholarshipIds: [] };
 
   // Use service-role to bypass RLS pain on the join (RLS would still
   // restrict; we filter explicitly by user_id below).
@@ -326,7 +327,17 @@ async function buildLiveCaseContext(
     lines.push("");
   }
 
-  return { context: lines.join("\n"), userId };
+  // For F11 anti-hallucination guard: the names of the scholarships the
+  // counselor is actually grounded in. Anything bold-formatted in the LLM
+  // output that doesn't fuzzy-match this set is a candidate hallucination.
+  const retrievedScholarshipNames = visible
+    .map((t) => t.scholarship?.scholarship_name)
+    .filter((n): n is string => typeof n === "string" && n.length > 0);
+  const retrievedScholarshipIds = visible
+    .map((t) => t.scholarship_id)
+    .filter((id): id is string => typeof id === "string");
+
+  return { context: lines.join("\n"), userId, retrievedScholarshipNames, retrievedScholarshipIds };
 }
 
 serve(async (req) => {
@@ -358,12 +369,16 @@ serve(async (req) => {
        passes (offline-first behaviour). */
     let liveContext = "";
     let userId: string | null = null;
+    let retrievedScholarshipNames: string[] = [];
+    let retrievedScholarshipIds: string[] = [];
     const authHeader = req.headers.get("Authorization");
     if (authHeader) {
       try {
         const r = await buildLiveCaseContext(authHeader);
         liveContext = r.context;
         userId = r.userId;
+        retrievedScholarshipNames = r.retrievedScholarshipNames;
+        retrievedScholarshipIds = r.retrievedScholarshipIds;
       } catch (e) {
         console.warn("[topuni-chat] live context fetch failed", e);
       }
@@ -519,6 +534,25 @@ CRITICAL — ANTI-HALLUCINATION RULES FOR SCHOLARSHIP NAMES:
                   role: "assistant",
                   content: assistantContent,
                 });
+                // F11 anti-hallucination guard, log-only Phase 1.
+                // Counselor output is grounded in the user's saved
+                // scholarships (visible set from buildLiveCaseContext).
+                // Any bold-name mention that doesn't fuzzy-match a saved
+                // scholarship is a candidate hallucination.
+                const flags = findHallucinations(assistantContent, retrievedScholarshipNames);
+                if (flags.length > 0) {
+                  await admin.from("brief_hallucinations").insert(
+                    flags.map((f) => ({
+                      source_function: "topuni-chat:counselor",
+                      flagged_text: f.flagged_text,
+                      retrieved_scholarship_ids: retrievedScholarshipIds,
+                      was_redacted: false,
+                      best_fuzzy_match_score: f.best_fuzzy_match_score,
+                      best_fuzzy_match_against_name: f.best_fuzzy_match_against_name,
+                      user_id: userId,
+                    })) as never,
+                  );
+                }
               } catch (e) {
                 console.warn("[topuni-chat] persist assistant failed", e);
               }
