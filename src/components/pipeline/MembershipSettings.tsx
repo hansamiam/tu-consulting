@@ -75,7 +75,7 @@ export const MembershipSettings = ({ language = "en", variant = "embedded" }: Pr
   const tier = subscription.tier;
   const tierLabel =
     tier === "founding" ? t("Early access", "Ранний доступ")
-    : tier === "pro"    ? t("Pro member", "Pro участник")
+    : tier === "pro"    ? t("Member", "Участник")
     : t("Free", "Бесплатно");
   const tierBadgeCls =
     tier === "founding" ? "bg-gold/15 text-gold-dark border-gold/35"

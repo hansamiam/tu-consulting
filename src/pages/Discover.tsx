@@ -5072,8 +5072,8 @@ const Discover = ({ language = "en" }: Props) => {
                       `Вы использовали бесплатные ${SHORTLIST_FREE_LIMIT} сохранений. Участники Membership — без лимита, плюс инсайты по каждой стипендии и рабочее пространство для трекинга.`,
                     )}
                     {paywallOpen === "strategy" && t(
-                      "Strategy notes — ideal-candidate profile, how-to-win approach, common rejection reasons, weak-candidate warnings — are part of TopUni Membership.",
-                      "Стратегические заметки — портрет идеального кандидата, как выиграть, типичные причины отказа и кому не стоит подавать — входят в TopUni Membership.",
+                      "Per-scholarship insights — \"Why this fits you\" + \"How to win this one\" — are part of TopUni Membership.",
+                      "Инсайты по каждой стипендии — «Почему подходит именно тебе» + «Как выиграть эту» — входят в TopUni Membership.",
                     )}
                     {paywallOpen === "compare" && t(
                       "Compare up to three scholarships side-by-side with TopUni Membership.",
@@ -5087,15 +5087,21 @@ const Discover = ({ language = "en" }: Props) => {
               <div className="space-y-2.5 text-sm text-foreground/85">
                 {[
                   t(
-                    `Full live feed — every active opportunity with strategy notes, rejection patterns, and how-to-win approaches. Updated continuously, not a stale once-a-year catalog.`,
-                    `Полная live-лента — каждая актуальная возможность со стратегическими заметками, причинами отказов и подходами к победе. Обновляется постоянно — не статичный каталог.`,
+                    `Unlimited saves — save every scholarship that fits your profile, not just five.`,
+                    `Без лимита сохранений — сохраняй каждую подходящую стипендию, а не только пять.`,
                   ),
                   t(
-                    "Live monthly workshops with our founders — Yale, Cambridge & Tsinghua, Harvard.",
-                    "Ежемесячные воркшопы с основателями — Yale, Cambridge & Tsinghua, Harvard.",
+                    `Per-scholarship insights — "Why this fits you" + "How to win this one" on every saved row.`,
+                    `Инсайты по каждой стипендии — «Почему подходит» + «Как выиграть» на каждой сохранённой строке.`,
                   ),
-                  t("Recordings library — every workshop saved for you.", "Библиотека записей — каждый воркшоп сохранён."),
-                  t("Unlimited shortlist + status tracking + notes.", "Без лимита: сохранения, статусы, заметки."),
+                  t(
+                    "Workspace — kanban for tracking applications, deadline calendar synced to Google / Apple Calendar.",
+                    "Рабочая зона — канбан-доска, календарь дедлайнов с синхронизацией в Google / Apple Calendar.",
+                  ),
+                  t(
+                    "Live monthly workshops — Yale, Cambridge & Tsinghua, Harvard alumni. Recordings library kept forever.",
+                    "Воркшопы вживую каждый месяц — выпускники Yale, Cambridge & Tsinghua, Harvard. Архив записей навсегда.",
+                  ),
                 ].map((b, i) => (
                   <div key={i} className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-gold-dark shrink-0 mt-0.5" />
