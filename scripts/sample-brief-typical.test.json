@@ -1,0 +1,116 @@
+{
+  "_comment": "TYPICAL launch-student fixture — single-focus Kazakh kid, somewhat undecided major, normal extracurriculars, no cross-domain superpower. Tests that the brief works for the MAJORITY of incoming students (not just Yerlan-shape outliers). Archetype should resolve to Open Question or Quiet Builder (the Barnum defaults).",
+  "intake": {
+    "fullName": "Aigerim Tolegen",
+    "nationality": "Kazakhstan",
+    "gpa": "3.6",
+    "ielts": "6.5",
+    "major": "Business",
+    "majorCertainty": "some_idea",
+    "targetCountries": ["Canada", "Singapore"],
+    "topActivity": "captain of girls' volleyball team, MUN delegate, part-time tutor for younger students",
+    "background": "first in family to apply abroad, parents both work in retail, want me to study close to home but I want out"
+  },
+  "dbContext": "University of Toronto (Canada) — Rotman Commerce is the business school. McGill (Canada) — Desautels Faculty of Management. University of British Columbia (Canada) — Sauder School of Business. NUS Singapore — top-3 business school in Asia, English-medium. SMU Singapore — newer but rising fast in business analytics.",
+  "brief": {
+    "schema": 3,
+    "plan": {
+      "archetype": {
+        "id": "open-question",
+        "confidence": 75,
+        "reason": "majorCertainty=some_idea, generic 'Business' major selection, no specific career direction — the indecision is the load-bearing thing to name warmly"
+      },
+      "identityClaim": "the kid who knows she needs out but not yet what for",
+      "pileContrast": "Most kids your year either lock in to one Kazakh university track or get pushed toward the IT-and-finance pipeline. You're saying 'Business' as a placeholder — it's what people say when they don't want to commit yet.",
+      "essaySeedType": "a moment when someone assumed you'd stay close to home and you noticed what you felt",
+      "primaryGap": {
+        "type": "major-uncertainty",
+        "reason": "Aigerim is on 'some_idea' for major; 'Business' is the safe-sounding placeholder. Naming this gently lets her write about what's actually happening instead of hiding behind a major she didn't pick."
+      },
+      "countryBuckets": ["Canada", "Singapore"],
+      "mondayMoveArtifact": "a Google Doc titled 'why I want out' with three honest sentences, then stop"
+    },
+    "sections": {
+      "whereYouStand": {
+        "kicker": "01 · Where you stand",
+        "headline": "You know you need out — you don't yet know what for.",
+        "lead": "Aigerim, your file reads honestly even before you say a word.",
+        "body": "You picked 'Business' on the major question — that's what kids in your year say when they don't want to pick yet. Your file shows volleyball captain, MUN, tutoring younger kids — three different shapes of leadership without a through-line. And your background says you want out of Kazakhstan but your parents want you close to home. None of these are problems. They're the actual application.",
+        "pullquote": "Stop hiding behind 'Business.' What you want is to leave."
+      },
+      "whereYouCanLand": {
+        "kicker": "02 · Where you belong",
+        "headline": "Two places that fit the version of you that left.",
+        "lead": "Pulled from your countries — both English-medium, both visa-realistic for KZ.",
+        "buckets": [
+          {
+            "country": "Canada",
+            "cities": "Toronto, Vancouver",
+            "schools": [
+              { "name": "University of Toronto", "lore": "Rotman is the business school but you don't have to declare day one. Big enough to be quietly undecided for a year while you figure it out." },
+              { "name": "McGill", "lore": "Desautels has a strong international cohort — the leaving-home kids end up next to each other, which makes the homesickness easier to admit." }
+            ]
+          },
+          {
+            "country": "Singapore",
+            "schools": [
+              { "name": "NUS Singapore", "lore": "Six-hour flight from Astana, English-medium, scholarship-heavy. The place that says yes to your visa and your indecision at the same time." }
+            ]
+          }
+        ]
+      },
+      "whatToWrite": {
+        "kicker": "04 · The essay only you can write",
+        "headline": "The essay you should write doesn't exist yet — but the seed for it does.",
+        "lead": "One specific moment to find.",
+        "essaySeed": {
+          "title": "The moment someone assumed you'd stay",
+          "body": "Sometime in the last year, someone in your life — a teacher, an aunt, a family friend — assumed out loud that you'd study in Almaty or Astana. Maybe a parent told you about a cousin's plan. Maybe someone said 'why would you leave?' and didn't actually wait for the answer. Find that exact moment.",
+          "closer": "What you felt in that moment is the essay."
+        }
+      },
+      "whatsBlockingYou": {
+        "kicker": "05 · What's blocking you",
+        "headline": "You don't know what you want to study yet.",
+        "lead": "And calling it 'Business' is how you've been avoiding the question.",
+        "entries": [
+          {
+            "priority": "high",
+            "title": "You don't know what you want to study yet",
+            "whyItMatters": "Aigerim, 'Business' is what teenagers say when the real answer is 'I don't know but I want out.' Schools have answers for kids who haven't picked yet — they don't have answers for kids who hide behind a major they didn't choose.",
+            "actionThisMonth": "Stop hiding the question. The essay seed next to this card is where to start putting it on the page.",
+            "next60Days": "As you talk to schools, you'll notice which ones actually have space for an undecided kid versus which ones want a hard commitment up front."
+          }
+        ]
+      },
+      "whatToDoThisMonth": {
+        "kicker": "06 · Your Monday Move",
+        "headline": "Open a Google Doc titled 'why I want out' this week.",
+        "lead": "Three sentences, then stop.",
+        "mondayMove": {
+          "headline": "Open a Google Doc titled 'why I want out' this week.",
+          "body": "Inside, write three honest sentences about why you want to study abroad. Don't polish. Don't make them sound noble. Just three sentences as if you were telling your closest friend. Stop when you have three.",
+          "closer": "Once those three sentences exist on the page, the rest of the application has somewhere to start from."
+        }
+      },
+      "handoff": {
+        "archetypeId": "open-question",
+        "countryBuckets": ["Canada", "Singapore"],
+        "topMatches": [
+          { "id": "1", "name": "Chevening Scholarships", "country": "United Kingdom", "awardText": "Full tuition + stipend", "deadlineISO": "2026-11-07", "fitNote": "Open to undecided majors. Specifically values leadership through service — your volleyball captain + tutoring lines up." },
+          { "id": "2", "name": "ASEAN Scholarship at NUS", "country": "Singapore", "awardText": "Full tuition + living + flight", "deadlineISO": "2027-02-15", "fitNote": "ASEAN students get priority. KZ passport eligible. NUS lets you keep major undeclared first year." },
+          { "id": "3", "name": "U of T International Scholar Awards", "country": "Canada", "awardText": "$100K over 4 years", "deadlineISO": "2026-12-09", "fitNote": "Rotman is one of the eligible faculties. Profile match favors international students with leadership + academic mix." }
+        ]
+      }
+    },
+    "handoff": {
+      "archetypeId": "open-question",
+      "countryBuckets": ["Canada", "Singapore"],
+      "topMatches": [
+        { "id": "1", "name": "Chevening Scholarships", "country": "United Kingdom", "awardText": "Full tuition + stipend", "deadlineISO": "2026-11-07", "fitNote": "Open to undecided majors. Specifically values leadership through service — your volleyball captain + tutoring lines up." },
+        { "id": "2", "name": "ASEAN Scholarship at NUS", "country": "Singapore", "awardText": "Full tuition + living + flight", "deadlineISO": "2027-02-15", "fitNote": "ASEAN students get priority. KZ passport eligible. NUS lets you keep major undeclared first year." },
+        { "id": "3", "name": "U of T International Scholar Awards", "country": "Canada", "awardText": "$100K over 4 years", "deadlineISO": "2026-12-09", "fitNote": "Rotman is one of the eligible faculties. Profile match favors international students with leadership + academic mix." }
+      ]
+    }
+  }
+}

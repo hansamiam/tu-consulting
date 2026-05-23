@@ -1462,13 +1462,17 @@ const AnalysisProgress = ({ profile, isRu }: {
 }) => {
   const t = (en: string, ru: string) => (isRu ? ru : en);
   const countryList = (profile.targetCountries || []).slice(0, 2).join(", ");
+  /* 2026-05-23: rewrote loading-step copy to match the v7 brief's
+     older-cousin voice + the locked "Top Uni = scholarships not
+     universities" framing. Steps read as observations the cousin is
+     making about your file, not corporate progress bars. */
   const steps = useMemo(() => [
-    t("Reading your academic profile and targets", "Читаем ваш профиль и цели"),
+    t("Reading what you wrote about yourself", "Читаем, что ты написал(а) о себе"),
     countryList
-      ? t(`Cross-referencing universities in ${countryList}`, `Сопоставляем университеты в ${countryList}`)
-      : t("Cross-referencing universities globally", "Сопоставляем университеты по всему миру"),
-    t("Pulling matched scholarships from our database", "Подбираем стипендии из нашей базы"),
-    t("Drafting your strategy report", "Готовим стратегический отчёт"),
+      ? t(`Looking at scholarships in ${countryList}`, `Смотрим стипендии в ${countryList}`)
+      : t("Looking across every scholarship that might fit", "Смотрим все стипендии, которые могут подойти"),
+    t("Pulling the ones that actually match your profile", "Отбираем те, что реально подходят твоему профилю"),
+    t("Writing it up", "Пишем твою стратегию"),
   ], [countryList, isRu]);
 
   const [done, setDone] = useState(0);
@@ -1492,11 +1496,11 @@ const AnalysisProgress = ({ profile, isRu }: {
         </span>
       </div>
       <h3 className="font-heading text-xl font-bold text-foreground tracking-tight mb-1">
-        {t("Building your strategy report", "Готовим ваш стратегический отчёт")}
+        {t("Reading your file…", "Читаем твой профиль…")}
       </h3>
       <p className="text-xs text-muted-foreground mb-6">
-        {t("Usually takes 20–40 seconds. Stay on this page.",
-           "Обычно 20–40 секунд. Не закрывайте страницу.")}
+        {t("Give it 30 seconds. The good stuff is worth the wait.",
+           "Дай 30 секунд. Лучшее стоит ожидания.")}
       </p>
       <ul className="space-y-2.5">
         {steps.map((label, i) => {
@@ -3528,7 +3532,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             mode="static"
                             sections={magazineSections}
                             studentName={profile.fullName || (isRu ? "Ваш отчёт" : "Your strategy report")}
-                            gradeLabel={reportGrade === "premium" ? "Pro" : "Basic"}
+                            gradeLabel={reportGrade === "premium" ? "Member" : "Basic"}
                             generatedAt={pathwayGeneratedAt ? new Date(pathwayGeneratedAt).toISOString() : undefined}
                           />
                         ) : pathwayContent && (
@@ -3780,7 +3784,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                           <span className="text-muted-foreground/30">·</span>
                           <span>
                             {reportGrade === "premium"
-                              ? <span className="inline-flex items-center gap-1 font-semibold text-gold-dark"><Crown className="w-2.5 h-2.5" /> {t("Pro tier", "Pro-уровень")}</span>
+                              ? <span className="inline-flex items-center gap-1 font-semibold text-gold-dark"><Crown className="w-2.5 h-2.5" /> {t("Member tier", "Уровень Membership")}</span>
                               : <span>{t("Standard tier", "Базовый уровень")}</span>}
                           </span>
                         </div>
@@ -4194,21 +4198,18 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                       // soft Pro upgrade card. PremiumGate fires gate_seen
                       // + gate_upgrade_clicked into the analytics_events
                       // table for funnel telemetry.
-                      <PremiumGate
-                        gateId="counselor-free-limit"
-                        headline={t(
-                          `You've sent ${COUNSELOR_FREE_MESSAGE_LIMIT} free counselor messages — unlock unlimited with Pro`,
-                          `Вы отправили ${COUNSELOR_FREE_MESSAGE_LIMIT} бесплатных сообщений — Pro даёт безлимит`,
+                      // 2026-05-23 stage-2: counselor chat dropped from
+                      // the Membership pitch (per "ChatGPT eats this
+                      // lunch" decision). Show a simple deactivated
+                      // notice instead of upselling. The route still
+                      // works for users who hit it directly; just don't
+                      // pitch it as a perk.
+                      <div className="h-32 rounded-xl border border-border bg-background flex items-center justify-center text-sm text-muted-foreground">
+                        {t(
+                          `You've reached the ${COUNSELOR_FREE_MESSAGE_LIMIT}-message limit.`,
+                          `Вы достигли лимита ${COUNSELOR_FREE_MESSAGE_LIMIT} сообщений.`,
                         )}
-                        subline={t(
-                          "Pro lets you keep iterating with the counselor on essay drafts, deadline plans, country pivots — no limit.",
-                          "Pro даёт безлимит общения с советником: эссе, дедлайны, смена стран — без ограничений.",
-                        )}
-                      >
-                        <div className="h-32 rounded-xl border border-border bg-background opacity-50 flex items-center justify-center text-sm text-muted-foreground">
-                          {t("Continue the conversation with Pro", "Продолжите общение с Pro")}
-                        </div>
-                      </PremiumGate>
+                      </div>
                     ) : (
                       <>
                         <form

@@ -4257,7 +4257,7 @@ const Discover = ({ language = "en" }: Props) => {
                       {/* Sidebar membership card — visible to anyone not yet
                           a member. Quick-panel surface uses "Membership"
                           (plainer, matches the footer + paywall row labels)
-                          rather than "TopUni Pro" — that name still belongs
+                          rather than "TopUni Membership" — that name still belongs
                           on the deeper paywall sheet headers where the user
                           is being sold the product, not the sidebar nudge.
                           Founding-cohort scarcity drives conversion via the
@@ -5055,7 +5055,7 @@ const Discover = ({ language = "en" }: Props) => {
               <div className="relative">
                 <div className="inline-flex items-center gap-2 bg-gold/15 border border-gold/30 px-3 py-1 rounded-full mb-5">
                   <Crown className="h-3 w-3 text-gold-light" />
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold-light">TopUni Pro</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold-light">TopUni Membership</span>
                 </div>
                 <SheetHeader>
                   <SheetTitle className="font-heading text-2xl text-primary-foreground tracking-tight leading-tight text-left">
@@ -5068,16 +5068,16 @@ const Discover = ({ language = "en" }: Props) => {
                   </SheetTitle>
                   <p className="text-primary-foreground/65 text-sm leading-relaxed pt-1 text-left">
                     {paywallOpen === "shortlist" && t(
-                      `You've saved your free ${SHORTLIST_FREE_LIMIT}. Pro members get unlimited saves plus per-scholarship status tracking and notes.`,
-                      `Вы использовали бесплатные ${SHORTLIST_FREE_LIMIT} сохранений. Pro-членство — без лимита, плюс статусы и заметки по каждой стипендии.`,
+                      `You've saved your free ${SHORTLIST_FREE_LIMIT}. Members get unlimited saves plus per-scholarship insights and the workspace to track them.`,
+                      `Вы использовали бесплатные ${SHORTLIST_FREE_LIMIT} сохранений. Участники Membership — без лимита, плюс инсайты по каждой стипендии и рабочее пространство для трекинга.`,
                     )}
                     {paywallOpen === "strategy" && t(
-                      "Strategy notes — ideal-candidate profile, how-to-win approach, common rejection reasons, weak-candidate warnings — are part of TopUni Pro.",
-                      "Стратегические заметки — портрет идеального кандидата, как выиграть, типичные причины отказа и кому не стоит подавать — входят в TopUni Pro.",
+                      "Per-scholarship insights — \"Why this fits you\" + \"How to win this one\" — are part of TopUni Membership.",
+                      "Инсайты по каждой стипендии — «Почему подходит именно тебе» + «Как выиграть эту» — входят в TopUni Membership.",
                     )}
                     {paywallOpen === "compare" && t(
-                      "Compare up to three scholarships side-by-side with TopUni Pro.",
-                      "Сравнивайте до трёх стипендий рядом — с TopUni Pro.",
+                      "Compare up to three scholarships side-by-side with TopUni Membership.",
+                      "Сравнивайте до трёх стипендий рядом — с TopUni Membership.",
                     )}
                   </p>
                 </SheetHeader>
@@ -5087,15 +5087,21 @@ const Discover = ({ language = "en" }: Props) => {
               <div className="space-y-2.5 text-sm text-foreground/85">
                 {[
                   t(
-                    `Full live feed — every active opportunity with strategy notes, rejection patterns, and how-to-win approaches. Updated continuously, not a stale once-a-year catalog.`,
-                    `Полная live-лента — каждая актуальная возможность со стратегическими заметками, причинами отказов и подходами к победе. Обновляется постоянно — не статичный каталог.`,
+                    `Unlimited saves — save every scholarship that fits your profile, not just five.`,
+                    `Без лимита сохранений — сохраняй каждую подходящую стипендию, а не только пять.`,
                   ),
                   t(
-                    "Live monthly workshops with our founders — Yale, Cambridge & Tsinghua, Harvard.",
-                    "Ежемесячные воркшопы с основателями — Yale, Cambridge & Tsinghua, Harvard.",
+                    `Per-scholarship insights — "Why this fits you" + "How to win this one" on every saved row.`,
+                    `Инсайты по каждой стипендии — «Почему подходит» + «Как выиграть» на каждой сохранённой строке.`,
                   ),
-                  t("Recordings library — every workshop saved for you.", "Библиотека записей — каждый воркшоп сохранён."),
-                  t("Unlimited shortlist + status tracking + notes.", "Без лимита: сохранения, статусы, заметки."),
+                  t(
+                    "Workspace — kanban for tracking applications, deadline calendar synced to Google / Apple Calendar.",
+                    "Рабочая зона — канбан-доска, календарь дедлайнов с синхронизацией в Google / Apple Calendar.",
+                  ),
+                  t(
+                    "Live monthly workshops — Yale, Cambridge & Tsinghua, Harvard alumni. Recordings library kept forever.",
+                    "Воркшопы вживую каждый месяц — выпускники Yale, Cambridge & Tsinghua, Harvard. Архив записей навсегда.",
+                  ),
                 ].map((b, i) => (
                   <div key={i} className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-gold-dark shrink-0 mt-0.5" />
@@ -5111,7 +5117,7 @@ const Discover = ({ language = "en" }: Props) => {
               )}
               <div className="flex flex-col gap-2 pt-2">
                 <Button variant="gold" size="lg" className="w-full gap-2" onClick={() => { setPaywallOpen(null); navigate(ru ? "/pricing/ru" : "/pricing"); }}>
-                  {t("See TopUni Pro", "Смотреть TopUni Pro")} <ArrowRight className="h-4 w-4" />
+                  {t("See Membership", "Смотреть Membership")} <ArrowRight className="h-4 w-4" />
                 </Button>
                 <button onClick={() => setPaywallOpen(null)} className="text-xs text-muted-foreground hover:text-foreground transition-colors py-2">
                   {t("Not now", "Не сейчас")}
