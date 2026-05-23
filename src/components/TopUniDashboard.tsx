@@ -3532,7 +3532,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             mode="static"
                             sections={magazineSections}
                             studentName={profile.fullName || (isRu ? "Ваш отчёт" : "Your strategy report")}
-                            gradeLabel={reportGrade === "premium" ? "Pro" : "Basic"}
+                            gradeLabel={reportGrade === "premium" ? "Member" : "Basic"}
                             generatedAt={pathwayGeneratedAt ? new Date(pathwayGeneratedAt).toISOString() : undefined}
                           />
                         ) : pathwayContent && (

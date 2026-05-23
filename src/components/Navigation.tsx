@@ -106,7 +106,7 @@ const Navigation = ({ language = "en", variant = "default", overlayThreshold = 8
   // a separate account button to show the tier.
   const tierLabelMobile =
     subscription.tier === "founding" ? (isRussian ? "Ранний доступ" : "Early access") :
-    subscription.tier === "pro"      ? (isRussian ? "Pro аккаунт"   : "Pro Member")  :
+    subscription.tier === "pro"      ? (isRussian ? "Участник"     : "Member")      :
                                        (isRussian ? "Мой аккаунт"   : "Free");
 
   const linkBase = "px-3 py-2 text-sm font-medium rounded-md transition-colors";
