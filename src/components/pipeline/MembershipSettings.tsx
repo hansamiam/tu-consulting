@@ -144,7 +144,7 @@ export const MembershipSettings = ({ language = "en", variant = "embedded" }: Pr
             </div>
             {tier === "free" && !subscription.earned_trial_active && (
               <Button size="sm" onClick={() => navigate(pricingPath)} className="gap-1.5 shrink-0">
-                {t("Upgrade", "Перейти на Pro")}
+                {t("Upgrade", "Стать участником")}
                 <ArrowRight className="w-3.5 h-3.5" />
               </Button>
             )}
