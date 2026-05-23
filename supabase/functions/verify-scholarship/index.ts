@@ -60,29 +60,11 @@ const COST_ESTIMATE_USD = 0.0015 + FIRECRAWL_COST_PER_SCRAPE_USD;
 const MAX_MARKDOWN_CHARS = 25_000;
 const MIN_CONFIDENCE_TO_TRUST = 0.7;
 
-// Local aggregator-hostname check, used to pick which URL to re-fetch during
-// verification. Mirrors the public.is_aggregator_url() Postgres function but
-// inlined to avoid a per-row RPC on the hot path. Keep in sync with the
-// migration list (20260523000000_expand_is_aggregator_url_domains.sql).
-const AGGREGATOR_HOSTS = [
-  "opportunitiesforyouth.org", "opportunitiestracker.ug", "opportunitytracker.ug",
-  "opportunitydesk.org", "scholars4dev.com", "opportunitiesforafricans.com",
-  "iefa.org", "fastweb.com", "scholarshipportal.com", "studyportals.com",
-  "scholarshipsads.com", "opportunitiescorner.info", "afterschoolafrica.com",
-  "topuniversities.com", "mladiinfo.eu", "profellow.com", "iie.org",
-  "erudera.com", "scholarshippanda.com", "scholarshipsdb.net", "studyabroadaid.com",
-  "opportunitiesforinternationalstudents.com", "buddy4study.com",
-  "studyabroad.com", "after12.in", "scholarship-positions.com",
-];
-function isAggregatorHostnameLocal(url: string | null | undefined): boolean {
-  if (!url) return false;
-  try {
-    const host = new URL(url).hostname.replace(/^www\./, "").toLowerCase();
-    return AGGREGATOR_HOSTS.some((d) => host === d || host.endsWith("." + d));
-  } catch {
-    return false;
-  }
-}
+// Aggregator-hostname check used to pick which URL to re-fetch during
+// verification. Sourced from _shared/aggregator-hosts.ts — single source
+// of truth for the project. (Previously inlined here as a 25-entry list;
+// extracted 2026-05-23 after a third copy was found in canonical-extract.)
+import { isAggregatorHostname as isAggregatorHostnameLocal } from "../_shared/aggregator-hosts.ts";
 
 /* Field-level diff threshold rules. We don't flag micro-changes (case
    diffs, trailing whitespace) — only material drift the user would
