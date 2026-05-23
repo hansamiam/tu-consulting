@@ -78,7 +78,12 @@ const CohortWelcomeEmail = ({
   const dateStr = formatStartDate(startsAt, lang)
   const base = siteUrl ?? 'https://topuni.org'
   const langSuffix = lang === 'ru' ? '/ru' : ''
-  const portalUrl = `${base}/cohorts/${cohortSlug}${langSuffix}`
+  // Per feedback_academy_is_members_area.md — /academy is the single
+  // members area; cohort surface integrates AS A SECTION there.
+  // cohortSlug is kept on the Props interface for analytics / future
+  // per-cohort routing but isn't part of the URL today.
+  void cohortSlug
+  const portalUrl = `${base}/academy${langSuffix}`
   return (
     <Html lang={c.htmlLang}>
       <Head />
