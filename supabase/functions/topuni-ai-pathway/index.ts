@@ -7,7 +7,16 @@ import {
   type SectionSpec,
   type BriefContext,
 } from "../_shared/brief-sections.ts";
-import { EDITORIAL_RULES } from "../_shared/editorial-rules.ts";
+import { EDITORIAL_RULES, resolveCulturalContext } from "../_shared/editorial-rules.ts";
+import {
+  buildPlanPrompt,
+  validatePlan,
+  buildFallbackPlan,
+  type BriefPlan,
+  type PlanContext,
+} from "../_shared/brief-plan.ts";
+import { getArchetype } from "../_shared/archetype-library.ts";
+import { extractPersonalityAxisFromFields } from "../_shared/personality-axis.ts";
 import {
   cleanScholarshipName,
   cleanProvider,
@@ -93,16 +102,29 @@ async function computeBriefHash(profile: any, grade: string, lang: string): Prom
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
 }
 
-/* v6 magazine cache replay — emits per-section JSON events the new
+/* Magazine cache replay — emits per-section JSON events the
    BriefMagazine renderer expects. Cache content shape:
-     { schema: 2, sections: { whereYouStand: {...}, ... } }
-   We replay in PREMIUM_SECTIONS order so the client renders in journey
-   order; missing sections are skipped (renderer keeps their skeletons). */
-function replayMagazineCachedAsSse(sections: Record<string, unknown>): ReadableStream<Uint8Array> {
+     v7 (schema 3): { schema: 3, plan: {...}, sections: { whereYouStand: {...}, ... } }
+     v6 (schema 2): { schema: 2, sections: { ... } }
+   For schema 3, emit the archetype card first (rendered from
+   plan.archetype + the library lookup). For schema 2 (legacy
+   cache), skip the archetype event — the brief just doesn't get a
+   hook card.
+   Replay in PREMIUM_SECTIONS order so the client renders in
+   journey order; missing sections are skipped (renderer keeps
+   their skeletons). */
+function replayMagazineCachedAsSse(
+  sections: Record<string, unknown>,
+  plan: BriefPlan | null,
+): ReadableStream<Uint8Array> {
   const enc = new TextEncoder();
   return new ReadableStream({
     start(c) {
       try {
+        if (plan) {
+          const arch = buildArchetypePayload(plan);
+          c.enqueue(enc.encode(`data: ${JSON.stringify({ section: "archetype", payload: arch })}\n\n`));
+        }
         for (const spec of PREMIUM_SECTIONS) {
           const payload = sections[spec.id];
           if (payload === undefined) continue;
@@ -281,11 +303,111 @@ async function generateSection(spec: SectionSpec, ctx: BriefContext): Promise<Se
   return { spec, rawJson: stub, payload: safeParseJson(stub), valid: false, regenerated: true };
 }
 
+/* v7 (Phase 2): the pre-plan call. Runs BEFORE the section promises
+   so the LLM has produced the canonical narrative throughline that
+   every section consumes via ctx.briefPlan. Pattern parallels
+   generateSection: one LLM call, validate, regen once on failure,
+   fall back to the deterministic plan if both fail (the brief still
+   ships, just without LLM-refined cross-card anchors). */
+async function generateBriefPlan(planCtx: PlanContext): Promise<{
+  plan: BriefPlan;
+  regenerated: boolean;
+  llmBacked: boolean;
+}> {
+  const sysContent = `You are TopUni AI's brief PLANNER. You output ONLY a valid JSON object matching the schema in the user message. No markdown fences, no preamble.`;
+  let firstReason: string | undefined;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const prompt =
+      attempt === 1
+        ? buildPlanPrompt(planCtx)
+        : `${buildPlanPrompt(planCtx)}\n\nYOUR PREVIOUS ATTEMPT FAILED VALIDATION: ${firstReason ?? "validation failed"}\n\nRe-emit the JSON meeting every constraint. Output ONLY the JSON.`;
+    try {
+      const resp = await chatCompletions({
+        tier: "flash",
+        messages: [
+          { role: "system", content: sysContent },
+          { role: "user", content: prompt },
+        ],
+        stream: false,
+        jsonMode: true,
+      });
+      if (!resp.ok) {
+        const errBody = await resp.text();
+        console.warn(
+          `[brief-plan] attempt ${attempt} HTTP ${resp.status}: ${errBody.slice(0, 200)}`,
+        );
+        if (attempt === 1) {
+          firstReason = `gateway HTTP ${resp.status}`;
+          continue;
+        }
+        break; // fall through to fallback
+      }
+      const data = await resp.json();
+      const text =
+        (data?.choices?.[0]?.message?.content
+          ?? (Array.isArray(data?.content)
+            ? data.content.map((c: any) => c?.text ?? "").join("")
+            : "")
+          ?? "") as string;
+      const isolated = isolateJson(text);
+      const verdict = validatePlan(isolated, planCtx);
+      if ("plan" in verdict) {
+        return { plan: verdict.plan, regenerated: attempt > 1, llmBacked: true };
+      }
+      firstReason = verdict.error;
+      console.warn(`[brief-plan] attempt ${attempt} invalid: ${verdict.error}`);
+      if (attempt === 2) break;
+    } catch (e) {
+      console.warn(`[brief-plan] attempt ${attempt} threw:`, (e as Error).message);
+      if (attempt === 1) firstReason = (e as Error).message;
+      if (attempt === 2) break;
+    }
+  }
+  // Both LLM attempts failed — ship the deterministic fallback so the
+  // brief still generates. Telemetry surfaces the LLM failure via the
+  // llmBacked flag returned from this function.
+  console.warn(
+    `[brief-plan] LLM regen exhausted; falling back to deterministic plan (last reason: ${firstReason ?? "?"})`,
+  );
+  return { plan: buildFallbackPlan(planCtx), regenerated: true, llmBacked: false };
+}
+
+/** Build the archetype SSE payload from a brief plan. Combines the
+ *  LLM/heuristic-picked id with the closed-library lookup so the
+ *  renderer receives the canonical name/tagline/color without
+ *  needing to ship the library to the client. */
+function buildArchetypePayload(plan: BriefPlan): {
+  id: string;
+  name: string;
+  tagline: string;
+  color: string;
+  confidence: number;
+  reason: string;
+} {
+  const arch = getArchetype(plan.archetype.id);
+  return {
+    id: arch.id,
+    name: arch.name,
+    tagline: arch.tagline,
+    color: arch.color,
+    confidence: plan.archetype.confidence,
+    reason: plan.archetype.reason,
+  };
+}
+
 /* v6 magazine stream — emits one SSE event per completed section as
    `data: {"section":"<id>","payload":{...}}`. Sections are awaited in
    PREMIUM_SECTIONS order so the client renders in journey order. The
-   payload is the parsed JSON the renderer consumes directly. */
-function buildOrderedSectionStream(promises: Array<Promise<SectionResult>>): ReadableStream<Uint8Array> {
+   payload is the parsed JSON the renderer consumes directly.
+
+   v7 Phase 2: accepts optional `priorEvents` — fully-resolved
+   {section, payload} pairs that emit BEFORE any of the section
+   promises resolve. Used for the archetype card (rendered from the
+   pre-plan output, no LLM call of its own). */
+function buildOrderedSectionStream(
+  promises: Array<Promise<SectionResult>>,
+  priorEvents: Array<{ section: string; payload: unknown }> = [],
+): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
   return new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -294,6 +416,9 @@ function buildOrderedSectionStream(promises: Array<Promise<SectionResult>>): Rea
         controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
       };
       try {
+        for (const ev of priorEvents) {
+          emit(ev.section, ev.payload);
+        }
         for (let i = 0; i < promises.length; i++) {
           const result = await promises[i];
           emit(result.spec.id, result.payload ?? { error: "no payload" });
@@ -431,21 +556,30 @@ serve(async (req) => {
         }
         if (!drifted) {
           // Cache hit + fresh — branch on schema:
-          //   v6 magazine: content is a JSON object { sections: {...} }
+          //   v7 magazine (schema 3): { schema: 3, plan, sections }
+          //   v6 magazine (schema 2): { schema: 2, sections }
           //   legacy basic: content is a markdown string
           let magazineSections: Record<string, unknown> | null = null;
+          let cachedPlan: BriefPlan | null = null;
           if (grade === "premium") {
             try {
               const obj = typeof cached.content === "string"
                 ? JSON.parse(cached.content)
-                : (cached.content as { sections?: Record<string, unknown> });
+                : (cached.content as {
+                  schema?: number;
+                  plan?: BriefPlan;
+                  sections?: Record<string, unknown>;
+                });
               if (obj && typeof obj === "object" && obj.sections) {
                 magazineSections = obj.sections as Record<string, unknown>;
+              }
+              if (obj && typeof obj === "object" && obj.plan && obj.schema === 3) {
+                cachedPlan = obj.plan as BriefPlan;
               }
             } catch { /* fall through to legacy replay */ }
           }
           const stream = magazineSections
-            ? replayMagazineCachedAsSse(magazineSections)
+            ? replayMagazineCachedAsSse(magazineSections, cachedPlan)
             : replayCachedAsSse(typeof cached.content === "string" ? cached.content : "");
           return new Response(stream, {
             headers: {
@@ -858,16 +992,35 @@ ${EDITORIAL_RULES}`;
        vs 1) but dramatically more reliable structure + deeper per-
        section content because each prompt is laser-focused. */
     if (grade === "premium") {
+      const culturalContext = resolveCulturalContext(profile.nationality) as
+        | "central_asia"
+        | "default";
+      // v7 Phase 2: extract personality axis from the Step 3 free-text
+      // (background / personalStory / etc.) via the covert-intake
+      // placeholder mechanic. Regex-based, zero LLM cost. Returns
+      // "unknown" when no signal — cards render neutral framing.
+      const personalityAxis = extractPersonalityAxisFromFields([
+        profile.background,
+        profile.personalStory,
+        profile.careerGoal,
+        profile.extracurriculars,
+      ]).axis;
+
       const briefCtx: BriefContext = {
         dbContext,
         profile,
         lang,
         audienceLine,
+        culturalContext,
+        personalityAxis,
       };
 
       // Per-section regen path — caller passed a section id; we run just
-      // that one and stream its markdown back. No section-prefix newline
-      // since the client is splicing this in place.
+      // that one. We do NOT re-run the pre-plan here because the existing
+      // brief in the client already has the plan baked in via its
+      // earlier cards. Per-section regen uses the v7-without-plan
+      // prompts — slightly less coherent than a full regen, acceptable
+      // for a targeted card replace.
       if (typeof regenSection === "string" && regenSection) {
         const target = PREMIUM_SECTIONS.find(s => s.id === regenSection);
         if (!target) {
@@ -879,11 +1032,37 @@ ${EDITORIAL_RULES}`;
         });
       }
 
-      // Full premium build — all sections in parallel, magazine SSE.
+      // v7 Phase 2: pre-plan call. One LLM call up front produces the
+      // canonical narrative throughline JSON. Every section then
+      // renders against the plan; cross-card coherence is by
+      // construction, not by parallel-LLM accident. Cost: ~$0.0006
+      // (flash). Latency: ~2-4s added to TTFB, offset by emitting the
+      // archetype SSE event the moment the plan is ready (gives the
+      // user something moving while sections warm up).
+      const planCtx: PlanContext = {
+        profile: profile as PlanContext["profile"],
+        dbContext,
+        lang,
+      };
+      const planResult = await generateBriefPlan(planCtx);
+      briefCtx.briefPlan = planResult.plan;
+      const archetypePayload = buildArchetypePayload(planResult.plan);
+      console.log(
+        `[brief-plan] archetype=${planResult.plan.archetype.id} confidence=${planResult.plan.archetype.confidence} llmBacked=${planResult.llmBacked} regenerated=${planResult.regenerated}`,
+      );
+
+      // Full premium build — sections run in parallel with the plan in
+      // context. Archetype event is emitted FIRST as a prior event so
+      // the client renders the archetype card while section generators
+      // are still working.
       const sectionPromises = PREMIUM_SECTIONS.map(spec => generateSection(spec, briefCtx));
-      const stream = buildOrderedSectionStream(sectionPromises);
+      const stream = buildOrderedSectionStream(sectionPromises, [
+        { section: "archetype", payload: archetypePayload },
+      ]);
       // Tee for cache persistence — accumulator collects JSON payloads
-      // keyed by section id; persisted as { schema: 2, sections: {...} }.
+      // keyed by section id; persisted as { schema: 3, plan, sections }.
+      // Old schema-2 caches (no plan) still replay correctly via the
+      // schema-aware replay function below; new writes always use 3.
       const { client, accumulated } = teeMagazineStreamForCache(stream);
       const scholarshipIdList = scholarshipRows.map((r: any) => r.scholarship_id).filter(Boolean);
       const retrievedNames: string[] = scholarshipRows
@@ -897,8 +1076,12 @@ ${EDITORIAL_RULES}`;
               profile_hash: briefProfileHash,
               language: cacheLang,
               grade,
-              content: JSON.stringify({ schema: 2, sections }),
-              brief_schema_version: 2,
+              content: JSON.stringify({
+                schema: 3,
+                plan: planResult.plan,
+                sections,
+              }),
+              brief_schema_version: 3,
               scholarship_ids: scholarshipIdList,
               retrieval_method: retrievalMethod,
               prompt_version: PROMPT_VERSION,
@@ -933,7 +1116,7 @@ ${EDITORIAL_RULES}`;
         }
       })();
       return new Response(client, {
-        headers: { ...corsHeaders, "Content-Type": "text/event-stream", "X-Cache": "MISS", "X-Brief-Schema": "2" },
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream", "X-Cache": "MISS", "X-Brief-Schema": "3" },
       });
     }
 

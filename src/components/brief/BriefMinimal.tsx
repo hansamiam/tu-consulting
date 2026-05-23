@@ -474,6 +474,7 @@ export const BriefDeck: React.FC<Props> = (props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const archetype = sections.archetype;
   const stand = sections.whereYouStand;
   const gaps = sections.whatsBlockingYou?.entries ?? [];
   const schoolEntries = sections.whereYouCanLand?.entries ?? [];
@@ -492,6 +493,36 @@ export const BriefDeck: React.FC<Props> = (props) => {
       )}
 
       <Cover studentName={props.studentName} gradeLabel={props.gradeLabel} generatedAt={props.generatedAt} />
+
+      {/* v7 Phase 2: archetype hook card. Renders above the substantive
+          sections when the pre-plan call streamed an "archetype" SSE
+          event. Minimal treatment for now — the full Wrapped-Bold IG-
+          Story-shaped variant + share button lands in #13 / #14. */}
+      {archetype?.id && archetype?.name ? (
+        <section
+          aria-label="Your archetype"
+          className="my-10 mx-auto max-w-2xl rounded-2xl px-8 py-10 text-center shadow-sm"
+          style={{
+            background: `linear-gradient(135deg, ${archetype.color}1A, ${archetype.color}33)`,
+            borderTop: `4px solid ${archetype.color}`,
+          }}
+        >
+          <div className="text-[10px] uppercase tracking-[0.28em] text-foreground/60 font-medium">
+            You are
+          </div>
+          <h2
+            className="mt-3 text-[clamp(1.75rem,4vw,2.5rem)] font-serif font-bold leading-tight tracking-tight"
+            style={{ color: archetype.color }}
+          >
+            {archetype.name}
+          </h2>
+          {archetype.tagline && (
+            <p className="mt-4 text-base sm:text-lg text-foreground/80 italic font-serif max-w-md mx-auto leading-snug">
+              {archetype.tagline}
+            </p>
+          )}
+        </section>
+      ) : null}
 
       {(stand?.body || stand?.lead || gaps.length > 0) ? (
         <StartingLine

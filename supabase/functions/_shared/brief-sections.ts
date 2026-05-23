@@ -1,31 +1,57 @@
 /**
- * Brief section specs — v6 (magazine redesign).
+ * Brief section specs — v7 (spec lock 2026-05-22).
  *
- * Six journey sections that each produce a STRUCTURED JSON payload
- * (not markdown). The renderer in src/components/brief/* owns 100%
- * of visual choices; this file just orchestrates one LLM call per
- * section and validates the JSON shape.
+ * Five journey sections (IDs unchanged from v6 for renderer wire-
+ * compat — see src/components/brief/types.ts) that each produce a
+ * STRUCTURED JSON payload. The renderer in src/components/brief/*
+ * still owns 100% of visual choices; this file orchestrates one LLM
+ * call per section and validates BOTH the JSON shape AND the
+ * semantic content (banned vocab, specific-anchor presence,
+ * culturally-aware peer-piles).
  *
- * Journey order:
- *   01 whereYouStand      — current profile interpreted, sets the thesis
- *   02 whereYouCanLand    — 3 schools (reach / target / safety)
- *   03 howYoullPay        — 3-5 scholarships ordered by deadline
- *   04 whatToWrite        — 3 essay angles
- *   05 whatsBlockingYou   — 2-3 gaps with priority + action
- *   06 whatToDoThisMonth  — 4-week plan with checkable tasks
+ * v7 changes — what's NEW vs v6:
+ *   1. Each section prompt embeds a worked GOLD EXEMPLAR so the
+ *      model has a concrete reference for the prose-quality bar,
+ *      not just a description of structure.
+ *   2. Validators check banned-vocab matches (scanBannedVocab) and
+ *      specific-anchor presence (does the output reference any
+ *      intake field by name?). A validator failure triggers regen,
+ *      same as a shape failure.
+ *   3. Cultural-context branching: prompts and validators receive
+ *      ctx.culturalContext ("central_asia" | "default"). The
+ *      central-asia branch surfaces locally-salient peer piles
+ *      (IT/CS, engineering, finance, IR) and forbids "pre-med".
+ *   4. Major-certainty branching: section 05 (whatsBlockingYou) has
+ *      two prompt variants. If ctx.majorCertainty in {not_at_all,
+ *      some_idea}, the section names the major-uncertainty itself
+ *      as the load-bearing gap. If pretty_sure/certain, the section
+ *      picks from a closed library of named gaps.
+ *   5. Each section's content semantics shifted toward the v7 spec
+ *      cards (WHO YOU ARE, WHERE YOU BELONG, ESSAY ONLY YOU CAN
+ *      WRITE, WHAT YOU'RE AVOIDING, MONDAY MOVE) WHILE preserving
+ *      the v6 payload shape (kicker/headline/lead/body/entries/etc).
+ *      Renderer/serializer changes that allow the full v7 card stack
+ *      (Archetype + 6 cards with one-of-X payloads) are a planned
+ *      follow-up — see ~/.claude/plans/ok-good-morning-claude-
+ *      frolicking-moth.md for the full spec.
+ *
+ * Journey order (renderer-wire IDs in parens):
+ *   01 WHO YOU ARE                (whereYouStand)
+ *   02 WHERE YOU BELONG           (whereYouCanLand)
+ *   03 ESSAY ONLY YOU CAN WRITE   (whatToWrite)
+ *   04 WHAT YOU'RE AVOIDING       (whatsBlockingYou)
+ *   05 MONDAY MOVE                (whatToDoThisMonth)
+ *
+ * The legacy spec called these "Where you stand / Where you can land
+ * / What to write / What's blocking you / What to do this month".
+ * The v7 cards reuse the IDs but the CONTENT is the new spec. The
+ * old kicker labels still flow through types.ts; updating the
+ * displayed kicker copy is a renderer-side change separate from this
+ * file. The model is told the v7 card name in the prompt.
  *
  * Each section streams as one complete `data: {section, payload}` SSE
  * event. The renderer fills its block as soon as that event arrives;
  * sections not yet streamed render as skeletons in journey position.
- *
- * Validators check JSON keys + entry counts. A failure triggers ONE
- * regen with a stricter prompt; if regen also fails we keep the first
- * attempt and move on (degrading > blocking the whole brief).
- *
- * The four legacy v5 specs (careerRoi, visa, monthlyBudget, finalWord)
- * were retired in the 2026-05-10 cull; the v5 list (positioning,
- * shortlist, fundingPathway, essays, honestGaps) is retired here. If
- * you need them back, dig through git history at this file's prior rev.
  */
 
 export interface BriefContext {
@@ -53,10 +79,31 @@ export interface BriefContext {
     topActivity?: string;
     personalStory?: string;
     namedSchools?: string;
+    /** v7 spec: major-certainty signal gates the WHAT-YOU'RE-AVOIDING
+     *  branch + The Open Question / Tight Lane archetype detection.
+     *  4-level enum; default to "some_idea" if missing. */
+    majorCertainty?: "not_at_all" | "some_idea" | "pretty_sure" | "certain";
   };
   /** "English" or "Russian". */
   lang: string;
   audienceLine: string;
+  /** v7: cultural-context bucket derived from profile.nationality. The
+   *  pre-flight resolver in editorial-rules.ts maps codes/names to
+   *  "central_asia" or "default". Each section's prompt branches on
+   *  this for locally-salient peer piles, vocabulary bans, etc.
+   *  Defaults to "default" if absent. */
+  culturalContext?: "central_asia" | "default";
+  /** v7: personality axis extracted (best-effort) from the Step 3
+   *  free-text field via covert-intake placeholder shaping. If the
+   *  extraction is ambiguous, "unknown" — and no card may make a
+   *  confident I/E claim. */
+  personalityAxis?: "introvert" | "extrovert" | "mixed" | "unknown";
+  /** v7 Phase 2 (#12): the pre-plan output. When present, every
+   *  section's prompt receives the plan as context, enforcing
+   *  narrative throughline across cards. When undefined (legacy /
+   *  fallback / pre-deploy), sections degrade to v7-without-plan
+   *  behavior — same prompts, no cross-card anchors. */
+  briefPlan?: import("./brief-plan.ts").BriefPlan;
 }
 
 export interface ValidatorResult {
@@ -74,13 +121,15 @@ export interface SectionSpec {
   heading: string;
   /** Build the focused user-prompt for this section. */
   buildPrompt: (ctx: BriefContext) => string;
-  /** JSON shape validator — parse + key + count checks. */
+  /** JSON shape + semantic validator. Returns ok:false if either the
+   *  JSON is malformed OR the content fails banned-vocab / specific-
+   *  anchor / cultural-context checks. A failure triggers ONE regen. */
   validate?: (rawJson: string, ctx: BriefContext) => ValidatorResult;
   /** Reasoning effort for premium-tier model calls. */
   reasoning?: { effort: "low" | "medium" | "high" };
 }
 
-import { EDITORIAL_RULES } from "./editorial-rules.ts";
+import { EDITORIAL_RULES, scanBannedVocab } from "./editorial-rules.ts";
 import { extractLlmJson } from "./llm-json.ts";
 
 const SHARED_JSON_RULES = `
@@ -93,7 +142,16 @@ OUTPUT FORMAT — STRICT:
   ("write a strong essay", "pursue your dreams", "leverage your strengths"),
   OMIT that optional key instead. Empty arrays/strings beat platitudes.
 - Strings use plain text. No markdown bold, italics, headers, or bullets
-  inside string values — those belong in the renderer, not the data.`;
+  inside string values — those belong in the renderer, not the data.
+
+SPECIFIC-ANCHOR rule (hard requirement, validator-enforced):
+- Every section MUST reference at least ONE specific intake field by
+  name — a number (GPA, IELTS), a country, a school, an extracurricular
+  the student named, or a career interest. If your output reads
+  identically to what you'd write for any other student, you have
+  failed this section.
+- Specifics MUST come from the STUDENT PROFILE block. Never invent
+  names, numbers, schools, projects, or biographical events.`;
 
 const profileBlock = (ctx: BriefContext): string => {
   const p = ctx.profile;
@@ -106,118 +164,302 @@ const profileBlock = (ctx: BriefContext): string => {
   const gpaScale = pf(p.gpaScale, "");
   const lines = [
     `- Name: ${pf(p.fullName, "—")}`,
+    `- Nationality: ${pf(p.nationality, "—")}`,
     `- GPA: ${pf(p.gpa, "—")}${gpaScale ? ` / ${gpaScale}` : ""}`,
     `- IELTS: ${pf(p.ielts, "Not taken")}`,
     `- SAT: ${pf(p.sat, "Not taken")}`,
     `- Grade level: ${pf(p.gradeLevel, "—")}`,
     `- Target countries: ${targets}`,
     `- Intended major: ${pf(p.major, "Undecided")}`,
+    `- How sure about major: ${pf(p.majorCertainty, "some_idea (default — not explicitly asked)")}`,
     `- Budget: ${pf(p.budget, "Unspecified")}`,
     `- Needs scholarship: ${pf(p.scholarshipNeeded, "—")}`,
     `- Timeline: ${pf(p.timeline, "Flexible")}`,
   ];
-  if (p.prestige != null) lines.push(`- Priorities (1-5): Prestige ${p.prestige}, Scholarship ${p.scholarship}, Career ROI ${p.careerRoi}, Visa ${p.visaAccess}, Location ${p.locationPref}`);
-  if (pf(p.topActivity, ""))   lines.push(`- Top activity / achievement: ${p.topActivity}`);
+  if (p.prestige != null) {
+    lines.push(
+      `- Priorities (1-5): Prestige ${p.prestige}, Scholarship ${p.scholarship}, Career ROI ${p.careerRoi}, Visa ${p.visaAccess}, Location ${p.locationPref}`,
+    );
+  }
+  if (pf(p.topActivity, "")) lines.push(`- Top activity / achievement: ${p.topActivity}`);
   if (pf(p.personalStory, "")) lines.push(`- Personal story (their own words): ${p.personalStory}`);
-  if (pf(p.namedSchools, ""))  lines.push(`- Specific schools on their list: ${p.namedSchools}`);
+  if (pf(p.namedSchools, "")) lines.push(`- Specific schools on their list: ${p.namedSchools}`);
+  if (ctx.personalityAxis && ctx.personalityAxis !== "unknown") {
+    lines.push(`- Personality lean (extracted, best-effort): ${ctx.personalityAxis}`);
+  }
+  if (ctx.culturalContext) {
+    lines.push(`- Cultural context: ${ctx.culturalContext}`);
+  }
   return lines.join("\n");
 };
 
 const dbBlock = (ctx: BriefContext): string => ctx.dbContext;
 
+/** v7 Phase 2 (#12): when a brief plan is present, surface its
+ *  cross-card anchors so the section prompts can render against
+ *  them. Empty string when no plan — sections fall back to their
+ *  v7-without-plan behavior (still good, just no cross-card
+ *  throughline). */
+const planBlock = (ctx: BriefContext): string => {
+  const p = ctx.briefPlan;
+  if (!p) return "";
+  const gapLine =
+    p.primaryGap.type === "library-entry"
+      ? `library-entry #${p.primaryGap.libraryEntryId} — ${p.primaryGap.reason}`
+      : `major-uncertainty — ${p.primaryGap.reason}`;
+  return `
+BRIEF PLAN (canonical narrative throughline — every card must respect it):
+- Archetype: ${p.archetype.id} (confidence ${p.archetype.confidence})
+- Identity claim (Card 01 anchor): "${p.identityClaim}"
+- Pile contrast (Cards 01-02 anchor): "${p.pileContrast}"
+- Essay seed type (Card 03 anchor): "${p.essaySeedType}"
+- Primary gap (Card 04 anchor): ${gapLine}
+- Country buckets (Card 05 anchor): ${p.countryBuckets.join(", ")}
+- Monday-move artifact (Card 06 anchor): "${p.mondayMoveArtifact}"
+
+Your section MUST anchor to the plan field(s) relevant to it. Do not
+contradict the plan; do not paraphrase the anchors into vagueness;
+do not invent specifics the plan doesn't establish.
+`.trim();
+};
+
 /** Parse helper — returns the parsed object or null if not valid JSON.
  * 2026-05-18: routed through the shared brace-walking helper so an LLM
  * appending commentary after the JSON body doesn't silently drop the
- * section (those bug rendered as a missing block in the brief). */
+ * section (those bugs rendered as a missing block in the brief). */
 const tryParse = (raw: string): unknown | null => {
   try { return extractLlmJson(raw); } catch { return null; }
 };
 
+/** Semantic-validator helper — every section runs this after JSON-shape
+ *  validation. Returns the first failing reason if any. */
+const semanticCheck = (
+  obj: Record<string, unknown>,
+  ctx: BriefContext,
+  opts: { mustNameIntakeField: boolean },
+): ValidatorResult => {
+  // Flatten every string in the payload (recursive) into one corpus
+  // so we can scan banned-vocab and specific-anchor presence in one
+  // pass without missing nested fields.
+  const corpus: string[] = [];
+  const walk = (v: unknown): void => {
+    if (typeof v === "string") corpus.push(v);
+    else if (Array.isArray(v)) v.forEach(walk);
+    else if (v && typeof v === "object") Object.values(v).forEach(walk);
+  };
+  walk(obj);
+  const text = corpus.join(" \n ");
+
+  // Banned-vocab scan (incl. cultural-context bans).
+  const hits = scanBannedVocab(text, ctx.culturalContext);
+  if (hits.length > 0) {
+    const first = hits[0];
+    return { ok: false, reason: `banned-vocab hit (${first.label}): "${first.match}"` };
+  }
+
+  // Specific-anchor presence — at least one named intake field must
+  // appear in the corpus. Names, numbers, countries, schools all count.
+  if (opts.mustNameIntakeField) {
+    const p = ctx.profile;
+    const anchors: string[] = [];
+    const addIf = (v: unknown): void => {
+      if (v === null || v === undefined) return;
+      const s = String(v).trim();
+      if (s.length >= 2) anchors.push(s);
+    };
+    addIf(p.fullName?.split(/\s+/)[0]); // first name only — full name often awkward
+    addIf(p.nationality);
+    addIf(p.gpa);
+    addIf(p.ielts);
+    addIf(p.sat);
+    addIf(p.major);
+    addIf(p.topActivity);
+    addIf(p.namedSchools);
+    (p.targetCountries ?? []).forEach(addIf);
+
+    const corpusLower = text.toLowerCase();
+    const hit = anchors.some((a) => a && corpusLower.includes(a.toLowerCase()));
+    if (!hit) {
+      return {
+        ok: false,
+        reason: "specific-anchor missing: output references no named intake field (GPA, country, school, activity, etc.)",
+      };
+    }
+  }
+
+  return { ok: true };
+};
+
 /* ─── Section specs (journey order) ──────────────────────────────────── */
 
-/* 01 — Where You Stand */
+/* 01 — WHO YOU ARE (renderer-wire ID: whereYouStand) */
 const whereYouStand: SectionSpec = {
   id: "whereYouStand",
   heading: "Where you stand",
   reasoning: { effort: "high" },
-  buildPrompt: (ctx) => `
-You are writing the OPENING section of a personalized admissions strategy
-brief, in the voice of a real admissions counselor talking to ${ctx.audienceLine}.
-This section interprets WHO THIS STUDENT IS right now — what their profile
-reads like to admissions readers, what they have going for them, what's
-under-leveraged. It sets the thesis the rest of the brief argues.
+  buildPrompt: (ctx) => {
+    const isCIS = ctx.culturalContext === "central_asia";
+    const peerPiles = isCIS
+      ? "the IT-track kids, the engineering kids being pushed into Western banking since 9th grade, the finance/economics kids, the international relations kids"
+      : "the obvious one-track piles (pre-med, CS, finance, engineering)";
+    return `
+You are writing CARD 01 of a 5-card admissions strategy brief in the
+v7 spec. This card is called WHO YOU ARE. Its job: make ${ctx.audienceLine}
+feel SEEN. Name them in a way they hadn't articulated themselves.
 
 STUDENT PROFILE:
 ${profileBlock(ctx)}
 
+${planBlock(ctx)}
+
 LIVE CONTEXT (cohort + matched programs for your reference):
 ${dbBlock(ctx)}
+
+STRUCTURE — the card has three beats:
+  1. HEADLINE: a stylized identity claim, 8-14 words, quotable. NOT
+     "your profile type". Softer, observed, named. Examples of the
+     SHAPE (not content) — "You're a [X] who hasn't told anyone yet."
+     / "You're [X] in a year of [Y]." / "You're the kid who [specific
+     observation about their data]."
+  2. BODY: 3-5 sentences, 60-90 words. PILE-CONTRAST observation. Most
+     kids in their year go into one of ${peerPiles}. Place THIS student
+     OUTSIDE those piles by naming TWO specific intake fields by name
+     (GPA + activity, or test scores + named project, etc.). The
+     observation should be admissions-reader-perspective: what does
+     their file actually LOOK like vs the pile.
+  3. CLOSER: 1 sentence, 10-18 words. The gentle reframe — names what
+     they've been treating wrong about their own profile. SUGGESTION
+     MOOD only — "the time will come to lead with it" / "worth
+     surfacing when you're ready" / "that's the thing". NEVER bare
+     imperative ("Stop." "Do this.").
+
+GOLD EXEMPLAR — match this prose-quality bar:
+  Student: Yerlan, Kazakhstan, GPA 3.7, AP Calc + Math Olympiad
+  regional medal, debate captain, majorCertainty: not_at_all,
+  cultural_context: central_asia
+  Output:
+    headline: "You're a policy-leaning STEM kid who hasn't told anyone yet."
+    lead:     "Yerlan, your profile is more interesting than you're treating it."
+    body:     "Most kids in your year go in one pile. The IT-track pile, the engineering kids being pushed into Western banking since 9th grade, the finance kids. They look the same on paper because the path was picked for them. Your file shows AP Calc AND a debate medal — two things that don't normally appear together in your school's outbound applicants. That puts you in a smaller pile most admissions readers don't get to see often."
+    pullquote: "The time will come to lead with that overlap."
 
 OUTPUT — emit a JSON object exactly matching this shape:
 {
   "kicker": "01 · Where you stand",
-  "headline": "string — a 4-8 word display title that captures the thesis. NOT generic ('Your strong start') — specific to this student ('A policy-leaning STEM profile') ",
-  "lead": "string — ONE sentence (max ~30 words) that anchors the brief. This sentence gets a drop cap in the renderer, so the FIRST WORD should be punchy and concrete. NAME the student's positioning in one breath.",
-  "body": "string — 2-3 short paragraphs (separate with \\n\\n) interpreting their profile. What admissions officers see at first glance. What's the under-leveraged angle. What competitive band they're in. No platitudes, no superlatives.",
-  "pullquote": "string — ONE sentence framed as a directive call. Pattern: 'Your 30-day call: <single concrete action>'. The action must be measurable and shippable in ≤30 days. Example: 'Your 30-day call: publish one 1500-word analysis of an open data set in your major — public link, GitHub or Medium.'"
+  "headline": "string — 8 to 14 words. The stylized identity claim. Quotable. NO banned vocab.",
+  "lead": "string — ONE sentence (max ~25 words) anchoring the card. First word punchy and concrete — gets a drop cap in the renderer.",
+  "body": "string — 3 to 5 sentences (separate with \\n\\n if more than one paragraph). PILE-CONTRAST observation referencing AT LEAST 2 specific intake fields by name.",
+  "pullquote": "string — 1 sentence, 10 to 18 words. The gentle reframe. SUGGESTION MOOD only. No 'Stop.' / 'Do this.' / 'Start now.'."
 }
 
-${SHARED_JSON_RULES}`,
-  validate: (raw) => {
+${SHARED_JSON_RULES}`;
+  },
+  validate: (raw, ctx) => {
     const obj = tryParse(raw) as Record<string, unknown> | null;
     if (!obj) return { ok: false, reason: "not valid JSON" };
-    for (const k of ["kicker","headline","lead","body","pullquote"]) {
+    for (const k of ["kicker", "headline", "lead", "body", "pullquote"]) {
       const v = obj[k];
       if (typeof v !== "string" || v.trim().length < 10) {
         return { ok: false, reason: `missing or too short: ${k}` };
       }
     }
-    if (!/30[- ]day/i.test(obj.pullquote as string)) {
-      return { ok: false, reason: "pullquote missing '30-day call' framing" };
+    // Headline length cap (~14 words)
+    const headline = obj.headline as string;
+    if (headline.split(/\s+/).length > 16) {
+      return { ok: false, reason: "headline too long (>16 words)" };
     }
-    return { ok: true };
+    // Closer/pullquote must not start with a bare imperative
+    const pullquote = (obj.pullquote as string).trim();
+    if (/^(Stop|Do this|Don't|Begin|Start now)\.?\s/i.test(pullquote)) {
+      return { ok: false, reason: "pullquote uses bare imperative — must be suggestion mood" };
+    }
+    return semanticCheck(obj, ctx, { mustNameIntakeField: true });
   },
 };
 
-/* 02 — Where You Can Land */
+/* 02 — WHERE YOU BELONG (renderer-wire ID: whereYouCanLand)
+   Payload shape kept at 3 entries with reach/target/safety `tier`
+   field for renderer wire-compat. Prompt teaches the model to use the
+   tier slots more flexibly: tier "reach" = the stretch place, tier
+   "target" = the home place, tier "safety" = the sure place. Each
+   entry gets a one-line LORE sentence in whyItFits — the new
+   "personality of the school" frame. */
 const whereYouCanLand: SectionSpec = {
   id: "whereYouCanLand",
   heading: "Where you can land",
   reasoning: { effort: "high" },
-  buildPrompt: (ctx) => `
-You are writing the SCHOOLS section — naming EXACTLY 3 universities this
-student should put on their list. One reach, one target, one safety.
-Pulled from the LIVE CONTEXT below; do not invent schools.
+  buildPrompt: (ctx) => {
+    const isCIS = ctx.culturalContext === "central_asia";
+    const visaNote = isCIS
+      ? `VISA REALISM: this student has a CIS passport. Exclude destinations that historically don't grant student visas easily to CIS passports. Be honest about visa-tier when naming countries.`
+      : `VISA REALISM: confirm any destination is plausibly visa-attainable for this student's nationality.`;
+    return `
+You are writing CARD 02 of a 5-card admissions strategy brief in the
+v7 spec. This card is called WHERE YOU BELONG. Its job: trigger
+imagination + mechta (the dream of being there). It names cities /
+schools where THIS student's profile actually thrives. NOT a
+reach/target/safety odds list — those words are banned.
 
 STUDENT PROFILE:
 ${profileBlock(ctx)}
 
-LIVE CONTEXT (use these schools — pick from the matched list):
+${planBlock(ctx)}
+
+LIVE CONTEXT (use these schools — pick from the matched list, do not invent):
 ${dbBlock(ctx)}
+
+${visaNote}
+
+STRUCTURE — exactly 3 entries, each one a "place where you'd thrive":
+  - The tier field is wire-only (renderer expects reach/target/safety).
+    Treat the labels as: reach = the stretch place, target = the home
+    place, safety = the sure place. Do NOT use the words reach/target/
+    safety in any string field (banned).
+  - Each entry names ONE school. For each school, write the whyItFits
+    field as the school's PERSONALITY — what kind of student thrives
+    there, who they sit next to in the dorm, what the campus rhythm
+    is. Grounded in THIS student's specific identity from Card 01.
+  - Cite ONE specific intake field across the 3 entries (their major,
+    their named schools, their country of origin, etc.).
+
+GOLD EXEMPLAR — match this prose-quality bar:
+  Student: Yerlan (same as Card 01), targetCountries: Canada / UK / Singapore
+  Output:
+    headline: "Three places that fit how you actually move."
+    lead:     "Pulled from your countries, with your file in mind."
+    entries:
+      [reach] University of Toronto, Canada
+        whyItFits: "Where the kid running policy resolutions on weekends finds three other people doing the same in the same dorm. Big enough to disappear into when you need to, dense enough that the overlap shows up at lunch."
+      [target] McGill, Canada
+        whyItFits: "Policy-school energy without giving up the math. The dual-major kids here aren't unusual — they're the ones who pick the program."
+      [safety] University of Edinburgh, UK
+        whyItFits: "Where the STEM-with-policy combination isn't unusual, it's the standard. Quieter prestige, lower selectivity, better fit. Not Oxbridge — the smarter middle."
 
 OUTPUT — emit a JSON object exactly matching this shape:
 {
   "kicker": "02 · Where you can land",
-  "headline": "string — 4-8 word display line tying these 3 schools to the student's thesis. Example: 'Three doors into U.S. policy graduate work.'",
-  "lead": "string — ONE sentence (max ~30 words) framing why THIS particular trio fits the student. Drop-cap rendered.",
+  "headline": "string — 4-8 word display line. NO banned vocab (no 'reach' / 'target' / 'safety' words in headline).",
+  "lead": "string — ONE sentence (max ~25 words) framing the trio. Drop-cap rendered.",
   "entries": [
     {
       "tier": "reach",
-      "name": "string — exact school name as in LIVE CONTEXT",
+      "name": "string — exact school name from LIVE CONTEXT",
       "country": "string — short country name",
-      "whyItFits": "string — 1 sentence naming the SPECIFIC reason this school matches this student. Cite the angle. NOT 'great fit' or 'strong program' — name what.",
-      "threshold": "string — 1 line summarising the admission bar: 'GPA 3.8+ · IELTS 7.5 · top-2% class rank' or 'Acceptance rate ~7%'. Use real numbers from context where present.",
-      "careerAnchor": "string — 1 line naming WHO hires graduates / where alumni go. Real names beat categories. Example: 'McKinsey, Goldman, IMF; ~60% finance/consulting'."
+      "whyItFits": "string — 1 to 2 sentences. The school's PERSONALITY for THIS student. Plain English. NO banned vocab.",
+      "threshold": "string — 1 line on the admissions bar with REAL numbers from context where present. No 'reach' wording.",
+      "careerAnchor": "string — 1 line naming WHERE alumni actually go. Real names beat categories. Specific numbers if in context."
     },
     { "tier": "target", ... same shape ... },
     { "tier": "safety", ... same shape ... }
   ]
 }
 
-EXACTLY 3 entries in order: reach, target, safety.
+EXACTLY 3 entries in order: reach, target, safety (tier field only —
+the words must not appear in any prose field).
 
-${SHARED_JSON_RULES}`,
-  validate: (raw) => {
+${SHARED_JSON_RULES}`;
+  },
+  validate: (raw, ctx) => {
     const obj = tryParse(raw) as Record<string, unknown> | null;
     if (!obj) return { ok: false, reason: "not valid JSON" };
     const entries = obj.entries as unknown[] | undefined;
@@ -226,205 +468,297 @@ ${SHARED_JSON_RULES}`,
     }
     const tiers = entries.map((e) => (e as { tier?: string }).tier);
     if (!tiers.includes("reach") || !tiers.includes("target") || !tiers.includes("safety")) {
-      return { ok: false, reason: "entries must include reach + target + safety tiers" };
+      return { ok: false, reason: "entries must include reach + target + safety tier slots" };
     }
-    return { ok: true };
+    return semanticCheck(obj, ctx, { mustNameIntakeField: true });
   },
 };
 
-/* 03 — How You'll Pay */
-const howYoullPay: SectionSpec = {
-  id: "howYoullPay",
-  heading: "How you'll pay",
-  reasoning: { effort: "high" },
-  // 2026-05-18: User direction — "without listing a bunch of scholarships
-  // unnecessarily don't list any just checkout what's available and then
-  // go to discover database". The brief no longer enumerates specific
-  // awards (those go stale fast and are already personalized in
-  // /discover). Instead it teaches the student the FUNDING LANES that
-  // apply to their profile, then redirects to /discover for the live
-  // matchlist. The renderer keeps the same row shape; only the semantics
-  // shifted from "row = one scholarship" to "row = one funding lane".
-  buildPrompt: (ctx) => `
-You are writing the FUNDING STRATEGY section. CRITICAL: do NOT list
-specific scholarships by name. The student's personalized live list is
-in our database at /discover and refreshes daily — naming individual
-awards here just creates stale duplication. Instead, teach them the 3
-to 4 FUNDING LANES (award categories) that fit their profile, why each
-one fits, and what to do first to start applying within each.
-
-STUDENT PROFILE:
-${profileBlock(ctx)}
-
-OUTPUT — emit a JSON object exactly matching this shape:
-{
-  "kicker": "03 · How you'll pay",
-  "headline": "string — 4-8 word display line capturing the funding stack approach. Example: 'Stack three lanes, layer one safety net.'",
-  "lead": "string — ONE sentence (max ~30 words) framing the funding picture for this student. Drop-cap rendered.",
-  "entries": [
-    {
-      "name": "string — funding LANE label, NOT a specific award. Choose from: 'Government scholarships (home country)', 'Government scholarships (host country)', 'University merit aid', 'University need-based aid', 'Department TA/RA / assistantship', 'Research / PhD fellowship', 'External private grant', 'Travel & conference grant', 'Bilateral exchange program'. Pick the 3-4 lanes that actually apply to this profile.",
-      "coverage": "string — typical coverage at this lane: 'Full ride' | 'Tuition + stipend' | 'Tuition only' | 'Partial / merit' | 'Living costs' | 'Travel grant'",
-      "awardText": "string — typical award range. Example: '$30K-50K / year' or '~$200K total package' or 'Variable, often partial'",
-      "deadline": "string — typical cycle window for THIS lane. Example: 'Fall cycle (Oct-Jan)', 'Rolling', 'Annual, spring deadlines', 'Aligns with school app'",
-      "howProfileMaps": "string — 1-2 sentences naming the SPECIFIC profile elements that make THIS lane strong for THIS student. Cite the angle. Skip generic 'strong applicants'.",
-      "firstTask": "string — ONE concrete action they should take FIRST this week to start working this lane. Example: 'Search topuni.com/discover with the Government filter on, sort by deadline.' or 'Email three potential PhD advisors before requesting a fellowship nomination.'"
-    },
-    ... 3 to 4 lane entries total ...
-  ],
-  "stackingNote": "string — 1-2 sentences explaining how these lanes combine for THIS student. Pattern: 'Government + university merit usually stack; private grants typically reduce university aid one-for-one — start with the bigger one.' Skip if there's no real stacking insight.",
-  "discoverCallout": "string — ONE sentence directing them to topuni.com/discover for the live, personalized match list filtered to their profile. Required field."
-}
-
-ABSOLUTE RULES:
-- Do NOT name any specific scholarship, fellowship, or award. No 'DAAD',
-  no 'Chevening', no 'Rhodes', no university-specific scholarship names.
-  Only LANE labels. Reviewers will flag any specific award name.
-- Do NOT invent statistics or acceptance rates.
-
-${SHARED_JSON_RULES}`,
-  validate: (raw) => {
-    const obj = tryParse(raw) as Record<string, unknown> | null;
-    if (!obj) return { ok: false, reason: "not valid JSON" };
-    const entries = obj.entries as unknown[] | undefined;
-    // 2026-05-19: loosened to 2-5. Flash was failing the 3-4 ceiling
-    // consistently (often produced 5 lanes) and the whole brief stream
-    // failed to complete. Renderer caps display at 5 anyway.
-    if (!Array.isArray(entries) || entries.length < 2 || entries.length > 5) {
-      return { ok: false, reason: "entries must be array of 2-5 lanes" };
-    }
-    // discoverCallout is now optional. Renderer falls back to a default
-    // line so the CTA banner always shows.
-    return { ok: true };
-  },
-};
-
-/* 04 — What to Write */
+/* 03 — ESSAY ONLY YOU CAN WRITE (renderer-wire ID: whatToWrite)
+   Payload shape kept at 3 entries for renderer wire-compat, but the
+   prompt now asks for ONE primary essay seed in the first entry +
+   2 supporting variations. The first entry is the spec's "ONE essay
+   seed"; the 2 follow-ups give the renderer the multi-angle UX it
+   expects without claiming three independent stories. */
 const whatToWrite: SectionSpec = {
   id: "whatToWrite",
   heading: "What to write",
   reasoning: { effort: "high" },
   buildPrompt: (ctx) => `
-You are writing the ESSAYS section — EXACTLY 3 distinct essay angles this
-student could lead with. Each angle pulls from a different part of their
-profile so the brief surfaces multiple compelling stories, not one
-overused thread.
+You are writing CARD 03 of a 5-card admissions strategy brief in the
+v7 spec. This card is called THE ESSAY ONLY YOU CAN WRITE. Its job:
+name the SINGLE primary essay seed this student is uniquely positioned
+to develop, plus 2 alternate angles for breadth. The seed must connect
+to the specific identity claim from Card 01.
+
+CRITICAL RULE — SPECULATIVE TENSE for the primary seed:
+The brief cannot KNOW specific moments from the student's life. So the
+primary essay seed must propose a TYPE of moment they could find,
+using speculative tense: "sometime in the last two years...", "maybe
+X, maybe Y...", "there was likely a moment when...". The student
+finds the moment; the brief names where to look. Never assert a
+specific moment happened.
 
 STUDENT PROFILE:
 ${profileBlock(ctx)}
 
+${planBlock(ctx)}
+
+GOLD EXEMPLAR (primary seed, first entry):
+  Student: Yerlan (same as Cards 01-02)
+  title: "The math-in-debate moment"
+  whyItWorks: "Sometime in the last two years, something from a math
+    class showed up inside a debate round you were running. Maybe a
+    stat that turned the room. Maybe a calculation you did
+    mid-rebuttal. Maybe a piece of game theory that explained why a
+    strategy worked. Find that exact moment."
+  anchorItWith: "The specific round / opponent / topic — one named
+    instance only. The essay starts where the math and the argument
+    met for the first time."
+  playsBestTo: "Schools that want cross-domain thinkers, especially
+    the policy-strong programs at U of T, McGill, Edinburgh."
+
+The remaining 2 entries are ALTERNATE angles in case the primary seed
+doesn't pan out — same shape, different pulls from the profile.
+
 OUTPUT — emit a JSON object exactly matching this shape:
 {
   "kicker": "04 · What to write",
-  "headline": "string — 4-8 word display line. Example: 'Three stories the reader hasn't heard yet.'",
-  "lead": "string — ONE sentence (max ~30 words) framing the essay strategy. Drop-cap rendered.",
+  "headline": "string — 4-8 word display line. Example shape: 'The essay only you can write.'",
+  "lead": "string — ONE sentence (max ~25 words). Drop-cap rendered.",
   "entries": [
     {
-      "title": "string — short evocative angle title, max 6 words. Example: 'The civic-tech bridge' or 'Quiet builder, loud results'.",
-      "whyItWorks": "string — 1-2 sentences naming WHY this angle resonates with admissions readers at the schools in section 02. Specific: 'Cambridge values measurable civic impact over scale of audience'.",
-      "anchorItWith": "string — 1 sentence naming the ONE concrete moment/project/datum this essay should center on. Pulled from the student's profile.",
-      "playsBestTo": "string — 1 sentence naming WHICH school(s) / scholarship(s) this angle plays best to. Specific names, not 'top schools'."
+      "title": "string — short evocative angle title, max 6 words.",
+      "whyItWorks": "string — for the FIRST entry, the primary seed in SPECULATIVE TENSE (sometime / maybe / probably) referencing Card 01's identity claim. For entries 2-3, why this alternate angle would land.",
+      "anchorItWith": "string — 1 sentence naming the type of concrete moment the student should find. NEVER assert a specific moment happened — use speculative tense.",
+      "playsBestTo": "string — 1 sentence naming WHICH schools (from Card 02) this angle plays best to. Real names, not 'top schools'."
     },
-    ... 3 entries total ...
+    ... 3 entries total (1 primary + 2 alternates) ...
   ]
 }
 
+EXACTLY 3 entries. The FIRST entry MUST use speculative tense ("sometime",
+"maybe", "probably", "there was likely") in the whyItWorks field. No
+fake biographical specifics in any entry.
+
 ${SHARED_JSON_RULES}`,
-  validate: (raw) => {
+  validate: (raw, ctx) => {
     const obj = tryParse(raw) as Record<string, unknown> | null;
     if (!obj) return { ok: false, reason: "not valid JSON" };
     const entries = obj.entries as unknown[] | undefined;
     if (!Array.isArray(entries) || entries.length !== 3) {
       return { ok: false, reason: "entries must be exactly 3 angles" };
     }
-    return { ok: true };
+    // First entry MUST use speculative tense in whyItWorks
+    const firstWhy = ((entries[0] as { whyItWorks?: string })?.whyItWorks ?? "").toLowerCase();
+    if (!/\b(sometime|maybe|probably|there was likely|there's likely|likely a moment|might have been|may have been)\b/.test(firstWhy)) {
+      return { ok: false, reason: "first essay seed must use speculative tense (sometime/maybe/probably) — concrete biography is forbidden" };
+    }
+    return semanticCheck(obj, ctx, { mustNameIntakeField: true });
   },
 };
 
-/* 05 — What's Blocking You */
+/* 04 — WHAT YOU'RE AVOIDING (renderer-wire ID: whatsBlockingYou)
+   Branches on profile.majorCertainty. If not_at_all/some_idea, the
+   primary gap is major-uncertainty itself, named warmly. If
+   pretty_sure/certain, the gap comes from the closed library. */
 const whatsBlockingYou: SectionSpec = {
   id: "whatsBlockingYou",
   heading: "What's blocking you",
   reasoning: { effort: "high" },
-  buildPrompt: (ctx) => `
-You are writing the GAPS section — 2 to 3 HONEST gaps in this student's
-profile that need closing before they apply. Be a coach, not a cheerleader.
-If everything is on track, OMIT the section by emitting an empty entries
-array — the renderer handles that gracefully.
+  buildPrompt: (ctx) => {
+    const cert = ctx.profile.majorCertainty ?? "some_idea";
+    const majorUncertainBranch = cert === "not_at_all" || cert === "some_idea";
+
+    const branchSpecific = majorUncertainBranch
+      ? `BRANCH: major-uncertainty (intake says majorCertainty = "${cert}").
+
+The PRIMARY gap (priority "high", first entry) is the student's own
+indecision about what they want to study. Name it warmly — NOT as a
+flaw to fix but as a fact to surface. Pattern:
+
+  Headline: "You don't know what you want to study yet."
+  whyItMatters: validation language — "not knowing is information,
+    not a problem. Schools have answers for cross-domain kids who
+    haven't picked yet."
+  actionThisMonth: NO concrete prescription here — Card 06 owns
+    actions. Just a posture: "stop hiding this from your applications.
+    Build the application that names it."
+  next60Days: brief — "as you talk to more schools the question
+    sharpens, not the answer."
+
+The remaining 0-2 gap entries are OPTIONAL and from the GAP LIBRARY
+below — only include if obviously triggered from the intake.`
+      : `BRANCH: gap-library (intake says majorCertainty = "${cert}" — student is reasonably sure).
+
+Pick ONE gap from the closed library below that is most clearly
+triggered by the intake. If no specific gap obviously triggers, use
+the DEMONSTRABLE-DEPTH catch-all (entry 07).`;
+
+    return `
+You are writing CARD 04 of a 5-card admissions strategy brief in the
+v7 spec. This card is called WHAT YOU'RE AVOIDING. Its job: name ONE
+honest, load-bearing gap and frame it warmly — as information, not
+verdict. The cousin doesn't lecture; she points at the thing the kid
+has been editing out of his own self-description.
 
 STUDENT PROFILE:
 ${profileBlock(ctx)}
 
+${planBlock(ctx)}
+
+${branchSpecific}
+
+GAP LIBRARY (use ONLY when the gap-library branch is active above):
+  01 Test scores aren't filed yet
+     trigger: ielts && toefl && sat all empty
+     tone: "You've been moving through this without putting a number on the table."
+  02 Wide but shallow activity profile
+     trigger: activity-text suggests many ECs but no leadership/recognition
+     tone: "You've touched a lot of things. You haven't led one yet."
+  03 Single-country tunnel vision
+     trigger: targetCountries.length === 1
+     tone: "Every school on your list is in one country. That's a choice, but it might not be the one you actually made."
+  05 Activities don't cluster into one story
+     trigger: EC text shows variety without through-line
+     tone: "Your activities are interesting. They don't add up to one thing yet."
+  06 English-writing polish
+     trigger: non-native EN + no IELTS/TOEFL >= 7
+     tone: "Your spoken English is solid. Your written English needs one careful pass before any application goes out."
+  07 Demonstrable-depth gap (Barnum / catch-all DEFAULT)
+     trigger: when no specific gap above obviously fires
+     tone: "You can tell the story of why this matters to you. What you don't have yet are the receipts — the leadership titles, the named projects, the recognitions — that would prove it to a stranger reading your application."
+
+GOLD EXEMPLAR (major-uncertainty branch):
+  Output (single entry):
+    priority: "high"
+    title: "You don't know what you want to study yet."
+    whyItMatters: "Yerlan, you put 'CS' on the intake form because that's what people expect when you're good at math. That's not the same as wanting it. You've been holding the question quietly — what does it mean if I don't know yet? Not knowing is information, not a problem."
+    actionThisMonth: "Stop hiding the question. The brief next to this one names where to start writing — let the unanswered question be part of the application."
+    next60Days: "As you talk to more schools, the question sharpens; the answer follows the conversations, not the form fields."
+
 OUTPUT — emit a JSON object exactly matching this shape:
 {
   "kicker": "05 · What's blocking you",
-  "headline": "string — 4-8 word display line. Example: 'Two gaps to close before October.'",
-  "lead": "string — ONE sentence (max ~30 words) framing the gaps work honestly. Drop-cap rendered.",
+  "headline": "string — 4 to 8 word display line. NO banned vocab.",
+  "lead": "string — ONE sentence (max ~25 words). Drop-cap rendered.",
   "entries": [
     {
       "priority": "high" | "medium",
-      "title": "string — short gap title, max 8 words. Example: 'Test-score ceiling for top-3 reach'.",
-      "whyItMatters": "string — 1-2 sentences naming the SPECIFIC consequence if unaddressed. Not 'might hurt your chances' — name what.",
-      "actionThisMonth": "string — ONE concrete action they should take THIS MONTH. Should fit in 30 days.",
-      "next60Days": "string — 1 sentence describing the follow-through over the next 60 days."
+      "title": "string — short gap title, max 10 words. Direct naming, no softening.",
+      "whyItMatters": "string — 2 to 3 sentences. SPECIFIC naming using intake fields. Validates the gap as information, NOT verdict.",
+      "actionThisMonth": "string — ONE posture/orientation (Card 06 owns concrete actions). 1 sentence.",
+      "next60Days": "string — 1 sentence framing the follow-through."
     },
-    ... 0 to 3 entries total ...
+    ... 1 to 3 entries total (1 is preferred for v7) ...
   ]
 }
 
-${SHARED_JSON_RULES}`,
-  validate: (raw) => {
+${SHARED_JSON_RULES}`;
+  },
+  validate: (raw, ctx) => {
     const obj = tryParse(raw) as Record<string, unknown> | null;
     if (!obj) return { ok: false, reason: "not valid JSON" };
     const entries = obj.entries as unknown[] | undefined;
     if (!Array.isArray(entries)) return { ok: false, reason: "entries must be array" };
-    if (entries.length > 3) return { ok: false, reason: "max 3 gap entries" };
-    return { ok: true };
+    if (entries.length < 1 || entries.length > 3) {
+      return { ok: false, reason: "entries must be 1-3 (v7 prefers 1)" };
+    }
+    // Major-uncertainty branch: when intake signal present, primary
+    // gap MUST name the uncertainty itself — fail if the first
+    // entry's title doesn't reference major / study / decided wording.
+    const cert = ctx.profile.majorCertainty;
+    if (cert === "not_at_all" || cert === "some_idea") {
+      const firstTitle = ((entries[0] as { title?: string })?.title ?? "").toLowerCase();
+      const namesMajorUncertainty = /\b(major|study|decide|undecid|don'?t know|haven'?t picked|what (?:you|to) (?:want to|want|will) study)\b/.test(firstTitle);
+      if (!namesMajorUncertainty) {
+        return {
+          ok: false,
+          reason: "major-uncertainty branch: primary gap title must name the indecision itself (intake majorCertainty signal present)",
+        };
+      }
+    }
+    return semanticCheck(obj, ctx, { mustNameIntakeField: true });
   },
 };
 
-/* 06 — What to Do This Month */
+/* 05 — MONDAY MOVE (renderer-wire ID: whatToDoThisMonth)
+   Payload shape keeps 4 weeks (renderer wire-compat). Prompt asks for
+   week 1 to be the SINGLE Monday Move (one verb + one artifact + low
+   bar) and weeks 2-4 to be the chain it opens. Each week still has
+   3-5 tasks but week 1 leads with ONE specific low-bar artifact-
+   building task and the rest support it. Closing line is the spec's
+   "once X exists, Y starts" pattern. */
 const whatToDoThisMonth: SectionSpec = {
   id: "whatToDoThisMonth",
   heading: "What to do this month",
   reasoning: { effort: "high" },
   buildPrompt: (ctx) => `
-You are writing the CLOSING section — a concrete 4-week action plan. This
-is the brief's payoff: the student should finish reading knowing exactly
-what to do tomorrow. Each week has a focus + 3-5 specific tasks.
+You are writing CARD 05 of a 5-card admissions strategy brief in the
+v7 spec. This card is called YOUR MONDAY MOVE. Its job: name ONE move
+this week — verb + artifact + low bar — that opens the chain of work
+the rest of the brief set up. Week 1's first task IS the Monday Move.
+
+KEY DESIGN PRINCIPLE — executive-dysfunction-friendly:
+- Week 1's first task must be ≤ 1 hour to complete.
+- Week 1's first task must be CONCRETE (an artifact: a doc, a file,
+  a list, a draft, an email). NOT abstract ("brainstorm", "reflect",
+  "research").
+- Week 1's first task must EXPLICITLY LOWER THE BAR — include one
+  permission phrase like "don't polish", "don't make it good", "just
+  list", "stop when you have three", "no need to share with anyone".
+- Subsequent tasks (week 1 task 2-5, weeks 2-4) BUILD on that
+  artifact. The week 1 first task is the keystone; everything else
+  is downstream.
+
+LOCALLY-EXECUTABLE rule:
+- Do NOT prescribe actions that require US-only infrastructure (SAT
+  testing centers, Common App accounts, AP testing centers) unless
+  the intake clearly indicates the student has access.
 
 STUDENT PROFILE:
 ${profileBlock(ctx)}
 
-CONTEXT REFERENCES — pull task specifics from the schools/scholarships/
-gaps in earlier sections so the plan is grounded, not generic:
+${planBlock(ctx)}
+
+CONTEXT FROM EARLIER CARDS — anchor tasks to the schools/essay/gaps
+named earlier so the plan is grounded, not generic:
 ${dbBlock(ctx)}
+
+GOLD EXEMPLAR (week 1, task 1 = the Monday Move):
+  Student: Yerlan (same as Cards 01-04)
+  Week 1 focus: "Open the doc that becomes the essay."
+  Week 1 task 1: "Open a Google Doc titled 'math in debate.' List three specific times something from math class showed up in a debate round you ran. Don't polish."
+  Week 1 task 2-3: support the artifact-building. ("Add the dates / opponents / topic for each moment.")
+  closingLine: "Once those three lines exist on the page, the essay has somewhere to start."
 
 OUTPUT — emit a JSON object exactly matching this shape:
 {
   "kicker": "06 · What to do this month",
-  "headline": "string — 4-8 word display line. Example: 'Your next 28 days, mapped.'",
-  "lead": "string — ONE sentence (max ~30 words) framing the plan. Drop-cap rendered.",
+  "headline": "string — 4-8 word display line. Example shape: 'Your next 28 days.' NO banned vocab.",
+  "lead": "string — ONE sentence (max ~25 words). Drop-cap rendered.",
   "weeks": [
     {
       "label": "Week 1",
-      "focus": "string — ONE sentence naming the week's focus. Example: 'Start the recommender pipeline + draft your strongest essay angle.'",
+      "focus": "string — ONE sentence. The week's focus, anchored to the artifact week 1 task 1 builds.",
       "tasks": [
-        "string — 1 specific actionable task, ≤14 words, present-tense imperative",
-        "...3-5 tasks per week..."
+        "string — TASK 1 = THE MONDAY MOVE. ≤14 words, verb + artifact + low-bar permission. (e.g., 'Open a Google Doc titled X. List three Ys. Don't polish.')",
+        "...3-5 tasks per week, all anchored to specific intake fields/schools..."
       ]
     },
     { "label": "Week 2", ... },
     { "label": "Week 3", ... },
     { "label": "Week 4", ... }
   ],
-  "closingLine": "string — ONE final sentence of momentum. Quiet confidence, not hype. Example: 'Ship Week 1 and the rest follows.'"
+  "closingLine": "string — ONE sentence in 'Once X exists, Y starts' or 'Once X is done, Y follows' pattern. Quiet confidence, NOT hype."
 }
 
-EXACTLY 4 weeks. Each week MUST have 3-5 tasks.
+EXACTLY 4 weeks. Each week MUST have 3-5 tasks. Week 1 task 1 MUST
+contain a low-bar permission phrase ("don't polish" / "just list" /
+"don't make it good" / "no need to" / "stop when").
 
 ${SHARED_JSON_RULES}`,
-  validate: (raw) => {
+  validate: (raw, ctx) => {
     const obj = tryParse(raw) as Record<string, unknown> | null;
     if (!obj) return { ok: false, reason: "not valid JSON" };
     const weeks = obj.weeks as unknown[] | undefined;
@@ -437,15 +771,26 @@ ${SHARED_JSON_RULES}`,
         return { ok: false, reason: "each week must have 3-5 tasks" };
       }
     }
-    return { ok: true };
+    // Week 1 task 1 MUST contain a low-bar permission phrase
+    const w1tasks = (weeks[0] as { tasks?: string[] }).tasks ?? [];
+    const w1t1 = String(w1tasks[0] ?? "").toLowerCase();
+    if (
+      !/(don'?t polish|just list|don'?t make it good|no need to|stop when|don'?t worry about|don'?t edit)/.test(w1t1)
+    ) {
+      return {
+        ok: false,
+        reason: "Monday Move (week 1 task 1) must include a low-bar permission phrase (don't polish / just list / etc.)",
+      };
+    }
+    return semanticCheck(obj, ctx, { mustNameIntakeField: true });
   },
 };
 
 // 2026-05-20: howYoullPay dropped from the rendered brief — the live
 // /discover database is the funding source of truth. The new
-// BriefMinimal renderer doesn't include this section either. Keep
-// the section definition above for cached briefs that still reference
-// it, but stop generating it on new runs.
+// BriefMinimal renderer doesn't include this section either. v7 spec
+// (2026-05-22) confirms this — the brief no longer attempts to teach
+// funding lanes; Discover IS the answer.
 export const PREMIUM_SECTIONS: SectionSpec[] = [
   whereYouStand,
   whereYouCanLand,
