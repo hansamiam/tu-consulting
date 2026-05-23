@@ -1410,16 +1410,51 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                       };
                       const filled = [careerGoal, extracurriculars, background, namedSchools]
                         .filter((v) => v && v.trim().length > 0).length;
+                      // 2026-05-23 sparse-input pass: when fewer than 2 of
+                      // the 4 sharpen fields are filled, show a richer
+                      // nudge instead of the bland "optional" line. Gives
+                      // the user one explicit chance to add more before
+                      // submitting a sparse profile. "Add more" focuses
+                      // the first empty textarea; the primary Generate
+                      // button below is the "skip anyway" path.
+                      const focusFirstEmptyStep3 = () => {
+                        const ids: ReadonlyArray<[string, string]> = [
+                          ["careerGoal", careerGoal],
+                          ["extracurriculars", extracurriculars],
+                          ["background", background],
+                          ["namedSchools", namedSchools],
+                        ];
+                        const next = ids.find(([, v]) => !v || v.trim().length === 0);
+                        if (!next) return;
+                        const el = document.getElementById(next[0]);
+                        if (el && "focus" in el) {
+                          (el as HTMLElement).scrollIntoView({ behavior: "smooth", block: "center" });
+                          (el as HTMLElement).focus({ preventScroll: true });
+                        }
+                      };
+                      const showNudge = filled < 2;
                       return (
                         <>
-                          <div className="text-center pt-2">
-                            <p className="text-[11.5px] text-muted-foreground">
-                              {filled === 0
-                                ? t("Optional — leave blank to use the basics you've already shared.",
-                                     "По желанию — можно пропустить, отчёт построится по уже заполненному.")
-                                : t(`${filled} of 4 fields added · sharpens essay angles and fit notes.`,
-                                     `Заполнено ${filled} из 4 · улучшит идеи эссе и подбор.`)}
-                            </p>
+                          <div className="text-center pt-2" aria-live="polite">
+                            {showNudge ? (
+                              <p className="text-[12px] text-muted-foreground leading-snug">
+                                {t("Your brief will read more general with shorter answers. Even one line per box sharpens it.",
+                                   "С короткими ответами отчёт будет более общим. Даже одна строка в каждом поле его уточняет.")}
+                                {" "}
+                                <button
+                                  type="button"
+                                  onClick={focusFirstEmptyStep3}
+                                  className="text-gold-dark hover:text-gold underline underline-offset-2 font-medium"
+                                >
+                                  {t("Add more", "Добавить ещё")}
+                                </button>
+                              </p>
+                            ) : (
+                              <p className="text-[11.5px] text-muted-foreground">
+                                {t(`${filled} of 4 fields added · sharpens essay angles and fit notes.`,
+                                   `Заполнено ${filled} из 4 · улучшит идеи эссе и подбор.`)}
+                              </p>
+                            )}
                           </div>
                           {/* 2026-05-20: dropped the redundant "Skip for
                               now" ghost button — it called the same
