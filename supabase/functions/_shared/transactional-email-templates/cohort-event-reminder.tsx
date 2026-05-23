@@ -105,7 +105,10 @@ const CohortEventReminderEmail = ({
     : c.body1h(eventTitle, kindLabel, dateStr)
   const base = siteUrl ?? 'https://topuni.org'
   const langSuffix = lang === 'ru' ? '/ru' : ''
-  const portalUrl = `${base}/cohorts/${cohortSlug}${langSuffix}`
+  // Per feedback_academy_is_members_area.md — /academy is the single
+  // members area; cohort surface integrates AS A SECTION there.
+  void cohortSlug
+  const portalUrl = `${base}/academy${langSuffix}`
   return (
     <Html lang={c.htmlLang}>
       <Head />
