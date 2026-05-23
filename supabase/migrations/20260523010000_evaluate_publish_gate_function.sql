@@ -33,6 +33,24 @@ BEGIN
     RETURN;
   END IF;
 
+  -- Sticky admin decisions: if an admin set the rejection reason
+  -- (prefixed audience_/admin_), the machine gate eval does NOT
+  -- overwrite it — regardless of whether the machine gates pass
+  -- or fail. Admin cuts are deliberate human judgment that the
+  -- catalog should respect even when data quality changes.
+  -- An admin can clear the cut by manually nulling gate_fail_reason
+  -- and re-running this function. Pre-fix the preservation only
+  -- triggered when machine gates passed, so a URL 404 on an
+  -- admin-cut row would overwrite "audience_narrow_*" with "G3c"
+  -- and lose the admin decision.
+  IF v_row.gate_fail_reason IS NOT NULL
+     AND v_row.gate_fail_reason ~ '^(audience_|admin_)' THEN
+    UPDATE public.scholarships
+    SET last_gate_checked_at = now()
+    WHERE scholarship_id = p_scholarship_id;
+    RETURN;
+  END IF;
+
   v_fail_reason :=
     CASE
       WHEN v_row.scholarship_name IS NULL OR length(v_row.scholarship_name) < 10 OR v_row.scholarship_name ILIKE '%untitled%' THEN 'G1'
@@ -52,20 +70,6 @@ BEGIN
       WHEN v_row.data_source ILIKE 'manus_%' THEN 'G11'
       ELSE NULL
     END;
-
-  -- Don't clobber an admin-set audience-narrow rejection. If gate_fail_reason
-  -- starts with 'audience_narrow' the row was deliberately cut by admin
-  -- review and shouldn't get auto-re-published just because the machine
-  -- gates now pass. Same logic for any future admin-set reason prefix.
-  IF v_row.gate_fail_reason IS NOT NULL
-     AND v_row.gate_fail_reason ~ '^(audience_|admin_)'
-     AND v_fail_reason IS NULL THEN
-    -- Machine gates pass but admin cut it. Preserve admin decision.
-    UPDATE public.scholarships
-    SET last_gate_checked_at = now()
-    WHERE scholarship_id = p_scholarship_id;
-    RETURN;
-  END IF;
 
   UPDATE public.scholarships
   SET is_published = (v_fail_reason IS NULL),
