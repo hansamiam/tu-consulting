@@ -484,67 +484,250 @@ export const BriefDeck: React.FC<Props> = (props) => {
   const streaming = props.mode === "stream" && !streamError;
   const anyLoaded = Object.keys(sections).length > 0;
 
+  /* v7 Phase 3 (#13): card-stack swipe nav.
+     Each substantive section becomes a self-contained card; the user
+     swipes horizontally (mobile) or arrows through them (desktop).
+     Print path bypasses the swipe container via `print:` utilities —
+     PDFs still render vertically as one document. */
+  const archetypeNode =
+    archetype?.id && archetype?.name ? (
+      <section
+        aria-label="Your archetype"
+        className="rounded-2xl px-8 py-10 text-center shadow-sm"
+        style={{
+          background: `linear-gradient(135deg, ${archetype.color}1A, ${archetype.color}33)`,
+          borderTop: `4px solid ${archetype.color}`,
+        }}
+      >
+        <div className="text-[10px] uppercase tracking-[0.28em] text-foreground/60 font-medium">
+          You are
+        </div>
+        <h2
+          className="mt-3 text-[clamp(1.75rem,4vw,2.5rem)] font-serif font-bold leading-tight tracking-tight"
+          style={{ color: archetype.color }}
+        >
+          {archetype.name}
+        </h2>
+        {archetype.tagline && (
+          <p className="mt-4 text-base sm:text-lg text-foreground/80 italic font-serif max-w-md mx-auto leading-snug">
+            {archetype.tagline}
+          </p>
+        )}
+      </section>
+    ) : null;
+
+  type CardEntry = { id: string; kicker: string; node: React.ReactNode };
+  const cards: CardEntry[] = [
+    { id: "cover", kicker: "Brief", node: <Cover studentName={props.studentName} gradeLabel={props.gradeLabel} generatedAt={props.generatedAt} /> },
+  ];
+  if (archetypeNode) cards.push({ id: "archetype", kicker: "Your archetype", node: archetypeNode });
+  if (stand?.body || stand?.lead || gaps.length > 0) {
+    cards.push({
+      id: "stand",
+      kicker: "Where you stand",
+      node: <StartingLine thesis={stand?.headline ?? stand?.lead} body={stand?.body ?? stand?.lead} gaps={gaps} />,
+    });
+  } else if (streaming) {
+    cards.push({ id: "stand-skeleton", kicker: "Where you stand", node: <SlideSkeleton number={2} kicker="The starting line" title="Where you stand today." /> });
+  }
+  if (schoolEntries.length > 0) {
+    cards.push({ id: "shortlist", kicker: "Where you can land", node: <Shortlist entries={schoolEntries} /> });
+  } else if (streaming) {
+    cards.push({ id: "shortlist-skeleton", kicker: "Where you can land", node: <SlideSkeleton number={3} kicker="Where you can land" title="Three schools to anchor on." /> });
+  }
+  if (essayEntries.length > 0) {
+    cards.push({ id: "essays", kicker: "What to write", node: <EssayAngles entries={essayEntries} /> });
+  } else if (streaming) {
+    cards.push({ id: "essays-skeleton", kicker: "What to write", node: <SlideSkeleton number={4} kicker="What to write" title="Three angles only you can write." /> });
+  }
+  if (weeks.length > 0) {
+    cards.push({ id: "plan", kicker: "Your next 28 days", node: <ActionPlan weeks={weeks} closingLine={sections.whatToDoThisMonth?.closingLine} /> });
+  } else if (streaming) {
+    cards.push({ id: "plan-skeleton", kicker: "Your next 28 days", node: <SlideSkeleton number={5} kicker="Your next 28 days" title="A 4-week plan, mapped." /> });
+  }
+  if (anyLoaded && !streamError) {
+    cards.push({ id: "next", kicker: "What next", node: <NextStepsCard /> });
+  }
+
   return (
-    <div id="printable-report-inner" className="max-w-3xl mx-auto">
+    <div id="printable-report-inner" className="relative">
       {streamError && (
         <div className="my-6 mx-auto max-w-md text-center text-rose-500 text-sm">
           Brief generation failed: {streamError}. Try regenerating.
         </div>
       )}
+      <CardStack cards={cards} archetypeColor={archetype?.color} />
+    </div>
+  );
+};
 
-      <Cover studentName={props.studentName} gradeLabel={props.gradeLabel} generatedAt={props.generatedAt} />
+/* ─── CardStack ───────────────────────────────────────────────────────
+   v7 Phase 3 (#13). Horizontal scroll-snap container with progress
+   dots + keyboard nav + a Share button per card. Each card fills the
+   viewport (or near-viewport on mobile) and scrolls internally when
+   its content overflows. Print mode falls back to vertical block
+   flow so the PDF export still renders as one document. */
+interface CardStackProps {
+  cards: Array<{ id: string; kicker: string; node: React.ReactNode }>;
+  archetypeColor?: string;
+}
 
-      {/* v7 Phase 2: archetype hook card. Renders above the substantive
-          sections when the pre-plan call streamed an "archetype" SSE
-          event. Minimal treatment for now — the full Wrapped-Bold IG-
-          Story-shaped variant + share button lands in #13 / #14. */}
-      {archetype?.id && archetype?.name ? (
-        <section
-          aria-label="Your archetype"
-          className="my-10 mx-auto max-w-2xl rounded-2xl px-8 py-10 text-center shadow-sm"
-          style={{
-            background: `linear-gradient(135deg, ${archetype.color}1A, ${archetype.color}33)`,
-            borderTop: `4px solid ${archetype.color}`,
-          }}
-        >
-          <div className="text-[10px] uppercase tracking-[0.28em] text-foreground/60 font-medium">
-            You are
-          </div>
-          <h2
-            className="mt-3 text-[clamp(1.75rem,4vw,2.5rem)] font-serif font-bold leading-tight tracking-tight"
-            style={{ color: archetype.color }}
+const CardStack: React.FC<CardStackProps> = ({ cards, archetypeColor }) => {
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  // Scroll handler tracks which card is centered in the viewport so
+  // the progress dots stay in sync. Uses the container's scrollLeft
+  // and the first card's offsetWidth as the per-card stride.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const cardWidth = el.firstElementChild instanceof HTMLElement ? el.firstElementChild.offsetWidth : 1;
+        const idx = Math.round(el.scrollLeft / Math.max(cardWidth, 1));
+        setActiveIdx(Math.min(Math.max(idx, 0), cards.length - 1));
+      });
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(raf);
+      el.removeEventListener("scroll", onScroll);
+    };
+  }, [cards.length]);
+
+  const scrollToCard = (i: number) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const target = el.children[i] as HTMLElement | undefined;
+    if (target) target.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
+  };
+
+  // Arrow-key nav on desktop. Capture-phase listener so the buttons
+  // inside each card don't swallow the keystroke when focused.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // Ignore when focus is inside an editable field — users typing
+      // shouldn't get their cursor stolen.
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if ((e.target as HTMLElement | null)?.isContentEditable) return;
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        scrollToCard(Math.min(activeIdx + 1, cards.length - 1));
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        scrollToCard(Math.max(activeIdx - 1, 0));
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [activeIdx, cards.length]);
+
+  const handleShare = async (cardKicker: string) => {
+    // Minimal share — opens the OS share sheet with the current URL +
+    // a per-card suggested message. The full IG-Story-frictionless
+    // deep link via instagram-stories:// is the work of #14.
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    const shareData = {
+      title: `TopUni AI · ${cardKicker}`,
+      text: `My TopUni AI brief said: ${cardKicker}. topuni.kz/ai`,
+      url,
+    };
+    if (typeof navigator !== "undefined" && (navigator as Navigator & { share?: (d: ShareData) => Promise<void> }).share) {
+      try {
+        await (navigator as Navigator & { share: (d: ShareData) => Promise<void> }).share(shareData);
+        return;
+      } catch {
+        // user-cancelled share — fall through to clipboard fallback
+      }
+    }
+    // Clipboard fallback.
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch { /* ignore */ }
+    }
+  };
+
+  return (
+    <div className="relative">
+      {/* Progress dots — sticky at top, hidden in print. */}
+      <div className="sticky top-0 z-20 print:hidden bg-background/80 backdrop-blur-sm py-3">
+        <div className="flex items-center justify-center gap-1.5">
+          {cards.map((c, i) => (
+            <button
+              key={c.id}
+              onClick={() => scrollToCard(i)}
+              aria-label={`Go to ${c.kicker}`}
+              className="h-1.5 rounded-full transition-all"
+              style={{
+                width: i === activeIdx ? 24 : 6,
+                background: i === activeIdx ? (archetypeColor ?? "currentColor") : "rgba(0,0,0,0.2)",
+              }}
+            />
+          ))}
+        </div>
+        <div className="mt-1.5 text-center text-[10px] uppercase tracking-[0.22em] text-foreground/60 font-medium">
+          {String(activeIdx + 1).padStart(2, "0")} / {String(cards.length).padStart(2, "0")} · {cards[activeIdx]?.kicker}
+        </div>
+      </div>
+
+      {/* The swipe container. Horizontal scroll-snap on interactive;
+          vertical block flow in print. */}
+      <div
+        ref={scrollRef}
+        className="
+          flex overflow-x-auto snap-x snap-mandatory
+          [&::-webkit-scrollbar]:hidden
+          [-ms-overflow-style:none] [scrollbar-width:none]
+          print:block print:overflow-visible
+        "
+      >
+        {cards.map((card, i) => (
+          <div
+            key={card.id}
+            className="
+              flex-shrink-0 w-full snap-start
+              min-h-[calc(100vh-5rem)]
+              overflow-y-auto
+              px-4 sm:px-8 py-6
+              print:flex-shrink print:w-auto print:min-h-0 print:overflow-visible print:break-inside-avoid print:px-0 print:py-0
+            "
           >
-            {archetype.name}
-          </h2>
-          {archetype.tagline && (
-            <p className="mt-4 text-base sm:text-lg text-foreground/80 italic font-serif max-w-md mx-auto leading-snug">
-              {archetype.tagline}
-            </p>
-          )}
-        </section>
-      ) : null}
+            <div className="max-w-3xl mx-auto">{card.node}</div>
 
-      {(stand?.body || stand?.lead || gaps.length > 0) ? (
-        <StartingLine
-          thesis={stand?.headline ?? stand?.lead}
-          body={stand?.body ?? stand?.lead}
-          gaps={gaps}
-        />
-      ) : streaming ? <SlideSkeleton number={2} kicker="The starting line" title="Where you stand today." /> : null}
-
-      {schoolEntries.length > 0 ? (
-        <Shortlist entries={schoolEntries} />
-      ) : streaming ? <SlideSkeleton number={3} kicker="Where you can land" title="Three schools to anchor on." /> : null}
-
-      {essayEntries.length > 0 ? (
-        <EssayAngles entries={essayEntries} />
-      ) : streaming ? <SlideSkeleton number={4} kicker="What to write" title="Three angles only you can write." /> : null}
-
-      {weeks.length > 0 ? (
-        <ActionPlan weeks={weeks} closingLine={sections.whatToDoThisMonth?.closingLine} />
-      ) : streaming ? <SlideSkeleton number={5} kicker="Your next 28 days" title="A 4-week plan, mapped." /> : null}
-
-      {anyLoaded && !streamError && <NextStepsCard />}
+            {/* Card footer — share + next button. Hidden in print. */}
+            <div className="print:hidden mt-6 max-w-3xl mx-auto flex items-center justify-between gap-3">
+              <button
+                onClick={() => handleShare(card.kicker)}
+                className="text-xs font-medium text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1.5"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                  <polyline points="16 6 12 2 8 6" />
+                  <line x1="12" y1="2" x2="12" y2="15" />
+                </svg>
+                Share
+              </button>
+              {i < cards.length - 1 ? (
+                <button
+                  onClick={() => scrollToCard(i + 1)}
+                  className="text-xs font-medium text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1.5"
+                >
+                  Next
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </button>
+              ) : null}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
