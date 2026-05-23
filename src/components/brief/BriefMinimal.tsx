@@ -185,8 +185,15 @@ const StartingLine: React.FC<{
   thesis?: string;
   body?: string;
   gaps: GapEntry[];
-}> = ({ thesis, body, gaps }) => (
-  <Slide number={2} kicker="The starting line" title={thesis ?? "Where you stand today."}>
+  color?: string;
+}> = ({ thesis, body, gaps, color }) => (
+  <WrappedCard
+    kicker="01 · Where you stand"
+    headline={thesis ?? "Where you stand today."}
+    color={color}
+    expandLabel="Read the reasoning"
+    collapseLabel="Hide the reasoning"
+  >
     {body && (
       <div className="space-y-4 text-neutral-700 text-[15px] leading-[1.75] max-w-[64ch]">
         {body.split(/\n\n+/).map((p, i) => (
@@ -221,7 +228,7 @@ const StartingLine: React.FC<{
         </ol>
       </div>
     )}
-  </Slide>
+  </WrappedCard>
 );
 
 // ─── Slide 03 — Where you can land ────────────────────────────────────
@@ -383,72 +390,215 @@ const ActionPlan: React.FC<{ weeks: WeekBlock[]; closingLine?: string }> = ({ we
 // generator emits the new payload shapes. The old components remain
 // in place as the fallback for cached schema-2 briefs.
 
-const WhereYouBelongBuckets: React.FC<{ buckets: CountryBucket[] }> = ({ buckets }) => (
-  <Slide number={3} kicker="Where you belong" title="Three kinds of places that fit you.">
-    <div className="divide-y divide-neutral-100">
-      {buckets.map((b, i) => (
-        <section key={`${b.country}-${i}`} className="py-7 sm:py-8">
-          <div className="flex items-baseline gap-3 flex-wrap">
-            <h3 className="font-heading text-neutral-900 font-bold text-[18px] sm:text-[19px] tracking-[-0.01em]">
-              {b.country}
-            </h3>
-            {b.cities && (
-              <span className="text-neutral-400 text-[12.5px]">{b.cities}</span>
-            )}
-          </div>
-          <div className="mt-3 space-y-3.5">
-            {b.schools.map((s, j) => (
-              <div key={`${s.name}-${j}`} className="grid grid-cols-[auto,1fr] gap-x-4">
-                <span className="text-gold-dark/60 select-none pt-2 flex-none">
-                  <span className="block h-1 w-1 rounded-full bg-gold-dark/70" />
-                </span>
-                <div>
-                  <p className="font-heading text-neutral-900 font-semibold text-[15.5px] sm:text-[16px] tracking-[-0.005em]">
-                    {s.name}
-                  </p>
-                  {s.lore && (
-                    <p className="text-neutral-700 text-[14px] leading-[1.7] mt-1 max-w-[58ch]">
-                      {s.lore}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      ))}
-    </div>
-  </Slide>
-);
+/* ─── WrappedCard ─────────────────────────────────────────────────
+   Q1=A polish (2026-05-23): Wrapped-style first impression for the
+   substantive brief cards. The big quote-shaped headline + minimal
+   subhead sit on a tinted archetype-color background; the editorial
+   body is revealed via tap-to-expand below. Print path always shows
+   the expanded body (so PDF export still has the full prose).
 
-const EssaySeedSlide: React.FC<{ seed: EssaySeed }> = ({ seed }) => (
-  <Slide number={4} kicker="What to write" title={seed.title ?? "The essay only you can write."}>
+   Each v7 card component (Card 01-06) renders through this shell.
+   The kicker is the small all-caps label on top; headline is the
+   pull-quote-sized typography that does the actual visual work;
+   subhead is the smaller italic line below; children is whatever
+   the card's editorial body would be in non-Wrapped mode.
+
+   The "Read more" / "Show less" toggle is a button at the bottom
+   of the closed card. Clicking it animates the body open or shut.
+   Closed by default — tap to reveal substance. */
+interface WrappedCardProps {
+  kicker?: string;
+  headline?: string;
+  subhead?: string;
+  /** Hex from archetype-library.ts. Defaults to a neutral navy
+   *  if absent (legacy schema-2 cached briefs with no archetype). */
+  color?: string;
+  /** The editorial body — revealed when expanded. Always shown
+   *  in print so PDFs include the full prose. */
+  children?: React.ReactNode;
+  /** Override the expand-button labels if the card wants
+   *  surface-specific copy (e.g., "Read the reasoning"). Defaults
+   *  to "Read more" / "Show less". */
+  expandLabel?: string;
+  collapseLabel?: string;
+}
+
+const WrappedCard: React.FC<WrappedCardProps> = ({
+  kicker,
+  headline,
+  subhead,
+  color = "#1A3B66",
+  children,
+  expandLabel = "Read more",
+  collapseLabel = "Show less",
+}) => {
+  const [expanded, setExpanded] = useState(false);
+  const hasBody = !!children;
+  // Color tinting: convert hex to rgba with low alpha so the card
+  // reads as Wrapped-saturated but the kicker / read-more button
+  // text stay legible. Use the same hex for the top border (full
+  // saturation) as the visual anchor.
+  const rgb = hexToRgb(color);
+  const tintBg = rgb ? `linear-gradient(180deg, rgba(${rgb}, 0.14) 0%, rgba(${rgb}, 0.06) 60%, rgba(${rgb}, 0.03) 100%)` : "white";
+  return (
+    <article
+      className="bg-white border border-neutral-200/80 rounded-lg overflow-hidden mb-10 sm:mb-14 break-inside-avoid print:mb-0 print:rounded-none print:border-x-0"
+      style={{ background: tintBg, borderTop: `4px solid ${color}` }}
+    >
+      <div className="px-8 sm:px-14 pt-14 sm:pt-20 pb-10 sm:pb-12">
+        {kicker && (
+          <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] font-semibold mb-6" style={{ color }}>
+            {kicker}
+          </p>
+        )}
+        {headline && (
+          <h2
+            className="font-heading font-bold tracking-[-0.025em] leading-[1.05] text-[clamp(2rem,5vw,3.5rem)] max-w-[20ch]"
+            style={{ color: "hsl(222 30% 12%)" }}
+          >
+            {headline}
+          </h2>
+        )}
+        {subhead && (
+          <p className="mt-6 sm:mt-8 font-heading italic text-neutral-700 text-[clamp(1.125rem,2vw,1.5rem)] leading-snug tracking-tight max-w-[40ch]">
+            {subhead}
+          </p>
+        )}
+        {hasBody && (
+          <>
+            {/* Body: collapsed in interactive mode, always-open in
+                print. The print: utility forces the body block to
+                display regardless of `expanded` state, since PDF
+                readers can't tap to expand. */}
+            <div
+              className={`overflow-hidden transition-all duration-300 print:!max-h-none print:!opacity-100 print:!mt-10 ${
+                expanded ? "max-h-[5000px] opacity-100 mt-10 sm:mt-12" : "max-h-0 opacity-0 mt-0"
+              }`}
+              aria-hidden={!expanded}
+            >
+              <div className="border-t border-neutral-200/70 pt-8">
+                {children}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              className="mt-8 inline-flex items-center gap-1.5 text-[12px] font-medium uppercase tracking-[0.18em] hover:opacity-80 transition-opacity print:hidden"
+              style={{ color }}
+            >
+              {expanded ? collapseLabel : expandLabel}
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                style={{ transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+          </>
+        )}
+      </div>
+    </article>
+  );
+};
+
+/** Convert a #RRGGBB hex to "R, G, B" suitable for embedding in
+ *  rgba(). Returns null if the input doesn't parse — caller
+ *  should fall back to a literal color. */
+function hexToRgb(hex: string): string | null {
+  if (!hex || typeof hex !== "string") return null;
+  const m = hex.replace(/^#/, "").match(/^([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+  if (!m) return null;
+  return `${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}`;
+}
+
+const WhereYouBelongBuckets: React.FC<{ buckets: CountryBucket[]; color?: string }> = ({ buckets, color }) => {
+  const countryList = buckets.slice(0, 3).map((b) => b.country).join(" · ");
+  return (
+    <WrappedCard
+      kicker="02 · Where you belong"
+      headline={`Three places that fit how you actually move.`}
+      subhead={countryList ? `${countryList} — pulled from your countries with your file in mind.` : undefined}
+      color={color}
+      expandLabel="See the schools"
+      collapseLabel="Hide the schools"
+    >
+      <div className="divide-y divide-neutral-100">
+        {buckets.map((b, i) => (
+          <section key={`${b.country}-${i}`} className="py-7 sm:py-8 first:pt-0">
+            <div className="flex items-baseline gap-3 flex-wrap">
+              <h3 className="font-heading text-neutral-900 font-bold text-[18px] sm:text-[19px] tracking-[-0.01em]">
+                {b.country}
+              </h3>
+              {b.cities && (
+                <span className="text-neutral-400 text-[12.5px]">{b.cities}</span>
+              )}
+            </div>
+            <div className="mt-3 space-y-3.5">
+              {b.schools.map((s, j) => (
+                <div key={`${s.name}-${j}`} className="grid grid-cols-[auto,1fr] gap-x-4">
+                  <span className="select-none pt-2 flex-none">
+                    <span className="block h-1 w-1 rounded-full" style={{ background: color ?? "hsl(38 58% 35%)" }} />
+                  </span>
+                  <div>
+                    <p className="font-heading text-neutral-900 font-semibold text-[15.5px] sm:text-[16px] tracking-[-0.005em]">
+                      {s.name}
+                    </p>
+                    {s.lore && (
+                      <p className="text-neutral-700 text-[14px] leading-[1.7] mt-1 max-w-[58ch]">
+                        {s.lore}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </WrappedCard>
+  );
+};
+
+const EssaySeedSlide: React.FC<{ seed: EssaySeed; color?: string }> = ({ seed, color }) => (
+  <WrappedCard
+    kicker="03 · The essay only you can write"
+    headline={seed.title ?? "The essay you should write doesn't exist yet."}
+    subhead={seed.closer ?? "Find the moment that already lives somewhere in your head."}
+    color={color}
+    expandLabel="Read the seed"
+    collapseLabel="Hide the seed"
+  >
     <div className="max-w-[58ch]">
       <p className="text-neutral-800 text-[15.5px] leading-[1.75]">
         {seed.body}
       </p>
-      {seed.closer && (
-        <p className="mt-8 font-heading italic text-neutral-700 text-[16px] leading-snug tracking-tight">
-          {seed.closer}
-        </p>
-      )}
     </div>
-  </Slide>
+  </WrappedCard>
 );
 
-const MondayMoveSlide: React.FC<{ move: MondayMove }> = ({ move }) => (
-  <Slide number={5} kicker="Your Monday move" title={move.headline ?? "One move this week."}>
+const MondayMoveSlide: React.FC<{ move: MondayMove; color?: string }> = ({ move, color }) => (
+  <WrappedCard
+    kicker="06 · Your Monday move"
+    headline={move.headline ?? "One move this week."}
+    subhead={move.closer ?? "It opens the rest."}
+    color={color}
+    expandLabel="See the move"
+    collapseLabel="Hide the move"
+  >
     <div className="max-w-[58ch]">
       <p className="text-neutral-800 text-[15.5px] leading-[1.75]">
         {move.body}
       </p>
-      {move.closer && (
-        <p className="mt-8 font-heading italic text-neutral-700 text-[16px] leading-snug tracking-tight">
-          {move.closer}
-        </p>
-      )}
     </div>
-  </Slide>
+  </WrappedCard>
 );
 
 // ─── Next-steps card (non-deck, post-brief CTAs) ──────────────────────
@@ -634,7 +784,7 @@ export const BriefDeck: React.FC<Props> = (props) => {
     cards.push({
       id: "stand",
       kicker: "Where you stand",
-      node: <StartingLine thesis={stand?.headline ?? stand?.lead} body={stand?.body ?? stand?.lead} gaps={gaps} />,
+      node: <StartingLine thesis={stand?.headline ?? stand?.lead} body={stand?.body ?? stand?.lead} gaps={gaps} color={archetypeColorForShare} />,
       shareAsset: stand ? <WhereYouStandShareCard color={archetypeColorForShare} payload={stand} /> : undefined,
     });
   } else if (streaming) {
@@ -646,7 +796,7 @@ export const BriefDeck: React.FC<Props> = (props) => {
     cards.push({
       id: "buckets",
       kicker: "Where you belong",
-      node: <WhereYouBelongBuckets buckets={buckets} />,
+      node: <WhereYouBelongBuckets buckets={buckets} color={archetypeColorForShare} />,
       shareAsset: <WhereYouBelongShareCard color={archetypeColorForShare} buckets={buckets} />,
     });
   } else if (schoolEntries.length > 0) {
@@ -660,7 +810,7 @@ export const BriefDeck: React.FC<Props> = (props) => {
     cards.push({
       id: "essay-seed",
       kicker: "What to write",
-      node: <EssaySeedSlide seed={essaySeed} />,
+      node: <EssaySeedSlide seed={essaySeed} color={archetypeColorForShare} />,
       shareAsset: <EssaySeedShareCard color={archetypeColorForShare} seed={essaySeed} />,
     });
   } else if (essayEntries.length > 0) {
@@ -673,7 +823,7 @@ export const BriefDeck: React.FC<Props> = (props) => {
     cards.push({
       id: "monday-move",
       kicker: "Your Monday move",
-      node: <MondayMoveSlide move={mondayMove} />,
+      node: <MondayMoveSlide move={mondayMove} color={archetypeColorForShare} />,
       shareAsset: <MondayMoveShareCard color={archetypeColorForShare} move={mondayMove} />,
     });
   } else if (weeks.length > 0) {
