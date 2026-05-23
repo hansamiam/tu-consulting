@@ -83,6 +83,17 @@ export interface BriefContext {
      *  branch + The Open Question / Tight Lane archetype detection.
      *  4-level enum; default to "some_idea" if missing. */
     majorCertainty?: "not_at_all" | "some_idea" | "pretty_sure" | "certain";
+    /** Sparse-input pass (2026-05-23): foreign languages chip-picked on
+     *  Step 1. Already pre-filtered at form level to exclude English + CIS
+     *  native — anything here IS distinctive. Brief celebrates whatever's
+     *  present without per-nationality baseline filtering. */
+    foreignLanguages?: string[];
+    /** Sparse-input pass (2026-05-23): first-in-family-to-apply-abroad
+     *  chip-picked on Step 1. When "yes", the brief's Card 01 + Card 03
+     *  apply culturalContext.firstAbroadFramingFor(nationality) — CIS
+     *  gets "leaving home" angle, US/LatAm gets "first-gen college"
+     *  angle, default gets generic "first step" framing. */
+    firstToApplyAbroad?: "yes" | "siblings_have" | "parents_have" | "unsure";
   };
   /** "English" or "Russian". */
   lang: string;

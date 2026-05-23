@@ -75,6 +75,21 @@ CULTURAL-CONTEXT rule (audience is Bishkek/Almaty / Central Asian first):
   some destinations as "realistic" without acknowledging visa-tier).
 - Don't assume Common App / SAT centers / AP testing access. If you
   prescribe an action, make sure it's locally executable.
+- FIRST-IN-FAMILY-ABROAD framing depends on cultural context.
+  When profile.firstToApplyAbroad === "yes", apply the lens from
+  cultural-context.firstAbroadFramingFor(profile.nationality):
+    · CIS / MENA → "first_to_leave_home" framing. Use "first to step
+      out / first to go abroad / leaving home" language. School-
+      completion is high in these regions and parents often graduated
+      university — DO NOT frame as "first-gen college student" (that
+      reads as factually wrong and patronizing).
+    · US / parts of LatAm / SE Asia / Africa → "first_gen_college"
+      framing. Standard "first in your family to attend / first-
+      generation" language is correct and lands.
+    · Unmapped nationality → "first_global_step" framing. Generic
+      "first to take this step" language; no claims about family
+      education history.
+  Never default to "first-gen college" for CIS students.
 
 CONTENT:
 - Cite their actual numbers (GPA, IELTS, country) by name. Cite
