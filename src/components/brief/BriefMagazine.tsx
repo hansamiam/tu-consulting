@@ -17,6 +17,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Compass, GraduationCap, Sparkles } from "lucide-react";
 import { MagazineMasthead } from "./primitives/MagazineMasthead";
+import { AcademyWaitlistForm } from "@/components/topuni-ai/AcademyWaitlistForm";
 import { SectionSkeleton } from "./primitives/SectionSkeleton";
 import { WhereYouStand } from "./sections/WhereYouStand";
 import { WhereYouCanLand } from "./sections/WhereYouCanLand";
@@ -267,6 +268,14 @@ export const BriefMagazine: React.FC<Props> = (props) => {
               <Sparkles className="h-3 w-3 text-gold-dark" />
               Your report is saved — return to it anytime from your account.
             </p>
+          </div>
+
+          {/* F12 stitch — Academy waitlist form at brief end. Date-free
+              copy per plan: "we'll email when we open without committing
+              a date." Single-line form, sticky-done via localStorage so
+              it doesn't re-appear after signup. */}
+          <div className="max-w-3xl mx-auto mt-10">
+            <AcademyWaitlistForm source="brief_end" />
           </div>
         </section>
       )}
