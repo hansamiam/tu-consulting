@@ -32,7 +32,7 @@ interface HeadlineTemplates {
   multi: string;
 }
 
-const TEMPLATES: Record<ArchetypeId, HeadlineTemplates> = {
+export const TEMPLATES: Record<ArchetypeId, HeadlineTemplates> = {
   "bridge-domain-kid": {
     single: "Bridge-Domain Kids like you usually save 4-5 scholarships in {countries}.",
     multi: "Bridge-Domain Kids like you usually save 3-5 scholarships across {countries}.",
