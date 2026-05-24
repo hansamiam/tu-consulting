@@ -28,6 +28,8 @@ import { template as cancellationRecovery } from './cancellation-recovery.tsx'
 import { template as membershipWelcome } from './membership-welcome.tsx'
 import { template as academyWaitlistConfirmation } from './academy-waitlist-confirmation.tsx'
 import { template as briefLeadNudge } from './brief-lead-nudge.tsx'
+import { template as cohortWelcome } from './cohort-welcome.tsx'
+import { template as cohortEventReminder } from './cohort-event-reminder.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'booking-confirmation': bookingConfirmation,
@@ -49,4 +51,6 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'membership-welcome': membershipWelcome,
   'academy-waitlist-confirmation': academyWaitlistConfirmation,
   'brief-lead-nudge': briefLeadNudge,
+  'cohort-welcome': cohortWelcome,
+  'cohort-event-reminder': cohortEventReminder,
 }

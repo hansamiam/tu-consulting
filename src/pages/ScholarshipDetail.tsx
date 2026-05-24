@@ -52,7 +52,7 @@ import { EditorialCard } from "@/components/brief/primitives/EditorialCard";
 import { PullQuote } from "@/components/brief/primitives/PullQuote";
 import { EditorialProse } from "@/components/brief/primitives/EditorialProse";
 import { LeadParagraph } from "@/components/brief/primitives/LeadParagraph";
-import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
+import { DeepDiveTriggerButton } from "@/components/scholarship/DeepDiveModal";
 import { ScholarshipOutcomesBlock } from "@/components/scholarship/ScholarshipOutcomesBlock";
 import { getStoredProfile } from "@/components/discover/DiscoverProfileGate";
 import { isAggregatorUrl } from "@/lib/aggregatorUrls";
@@ -803,7 +803,7 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
         {(() => {
           const stored = getStoredProfile();
           // The DiscoverProfile shape from getStoredProfile uses different
-          // keys than our edge fn expects — adapt here.
+          // keys than the edge fn expects — adapt here.
           const profileForDive = stored ? {
             fullName: stored.fullName,
             nationality: stored.nationality,
@@ -815,10 +815,17 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
             ielts: stored.ieltsScore,
           } : null;
           return (
-            <ScholarshipDeepDive
+            <DeepDiveTriggerButton
               scholarshipId={s.scholarship_id}
+              scholarshipName={s.scholarship_name}
               profile={profileForDive}
-              onBuildProfile={() => navigate("/discover")}
+              fallback={{
+                how_to_win: s.how_to_win,
+                strategy_notes: s.strategy_notes,
+                common_rejection_reasons: s.common_rejection_reasons,
+                risk_note: s.risk_note,
+              }}
+              onBuildProfile={() => navigate("/topuni-ai")}
             />
           );
         })()}

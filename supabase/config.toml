@@ -3,6 +3,11 @@ project_id = "bsfldtpemfxhnkdzccib"
 [functions.create-checkout]
 verify_jwt = false
 
+[functions.cohort-reminder-cron]
+# Self-gated via requireAdminOrService. pg_cron + pg_net call carries the
+# dispatchClient token; public callers without the token get 401.
+verify_jwt = false
+
 [functions.verify-payment]
 verify_jwt = false
 

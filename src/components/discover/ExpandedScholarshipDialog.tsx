@@ -20,7 +20,7 @@ import {
   GraduationCap,
   Globe,
 } from "lucide-react";
-import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
+import { DeepDiveTriggerButton } from "@/components/scholarship/DeepDiveModal";
 import { AcademyHookCta } from "@/components/discover/AcademyHookCta";
 import {
   cleanScholarshipName, cleanProvider, humanizeDegreeLabel,
@@ -220,17 +220,34 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
             </p>
           </div>
 
-          {/* Scrollable body — ScholarshipDeepDive carries the personalised
-              analysis (match breakdown, how-to-win, ideal-candidate). */}
+          {/* Scrollable body — DeepDiveTriggerButton opens the
+              Membership-gated v6 deep-dive modal. The lite shape used
+              here doesn't carry Path A fields; fallback card renders
+              its minimal "loading, refresh in a moment" state if the
+              edge function fails — full Path A fallback is on the
+              dedicated /scholarships/:id page. */}
           <div className="overflow-y-auto flex-1 px-6 sm:px-9 py-5 sm:py-6 space-y-5">
-            <div>
-              <h3 className="font-heading text-lg font-bold tracking-tight text-foreground mb-4">
-                {t("Personalised for you", "Персонально для вас")}
-              </h3>
-              <ScholarshipDeepDive
-                scholarshipId={s.scholarship_id}
-                profile={deepDiveProfile}
-              />
+            <DeepDiveTriggerButton
+              scholarshipId={s.scholarship_id}
+              scholarshipName={s.scholarship_name}
+              profile={deepDiveProfile}
+              fallback={{
+                how_to_win: null,
+                strategy_notes: null,
+                common_rejection_reasons: null,
+                risk_note: null,
+              }}
+              onBuildProfile={() => {
+                window.location.assign("/topuni-ai");
+              }}
+              language={lang}
+            />
+            <div className="hidden">
+              {/* Personalised-for-you section header retired with the
+                  v6 modal swap — the trigger button now carries its
+                  own framing. Kept the t() call sites referenced below
+                  for translation review.
+                  t("Personalised for you", "Персонально для вас") */}
             </div>
             {/* F12 stitch — Academy upsell below the deep-dive analysis.
                 Soft "want help winning this?" pointer to the strategy
