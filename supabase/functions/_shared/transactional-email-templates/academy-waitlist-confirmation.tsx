@@ -10,7 +10,7 @@ import type { TemplateEntry } from './registry.ts'
 // template is deliberately short and date-free — just confirms we have you
 // on the list and says what to expect when we launch.
 
-const SITE_NAME = 'Top Uni Academy'
+const SITE_NAME = 'TopUni Academy'
 
 interface Props {
   /** First name if known (full_name on the waitlist row). */
@@ -23,25 +23,25 @@ interface Props {
 
 const COPY = {
   en: {
-    kicker: 'Top Uni Academy · You\'re on the list',
-    previewFallback: 'You\'re on the Top Uni Academy waitlist. We\'ll email you when we open.',
+    kicker: 'TopUni Academy · You\'re on the list',
+    previewFallback: 'You\'re on the TopUni Academy waitlist. We\'ll email you when we open.',
     greetingNamed: (n: string) => `${n}, you\'re on the list.`,
     greetingNeutral: 'You\'re on the list.',
-    body1: 'We\'ll email when Top Uni Academy opens for enrollment. No date promised yet — we\'re building it the right way, not the fast way.',
+    body1: 'We\'ll email when TopUni Academy opens for enrollment. No date promised yet — we\'re building it the right way, not the fast way.',
     body2: 'What to expect when we open: async cohort cycles, live group strategy calls with operators who\'ve actually run admissions, and a content library that maps to the exact decisions you\'re making this cycle.',
     body3: 'Until then, your strategy brief and Discover feed keep working — we\'ll layer Academy on top, not replace what already helps you.',
-    teamSignoff: '— The Top Uni Team',
+    teamSignoff: '— The TopUni Team',
     htmlLang: 'en',
   },
   ru: {
-    kicker: 'Top Uni Academy · Вы в списке',
-    previewFallback: 'Вы добавлены в лист ожидания Top Uni Academy. Мы напишем, когда откроем набор.',
+    kicker: 'TopUni Academy · Вы в списке',
+    previewFallback: 'Вы добавлены в лист ожидания TopUni Academy. Мы напишем, когда откроем набор.',
     greetingNamed: (n: string) => `${n}, вы в списке.`,
     greetingNeutral: 'Вы в списке.',
-    body1: 'Мы напишем, когда Top Uni Academy откроется. Дату пока не называем — собираем правильно, а не быстро.',
+    body1: 'Мы напишем, когда TopUni Academy откроется. Дату пока не называем — собираем правильно, а не быстро.',
     body2: 'Что внутри после запуска: асинхронные когорты, живые групповые звонки со стратегами, которые сами проходили процесс приёма, и библиотека материалов под конкретные решения этого цикла.',
     body3: 'А пока — ваш стратегический брифинг и Discover-лента продолжают работать. Academy добавится сверху, не вместо.',
-    teamSignoff: '— Команда Top Uni',
+    teamSignoff: '— Команда TopUni',
     htmlLang: 'ru',
   },
 } as const
@@ -78,7 +78,7 @@ export const template: TemplateEntry = {
   component: AcademyWaitlistConfirmationEmail,
   subject: (data) => {
     const lang = (data as Props).language === 'ru' ? 'ru' : 'en'
-    return lang === 'ru' ? 'Вы в списке ожидания Top Uni Academy' : 'You\'re on the Top Uni Academy waitlist'
+    return lang === 'ru' ? 'Вы в списке ожидания TopUni Academy' : 'You\'re on the TopUni Academy waitlist'
   },
   displayName: 'Academy Waitlist Confirmation',
   previewData: {
