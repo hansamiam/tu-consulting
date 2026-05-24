@@ -57,7 +57,7 @@
         ]
       },
       "whatToWrite": {
-        "kicker": "04 · The essay only you can write",
+        "kicker": "03 · The essay only you can write",
         "headline": "The essay you should write doesn't exist yet — but the seed for it does.",
         "lead": "One specific bug, problem, or breakthrough that took days to solve.",
         "essaySeed": {
@@ -67,7 +67,7 @@
         }
       },
       "whatsBlockingYou": {
-        "kicker": "05 · What's blocking you",
+        "kicker": "04 · What's blocking you",
         "headline": "Every school on your list is in one country.",
         "lead": "That's a choice — but it might not be the one you actually made.",
         "entries": [
@@ -81,7 +81,7 @@
         ]
       },
       "whatToDoThisMonth": {
-        "kicker": "06 · Your Monday Move",
+        "kicker": "05 · Your Monday Move",
         "headline": "Open a Google Doc this week. Title it 'CS programs outside the US.'",
         "lead": "List three you'd apply to. Don't commit.",
         "mondayMove": {

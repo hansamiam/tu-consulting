@@ -252,10 +252,10 @@ BRIEF PLAN (canonical narrative throughline — every card must respect it):
 - Archetype: ${p.archetype.id} (confidence ${p.archetype.confidence})
 - Identity claim (Card 01 anchor): "${p.identityClaim}"
 - Pile contrast (Cards 01-02 anchor): "${p.pileContrast}"
+- Country buckets (Card 02 anchor): ${p.countryBuckets.join(", ")}
 - Essay seed type (Card 03 anchor): "${p.essaySeedType}"
 - Primary gap (Card 04 anchor): ${gapLine}
-- Country buckets (Card 05 anchor): ${p.countryBuckets.join(", ")}
-- Monday-move artifact (Card 06 anchor): "${p.mondayMoveArtifact}"
+- Monday-move artifact (Card 05 anchor): "${p.mondayMoveArtifact}"
 
 Your section MUST anchor to the plan field(s) relevant to it. Do not
 contradict the plan; do not paraphrase the anchors into vagueness;
@@ -713,7 +713,7 @@ ${planBlock(ctx)}
 GOLD EXEMPLAR — match this prose-quality bar:
   Student: Yerlan (same as Cards 01-02)
   Output:
-    kicker:  "04 · The essay only you can write"
+    kicker:  "03 · The essay only you can write"
     headline: "The essay you should write doesn't exist yet — but the seed for it does."
     lead:     "One specific kind of moment to find. Then it starts itself."
     essaySeed.title: "The math-in-debate moment"
@@ -722,7 +722,7 @@ GOLD EXEMPLAR — match this prose-quality bar:
 
 OUTPUT — emit a JSON object exactly matching this shape:
 {
-  "kicker": "04 · The essay only you can write",
+  "kicker": "03 · The essay only you can write",
   "headline": "string — 8 to 14 words. Names the essay's existence as a possibility, not a finished thing. 'The essay you should write doesn't exist yet — but the seed for it does.' is the template shape.",
   "lead": "string — ONE sentence (max ~15 words). Drop-cap rendered.",
   "essaySeed": {
@@ -791,7 +791,7 @@ flaw to fix but as a fact to surface. Pattern:
   whyItMatters: validation language — "not knowing is information,
     not a problem. Schools have answers for cross-domain kids who
     haven't picked yet."
-  actionThisMonth: NO concrete prescription here — Card 06 owns
+  actionThisMonth: NO concrete prescription here — Card 05 owns
     actions. Just a posture: "stop hiding this from your applications.
     Build the application that names it."
   next60Days: brief — "as you talk to more schools the question
@@ -849,7 +849,7 @@ GOLD EXEMPLAR (major-uncertainty branch):
 
 OUTPUT — emit a JSON object exactly matching this shape:
 {
-  "kicker": "05 · What's blocking you",
+  "kicker": "04 · What's blocking you",
   "headline": "string — 4 to 8 word display line. NO banned vocab.",
   "lead": "string — ONE sentence (max ~25 words). Drop-cap rendered.",
   "entries": [
@@ -857,7 +857,7 @@ OUTPUT — emit a JSON object exactly matching this shape:
       "priority": "high" | "medium",
       "title": "string — short gap title, max 10 words. Direct naming, no softening.",
       "whyItMatters": "string — 2 to 3 sentences. SPECIFIC naming using intake fields. Validates the gap as information, NOT verdict.",
-      "actionThisMonth": "string — ONE posture/orientation (Card 06 owns concrete actions). 1 sentence.",
+      "actionThisMonth": "string — ONE posture/orientation (Card 05 owns concrete actions). 1 sentence.",
       "next60Days": "string — 1 sentence framing the follow-through."
     },
     ... 1 to 3 entries total (1 is preferred for v7) ...
@@ -902,7 +902,7 @@ const whatToDoThisMonth: SectionSpec = {
   heading: "What to do this month",
   reasoning: { effort: "high" },
   buildPrompt: (ctx) => `
-You are writing CARD 06 (renderer-wire id: whatToDoThisMonth) of the
+You are writing CARD 05 (renderer-wire id: whatToDoThisMonth) of the
 v7 admissions strategy brief. This card is called YOUR MONDAY MOVE.
 Its job: name ONE move this week — verb + artifact + low bar — that
 opens the chain of work the rest of the brief set up. Not a 4-week
@@ -936,7 +936,7 @@ ${dbBlock(ctx)}
 GOLD EXEMPLAR — match this prose-quality bar:
   Student: Yerlan (same as Cards 01-04)
   Output:
-    kicker:    "06 · Your Monday Move"
+    kicker:    "05 · Your Monday Move"
     headline:  "Open a Google Doc this week. Title it 'math in debate.'"
     lead:      "One move that opens the rest."
     mondayMove.body: "Inside, list three specific times something from a math class showed up in a debate round you ran. Don't polish. Don't make them sound profound. Just three lines, one per moment. Stop when you have three."
@@ -944,7 +944,7 @@ GOLD EXEMPLAR — match this prose-quality bar:
 
 OUTPUT — emit a JSON object exactly matching this shape:
 {
-  "kicker": "06 · Your Monday Move",
+  "kicker": "05 · Your Monday Move",
   "headline": "string — 6 to 12 words. The move, named as a verb-led instruction. Concrete artifact. Example shape: 'Open a Google Doc this week. Title it [X].'",
   "lead": "string — ONE sentence (max ~12 words) framing the move. Drop-cap rendered.",
   "mondayMove": {

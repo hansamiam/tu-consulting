@@ -23,13 +23,11 @@ export type SectionId =
 // 2026-05-24: howYoullPay removed from SECTION_ORDER and SECTION_KICKERS.
 // The edge function dropped this section from PREMIUM_SECTIONS on
 // 2026-05-20 (see brief-sections.ts:994-998) — /discover is the live
-// funding source of truth. Leaving it in SECTION_ORDER caused a
-// zombie "03 · How you'll pay" skeleton to spin forever during
-// streaming because the payload never arrived. Note the kicker
-// numbering for downstream sections still reads "04 / 05 / 06" —
-// that matches what the edge function emits in payload.kicker, so
-// keeping the skeleton kickers aligned avoids stream-flicker. The
-// "missing 03" is intentional, not a renderer bug.
+// funding source of truth. Initial removal left a visible "missing
+// 03" gap (kickers read 01 / 02 / 04 / 05 / 06). Renumbered to
+// sequential 01-05 on the same day — the edge function's kicker
+// strings in brief-sections.ts were updated in lockstep so skeleton
+// kickers and streamed payload kickers stay aligned (no flicker).
 export const SECTION_ORDER: SectionId[] = [
   "archetype",
   "whereYouStand",
@@ -43,9 +41,9 @@ export const SECTION_KICKERS: Record<SectionId, string> = {
   archetype: "00 · Your archetype",
   whereYouStand: "01 · Where you stand",
   whereYouCanLand: "02 · Where you can land",
-  whatToWrite: "04 · What to write",
-  whatsBlockingYou: "05 · What's blocking you",
-  whatToDoThisMonth: "06 · What to do this month",
+  whatToWrite: "03 · What to write",
+  whatsBlockingYou: "04 · What's blocking you",
+  whatToDoThisMonth: "05 · What to do this month",
 };
 
 interface SectionCommon {

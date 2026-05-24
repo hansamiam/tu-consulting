@@ -60,7 +60,7 @@
         ]
       },
       "whatToWrite": {
-        "kicker": "04 · The essay only you can write",
+        "kicker": "03 · The essay only you can write",
         "headline": "The essay you should write doesn't exist yet — but the seed for it does.",
         "lead": "One specific moment to find.",
         "essaySeed": {
@@ -70,7 +70,7 @@
         }
       },
       "whatsBlockingYou": {
-        "kicker": "05 · What's blocking you",
+        "kicker": "04 · What's blocking you",
         "headline": "You don't know what you want to study yet.",
         "lead": "And calling it 'Business' is how you've been avoiding the question.",
         "entries": [
@@ -84,7 +84,7 @@
         ]
       },
       "whatToDoThisMonth": {
-        "kicker": "06 · Your Monday Move",
+        "kicker": "05 · Your Monday Move",
         "headline": "Open a Google Doc titled 'why I want out' this week.",
         "lead": "Three sentences, then stop.",
         "mondayMove": {

@@ -1,5 +1,5 @@
 /**
- * 04 · What to Write — 3 essay angles.
+ * 03 · What to Write — 3 essay angles.
  *
  * Each angle: oversized numbered display label (01/02/03 serif), title,
  * then 3 labeled paragraphs — Why it works, Anchor with, Plays best to.

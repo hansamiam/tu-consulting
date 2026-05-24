@@ -217,7 +217,7 @@ export const EssaySeedShareCard: React.FC<SectionShareProps & { seed: EssaySeed 
 );
 
 export const MondayMoveShareCard: React.FC<SectionShareProps & { move: MondayMove }> = ({ color, move }) => (
-  <WrappedBoldFrame color={color} kicker="06 · Your Monday move">
+  <WrappedBoldFrame color={color} kicker="05 · Your Monday move">
     {move.headline && (
       <div style={{ fontSize: 56, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
         {move.headline}
