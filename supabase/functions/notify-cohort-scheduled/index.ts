@@ -126,6 +126,12 @@ Deno.serve(async (req) => {
       page: 1,
       perPage: USER_FETCH_CAP,
     });
+    if (usersPage?.users?.length === USER_FETCH_CAP) {
+      console.error(
+        "[notify-cohort-scheduled] user fetch hit cap — possible truncation",
+        { cap: USER_FETCH_CAP },
+      );
+    }
     const userIndex = new Map<string, MemberRow>();
     for (const u of usersPage?.users ?? []) {
       if (!u.email) continue;
@@ -151,7 +157,14 @@ Deno.serve(async (req) => {
     const seenEmails = new Set<string>();
 
     for (const sub of (subs ?? []) as Pick<MemberRow, "user_id" | "email">[]) {
-      const member = userIndex.get(sub.user_id) ?? {
+      const authUser = userIndex.get(sub.user_id);
+      if (!authUser) {
+        console.warn(
+          "[notify-cohort-scheduled] subscription without matching auth user",
+          { user_id: sub.user_id },
+        );
+      }
+      const member = authUser ?? {
         user_id: sub.user_id,
         email: sub.email,
         display_name: null,
