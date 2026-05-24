@@ -239,9 +239,20 @@ export function scanBannedVocab(
 }
 
 /**
- * Map an ISO-2 country code (or nationality string) to a cultural-
- * context bucket the brief-generator branches on. Currently only
- * resolves "central_asia" — others fall back to "default".
+ * Map a nationality string to a cultural-context bucket the
+ * brief-generator branches on. Currently only resolves
+ * "central_asia" — others fall back to "default".
+ *
+ * Intake stores FULL country names ("Kazakhstan", "Kyrgyzstan"),
+ * not ISO-2 codes. The previous implementation also did a
+ * `nationality.slice(0, 2)` ISO-2 path which was never reachable
+ * with real intake data — "Ka" never matches any ISO-2 in the
+ * codes set — and worked today only by accident via the cisNames
+ * substring fallback. That dead path was a latent footgun: if
+ * someone added a new country to cisCodes (ISO-2) without
+ * mirroring it in cisNames, CIS students from that country would
+ * silently get a US-flavored brief. The ISO-2 path is now removed;
+ * only the cisNames substring check remains.
  *
  * Extend cautiously: each new bucket adds branching to every brief
  * surface, so add only when the audience's needs genuinely differ
@@ -249,13 +260,6 @@ export function scanBannedVocab(
  */
 export function resolveCulturalContext(nationality?: string | null): string {
   if (!nationality) return "default";
-  const code = nationality.trim().toUpperCase().slice(0, 2);
-  const cisCodes = new Set([
-    "KZ", "KG", "UZ", "TJ", "TM", "RU", "BY", "UA", "AM", "AZ", "GE",
-    // also handle full names that intake might pass
-  ]);
-  if (cisCodes.has(code)) return "central_asia";
-  // Country-name fallbacks for free-text intake values
   const lower = nationality.trim().toLowerCase();
   const cisNames = [
     "kazakhstan", "kyrgyzstan", "uzbekistan", "tajikistan", "turkmenistan",

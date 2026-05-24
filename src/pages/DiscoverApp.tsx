@@ -256,6 +256,15 @@ const DiscoverApp = ({ language = "en" }: Props) => {
         // them from this surface).
         .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
         .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null")
+        // Bug J fix (2026-05-24): pin Discover to publish-gate output.
+        // Without this clause, the .or() trust filter above leaks 140+
+        // rows that failed G3b (aggregator URL), G8a (no deadline), or
+        // G8b (expired) — bypassing the canonical-extract/publish-gate
+        // pipeline. is_published is the only column that reflects the
+        // full gate. Anonymous + authed users hit the same query (RLS
+        // already allows public SELECT on scholarships); this is a
+        // pure server-side narrowing, not an auth condition.
+        .eq("is_published", true)
         .order("estimated_total_value_usd", { ascending: false });
       if (data) setRows(data as unknown as Scholarship[]);
       setLoading(false);
@@ -280,14 +289,18 @@ const DiscoverApp = ({ language = "en" }: Props) => {
     return <Navigate to={isRu ? "/discover/ru" : "/discover"} replace />;
   }
 
-  // Stage-2 spec (2026-05-23): Discover database stays free for all
-  // users — the 3-gate Membership unlocks Discover SAVES, not visibility.
-  // Previously this capped free users at 3 visible rows; removed to
-  // align /discover/app with the main /discover route. The "+N more
-  // scholarships" teaser block below renders only when locked > 0, so
-  // it becomes a no-op without needing to delete the JSX.
+  // Bug J fix (2026-05-24): restore tiered visibility. Free users see
+  // every row in the catalog (top-of-funnel — name/country/amount/
+  // deadline) so the size of the offer is honest, but rows past the
+  // first FREE_PREVIEW_COUNT have the strategy panel hidden and the
+  // dialog CTA replaced with a Pro lock. Pro users see everything.
+  //
+  // `isPro` is derived in AuthContext from `subscription.tier`, which
+  // defaults to FREE_DEFAULT ("free") for anonymous users — so logged-
+  // out visitors land in the free branch without a crash.
+  const FREE_PREVIEW_COUNT = 5;
   const visible = ranked;
-  const locked = 0;
+  const locked = isPro ? 0 : Math.max(0, ranked.length - FREE_PREVIEW_COUNT);
 
   const handleResetProfile = () => {
     localStorage.removeItem("topuni_discover_profile");
@@ -478,17 +491,22 @@ const DiscoverApp = ({ language = "en" }: Props) => {
                   </div>
                   {!isPro && (
                     <Badge variant="outline" className="border-gold/40 text-gold-dark bg-gold/5 self-start">
-                      <Lock className="h-3 w-3 mr-1" />{isRu ? "Превью: топ 3" : "Preview · top 3"}
+                      <Lock className="h-3 w-3 mr-1" />{isRu ? `Превью: топ ${FREE_PREVIEW_COUNT}` : `Preview · top ${FREE_PREVIEW_COUNT}`}
                     </Badge>
                   )}
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-5">
-                  {visible.map(s => {
+                  {visible.map((s, idx) => {
                     const PStyle = PRIORITY_STYLE[s.priority];
                     const Elig = ELIG_STYLE[s.eligibility];
                     const ElIcon = Elig.icon;
                     const days = s.application_deadline ? Math.ceil((new Date(s.application_deadline).getTime() - Date.now()) / 86400000) : null;
+                    // Free preview ends at FREE_PREVIEW_COUNT; rows past
+                    // that show only top-of-funnel (name/country/amount/
+                    // deadline) and lock the Application-notes dialog
+                    // behind a Pro CTA. Pro users always see everything.
+                    const rowLocked = !isPro && idx >= FREE_PREVIEW_COUNT;
                     return (
                       <motion.div key={s.scholarship_id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                         <Card className="h-full hover:border-accent/40 hover:shadow-md transition-all flex flex-col rounded-2xl border-border bg-card">
@@ -505,8 +523,16 @@ const DiscoverApp = ({ language = "en" }: Props) => {
                                   the hood. */}
                             </div>
                             <div className="flex flex-wrap gap-1.5 mt-3">
-                              <Badge variant="outline" className={PStyle.cls}>{PStyle.label}</Badge>
-                              <Badge variant="outline" className={`gap-1 ${Elig.cls}`}><ElIcon className="h-3 w-3" />{Elig.label}</Badge>
+                              {rowLocked ? (
+                                <Badge variant="outline" className="border-gold/40 text-gold-dark bg-gold/5 gap-1">
+                                  <Lock className="h-3 w-3" />Pro
+                                </Badge>
+                              ) : (
+                                <>
+                                  <Badge variant="outline" className={PStyle.cls}>{PStyle.label}</Badge>
+                                  <Badge variant="outline" className={`gap-1 ${Elig.cls}`}><ElIcon className="h-3 w-3" />{Elig.label}</Badge>
+                                </>
+                              )}
                               {s.coverage_type === "full_ride" && <Badge className="bg-gold/15 text-gold-dark border-gold/30 border" variant="outline"><Award className="h-3 w-3 mr-1" />Full ride</Badge>}
                               {days !== null && days > 0 && days < 60 && (
                                 <Badge variant="outline" className="border-destructive/30 text-destructive"><Clock className="h-3 w-3 mr-1" />{days}d left</Badge>
@@ -521,22 +547,32 @@ const DiscoverApp = ({ language = "en" }: Props) => {
                               )}
                             </div>
 
-                            {s.why_this_fits && (
+                            {!rowLocked && s.why_this_fits && (
                               <div className="bg-accent/5 border border-accent/20 rounded-xl p-3">
                                 <p className="label-mono text-accent mb-1 flex items-center gap-1"><Lightbulb className="h-3 w-3" />{isRu ? "Почему подходит" : "Why this fits"}</p>
                                 <p className="text-xs text-foreground/85 leading-relaxed">{s.why_this_fits}</p>
                               </div>
                             )}
 
-                            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                              <span className="inline-flex items-center gap-1"><TrendingUp className="h-3 w-3" />Reward: <strong className="text-foreground">{s.reward}</strong></span>
-                              <span className="inline-flex items-center gap-1">Effort: <strong className="text-foreground">{s.effort}</strong></span>
-                            </div>
+                            {!rowLocked && (
+                              <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                                <span className="inline-flex items-center gap-1"><TrendingUp className="h-3 w-3" />Reward: <strong className="text-foreground">{s.reward}</strong></span>
+                                <span className="inline-flex items-center gap-1">Effort: <strong className="text-foreground">{s.effort}</strong></span>
+                              </div>
+                            )}
 
                             <div className="mt-auto flex gap-2 pt-2">
-                              <Button size="sm" variant="outline" className="flex-1 rounded-full" onClick={() => setOpenDetail(s)}>
-                                {isRu ? "Стратегия" : "Application notes"} <ArrowRight className="h-3 w-3 ml-1" />
-                              </Button>
+                              {rowLocked ? (
+                                <Button size="sm" variant="outline" asChild className="flex-1 rounded-full border-gold/40 text-gold-dark hover:bg-gold/5">
+                                  <Link to="/pricing">
+                                    <Lock className="h-3 w-3 mr-1" />{isRu ? "Открыть с Pro" : "Unlock with Pro"}
+                                  </Link>
+                                </Button>
+                              ) : (
+                                <Button size="sm" variant="outline" className="flex-1 rounded-full" onClick={() => setOpenDetail(s)}>
+                                  {isRu ? "Стратегия" : "Application notes"} <ArrowRight className="h-3 w-3 ml-1" />
+                                </Button>
+                              )}
                               {s.official_url && (
                                 <Button size="sm" asChild className="rounded-full bg-foreground text-background hover:bg-foreground/90">
                                   <a href={s.official_url} target="_blank" rel="noopener noreferrer">

@@ -2805,6 +2805,19 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
     const magazineAcc: BriefSections = {};
     const startedAtMs = Date.now();
 
+    // Client-side timeout — the Supabase edge function has a 60s hard
+    // wall; if it dies mid-stream the SSE just stops and the progress
+    // bar freezes at 95% forever with no retry. 75s gives some headroom
+    // past the edge-function wall; on fire we abort the fetch (streamSSE
+    // treats AbortError as silent unmount), then check the `timedOut`
+    // flag below to surface a retry card. Cleared in onDone + onError.
+    let timedOut = false;
+    let completed = false;
+    const timeoutId = window.setTimeout(() => {
+      timedOut = true;
+      briefController.abort();
+    }, 75_000);
+
     void track("brief_generation_started", { tier: reportGrade, has_pro_depth: hasProDepth });
 
     // Merge the wizard profile with any Pro depth fields the user has
@@ -2832,6 +2845,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       },
       (chunk) => { soFar += chunk; setPathwayContent(soFar); },
       () => {
+        completed = true;
+        window.clearTimeout(timeoutId);
         const now = Date.now();
         setPathwayLoading(false);
         // 2026-05-10: short-content guard. v6 magazine path emits no
@@ -3029,6 +3044,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
       // text. Toast still fires so the error is visible even if the
       // user has scrolled past the report block.
       (status, message) => {
+        completed = true;
+        window.clearTimeout(timeoutId);
         setPathwayLoading(false);
         // Restore prior content on regen failure so the user keeps
         // their working brief. Only surface the empty-state error
@@ -3061,6 +3078,26 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         setMagazineSections({ ...magazineAcc });
       },
     );
+
+    // Timeout fallback — streamSSE swallows AbortError silently (treats
+    // it as unmount cleanup), so neither onDone nor onError fires when
+    // our 75s timer trips. Surface a retry card here so the user isn't
+    // staring at a frozen 95% progress bar with no escape hatch.
+    window.clearTimeout(timeoutId);
+    if (timedOut && !completed) {
+      setPathwayLoading(false);
+      if (priorContent) {
+        setPathwayContent(priorContent);
+      } else {
+        setPathwayContent("");
+      }
+      const userMessage = language === "ru"
+        ? "Генерация брифинга заняла слишком долго. Попробуйте ещё раз — мы продолжим с того места, где остановились."
+        : "Brief generation timed out. Try again — we'll resume from where we left off.";
+      if (!priorContent) setPathwayError(userMessage);
+      toast.error(userMessage);
+      void track("brief_generation_failed", { status: 0, tier: reportGrade, reason: "client_timeout" });
+    }
   };
 
   /* Counselor free-message limit: non-Pro users get 5 user-side messages
