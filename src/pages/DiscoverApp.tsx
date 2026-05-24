@@ -333,7 +333,7 @@ const DiscoverApp = ({ language = "en" }: Props) => {
                 {(stored.fullName || "?").trim().charAt(0).toUpperCase()}
               </div>
               <div className="text-xs leading-tight">
-                <div className="font-medium text-foreground truncate max-w-[120px]">{stored.fullName}</div>
+                <div className="font-medium text-foreground truncate max-w-[120px]" title={stored.fullName}>{stored.fullName}</div>
                 <div className="text-muted-foreground">{stored.nationality}</div>
               </div>
               <button
