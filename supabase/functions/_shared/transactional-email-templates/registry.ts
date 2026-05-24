@@ -30,6 +30,7 @@ import { template as academyWaitlistConfirmation } from './academy-waitlist-conf
 import { template as briefLeadNudge } from './brief-lead-nudge.tsx'
 import { template as cohortWelcome } from './cohort-welcome.tsx'
 import { template as cohortEventReminder } from './cohort-event-reminder.tsx'
+import { template as renewalReceipt } from './renewal-receipt.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'booking-confirmation': bookingConfirmation,
@@ -53,4 +54,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'brief-lead-nudge': briefLeadNudge,
   'cohort-welcome': cohortWelcome,
   'cohort-event-reminder': cohortEventReminder,
+  'renewal-receipt': renewalReceipt,
 }

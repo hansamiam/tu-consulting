@@ -247,6 +247,82 @@ async function queueCancellationEmail(
   }
 }
 
+// Renewal receipt — fires on invoice.payment_succeeded with
+// billing_reason === 'subscription_cycle' (i.e. true monthly/yearly
+// renewal, not the first charge of a new sub which is already covered
+// by membership-welcome). Body: amount, period, billing portal link.
+//
+// Idempotency keyed by invoice.id so webhook retries don't double-send.
+// Same billing-portal try/catch fallback as queuePaymentFailedEmail.
+async function queueRenewalReceiptEmail(
+  admin: ReturnType<typeof createServiceClient>,
+  stripe: Stripe,
+  email: string,
+  invoice: Stripe.Invoice,
+  customerId: string | null,
+  tier: "pro" | "founding",
+) {
+  let billingPortalUrl = `${SITE}/account`;
+  if (customerId) {
+    try {
+      const portal = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: `${SITE}/account`,
+      });
+      if (portal.url) billingPortalUrl = portal.url;
+    } catch (e) {
+      console.warn("[stripe-webhook] billingPortal.create failed (renewal), falling back to /account", (e as Error).message);
+    }
+  }
+
+  // Invoice fields land at the top level for one-time invoices but on
+  // the first line item for subscription invoices. Pull the period from
+  // the line item when present so the email shows the actual billed
+  // window (Stripe rolls the period off the price). Fall back to invoice-
+  // level fields if line items aren't expanded.
+  const line = invoice.lines?.data?.[0] as
+    | { period?: { start?: number; end?: number } }
+    | undefined;
+  const startUnix = line?.period?.start
+    ?? (invoice as unknown as { period_start?: number }).period_start
+    ?? null;
+  const endUnix = line?.period?.end
+    ?? (invoice as unknown as { period_end?: number }).period_end
+    ?? null;
+  const periodStart = startUnix
+    ? new Date(startUnix * 1000).toISOString()
+    : new Date().toISOString();
+  const periodEnd = endUnix
+    ? new Date(endUnix * 1000).toISOString()
+    : new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
+
+  // amount_paid is in minor units (cents). Currency is already an ISO 4217
+  // string from Stripe.
+  const amount = (invoice.amount_paid ?? 0) / 100;
+  const currency = invoice.currency ?? "usd";
+
+  try {
+    await admin.functions.invoke("send-transactional-email", {
+      body: {
+        recipientEmail: email,
+        templateName: "renewal-receipt",
+        idempotencyKey: `renewal-receipt-${invoice.id}`,
+        templateData: {
+          amount,
+          currency,
+          periodStart,
+          periodEnd,
+          billingPortalUrl,
+          tier,
+          language: "en",
+        },
+      },
+    });
+  } catch (e) {
+    console.warn("[stripe-webhook] renewal-receipt enqueue failed", e);
+  }
+}
+
 async function queuePaymentFailedEmail(
   admin: ReturnType<typeof createServiceClient>,
   stripe: Stripe,
@@ -410,7 +486,30 @@ Deno.serve(async (req) => {
           const sub = typeof subId === "string"
             ? await stripe.subscriptions.retrieve(subId)
             : subId;
-          await syncSubscription(stripe, admin, sub);
+          const { userEmail } = await syncSubscription(stripe, admin, sub);
+
+          // Receipt email — only on true renewals. The first invoice of
+          // a new subscription has billing_reason === 'subscription_create'
+          // and is the same charge that fires customer.subscription.created
+          // (which already sends membership-welcome). Sending a receipt
+          // there would double up. Real renewals are 'subscription_cycle'.
+          // Other billing_reasons (subscription_update for proration,
+          // manual, etc.) are skipped here — they're rare enough that
+          // silence is fine until we explicitly want to handle them.
+          const billingReason = (invoice as unknown as { billing_reason?: string }).billing_reason;
+          if (
+            billingReason === "subscription_cycle"
+            && userEmail
+            && invoice.id
+          ) {
+            const item = sub.items.data[0];
+            const priceId = item?.price?.id;
+            const tier = (priceId && PRICE_MAP[priceId]?.tier) ?? "pro";
+            const customerId = typeof invoice.customer === "string"
+              ? invoice.customer
+              : invoice.customer?.id ?? null;
+            await queueRenewalReceiptEmail(admin, stripe, userEmail, invoice, customerId, tier);
+          }
         }
         break;
       }
