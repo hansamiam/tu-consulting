@@ -8,7 +8,7 @@
  * bullets) for readability inside the system prompt block. No JSX,
  * no formatting beyond what the LLM can absorb.
  */
-import type { BriefSections, SchoolEntry, ScholarshipEntry, EssayEntry, GapEntry, WeekBlock } from "./types";
+import type { BriefSections, SchoolEntry, EssayEntry, GapEntry, WeekBlock } from "./types";
 
 const headings = (s: { headline?: string; lead?: string }, fallback: string) => {
   const head = s.headline ?? fallback;
@@ -23,16 +23,6 @@ const formatSchool = (e: SchoolEntry): string => {
   if (e.whyItFits) parts.push(`  · Why it fits: ${e.whyItFits}`);
   if (e.threshold) parts.push(`  · Threshold: ${e.threshold}`);
   if (e.careerAnchor) parts.push(`  · Career: ${e.careerAnchor}`);
-  return parts.join("\n");
-};
-
-const formatScholarship = (e: ScholarshipEntry): string => {
-  const parts = [
-    `- ${e.name}${e.coverage ? ` — ${e.coverage}` : ""}${e.awardText ? ` (${e.awardText})` : ""}`,
-  ];
-  if (e.deadline) parts.push(`  · Deadline: ${e.deadline}`);
-  if (e.howProfileMaps) parts.push(`  · How profile maps: ${e.howProfileMaps}`);
-  if (e.firstTask) parts.push(`  · First task: ${e.firstTask}`);
   return parts.join("\n");
 };
 
@@ -85,13 +75,10 @@ export function serializeBriefForCounselor(sections: BriefSections): string {
     }
   }
 
-  if (sections.howYoullPay) {
-    out.push(headings(sections.howYoullPay, "How you'll pay"));
-    for (const e of sections.howYoullPay.entries ?? []) {
-      out.push(formatScholarship(e));
-    }
-    if (sections.howYoullPay.stackingNote) out.push(`> ${sections.howYoullPay.stackingNote}`);
-  }
+  // 2026-05-24: howYoullPay block removed — section dropped from the
+  // edge function's PREMIUM_SECTIONS on 2026-05-20 (see
+  // brief-sections.ts:994-998). /discover is the live funding source
+  // of truth; the counselor no longer needs a synthesized version.
 
   if (sections.whatToWrite) {
     out.push(headings(sections.whatToWrite, "What to write"));
