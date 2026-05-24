@@ -249,12 +249,33 @@ async function queueCancellationEmail(
 
 async function queuePaymentFailedEmail(
   admin: ReturnType<typeof createServiceClient>,
+  stripe: Stripe,
   email: string,
   invoiceId: string,
+  customerId: string | null,
 ) {
   // Idempotency keyed by invoice — Stripe will retry the same invoice
   // multiple times before giving up; we want one email per dunning
   // cycle, not one per retry.
+  //
+  // Generate a Stripe Billing Portal session so the recovery email's
+  // CTA drops the user straight into the payment-method edit screen
+  // instead of bouncing through /account. If the Stripe API call fails
+  // (network blip, deleted customer, missing portal config), fall back
+  // to the generic account URL so the email still sends.
+  let billingPortalUrl = `${SITE}/account`;
+  if (customerId) {
+    try {
+      const portal = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: `${SITE}/account`,
+      });
+      if (portal.url) billingPortalUrl = portal.url;
+    } catch (e) {
+      console.warn("[stripe-webhook] billingPortal.create failed, falling back to /account", (e as Error).message);
+    }
+  }
+
   try {
     await admin.functions.invoke("send-transactional-email", {
       body: {
@@ -262,7 +283,7 @@ async function queuePaymentFailedEmail(
         templateName: "payment-failed-recovery",
         idempotencyKey: `payment-failed-${invoiceId}`,
         templateData: {
-          billingPortalUrl: `${SITE}/account`,
+          billingPortalUrl,
           language: "en",
         },
       },
@@ -372,8 +393,11 @@ Deno.serve(async (req) => {
             : subId;
           const { userEmail } = await syncSubscription(stripe, admin, sub);
           const email = userEmail || invoice.customer_email;
+          const customerId = typeof invoice.customer === "string"
+            ? invoice.customer
+            : invoice.customer?.id ?? null;
           if (email && invoice.id) {
-            await queuePaymentFailedEmail(admin, email, invoice.id);
+            await queuePaymentFailedEmail(admin, stripe, email, invoice.id, customerId);
           }
         }
         break;

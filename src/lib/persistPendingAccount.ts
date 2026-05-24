@@ -20,6 +20,9 @@ const intNum = (v: unknown): number | null => {
 
 export async function persistPendingAccount(userId: string, p: PendingAccountPayload): Promise<void> {
   const profile = p.profile ?? {};
+  // Language comes from the brief that the wizard just generated (the
+  // toggle the user picked). Falls back to 'en' for older payloads.
+  const language: "en" | "ru" = p.pathway?.language === "ru" ? "ru" : "en";
 
   await supabase.from("student_profiles").upsert(
     {
@@ -44,6 +47,7 @@ export async function persistPendingAccount(userId: string, p: PendingAccountPay
       career_roi_weight: intNum(profile.careerRoi),
       visa_weight: intNum(profile.visaAccess),
       location_weight: intNum(profile.locationPref),
+      language,
     },
     { onConflict: "user_id" },
   );

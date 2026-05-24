@@ -62,6 +62,73 @@ async function queueBriefGeneratedEmail(
   }
 }
 
+/* Capture an anonymous wizard completion into brief_leads so the
+   lifecycle-emails-cron / brief-lead-nudge template has rows to iterate
+   over. Without this insert the table stays empty and every anon brief
+   is a lost top-of-funnel lead (the original behavior the migration
+   comment described but no caller ever wrote).
+
+   Only fires for anonymous callers (no Authorization bearer) — the
+   caller is responsible for that check before invoking. Upserts on the
+   normalized email so a retrying user doesn't create duplicates.
+   Wrapped to never throw — the brief delivery is more valuable than
+   the lead capture, and a failed insert here must not break the SSE
+   stream the user is reading. */
+async function captureAnonBriefLead(
+  admin: ReturnType<typeof createServiceClient>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  profile: any,
+  language: "en" | "ru",
+  req: Request,
+): Promise<void> {
+  try {
+    const email = (profile?.email ?? "").toString().trim();
+    if (!email || !email.includes("@")) return;
+    const lowerEmail = email.toLowerCase();
+    const targetCountries: string[] | null = Array.isArray(profile?.targetCountries)
+      ? profile.targetCountries.filter((c: unknown) => typeof c === "string")
+      : null;
+    const url = new URL(req.url);
+    const sourcePath = req.headers.get("referer") || url.pathname || null;
+    const userAgent = req.headers.get("user-agent") || null;
+
+    // Dedupe on lower(email) — multiple wizard runs from the same
+    // anon visitor should not produce multiple rows. Match the
+    // brief_leads_email_lower_idx index so this stays cheap.
+    const { data: existing } = await admin
+      .from("brief_leads")
+      .select("id, converted_at")
+      .ilike("email", lowerEmail)
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      // Already captured. Don't bump created_at — the nudge window
+      // is anchored to the original lead capture, and "they came
+      // back" data isn't useful enough to overwrite.
+      return;
+    }
+
+    const { error } = await admin.from("brief_leads").insert({
+      email,
+      full_name: profile?.fullName ?? null,
+      nationality: profile?.nationality ?? null,
+      grade_level: profile?.gradeLevel ?? null,
+      gpa: profile?.gpa != null ? String(profile.gpa) : null,
+      major: profile?.major ?? profile?.field ?? null,
+      target_countries: targetCountries,
+      language,
+      source_path: sourcePath,
+      user_agent: userAgent,
+    } as never);
+    if (error) {
+      console.warn("[brief_leads] insert failed", error.message);
+    }
+  } catch (e) {
+    console.warn("[brief_leads] capture threw", (e as Error).message);
+  }
+}
+
 /* ─── Profile → canonical query string ─────────────────────────────
    Used for embedding. Same shape as match-scholarships' profileToQuery
    so retrievals are stable across surfaces. */
@@ -1219,13 +1286,14 @@ ${EDITORIAL_RULES}`;
             } as never, { onConflict: "profile_hash,language,grade" });
 
             // Fire the brief-generated email to the authed user (if any).
-            // Anon users are handled by the brief_leads → lifecycle-emails-
-            // cron path. Resolved here (not at the top of the function)
-            // so cache-hit branches don't re-send.
+            // Anon users land in brief_leads via captureAnonBriefLead
+            // below — same closure so the capture only fires on
+            // successful brief persistence.
+            const auth = req.headers.get("Authorization");
+            const isAnon = !auth?.startsWith("Bearer ");
             try {
-              const auth = req.headers.get("Authorization");
-              if (auth?.startsWith("Bearer ")) {
-                const { data: { user } } = await createUserClient(auth).auth.getUser();
+              if (!isAnon) {
+                const { data: { user } } = await createUserClient(auth!).auth.getUser();
                 if (user?.id && user.email) {
                   const { data: prof } = await supabase
                     .from("student_profiles")
@@ -1241,6 +1309,9 @@ ${EDITORIAL_RULES}`;
               }
             } catch (e) {
               console.warn("[brief-generated] post-magazine notify failed", e);
+            }
+            if (isAnon) {
+              await captureAnonBriefLead(supabase, profile, cacheLang === "ru" ? "ru" : "en", req);
             }
           }
         } catch (e) {
@@ -1333,11 +1404,12 @@ ${grade === "premium" ? premiumSections : basicSections}`;
           }, { onConflict: "profile_hash,language,grade" });
 
           // Mirror of the magazine path — fire brief-generated to authed
-          // users only. Anon path covered by brief_leads → lifecycle.
+          // users only. Anon path covered by captureAnonBriefLead below.
+          const auth = req.headers.get("Authorization");
+          const isAnon = !auth?.startsWith("Bearer ");
           try {
-            const auth = req.headers.get("Authorization");
-            if (auth?.startsWith("Bearer ")) {
-              const { data: { user } } = await createUserClient(auth).auth.getUser();
+            if (!isAnon) {
+              const { data: { user } } = await createUserClient(auth!).auth.getUser();
               if (user?.id && user.email) {
                 const { data: prof } = await supabase
                   .from("student_profiles")
@@ -1353,6 +1425,9 @@ ${grade === "premium" ? premiumSections : basicSections}`;
             }
           } catch (e) {
             console.warn("[brief-generated] post-basic notify failed", e);
+          }
+          if (isAnon) {
+            await captureAnonBriefLead(supabase, profile, cacheLang === "ru" ? "ru" : "en", req);
           }
         }
       } catch (e) {
