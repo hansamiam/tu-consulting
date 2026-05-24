@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import samuelPhoto from "@/assets/samuel.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
 import AcademyResourceList from "@/components/academy/AcademyResourceList";
+import CurrentCohort from "@/components/academy/CurrentCohort";
 
 const FOUNDERS = [
   { name: "Samuel Han",          credential: "Yale",                  photo: samuelPhoto },
@@ -94,6 +95,12 @@ const Academy = ({ language = "en" }: AcademyProps) => {
       {/* /academy/live retired 2026-05-20 — was a fake video-chrome
           surface that didn't work without real Zoom/Meet embed. The
           member-access card here pointed at it; removed alongside. */}
+
+      {/* CURRENT COHORT — Phase B4 v2. Renders the active cohort cycle
+          (name, dates, next 3 events) for members; teaser CTA for
+          non-members. Self-hides during transition gaps between cycles
+          (no open/in_progress cohort in the next 60 days). */}
+      <CurrentCohort language={language} />
 
       {/* RESOURCES — members-only file/link library. The list renders
           even when empty so members know the system is live; the
