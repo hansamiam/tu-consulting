@@ -165,6 +165,13 @@ async function queueCohortWelcomeEmail(
   subId: string,
   firstName: string | null,
 ) {
+  // We keep this try/catch broad so the webhook stays 200-ack-able even
+  // if the cohorts table is unreachable — Stripe redelivery would not
+  // help recover a missed cohort-welcome (the subscription row is
+  // already synced, so retried events would no-op on the upsert and
+  // we'd lose this side-effect entirely). Instead: log loudly with
+  // enough context (subId, cohort_id when known) for a manual re-send.
+  let loadedCohortId: string | null = null;
   try {
     // Casts through any until gen:types catches up with the cohorts
     // schema (added in 20260524120000_cohorts_schema.sql, PR #63).
@@ -182,13 +189,18 @@ async function queueCohortWelcomeEmail(
       .limit(1)
       .maybeSingle();
     if (error) {
-      console.warn("[stripe-webhook] cohort lookup failed (non-fatal)", error.message);
+      console.error("[stripe-webhook] cohort lookup failed — cohort-welcome SKIPPED, manual re-send needed", {
+        sub_id: subId,
+        email,
+        error: error.message,
+      });
       return;
     }
     if (!cohort) {
       // No current/upcoming cohort — fine, skip the welcome.
       return;
     }
+    loadedCohortId = cohort.cohort_id;
     await admin.functions.invoke("send-transactional-email", {
       body: {
         recipientEmail: email,
@@ -208,7 +220,12 @@ async function queueCohortWelcomeEmail(
       },
     });
   } catch (e) {
-    console.warn("[stripe-webhook] cohort-welcome enqueue failed (non-fatal)", e);
+    console.error("[stripe-webhook] cohort-welcome enqueue failed — manual re-send needed", {
+      sub_id: subId,
+      email,
+      cohort_id: loadedCohortId,
+      error: (e as Error).message,
+    });
   }
 }
 
@@ -474,6 +491,13 @@ Deno.serve(async (req) => {
             : invoice.customer?.id ?? null;
           if (email && invoice.id) {
             await queuePaymentFailedEmail(admin, stripe, email, invoice.id, customerId);
+          } else {
+            console.error("[stripe-webhook] payment_failed but no email resolvable — dunning email skipped", {
+              invoice_id: invoice.id,
+              customer_id: customerId,
+              userEmail_present: !!userEmail,
+              customer_email_present: !!invoice.customer_email,
+            });
           }
         }
         break;
@@ -509,6 +533,16 @@ Deno.serve(async (req) => {
               ? invoice.customer
               : invoice.customer?.id ?? null;
             await queueRenewalReceiptEmail(admin, stripe, userEmail, invoice, customerId, tier);
+          } else if (billingReason === "subscription_cycle" && (!userEmail || !invoice.id)) {
+            const customerId = typeof invoice.customer === "string"
+              ? invoice.customer
+              : invoice.customer?.id ?? null;
+            console.error("[stripe-webhook] payment_succeeded (subscription_cycle) but no email resolvable — renewal receipt skipped", {
+              invoice_id: invoice.id,
+              customer_id: customerId,
+              userEmail_present: !!userEmail,
+              customer_email_present: !!invoice.customer_email,
+            });
           }
         }
         break;

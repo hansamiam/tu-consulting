@@ -44,14 +44,17 @@ const json = (status: number, body: unknown) =>
 // run as "failed" upstream. New ceiling: 12 × ~10s = ~120s with the
 // wall-clock budget as a backstop.
 //
-// 2026-05-24: bumped 12 → 75 to drain a 1,879-row pending backlog faster
-// (12/day → ~150 days; 75/day → ~25 days). The wall-clock check inside
-// the loop (WALL_CLOCK_BUDGET_MS) keeps us safe: if a run hits ~130s
-// before getting through all 75, it breaks out and reports timedOutEarly.
-// Real-world rows complete in ~2-3s each in practice, so 75 × ~2.5s =
-// ~190s worst-case, comfortably caught by the wall-clock backstop. Worst
-// case the cron processes ~50 before breaking — still 4× the old throughput.
-const MAX_PER_RUN = 75;
+// 2026-05-24: bumped 12 → 75 to drain a 1,879-row pending backlog faster.
+// 2026-05-24 (round 3 silent-failure fix): dropped 75 → 30. The wall-clock
+// check at the top of each iteration fires BEFORE the next verify call —
+// but if we're already inside verify-scholarship's await when the budget
+// blows, the function hard-dies at the Supabase edge worker's ~150s cap
+// mid-await. With realistic per-row cost of ~2.5s call + 0.8s throttle =
+// 3.3s, 75 rows × 3.3s = 247s — well past 150s. 30 × 3.3s = 99s, safely
+// under the cap with the wall-clock check as backstop. Less throughput
+// (30/run × 24 runs/day = 720/day) but it actually completes; better than
+// 75/run that crash-exits mid-row after ~45 entries.
+const MAX_PER_RUN = 30;
 const THROTTLE_MS = 800;
 const WALL_CLOCK_BUDGET_MS = 130_000;
 

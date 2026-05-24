@@ -36,6 +36,13 @@ const WINDOW_1H_MS = 60 * 60 * 1000;
 // exact target time (e.g. tick at T+24h05m still catches an event at T+24h).
 const TICK_SLACK_MS = 10 * 60 * 1000;
 
+// Auth-user fetch cap — single page only (see fanOutReminder). If
+// membership grows past this, paginate; until then a single page keeps
+// the function fast. We log loudly when we hit the cap so silent
+// truncation surfaces in logs instead of silently swapping in English
+// fallbacks for members past the cap.
+const USER_FETCH_CAP = 500;
+
 interface EventRow {
   event_id: string;
   cohort_id: string;
@@ -112,18 +119,26 @@ Deno.serve(async (req) => {
       const sent = await fanOutReminder(db, ev, "24h");
       result.sent += sent.sent;
       result.failed += sent.failed;
-      // Mark the event reminded regardless of per-member success — failed
-      // sends are logged but don't block the row from advancing. If we
-      // re-tried, an event-wide retry would re-send to people who DID get
-      // it the first time.
-      const { error: markErr } = await db
-        .from("cohort_events")
-        .update({ reminder_24h_sent_at: new Date().toISOString() })
-        .eq("event_id", ev.event_id);
-      if (markErr) {
-        console.error("[cohort-reminder-cron] 24h mark failed", ev.event_id, markErr);
+      // Only stamp the row reminded when we actually fanned out to at
+      // least one member OR there were zero failures. If sent === 0 and
+      // failed > 0, the subscriptions/users query failed transiently and
+      // marking sent would silently lose the reminder forever. Leave the
+      // flag null so next tick retries.
+      if (sent.sent > 0 || sent.failed === 0) {
+        const { error: markErr } = await db
+          .from("cohort_events")
+          .update({ reminder_24h_sent_at: new Date().toISOString() })
+          .eq("event_id", ev.event_id);
+        if (markErr) {
+          console.error("[cohort-reminder-cron] 24h mark failed", ev.event_id, markErr);
+        } else {
+          result.events_24h += 1;
+        }
       } else {
-        result.events_24h += 1;
+        console.warn(
+          "[cohort-reminder-cron] 24h stamp SKIPPED — fan-out fully failed, will retry next tick",
+          { event_id: ev.event_id, sent: sent.sent, failed: sent.failed },
+        );
       }
     }
 
@@ -144,14 +159,22 @@ Deno.serve(async (req) => {
       const sent = await fanOutReminder(db, ev, "1h");
       result.sent += sent.sent;
       result.failed += sent.failed;
-      const { error: markErr } = await db
-        .from("cohort_events")
-        .update({ reminder_1h_sent_at: new Date().toISOString() })
-        .eq("event_id", ev.event_id);
-      if (markErr) {
-        console.error("[cohort-reminder-cron] 1h mark failed", ev.event_id, markErr);
+      // Same gate as the 24h pass — see comment above.
+      if (sent.sent > 0 || sent.failed === 0) {
+        const { error: markErr } = await db
+          .from("cohort_events")
+          .update({ reminder_1h_sent_at: new Date().toISOString() })
+          .eq("event_id", ev.event_id);
+        if (markErr) {
+          console.error("[cohort-reminder-cron] 1h mark failed", ev.event_id, markErr);
+        } else {
+          result.events_1h += 1;
+        }
       } else {
-        result.events_1h += 1;
+        console.warn(
+          "[cohort-reminder-cron] 1h stamp SKIPPED — fan-out fully failed, will retry next tick",
+          { event_id: ev.event_id, sent: sent.sent, failed: sent.failed },
+        );
       }
     }
 
@@ -193,7 +216,13 @@ async function fanOutReminder(
 
   // Resolve display_name from auth.users by listing the first page and
   // matching on user_id. Same approach as stripe-webhook's syncSubscription.
-  const { data: usersPage } = await db.auth.admin.listUsers({ page: 1, perPage: 500 });
+  const { data: usersPage } = await db.auth.admin.listUsers({ page: 1, perPage: USER_FETCH_CAP });
+  if (usersPage?.users?.length === USER_FETCH_CAP) {
+    console.error(
+      "[cohort-reminder-cron] user fetch hit cap — possible truncation, members past cap will language-fallback",
+      { cap: USER_FETCH_CAP },
+    );
+  }
   const userIndex = new Map<string, MemberRow>();
   for (const u of usersPage?.users ?? []) {
     if (!u.email) continue;
@@ -208,7 +237,14 @@ async function fanOutReminder(
   let sent = 0;
   let failed = 0;
   for (const sub of (subs ?? []) as Pick<MemberRow, "user_id" | "email">[]) {
-    const member = userIndex.get(sub.user_id) ?? {
+    const authUser = userIndex.get(sub.user_id);
+    if (!authUser) {
+      console.warn(
+        "[cohort-reminder-cron] subscription without matching auth user",
+        { user_id: sub.user_id, event_id: ev.event_id },
+      );
+    }
+    const member = authUser ?? {
       user_id: sub.user_id,
       email: sub.email,
       display_name: null,

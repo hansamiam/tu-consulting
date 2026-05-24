@@ -83,8 +83,16 @@ async function captureAnonBriefLead(
 ): Promise<void> {
   try {
     const email = (profile?.email ?? "").toString().trim();
-    if (!email || !email.includes("@")) return;
+    if (!email || !email.includes("@")) {
+      // Loud-skip: anon completion without an email is a lost lead.
+      // Tag with reason so a single log filter rebuilds the funnel.
+      console.log("[brief-lead] skip", { reason: "no_email" });
+      return;
+    }
     const lowerEmail = email.toLowerCase();
+    // Non-reversible hash signal — domain + length is enough to spot a
+    // bot pattern or repeat conversion without putting raw email in logs.
+    const emailHash = `${lowerEmail.split("@")[1] ?? "?"}/${lowerEmail.length}`;
     const targetCountries: string[] | null = Array.isArray(profile?.targetCountries)
       ? profile.targetCountries.filter((c: unknown) => typeof c === "string")
       : null;
@@ -106,6 +114,7 @@ async function captureAnonBriefLead(
       // Already captured. Don't bump created_at — the nudge window
       // is anchored to the original lead capture, and "they came
       // back" data isn't useful enough to overwrite.
+      console.log("[brief-lead] skip", { reason: "duplicate", email_hash: emailHash });
       return;
     }
 
@@ -122,10 +131,12 @@ async function captureAnonBriefLead(
       user_agent: userAgent,
     } as never);
     if (error) {
-      console.warn("[brief_leads] insert failed", error.message);
+      console.error("[brief-lead] insert failed", { reason: "insert_failed", email_hash: emailHash, error: error.message });
+      return;
     }
+    console.log("[brief-lead] captured", { email_hash: emailHash });
   } catch (e) {
-    console.warn("[brief_leads] capture threw", (e as Error).message);
+    console.error("[brief-lead] capture threw", { reason: "exception", error: (e as Error).message });
   }
 }
 
