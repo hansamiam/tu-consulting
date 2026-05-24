@@ -61,7 +61,7 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
 import { track } from "@/lib/analytics";
-import { CuratedCollections } from "@/components/discover/CuratedCollections";
+import { HeroCard } from "@/components/discover/HeroCard";
 import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
 import { ExpandedScholarshipDialog } from "@/components/discover/ExpandedScholarshipDialog";
 // MatchScoreBreakdown import retired round 33 — the per-row hover
@@ -4050,22 +4050,59 @@ const Discover = ({ language = "en" }: Props) => {
                 );
               })()}
 
-              {/* Curated collections — preset filter combos for natural
-                  search intents, rendered as compact text-pills below the
-                  profile strip and above the sticky toolbar. Earlier
-                  iteration used a large tile grid + a separate
-                  OpportunityMap stat strip, which pushed actual results
-                  past the fold and competed with the toolbar count. The
-                  pill rail keeps the same intents but stays visually
-                  light — text + count, no gradients, no heavy borders. */}
-              {!loading && ranked.length > 0 && (
-                <CuratedCollections
-                  rows={ranked}
-                  filters={filters as unknown as Record<string, unknown>}
-                  onApply={(patch) => setFilters(f => ({ ...f, ...patch as Partial<FilterState> }))}
-                  lang={language}
-                />
-              )}
+              {/* HeroCard — Discover v1 F4 "mechta mode" featured slot.
+                  Replaces CuratedCollections (2026-05-24): the pill rail
+                  was a horizontal filter shortcut; the hero is a single
+                  magazine-style featured scholarship that gives Discover
+                  an emotional anchor / "this is the dream" entrypoint.
+                  For Phase 1 wiring we pass the top-ranked scholarship
+                  (works as both the personalized top-match and a sensible
+                  editorial fallback for sparse profiles). heroReason is
+                  null until match-scholarships?mode=hero is integrated —
+                  HeroCard renders the magazine shell without the
+                  paragraph in that case. featured_rotations is empty in
+                  DB on first deploy; we degrade gracefully because we
+                  derive the hero from `ranked` instead of querying that
+                  table. */}
+              {!loading && ranked.length > 0 && (() => {
+                const heroScholarship = ranked[0];
+                // Profile-quality classifier — mirrors the spec F4 buckets.
+                // rich = country + degrees + (field OR targetCountries OR demographics)
+                // partial = country + degrees only (or 2-of-3 of the above)
+                // sparse = exactly one signal
+                // empty = nothing
+                const signals = [
+                  !!profile.country,
+                  (profile.degrees?.length ?? 0) > 0,
+                  !!profile.field,
+                  (profile.targetCountries?.length ?? 0) > 0,
+                  (profile.demographics?.length ?? 0) > 0,
+                ].filter(Boolean).length;
+                const profileQuality: "rich" | "partial" | "sparse" | "empty" =
+                  signals >= 4 ? "rich" :
+                  signals >= 2 ? "partial" :
+                  signals >= 1 ? "sparse" : "empty";
+                return (
+                  <HeroCard
+                    scholarship={{
+                      scholarship_id: heroScholarship.scholarship_id,
+                      scholarship_name: heroScholarship.scholarship_name,
+                      provider_name: heroScholarship.provider_name,
+                      host_country: heroScholarship.host_country,
+                      coverage_type: heroScholarship.coverage_type,
+                      award_amount_text: heroScholarship.award_amount_text,
+                      application_deadline: heroScholarship.application_deadline,
+                      cover_image_url: heroScholarship.cover_image_url,
+                      official_url: heroScholarship.official_url,
+                    }}
+                    heroReason={null}
+                    profileQuality={profileQuality}
+                    onExpand={() => openDetailRoute(heroScholarship)}
+                    onSharpenProfile={() => navigate(language === "ru" ? "/topuni-ai/ru" : "/topuni-ai")}
+                    lang={language}
+                  />
+                );
+              })()}
 
               {/* Sticky toolbar — search · filters · sort · view-mode · hidden · compare.
                   Sticks below the global Nav (h-16 = 64px) so the filter row is always

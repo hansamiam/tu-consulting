@@ -43,7 +43,15 @@ const json = (status: number, body: unknown) =>
 // run, draining maybe 12-15 rows before crash-exit while reporting the
 // run as "failed" upstream. New ceiling: 12 × ~10s = ~120s with the
 // wall-clock budget as a backstop.
-const MAX_PER_RUN = 12;
+//
+// 2026-05-24: bumped 12 → 75 to drain a 1,879-row pending backlog faster
+// (12/day → ~150 days; 75/day → ~25 days). The wall-clock check inside
+// the loop (WALL_CLOCK_BUDGET_MS) keeps us safe: if a run hits ~130s
+// before getting through all 75, it breaks out and reports timedOutEarly.
+// Real-world rows complete in ~2-3s each in practice, so 75 × ~2.5s =
+// ~190s worst-case, comfortably caught by the wall-clock backstop. Worst
+// case the cron processes ~50 before breaking — still 4× the old throughput.
+const MAX_PER_RUN = 75;
 const THROTTLE_MS = 800;
 const WALL_CLOCK_BUDGET_MS = 130_000;
 
