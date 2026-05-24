@@ -26,6 +26,8 @@ import { template as inactiveWinback } from './inactive-winback.tsx'
 import { template as paymentFailedRecovery } from './payment-failed-recovery.tsx'
 import { template as cancellationRecovery } from './cancellation-recovery.tsx'
 import { template as membershipWelcome } from './membership-welcome.tsx'
+import { template as academyWaitlistConfirmation } from './academy-waitlist-confirmation.tsx'
+import { template as briefLeadNudge } from './brief-lead-nudge.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'booking-confirmation': bookingConfirmation,
@@ -45,4 +47,6 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'payment-failed-recovery': paymentFailedRecovery,
   'cancellation-recovery': cancellationRecovery,
   'membership-welcome': membershipWelcome,
+  'academy-waitlist-confirmation': academyWaitlistConfirmation,
+  'brief-lead-nudge': briefLeadNudge,
 }
