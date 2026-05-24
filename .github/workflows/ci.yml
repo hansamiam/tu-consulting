@@ -47,6 +47,9 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_Woa7nW8-UJAYjNBXfgFX1A_qR6nonzb
         run: npm run build
 
+      - name: Test (Vitest — renderer snapshots)
+        run: npm run test
+
   # Brief verification — locks the v7 brief generator behavior across
   # three archetype fixtures + the banned-vocab scan. Runs against the
   # static editorial-rules.ts + archetype-library.ts + brief-sections.ts
@@ -83,3 +86,41 @@ jobs:
 
       - name: Verify brief — US first-abroad ("first-gen college" framing)
         run: deno run --allow-read scripts/verify-brief.ts scripts/sample-brief-us-first-abroad.test.json
+
+  # Live edge-function smoke test — POSTs a known-good profile to the
+  # deployed topuni-ai-pathway, reads the SSE stream, and asserts:
+  #   1. archetype event fires
+  #   2. all 5 PREMIUM_SECTIONS section events fire
+  #   3. stream terminates with [DONE]
+  #   4. no _error events
+  #
+  # Designed to catch the class of bug that the fixture-based
+  # brief-verify job can't see:
+  #   - Edge function 500 / 502 / timeout
+  #   - SSE stream opens then dies mid-flight (PR #10 pattern —
+  #     "stamp success before the work completes")
+  #   - Sections silently dropped
+  #   - LLM gateway outage / model rotated out
+  #
+  # Bails out cleanly (exit 0) when SUPABASE_URL / SUPABASE_ANON_KEY
+  # are not set in repo secrets, so the job stays green until Samuel
+  # adds the secrets. Once added, the next run actually exercises
+  # the deployed function.
+  brief-smoke:
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v2.x
+
+      - name: Smoke test brief generation against live edge function
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: deno run --allow-net --allow-env scripts/smoke-brief.ts
