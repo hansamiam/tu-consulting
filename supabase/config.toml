@@ -8,6 +8,11 @@ verify_jwt = false
 # dispatchClient token; public callers without the token get 401.
 verify_jwt = false
 
+[functions.notify-cohort-scheduled]
+# Manually invoked by Samuel when a new cohort is scheduled. Self-gated
+# via requireAdminOrService — service-role bearer or admin user JWT only.
+verify_jwt = false
+
 [functions.verify-payment]
 verify_jwt = false
 
