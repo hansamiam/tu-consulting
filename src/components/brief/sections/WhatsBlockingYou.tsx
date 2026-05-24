@@ -1,5 +1,5 @@
 /**
- * 05 · What's Blocking You — 2-3 priority-coded gaps.
+ * 04 · What's Blocking You — 2-3 priority-coded gaps.
  *
  * Each gap card: priority label (HIGH PRIORITY / MEDIUM in colored caps),
  * title, why-matters body, gold "This month:" action box, 60-day plan

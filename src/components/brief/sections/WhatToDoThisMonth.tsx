@@ -1,5 +1,5 @@
 /**
- * 06 · What to Do This Month — 4-week closing action plan.
+ * 05 · What to Do This Month — 4-week closing action plan.
  *
  * Each week: large week number on the left, italic focus sentence as
  * row lead, then 3-5 visual checkboxes (no persistence in v1).
