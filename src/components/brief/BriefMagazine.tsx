@@ -21,7 +21,6 @@ import { AcademyWaitlistForm } from "@/components/topuni-ai/AcademyWaitlistForm"
 import { SectionSkeleton } from "./primitives/SectionSkeleton";
 import { WhereYouStand } from "./sections/WhereYouStand";
 import { WhereYouCanLand } from "./sections/WhereYouCanLand";
-import { HowYoullPay } from "./sections/HowYoullPay";
 import { WhatToWrite } from "./sections/WhatToWrite";
 import { WhatsBlockingYou } from "./sections/WhatsBlockingYou";
 import { WhatToDoThisMonth } from "./sections/WhatToDoThisMonth";
@@ -32,7 +31,6 @@ import {
   type SectionId,
   type WhereYouStandPayload,
   type WhereYouCanLandPayload,
-  type HowYoullPayPayload,
   type WhatToWritePayload,
   type WhatsBlockingYouPayload,
   type WhatToDoThisMonthPayload,
@@ -76,8 +74,6 @@ const renderSection = (id: SectionId, payload: unknown): React.ReactNode => {
       return <WhereYouStand payload={payload as WhereYouStandPayload} />;
     case "whereYouCanLand":
       return <WhereYouCanLand payload={payload as WhereYouCanLandPayload} />;
-    case "howYoullPay":
-      return <HowYoullPay payload={payload as HowYoullPayPayload} />;
     case "whatToWrite":
       return <WhatToWrite payload={payload as WhatToWritePayload} />;
     case "whatsBlockingYou":
