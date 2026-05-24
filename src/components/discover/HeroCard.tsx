@@ -100,6 +100,19 @@ export const HeroCard = ({
     : "from-foreground/40 to-foreground/60";
   const cov = coverageLabel(scholarship.coverage_type, lang);
 
+  // award_amount_text is sometimes a tight money figure ("$25,000 / year")
+  // and sometimes a free-text sentence pulled from the source page
+  // ("Funding support with J-1 visa, health benefits, monthly stipend, …").
+  // The former renders cleanly as a badge; the latter truncates mid-sentence
+  // and reads as broken copy. Only badge-render the tight form.
+  const awardText = scholarship.award_amount_text?.trim() ?? "";
+  const looksLikeAmount =
+    awardText.length > 0 &&
+    awardText.length <= 32 &&
+    !awardText.includes(",") &&
+    awardText.split(/\s+/).length <= 5;
+  const awardBadge = looksLikeAmount ? awardText : null;
+
   const isPersonalized = profileQuality === "rich" || profileQuality === "partial";
 
   const eyebrow = isPersonalized
@@ -168,12 +181,12 @@ export const HeroCard = ({
                 {cov}
               </Badge>
             )}
-            {scholarship.award_amount_text && (
+            {awardBadge && (
               <Badge
                 variant="secondary"
-                className="bg-white/15 text-white border-0 backdrop-blur font-normal max-w-[280px] truncate"
+                className="bg-white/15 text-white border-0 backdrop-blur font-normal"
               >
-                {scholarship.award_amount_text}
+                {awardBadge}
               </Badge>
             )}
             {dl.text && (

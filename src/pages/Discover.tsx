@@ -4064,7 +4064,9 @@ const Discover = ({ language = "en" }: Props) => {
                   DB on first deploy; we degrade gracefully because we
                   derive the hero from `ranked` instead of querying that
                   table. */}
-              {!loading && ranked.length > 0 && (() => {
+              {!loading && ranked.length > 0 && (
+                <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-5">
+                  {(() => {
                 const heroScholarship = ranked[0];
                 // Profile-quality classifier — mirrors the spec F4 buckets.
                 // rich = country + degrees + (field OR targetCountries OR demographics)
@@ -4102,7 +4104,9 @@ const Discover = ({ language = "en" }: Props) => {
                     lang={language}
                   />
                 );
-              })()}
+                  })()}
+                </div>
+              )}
 
               {/* Sticky toolbar — search · filters · sort · view-mode · hidden · compare.
                   Sticks below the global Nav (h-16 = 64px) so the filter row is always
