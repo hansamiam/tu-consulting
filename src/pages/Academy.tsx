@@ -1,10 +1,10 @@
-// Academy — public landing for the upcoming June launch.
-// Public /academy always shows the launch landing regardless of
-// auth state, so signed-in users don't see a different page.
+// Academy — members area + public landing. The CurrentCohort
+// section renders dynamically: members see the live cohort + events,
+// non-members see a membership CTA, and the section self-hides in
+// the transition gap between cohorts.
 import { useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import { Award } from "lucide-react";
 import { motion } from "framer-motion";
 import samuelPhoto from "@/assets/samuel.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
@@ -42,9 +42,6 @@ const Academy = ({ language = "en" }: AcademyProps) => {
       <section className="relative -mt-16 bg-gradient-to-br from-primary via-primary to-primary/90 pt-32 sm:pt-36 pb-20 sm:pb-28 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(var(--gold)/0.1),_transparent_60%)]" />
         <div className="relative max-w-3xl mx-auto px-4 text-center">
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 bg-gold/15 border border-gold/40 px-3 py-1 rounded-full text-gold text-xs font-semibold mb-6">
-            <Award className="h-3.5 w-3.5" /> {t("Launching in June", "Запуск в июне")}
-          </motion.div>
           <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="text-4xl sm:text-6xl font-heading font-bold text-primary-foreground mb-5 leading-tight tracking-tight">
             TopUni <span className="text-gold">Academy</span>
           </motion.h1>
