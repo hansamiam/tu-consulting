@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { trackPageView } from "@/utils/analytics";
 import { motion, AnimatePresence } from "framer-motion";
 import Navigation from "@/components/Navigation";
+import topuniBg from "@/assets/topuni-bg.jpg";
 // BetaBanner retired site-wide 2026-05-10 per user direction.
 import { TopUniAIEntrance } from "@/components/topuni/TopUniAIEntrance";
 import { Footer } from "@/components/Footer";
@@ -551,6 +552,23 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
     // standard card color so they read as clean foreground against
     // the cream. Inline style so it doesn't bleed into other pages.
     <div className="min-h-screen relative overflow-hidden" style={{ background: "hsl(38 35% 97%)" }}>
+      {/* Campus backdrop — restored 2026-05-24. Fixed-position image at
+          12% opacity with a 3px blur sits behind the cream canvas, so
+          when the user scrolls the wizard the backdrop stays put (a
+          subtle parallax-by-position-fixed). Subtle enough not to clash
+          with form fields, present enough to add place + warmth to the
+          intake. Was the wizard's original visual signature before the
+          cream-clean reset on 2026-05-10. */}
+      <div
+        className="fixed inset-0 z-0 opacity-[0.12] pointer-events-none"
+        style={{
+          backgroundImage: `url(${topuniBg})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          filter: "blur(3px)",
+        }}
+        aria-hidden
+      />
       <TopUniAIEntrance language="en" />
       <div className="relative z-10">
         <Navigation language="en" />
@@ -572,16 +590,22 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                   stage instead of three abstract bars. Active step's
                   label gets a subtle gold tint; completed steps get
                   the canvas-foreground colour; upcoming stay muted. */}
-              {/* 2026-05-20: Consolidated 4 → 3 steps per user direction
-                  ("the 4 pages are too long"). Old Step 2 (direction:
-                  major + timeline) merged into old Step 3 (priorities:
-                  3 sliders) on one "Goals" page. Sharpen is the optional
-                  textareas page, still with a prominent Skip path. */}
+              {/* 2026-05-20: consolidated 4 → 3 steps because Step 2
+                  ("direction": major + timeline) was thin and felt
+                  redundant against Step 3's sliders.
+                  2026-05-24: re-split to 4 because Step 1 grew dense
+                  after foreign-languages + first-in-family-abroad chips
+                  were added (2026-05-23 sparse-input pass). Different
+                  problem this time — old Step 2 is NOT coming back;
+                  instead the original heavy "Profile" step is split
+                  into "Identity" (about you) and "Academics" (your
+                  numbers). Each step now holds ~equal visual weight. */}
               <div className="flex items-start justify-center gap-3 mb-10">
                 {[
-                  { n: 1, label: t("Profile", "Профиль") },
-                  { n: 2, label: t("Goals", "Цели") },
-                  { n: 3, label: t("Sharpen", "Детали") },
+                  { n: 1, label: t("Identity", "О себе") },
+                  { n: 2, label: t("Academics", "Учёба") },
+                  { n: 3, label: t("Goals", "Цели") },
+                  { n: 4, label: t("Sharpen", "Детали") },
                 ].map(s => {
                   const isActive = s.n === step;
                   const isDone = s.n < step;
@@ -745,129 +769,15 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">{t("What's your GPA looking like?", "Какой у тебя средний балл?")}</Label>
-                          {/* Paired input + scale picker — covers the four
-                              common bases (US 4.0, post-Soviet 5.0,
-                              Continental Europe 10.0, percentage 100) so
-                              users put in their actual number rather than
-                              mentally converting. Downstream scoring
-                              normalizes to 4.0. */}
-                          <div className="flex gap-2">
-                            <Input
-                              value={gpa}
-                              // Keydown gate: block non-numeric keys at the
-                              // keystroke before they enter the field. The
-                              // previous onChange-only strip let letters
-                              // briefly flash into the input then disappear
-                              // (visible jitter); blocking on keydown means
-                              // letters never appear in the first place.
-                              // Whitelist navigation + clipboard keys so
-                              // arrows, backspace, copy/paste still work.
-                              onKeyDown={e => {
-                                const allowed = [
-                                  "Backspace", "Delete", "Tab", "Escape", "Enter",
-                                  "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
-                                  "Home", "End",
-                                ];
-                                if (allowed.includes(e.key)) return;
-                                if (e.metaKey || e.ctrlKey) return; // cmd+a, cmd+c, etc.
-                                // One decimal point max.
-                                if (e.key === ".") {
-                                  if (gpa.includes(".")) e.preventDefault();
-                                  return;
-                                }
-                                if (!/^[0-9]$/.test(e.key)) e.preventDefault();
-                              }}
-                              onChange={e => {
-                                // Belt-and-braces strip — paste events
-                                // bypass keydown so anything pasted still
-                                // needs cleaning here. Single decimal point
-                                // enforced same as the keydown branch.
-                                const v = e.target.value.replace(/[^0-9.]/g, "");
-                                const parts = v.split(".");
-                                const cleaned = parts.length > 2
-                                  ? `${parts[0]}.${parts.slice(1).join("")}`
-                                  : v;
-                                setGpa(cleaned);
-                              }}
-                              inputMode="decimal"
-                              placeholder={
-                                gpaScale === "5.0" ? "e.g. 4.7"
-                                : gpaScale === "10.0" ? "e.g. 8.5"
-                                : gpaScale === "100" ? "e.g. 87"
-                                : "e.g. 3.7"
-                              }
-                              className="h-11 bg-card flex-1"
-                            />
-                            <div className="flex rounded-md overflow-hidden border border-border bg-card shrink-0">
-                              {["4.0", "5.0", "10.0", "100"].map(s => (
-                                <button
-                                  type="button"
-                                  key={s}
-                                  onClick={() => setGpaScale(s)}
-                                  className={`px-2.5 text-xs font-semibold transition-colors ${
-                                    gpaScale === s
-                                      ? "bg-gold-dark text-primary-foreground"
-                                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                                  }`}
-                                >
-                                  /{s}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">IELTS</Label>
-                          <Input value={ielts} onChange={e => setIelts(e.target.value)} placeholder={t("Score or skip · e.g. 7.0", "Балл или пропусти · напр. 7.0")} className="h-11 bg-card" />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">TOEFL</Label>
-                          <Input value={toefl} onChange={e => setToefl(e.target.value)} placeholder={t("Score or skip · e.g. 100", "Балл или пропусти · напр. 100")} className="h-11 bg-card" />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">SAT</Label>
-                          <Input value={sat} onChange={e => setSat(e.target.value)} placeholder={t("Score or skip · e.g. 1450", "Балл или пропусти · напр. 1450")} className="h-11 bg-card" />
-                        </div>
-                      </div>
                     </div>
-                    {/* 2026-05-23 sparse-input pass — two 1-tap fields
-                        that sharpen the brief's voice without adding
-                        textareas. Foreign-languages chip set deliberately
-                        omits English + CIS native languages so anything
-                        picked IS distinctive (no cultural-baseline
-                        filtering needed in the brief). First-in-family
-                        drives cultural-context.firstAbroadFramingFor()
-                        on the brief side — CIS = "leaving home" angle,
-                        US/LatAm = "first-gen college" angle. */}
+                    {/* First-in-family chip is identity context — drives
+                        cultural-context.firstAbroadFramingFor() in the
+                        brief (CIS = "leaving home" angle, US/LatAm =
+                        "first-gen college"). Kept on the Identity step.
+                        GPA + the three test scores were split off to
+                        Step 2 (Academics) on 2026-05-24 to relieve
+                        Step 1's vertical density. */}
                     <div className="pt-2 space-y-5">
-                      <div>
-                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Foreign languages you're learning or speak", "Иностранные языки")}</Label>
-                        <p className="text-muted-foreground text-xs mt-1 mb-3">{t("Beyond your native and English. Pick all that apply — optional.", "Помимо родного и английского. Отметь все — по желанию.")}</p>
-                        <div className="flex flex-wrap gap-2">
-                          {LANGUAGE_CHIPS.map((c) => {
-                            const selected = foreignLanguages.includes(c.token);
-                            return (
-                              <button
-                                key={c.token}
-                                type="button"
-                                onClick={() => toggleForeignLanguage(c.token)}
-                                aria-pressed={selected}
-                                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[36px] ${
-                                  selected
-                                    ? "bg-gold-dark text-cream border-gold-dark"
-                                    : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
-                                }`}
-                              >
-                                {selected && <Check className="w-3 h-3" />}
-                                {languageLabel(c.token, language === "ru" ? "ru" : "en")}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
                       <div>
                         <Label className="text-xs uppercase tracking-wider font-medium">{t("First in your family to apply abroad?", "Первый в семье поступает за рубеж?")}</Label>
                         <p className="text-muted-foreground text-xs mt-1 mb-3">{t("Pick one — optional.", "Выбери один — по желанию.")}</p>
@@ -987,9 +897,9 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           }
                           goToStep(2);
                         }}
-                        disabled={accountSubmitting || !fullName.trim() || !email.trim() || !nationality.trim() || !gradeLevel || !gpa.trim()}
+                        disabled={accountSubmitting || !fullName.trim() || !email.trim() || !nationality.trim() || !gradeLevel}
                       >
-                        {t("Nice. Two more pieces.", "Хорошо. Ещё два шага.")} <ArrowRight className="ml-2 w-4 h-4" />
+                        {t("Nice. Your numbers next.", "Хорошо. Дальше — баллы.")} <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
                     </div>
                   </motion.div>
@@ -1007,6 +917,149 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                     <div>
                       <div className="flex items-baseline gap-3 mb-3">
                         <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">02</span>
+                        <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">
+                          {t("Your numbers", "Баллы")}
+                        </span>
+                      </div>
+                      <h2 className="font-heading text-[32px] sm:text-[44px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
+                        {t("How does your academic record look?", "Как выглядит твоя успеваемость?")}
+                      </h2>
+                      <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[50ch]">
+                        {t("Just what you've got. Skip the tests you haven't taken.", "Только то, что есть. Пропускай тесты, которые не сдавал.")}
+                      </p>
+                    </div>
+                    <div className="grid gap-5">
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs uppercase tracking-wider font-medium">{t("What's your GPA looking like?", "Какой у тебя средний балл?")}</Label>
+                          {/* Paired input + scale picker — covers the four
+                              common bases (US 4.0, post-Soviet 5.0,
+                              Continental Europe 10.0, percentage 100) so
+                              users put in their actual number rather than
+                              mentally converting. Downstream scoring
+                              normalizes to 4.0. */}
+                          <div className="flex gap-2">
+                            <Input
+                              value={gpa}
+                              onKeyDown={e => {
+                                const allowed = [
+                                  "Backspace", "Delete", "Tab", "Escape", "Enter",
+                                  "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
+                                  "Home", "End",
+                                ];
+                                if (allowed.includes(e.key)) return;
+                                if (e.metaKey || e.ctrlKey) return;
+                                if (e.key === ".") {
+                                  if (gpa.includes(".")) e.preventDefault();
+                                  return;
+                                }
+                                if (!/^[0-9]$/.test(e.key)) e.preventDefault();
+                              }}
+                              onChange={e => {
+                                const v = e.target.value.replace(/[^0-9.]/g, "");
+                                const parts = v.split(".");
+                                const cleaned = parts.length > 2
+                                  ? `${parts[0]}.${parts.slice(1).join("")}`
+                                  : v;
+                                setGpa(cleaned);
+                              }}
+                              inputMode="decimal"
+                              placeholder={
+                                gpaScale === "5.0" ? "e.g. 4.7"
+                                : gpaScale === "10.0" ? "e.g. 8.5"
+                                : gpaScale === "100" ? "e.g. 87"
+                                : "e.g. 3.7"
+                              }
+                              className="h-11 bg-card flex-1"
+                            />
+                            <div className="flex rounded-md overflow-hidden border border-border bg-card shrink-0">
+                              {["4.0", "5.0", "10.0", "100"].map(s => (
+                                <button
+                                  type="button"
+                                  key={s}
+                                  onClick={() => setGpaScale(s)}
+                                  className={`px-2.5 text-xs font-semibold transition-colors ${
+                                    gpaScale === s
+                                      ? "bg-gold-dark text-primary-foreground"
+                                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                  }`}
+                                >
+                                  /{s}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs uppercase tracking-wider font-medium">IELTS</Label>
+                          <Input value={ielts} onChange={e => setIelts(e.target.value)} placeholder={t("Score or skip · e.g. 7.0", "Балл или пропусти · напр. 7.0")} className="h-11 bg-card" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs uppercase tracking-wider font-medium">TOEFL</Label>
+                          <Input value={toefl} onChange={e => setToefl(e.target.value)} placeholder={t("Score or skip · e.g. 100", "Балл или пропусти · напр. 100")} className="h-11 bg-card" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs uppercase tracking-wider font-medium">SAT</Label>
+                          <Input value={sat} onChange={e => setSat(e.target.value)} placeholder={t("Score or skip · e.g. 1450", "Балл или пропусти · напр. 1450")} className="h-11 bg-card" />
+                        </div>
+                      </div>
+                    </div>
+                    {/* Foreign-languages chip set — moved from old Step 1
+                        on 2026-05-24 to pair with English-test scores on
+                        the academic-record step. Set deliberately omits
+                        English + CIS native languages so anything picked
+                        IS distinctive (no cultural-baseline filtering
+                        needed in the brief). */}
+                    <div>
+                      <Label className="text-xs uppercase tracking-wider font-medium">{t("Foreign languages you're learning or speak", "Иностранные языки")}</Label>
+                      <p className="text-muted-foreground text-xs mt-1 mb-3">{t("Beyond your native and English. Pick all that apply — optional.", "Помимо родного и английского. Отметь все — по желанию.")}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {LANGUAGE_CHIPS.map((c) => {
+                          const selected = foreignLanguages.includes(c.token);
+                          return (
+                            <button
+                              key={c.token}
+                              type="button"
+                              onClick={() => toggleForeignLanguage(c.token)}
+                              aria-pressed={selected}
+                              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[36px] ${
+                                selected
+                                  ? "bg-gold-dark text-cream border-gold-dark"
+                                  : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
+                              }`}
+                            >
+                              {selected && <Check className="w-3 h-3" />}
+                              {languageLabel(c.token, language === "ru" ? "ru" : "en")}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="flex justify-between pt-4">
+                      <Button variant="outline" onClick={() => goToStep(1)}><ArrowLeft className="mr-2 w-4 h-4" /> {t("Back", "Назад")}</Button>
+                      <Button
+                        variant="gold"
+                        onClick={() => goToStep(3)}
+                        disabled={!gpa.trim()}
+                      >
+                        {t("Got it. Where are you headed?", "Понял. Куда поступаешь?")} <ArrowRight className="ml-2 w-4 h-4" />
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {step === 3 && (
+                  <motion.div
+                    key="step3"
+                    initial={stepEnter}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={stepExit}
+                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                    className="space-y-7"
+                  >
+                    <div>
+                      <div className="flex items-baseline gap-3 mb-3">
+                        <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">03</span>
                         <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{t("Direction", "Направление")}</span>
                       </div>
                       <h2 className="font-heading text-[32px] sm:text-[44px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
@@ -1240,10 +1293,10 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                       </div>
                     </div>
                     <div className="flex justify-between pt-4">
-                      <Button variant="outline" onClick={() => goToStep(1)}><ArrowLeft className="mr-2 w-4 h-4" /> {t("Back", "Назад")}</Button>
+                      <Button variant="outline" onClick={() => goToStep(2)}><ArrowLeft className="mr-2 w-4 h-4" /> {t("Back", "Назад")}</Button>
                       <Button
                         variant="gold"
-                        onClick={() => goToStep(3)}
+                        onClick={() => goToStep(4)}
                         disabled={!major.trim()}
                       >
                         {t("Good. Last bit's optional.", "Отлично. Последнее — по желанию.")} <ArrowRight className="ml-2 w-4 h-4" />
@@ -1252,7 +1305,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                   </motion.div>
                 )}
 
-                {step === 3 && (
+                {step === 4 && (
                   <motion.div
                     key="step4"
                     initial={stepEnter}
@@ -1263,7 +1316,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                   >
                     <div>
                       <div className="flex items-baseline gap-3 mb-3">
-                        <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">03</span>
+                        <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">04</span>
                         <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{t("Sharpen", "Детали")}</span>
                       </div>
                       <h2 className="font-heading text-[32px] sm:text-[44px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
@@ -1463,7 +1516,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               clutter. The label hint above already
                               tells users they can leave fields blank. */}
                           <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
-                            <Button variant="outline" onClick={() => goToStep(2)}>
+                            <Button variant="outline" onClick={() => goToStep(3)}>
                               <ArrowLeft className="mr-2 w-4 h-4" /> {t("Back", "Назад")}
                             </Button>
                             <Button variant="gold" size="lg" onClick={onGenerate}>
