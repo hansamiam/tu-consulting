@@ -16,16 +16,24 @@ export type SectionId =
   | "archetype"
   | "whereYouStand"
   | "whereYouCanLand"
-  | "howYoullPay"
   | "whatToWrite"
   | "whatsBlockingYou"
   | "whatToDoThisMonth";
 
+// 2026-05-24: howYoullPay removed from SECTION_ORDER and SECTION_KICKERS.
+// The edge function dropped this section from PREMIUM_SECTIONS on
+// 2026-05-20 (see brief-sections.ts:994-998) — /discover is the live
+// funding source of truth. Leaving it in SECTION_ORDER caused a
+// zombie "03 · How you'll pay" skeleton to spin forever during
+// streaming because the payload never arrived. Note the kicker
+// numbering for downstream sections still reads "04 / 05 / 06" —
+// that matches what the edge function emits in payload.kicker, so
+// keeping the skeleton kickers aligned avoids stream-flicker. The
+// "missing 03" is intentional, not a renderer bug.
 export const SECTION_ORDER: SectionId[] = [
   "archetype",
   "whereYouStand",
   "whereYouCanLand",
-  "howYoullPay",
   "whatToWrite",
   "whatsBlockingYou",
   "whatToDoThisMonth",
@@ -35,7 +43,6 @@ export const SECTION_KICKERS: Record<SectionId, string> = {
   archetype: "00 · Your archetype",
   whereYouStand: "01 · Where you stand",
   whereYouCanLand: "02 · Where you can land",
-  howYoullPay: "03 · How you'll pay",
   whatToWrite: "04 · What to write",
   whatsBlockingYou: "05 · What's blocking you",
   whatToDoThisMonth: "06 · What to do this month",
@@ -94,34 +101,12 @@ export interface WhereYouCanLandPayload extends SectionCommon {
   buckets?: CountryBucket[];
 }
 
-/* 2026-05-18: Repurposed. Was per-scholarship row. Now a funding-LANE
-   row (govt scholarship, university merit, fellowship, etc.) since the
-   brief no longer lists specific awards — the live database at
-   /discover is the source of truth and updates daily. We kept the
-   field names so cached briefs still render. */
-export interface ScholarshipEntry {
-  /** Funding lane / category label. e.g. "Government scholarships",
-   *  "University merit aid", "Research fellowship". */
-  name: string;
-  /** Typical coverage label. e.g. "Full tuition + stipend". */
-  coverage?: string;
-  /** Typical award range. e.g. "$30K-50K / year". */
-  awardText?: string;
-  /** Typical cycle window. e.g. "Fall cycle (Oct-Jan)", "Rolling". */
-  deadline?: string;
-  /** Why this LANE fits THIS student's profile. */
-  howProfileMaps?: string;
-  /** First step to start applying within this lane. */
-  firstTask?: string;
-}
-
-export interface HowYoullPayPayload extends SectionCommon {
-  entries?: ScholarshipEntry[];
-  stackingNote?: string;
-  /** CTA copy directing the student to /discover for their live
-   *  personalized match list. */
-  discoverCallout?: string;
-}
+// 2026-05-24: ScholarshipEntry + HowYoullPayPayload removed. The
+// edge function stopped emitting the howYoullPay section on
+// 2026-05-20 (see brief-sections.ts:994-998) — /discover is the
+// live funding source of truth. The renderer no longer iterates
+// this section, the SectionId union no longer includes it, and
+// the serializer no longer formats it.
 
 export interface EssayEntry {
   title: string;
@@ -228,7 +213,6 @@ export type AnySectionPayload =
   | ArchetypePayload
   | WhereYouStandPayload
   | WhereYouCanLandPayload
-  | HowYoullPayPayload
   | WhatToWritePayload
   | WhatsBlockingYouPayload
   | WhatToDoThisMonthPayload;
@@ -237,7 +221,6 @@ export type BriefSections = Partial<{
   archetype: ArchetypePayload;
   whereYouStand: WhereYouStandPayload;
   whereYouCanLand: WhereYouCanLandPayload;
-  howYoullPay: HowYoullPayPayload;
   whatToWrite: WhatToWritePayload;
   whatsBlockingYou: WhatsBlockingYouPayload;
   whatToDoThisMonth: WhatToDoThisMonthPayload;
