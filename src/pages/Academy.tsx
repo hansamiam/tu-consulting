@@ -10,6 +10,7 @@ import samuelPhoto from "@/assets/samuel.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
 import AcademyResourceList from "@/components/academy/AcademyResourceList";
 import CurrentCohort from "@/components/academy/CurrentCohort";
+import PastWorkshops from "@/components/academy/PastWorkshops";
 
 const FOUNDERS = [
   { name: "Samuel Han",          credential: "Yale",                  photo: samuelPhoto },
@@ -98,6 +99,12 @@ const Academy = ({ language = "en" }: AcademyProps) => {
           non-members. Self-hides during transition gaps between cycles
           (no open/in_progress cohort in the next 60 days). */}
       <CurrentCohort language={language} />
+
+      {/* PAST WORKSHOPS — recordings archive. Queries published rows
+          from public.academy_workshops where recording_url is set and
+          scheduled_for is in the past. Section self-hides when empty
+          (the resources block below already covers "coming soon"). */}
+      <PastWorkshops language={language} />
 
       {/* RESOURCES — members-only file/link library. The list renders
           even when empty so members know the system is live; the
