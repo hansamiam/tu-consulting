@@ -11,11 +11,15 @@ import { CORS_HEADERS_EXTENDED as corsHeaders, handleCorsOptions } from "../_sha
 import { respondError, respondJson } from "../_shared/http.ts";
 import { createServiceClient, createUserClient } from "../_shared/clients.ts";
 
-// Early-Access tier — $19/mo. Single tier, monthly only for now.
+// Early-Access tier — $19/mo, $360/yr (annual price TBD).
 // Internal SKU identifier 'founding' preserved (DB rows reference it).
+// Annual price ID is env-wired so it can land via `supabase secrets set`
+// without a code change. If unset, year-interval requests 400 with a
+// clear message — safer than silently aliasing annual → monthly and
+// billing customers the wrong amount.
 const FOUNDING_PRICES: { month: string; year: string } = {
-  month: "price_1TQTyAQVirFUxpBg4YtW8JFo",
-  year: "price_1TQTyAQVirFUxpBg4YtW8JFo", // alias to monthly for now
+  month: Deno.env.get("STRIPE_PRICE_ID_MONTHLY") ?? "price_1TQTyAQVirFUxpBg4YtW8JFo",
+  year: Deno.env.get("STRIPE_PRICE_ID_ANNUAL") ?? "",
 };
 
 Deno.serve(async (req) => {
@@ -56,6 +60,14 @@ Deno.serve(async (req) => {
     }
     const reservedFoundingNumber = claimData as number;
 
+    // Guard: annual price must be configured before accepting year-interval
+    // checkout. Empty string ⇒ STRIPE_PRICE_ID_ANNUAL secret not set yet.
+    // Fail loud rather than silently bill the monthly price.
+    const priceId = FOUNDING_PRICES[interval];
+    if (!priceId) {
+      return respondError(400, "Annual billing is not yet configured. Please choose monthly.", corsHeaders);
+    }
+
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2025-08-27.basil" });
 
     // Find or reuse Stripe customer
@@ -83,7 +95,7 @@ Deno.serve(async (req) => {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       mode: "subscription",
-      line_items: [{ price: FOUNDING_PRICES[interval], quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       allow_promotion_codes: true,
       subscription_data: {
         metadata: {
