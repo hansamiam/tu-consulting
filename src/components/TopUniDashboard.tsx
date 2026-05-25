@@ -76,6 +76,7 @@ import { cleanScholarshipName, cleanProvider, compactAward } from "@/lib/scholar
 import { BriefStory } from "@/components/brief/BriefStory";
 import { BriefMagazine as BriefMinimal } from "@/components/brief/BriefMinimal";
 import { DashboardTabs, useDashboardTab } from "@/components/brief/DashboardTabs";
+import { BriefChapterNavWrapper } from "@/components/brief/BriefChapterNavWrapper";
 import type { BriefSections, SectionId } from "@/components/brief/types";
 import { serializeBriefForCounselor } from "@/components/brief/serializeForCounselor";
 
@@ -3527,13 +3528,20 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                             toggle above. */}
                         {Object.keys(magazineSections).length > 0 ? (
                           tab === "read" ? (
-                            <BriefMinimal
-                              mode="static"
-                              sections={magazineSections}
-                              studentName={profile.fullName || firstName}
-                              gradeLabel={profile.gradeLevel}
-                              generatedAt={pathwayGeneratedAt ? new Date(pathwayGeneratedAt).toISOString() : undefined}
-                            />
+                            <div className="lg:grid lg:grid-cols-12 lg:gap-8">
+                              <main className="lg:col-span-9 min-w-0">
+                                <BriefMinimal
+                                  mode="static"
+                                  sections={magazineSections}
+                                  studentName={profile.fullName || firstName}
+                                  gradeLabel={profile.gradeLevel}
+                                  generatedAt={pathwayGeneratedAt ? new Date(pathwayGeneratedAt).toISOString() : undefined}
+                                />
+                              </main>
+                              <aside className="hidden lg:block lg:col-span-3 print:hidden">
+                                <BriefChapterNavWrapper sections={magazineSections} lang={language} />
+                              </aside>
+                            </div>
                           ) : (
                             <BriefStory
                               sections={magazineSections}
