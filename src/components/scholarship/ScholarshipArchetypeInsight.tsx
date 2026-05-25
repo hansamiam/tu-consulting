@@ -8,19 +8,24 @@
  *   · the cell is null in DB (eligibility hard-gate skipped it, or
  *     the LLM validator rejected the output past max retries)
  *
+ * Members-only gate (2026-05-25 reinstate): the insight is the
+ * personalized-strategy hook that justifies Membership. Non-members
+ * see the blurred teaser through PremiumGate; members see the cell
+ * in full. Same paywall shape as the prior ScholarshipDeepDive.
+ *
  * Template variables — the "pseudo-LLM cheap personalization" layer:
  * cells can include {{nationality}}, {{targetCountry}}, {{major}},
- * {{firstName}} placeholders that get substituted at render time from
- * the user's wizard profile. Zero LLM cost per view, but the line
- * reads as if written for THIS user specifically.
- *
- * Voice rule: a single italic line, no eyebrow label, no card chrome.
- * The line speaks for itself — that's the whole point.
+ * {{firstName}} etc, substituted from the wizard profile at render.
+ * Zero LLM cost per view; the line still reads as if written for
+ * THIS user specifically.
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserArchetype } from "@/hooks/useUserArchetype";
+import { useAuth } from "@/contexts/AuthContext";
 import { getStoredProfile } from "@/components/discover/DiscoverProfileGate";
+import { PremiumGate } from "@/components/PremiumGate";
+import { isAdminUser } from "@/lib/adminMode";
 
 interface Props {
   scholarshipId: string;
@@ -67,6 +72,12 @@ function fillTemplate(text: string): string {
 
 export const ScholarshipArchetypeInsight = ({ scholarshipId }: Props) => {
   const archetypeId = useUserArchetype();
+  const { user, subscription } = useAuth();
+  const isMember = !!subscription && (
+    subscription.is_active ||
+    subscription.is_founding_member ||
+    isAdminUser(user)
+  );
   const [text, setText] = useState<string | null>(null);
 
   useEffect(() => {
@@ -97,13 +108,27 @@ export const ScholarshipArchetypeInsight = ({ scholarshipId }: Props) => {
 
   // Pull-quote frame — subtle gold left border + a touch of padding so
   // the insight reads as its own section without an AI-slop eyebrow
-  // ("Personalized for you" etc) above it. Matches the BriefStory
+  // ("Personalized for you" etc) above it. Matches BriefStory's
   // Pullquote treatment so users recognise the editorial register.
-  return (
+  const insight = (
     <blockquote className="not-prose m-0 mb-2 border-l-2 border-gold/70 pl-4 py-1">
       <p className="font-heading italic text-[15.5px] leading-[1.55] text-foreground m-0 max-w-2xl">
         {text}
       </p>
     </blockquote>
+  );
+
+  // Members read it. Non-members see the blurred teaser + Membership
+  // CTA — same PremiumGate pattern used elsewhere in the codebase.
+  if (isMember) return insight;
+
+  return (
+    <PremiumGate
+      gateId="scholarship-personalized-insight"
+      headline="Members read every scholarship through your archetype lens."
+      subline="One line per scholarship, written for your specific applicant shape — what to lean on, what to mute, where this fund's panel actually looks."
+    >
+      {insight}
+    </PremiumGate>
   );
 };
