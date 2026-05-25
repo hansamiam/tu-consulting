@@ -25,6 +25,7 @@ import { WhatToWrite } from "./sections/WhatToWrite";
 import { WhatsBlockingYou } from "./sections/WhatsBlockingYou";
 import { WhatToDoThisMonth } from "./sections/WhatToDoThisMonth";
 import { ArchetypeRadial, ARCHETYPE_AXES } from "./ArchetypeRadial";
+import { WhereYouCanLandViz } from "./sections/WhereYouCanLandViz";
 import { SectionDivider } from "./primitives/SectionDivider";
 import {
   SECTION_ORDER,
@@ -101,7 +102,12 @@ const renderSection = (id: SectionId, payload: unknown): React.ReactNode => {
     case "whereYouStand":
       return <WhereYouStand payload={payload as WhereYouStandPayload} />;
     case "whereYouCanLand":
-      return <WhereYouCanLand payload={payload as WhereYouCanLandPayload} />;
+      return (
+        <>
+          <WhereYouCanLandViz buckets={(payload as WhereYouCanLandPayload).buckets ?? []} />
+          <WhereYouCanLand payload={payload as WhereYouCanLandPayload} />
+        </>
+      );
     case "whatToWrite":
       return <WhatToWrite payload={payload as WhatToWritePayload} />;
     case "whatsBlockingYou":
