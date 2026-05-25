@@ -2401,23 +2401,14 @@ const ReqRow = ({ label, status, detail }: {
 
 /* ─── Inline animated stat ───────────────────────────────────────────── */
 /* ─── Section header ─────────────────────────────────────────────────── */
-const SectionHeader = ({ kicker, title, subtitle, accentClass }: {
-  kicker?: string; title: string; subtitle: string; count?: number; accentClass: string;
+const SectionHeader = ({ title, subtitle }: {
+  title: string; subtitle: string; count?: number; accentClass?: string;
 }) => (
-  // Section counts removed — at the current database scale a "· 12"
-  // suffix reads as a thin number rather than an editorial cue. The
-  // section's actual cards below already convey the count visually.
-  // Eyebrow row only renders when there is a kicker label — without
-  // this guard the bullet dot rendered as an orphan above headers
-  // that don't pass kicker (Selections, More flagship programs).
+  // Eyebrow row (kicker + dot) dropped entirely — the uppercase mono
+  // tracked label + leading dot is the AI-template stack the no-AI-slop
+  // headers feedback bans. Title carries the section on its own.
   <Reveal className="flex items-end justify-between gap-4 mb-4 pb-3 border-b border-border/60">
     <div className="min-w-0">
-      {kicker && (
-        <div className={`inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${accentClass} mb-1.5`}>
-          <span className={`h-1.5 w-1.5 rounded-full ${accentClass.replace("text-", "bg-")}`} />
-          {kicker}
-        </div>
-      )}
       <h2 className="font-heading font-bold text-lg sm:text-xl text-foreground leading-tight tracking-tight">{title}</h2>
       <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{subtitle}</p>
     </div>
@@ -4748,13 +4739,6 @@ const Discover = ({ language = "en" }: Props) => {
                                     bulletin, "Deadline first" reads as
                                     closing-soon urgency. */}
                                 <SectionHeader
-                                  kicker={
-                                    sortBy === "newest"
-                                      ? t("Live feed", "Live-лента")
-                                      : sortBy === "deadline"
-                                        ? t("Closing soon", "Закрываются скоро")
-                                        : t("Database", "База")
-                                  }
                                   title={
                                     sortBy === "newest"
                                       ? t("Latest opportunities", "Последние возможности")
@@ -4769,7 +4753,6 @@ const Discover = ({ language = "en" }: Props) => {
                                         ? t("Sorted by what closes next so urgent programs surface first.", "Отсортировано по ближайшим дедлайнам.")
                                         : t("Build your profile (top right) to see which ones fit you best.", "Заполните профиль (вверху справа), чтобы увидеть, какие подходят лучше.")
                                   }
-                                  accentClass="text-foreground/60"
                                 />
                                 {renderSectionGrid("all", sections.stretch)}
                                 {lockedCount > 0 && <PaywallCard lockedCount={lockedCount} className="mt-4" lang={language} />}
@@ -4791,8 +4774,7 @@ const Discover = ({ language = "en" }: Props) => {
                                 <section>
                                   <SectionHeader
                                     title={t("Selections for you", "Подборка для вас")}
-                                    subtitle={t("Programs whose audience overlaps with your profile.", "Программы, чья аудитория совпадает с вашим профилем.")}
-                                    count={sections.strong.length} accentClass="text-gold-dark" />
+                                    subtitle={t("Programs whose audience overlaps with your profile.", "Программы, чья аудитория совпадает с вашим профилем.")} />
                                   {renderSectionGrid("strong", sections.strong)}
                                 </section>
                               )}
@@ -4801,9 +4783,7 @@ const Discover = ({ language = "en" }: Props) => {
                                 <section>
                                   <SectionHeader
                                     title={t("More flagship programs", "Больше флагманских программ")}
-                                    subtitle={t("More than a few ways to fund your education.", "Не один способ профинансировать обучение.")}
-                                    count={sections.competitive.length + sections.stretch.length}
-                                    accentClass="text-muted-foreground" />
+                                    subtitle={t("More than a few ways to fund your education.", "Не один способ профинансировать обучение.")} />
                                   {renderSectionGrid("more", [...sections.competitive, ...sections.stretch])}
                                 </section>
                               )}
