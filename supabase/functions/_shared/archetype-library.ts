@@ -92,7 +92,8 @@ export const ARCHETYPE_LIBRARY: ReadonlyArray<Archetype> = [
   {
     id: "quiet-builder",
     name: "The Quiet Builder",
-    tagline: "You've built it. You haven't claimed it yet.",
+    // 2026-05-25: ditched the "X, not-yet-Y" antithesis pattern.
+    tagline: "The proof is built. The pitch is what's missing.",
     color: "#586B62", // sage-navy — soft, growing, understated
   },
   {
@@ -149,7 +150,8 @@ export const ARCHETYPE_LIBRARY: ReadonlyArray<Archetype> = [
   {
     id: "operator",
     name: "The Operator",
-    tagline: "You don't theorize. You move people.",
+    // 2026-05-25: ditched the "you don't X. you Y" antithesis pattern.
+    tagline: "Action is your first instinct.",
     color: "#946D32", // burnt gold — commanding, action-warm
   },
   {
