@@ -27,6 +27,7 @@ import {
 // future per-profile feature revival — see
 // project_topuni_deep_dive_decisions_2026_05_25.md.
 import { ScholarshipMiniGuide } from "@/components/scholarship/ScholarshipMiniGuide";
+import { ScholarshipArchetypeInsight } from "@/components/scholarship/ScholarshipArchetypeInsight";
 import { AcademyHookCta } from "@/components/discover/AcademyHookCta";
 import {
   cleanScholarshipName, cleanProvider, humanizeDegreeLabel,
@@ -217,6 +218,12 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
               no row exists (graceful degrade — the static prose below
               still renders). */}
           <div className="overflow-y-auto flex-1 px-6 sm:px-9 py-5 sm:py-6 space-y-5">
+            {/* Personalised single-line insight for THIS user's archetype.
+                Reads from scholarship_archetype_insights (pre-gen matrix).
+                Renders nothing when the user has no archetype yet, when
+                the cell is null (eligibility-skipped or validator-rejected),
+                or when the user isn't signed in. */}
+            <ScholarshipArchetypeInsight scholarshipId={s.scholarship_id} />
             <ScholarshipMiniGuide scholarshipId={s.scholarship_id} language={lang} />
             {/* F12 stitch — Academy upsell below the deep-dive analysis.
                 Soft "want help winning this?" pointer to the strategy
