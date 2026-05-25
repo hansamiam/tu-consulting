@@ -446,16 +446,18 @@ FIRST-ABROAD FRAMING (profile.firstToApplyAbroad === "yes"):
 
 /* ─── Section specs (journey order) ──────────────────────────────────── */
 
-/* 01 — WHO YOU ARE (renderer-wire ID: whereYouStand) */
+/* 01 — WHO YOU ARE (renderer-wire ID: whereYouStand)
+   Stream-A regen-v2 (2026-05-25): kills the demographic-cliché opener
+   pattern ("Most students in Kazakhstan your age pursue a direct path
+   toward IT or finance.") and tightens sentence/word caps. Headline
+   names what the student IS, never what they aren't (no antithesis,
+   no peer-bucket framing). The body must speak to THIS person, not
+   their demographic. */
 const whereYouStand: SectionSpec = {
   id: "whereYouStand",
   heading: "Where you stand",
   reasoning: { effort: "high" },
   buildPrompt: (ctx) => {
-    const isCIS = ctx.culturalContext === "central_asia";
-    const peerPiles = isCIS
-      ? "the IT-track kids, the engineering kids being pushed into Western banking since 9th grade, the finance/economics kids, the international relations kids"
-      : "the obvious one-track piles (pre-med, CS, finance, engineering)";
     return `
 You are writing CARD 01 of a 5-card admissions strategy brief in the
 v7 spec. This card is called WHO YOU ARE. Its job: make ${ctx.audienceLine}
@@ -469,41 +471,47 @@ ${planBlock(ctx)}
 LIVE CONTEXT (cohort + matched programs for your reference):
 ${dbBlock(ctx)}
 
-STRUCTURE — the card has three beats:
-  1. HEADLINE: a stylized identity claim, 8-14 words, quotable. NOT
-     "your profile type". Softer, observed, named. Examples of the
-     SHAPE (not content) — "You're a [X] who hasn't told anyone yet."
-     / "You're [X] in a year of [Y]." / "You're the kid who [specific
-     observation about their data]."
-  2. BODY: 3-5 sentences, 60-90 words. PILE-CONTRAST observation. Most
-     kids in their year go into one of ${peerPiles}. Place THIS student
-     OUTSIDE those piles by naming TWO specific intake fields by name
-     (GPA + activity, or test scores + named project, etc.). The
-     observation should be admissions-reader-perspective: what does
-     their file actually LOOK like vs the pile.
-  3. CLOSER: 1 sentence, 10-18 words. The gentle reframe — names what
-     they've been treating wrong about their own profile. SUGGESTION
-     MOOD only — "the time will come to lead with it" / "worth
-     surfacing when you're ready" / "that's the thing". NEVER bare
-     imperative ("Stop." "Do this.").
+ABSOLUTE — DEMOGRAPHIC-OPENER BAN:
+Do NOT open the body (or any sentence in this card) with demographic
+generalizations. The following shapes are forbidden:
+  · "Most students in {country} your age..."
+  · "Students from {country} often..."
+  · "Kids your age in {region}..."
+  · "Most applicants from {place} pursue..."
+Speak to THIS person, not their demographic bucket. Open every
+sentence by naming a concrete intake field (their GPA, IELTS, named
+activity, course, country, major) and saying something specific about
+THAT field. The card cites THEIR file, never the average kid's file.
+
+STRUCTURE — the card has four beats:
+  1. HEADLINE: MAX 10 words. Names what the student IS, never what
+     they aren't (no antithesis: "You're not X, you're Y" is banned).
+     Direct identity claim only. Quotable. NO banned vocab.
+  2. LEAD: ONE sentence, MAX 20 words. Cites at least one specific
+     intake field by name (GPA / IELTS / country / major / activity).
+  3. BODY: MAX 2 sentences. Each sentence MAX 25 words. Concrete
+     examples only — no hedging adverbs, no peer-bucket framing.
+     References at least 2 named intake fields total across the body.
+  4. PULLQUOTE: ONE sentence, MAX 15 words, standalone. Suggestion
+     mood only — "the time will come to lead with it" / "worth
+     surfacing when you're ready". NEVER bare imperative.
 
 GOLD EXEMPLAR — match this prose-quality bar:
   Student: Yerlan, Kazakhstan, GPA 3.7, AP Calc + Math Olympiad
-  regional medal, debate captain, majorCertainty: not_at_all,
-  cultural_context: central_asia
+  regional medal (2024), debate captain.
   Output:
-    headline: "You're a policy-leaning STEM kid who hasn't told anyone yet."
-    lead:     "Yerlan, your profile is more interesting than you're treating it."
-    body:     "Most kids in your year go in one pile. The IT-track pile, the engineering kids being pushed into Western banking since 9th grade, the finance kids. They look the same on paper because the path was picked for them. Your file shows AP Calc AND a debate medal — two things that don't normally appear together in your school's outbound applicants. That puts you in a smaller pile most admissions readers don't get to see often."
-    pullquote: "The time will come to lead with that overlap."
+    headline: "Math is your native language. Debate is your second."
+    lead:     "Yerlan, your 3.7 GPA carries an AP Calc grade most of your debate teammates don't have."
+    body:     "Your 2024 Math Olympiad medal proves the math wasn't a coincidence — you train at it. Pairing that with debate captaincy is the rare combo Cambridge land-economy and Toronto Rotman both look for."
+    pullquote: "Lead with the overlap when you write."
 
 OUTPUT — emit a JSON object exactly matching this shape:
 {
   "kicker": "01 · Where you stand",
-  "headline": "string — 8 to 14 words. The stylized identity claim. Quotable. NO banned vocab.",
-  "lead": "string — ONE sentence (max ~25 words) anchoring the card. First word punchy and concrete — gets a drop cap in the renderer.",
-  "body": "string — 3 to 5 sentences (separate with \\n\\n if more than one paragraph). PILE-CONTRAST observation referencing AT LEAST 2 specific intake fields by name.",
-  "pullquote": "string — 1 sentence, 10 to 18 words. The gentle reframe. SUGGESTION MOOD only. No 'Stop.' / 'Do this.' / 'Start now.'."
+  "headline": "string — MAX 10 words. Direct identity claim. NO 'You're not X, you're Y' antithesis. NO banned vocab.",
+  "lead": "string — ONE sentence, MAX 20 words. Cites at least one specific intake field by name. Drop-cap rendered.",
+  "body": "string — MAX 2 sentences. Each sentence ≤ 25 words. Concrete examples only — zero hedging adverbs. NO demographic-cliché openers ('Most students in {country}…'). References at least 2 named intake fields total.",
+  "pullquote": "string — ONE sentence, MAX 15 words. Standalone reframe. Suggestion mood only. No 'Stop.' / 'Do this.' / 'Start now.'."
 }
 
 ${SHARED_JSON_RULES}`;
@@ -517,13 +525,33 @@ ${SHARED_JSON_RULES}`;
         return { ok: false, reason: `missing or too short: ${k}` };
       }
     }
-    // Headline length cap (~14 words)
-    const headline = obj.headline as string;
-    if (headline.split(/\s+/).length > 16) {
-      return { ok: false, reason: "headline too long (>16 words)" };
+    const headline = (obj.headline as string).trim();
+    if (headline.split(/\s+/).length > 10) {
+      return { ok: false, reason: `headline >10 words (${headline.split(/\s+/).length})` };
     }
-    // Closer/pullquote must not start with a bare imperative
+    const lead = (obj.lead as string).trim();
+    if (lead.split(/\s+/).length > 20) {
+      return { ok: false, reason: `lead >20 words (${lead.split(/\s+/).length})` };
+    }
+    const body = (obj.body as string).trim();
+    const bodySentences = body.split(/(?<=[.!?])\s+/).filter((s) => s.trim().length > 0);
+    if (bodySentences.length > 2) {
+      return { ok: false, reason: `body >2 sentences (${bodySentences.length})` };
+    }
+    for (const s of bodySentences) {
+      if (s.split(/\s+/).length > 25) {
+        return { ok: false, reason: `body sentence >25 words: "${s.slice(0, 60)}…"` };
+      }
+    }
+    // Demographic-opener guard — explicit phrase scan, since the
+    // generic banned-vocab pool may not catch every interpolation.
+    if (/^(most students in|students from \w+ often|kids your age in|most applicants from)\b/i.test(body)) {
+      return { ok: false, reason: "body opens with a demographic-cliché generalization" };
+    }
     const pullquote = (obj.pullquote as string).trim();
+    if (pullquote.split(/\s+/).length > 15) {
+      return { ok: false, reason: `pullquote >15 words (${pullquote.split(/\s+/).length})` };
+    }
     if (/^(Stop|Do this|Don't|Begin|Start now)\.?\s/i.test(pullquote)) {
       return { ok: false, reason: "pullquote uses bare imperative — must be suggestion mood" };
     }
