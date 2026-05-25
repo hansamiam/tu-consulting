@@ -40,8 +40,6 @@ import {
   ShieldAlert,
   MinusCircle,
   HelpCircle,
-  LayoutGrid,
-  List,
   EyeOff,
   Eye,
   Columns3,
@@ -276,7 +274,6 @@ interface FilterState {
 
 type Phase = "landing" | "wizard" | "analyzing" | "results";
 type SortBy = "match" | "deadline" | "newest";
-type ViewMode = "grid" | "list";
 type AppSection = "browse" | "pipeline" | "shortlist" | "collections";
 /* Three application stages — captures the meaningful work-in-progress
  * states. "Decision" / "Awaiting" / "Rejected" / "Accepted" were
@@ -2650,14 +2647,13 @@ const Discover = ({ language = "en" }: Props) => {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [shortlistOpen, setShortlistOpen] = useState(false);
 
-  // Logic-Pro-grade app state, persisted in localStorage. Default to list —
-  // serious databases lead with dense rows, not marketing card grids.
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    // Migrate legacy localStorage values: "timeline" view was removed
-    // (redundant with sort-by-deadline on grid/list); coerce to "list".
-    const stored = localStorage.getItem("tu_view_mode");
-    return stored === "grid" ? "grid" : "list";
-  });
+  // List view was retired 2026-05-25 — it read as empty when users
+  // fast-scrolled and steered attention toward quantity-as-table rather
+  // than program quality. Browse is grid-only now; Shortlist + Pipeline
+  // + Collections still render their own row layouts because dense lists
+  // are the right pattern for those (tracker + curated drawer surfaces).
+  // The `tu_view_mode` localStorage key is left orphaned — harmless and
+  // not worth a one-shot migration.
   const [appSection, setAppSection] = useState<AppSection>("browse");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [showHidden, setShowHidden] = useState(false);
@@ -2684,8 +2680,6 @@ const Discover = ({ language = "en" }: Props) => {
   // statusMap / notesMap / hidden / shortlist are now driven by the
   // useApplicationTracker hook above. Their persistence (localStorage +
   // Postgres when authed) is handled there.
-
-  useEffect(() => { localStorage.setItem("tu_view_mode", viewMode); }, [viewMode]);
 
   // ?scholarship=<id> deep-link handler is mounted later (after `ranked`
   // is in scope); see the matching useEffect below the ranked memo.
@@ -4153,32 +4147,10 @@ const Discover = ({ language = "en" }: Props) => {
                     </SelectContent>
                   </Select>
 
-                  {/* View-mode segmented control — only meaningful in
-                      Browse. Shortlist + Pipeline always render as a
-                      list regardless of viewMode (the underlying
-                      branches at L3193+ ignore it), and Collections
-                      render their own tile grid. Showing a clickable-
-                      but-no-op toggle in those sections was misleading. */}
-                  {appSection === "browse" && (
-                    <div className="inline-flex h-10 items-center rounded-lg border border-border bg-card overflow-hidden" role="tablist" aria-label="View mode">
-                      <button
-                        onClick={() => setViewMode("grid")}
-                        className={`h-full px-3 text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === "grid" ? "bg-foreground/[0.06] text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                        aria-pressed={viewMode === "grid"}
-                        title={t("Grid view", "Сетка")}
-                      >
-                        <LayoutGrid className="h-3.5 w-3.5" /><span className="hidden sm:inline">{t("Grid", "Сетка")}</span>
-                      </button>
-                      <button
-                        onClick={() => setViewMode("list")}
-                        className={`h-full px-3 text-xs font-medium flex items-center gap-1.5 transition-colors border-l border-border ${viewMode === "list" ? "bg-foreground/[0.06] text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                        aria-pressed={viewMode === "list"}
-                        title={t("List view", "Список")}
-                      >
-                        <List className="h-3.5 w-3.5" /><span className="hidden sm:inline">{t("List", "Список")}</span>
-                      </button>
-                    </div>
-                  )}
+                  {/* View-mode toggle removed 2026-05-25. Browse is
+                      grid-only; the segmented control was visual noise
+                      that nudged users toward a list view that read as
+                      empty when fast-scrolled. */}
 
                   {/* Compare button — opens drawer */}
                   {compareSet.size > 0 && (
@@ -4657,44 +4629,10 @@ const Discover = ({ language = "en" }: Props) => {
                             lang: language,
                           });
 
-                          if (viewMode === "list") {
-                            // Header is label-only — sort is driven by the
-                            // dropdown above the grid (one source of truth).
-                            // Same pagination model as the grid view —
-                            // SECTION_PAGE_SIZE rows initial, "Show more"
-                            // toggles expansion. List view shares the
-                            // expandedSections map under the "list" key.
-                            const expanded = expandedSections.has("list");
-                            const visible = expanded ? filtered : filtered.slice(0, SECTION_PAGE_SIZE);
-                            const hiddenCount = filtered.length - visible.length;
-                            return (
-                              <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
-                                <div className="hidden sm:grid grid-cols-[minmax(0,1fr),170px,128px] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                                  <span>Scholarship</span>
-                                  <span className="text-right">Award · Deadline</span>
-                                  <span className="text-right pr-1">Actions</span>
-                                </div>
-                                {visible.map((s, i) => <MemoScholarRow {...cardProps(s, i)} />)}
-                                {(hiddenCount > 0 || expanded) && filtered.length > SECTION_PAGE_SIZE && (
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleSectionExpanded("list")}
-                                    className="w-full px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground hover:text-gold-dark transition-colors border-t border-border bg-canvas-soft/30 hover:bg-gold/5"
-                                  >
-                                    {/* 2026-05-18: hard count "(+N)" dropped
-                                        from the "Show all" affordance. The
-                                        dashboard reframe says the user
-                                        shouldn't be steered toward thinking
-                                        in totals — just expand-or-not. */}
-                                    {expanded
-                                      ? t("Show less", "Свернуть")
-                                      : t("Show more", "Показать ещё")}
-                                  </button>
-                                )}
-                                {lockedCount > 0 && <PaywallRow lockedCount={lockedCount} lang={language} />}
-                              </div>
-                            );
-                          }
+                          // List view branch retired 2026-05-25 alongside
+                          // the toggle (see comment above the toolbar).
+                          // Browse now always falls through to the
+                          // priority-section grid below.
 
                           // Grid view — three sections by priority when the
                           // user has profile signal driving the bucketing.
