@@ -126,18 +126,18 @@ export const ScholarshipDeepDive = ({
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mb-1.5">
-              {t("Personalized analysis", "Персональный анализ")}
+              {t("Your personalized strategy", "Ваша персональная стратегия")}
             </p>
             <h3 className="font-heading font-bold text-lg sm:text-xl text-foreground tracking-tight mb-1.5">
-              {t("Will this scholarship work for you?",
-                 "Подойдёт ли вам эта стипендия?")}
+              {t("Build a strategy for this scholarship",
+                 "Соберите стратегию под эту стипендию")}
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed mb-4 max-w-xl">
-              {t("Build your profile (60 seconds) and we'll show you a match breakdown vs your stats, a strategy specific to your background, what to prepare first, and the realistic odds.",
-                 "Заполните профиль (60 секунд) — и мы покажем разбор соответствия по вашим показателям, стратегию под ваш бэкграунд, что готовить в первую очередь и реальные шансы.")}
+              {t("60 seconds. A strategy tailored to your background and what to prepare first.",
+                 "60 секунд. Стратегия под ваш бэкграунд и что готовить в первую очередь.")}
             </p>
             <Button variant="gold" onClick={onBuildProfile} className="gap-1.5">
-              {t("Build my profile", "Заполнить профиль")} <ArrowRight className="w-3.5 h-3.5" />
+              {t("Build my strategy", "Собрать стратегию")} <ArrowRight className="w-3.5 h-3.5" />
             </Button>
           </div>
         </div>

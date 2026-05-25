@@ -493,6 +493,16 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
   const isShortlisted = !!s && tracker.shortlist.has(s.scholarship_id);
   const status = s ? tracker.statusMap[s.scholarship_id] : undefined;
   const days = s?.application_deadline ? Math.ceil((new Date(s.application_deadline).getTime() - Date.now()) / 86400_000) : null;
+  const formattedDeadline: string | null = (() => {
+    if (!s?.application_deadline) return null;
+    const d = new Date(s.application_deadline);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toLocaleDateString(language === "ru" ? "ru-RU" : undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  })();
 
   /* Open TopUni AI with this scholarship pre-elevated into the brief flow.
      Two sessionStorage payloads, drained independently by the wizard /
@@ -632,18 +642,23 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
               ) : null;
             })()}
             {s.application_deadline && days !== null && (
-              <span className={`font-heading text-[11px] uppercase tracking-[0.18em] px-2.5 py-1 rounded-sm font-semibold ${
+              <span className={`inline-flex items-center gap-1.5 font-heading text-[11px] uppercase tracking-[0.18em] px-2.5 py-1 rounded-sm font-semibold ${
                 days <= 7 ? "bg-rose-500/15 text-rose-600 dark:text-rose-400" :
                 days <= 30 ? "bg-amber-500/15 text-amber-700 dark:text-amber-400" :
                 "bg-muted/60 text-foreground/75"
               }`}>
-                {days <= 0
-                  ? t("Closed", "Закрыто")
-                  : days === 1
-                    ? t("1 day", "1 дн.")
-                    : days <= 30
-                      ? `${days} ${t("days left", "дн. осталось")}`
-                      : `${Math.round(days / 30)} ${t("months", "мес.")}`}
+                <span>
+                  {days <= 0
+                    ? t("Closed", "Закрыто")
+                    : days === 1
+                      ? t("1 day", "1 дн.")
+                      : days <= 30
+                        ? `${days} ${t("days left", "дн. осталось")}`
+                        : `${Math.round(days / 30)} ${t("months", "мес.")}`}
+                </span>
+                {formattedDeadline && days > 0 && (
+                  <span className="opacity-70 normal-case tracking-normal">· {formattedDeadline}</span>
+                )}
               </span>
             )}
           </div>
@@ -789,7 +804,7 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
         {/* Key facts row */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <Fact icon={<Wallet />} label={t("Award", "Финансирование")} value={s.award_amount_text || compactAward(s) || (s.estimated_total_value_usd ? `~$${Math.round(s.estimated_total_value_usd / 1000)}K total` : "—")} />
-          <Fact icon={<Calendar />} label={t("Deadline", "Дедлайн")} value={s.application_deadline ?? (s.deadline_type ?? t("varies", "разные"))} />
+          <Fact icon={<Calendar />} label={t("Deadline", "Дедлайн")} value={formattedDeadline ?? (s.deadline_type ?? t("varies", "разные"))} />
           <Fact icon={<GraduationCap />} label={t("Levels", "Уровни")} value={(s.target_degree_level ?? []).map(humanizeDegreeLabel).join(", ") || t("any", "любой")} />
           <Fact icon={<Globe />} label={t("Citizenship", "Гражданство")} value={s.citizenship_requirements ? truncate(s.citizenship_requirements, 60) : t("any", "любое")} />
         </div>
@@ -1177,6 +1192,13 @@ const DeadlineUrgencyBanner = ({ deadline, deadlineType, days }: {
 }) => {
   if (!deadline) return null;
   const isRolling = (deadlineType || "").toLowerCase().includes("rolling");
+  // Format the raw ISO deadline as a localized short date for the
+  // inline copy ("Closes May 31, 2026" instead of "Closes 2026-05-31").
+  const deadlineDate = (() => {
+    const d = new Date(deadline);
+    if (Number.isNaN(d.getTime())) return deadline;
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  })();
 
   if (days !== null && days <= 0) {
     return (
@@ -1185,7 +1207,7 @@ const DeadlineUrgencyBanner = ({ deadline, deadlineType, days }: {
           <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
           <div>
             <span className="font-semibold text-foreground">Applications closed.</span>{" "}
-            The {deadline} deadline has passed. The strategy notes below still apply for next cycle —
+            The {deadlineDate} deadline has passed. The strategy notes below still apply for next cycle —
             scroll for similar scholarships still accepting applications.
           </div>
         </div>
@@ -1201,7 +1223,7 @@ const DeadlineUrgencyBanner = ({ deadline, deadlineType, days }: {
             <span className="font-semibold">
               {days === 1 ? "1 day to deadline." : `${days} days to deadline.`}
             </span>{" "}
-            Closes {deadline}. If you weren't already drafting, you are now.
+            Closes {deadlineDate}. If you weren't already drafting, you are now.
             Open the official site below to confirm submission requirements before you start.
           </div>
         </div>
@@ -1214,7 +1236,7 @@ const DeadlineUrgencyBanner = ({ deadline, deadlineType, days }: {
         <div className="rounded-lg border border-amber-400/40 bg-amber-500/[0.06] px-4 py-3 text-sm text-amber-800 dark:text-amber-400 leading-relaxed flex items-start gap-2">
           <Calendar className="w-4 h-4 mt-0.5 shrink-0" />
           <div>
-            <span className="font-semibold">{days} days to deadline</span> — closes {deadline}.
+            <span className="font-semibold">{days} days to deadline</span> — closes {deadlineDate}.
             Block out drafting time this week.
           </div>
         </div>

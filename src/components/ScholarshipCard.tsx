@@ -248,6 +248,21 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
     urgencyText = days <= 365 ? t.monthsLeft(Math.round(days / 30)) : t.monthsLeft(Math.round(days / 30));
     urgencyClass = "bg-muted/30 text-muted-foreground border-transparent";
   }
+  // The countdown alone is ambiguous ("24 days left" → from what date?).
+  // Append the actual ISO deadline as a localized short date so the user
+  // can plan against a concrete calendar mark. Only when we have a real
+  // deadline (not rolling / not closed already with no date).
+  let deadlineDateLabel: string | null = null;
+  if (r.application_deadline && days !== null && days > 0) {
+    const d = new Date(r.application_deadline);
+    if (!Number.isNaN(d.getTime())) {
+      deadlineDateLabel = d.toLocaleDateString(language === "ru" ? "ru-RU" : undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    }
+  }
 
   // Funding presentation rules — UNIFIED through compactAward() so every
   // surface (Discover row, brief funding card, scholarship detail chip)
@@ -408,6 +423,11 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
           <Calendar className="w-3 h-3 mr-1" />
           {urgencyText}
         </Badge>
+        {deadlineDateLabel && (
+          <span className="text-[11px] text-muted-foreground tabular-nums" title="Application deadline">
+            {deadlineDateLabel}
+          </span>
+        )}
         {showTracking && (
           <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums" title="Students tracking this scholarship in their pipeline">
             <Users className="w-3 h-3" />
