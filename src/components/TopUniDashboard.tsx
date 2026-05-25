@@ -3539,6 +3539,9 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                                   studentName={profile.fullName || firstName}
                                   gradeLabel={profile.gradeLevel}
                                   generatedAt={pathwayGeneratedAt ? new Date(pathwayGeneratedAt).toISOString() : undefined}
+                                  combinedFunding={structuredBrief?.combinedFunding ?? null}
+                                  onOpenDiscover={() => navigate(isRu ? "/discover/ru" : "/discover")}
+                                  lang={language}
                                 />
                               </main>
                               <aside className="hidden lg:block lg:col-span-3 print:hidden">

@@ -24,6 +24,8 @@ import { WhereYouCanLand } from "./sections/WhereYouCanLand";
 import { WhatToWrite } from "./sections/WhatToWrite";
 import { WhatsBlockingYou } from "./sections/WhatsBlockingYou";
 import { WhatToDoThisMonth } from "./sections/WhatToDoThisMonth";
+import { FinalCTA } from "@/components/brief/FinalCTA";
+import type { CombinedFundingSection } from "@/types/briefStructured";
 import {
   SECTION_ORDER,
   SECTION_KICKERS,
@@ -43,6 +45,15 @@ interface CommonProps {
   generatedAt?: string;
   onShare?: () => void;
   onPrint?: () => void;
+  /** Optional structured funding (premium tier) — drives the FinalCTA
+   *  headline number. When absent, FinalCTA falls back to a generic
+   *  "your matched scholarships are in Discover" close. */
+  combinedFunding?: CombinedFundingSection | null;
+  /** Click handler for the FinalCTA Discover button. When omitted,
+   *  FinalCTA navigates via `window.location.href = /discover`. */
+  onOpenDiscover?: () => void;
+  /** Magazine language — also forwarded to FinalCTA copy. */
+  lang?: "en" | "ru";
 }
 
 interface StaticProps extends CommonProps {
@@ -274,6 +285,21 @@ export const BriefMagazine: React.FC<Props> = (props) => {
             <AcademyWaitlistForm source="brief_end" />
           </div>
         </section>
+      )}
+
+      {/* 2026-05-25: FinalCTA closer — last thing the reader sees. The
+          combinedFunding payload (extract-brief-data second pass) feeds
+          a personalized "$X waiting for you" headline; falls back to a
+          generic "your matched scholarships are in Discover" close
+          when no funding data is available. Only renders once at least
+          one section has streamed to avoid a stranded CTA above the
+          report. */}
+      {Object.keys(sections).length > 0 && !streamError && (
+        <FinalCTA
+          combinedFunding={props.combinedFunding ?? null}
+          onOpenDiscover={props.onOpenDiscover}
+          lang={props.lang ?? "en"}
+        />
       )}
     </div>
   );
