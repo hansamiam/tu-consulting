@@ -270,7 +270,7 @@ export const HeroCard = ({
               onClick={onExpand}
               className="bg-black/30 backdrop-blur-md border-white/60 text-white hover:bg-black/45 hover:text-white hover:border-white/80"
             >
-              {t("Why this matches you", "Почему это для вас")}
+              {t("How to win it", "Как выиграть")}
             </Button>
           </div>
         </div>
