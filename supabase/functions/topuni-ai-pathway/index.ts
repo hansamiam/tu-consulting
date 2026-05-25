@@ -1316,6 +1316,50 @@ ${EDITORIAL_RULES}`;
         `[brief-plan] archetype=${planResult.plan.archetype.id} confidence=${planResult.plan.archetype.confidence} llmBacked=${planResult.llmBacked} regenerated=${planResult.regenerated}`,
       );
 
+      // Telemetry — log the final archetype + the intake snapshot that
+      // produced it, so we can audit assignment distribution after a few
+      // weeks of real traffic. Fire-and-forget; never block the stream.
+      // user_id is best-effort (null for pre-signup runs).
+      (async () => {
+        try {
+          let assignmentUserId: string | null = null;
+          const auth = req.headers.get("Authorization");
+          if (auth?.startsWith("Bearer ")) {
+            const uc = createUserClient(auth);
+            const { data: { user: u } } = await uc.auth.getUser();
+            assignmentUserId = u?.id ?? null;
+          }
+          await (supabase as any).from("archetype_assignments").insert({
+            user_id: assignmentUserId,
+            archetype_id: planResult.plan.archetype.id,
+            confidence: planResult.plan.archetype.confidence,
+            reason: planResult.plan.archetype.reason,
+            intake_snapshot: {
+              nationality: profile.nationality,
+              gradeLevel: profile.gradeLevel,
+              majorCertainty: profile.majorCertainty,
+              major: profile.major,
+              fieldOfStudy: profile.fieldOfStudy,
+              targetCountries: profile.targetCountries,
+              gpa: profile.gpa,
+              gpaScale: profile.gpaScale,
+              ielts: profile.ielts,
+              toefl: profile.toefl,
+              sat: profile.sat,
+              topActivity: profile.topActivity,
+              personalStory: profile.personalStory,
+              background: profile.background,
+              extracurriculars: profile.extracurriculars,
+              careerGoal: profile.careerGoal,
+              namedSchools: profile.namedSchools,
+            },
+            detector_version: "v1",
+          });
+        } catch (e) {
+          console.warn("[telemetry] archetype_assignments insert failed:", e);
+        }
+      })();
+
       // Full premium build — sections run in parallel with the plan in
       // context. Archetype event is emitted FIRST as a prior event so
       // the client renders the archetype card while section generators
