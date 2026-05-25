@@ -66,6 +66,15 @@ const BODY = "text-[14px] leading-snug text-foreground/90";
 const PULLQUOTE = "text-[18px] italic font-medium text-foreground/85 leading-snug";
 const CLOSER = "text-[13px] font-semibold text-foreground/80";
 
+// ─── Visual anchor slot ────────────────────────────────────────────────
+// Per-frame visual anchor. Frames opt in by passing children to this slot.
+// Frames that pass nothing render with empty space (Stream D will fill these
+// with real charts; Stream C ships with static placeholders below).
+const VisualAnchor = ({ children, className = "" }: { children?: React.ReactNode; className?: string }) =>
+  children ? (
+    <div className={`mt-auto pt-4 ${className}`}>{children}</div>
+  ) : null;
+
 interface SurfaceSpec {
   id: string;
   kicker: string;
@@ -324,24 +333,38 @@ const ArchetypeHook = ({
 }: {
   archetype: { name: string; tagline?: string; confidence?: number };
   color?: string;
-}) => (
-  <div className="flex-1 min-h-0 flex flex-col">
-    {/* Archetype name keeps its display size — this is the branded
-        hook, not a body heading, so HEADING (28-32px) would underplay
-        it. PULLQUOTE governs the tagline below. */}
-    <h1
-      className="font-heading font-bold text-[44px] sm:text-[52px] leading-[1.0] tracking-[-0.04em] m-0 mb-3 text-balance"
-      style={color ? { color } : undefined}
-    >
-      {archetype.name.replace(/\.$/, "")}.
-    </h1>
-    {archetype.tagline && (
-      <p className={`font-heading ${PULLQUOTE} text-foreground/75 tracking-tight m-0 max-w-[24ch] text-balance`}>
-        {archetype.tagline}
-      </p>
-    )}
-  </div>
-);
+}) => {
+  // Initials = first 2 chars of archetype name, uppercased. Drops a
+  // trailing period if present so "The Builder." doesn't become "TH".
+  const cleanName = archetype.name.replace(/\.$/, "").trim();
+  const initials = cleanName.slice(0, 2).toUpperCase();
+  return (
+    <div className="flex-1 min-h-0 flex flex-col">
+      {/* Archetype name keeps its display size — this is the branded
+          hook, not a body heading, so HEADING (28-32px) would underplay
+          it. PULLQUOTE governs the tagline below. */}
+      <h1
+        className="font-heading font-bold text-[44px] sm:text-[52px] leading-[1.0] tracking-[-0.04em] m-0 mb-3 text-balance"
+        style={color ? { color } : undefined}
+      >
+        {cleanName}.
+      </h1>
+      {archetype.tagline && (
+        <p className={`font-heading ${PULLQUOTE} text-foreground/75 tracking-tight m-0 max-w-[24ch] text-balance`}>
+          {archetype.tagline}
+        </p>
+      )}
+      {/* Stream C C.3 visual anchor — gradient initials emblem fills
+          the previously-empty bottom of the card. Stream D will swap
+          this for <ArchetypeRadial>. */}
+      <VisualAnchor>
+        <div className="mx-auto h-[120px] w-[120px] rounded-full bg-gradient-to-br from-gold/30 to-gold/10 border border-gold/40 flex items-center justify-center">
+          <span className="font-heading text-2xl font-bold text-gold-dark">{initials}</span>
+        </div>
+      </VisualAnchor>
+    </div>
+  );
+};
 
 const Body = ({ headline, body }: { headline?: string; body?: string }) => (
   <div className="flex-1 min-h-0 flex flex-col">
@@ -466,33 +489,29 @@ const WhatYoureAvoiding = ({
     {block.body && (
       <p className={`font-sans ${BODY} text-foreground/70 m-0 mb-3`}>{block.body}</p>
     )}
-    <div className="overflow-y-auto">
+    {/* Stream C C.3 visual anchor — priority-color left-border bars.
+        Type enum is high/medium (no third tier), so:
+          high → red (Now), medium → amber (Soon). */}
+    <VisualAnchor className="space-y-1.5">
       {block.items.map((it, i) => (
         <div
           key={i}
-          className="py-2.5 grid grid-cols-[44px_1fr] items-start gap-3 border-t border-border/60 last:border-b"
+          className={[
+            "border-l-[3px] pl-2.5 py-1.5",
+            it.priority === "high" ? "border-red-500" : "border-amber-500",
+          ].join(" ")}
         >
-          <span
-            className={[
-              "text-[11px] uppercase tracking-[0.18em] font-semibold",
-              it.priority === "high" ? "text-gold-dark" : "text-muted-foreground",
-            ].join(" ")}
-          >
-            {it.priority === "high" ? "Now" : "Soon"}
-          </span>
-          <div>
-            <p className={`font-heading font-semibold ${BODY} text-foreground m-0 leading-snug`}>
-              {it.title}
+          <p className={`font-heading font-semibold ${BODY} text-foreground/90 leading-tight m-0`}>
+            {it.title}
+          </p>
+          {it.action && (
+            <p className="text-[12px] text-muted-foreground leading-snug mt-0.5 m-0">
+              {it.action}
             </p>
-            {it.action && (
-              <p className="text-[12px] text-muted-foreground m-0 mt-0.5 leading-relaxed">
-                {it.action}
-              </p>
-            )}
-          </div>
+          )}
         </div>
       ))}
-    </div>
+    </VisualAnchor>
   </div>
 );
 
@@ -516,10 +535,25 @@ const MondayMoveCard = ({
       </p>
     )}
     {move.body && (
-      <p className={`font-sans ${BODY} m-0 overflow-y-auto`}>
+      <p className={`font-sans ${BODY} m-0`}>
         {move.body}
       </p>
     )}
+    {/* Stream C C.3 visual anchor — Mon-Sun pill strip with Monday
+        highlighted in gold (the "Monday move"). */}
+    <VisualAnchor className="flex gap-1.5 justify-center">
+      {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((d, i) => (
+        <div
+          key={d}
+          className={[
+            "h-8 w-8 rounded-full text-[10px] font-semibold flex items-center justify-center",
+            i === 0 ? "bg-gold text-primary" : "bg-muted/40 text-muted-foreground",
+          ].join(" ")}
+        >
+          {d}
+        </div>
+      ))}
+    </VisualAnchor>
   </div>
 );
 
