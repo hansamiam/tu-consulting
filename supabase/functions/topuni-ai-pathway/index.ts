@@ -38,18 +38,23 @@ const SITE = Deno.env.get("PUBLIC_SITE_URL") ?? "https://topuni.org";
    only after the brief is actually saved. */
 async function queueBriefGeneratedEmail(
   admin: ReturnType<typeof createServiceClient>,
-  userId: string,
+  userId: string | null,
   email: string,
   fullName: string | null,
   language: "en" | "ru",
   briefSlug?: string,
 ) {
   try {
+    // Idempotency key is per-recipient. For authed users we key on userId
+    // (stable across re-runs). For anon, no userId exists — fall back to
+    // the lowercased email so a single anon email gets one strategy mail
+    // even across retries / wizard resubmits.
+    const idemBase = userId ?? `anon-${email.trim().toLowerCase()}`;
     await admin.functions.invoke("send-transactional-email", {
       body: {
         recipientEmail: email,
         templateName: "brief-generated",
-        idempotencyKey: `brief-generated-${userId}`,
+        idempotencyKey: `brief-generated-${idemBase}`,
         templateData: {
           firstName: fullName?.split(" ")[0] || undefined,
           briefUrl: briefSlug ? `${SITE}/brief/${briefSlug}` : `${SITE}/topuni-ai${language === "ru" ? "/ru" : ""}`,
@@ -1406,10 +1411,14 @@ ${EDITORIAL_RULES}`;
               generated_at: new Date().toISOString(),
             } as never, { onConflict: "profile_hash,language,grade" });
 
-            // Fire the brief-generated email to the authed user (if any).
-            // Anon users land in brief_leads via captureAnonBriefLead
-            // below — same closure so the capture only fires on
-            // successful brief persistence.
+            // Fire the brief-generated email immediately — for BOTH authed
+            // users AND anon users who provided an email in the wizard.
+            // The wizard promises "we'll send your strategy"; that promise
+            // gets kept for every cohort, not just signed-up users. Anon
+            // users still also land in brief_leads via captureAnonBriefLead
+            // below for the 24-48h re-engagement nudge if they haven't
+            // signed up by then. The brief URL is 30-day-live for anon
+            // per the email template copy.
             const auth = req.headers.get("Authorization");
             const isAnon = !auth?.startsWith("Bearer ");
             try {
@@ -1427,6 +1436,13 @@ ${EDITORIAL_RULES}`;
                     cacheLang === "ru" ? "ru" : "en",
                   );
                 }
+              } else if (profile?.email && typeof profile.email === "string" && profile.email.includes("@")) {
+                // Anon path — same strategy email, no user_id.
+                await queueBriefGeneratedEmail(
+                  supabase, null, profile.email,
+                  profile?.fullName ?? null,
+                  cacheLang === "ru" ? "ru" : "en",
+                );
               }
             } catch (e) {
               console.warn("[brief-generated] post-magazine notify failed", e);
@@ -1524,8 +1540,10 @@ ${grade === "premium" ? premiumSections : basicSections}`;
             generated_at: new Date().toISOString(),
           }, { onConflict: "profile_hash,language,grade" });
 
-          // Mirror of the magazine path — fire brief-generated to authed
-          // users only. Anon path covered by captureAnonBriefLead below.
+          // Mirror of the magazine path — fire brief-generated to BOTH
+          // authed users AND anon users with an email. Anon users still
+          // also land in brief_leads via captureAnonBriefLead below for
+          // the 24-48h re-engagement nudge.
           const auth = req.headers.get("Authorization");
           const isAnon = !auth?.startsWith("Bearer ");
           try {
@@ -1543,6 +1561,13 @@ ${grade === "premium" ? premiumSections : basicSections}`;
                   cacheLang === "ru" ? "ru" : "en",
                 );
               }
+            } else if (profile?.email && typeof profile.email === "string" && profile.email.includes("@")) {
+              // Anon path — same strategy email, no user_id.
+              await queueBriefGeneratedEmail(
+                supabase, null, profile.email,
+                profile?.fullName ?? null,
+                cacheLang === "ru" ? "ru" : "en",
+              );
             }
           } catch (e) {
             console.warn("[brief-generated] post-basic notify failed", e);
