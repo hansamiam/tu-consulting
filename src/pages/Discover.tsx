@@ -4001,12 +4001,12 @@ const Discover = ({ language = "en" }: Props) => {
                                     </span>
                                   )}
                                   {profile.gpa && (
-                                    <span className="inline-flex items-center gap-1 text-[11px] text-foreground/70 bg-muted/60 border border-border/60 px-2.5 py-1 rounded-full font-medium">
+                                    <span className="inline-flex items-center gap-1 text-[11px] text-foreground/85 bg-card border border-border/70 px-2.5 py-1 rounded-full font-medium">
                                       GPA {profile.gpa}{profile.gpaScale && profile.gpaScale !== "4.0" ? `/${profile.gpaScale}` : ""}
                                     </span>
                                   )}
                                   {(profile.ielts || profile.toefl) && (
-                                    <span className="inline-flex items-center gap-1 text-[11px] text-foreground/70 bg-muted/60 border border-border/60 px-2.5 py-1 rounded-full font-medium">
+                                    <span className="inline-flex items-center gap-1 text-[11px] text-foreground/85 bg-card border border-border/70 px-2.5 py-1 rounded-full font-medium">
                                       {profile.ielts ? `IELTS ${profile.ielts}` : `TOEFL ${profile.toefl}`}
                                     </span>
                                   )}
@@ -4331,25 +4331,11 @@ const Discover = ({ language = "en" }: Props) => {
                         </div>
                       )}
 
-                      {/* Refer-a-friend chip — engagement-gated. Only
-                          renders once the user has saved or tracked at
-                          least one scholarship, so anon visitors aren't
-                          asked to refer something they haven't engaged
-                          with. Subtle, single quiet line; clicks land
-                          on /refer. */}
-                      {(shortlist.size > 0 || Object.keys(statusMap).length > 0) && (
-                        <Link
-                          to="/refer"
-                          className="block rounded-xl border border-border bg-card/40 hover:bg-card hover:border-gold/30 px-3 py-2.5 transition-colors group"
-                        >
-                          <p className="text-[11px] text-foreground/75 leading-snug">
-                            {t("Liking TopUni so far?", "Нравится TopUni?")}{" "}
-                            <span className="text-gold-dark font-medium group-hover:underline underline-offset-4">
-                              {t("Refer a friend → free month", "Пригласите друга → месяц бесплатно")}
-                            </span>
-                          </p>
-                        </Link>
-                      )}
+                      {/* Refer-a-friend card removed 2026-05-25 — it was
+                          competing with the Academy CTA below and
+                          truncating its copy. /refer route stays live
+                          for direct visits, just no longer surfaced
+                          inline on Discover. */}
 
                       {/* 2026-05-19: Academy CTA card — bridges Discover →
                           Academy for users who want live human help on top
@@ -4366,7 +4352,7 @@ const Discover = ({ language = "en" }: Props) => {
                         <p className="text-[11.5px] text-foreground/80 leading-snug">
                           {t("Live workshops + office hours with the team.", "Прямые мастер-классы и office hours с командой.")}{" "}
                           <span className="text-primary font-semibold group-hover:underline underline-offset-4">
-                            {t("Academy", "Академия")} →
+                            {t("Visit Academy", "Открыть Академию")} →
                           </span>
                         </p>
                       </Link>
@@ -4743,41 +4729,33 @@ const Discover = ({ language = "en" }: Props) => {
                           }
                           return (
                             <>
-                              {/* Section headers reworked in round 6 — earlier
-                                  copy ('Within reach' / 'Aim high') made
-                                  predictive claims from a thin profile and
-                                  set a flat-affect tone for highly-selective
-                                  rows. New copy describes WHAT the bucket
-                                  is (alignment with profile signals), not
-                                  WHETHER the user is likely to win. */}
+                              {/* Two-section layout 2026-05-25 (was three):
+                                  the prior "Strong fit / These align with
+                                  your profile / Selections for you / More
+                                  flagship programs" stack read as wordy
+                                  and over-segmented. Now: top bucket is
+                                  the profile-aligned "Selections for you",
+                                  everything else folds into a single "More
+                                  flagship programs" bucket (formerly the
+                                  competitive + stretch split). */}
                               {sections.strong.length > 0 && (
                                 <section>
                                   <SectionHeader
-                                    kicker={t("Strong fit", "Хорошее совпадение")}
-                                    title={t("These align with your profile", "Эти подходят вашему профилю")}
-                                    subtitle={t("Your stated nationality, level, and field overlap with the program's audience.", "Ваши гражданство, уровень и направление совпадают с целевой аудиторией программы.")}
+                                    title={t("Selections for you", "Подборка для вас")}
+                                    subtitle={t("Programs whose audience overlaps with your profile.", "Программы, чья аудитория совпадает с вашим профилем.")}
                                     count={sections.strong.length} accentClass="text-gold-dark" />
                                   {renderSectionGrid("strong", sections.strong)}
                                 </section>
                               )}
 
-                              {sections.competitive.length > 0 && (
-                                <section>
-                                  <SectionHeader
-                                    title={t("Selections for you", "Подборка для вас")}
-                                    subtitle={t("The world is your oyster.", "Мир — ваша устрица.")}
-                                    count={sections.competitive.length} accentClass="text-primary dark:text-primary-bright" />
-                                  {renderSectionGrid("competitive", sections.competitive)}
-                                </section>
-                              )}
-
-                              {sections.stretch.length > 0 && (
+                              {(sections.competitive.length > 0 || sections.stretch.length > 0) && (
                                 <section>
                                   <SectionHeader
                                     title={t("More flagship programs", "Больше флагманских программ")}
                                     subtitle={t("More than a few ways to fund your education.", "Не один способ профинансировать обучение.")}
-                                    count={sections.stretch.length} accentClass="text-muted-foreground" />
-                                  {renderSectionGrid("stretch", sections.stretch)}
+                                    count={sections.competitive.length + sections.stretch.length}
+                                    accentClass="text-muted-foreground" />
+                                  {renderSectionGrid("more", [...sections.competitive, ...sections.stretch])}
                                 </section>
                               )}
 
