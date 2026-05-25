@@ -69,7 +69,7 @@ export function GenerationPipeline({ profile, isRu = false }: Props) {
     {
       id: "retrieve",
       Icon: Database,
-      label: t("Loading verified scholarship database", "Загружаем проверенную базу стипендий"),
+      label: t("Loading the verified Discover catalog", "Загружаем верифицированный каталог Discover"),
       detail: t("Programs from governments, universities, and foundations", "Программы от правительств, университетов и фондов"),
       doneAt: 700,
     },

@@ -167,7 +167,7 @@ export function EnrichedMarkdown({ children, scholarships }: Props) {
               return (
                 <span
                   className="font-semibold text-foreground/65 underline decoration-dotted decoration-foreground/30 underline-offset-2"
-                  title="Not yet matched in TopUni's verified scholarship database — please verify on the official source before applying."
+                  title="Not yet in TopUni's verified Discover catalog — verify on the official source before applying."
                 >
                   {kids}
                 </span>

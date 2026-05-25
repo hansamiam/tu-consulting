@@ -747,8 +747,8 @@ const FundingShortlist = ({ markdown, liveMatches, isRu, onOpenDiscover, combine
               key={`fund-${i}`}
               className="group relative bg-muted/20 border border-dashed border-border rounded-xl px-5 py-4 overflow-hidden"
               title={isRu
-                ? "Не найдено в проверенной базе TopUni — проверьте на официальном сайте перед подачей."
-                : "Not yet matched in TopUni's verified scholarship database — please verify on the official source before applying."}
+                ? "Не найдено в верифицированном Discover — проверьте на официальном сайте перед подачей."
+                : "Not yet in TopUni's verified Discover catalog — verify on the official source before applying."}
             >
               <div className="absolute left-0 inset-y-0 w-[2px] bg-muted-foreground/30" />
               <div className="flex items-baseline justify-between gap-3 mb-2">
@@ -3578,8 +3578,8 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                                 ? (isRu
                                     ? `Стек финансирования: ${stackText}`
                                     : `${stackText} in potential funding`)
-                                : t("Pulled live from our database — sorted by deadline",
-                                    "Подобрано из базы — по дедлайнам")}
+                                : t("Pulled live from Discover — sorted by deadline",
+                                    "Подобрано из Discover — по дедлайнам")}
                           </h3>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -3867,7 +3867,7 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                         <ArrowRight className="w-3 h-3 text-muted-foreground ml-auto group-hover:text-gold-dark group-hover:translate-x-0.5 transition-all" />
                       </div>
                       <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
-                        {t("Every scholarship in our database, ranked against your profile.",
+                        {t("Every scholarship in Discover, ranked against your profile.",
                            "Каждая стипендия из базы, отсортирована под ваш профиль.")}
                       </p>
                     </button>
