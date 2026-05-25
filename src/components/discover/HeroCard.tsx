@@ -142,8 +142,21 @@ export const HeroCard = ({
             className="absolute inset-0 h-full w-full opacity-20 text-white"
           />
         )}
+        {/* Readability scrim — two stacked gradients. The horizontal one
+            does the heavy lifting: text sits inside max-w-3xl on the
+            left, so we darken that side heavily and let the photo
+            breathe on the right. The vertical bottom-up assist
+            guarantees chip-row contrast no matter how bright the lower
+            edge of the photo is. Replaces a single bottom-up gradient
+            whose LIGHTEST point (20% black) sat exactly where the
+            title + provider + reason render — unreadable over any
+            high-luminance photo. */}
         <span
-          className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-black/65"
+          className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-black/10"
+          aria-hidden
+        />
+        <span
+          className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent"
           aria-hidden
         />
 
@@ -154,8 +167,14 @@ export const HeroCard = ({
             {country && <span className="opacity-70"> · {country}</span>}
           </p>
 
-          {/* Name — large, room for 3 lines */}
-          <h2 className="text-2xl sm:text-3xl font-heading font-bold leading-[1.15] mb-3 line-clamp-3">
+          {/* Name — large, room for 3 lines. Text-shadow ensures crispness
+              over any photo even when the scrim does most of the work;
+              bright skin tones / sun glare can bleed through a 75% black
+              scrim at high luminance. */}
+          <h2
+            className="text-2xl sm:text-3xl font-heading font-bold leading-[1.15] mb-3 line-clamp-3"
+            style={{ textShadow: "0 1px 2px rgba(0,0,0,0.35)" }}
+          >
             {cleanedName ?? scholarship.scholarship_name}
           </h2>
 
@@ -176,7 +195,7 @@ export const HeroCard = ({
             {cov && (
               <Badge
                 variant="secondary"
-                className="bg-white/15 text-white border-0 backdrop-blur font-normal"
+                className="bg-black/40 text-white border-0 backdrop-blur-md font-normal"
               >
                 {cov}
               </Badge>
@@ -184,7 +203,7 @@ export const HeroCard = ({
             {awardBadge && (
               <Badge
                 variant="secondary"
-                className="bg-white/15 text-white border-0 backdrop-blur font-normal"
+                className="bg-black/40 text-white border-0 backdrop-blur-md font-normal"
               >
                 {awardBadge}
               </Badge>
@@ -198,7 +217,7 @@ export const HeroCard = ({
                     ? "bg-rose-500/85 text-white"
                     : dl.tone === "warn"
                     ? "bg-amber-400/85 text-amber-950"
-                    : "bg-white/15 text-white",
+                    : "bg-black/40 text-white backdrop-blur-md",
                 ].join(" ")}
               >
                 {dl.text}
@@ -229,7 +248,7 @@ export const HeroCard = ({
               variant="outline"
               size="lg"
               onClick={onExpand}
-              className="bg-transparent border-white/40 text-white hover:bg-white/10 hover:text-white hover:border-white/60"
+              className="bg-black/30 backdrop-blur-md border-white/60 text-white hover:bg-black/45 hover:text-white hover:border-white/80"
             >
               {t("Why this matches you", "Почему это для вас")}
             </Button>
