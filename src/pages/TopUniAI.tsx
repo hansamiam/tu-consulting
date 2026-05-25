@@ -38,6 +38,7 @@ import {
   COUNTRY_DEFAULT_CHIPS,
   COUNTRY_MASTER,
   countryLabel,
+  countryFlag,
   COUNTRY_PICK_CAP,
   OTHER_TOKEN,
 } from "@/lib/country-chips";
@@ -142,7 +143,9 @@ interface WizardDraft {
   /** Sparse-input pass (2026-05-23). Step 1 chip single-select. Drives
    *  cultural-context.firstAbroadFramingFor() in the brief generator —
    *  CIS = "leaving home" angle, US/LatAm = "first-gen college" angle. */
-  firstToApplyAbroad?: "yes" | "siblings_have" | "parents_have" | "unsure";
+  // Legacy siblings_have / parents_have accepted on read from old
+  // drafts (pre-2026-05-25) and normalized to "no" by readers.
+  firstToApplyAbroad?: "yes" | "no" | "unsure" | "siblings_have" | "parents_have";
   /** Sparse-input pass (2026-05-23). Step 3 broad-first EC chip
    *  selections. Prepended to extracurriculars textarea on Generate. */
   selectedECTags?: string[];
@@ -327,7 +330,12 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
   };
   const [firstToApplyAbroad, setFirstToApplyAbroad] = useState<
     FirstAbroadOption["token"] | undefined
-  >(draft?.firstToApplyAbroad);
+  >(() => {
+    const v = draft?.firstToApplyAbroad;
+    if (v === "siblings_have" || v === "parents_have") return "no";
+    if (v === "yes" || v === "no" || v === "unsure") return v;
+    return undefined;
+  });
   // 2026-05-23 sparse-input pass: Step 3 EC chips. Broad-first defaults
   // visible; elite-coded (Olympiads, Debate, etc.) hidden behind a
   // "+ More activities…" expand. Selected tokens are PREPENDED to the
@@ -617,11 +625,18 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                   into "Identity" (about you) and "Academics" (your
                   numbers). Each step now holds ~equal visual weight. */}
               <div className="flex items-start justify-center gap-3 mb-10">
+                {/* 2026-05-25 rename: single-noun labels (You / Scores /
+                    Direction / Story) read parallel and walk the user
+                    through who → numbers → where → why. Replaces the
+                    weird "Sharpen" + sibling "Identity / Academics /
+                    Goals" mix that didn't pattern-match. Foreign-
+                    languages moved from Scores → You step in the same
+                    pass (it's identity context, not a test score). */}
                 {[
-                  { n: 1, label: t("Identity", "О себе") },
-                  { n: 2, label: t("Academics", "Учёба") },
-                  { n: 3, label: t("Goals", "Цели") },
-                  { n: 4, label: t("Sharpen", "Детали") },
+                  { n: 1, label: t("You", "О тебе") },
+                  { n: 2, label: t("Scores", "Баллы") },
+                  { n: 3, label: t("Direction", "Куда") },
+                  { n: 4, label: t("Story", "История") },
                 ].map(s => {
                   const isActive = s.n === step;
                   const isDone = s.n < step;
@@ -806,6 +821,36 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           })}
                         </div>
                       </div>
+                      {/* Foreign-languages chip set — moved here 2026-05-25
+                          (was on Step 2 Scores; didn't belong with test
+                          scores). Identity context; chip set deliberately
+                          omits English + CIS native languages so anything
+                          picked IS distinctive. */}
+                      <div>
+                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Foreign languages you're learning or speak", "Иностранные языки")}</Label>
+                        <p className="text-muted-foreground text-xs mt-1 mb-3">{t("Beyond your native and English. Pick all that apply — optional.", "Помимо родного и английского. Отметь все — по желанию.")}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {LANGUAGE_CHIPS.map((c) => {
+                            const selected = foreignLanguages.includes(c.token);
+                            return (
+                              <button
+                                key={c.token}
+                                type="button"
+                                onClick={() => toggleForeignLanguage(c.token)}
+                                aria-pressed={selected}
+                                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[36px] ${
+                                  selected
+                                    ? "bg-gold/15 text-gold-dark border-gold"
+                                    : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
+                                }`}
+                              >
+                                {selected && <Check className="w-3 h-3" />}
+                                {languageLabel(c.token, language === "ru" ? "ru" : "en")}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
                     {/* Account sign-up callout — collapsed-by-default
                         invitation to convert the email field into a
@@ -902,7 +947,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         }}
                         disabled={accountSubmitting || !fullName.trim() || !email.trim() || !nationality.trim() || !gradeLevel}
                       >
-                        {t("Nice. Your numbers next.", "Хорошо. Дальше — баллы.")} <ArrowRight className="ml-2 w-4 h-4" />
+                        {t("Next", "Далее")} <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
                     </div>
                   </motion.div>
@@ -1032,37 +1077,11 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         </div>
                       </div>
                     </div>
-                    {/* Foreign-languages chip set — moved from old Step 1
-                        on 2026-05-24 to pair with English-test scores on
-                        the academic-record step. Set deliberately omits
-                        English + CIS native languages so anything picked
-                        IS distinctive (no cultural-baseline filtering
-                        needed in the brief). */}
-                    <div>
-                      <Label className="text-xs uppercase tracking-wider font-medium">{t("Foreign languages you're learning or speak", "Иностранные языки")}</Label>
-                      <p className="text-muted-foreground text-xs mt-1 mb-3">{t("Beyond your native and English. Pick all that apply — optional.", "Помимо родного и английского. Отметь все — по желанию.")}</p>
-                      <div className="flex flex-wrap gap-2">
-                        {LANGUAGE_CHIPS.map((c) => {
-                          const selected = foreignLanguages.includes(c.token);
-                          return (
-                            <button
-                              key={c.token}
-                              type="button"
-                              onClick={() => toggleForeignLanguage(c.token)}
-                              aria-pressed={selected}
-                              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[36px] ${
-                                selected
-                                  ? "bg-gold/15 text-gold-dark border-gold"
-                                  : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
-                              }`}
-                            >
-                              {selected && <Check className="w-3 h-3" />}
-                              {languageLabel(c.token, language === "ru" ? "ru" : "en")}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    {/* Foreign-languages chip set moved to Step 1 (You)
+                        on 2026-05-25 — it's identity context (what
+                        languages a student speaks), not a test score,
+                        and pairing it with English-test scores felt
+                        forced. */}
                     <div className="flex justify-between pt-4">
                       <Button variant="outline" onClick={() => goToStep(1)}><ArrowLeft className="mr-2 w-4 h-4" /> {t("Back", "Назад")}</Button>
                       <Button
@@ -1070,7 +1089,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         onClick={() => goToStep(3)}
                         disabled={!gpa.trim()}
                       >
-                        {t("Got it. Where are you headed?", "Понял. Куда поступаешь?")} <ArrowRight className="ml-2 w-4 h-4" />
+                        {t("Next", "Далее")} <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
                     </div>
                   </motion.div>
@@ -1088,13 +1107,13 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                     <div>
                       <div className="flex items-baseline gap-3 mb-3">
                         <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">03</span>
-                        <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{t("Direction", "Направление")}</span>
+                        <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{t("Direction", "Куда")}</span>
                       </div>
                       <h2 className="font-heading text-[32px] sm:text-[44px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
-                        {t("What are you chasing?", "К чему вы стремитесь?")}
+                        {t("Pick your direction.", "Выбери направление.")}
                       </h2>
                       <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[52ch]">
-                        {t("Field, timeline, and what matters most.", "Область, сроки и приоритеты.")}
+                        {t("Field, timeline, and what matters to you.", "Область, сроки и что для тебя важно.")}
                       </p>
                     </div>
                     <div className="space-y-6">
@@ -1116,7 +1135,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           a specialty not in the canonical list (e.g.
                           "Quantum Biophysics") aren't blocked. */}
                       <div className="space-y-1.5">
-                        <Label className="text-xs uppercase tracking-wider font-medium">{t("What do you (think you) want to study?", "Что ты (думаешь, что) хочешь изучать?")}</Label>
+                        <Label className="text-xs uppercase tracking-wider font-medium">{t("What do you want to study?", "Что ты хочешь изучать?")}</Label>
                         {(() => {
                           const MAJORS = [
                             "Undecided",
@@ -1213,6 +1232,9 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                             >
                               {selected && <Check className="w-3 h-3" />}
                               {isOther && !selected && <Plus className="w-3 h-3" />}
+                              {!isOther && (
+                                <span className="leading-none" aria-hidden>{countryFlag(token)}</span>
+                              )}
                               {label}
                             </button>
                           );
@@ -1232,6 +1254,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               className="inline-flex items-center gap-1.5 rounded-full border bg-gold/15 text-gold-dark border-gold px-3 py-1.5 text-xs font-medium min-h-[36px]"
                             >
                               <Check className="w-3 h-3" />
+                              <span className="leading-none" aria-hidden>{countryFlag(token)}</span>
                               {countryLabel(token, language === "ru" ? "ru" : "en")}
                               <X className="w-3 h-3 opacity-70 ml-0.5" />
                             </button>
@@ -1269,6 +1292,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                                   >
                                     {selected && <Check className="w-4 h-4 mr-2 text-gold-dark" />}
                                     {!selected && <span className="w-4 mr-2" />}
+                                    <span className="mr-2 leading-none" aria-hidden>{c.flag}</span>
                                     {label}
                                   </CommandItem>
                                 );
@@ -1289,30 +1313,29 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         accessibility. Header sets a soft divider between
                         the "direction" half above and "priorities" below
                         so the merged step still reads as two intents. */}
+                    {/* Priorities — slimmed 2026-05-25 to shorten the
+                        page. Previous each-row-in-its-own-card layout
+                        added ~120px of padding/borders the page didn't
+                        need; now an inline row per priority with the
+                        same controls but tighter vertical rhythm. */}
                     <div className="pt-2">
-                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark/80 font-medium mb-1.5">{t("What matters most", "Что важно")}</p>
-                      <p className="text-muted-foreground text-sm mb-4">{t("Weight each on a 1-5 scale.", "Оцените каждое по шкале 1–5.")}</p>
-                      <div className="space-y-5">
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark/80 font-medium mb-3">{t("What matters to you", "Что важно для тебя")}</p>
+                      <div className="space-y-3.5">
                         {[
                           { label: t("Prestige", "Престиж"), value: prestige, set: setPrestige, icon: GraduationCap, low: t("Any school", "Любой вуз"), high: t("Top 50 only", "Только топ-50") },
                           { label: t("Scholarship need", "Нужна стипендия"), value: scholarship, set: setScholarship, icon: Shield, low: t("Self-fund OK", "Готов(а) платить"), high: t("Must be free", "Только бесплатно") },
                           { label: t("Visa accessibility", "Доступность визы"), value: visaAccess, set: setVisaAccess, icon: CheckCircle2, low: t("Don't mind", "Не важно"), high: t("Easy access", "Простая виза") },
                         ].map(item => (
-                          <div key={item.label} className="bg-card border border-border/70 rounded-xl p-5">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-2.5">
-                                <item.icon className="w-4 h-4 text-gold-dark" />
-                                <span className="text-sm font-semibold text-foreground">{item.label}</span>
+                          <div key={item.label}>
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-2">
+                                <item.icon className="w-3.5 h-3.5 text-gold-dark" />
+                                <span className="text-[13px] font-semibold text-foreground">{item.label}</span>
                               </div>
-                              <div className="flex items-center gap-1.5">
-                                {[1, 2, 3, 4, 5].map(n => (
-                                  <span key={n} className={`h-1.5 w-1.5 rounded-full transition-colors ${n <= item.value[0] ? "bg-gold-dark" : "bg-border"}`} />
-                                ))}
-                                <span className="text-xs font-bold text-gold-dark tabular-nums ml-1.5">{item.value[0]}/5</span>
-                              </div>
+                              <span className="text-[11px] font-bold text-gold-dark tabular-nums">{item.value[0]}/5</span>
                             </div>
                             <Slider min={1} max={5} step={1} value={item.value} onValueChange={item.set} className="w-full" />
-                            <div className="flex justify-between mt-2 text-[11px] text-muted-foreground font-medium">
+                            <div className="flex justify-between mt-1 text-[10.5px] text-muted-foreground">
                               <span>{item.low}</span>
                               <span>{item.high}</span>
                             </div>
@@ -1327,7 +1350,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         onClick={() => goToStep(4)}
                         disabled={!major.trim()}
                       >
-                        {t("Good. Last bit's optional.", "Отлично. Последнее — по желанию.")} <ArrowRight className="ml-2 w-4 h-4" />
+                        {t("Next", "Далее")} <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
                     </div>
                   </motion.div>
@@ -1345,19 +1368,18 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                     <div>
                       <div className="flex items-baseline gap-3 mb-3">
                         <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">04</span>
-                        <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{t("Sharpen", "Детали")}</span>
+                        <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{t("Story", "История")}</span>
                       </div>
                       <h2 className="font-heading text-[32px] sm:text-[44px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
                         {t("Tell us more — or skip ahead.", "Расскажите больше — или пропустите.")}
                       </h2>
                       <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[54ch]">
-                        {t("Optional. Each detail makes your essay angles and shortlist sharper.",
-                           "По желанию. Каждая деталь усиливает идеи эссе и подбор.")}
+                        {t("Optional.", "По желанию.")}
                       </p>
                     </div>
                     <div className="space-y-5">
                       <div className="space-y-1.5">
-                        <Label htmlFor="careerGoal" className="text-xs uppercase tracking-wider font-medium">{t("Where do you want this to lead?", "К чему ты идёшь?")}</Label>
+                        <Label htmlFor="careerGoal" className="text-xs uppercase tracking-wider font-medium">{t("Who do you want to be?", "Кем ты хочешь стать?")}</Label>
                         <Textarea
                           id="careerGoal"
                           placeholder={t("e.g. data scientist focused on climate modeling", "напр. data scientist в климатическом моделировании")}
@@ -1367,7 +1389,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="extracurriculars" className="text-xs uppercase tracking-wider font-medium">{t("What have you actually been doing outside class?", "Чем ты реально занимаешься помимо учёбы?")}</Label>
+                        <Label htmlFor="extracurriculars" className="text-xs uppercase tracking-wider font-medium">{t("What do you like to do outside class?", "Чем ты любишь заниматься помимо учёбы?")}</Label>
                         {/* 2026-05-23 sparse-input pass: broad-first EC chip
                             row. Leads with culturally inclusive options
                             (Tutoring, Part-time job, Family responsibilities,
@@ -1443,7 +1465,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="background" className="text-xs uppercase tracking-wider font-medium">{t("Tell us about you — the version your closest friend would describe", "Расскажи о себе — так, как описал бы твой лучший друг")}</Label>
+                        <Label htmlFor="background" className="text-xs uppercase tracking-wider font-medium">{t("How would your friends describe you?", "Как твои друзья описали бы тебя?")}</Label>
                         <Textarea
                           id="background"
                           placeholder={t("e.g. first-gen, raised in Bishkek, parents both teachers", "напр. первый в семье в вузе, из Бишкека, родители учителя")}
@@ -1453,7 +1475,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="namedSchools" className="text-xs uppercase tracking-wider font-medium">{t("Schools already on your list?", "Вузы, которые ты уже присмотрел(а)?")}</Label>
+                        <Label htmlFor="namedSchools" className="text-xs uppercase tracking-wider font-medium">{t("Dream schools?", "Вузы мечты?")}</Label>
                         <Textarea
                           id="namedSchools"
                           placeholder={t("e.g. Stanford, U of Toronto, KAIST", "напр. Stanford, U of Toronto, KAIST")}
@@ -1489,54 +1511,14 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         } catch { /* localStorage may be unavailable; brief still renders */ }
                         setScreen("dashboard");
                       };
-                      const filled = [careerGoal, extracurriculars, background, namedSchools]
-                        .filter((v) => v && v.trim().length > 0).length;
-                      // 2026-05-23 sparse-input pass: when fewer than 2 of
-                      // the 4 sharpen fields are filled, show a richer
-                      // nudge instead of the bland "optional" line. Gives
-                      // the user one explicit chance to add more before
-                      // submitting a sparse profile. "Add more" focuses
-                      // the first empty textarea; the primary Generate
-                      // button below is the "skip anyway" path.
-                      const focusFirstEmptyStep3 = () => {
-                        const ids: ReadonlyArray<[string, string]> = [
-                          ["careerGoal", careerGoal],
-                          ["extracurriculars", extracurriculars],
-                          ["background", background],
-                          ["namedSchools", namedSchools],
-                        ];
-                        const next = ids.find(([, v]) => !v || v.trim().length === 0);
-                        if (!next) return;
-                        const el = document.getElementById(next[0]);
-                        if (el && "focus" in el) {
-                          (el as HTMLElement).scrollIntoView({ behavior: "smooth", block: "center" });
-                          (el as HTMLElement).focus({ preventScroll: true });
-                        }
-                      };
-                      const showNudge = filled < 2;
+                      // 2026-05-25: nudge + counter line dropped. The
+                      // "Even one line per box sharpens your strategy /
+                      // Add more" callout read as nagging; the
+                      // counter alternative ("X of 4 fields added") was
+                      // a salesy ratio. Page now just shows the inputs
+                      // and the Generate button with nothing in between.
                       return (
                         <>
-                          <div className="text-center pt-2" aria-live="polite">
-                            {showNudge ? (
-                              <p className="text-[12px] text-muted-foreground leading-snug">
-                                {t("Even one line per box sharpens your strategy.",
-                                   "Даже одна строка в каждом поле уточняет вашу стратегию.")}
-                                {" "}
-                                <button
-                                  type="button"
-                                  onClick={focusFirstEmptyStep3}
-                                  className="text-gold-dark hover:text-gold underline underline-offset-2 font-medium"
-                                >
-                                  {t("Add more", "Добавить ещё")}
-                                </button>
-                              </p>
-                            ) : (
-                              <p className="text-[11.5px] text-muted-foreground">
-                                {t(`${filled} of 4 fields added · sharpens essay angles and fit notes.`,
-                                   `Заполнено ${filled} из 4 · улучшит идеи эссе и подбор.`)}
-                              </p>
-                            )}
-                          </div>
                           {/* 2026-05-20: dropped the redundant "Skip for
                               now" ghost button — it called the same
                               onGenerate handler as the primary CTA, so
@@ -1548,7 +1530,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               <ArrowLeft className="mr-2 w-4 h-4" /> {t("Back", "Назад")}
                             </Button>
                             <Button variant="gold" size="lg" onClick={onGenerate}>
-                              {t("That's enough — write it up", "Хватит — напиши мне план")}
+                              {t("Give me my strategy", "Дай мне стратегию")}
                               <ArrowRight className="ml-2 w-5 h-5" />
                             </Button>
                           </div>

@@ -69,7 +69,9 @@ export interface DiscoverProfile {
    *  cultural-context.ts — CIS = "first to leave home" framing,
    *  US/LatAm = "first-gen college" framing, default = "first global
    *  step." Nullable. */
-  firstToApplyAbroad?: "yes" | "siblings_have" | "parents_have" | "unsure";
+  // Legacy tokens siblings_have / parents_have are accepted on read
+  // (drafts from before 2026-05-25) and normalized to "no" at parse time.
+  firstToApplyAbroad?: "yes" | "no" | "unsure" | "siblings_have" | "parents_have";
 }
 
 const STORAGE_KEY = "topuni_discover_profile";
@@ -208,8 +210,12 @@ const dbColumnsToProfile = (row: StudentProfileRow): Partial<DiscoverProfile> =>
   }
   if (row.first_to_apply_abroad) {
     const v = row.first_to_apply_abroad as string;
-    if (v === "yes" || v === "siblings_have" || v === "parents_have" || v === "unsure") {
+    // Normalize legacy siblings_have / parents_have → "no" on read
+    // (pre-2026-05-25 drafts). Brief generator only branches on "yes".
+    if (v === "yes" || v === "no" || v === "unsure") {
       out.firstToApplyAbroad = v;
+    } else if (v === "siblings_have" || v === "parents_have") {
+      out.firstToApplyAbroad = "no";
     }
   }
   return out;

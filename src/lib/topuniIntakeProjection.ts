@@ -67,7 +67,10 @@ interface IntakeFields {
   majorCertainty?: "not_at_all" | "some_idea" | "pretty_sure" | "certain";
   /** Sparse-input pass (2026-05-23) — see DiscoverProfile fields. */
   foreignLanguages?: string[];
-  firstToApplyAbroad?: "yes" | "siblings_have" | "parents_have" | "unsure";
+  // Legacy tokens siblings_have / parents_have are accepted on read
+  // for backward-compat with drafts created before 2026-05-25 and
+  // normalized to "no" by readers.
+  firstToApplyAbroad?: "yes" | "no" | "unsure" | "siblings_have" | "parents_have";
 }
 
 /** Project the wizard's intake into the DiscoverProfile shape that

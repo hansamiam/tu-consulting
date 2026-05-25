@@ -41,17 +41,20 @@ export function languageLabel(token: string, language: "en" | "ru"): string {
 // First-in-family-to-apply-abroad chip set. Single-select. The token
 // is what gets stored; cultural-context.ts in the brief generator maps
 // the framing per nationality.
+//
+// 2026-05-25: collapsed siblings_have + parents_have → single "no". The
+// brief generator only special-cased "yes" anyway; the rest got the
+// same generic line. Legacy tokens are mapped to "no" by consumers.
 export interface FirstAbroadOption {
-  token: "yes" | "siblings_have" | "parents_have" | "unsure";
+  token: "yes" | "no" | "unsure";
   en: string;
   ru: string;
 }
 
 export const FIRST_ABROAD_CHIPS: FirstAbroadOption[] = [
-  { token: "yes",            en: "Yes",            ru: "Да" },
-  { token: "siblings_have",  en: "Siblings have",  ru: "Братья/сёстры уже" },
-  { token: "parents_have",   en: "Parents have",   ru: "Родители уже" },
-  { token: "unsure",         en: "Not sure",       ru: "Не знаю" },
+  { token: "yes",     en: "Yes",      ru: "Да" },
+  { token: "no",      en: "No",       ru: "Нет" },
+  { token: "unsure",  en: "Not sure", ru: "Не знаю" },
 ];
 
 export function firstAbroadLabel(
