@@ -218,7 +218,7 @@ export function useActivityFeed() {
         out.push({
           id: `bs-${profileFreshness.last_brief_generated_at}`,
           kind: "brief_stale",
-          title: "Your strategy brief is out of date",
+          title: "Your strategy is out of date",
           meta: "Profile changed since last generation",
           href: "/topuni-ai",
           occurredAt: new Date(profileTs).toISOString(),

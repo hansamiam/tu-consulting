@@ -773,7 +773,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                                 aria-pressed={selected}
                                 className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[36px] ${
                                   selected
-                                    ? "bg-gold-dark text-cream border-gold-dark"
+                                    ? "bg-gold/15 text-gold-dark border-gold"
                                     : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
                                 }`}
                               >
@@ -1005,7 +1005,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               aria-pressed={selected}
                               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[36px] ${
                                 selected
-                                  ? "bg-gold-dark text-cream border-gold-dark"
+                                  ? "bg-gold/15 text-gold-dark border-gold"
                                   : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
                               }`}
                             >
@@ -1158,7 +1158,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               aria-pressed={selected}
                               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[36px] ${
                                 selected
-                                  ? "bg-gold-dark text-cream border-gold-dark"
+                                  ? "bg-gold/15 text-gold-dark border-gold"
                                   : isOther
                                     ? "bg-card text-foreground border-dashed border-border hover:border-gold-dark/60"
                                     : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
@@ -1182,7 +1182,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               type="button"
                               onClick={() => toggleCountry(token)}
                               aria-pressed={true}
-                              className="inline-flex items-center gap-1.5 rounded-full border bg-gold-dark text-cream border-gold-dark px-3 py-1.5 text-xs font-medium min-h-[36px]"
+                              className="inline-flex items-center gap-1.5 rounded-full border bg-gold/15 text-gold-dark border-gold px-3 py-1.5 text-xs font-medium min-h-[36px]"
                             >
                               <Check className="w-3 h-3" />
                               {countryLabel(token, language === "ru" ? "ru" : "en")}
@@ -1344,7 +1344,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                                   aria-pressed={selected}
                                   className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[34px] ${
                                     selected
-                                      ? "bg-gold-dark text-cream border-gold-dark"
+                                      ? "bg-gold/15 text-gold-dark border-gold"
                                       : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
                                   }`}
                                 >
@@ -1375,7 +1375,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                                     aria-pressed={selected}
                                     className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[34px] ${
                                       selected
-                                        ? "bg-gold-dark text-cream border-gold-dark"
+                                        ? "bg-gold/15 text-gold-dark border-gold"
                                         : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
                                     }`}
                                   >
