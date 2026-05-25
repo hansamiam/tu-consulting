@@ -238,6 +238,41 @@
   .bg-canvas-soft { background-color: hsl(var(--canvas-soft)); }
   .bg-surface { background-color: hsl(var(--surface)); }
 
+  /* BriefStory print mode — stack the 7 absolute-positioned slides
+     vertically, full bleed, one per page. The deck chrome (top bar,
+     sidebars, footer, frame controls, tap zones, progress) is hidden
+     via `print:hidden` on those elements directly. */
+  @media print {
+    .brief-story-root { min-height: 0 !important; background: #fff !important; }
+    .brief-story-root .brief-story-frame {
+      width: 100% !important;
+      height: auto !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      background: #fff !important;
+      overflow: visible !important;
+    }
+    .brief-story-root .brief-story-slide-wrap {
+      position: relative !important;
+      inset: auto !important;
+      opacity: 1 !important;
+      transform: none !important;
+      page-break-after: always !important;
+    }
+    .brief-story-root .brief-story-slide-wrap > article {
+      position: relative !important;
+      inset: auto !important;
+      padding: 40px 32px !important;
+      background: #fff !important;
+      color: #000 !important;
+      min-height: 0 !important;
+    }
+    /* Demote any navy slides to safe print colors. */
+    .brief-story-root .brief-story-slide-wrap > article * {
+      color: #000 !important;
+    }
+  }
+
   .bg-hero-soft {
     background:
       radial-gradient(ellipse 80% 50% at 50% 0%, hsl(var(--canvas-soft)) 0%, transparent 70%),

@@ -69,10 +69,12 @@ import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import { ENV, EDGE_FUNCTIONS_URL } from "@/lib/env";
 import { cleanScholarshipName, cleanProvider, compactAward } from "@/lib/scholarshipFields";
-// 2026-05-20: switched to BriefMinimal — clean 4-section layout, no
-// magazine chrome. BriefMagazine.tsx kept in tree as historical
-// reference until BriefMinimal proves out, but no longer imported.
-import { BriefMagazine } from "@/components/brief/BriefMinimal";
+// 2026-05-25: switched to BriefStory — Wrapped-style 7-card story deck.
+// Replaces the McKinsey-deck BriefMinimal as the post-form-submit view
+// per designer handoff at ~/Downloads/Top Uni AI/. BriefMinimal kept
+// in tree as the "Open full report" fallback (long-form view).
+import { BriefStory } from "@/components/brief/BriefStory";
+import { BriefMagazine as BriefMinimal } from "@/components/brief/BriefMinimal";
 import type { BriefSections, SectionId } from "@/components/brief/types";
 import { serializeBriefForCounselor } from "@/components/brief/serializeForCounselor";
 
@@ -3560,17 +3562,22 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                   {(() => {
                     return (
                       <>
-                        {/* v6 magazine path — if any sections streamed, render
-                            the editorial layout. Falls back to the legacy
-                            markdown ReportRenderer when no magazine sections
-                            present (basic tier, legacy cached briefs). */}
+                        {/* v7 BriefStory — Wrapped-style 7-card deck. Renders
+                            when at least one magazine section has streamed in.
+                            Falls back to the legacy markdown ReportRenderer
+                            for basic tier / cached briefs that pre-date the
+                            magazine payload shape. */}
                         {Object.keys(magazineSections).length > 0 ? (
-                          <BriefMagazine
-                            mode="static"
+                          <BriefStory
                             sections={magazineSections}
-                            studentName={profile.fullName || (isRu ? "Ваш отчёт" : "Your strategy report")}
-                            gradeLabel={reportGrade === "premium" ? "Member" : "Basic"}
-                            generatedAt={pathwayGeneratedAt ? new Date(pathwayGeneratedAt).toISOString() : undefined}
+                            student={{
+                              firstName: profile.fullName?.trim().split(/\s+/)[0] || (isRu ? "Друг" : "You"),
+                              lastName: profile.fullName?.trim().split(/\s+/).slice(1).join(" ") || "",
+                              gradeLabel: profile.gradeLevel,
+                              field: profile.major,
+                              city: (profile.targetCountries ?? [])[0],
+                              generatedAt: pathwayGeneratedAt ? new Date(pathwayGeneratedAt).toISOString() : undefined,
+                            }}
                           />
                         ) : pathwayContent && (
                           <ReportRenderer
