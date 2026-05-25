@@ -215,7 +215,7 @@ ${ctx.dbContext}
 
 THE 16-ARCHETYPE LIBRARY (you may pick any id):
 - bridge-domain-kid     The Bridge-Domain Kid     — "Both halves of you are the point."
-- quiet-builder         The Quiet Builder         — "You've built it. You haven't claimed it yet."
+- quiet-builder         The Quiet Builder         — "The proof is built. The pitch is what's missing."
 - late-bloomer          The Late Bloomer          — "Most of your run hasn't happened yet."
 - foreign-lane-native   The Foreign-Lane Native   — "Cross-cultural is where you already live."
 - quiet-athlete         The Quiet Athlete         — "Discipline you don't talk about is still discipline."
@@ -223,8 +223,8 @@ THE 16-ARCHETYPE LIBRARY (you may pick any id):
 - community-anchor      The Community Anchor      — "You're the one who shows up. That's information."
 - self-taught           The Self-Taught           — "You built your own scaffolding."
 - storyteller           The Storyteller           — "You can name what others only feel."
-- quant                 The Quant                 — "You're not 'good at math.' You're inside it."
-- operator              The Operator              — "You don't theorize. You move people."
+- quant                 The Quant                 — "Math is your native language."
+- operator              The Operator              — "Action is your first instinct."
 - translator            The Translator            — "You sit between groups on purpose."
 - open-question         The Open Question         — "You're still asking. That's the position."
 - tight-lane            The Tight Lane            — "You knew in 8th grade. Some never do."
