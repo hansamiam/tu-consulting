@@ -11,7 +11,9 @@ import type {
   MondayMove,
 } from "../types";
 
-export type StoryVariant = "editorial" | "bold" | "quiet";
+// StoryVariant retired 2026-05-25 — the Editorial/Bold/Quiet picker
+// was an internal design exploration, never meant to ship as a
+// user-facing tab. We ship one quiet, magazine-style layout.
 
 export interface StudentMeta {
   firstName: string;
@@ -105,18 +107,7 @@ export interface StoryData {
   };
 }
 
-export interface DeckCallbacks {
-  /** Called when the user hits "Open full report" on close-side actions
-   *  or wants the McKinsey long-form view. */
-  onOpenFullReport?: () => void;
-  /** Called from the share button. Receives the active slide index so
-   *  the share text can reference which card. */
-  onShare?: (slideIndex: number) => void;
-  /** Called from the "Save as PDF" button. Defaults to window.print(). */
-  onPrint?: () => void;
-}
-
-export interface BriefStoryProps extends DeckCallbacks {
+export interface BriefStoryProps {
   /** The streamed/cached brief payload. */
   sections: BriefSections;
   /** Student profile data — pulled from the saved wizard input. */
@@ -126,15 +117,11 @@ export interface BriefStoryProps extends DeckCallbacks {
   funnel?: FunnelMeta;
   /** Optional override of the top match. */
   topMatch?: TopMatch;
-  /** Stream-mode loading state — when true, the deck shows skeletons
-   *  for sections that haven't arrived yet. */
+  /** Stream-mode loading state — when true, render a soft skeleton until
+   *  the first section arrives. */
   loading?: boolean;
   /** Stream-mode error from the parent. */
   error?: string | null;
-  /** Initial variant. Defaults to "editorial" — the recommended ship. */
-  initialVariant?: StoryVariant;
-  /** Allow the user to switch variants from the top bar. Defaults to true. */
-  showVariantPicker?: boolean;
 }
 
 // Re-exports so slide components only import from this module.

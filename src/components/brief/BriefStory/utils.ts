@@ -55,12 +55,21 @@ const flagFor = (country: string): string => {
   return FLAG_EMOJI[key] ?? "🌍";
 };
 
-/** Build the cover slide's body sentence from the payload — falls
- *  back to a generic line when the funnel numbers are unknown. */
+/** Build the cover slide's body sentence from the payload. We
+ *  intentionally avoid quoting funnel.from when it's 0 / unknown
+ *  (the cover slide read "We read 0 scholarships and matched 4..."
+ *  in the 2026-05-25 walkthrough — caught and fixed). */
 const buildCoverBody = (funnel?: FunnelMeta): { intro: string; promise: string } => {
-  if (funnel && funnel.to > 0) {
+  if (funnel && funnel.to > 0 && funnel.from > 0) {
     return {
       intro: `We read ${funnel.from} scholarships and matched ${funnel.to} to your profile.`,
+      promise:
+        "Six cards. Your archetype, where you stand, where you can land, the essay only you can write, what to clear this month, and the one thing to do on Monday.",
+    };
+  }
+  if (funnel && funnel.to > 0) {
+    return {
+      intro: `Matched ${funnel.to} scholarship${funnel.to === 1 ? "" : "s"} to your profile.`,
       promise:
         "Six cards. Your archetype, where you stand, where you can land, the essay only you can write, what to clear this month, and the one thing to do on Monday.",
     };

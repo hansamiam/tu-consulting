@@ -1,18 +1,17 @@
-/* AcademyHookCta — Discover v1 F12 upsell stitch.
+/* AcademyHookCta — Discover detail-sheet membership upsell.
  *
- * Small reusable CTA block. Lives below ScholarshipDeepDive in the
- * detail sheet, and inside the "expired but reopens_annually" banner.
- * Doesn't require Academy infra to exist — it just nudges to the
- * strategy brief wizard, which is what the user can actually do today.
+ * Lives below the static scholarship info in the detail sheet and inside
+ * the "expired but reopens_annually" banner. Sam re-pointed this from a
+ * "strategy report" prompt to a MEMBERSHIP prompt on 2026-05-25 — live
+ * workshops + office hours with the team is the differentiated offer
+ * vs. the free strategy report.
  *
  * Variants:
- *   - detail_sheet (default): "Want help winning this one?"
+ *   - detail_sheet (default): "Want live support?"
  *   - expired_reopens: "We'll help you target next cycle"
  *   - generic: parent passes its own headline/body
  *
- * Bilingual EN/RU. Punchy copy, no Sparkles. Single-action — the
- * F12 plan calls these "lightweight stitches," not full landing
- * pages, so visual weight stays minimal.
+ * Bilingual EN/RU. Punchy copy, no Sparkles. Single-action.
  */
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
@@ -25,7 +24,7 @@ interface Props {
   /** Override copy. When set, ignores the variant defaults. */
   headline?: string;
   body?: string;
-  /** Where the primary button goes. Defaults to the wizard. */
+  /** Where the primary button goes. Defaults to /pricing — membership. */
   href?: string;
   /** Override the button label. */
   ctaLabel?: string;
@@ -37,31 +36,31 @@ interface Props {
 const COPY: Record<Variant, { en: { headline: string; body: string; cta: string }; ru: { headline: string; body: string; cta: string } }> = {
   detail_sheet: {
     en: {
-      headline: "Want help winning this one?",
-      body: "Get your Top Uni strategy — your fit, the angle, what to prepare first.",
-      cta: "Get my strategy",
+      headline: "Want live support?",
+      body: "Monthly workshops and office hours with our expert team.",
+      cta: "Become a member",
     },
     ru: {
-      headline: "Хотите помочь подать сильно?",
-      body: "Получите стратегию Top Uni — где вы подходите, какой угол, что готовить в первую очередь.",
-      cta: "Получить стратегию",
+      headline: "Нужна живая поддержка?",
+      body: "Ежемесячные воркшопы и office hours с командой.",
+      cta: "Стать членом",
     },
   },
   expired_reopens: {
     en: {
       headline: "We'll help you target the next cycle",
-      body: "This program reopens annually. Get your strategy now and be ready when applications open again.",
-      cta: "Get my strategy",
+      body: "Monthly workshops and office hours with our expert team — be ready when applications reopen.",
+      cta: "Become a member",
     },
     ru: {
       headline: "Подготовим вас к следующему циклу",
-      body: "Программа открывается каждый год. Получите стратегию сейчас — будете готовы, когда снова откроют подачу.",
-      cta: "Получить стратегию",
+      body: "Ежемесячные воркшопы и office hours с командой — будете готовы, когда снова откроют подачу.",
+      cta: "Стать членом",
     },
   },
   generic: {
-    en: { headline: "", body: "", cta: "Get my strategy" },
-    ru: { headline: "", body: "", cta: "Получить стратегию" },
+    en: { headline: "", body: "", cta: "Become a member" },
+    ru: { headline: "", body: "", cta: "Стать членом" },
   },
 };
 
@@ -69,7 +68,7 @@ export const AcademyHookCta = ({
   variant = "detail_sheet",
   headline,
   body,
-  href = "/topuni-ai",
+  href = "/pricing",
   ctaLabel,
   lang = "en",
   className = "",
