@@ -2186,12 +2186,13 @@ const MemoScholarCard = memo(ScholarCard, (prev, next) => (
 ));
 
 /* ─── Filters Panel ──────────────────────────────────────────────────── */
-const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsAvailable, lang = "en" }: {
+const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsAvailable, degreeCounts, lang = "en" }: {
   filters: FilterState;
   setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
   activeCount: number;
   hostCountries: string[];
   fieldsAvailable: string[];
+  degreeCounts?: { all: number; undergraduate: number; master: number; phd: number };
   lang?: Lang;
 }) => {
   const ru = lang === "ru";
@@ -2207,17 +2208,17 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
   // product's open-doors thesis. Selectivity still drives ranking +
   // lights up a "Prestigious" tag on cards for the very-selective
   // programs, but it's no longer something the user filters AGAINST.
-  const segmented: { label: string; key: keyof FilterState; opts: { v: string; l: string }[] }[] = [
+  const segmented: { label: string; key: keyof FilterState; opts: { v: string; l: string; n?: number }[] }[] = [
     // Coverage filter retired 2026-05-18 — Full ride / Tuition only /
     // Partial labels were thin signal at catalogue scale (most flagship
     // rows tag full_ride, most niche rows tag partial, so the bucket
     // was redundant with selectivity/tier). User wants the bulletin
     // surface focused on concrete amounts, not generic coverage chips.
     { label: t("Degree", "Уровень"), key: "degree", opts: [
-      { v: "all", l: t("All", "Все") },
-      { v: "undergraduate", l: t("Bachelor's", "Бакалавриат") },
-      { v: "master's", l: t("Master's", "Магистратура") },
-      { v: "PhD", l: "PhD" },
+      { v: "all", l: t("All", "Все"), n: degreeCounts?.all },
+      { v: "undergraduate", l: t("Bachelor's", "Бакалавриат"), n: degreeCounts?.undergraduate },
+      { v: "master's", l: t("Master's", "Магистратура"), n: degreeCounts?.master },
+      { v: "PhD", l: "PhD", n: degreeCounts?.phd },
     ] },
   ];
   /* Eligibility tags pruned to the cohorts that have ≥1 active
@@ -2247,13 +2248,18 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
                 <button
                   key={o.v}
                   onClick={() => setFilters(f => ({ ...f, [section.key]: o.v }))}
-                  className={`px-2.5 py-1 rounded-md text-[12px] leading-tight transition-colors ${
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] leading-tight transition-colors ${
                     active
                       ? "bg-gold/15 text-gold-dark font-semibold"
                       : "text-foreground/65 hover:text-foreground hover:bg-foreground/[0.04]"
                   }`}
                 >
                   {o.l}
+                  {typeof o.n === "number" && (
+                    <span className={`tabular-nums text-[10.5px] ${active ? "text-gold-dark/75" : "text-muted-foreground/65"}`}>
+                      {o.n}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -3229,6 +3235,23 @@ const Discover = ({ language = "en" }: Props) => {
    * while the result list catches up. Critical UX win on slower
    * mobile devices. */
   const deferredSearch = useDeferredValue(filters.search);
+
+  // Per-bucket degree counts off the full ranked list (pre-filter), so
+  // the Bachelor's / Master's / PhD filter chips can display live
+  // catalog counts. Computed off `ranked` (not `filteredAll`) so the
+  // count is the universe-of-options, independent of other active
+  // filters — otherwise picking Bachelor's would zero out the other
+  // chip counts and defeat the purpose of showing them.
+  const degreeCounts = useMemo(() => {
+    const c = { all: ranked.length, undergraduate: 0, master: 0, phd: 0 };
+    for (const r of ranked) {
+      const buckets = new Set((r.target_degree_level ?? []).map(d => degreeBucket(d)).filter(Boolean));
+      if (buckets.has("undergraduate")) c.undergraduate++;
+      if (buckets.has("master")) c.master++;
+      if (buckets.has("phd")) c.phd++;
+    }
+    return c;
+  }, [ranked]);
 
   const filteredAll = useMemo(() => {
     let list = ranked;
@@ -4279,7 +4302,7 @@ const Discover = ({ language = "en" }: Props) => {
                           <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground flex items-center gap-2"><SlidersHorizontal className="h-3.5 w-3.5" />Refine</h3>
                           {activeFiltersCount > 0 && <Badge className="h-5 px-1.5 text-[10px] bg-gold/20 text-gold-dark border-0">{activeFiltersCount}</Badge>}
                         </div>
-                        <FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} fieldsAvailable={fieldsAvailable} lang={language} />
+                        <FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} fieldsAvailable={fieldsAvailable} degreeCounts={degreeCounts} lang={language} />
                       </div>
 
                       {/* Sidebar membership card — visible to anyone not yet
@@ -4331,11 +4354,32 @@ const Discover = ({ language = "en" }: Props) => {
                         </div>
                       )}
 
-                      {/* Refer-a-friend card removed 2026-05-25 — it was
-                          competing with the Academy CTA below and
-                          truncating its copy. /refer route stays live
-                          for direct visits, just no longer surfaced
-                          inline on Discover. */}
+                      {/* Strategy notes — short, static, no-API tip card
+                          slotted into the space the refer-a-friend block
+                          freed up. Three pinned bullets give the sidebar
+                          something to do without paying per-render LLM
+                          costs. Treat the copy as editorial — keep
+                          tightening over time. */}
+                      <div className="rounded-xl border border-border bg-card/60 px-3 py-3">
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-gold-dark font-semibold mb-2 flex items-center gap-1.5">
+                          <Award className="h-3 w-3" />
+                          {t("Strategy notes", "Стратегия")}
+                        </p>
+                        <ul className="space-y-1.5 text-[11.5px] text-foreground/80 leading-snug">
+                          <li className="flex gap-1.5">
+                            <span className="text-gold-dark/70 shrink-0">•</span>
+                            <span>{t("Apply to 5+ in parallel — funding is a portfolio play.", "Подавайте на 5+ параллельно — это игра портфеля.")}</span>
+                          </li>
+                          <li className="flex gap-1.5">
+                            <span className="text-gold-dark/70 shrink-0">•</span>
+                            <span>{t("Sort by deadline first; closing windows are your real shortlist.", "Сортируйте по дедлайну — окна закрытия и есть ваш шортлист.")}</span>
+                          </li>
+                          <li className="flex gap-1.5">
+                            <span className="text-gold-dark/70 shrink-0">•</span>
+                            <span>{t("Reuse one strong essay — most prompts share the same spine.", "Один сильный эссе подходит большинству — суть одна.")}</span>
+                          </li>
+                        </ul>
+                      </div>
 
                       {/* 2026-05-19: Academy CTA card — bridges Discover →
                           Academy for users who want live human help on top
@@ -5110,7 +5154,7 @@ const Discover = ({ language = "en" }: Props) => {
         <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
           <SheetContent side="left" className="w-[300px] overflow-y-auto">
             <SheetHeader><SheetTitle className="flex items-center gap-2"><SlidersHorizontal className="h-4 w-4" />{t("Filters", "Фильтры")}</SheetTitle></SheetHeader>
-            <div className="mt-5"><FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} fieldsAvailable={fieldsAvailable} lang={language} /></div>
+            <div className="mt-5"><FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} fieldsAvailable={fieldsAvailable} degreeCounts={degreeCounts} lang={language} /></div>
           </SheetContent>
         </Sheet>
 
