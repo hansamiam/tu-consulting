@@ -54,6 +54,7 @@ import { buildStoryData } from "./utils";
 import { useDeck } from "./useDeck";
 import { tokenToIso } from "@/lib/adjacent-countries";
 import { useAdjacentSuggestions } from "@/lib/use-adjacent-suggestions";
+import { ArchetypeRadial, ARCHETYPE_AXES } from "@/components/brief/ArchetypeRadial";
 
 // ─── Type scale ────────────────────────────────────────────────────────
 // Type scale for Story cards. Sized for the 400px-wide 9:16 frame.
@@ -101,7 +102,7 @@ export const BriefStory = ({
     surfaces.push({
       id: "archetype",
       kicker: "You are",
-      render: () => <ArchetypeHook archetype={data.archetype!} color={sections.archetype?.color} />,
+      render: () => <ArchetypeHook archetype={data.archetype!} color={sections.archetype?.color} archetypeId={sections.archetype?.id} />,
     });
   }
   if (data.stand?.headline || data.stand?.body) {
@@ -332,14 +333,13 @@ export const BriefStory = ({
 const ArchetypeHook = ({
   archetype,
   color,
+  archetypeId,
 }: {
   archetype: { name: string; tagline?: string; confidence?: number };
   color?: string;
+  archetypeId?: string;
 }) => {
-  // Initials = first 2 chars of archetype name, uppercased. Drops a
-  // trailing period if present so "The Builder." doesn't become "TH".
   const cleanName = archetype.name.replace(/\.$/, "").trim();
-  const initials = cleanName.slice(0, 2).toUpperCase();
   return (
     <div className="flex-1 min-h-0 flex flex-col">
       {/* Archetype name keeps its display size — this is the branded
@@ -356,13 +356,13 @@ const ArchetypeHook = ({
           {archetype.tagline}
         </p>
       )}
-      {/* Stream C C.3 visual anchor — gradient initials emblem fills
-          the previously-empty bottom of the card. Stream D will swap
-          this for <ArchetypeRadial>. */}
-      <VisualAnchor>
-        <div className="mx-auto h-[120px] w-[120px] rounded-full bg-gradient-to-br from-gold/30 to-gold/10 border border-gold/40 flex items-center justify-center">
-          <span className="font-heading text-2xl font-bold text-gold-dark">{initials}</span>
-        </div>
+      {/* Stream D: real ArchetypeRadial replaces the gradient-initials placeholder. */}
+      <VisualAnchor className="flex justify-center">
+        <ArchetypeRadial
+          axes={ARCHETYPE_AXES[archetypeId ?? "default"] ?? ARCHETYPE_AXES.default}
+          archetypeColor={color ?? "#1A3B66"}
+          size={180}
+        />
       </VisualAnchor>
     </div>
   );
