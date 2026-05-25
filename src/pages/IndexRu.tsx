@@ -287,7 +287,7 @@ const IndexRu = () => {
                 Стать участником, $39/мес.
               </motion.h2>
               <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-lg mb-9 max-w-xl mx-auto leading-relaxed">
-                Академия · ежемесячные живые воркшопы и office hours с командой · новые инструменты и обновления каждый месяц. Скидка раннего доступа применяется автоматически.
+                Академия · ежемесячные живые воркшопы и office hours с командой · новые инструменты и обновления каждый месяц.
               </motion.p>
               <motion.div {...fadeUp(0.2)} className="flex flex-wrap items-center justify-center gap-3">
                 <Button

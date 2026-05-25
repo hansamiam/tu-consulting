@@ -906,7 +906,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         {t("How does your academic record look?", "Как выглядит твоя успеваемость?")}
                       </h2>
                       <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[50ch]">
-                        {t("Just what you've got. Skip the tests you haven't taken.", "Только то, что есть. Пропускай тесты, которые не сдавал.")}
+                        {t("Skip the tests you haven't taken.", "Пропускай тесты, которые не сдавал.")}
                       </p>
                     </div>
                     <div className="grid gap-5">
@@ -1047,7 +1047,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         {t("What are you chasing?", "К чему вы стремитесь?")}
                       </h2>
                       <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[52ch]">
-                        {t("Field, timeline, and what matters most. We'll match across every geography that fits.", "Область, сроки и приоритеты. Подберём программы по всему миру.")}
+                        {t("Field, timeline, and what matters most.", "Область, сроки и приоритеты.")}
                       </p>
                     </div>
                     <div className="space-y-6">
@@ -1304,8 +1304,8 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         {t("Tell us more — or skip ahead.", "Расскажите больше — или пропустите.")}
                       </h2>
                       <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[54ch]">
-                        {t("Optional. Each detail makes your essay angles and shortlist sharper. Anything you share stays private to your report.",
-                           "По желанию. Каждая деталь усиливает идеи эссе и подбор. Всё остаётся приватным в вашем отчёте.")}
+                        {t("Optional. Each detail makes your essay angles and shortlist sharper.",
+                           "По желанию. Каждая деталь усиливает идеи эссе и подбор.")}
                       </p>
                     </div>
                     <div className="space-y-5">
@@ -1472,8 +1472,8 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           <div className="text-center pt-2" aria-live="polite">
                             {showNudge ? (
                               <p className="text-[12px] text-muted-foreground leading-snug">
-                                {t("Your brief will read more general with shorter answers. Even one line per box sharpens it.",
-                                   "С короткими ответами отчёт будет более общим. Даже одна строка в каждом поле его уточняет.")}
+                                {t("Even one line per box sharpens your strategy.",
+                                   "Даже одна строка в каждом поле уточняет вашу стратегию.")}
                                 {" "}
                                 <button
                                   type="button"

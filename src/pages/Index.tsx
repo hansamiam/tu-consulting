@@ -336,7 +336,7 @@ const Index = () => {
               Become a member, $39/month.
             </motion.h2>
             <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-lg mb-9 max-w-xl mx-auto leading-relaxed">
-              Academy · monthly live workshops + office hours with the team · new tools and updates every month. Early-access discount applied automatically.
+              Academy · monthly live workshops + office hours with the team · new tools and updates every month.
             </motion.p>
             <motion.div {...fadeUp(0.2)} className="flex flex-wrap items-center justify-center gap-3">
               <Button

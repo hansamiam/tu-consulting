@@ -54,10 +54,10 @@ const COPY = {
        scholarship insights, workspace tools. Plus Academy. */
     includes: [
       { title: "Unlimited Discover saves",               body: "Save every scholarship that matches your profile — not just the first five." },
-      { title: "Per-scholarship insights",               body: "\"Why this fits you\" + \"How to win this one\" pointers on every saved row. Specific, not generic." },
-      { title: "Workspace — kanban + deadlines",         body: "Track your applications. Calendar view of every deadline, synced to Google / Apple Calendar." },
+      { title: "Per-scholarship insights",               body: "\"Why this fits you\" + \"How to win this one\" pointers on every saved row." },
+      { title: "Workspace — kanban + deadlines",         body: "Calendar view of every deadline, synced to Google / Apple Calendar." },
       { title: "Live monthly workshops",                 body: "Yale · Cambridge & Tsinghua · Harvard alumni run live sessions every month — essay clinics, scholarship strategy, country deep-dives." },
-      { title: "Recordings library, kept forever",       body: "Miss one? Catch up. The library compounds with every cohort." },
+      { title: "Recordings library, kept forever",       body: "The library compounds with every cohort." },
       { title: "Direct line to the team",                body: "Submit questions, vote on what the next workshop covers, get product input rights." },
     ],
     foundingPriceLabel: "Launch price",
@@ -87,7 +87,7 @@ const COPY = {
     needHelp: "Need 1:1 help?",
     seeConsulting: "See consulting →",
     authTitle: "Create your account",
-    authDesc: "One-tap sign in. We'll redirect you to checkout.",
+    authDesc: "One-tap sign in.",
     free: "Free",
   },
   ru: {
@@ -100,10 +100,10 @@ const COPY = {
     tierTagline: "Всё необходимое чтобы спланировать, подать и выиграть.",
     includes: [
       { title: "Без лимита сохранений в Discover",        body: "Сохраняйте любую стипендию из подбора — не только первые пять." },
-      { title: "Инсайты по каждой стипендии",             body: "«Почему подходит именно тебе» + «Как выиграть эту» — конкретные указания, не общие фразы." },
-      { title: "Рабочая зона — канбан + дедлайны",        body: "Отслеживайте заявки. Календарь дедлайнов, синхронизированный с Google / Apple Calendar." },
+      { title: "Инсайты по каждой стипендии",             body: "«Почему подходит именно тебе» + «Как выиграть эту» — конкретные указания." },
+      { title: "Рабочая зона — канбан + дедлайны",        body: "Календарь дедлайнов, синхронизированный с Google / Apple Calendar." },
       { title: "Воркшопы с основателями вживую",          body: "Выпускники Yale, Cambridge & Tsinghua, Harvard ведут сессии каждый месяц — эссе-клиники, стратегия, страновые разборы." },
-      { title: "Библиотека записей навсегда",             body: "Пропустили? Догоните в своём ритме. Библиотека пополняется каждый месяц." },
+      { title: "Библиотека записей навсегда",             body: "Библиотека пополняется каждый месяц." },
       { title: "Прямая линия с командой",                 body: "Задавайте вопросы, голосуйте за темы воркшопов, влияйте на продукт." },
     ],
     foundingPriceLabel: "Цена запуска",
@@ -133,7 +133,7 @@ const COPY = {
     needHelp: "Нужна 1:1 помощь?",
     seeConsulting: "Смотреть консалтинг →",
     authTitle: "Создайте аккаунт",
-    authDesc: "Вход в один клик. Мы перенаправим на оплату.",
+    authDesc: "Вход в один клик.",
     free: "Бесплатно",
   },
 } as const;
