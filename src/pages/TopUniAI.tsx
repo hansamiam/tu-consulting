@@ -1466,22 +1466,39 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                       </div>
                       <div className="space-y-1.5">
                         <Label htmlFor="background" className="text-xs uppercase tracking-wider font-medium">{t("How would your friends describe you?", "Как твои друзья описали бы тебя?")}</Label>
+                        {/* Personality-eliciting placeholder per the
+                            covert-intake convention — examples model an
+                            introvert/extrovert/quirk shape so the brief
+                            generator can pick up personality signal
+                            without a separate explicit question. */}
                         <Textarea
                           id="background"
-                          placeholder={t("e.g. first-gen, raised in Bishkek, parents both teachers", "напр. первый в семье в вузе, из Бишкека, родители учителя")}
+                          placeholder={t(
+                            "e.g. introvert with strangers but the loudest in the group chat; shows up early; obsessed with one weird hobby",
+                            "напр. интроверт с незнакомыми, но самый громкий в чате; всегда прихожу заранее; одержим(а) одним странным хобби",
+                          )}
                           value={background}
                           onChange={(e) => setBackground(e.target.value)}
                           className="min-h-[70px] resize-none bg-card"
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="namedSchools" className="text-xs uppercase tracking-wider font-medium">{t("Dream schools?", "Вузы мечты?")}</Label>
+                        <Label htmlFor="namedSchools" className="text-xs uppercase tracking-wider font-medium">{t("Dream school?", "Вуз мечты?")}</Label>
+                        {/* Single dream school + the reason, in one
+                            standardized line. The "—" in the placeholder
+                            teaches a `School — why` shape the brief
+                            generator parses cleanly. Singular by design:
+                            we want depth on ONE pick, not a list of
+                            three names without context. */}
                         <Textarea
                           id="namedSchools"
-                          placeholder={t("e.g. Stanford, U of Toronto, KAIST", "напр. Stanford, U of Toronto, KAIST")}
+                          placeholder={t(
+                            "e.g. Stanford — for the Knight-Hennessy Scholars program and the proximity to Bay Area startups",
+                            "напр. Stanford — ради программы Knight-Hennessy и близости к стартапам Bay Area",
+                          )}
                           value={namedSchools}
                           onChange={(e) => setNamedSchools(e.target.value)}
-                          className="min-h-[60px] resize-none bg-card"
+                          className="min-h-[70px] resize-none bg-card"
                         />
                       </div>
                     </div>
