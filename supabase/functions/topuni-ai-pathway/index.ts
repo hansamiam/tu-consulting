@@ -563,30 +563,90 @@ function buildHandoffPayload(
    handoff payload (archetype + countryBuckets + top 3 matched
    scholarships) so the renderer's HandoffBridge has everything it
    needs when the last section closes. */
+// Stream guardrails. Supabase edge functions are killed by the platform
+// around the 150s compute ceiling — if section emission is still in
+// progress at that point the client gets archetype + the first N
+// sections + abrupt silence (no [DONE], no error, no remaining sections).
+// Diagnosed 2026-05-25 when Samuel saw "only 2 slides + can't go back"
+// after a real submission.
+//
+// We bound emission with two budgets:
+//   1. WALL_CLOCK_MS — total time for the section loop. If we cross it
+//      we stub all REMAINING sections in order so the client gets a
+//      payload for each card slot, then emit [DONE] cleanly.
+//   2. PER_SECTION_TIMEOUT_MS — guard against a single hung section
+//      monopolizing the budget. Slow sections short-circuit to a stub
+//      and we move on.
+const STREAM_WALL_CLOCK_MS = 130_000; // 130s — leaves ~20s headroom under the 150s edge ceiling
+const PER_SECTION_TIMEOUT_MS = 45_000; // 45s per section; with 5 sections that's the wall-clock budget exactly
+
 function buildOrderedSectionStream(
   promises: Array<Promise<SectionResult>>,
   priorEvents: Array<{ section: string; payload: unknown }> = [],
   tailEvents: Array<{ section: string; payload: unknown }> = [],
+  specs?: Array<{ id: string; heading?: string }>, // pass section specs so we can build proper stubs when budget exhausted
 ): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
   return new ReadableStream<Uint8Array>({
     async start(controller) {
+      const startedAt = Date.now();
       const emit = (section: string, payload: unknown) => {
         const chunk = JSON.stringify({ section, payload });
         controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
+      };
+      const stubFor = (idx: number, reason: string): { section: string; payload: unknown } => {
+        const spec = specs?.[idx];
+        const id = spec?.id ?? `section_${idx}`;
+        return {
+          section: id,
+          payload: {
+            kicker: id,
+            headline: spec?.heading ?? "Section unavailable",
+            lead: "This section couldn't be generated in time. Try regenerating from the wizard.",
+            _stub: true,
+            _reason: reason,
+          },
+        };
       };
       try {
         for (const ev of priorEvents) {
           emit(ev.section, ev.payload);
         }
         for (let i = 0; i < promises.length; i++) {
-          const result = await promises[i];
-          emit(result.spec.id, result.payload ?? { error: "no payload" });
-          if (!result.valid) {
-            console.warn(`[brief-sections-v6] section ${result.spec.id} delivered invalid (reason: ${result.failureReason ?? "?"})`);
+          const elapsed = Date.now() - startedAt;
+          // Wall-clock budget exhausted — stub every remaining slot, keep
+          // emission in order, and break to [DONE].
+          if (elapsed >= STREAM_WALL_CLOCK_MS) {
+            console.warn(`[brief-sections-v6] wall-clock budget exhausted at section ${i}/${promises.length}; stubbing remainder`);
+            for (let j = i; j < promises.length; j++) {
+              const s = stubFor(j, "wall-clock budget exhausted");
+              emit(s.section, s.payload);
+            }
+            break;
           }
-          if (result.regenerated) {
-            console.log(`[brief-sections-v6] section ${result.spec.id} regenerated`);
+          // Per-section timeout: budget-aware (never wait past the wall-
+          // clock budget) so a single slow section can't eat the rest.
+          const remainingBudget = STREAM_WALL_CLOCK_MS - elapsed;
+          const sectionDeadline = Math.min(PER_SECTION_TIMEOUT_MS, remainingBudget);
+          let result: SectionResult;
+          try {
+            result = await Promise.race<SectionResult>([
+              promises[i],
+              new Promise<SectionResult>((_, reject) =>
+                setTimeout(() => reject(new Error("per-section timeout")), sectionDeadline),
+              ),
+            ]);
+            emit(result.spec.id, result.payload ?? { error: "no payload" });
+            if (!result.valid) {
+              console.warn(`[brief-sections-v6] section ${result.spec.id} delivered invalid (reason: ${result.failureReason ?? "?"})`);
+            }
+            if (result.regenerated) {
+              console.log(`[brief-sections-v6] section ${result.spec.id} regenerated`);
+            }
+          } catch (e) {
+            console.warn(`[brief-sections-v6] section ${i} timed out:`, (e as Error).message);
+            const s = stubFor(i, "section timed out");
+            emit(s.section, s.payload);
           }
         }
         for (const ev of tailEvents) {
@@ -1226,7 +1286,12 @@ ${EDITORIAL_RULES}`;
         if (!target) {
           return respondError(400, `Unknown section id: ${regenSection}`, corsHeaders);
         }
-        const stream = buildOrderedSectionStream([generateSection(target, briefCtx)]);
+        const stream = buildOrderedSectionStream(
+          [generateSection(target, briefCtx)],
+          [],
+          [],
+          [{ id: target.id, heading: target.heading }],
+        );
         return new Response(stream, {
           headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
         });
@@ -1268,6 +1333,7 @@ ${EDITORIAL_RULES}`;
         sectionPromises,
         [{ section: "archetype", payload: archetypePayload }],
         tailEvents,
+        PREMIUM_SECTIONS.map(s => ({ id: s.id, heading: s.heading })),
       );
       // Tee for cache persistence — accumulator collects JSON payloads
       // keyed by section id; persisted as { schema: 3, plan, sections }.
