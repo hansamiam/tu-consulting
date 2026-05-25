@@ -4343,7 +4343,7 @@ const Discover = ({ language = "en" }: Props) => {
                         className="block rounded-xl border border-primary/25 bg-gradient-to-br from-primary/[0.07] to-transparent hover:from-primary/[0.13] px-3 py-3 transition-colors group"
                       >
                         <p className="text-[10px] uppercase tracking-[0.18em] text-primary font-semibold mb-1">
-                          {t("Need to speak with someone?", "Хотите поговорить с кем-то?")}
+                          {t("Need to speak with an expert?", "Хотите поговорить с экспертом?")}
                         </p>
                         <p className="text-[11.5px] text-foreground/80 leading-snug">
                           {t("Live workshops + office hours with the team.", "Прямые мастер-классы и office hours с командой.")}{" "}
