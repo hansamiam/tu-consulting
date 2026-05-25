@@ -830,7 +830,48 @@ ${SHARED_JSON_RULES}`,
 /* 04 — WHAT YOU'RE AVOIDING (renderer-wire ID: whatsBlockingYou)
    Branches on profile.majorCertainty. If not_at_all/some_idea, the
    primary gap is major-uncertainty itself, named warmly. If
-   pretty_sure/certain, the gap comes from the closed library. */
+   pretty_sure/certain, the gap comes from the closed library.
+
+   Stream-A regen-v2 (2026-05-25): the section headline + the first
+   entry's title MUST NOT echo each other. Live brief shipped
+   "You don't know what you want to study yet." as BOTH the headline
+   AND the entry title, which read like a glitch. Hard rule + a
+   checkHeadlineDoesNotRepeatFirstEntry validator. */
+
+/**
+ * Validator helper — fails when the section headline and the first
+ * entry's title share >3 consecutive words (case-insensitive). Used
+ * by whatsBlockingYou to kill the live-brief bug where the section
+ * headline echoed the entry title verbatim.
+ */
+function checkHeadlineDoesNotRepeatFirstEntry(payload: Record<string, unknown>): ValidatorResult {
+  const headline = typeof payload.headline === "string" ? payload.headline.trim() : "";
+  const entries = payload.entries as unknown[] | undefined;
+  if (!Array.isArray(entries) || entries.length === 0) return { ok: true };
+  const firstTitle = ((entries[0] as { title?: string })?.title ?? "").trim();
+  if (!headline || !firstTitle) return { ok: true };
+
+  const tokenize = (s: string): string[] =>
+    s.toLowerCase().replace(/[^\p{L}\p{N}\s']/gu, " ").split(/\s+/).filter(Boolean);
+  const a = tokenize(headline);
+  const b = tokenize(firstTitle);
+  if (a.length === 0 || b.length === 0) return { ok: true };
+
+  // Find longest contiguous run of matching tokens. >3 consecutive
+  // shared tokens = headline is echoing the entry title.
+  const RUN_THRESHOLD = 4;
+  for (let i = 0; i + RUN_THRESHOLD <= a.length; i++) {
+    const window = a.slice(i, i + RUN_THRESHOLD).join(" ");
+    if (b.join(" ").includes(window)) {
+      return {
+        ok: false,
+        reason: `headline echoes first entry title (shared run "${window}"); rewrite the headline as a broad pattern, keep the title narrow.`,
+      };
+    }
+  }
+  return { ok: true };
+}
+
 const whatsBlockingYou: SectionSpec = {
   id: "whatsBlockingYou",
   heading: "What's blocking you",
@@ -844,9 +885,12 @@ const whatsBlockingYou: SectionSpec = {
 
 The PRIMARY gap (priority "high", first entry) is the student's own
 indecision about what they want to study. Name it warmly — NOT as a
-flaw to fix but as a fact to surface. Pattern:
+flaw to fix but as a fact to surface.
 
-  Headline: "You don't know what you want to study yet."
+  entries[0].title:  Name the indecision directly. Example: "The
+    major question is still open." Keep it SHORT (≤10 words) and
+    DIFFERENT from the section headline above — the validator rejects
+    >3 consecutive shared words between them.
   whyItMatters: validation language — "not knowing is information,
     not a problem. Schools have answers for cross-domain kids who
     haven't picked yet."
@@ -870,6 +914,15 @@ v7 spec. This card is called WHAT YOU'RE AVOIDING. Its job: name ONE
 honest, load-bearing gap and frame it warmly — as information, not
 verdict. The cousin doesn't lecture; she points at the thing the kid
 has been editing out of his own self-description.
+
+STREAM-A REGEN-V2 HARD RULE — headline ≠ first-entry title:
+The section "headline" names the BROAD pattern. The first entry's
+"title" names the SPECIFIC gap. They MUST NOT share more than 3
+consecutive words. If headline = "You don't know what you want to
+study yet." and entries[0].title = "You don't know what you want to
+study yet.", the validator rejects and you regenerate. Pick a
+different angle for the headline — name the FEELING or the SHAPE of
+what's been edited out, while the entry title names the gap itself.
 
 STUDENT PROFILE:
 ${profileBlock(ctx)}
@@ -899,39 +952,58 @@ GAP LIBRARY (use ONLY when the gap-library branch is active above):
      tone: "You can tell the story of why this matters to you. What you don't have yet are the receipts — the leadership titles, the named projects, the recognitions — that would prove it to a stranger reading your application."
 
 GOLD EXEMPLAR (major-uncertainty branch):
-  Output (single entry):
-    priority: "high"
-    title: "You don't know what you want to study yet."
-    whyItMatters: "Yerlan, you put 'CS' on the intake form because that's what people expect when you're good at math. That's not the same as wanting it. You've been holding the question quietly — what does it mean if I don't know yet? Not knowing is information, not a problem."
-    actionThisMonth: "Stop hiding the question. The brief next to this one names where to start writing — let the unanswered question be part of the application."
-    next60Days: "As you talk to more schools, the question sharpens; the answer follows the conversations, not the form fields."
+  Output:
+    kicker: "04 · What's blocking you"
+    headline: "The shape you've been hiding."   (≤8 words, broad pattern)
+    lead: "Yerlan, the thing you're avoiding isn't a flaw — it's the question you haven't let yourself ask out loud."
+    entries[0]:
+      priority: "high"
+      title: "The major question is still open."   (specific gap, no shared run with headline)
+      whyItMatters: "You put 'CS' on the intake form because that's what people expect when you're good at math. That's not the same as wanting it. Not knowing is information, not a problem."
+      actionThisMonth: "Stop hiding the question — the brief next to this one names where to start writing."
+      next60Days: "As you talk to more schools, the question sharpens; the answer follows the conversations."
 
 OUTPUT — emit a JSON object exactly matching this shape:
 {
   "kicker": "04 · What's blocking you",
-  "headline": "string — 4 to 8 word display line. NO banned vocab.",
-  "lead": "string — ONE sentence (max ~25 words). Drop-cap rendered.",
+  "headline": "string — MAX 8 words. Names the broad pattern / feeling, NOT the specific gap.",
+  "lead": "string — ONE sentence, MAX 20 words. Reframes the pattern as opportunity. Drop-cap rendered.",
   "entries": [
     {
       "priority": "high" | "medium",
-      "title": "string — short gap title, max 10 words. Direct naming, no softening.",
+      "title": "string — short gap title, max 10 words. Direct naming. MUST NOT share more than 3 consecutive words with the section headline.",
       "whyItMatters": "string — 2 to 3 sentences. SPECIFIC naming using intake fields. Validates the gap as information, NOT verdict.",
       "actionThisMonth": "string — ONE posture/orientation (Card 05 owns concrete actions). 1 sentence.",
       "next60Days": "string — 1 sentence framing the follow-through."
-    },
-    ... 1 to 3 entries total (1 is preferred for v7) ...
+    }
+    // EXACTLY 3 entries total, ordered as primary now / next / later
   ]
 }
+
+ABSOLUTE RULES:
+- entries array MUST have exactly 3 elements, ordered now / next / later.
+- headline ≤ 8 words, lead ≤ 20 words.
+- headline and entries[0].title MUST NOT share more than 3 consecutive
+  words (validator-enforced).
 
 ${SHARED_JSON_RULES}`;
   },
   validate: (raw, ctx) => {
     const obj = tryParse(raw) as Record<string, unknown> | null;
     if (!obj) return { ok: false, reason: "not valid JSON" };
+    const headline = typeof obj.headline === "string" ? obj.headline.trim() : "";
+    if (!headline) return { ok: false, reason: "headline missing" };
+    if (headline.split(/\s+/).length > 8) {
+      return { ok: false, reason: `headline >8 words (${headline.split(/\s+/).length})` };
+    }
+    const lead = typeof obj.lead === "string" ? obj.lead.trim() : "";
+    if (lead.split(/\s+/).length > 20) {
+      return { ok: false, reason: `lead >20 words (${lead.split(/\s+/).length})` };
+    }
     const entries = obj.entries as unknown[] | undefined;
     if (!Array.isArray(entries)) return { ok: false, reason: "entries must be array" };
-    if (entries.length < 1 || entries.length > 3) {
-      return { ok: false, reason: "entries must be 1-3 (v7 prefers 1)" };
+    if (entries.length !== 3) {
+      return { ok: false, reason: `entries must be exactly 3 (now/next/later), got ${entries.length}` };
     }
     // Major-uncertainty branch: when intake signal present, primary
     // gap MUST name the uncertainty itself — fail if the first
@@ -939,7 +1011,7 @@ ${SHARED_JSON_RULES}`;
     const cert = ctx.profile.majorCertainty;
     if (cert === "not_at_all" || cert === "some_idea") {
       const firstTitle = ((entries[0] as { title?: string })?.title ?? "").toLowerCase();
-      const namesMajorUncertainty = /\b(major|study|decide|undecid|don'?t know|haven'?t picked|what (?:you|to) (?:want to|want|will) study)\b/.test(firstTitle);
+      const namesMajorUncertainty = /\b(major|study|decide|undecid|don'?t know|haven'?t picked|what (?:you|to) (?:want to|want|will) study|the question)\b/.test(firstTitle);
       if (!namesMajorUncertainty) {
         return {
           ok: false,
@@ -947,6 +1019,9 @@ ${SHARED_JSON_RULES}`;
         };
       }
     }
+    // Hard rule: headline must not echo first entry's title.
+    const echo = checkHeadlineDoesNotRepeatFirstEntry(obj);
+    if (!echo.ok) return echo;
     return semanticCheck(obj, ctx, { mustNameIntakeField: true });
   },
 };
