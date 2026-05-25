@@ -75,6 +75,7 @@ import { cleanScholarshipName, cleanProvider, compactAward } from "@/lib/scholar
 // in tree as the "Open full report" fallback (long-form view).
 import { BriefStory } from "@/components/brief/BriefStory";
 import { BriefMagazine as BriefMinimal } from "@/components/brief/BriefMinimal";
+import { DashboardTabs, useDashboardTab } from "@/components/brief/DashboardTabs";
 import type { BriefSections, SectionId } from "@/components/brief/types";
 import { serializeBriefForCounselor } from "@/components/brief/serializeForCounselor";
 
@@ -1585,6 +1586,12 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   const isRu = language === "ru";
   const t = (en: string, ru: string) => isRu ? ru : en;
   const navigate = useNavigate();
+
+  // Story/Read tab — desktop defaults to "read" (long-form magazine view),
+  // mobile defaults to "story" (Wrapped-style 9:16 deck). URL hash
+  // persistence lives in useDashboardTab so refresh/share preserves intent.
+  const isDesktop = typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
+  const [tab, setTab] = useDashboardTab(isDesktop ? "read" : "story");
 
   // Pathway state — persisted to localStorage so the user sees the SAME
   // report on every visit (vs a fresh generation each time), which keeps
@@ -3484,26 +3491,55 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                       Live matches grid still renders — just below the
                       brief, where it reads as an action shelf rather
                       than a mid-document interruption. */}
+                  {/* Story / Read tab toggle — only rendered when at
+                      least one magazine section has streamed in (i.e. we
+                      have something to switch between). Sits directly
+                      above the brief content so the choice is local to
+                      the report, not a global page chrome element. */}
+                  {Object.keys(magazineSections).length > 0 && (
+                    <div className="mb-6 flex justify-center print:hidden">
+                      <DashboardTabs value={tab} onChange={setTab} lang={language} />
+                    </div>
+                  )}
                   {(() => {
+                    const firstName = profile.fullName?.trim().split(/\s+/)[0] || (isRu ? "Друг" : "You");
+                    const lastName = profile.fullName?.trim().split(/\s+/).slice(1).join(" ") || "";
+                    const studentMeta = {
+                      firstName,
+                      lastName,
+                      gradeLabel: profile.gradeLevel,
+                      field: profile.major,
+                      city: (profile.targetCountries ?? [])[0],
+                      generatedAt: pathwayGeneratedAt ? new Date(pathwayGeneratedAt).toISOString() : undefined,
+                    };
                     return (
                       <>
                         {/* v7 BriefStory — Wrapped-style 7-card deck. Renders
                             when at least one magazine section has streamed in.
                             Falls back to the legacy markdown ReportRenderer
                             for basic tier / cached briefs that pre-date the
-                            magazine payload shape. */}
+                            magazine payload shape.
+
+                            2026-05-25: tab-driven swap. Desktop defaults to
+                            BriefMinimal (long-form magazine, "Read" tab);
+                            mobile defaults to BriefStory (9:16 deck, "Story"
+                            tab). The user can flip with the DashboardTabs
+                            toggle above. */}
                         {Object.keys(magazineSections).length > 0 ? (
-                          <BriefStory
-                            sections={magazineSections}
-                            student={{
-                              firstName: profile.fullName?.trim().split(/\s+/)[0] || (isRu ? "Друг" : "You"),
-                              lastName: profile.fullName?.trim().split(/\s+/).slice(1).join(" ") || "",
-                              gradeLabel: profile.gradeLevel,
-                              field: profile.major,
-                              city: (profile.targetCountries ?? [])[0],
-                              generatedAt: pathwayGeneratedAt ? new Date(pathwayGeneratedAt).toISOString() : undefined,
-                            }}
-                          />
+                          tab === "read" ? (
+                            <BriefMinimal
+                              mode="static"
+                              sections={magazineSections}
+                              studentName={profile.fullName || firstName}
+                              gradeLabel={profile.gradeLevel}
+                              generatedAt={pathwayGeneratedAt ? new Date(pathwayGeneratedAt).toISOString() : undefined}
+                            />
+                          ) : (
+                            <BriefStory
+                              sections={magazineSections}
+                              student={studentMeta}
+                            />
+                          )
                         ) : pathwayContent && (
                           <ReportRenderer
                             markdown={pathwayContent}
