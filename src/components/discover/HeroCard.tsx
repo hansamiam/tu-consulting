@@ -264,14 +264,11 @@ export const HeroCard = ({
                 </a>
               </Button>
             )}
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={onExpand}
-              className="bg-black/30 backdrop-blur-md border-white/60 text-white hover:bg-black/45 hover:text-white hover:border-white/80"
-            >
-              {t("How to win it", "Как выиграть")}
-            </Button>
+            {/* 2026-05-25: secondary "How to win it" CTA dropped. The
+                per-profile match analysis it pointed at was retired in
+                favor of static pre-generated mini-guides (PR #106 /
+                #108); the lead "Apply on official site" button stands
+                alone until a richer secondary reveal comes back. */}
           </div>
         </div>
       </div>

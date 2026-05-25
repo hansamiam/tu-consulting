@@ -1979,20 +1979,27 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
         </span>
       </div>
 
-      <div className="p-4 flex flex-col flex-1 gap-3">
+      <div className="relative p-4 flex flex-col flex-1 gap-3">
+
+        {/* NEW pill — first 7 days after a scholarship lands in the
+            catalogue. 2026-05-25: absolutely-positioned in the top-
+            right of the card body so it doesn't push the title down
+            on rows with the pill vs rows without — the prior inline
+            placement broke line-spacing across the grid. */}
+        {isNewScholarship(s.created_at) && (
+          <span className="absolute top-3 right-3 z-10 inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 ring-1 ring-emerald-500/30 px-1.5 py-0.5 rounded-full">
+            <span className="h-1 w-1 rounded-full bg-emerald-500" />
+            {ru ? "Новое" : "New"}
+          </span>
+        )}
 
         {/* Title + provider. Title gets 3 lines (was 2 — too much truncation
             on long names like "MEXT Japanese Government Scholarship -..."
             in the screenshot). Provider truncates on a single line below. */}
         <div className="min-w-0">
-          {/* NEW pill — first 7 days after a scholarship lands in the
-              catalogue. Helps users notice fresh additions without
-              having to manually compare against last visit. */}
-          {isNewScholarship(s.created_at) && (
-            <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 ring-1 ring-emerald-500/30 px-1.5 py-0.5 rounded mb-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              {ru ? "Новое" : "New"}
-            </span>
+          {/* (NEW pill moved out of the flow above — see comment.) */}
+          {false && isNewScholarship(s.created_at) && (
+            <span className="hidden" />
           )}
           <h3 className="font-heading text-[15px] font-semibold leading-[1.2] tracking-[-0.01em] text-foreground group-hover:text-gold-dark transition-colors mb-1 break-words">
             {cleanScholarshipName(s.scholarship_name)}
@@ -4557,14 +4564,40 @@ const Discover = ({ language = "en" }: Props) => {
                           // one source of truth, no broken-feeling chevrons
                           // suggesting click-to-sort that wasn't reliable.
                           return (
-                            <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
-                              <div className="hidden sm:grid grid-cols-[minmax(0,1fr),170px,128px] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                                <span>{t("Scholarship", "Стипендия")}</span>
-                                <span className="text-right">{t("Award · Deadline", "Сумма · Дедлайн")}</span>
-                                <span className="text-right pr-1">{t("Actions", "Действия")}</span>
+                            <>
+                              {/* 2026-05-25: prominent "Go to Workspace" CTA above
+                                  the saved list. Sam called out that the shortlist
+                                  → workspace connection was nearly invisible —
+                                  shortlisting was the dead-end. The CTA leads to
+                                  /pipeline where deadline tracking + status + notes
+                                  live. Navy primary so the user can't miss it. */}
+                              <div className="mb-5 rounded-2xl border border-[hsl(var(--navy-deep)/0.18)] bg-gradient-to-br from-[hsl(var(--navy-deep)/0.04)] to-transparent px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-heading font-semibold text-foreground text-[15px] tracking-tight m-0 leading-snug">
+                                    {t(`${items.length} saved — track them in Workspace`, `${items.length} в шортлисте — следите в Workspace`)}
+                                  </p>
+                                  <p className="text-[13px] text-muted-foreground mt-0.5 m-0 leading-snug">
+                                    {t("Deadlines, statuses, notes — all your saved scholarships in one place.", "Дедлайны, статусы, заметки — все сохранённые стипендии в одном месте.")}
+                                  </p>
+                                </div>
+                                <Button
+                                  size="default"
+                                  onClick={() => navigate(language === "ru" ? "/pipeline/ru" : "/pipeline")}
+                                  className="bg-[hsl(var(--navy-deep))] hover:bg-[hsl(var(--navy))] text-[hsl(43_44%_96%)] gap-1.5 shrink-0"
+                                >
+                                  {t("Go to Workspace", "Открыть Workspace")}
+                                  <ArrowRight className="h-3.5 w-3.5" />
+                                </Button>
                               </div>
-                              {items.map((s, i) => <MemoScholarRow {...cp(s, i)} />)}
-                            </div>
+                              <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
+                                <div className="hidden sm:grid grid-cols-[minmax(0,1fr),170px,128px] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                                  <span>{t("Scholarship", "Стипендия")}</span>
+                                  <span className="text-right">{t("Award · Deadline", "Сумма · Дедлайн")}</span>
+                                  <span className="text-right pr-1">{t("Actions", "Действия")}</span>
+                                </div>
+                                {items.map((s, i) => <MemoScholarRow {...cp(s, i)} />)}
+                              </div>
+                            </>
                           );
                         })()}
 
@@ -4746,9 +4779,8 @@ const Discover = ({ language = "en" }: Props) => {
                               {sections.competitive.length > 0 && (
                                 <section>
                                   <SectionHeader
-                                    kicker={t("Worth a closer look", "Стоит присмотреться")}
-                                    title={t("Selective programs that match your direction", "Селективные программы по вашему направлению")}
-                                    subtitle={t("Some thresholds are tight — read the requirements before drafting.", "Некоторые пороги жёсткие — прочитайте требования до подачи.")}
+                                    title={t("Selections for you", "Подборка для вас")}
+                                    subtitle={t("The world is your oyster.", "Мир — ваша устрица.")}
                                     count={sections.competitive.length} accentClass="text-primary dark:text-primary-bright" />
                                   {renderSectionGrid("competitive", sections.competitive)}
                                 </section>
@@ -4757,9 +4789,8 @@ const Discover = ({ language = "en" }: Props) => {
                               {sections.stretch.length > 0 && (
                                 <section>
                                   <SectionHeader
-                                    kicker={t("Flagship programs", "Флагманские программы")}
-                                    title={t("The rest of the catalog", "Остальной каталог")}
-                                    subtitle={t("Highly selective on paper. People do win these every year.", "Очень селективные на бумаге. Каждый год кто-то их выигрывает.")}
+                                    title={t("More flagship programs", "Больше флагманских программ")}
+                                    subtitle={t("More than a few ways to fund your education.", "Не один способ профинансировать обучение.")}
                                     count={sections.stretch.length} accentClass="text-muted-foreground" />
                                   {renderSectionGrid("stretch", sections.stretch)}
                                 </section>
