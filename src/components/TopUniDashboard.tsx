@@ -75,6 +75,8 @@ import { cleanScholarshipName, cleanProvider, compactAward } from "@/lib/scholar
 // in tree as the "Open full report" fallback (long-form view).
 import { BriefStory } from "@/components/brief/BriefStory";
 import { BriefMagazine as BriefMinimal } from "@/components/brief/BriefMinimal";
+import { DashboardTabs, useDashboardTab } from "@/components/brief/DashboardTabs";
+import { BriefChapterNavWrapper } from "@/components/brief/BriefChapterNavWrapper";
 import type { BriefSections, SectionId } from "@/components/brief/types";
 import { serializeBriefForCounselor } from "@/components/brief/serializeForCounselor";
 
@@ -1585,6 +1587,12 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
   const isRu = language === "ru";
   const t = (en: string, ru: string) => isRu ? ru : en;
   const navigate = useNavigate();
+
+  // Story/Read tab — desktop defaults to "read" (long-form magazine view),
+  // mobile defaults to "story" (Wrapped-style 9:16 deck). URL hash
+  // persistence lives in useDashboardTab so refresh/share preserves intent.
+  const isDesktop = typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
+  const [tab, setTab] = useDashboardTab(isDesktop ? "read" : "story");
 
   // Pathway state — persisted to localStorage so the user sees the SAME
   // report on every visit (vs a fresh generation each time), which keeps
@@ -3484,26 +3492,94 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                       Live matches grid still renders — just below the
                       brief, where it reads as an action shelf rather
                       than a mid-document interruption. */}
+                  {/* Story / Read tab toggle — only rendered when at
+                      least one magazine section has streamed in (i.e. we
+                      have something to switch between). Sits directly
+                      above the brief content so the choice is local to
+                      the report, not a global page chrome element. */}
+                  {Object.keys(magazineSections).length > 0 && (
+                    <div className="mb-6 flex justify-center print:hidden">
+                      <DashboardTabs value={tab} onChange={setTab} lang={language} />
+                    </div>
+                  )}
                   {(() => {
+                    const firstName = profile.fullName?.trim().split(/\s+/)[0] || (isRu ? "Друг" : "You");
+                    const lastName = profile.fullName?.trim().split(/\s+/).slice(1).join(" ") || "";
+                    const studentMeta = {
+                      firstName,
+                      lastName,
+                      gradeLabel: profile.gradeLevel,
+                      field: profile.major,
+                      city: (profile.targetCountries ?? [])[0],
+                      generatedAt: pathwayGeneratedAt ? new Date(pathwayGeneratedAt).toISOString() : undefined,
+                    };
                     return (
                       <>
                         {/* v7 BriefStory — Wrapped-style 7-card deck. Renders
                             when at least one magazine section has streamed in.
                             Falls back to the legacy markdown ReportRenderer
                             for basic tier / cached briefs that pre-date the
-                            magazine payload shape. */}
+                            magazine payload shape.
+
+                            2026-05-25: tab-driven swap. Desktop defaults to
+                            BriefMinimal (long-form magazine, "Read" tab);
+                            mobile defaults to BriefStory (9:16 deck, "Story"
+                            tab). The user can flip with the DashboardTabs
+                            toggle above. */}
                         {Object.keys(magazineSections).length > 0 ? (
-                          <BriefStory
-                            sections={magazineSections}
-                            student={{
-                              firstName: profile.fullName?.trim().split(/\s+/)[0] || (isRu ? "Друг" : "You"),
-                              lastName: profile.fullName?.trim().split(/\s+/).slice(1).join(" ") || "",
-                              gradeLabel: profile.gradeLevel,
-                              field: profile.major,
-                              city: (profile.targetCountries ?? [])[0],
-                              generatedAt: pathwayGeneratedAt ? new Date(pathwayGeneratedAt).toISOString() : undefined,
-                            }}
-                          />
+                          tab === "read" ? (
+                            <div className="lg:grid lg:grid-cols-12 lg:gap-8">
+                              <main className="lg:col-span-9 min-w-0">
+                                <BriefMinimal
+                                  mode="static"
+                                  sections={magazineSections}
+                                  studentName={profile.fullName || firstName}
+                                  gradeLabel={profile.gradeLevel}
+                                  generatedAt={pathwayGeneratedAt ? new Date(pathwayGeneratedAt).toISOString() : undefined}
+                                />
+                              </main>
+                              <aside className="hidden lg:block lg:col-span-3 print:hidden">
+                                <BriefChapterNavWrapper sections={magazineSections} lang={language} />
+                              </aside>
+                            </div>
+                          ) : isDesktop ? (
+                            // Story tab on desktop: the bare 400px 9:16
+                            // BriefStory card looks orphaned on a wide
+                            // canvas. Wrap it in a phone-preview chrome
+                            // with a "Share Story" side panel that
+                            // explains what the user is looking at and
+                            // points to the long-form report.
+                            <div className="mx-auto max-w-3xl">
+                              <div className="rounded-3xl border border-border/60 bg-card p-6 sm:p-10 flex flex-col sm:flex-row items-center gap-8">
+                                <BriefStory
+                                  sections={magazineSections}
+                                  student={studentMeta}
+                                />
+                                <div className="flex-1 space-y-4 max-w-xs">
+                                  <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
+                                    {t("Share Story", "История")}
+                                  </p>
+                                  <h2 className="font-heading text-xl font-bold leading-tight">
+                                    {t("This is the version you'd post to Instagram.", "Эту версию можно опубликовать в Instagram.")}
+                                  </h2>
+                                  <p className="text-sm text-muted-foreground leading-snug">
+                                    {t("Swipe through, screenshot the slides you like, share to your story.", "Листайте, делайте скриншоты любимых слайдов, делитесь в сторис.")}
+                                  </p>
+                                  <button
+                                    onClick={() => setTab("read")}
+                                    className="text-xs font-semibold underline-offset-4 hover:underline"
+                                  >
+                                    {t("Read the full report →", "Читать полный отчёт →")}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <BriefStory
+                              sections={magazineSections}
+                              student={studentMeta}
+                            />
+                          )
                         ) : pathwayContent && (
                           <ReportRenderer
                             markdown={pathwayContent}
