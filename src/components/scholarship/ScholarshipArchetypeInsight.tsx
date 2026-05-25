@@ -89,12 +89,12 @@ const BuildProfileCard = () => (
             Personalized analysis
           </p>
           <h4 className="font-heading text-[20px] sm:text-[22px] font-bold leading-tight tracking-tight text-foreground m-0 mb-2.5">
-            Will this scholarship work for you?
+            Get your personalized scholarship strategy.
           </h4>
           <p className="text-[14px] leading-[1.55] text-foreground/75 m-0 mb-5 max-w-prose">
-            Build your profile (60 seconds) and we&apos;ll show you a match
-            breakdown vs your background, a strategy specific to your story,
-            and what to prepare first.
+            Build your profile (60 seconds) and we&apos;ll show you what to
+            lead with, what to prepare first, and where this fund&apos;s
+            panel actually looks.
           </p>
           <Button variant="gold" asChild className="gap-1.5">
             <Link to="/topuni-ai">
@@ -122,12 +122,12 @@ const PaywallCard = () => (
             Members only
           </p>
           <h4 className="font-heading text-[20px] sm:text-[22px] font-bold leading-tight tracking-tight text-foreground m-0 mb-2.5">
-            Your read on this one is behind Membership.
+            Your personalized strategy is members-only.
           </h4>
           <p className="text-[14px] leading-[1.55] text-foreground/75 m-0 mb-5 max-w-prose">
-            We&apos;ve already matched this scholarship to your specific
-            background. Members unlock the read for every scholarship in
-            the catalog.
+            We&apos;ve already matched this scholarship to your background.
+            Members unlock the strategy read for every scholarship in the
+            catalog.
           </p>
           <Button variant="gold" asChild className="gap-1.5">
             <Link to="/pricing">
@@ -189,7 +189,15 @@ export const ScholarshipArchetypeInsight = ({ scholarshipId }: Props) => {
     return () => { cancelled = true; };
   }, [scholarshipId, archetypeId, isMember]);
 
-  if (!archetypeId) return <BuildProfileCard />;
+  // State routing keyed on whether the user has built a profile —
+  // NOT on whether a row exists in archetype_assignments. The
+  // telemetry table only gets writes for briefs generated after
+  // 2026-05-25; existing users with prior briefs have a saved
+  // DiscoverProfile in localStorage but no telemetry row yet.
+  // useUserArchetype falls back to running the deterministic detector
+  // client-side, so archetypeId is non-null whenever a profile exists.
+  const hasProfile = !!getStoredProfile();
+  if (!hasProfile) return <BuildProfileCard />;
   if (!isMember) return <PaywallCard />;
   // Member with profile but no cell (eligibility-skipped pair) — render
   // nothing rather than a misleading CTA. The mini-guide below still
