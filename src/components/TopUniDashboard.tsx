@@ -2920,7 +2920,10 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
         // doesn't show those charts, so the call is wasted spend. Gated
         // on `false` rather than deleted in case we re-introduce a
         // chart appendix later — re-enabling is a one-line flip.
-        const EXTRACT_BRIEF_DATA_ENABLED = false;
+        // 2026-05-25: re-enabled — combined funding now powers the
+        // FinalCTA closer in BriefMagazine ("$X waiting for you in
+        // Discover"). Cost: ~one extra LLM call per brief gen, ~$0.02.
+        const EXTRACT_BRIEF_DATA_ENABLED = true;
         if (EXTRACT_BRIEF_DATA_ENABLED && reportGrade === "premium" && soFar.length > 800) {
           setStructuredLoading(true);
           (async () => {
