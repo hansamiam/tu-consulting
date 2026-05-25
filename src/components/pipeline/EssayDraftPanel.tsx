@@ -374,8 +374,8 @@ export const EssayDraftPanel = ({ scholarshipId, scholarshipName, value, onChang
               "Drop your essay draft here. Stuck on the opening? Tap \"Get 3 starting drafts\" and the AI gives you three angles to pick from.",
               "Вставьте черновик эссе. Не знаете с чего начать? Нажмите «3 варианта вступления» — AI предложит три угла на выбор.",
             )}
-            rows={28}
-            className="resize-y font-sans text-[14px] leading-relaxed min-h-[640px]"
+            rows={18}
+            className="resize-y font-sans text-[14px] leading-relaxed min-h-[400px]"
           />
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
             {/* Outline button — shows whenever the draft is empty or
@@ -395,33 +395,11 @@ export const EssayDraftPanel = ({ scholarshipId, scholarshipName, value, onChang
                 }}
               />
             )}
-            {draft.trim().length < 80 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={requestOpeners}
-                disabled={loadingOpeners}
-                className="gap-1.5"
-              >
-                {loadingOpeners ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PenLine className="w-3.5 h-3.5" />}
-                {loadingOpeners ? t("Drafting…", "Готовлю…") : t("Get 3 starting drafts", "3 варианта вступления")}
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={requestCritique}
-              disabled={critiquing || draft.trim().length < 50}
-              className="gap-1.5"
-            >
-              {critiquing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
-              {critiquing ? t("Reading…", "Читаю…") : critique ? t("Re-critique", "Заново") : t("Critique with AI", "AI-критика")}
-            </Button>
-            {critiquing && (
-              <Button variant="ghost" size="sm" onClick={cancelCritique} className="text-muted-foreground gap-1">
-                <X className="w-3 h-3" /> {t("Stop", "Стоп")}
-              </Button>
-            )}
+            {/* 2026-05-25: "Get 3 starting drafts" + "Critique with AI"
+                + cancel-Stop CTAs archived per Sam — features returning
+                in a future update. The textarea + auto-save + word count
+                remain so writers can still draft in the panel; the AI
+                assists come back when we revive that flow. */}
           </div>
 
           {/* Opener picker — three AI-generated drafts, click one to seed
