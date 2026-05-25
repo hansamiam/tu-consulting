@@ -24,11 +24,14 @@ import { WhereYouCanLand } from "./sections/WhereYouCanLand";
 import { WhatToWrite } from "./sections/WhatToWrite";
 import { WhatsBlockingYou } from "./sections/WhatsBlockingYou";
 import { WhatToDoThisMonth } from "./sections/WhatToDoThisMonth";
+import { ArchetypeRadial, ARCHETYPE_AXES } from "./ArchetypeRadial";
+import { SectionDivider } from "./primitives/SectionDivider";
 import {
   SECTION_ORDER,
   SECTION_KICKERS,
   type BriefSections,
   type SectionId,
+  type ArchetypePayload,
   type WhereYouStandPayload,
   type WhereYouCanLandPayload,
   type WhatToWritePayload,
@@ -67,9 +70,34 @@ interface StreamProps extends CommonProps {
 
 type Props = StaticProps | StreamProps;
 
+const ArchetypeCard: React.FC<{ payload: ArchetypePayload }> = ({ payload }) => {
+  const axes = ARCHETYPE_AXES[payload.id] ?? ARCHETYPE_AXES.default;
+  const color = payload.color || "#1A3B66";
+  return (
+    <section id="brief-archetype">
+      <SectionDivider kicker={SECTION_KICKERS.archetype} headline={payload.name} />
+      {payload.tagline && (
+        <p className="font-heading italic text-foreground/85 text-[17px] sm:text-[18.5px] leading-[1.55] text-center max-w-2xl mx-auto mt-4">
+          {payload.tagline}
+        </p>
+      )}
+      <div className="flex justify-center my-8" style={{ color }}>
+        <ArchetypeRadial axes={axes} archetypeColor={color} size={240} />
+      </div>
+      {payload.reason && (
+        <p className="text-muted-foreground text-[13.5px] leading-relaxed text-center max-w-xl mx-auto">
+          {payload.reason}
+        </p>
+      )}
+    </section>
+  );
+};
+
 const renderSection = (id: SectionId, payload: unknown): React.ReactNode => {
   if (!payload || typeof payload !== "object") return null;
   switch (id) {
+    case "archetype":
+      return <ArchetypeCard payload={payload as ArchetypePayload} />;
     case "whereYouStand":
       return <WhereYouStand payload={payload as WhereYouStandPayload} />;
     case "whereYouCanLand":
