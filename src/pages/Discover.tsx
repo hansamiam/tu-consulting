@@ -1530,8 +1530,13 @@ const degreeBucket = (raw: string | null | undefined): string => {
   const v = raw.toLowerCase().trim();
   // Order matters: "phd" appearing in "phd or master's" should win bachelor's.
   if (/(phd|doctora|dphil|d\.phil|dr\.|doctor)/.test(v)) return "phd";
-  if (/(master|graduate|m\.?[as]\b|m\.?phil|m\.?ba|m\.?eng|llm|m\.?fa|m\.?sc|m\.?\.?s\.?\b|magistr)/.test(v)) return "master";
+  // bachelor/undergrad MUST come before master/graduate because the master
+  // regex's `graduate` alternative matches "undergraduate" as a substring.
+  // Pre-fix degreeBucket("undergraduate") returned "master"; clicking the
+  // Bachelor's filter chip silently set the filter to master's. Caught
+  // live 2026-05-25.
   if (/(bachelor|undergrad|b\.?[as]\b|b\.?sc|b\.?eng|b\.?ba|llb|first[- ]degree)/.test(v)) return "undergraduate";
+  if (/(master|graduate|m\.?[as]\b|m\.?phil|m\.?ba|m\.?eng|llm|m\.?fa|m\.?sc|m\.?\.?s\.?\b|magistr)/.test(v)) return "master";
   return "";
 };
 
