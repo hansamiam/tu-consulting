@@ -683,7 +683,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         {t("Let's start with you.", "Начнём с вас.")}
                       </h2>
                       <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[50ch]">
-                        {t("The basics that shape every program match — takes about a minute.", "Основы для подбора программ — займёт минуту.")}
+                        {t("The basics that shape every program match.", "Основы для подбора программ.")}
                       </p>
                     </div>
                     <div className="grid gap-5">

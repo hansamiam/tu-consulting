@@ -75,8 +75,6 @@ export default function ThankYou() {
             {verifying ? (
               <>
                 <Loader2 className="w-14 h-14 text-gold mx-auto mb-4 animate-spin" />
-                <h1 className="text-2xl md:text-3xl font-bold text-gold mb-2">Confirming your payment…</h1>
-                <p className="text-primary-foreground/80">Just a few seconds.</p>
               </>
             ) : verifyError ? (
               <>
