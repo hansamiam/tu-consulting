@@ -17,9 +17,7 @@ import { AuthDialog } from "@/components/auth/AuthDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { MembershipSettings } from "@/components/pipeline/MembershipSettings";
 import { ProfileSettingsCard } from "@/components/account/ProfileSettingsCard";
-import { CalendarSubscribeDialog } from "@/components/pipeline/CalendarSubscribeDialog";
-import { Card } from "@/components/ui/card";
-import { Loader2, Calendar as CalendarIcon } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface AccountProps { language?: "en" | "ru"; }
@@ -30,7 +28,6 @@ const Account = ({ language = "en" }: AccountProps) => {
   const navigate = useNavigate();
   const { user, loading, refreshSubscription } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
-  const [calendarOpen, setCalendarOpen] = useState(false);
 
   // Auth gate
   useEffect(() => {
@@ -152,41 +149,7 @@ const Account = ({ language = "en" }: AccountProps) => {
 
         <ProfileSettingsCard language={language} />
 
-        {/* Calendar sync — surfaced here as well as in the Workspace
-            sidebar so the option is discoverable from Settings (where
-            most "set up integrations" expectations live). Same dialog
-            for Google / Apple / Outlook subscribable ICS feed. */}
-        <Card className="p-5 space-y-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-1.5">
-                {t("Calendar sync", "Календарь")}
-              </p>
-              <p className="text-[12px] text-muted-foreground leading-snug">
-                {t(
-                  "Subscribe your Google / Apple / Outlook calendar to your tracked deadlines. Updates automatically as you save or close scholarships.",
-                  "Подпишите Google / Apple / Outlook календарь на отслеживаемые дедлайны. Обновляется автоматически.",
-                )}
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setCalendarOpen(true)}
-            className="group inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-semibold bg-gold/10 hover:bg-gold/15 text-gold-dark hover:text-foreground border border-gold/40 hover:border-gold/60 transition-all"
-          >
-            <CalendarIcon className="h-4 w-4 transition-transform group-hover:scale-110" />
-            {t("Sync to Google Calendar", "Синхр. с Google Calendar")}
-          </button>
-        </Card>
-
         <MembershipSettings language={language} variant="standalone" />
-
-        <CalendarSubscribeDialog
-          open={calendarOpen}
-          onOpenChange={setCalendarOpen}
-          language={language}
-        />
 
         <button
           onClick={() => navigate(ru ? "/discover/ru" : "/discover")}

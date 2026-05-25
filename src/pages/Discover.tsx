@@ -4101,7 +4101,6 @@ const Discover = ({ language = "en" }: Props) => {
                     heroReason={null}
                     profileQuality={profileQuality}
                     onExpand={() => openDetailRoute(heroScholarship)}
-                    onSharpenProfile={() => navigate(language === "ru" ? "/topuni-ai/ru" : "/topuni-ai")}
                     lang={language}
                   />
                 );
