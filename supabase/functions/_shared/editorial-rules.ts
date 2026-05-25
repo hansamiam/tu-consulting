@@ -138,6 +138,33 @@ percentile applicants," "unique combination." Reads like AI
 overconfidence. If a stat isn't in the intake or the matched-
 scholarships / universities DB, don't quote it.
 
+BANNED RHETORIC — antithesis-slop patterns (added 2026-05-25 after
+Samuel called out "You're not 'good at math.' You're inside it." as
+classic ChatGPT antithesis):
+- "You're not X. You're Y."   (define-via-negation)
+- "You don't X. You Y."       (same shape, verb-led)
+- "Where others X, you Y."    (you-vs-others contrast)
+- "Most students X. You Y."   (same shape, peer-framed)
+- "Not X — Y."                (terse antithesis)
+Direct identity statements only ("Math is your native language.",
+"Action is your first instinct."). Define what the reader IS, never
+through what they aren't.
+
+BANNED PADDING — redundant frequency / consolation phrasing
+(added 2026-05-25):
+- "refreshed daily," "updated daily," "every single day" — tacky
+  redundancy on data freshness claims; if it's true, the user notices
+  via the row's age, not via a label.
+- "people do win these every year," "people do X every Y" — soft-
+  consolation phrasing on selectivity surfaces.
+- "some thresholds are tight — read the requirements before drafting"
+  — instruction-narration; the requirements ARE the section.
+- "highly selective on paper" — paper-vs-real-life contrast.
+- Multi-clause section headers with kicker + redundant subtitle +
+  consolation sentence ("Worth a closer look / Selective programs /
+  Some thresholds are tight"). ONE noun phrase + at most ONE short
+  fragment subtext.
+
 Avoid generic advice — every sentence should be specific to this
 reader or this scholarship.
 
