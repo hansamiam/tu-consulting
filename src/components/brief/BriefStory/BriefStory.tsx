@@ -15,6 +15,37 @@
  *   5. Avoid AI-slop phrases like "refreshed daily", "Your work could
  *      lead to impact in X", "We'll match across every geography" —
  *      lock-in the punchy direct register.
+ *
+ * ─── Stream C overhaul (2026-05-25) — per-frame visual anchor plan ───
+ *
+ * Audit: every frame ends in a content stack with `flex-1` taking the
+ * rest of the 9:16 card height — but the content itself stops well
+ * short of the bottom, leaving the bottom 1/2 to 2/3 visibly empty.
+ * Plan per frame:
+ *
+ *   • archetype (ArchetypeHook / "Frame 02"):
+ *       Centered gradient circle (120px) with archetype initials —
+ *       static placeholder, Stream D replaces with <ArchetypeRadial>.
+ *   • who (Body / "Frame 03 — WHO YOU ARE"):
+ *       Body copy fills naturally with new BODY size; no anchor.
+ *   • hidden (Pullquote / "Frame 03 — WHERE YOU STAND/HIDDEN ADV."):
+ *       Pullquote pinned to bottom, sized via PULLQUOTE constant
+ *       (larger than current). No additional anchor.
+ *   • belong (WhereYouBelong / "Frame 04"):
+ *       Country rows get larger flag tiles for more visual weight.
+ *       Stream E will append an adjacency strip below.
+ *   • essay (EssayCard / "Frame 05", navy):
+ *       Body fills naturally on navy background — no anchor.
+ *   • avoiding (WhatYoureAvoiding / "Frame 06"):
+ *       3 priority items rendered as horizontal bars with
+ *       priority-color left borders (red=now, amber=next,
+ *       zinc=later). Bars expand vertically to fill space.
+ *   • monday (MondayMoveCard / "Frame 07"):
+ *       Calendar mini-strip (Mon-Sun pills, target day in gold).
+ *       Static placeholder — Stream D does NOT touch this one.
+ *
+ * Type scale (KICKER/HEADING/BODY/PULLQUOTE/CLOSER) is codified
+ * below and replaces hardcoded font-size classNames in every frame.
  */
 import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Compass, Pause, Play } from "lucide-react";
