@@ -126,18 +126,8 @@ export const ActivityBell = ({ language = "en", variant = "default", grouped = f
             })}
           </ul>
         )}
-        {/* Workspace bridge — every event eventually lands in /pipeline
-            (saved scholarship, deadline tracker, saved-search match).
-            One footer link makes the relationship explicit so users
-            understand the bell is a fast peek and the Workspace is
-            the persistent home for these. */}
-        <button
-          onClick={() => navigate(ru ? "/pipeline/ru" : "/pipeline")}
-          className="w-full px-4 py-2.5 border-t border-border/60 bg-canvas-soft/50 text-[12px] font-medium text-foreground/80 hover:text-foreground hover:bg-foreground/[0.025] transition-colors flex items-center justify-center gap-1.5"
-        >
-          {ru ? "Открыть рабочую зону" : "Open Workspace"}
-          <ArrowRight className="h-3 w-3" />
-        </button>
+        {/* 2026-05-25: "Open Workspace" footer link retired with the
+            Workspace unpublish. */}
       </PopoverContent>
     </Popover>
   );

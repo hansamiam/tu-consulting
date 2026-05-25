@@ -189,10 +189,10 @@ const Account = ({ language = "en" }: AccountProps) => {
         />
 
         <button
-          onClick={() => navigate(ru ? "/pipeline/ru" : "/pipeline")}
+          onClick={() => navigate(ru ? "/discover/ru" : "/discover")}
           className="text-xs text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
         >
-          ← {t("Back to Workspace", "В Рабочую зону")}
+          ← {t("Back to Discover", "К Discover")}
         </button>
       </main>
       <Footer language={language} />

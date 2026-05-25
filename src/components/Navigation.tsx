@@ -158,25 +158,12 @@ const Navigation = ({ language = "en", variant = "default", overlayThreshold = 8
               </button>
             ))}
 
-            {/* Right-edge personal slot — Workspace when signed in,
-                Sign-in when not. Same position, same visual weight,
-                so the user always knows where to find their entry
-                point regardless of auth state. */}
+            {/* 2026-05-25: desktop Workspace nav button retired with the
+                Workspace unpublish. (PR #118's Edit silently no-op'd; this
+                is the actual removal.) Signed-in users see only the
+                account-icon affordance in the right-edge slot. */}
             {user ? (
               <>
-                {/* Workspace button — 2026-05-10: dropped the gold
-                    border + gold tint that made it stand out from the
-                    rest of the nav (user feedback: "shouldn't be gold-
-                    bold in top nav"). Now matches the regular nav-link
-                    treatment in weight and tone; just slightly clearer
-                    to read because it's the user's "go to my work"
-                    affordance. */}
-                <button
-                  onClick={() => navigate(isRussian ? "/pipeline/ru" : "/pipeline")}
-                  className={cn(linkBase, isOverlay ? "text-primary-foreground/85 hover:text-primary-foreground" : "text-foreground hover:text-gold-dark")}
-                >
-                  {isRussian ? "Рабочая зона" : "Workspace"}
-                </button>
                 {/* Account icon — separate from Workspace so the user
                     has a clear, smaller affordance for billing /
                     settings / sign-out without it competing with the
@@ -267,21 +254,11 @@ const Navigation = ({ language = "en", variant = "default", overlayThreshold = 8
                 </div>
 
                 <div className="pt-4 border-t border-border flex flex-col gap-2">
-                  {/* Personal slot — Workspace when signed in (with a
-                      small tier label beneath it), Sign-in when not.
-                      Same slot, mutually exclusive. Mirrors the
-                      desktop right-edge button. Account / billing
-                      lives inside Workspace via a small "Account"
-                      link in its header (round 34). */}
+                  {/* 2026-05-25: mobile Workspace button retired with the
+                      desktop one. Signed-in users see only the Account
+                      affordance in the mobile drawer. */}
                   {user ? (
                     <>
-                      <button
-                        onClick={() => { navigate(isRussian ? "/pipeline/ru" : "/pipeline"); setIsOpen(false); }}
-                        className="px-4 py-3 text-base font-bold rounded-md border border-gold/40 bg-gold/10 text-gold-dark text-left flex items-center gap-2"
-                      >
-                        {subscription.tier === "founding" ? <Crown className="w-4 h-4" /> : <UserIcon className="w-4 h-4" />}
-                        {isRussian ? "Рабочая зона" : "Workspace"}
-                      </button>
                       <button
                         onClick={() => { navigate(isRussian ? "/account/ru" : "/account"); setIsOpen(false); }}
                         className="px-4 py-2.5 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary text-left flex items-center gap-2"

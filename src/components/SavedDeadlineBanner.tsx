@@ -152,13 +152,9 @@ export function SavedDeadlineBanner({ trackedIds, isRu = false, daysWindow = 14 
           )}
         </p>
       </div>
-      <Link
-        to={isRu ? "/pipeline" : "/pipeline"}
-        className="inline-flex items-center gap-1.5 shrink-0 text-xs font-semibold text-foreground hover:text-gold-dark transition-colors"
-      >
-        {t("Open pipeline", "К pipeline", isRu)}
-        <ArrowRight className="w-3.5 h-3.5" />
-      </Link>
+      {/* 2026-05-25: "Open pipeline" link retired with the Workspace
+          unpublish. Banner now just surfaces the deadline count;
+          dismiss-for-today is the only action. */}
       <button
         type="button"
         onClick={dismiss}
