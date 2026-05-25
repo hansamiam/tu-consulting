@@ -140,16 +140,10 @@ export function GenerationPipeline({ profile, isRu = false }: Props) {
         animate={{ opacity: 1, y: 0 }}
         className="mb-6"
       >
-        {/* 2026-05-25: stripped the "WORKING" 10px mono-uppercase
-            tracking-[0.22em] eyebrow — that style is exactly the
-            AI-template smell Samuel called out on the brief. Pulse dot
-            alone says the same thing without the templated label. */}
-        <div className="mb-3">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold-dark opacity-60" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-gold-dark" />
-          </span>
-        </div>
+        {/* Header — pulse dot dropped 2026-05-25 (was an orphan after
+            the "WORKING" eyebrow label was stripped earlier the same
+            day). Progress bar + step list below carry the "we're
+            working" signal; the dot alone read as a random speck. */}
         <h3 className="font-heading text-2xl font-bold text-foreground tracking-tight mb-1">
           {profile.fullName
             ? t(`Building ${profile.fullName.split(" ")[0]}'s strategy`, `Готовим стратегию для ${profile.fullName.split(" ")[0]}`)

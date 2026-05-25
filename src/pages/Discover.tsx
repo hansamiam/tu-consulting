@@ -2391,17 +2391,22 @@ const ReqRow = ({ label, status, detail }: {
 /* ─── Inline animated stat ───────────────────────────────────────────── */
 /* ─── Section header ─────────────────────────────────────────────────── */
 const SectionHeader = ({ kicker, title, subtitle, accentClass }: {
-  kicker: string; title: string; subtitle: string; count?: number; accentClass: string;
+  kicker?: string; title: string; subtitle: string; count?: number; accentClass: string;
 }) => (
   // Section counts removed — at the current database scale a "· 12"
   // suffix reads as a thin number rather than an editorial cue. The
   // section's actual cards below already convey the count visually.
+  // Eyebrow row only renders when there is a kicker label — without
+  // this guard the bullet dot rendered as an orphan above headers
+  // that don't pass kicker (Selections, More flagship programs).
   <Reveal className="flex items-end justify-between gap-4 mb-4 pb-3 border-b border-border/60">
     <div className="min-w-0">
-      <div className={`inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${accentClass} mb-1.5`}>
-        <span className={`h-1.5 w-1.5 rounded-full ${accentClass.replace("text-", "bg-")}`} />
-        {kicker}
-      </div>
+      {kicker && (
+        <div className={`inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${accentClass} mb-1.5`}>
+          <span className={`h-1.5 w-1.5 rounded-full ${accentClass.replace("text-", "bg-")}`} />
+          {kicker}
+        </div>
+      )}
       <h2 className="font-heading font-bold text-lg sm:text-xl text-foreground leading-tight tracking-tight">{title}</h2>
       <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{subtitle}</p>
     </div>
