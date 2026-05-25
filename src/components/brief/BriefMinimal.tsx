@@ -53,6 +53,8 @@ import {
   type EssaySeed,
   type MondayMove,
 } from "./types";
+import { FinalCTA } from "@/components/brief/FinalCTA";
+import type { CombinedFundingSection } from "@/types/briefStructured";
 
 interface CommonProps {
   studentName: string;
@@ -60,6 +62,15 @@ interface CommonProps {
   generatedAt?: string;
   onShare?: () => void;
   onPrint?: () => void;
+  /** Optional structured funding (premium tier) — drives the FinalCTA
+   *  headline number. When absent, FinalCTA falls back to a generic
+   *  "your matched scholarships are in Discover" close. */
+  combinedFunding?: CombinedFundingSection | null;
+  /** Click handler for the FinalCTA Discover button. When omitted,
+   *  FinalCTA navigates via `window.location.href = /discover`. */
+  onOpenDiscover?: () => void;
+  /** Magazine language — forwarded to FinalCTA copy. */
+  lang?: "en" | "ru";
 }
 
 interface StaticProps extends CommonProps {
@@ -660,6 +671,20 @@ export const BriefDeck: React.FC<Props> = (props) => {
         </div>
       )}
       <CardStack cards={cards} archetypeColor={archetype?.color} />
+
+      {/* 2026-05-25: FinalCTA closer — last thing the reader sees after
+          the magazine deck. Headline pulls a personalized money number
+          from the extract-brief-data second pass when available; falls
+          back to a generic Discover hand-off otherwise. Only renders
+          once at least one section has streamed in so it doesn't show
+          stranded above the report. */}
+      {anyLoaded && !streamError && (
+        <FinalCTA
+          combinedFunding={props.combinedFunding ?? null}
+          onOpenDiscover={props.onOpenDiscover}
+          lang={props.lang ?? "en"}
+        />
+      )}
     </div>
   );
 };
