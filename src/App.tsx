@@ -192,14 +192,16 @@ const App = () => (
           <Route path="/scholarships/ru" element={<Discover language="ru" />} />
           {/* Public shareable AI strategy brief — viral / SEO surface */}
           <Route path="/brief/:slug" element={<SharedBrief />} />
-          {/* Application mission-control — kanban of saved scholarships */}
-          <Route path="/pipeline"     element={<Pipeline language="en" />} />
-          <Route path="/pipeline/ru"  element={<Pipeline language="ru" />} />
-          {/* Deadline calendar — paired with pipeline for time-based view */}
-          {/* /calendar consolidated into Workspace round 17 — redirects
-              keep external bookmarks alive. */}
-          <Route path="/calendar"     element={<Navigate to="/pipeline?tab=calendar" replace />} />
-          <Route path="/calendar/ru"  element={<Navigate to="/pipeline/ru?tab=calendar" replace />} />
+          {/* 2026-05-25: /pipeline (Workspace) unpublished. Route stays
+              live but redirects to /discover so any saved bookmarks
+              don't dead-end. Code in pages/Pipeline.tsx and
+              components/pipeline/* stays in tree for revival; only the
+              route + nav entry are hidden.
+              See project_topuni_archived_features_2026_05_25.md. */}
+          <Route path="/pipeline"     element={<Navigate to="/discover" replace />} />
+          <Route path="/pipeline/ru"  element={<Navigate to="/discover/ru" replace />} />
+          <Route path="/calendar"     element={<Navigate to="/discover" replace />} />
+          <Route path="/calendar/ru"  element={<Navigate to="/discover/ru" replace />} />
           {/* Referral hub — share your code, see your referrals */}
           <Route path="/refer"        element={<Refer language="en" />} />
           <Route path="/refer/ru"     element={<Refer language="ru" />} />
