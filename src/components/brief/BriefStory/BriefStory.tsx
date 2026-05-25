@@ -15,6 +15,37 @@
  *   5. Avoid AI-slop phrases like "refreshed daily", "Your work could
  *      lead to impact in X", "We'll match across every geography" —
  *      lock-in the punchy direct register.
+ *
+ * ─── Stream C overhaul (2026-05-25) — per-frame visual anchor plan ───
+ *
+ * Audit: every frame ends in a content stack with `flex-1` taking the
+ * rest of the 9:16 card height — but the content itself stops well
+ * short of the bottom, leaving the bottom 1/2 to 2/3 visibly empty.
+ * Plan per frame:
+ *
+ *   • archetype (ArchetypeHook / "Frame 02"):
+ *       Centered gradient circle (120px) with archetype initials —
+ *       static placeholder, Stream D replaces with <ArchetypeRadial>.
+ *   • who (Body / "Frame 03 — WHO YOU ARE"):
+ *       Body copy fills naturally with new BODY size; no anchor.
+ *   • hidden (Pullquote / "Frame 03 — WHERE YOU STAND/HIDDEN ADV."):
+ *       Pullquote pinned to bottom, sized via PULLQUOTE constant
+ *       (larger than current). No additional anchor.
+ *   • belong (WhereYouBelong / "Frame 04"):
+ *       Country rows get larger flag tiles for more visual weight.
+ *       Stream E will append an adjacency strip below.
+ *   • essay (EssayCard / "Frame 05", navy):
+ *       Body fills naturally on navy background — no anchor.
+ *   • avoiding (WhatYoureAvoiding / "Frame 06"):
+ *       3 priority items rendered as horizontal bars with
+ *       priority-color left borders (red=now, amber=next,
+ *       zinc=later). Bars expand vertically to fill space.
+ *   • monday (MondayMoveCard / "Frame 07"):
+ *       Calendar mini-strip (Mon-Sun pills, target day in gold).
+ *       Static placeholder — Stream D does NOT touch this one.
+ *
+ * Type scale (KICKER/HEADING/BODY/PULLQUOTE/CLOSER) is codified
+ * below and replaces hardcoded font-size classNames in every frame.
  */
 import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Compass, Pause, Play } from "lucide-react";
@@ -23,6 +54,28 @@ import { buildStoryData } from "./utils";
 import { useDeck } from "./useDeck";
 import { tokenToIso } from "@/lib/adjacent-countries";
 import { useAdjacentSuggestions } from "@/lib/use-adjacent-suggestions";
+
+// ─── Type scale ────────────────────────────────────────────────────────
+// Type scale for Story cards. Sized for the 400px-wide 9:16 frame.
+// Kicker stays tiny + uppercase (current eyebrow).
+// Heading: 28px mobile, 32px desktop — bigger than current.
+// Body: 14px with leading-snug — bigger than current 12px.
+// Pullquote: 18px italic.
+// Closer: 13px semibold (CTA-style sign-off).
+const KICKER = "text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold";
+const HEADING = "font-heading text-[28px] md:text-[32px] font-bold leading-tight tracking-tight";
+const BODY = "text-[14px] leading-snug text-foreground/90";
+const PULLQUOTE = "text-[18px] italic font-medium text-foreground/85 leading-snug";
+const CLOSER = "text-[13px] font-semibold text-foreground/80";
+
+// ─── Visual anchor slot ────────────────────────────────────────────────
+// Per-frame visual anchor. Frames opt in by passing children to this slot.
+// Frames that pass nothing render with empty space (Stream D will fill these
+// with real charts; Stream C ships with static placeholders below).
+const VisualAnchor = ({ children, className = "" }: { children?: React.ReactNode; className?: string }) =>
+  children ? (
+    <div className={`mt-auto pt-4 ${className}`}>{children}</div>
+  ) : null;
 
 interface SurfaceSpec {
   id: string;
@@ -157,8 +210,10 @@ export const BriefStory = ({
             >
               <p
                 className={[
-                  "m-0 mb-4 text-[12px] uppercase tracking-[0.08em] font-semibold",
-                  surface.navy ? "text-gold-light" : "text-foreground/55",
+                  // KICKER constant inlined here because the navy variant
+                  // swaps the muted-foreground color for gold-light.
+                  "m-0 mb-4 text-[11px] uppercase tracking-[0.18em] font-semibold",
+                  surface.navy ? "text-gold-light" : "text-muted-foreground",
                 ].join(" ")}
               >
                 {surface.kicker}
@@ -280,31 +335,48 @@ const ArchetypeHook = ({
 }: {
   archetype: { name: string; tagline?: string; confidence?: number };
   color?: string;
-}) => (
-  <div className="flex-1 min-h-0 flex flex-col">
-    <h1
-      className="font-heading font-bold text-[44px] sm:text-[52px] leading-[1.0] tracking-[-0.04em] m-0 mb-3 text-balance"
-      style={color ? { color } : undefined}
-    >
-      {archetype.name.replace(/\.$/, "")}.
-    </h1>
-    {archetype.tagline && (
-      <p className="font-heading italic font-medium text-[18px] leading-[1.35] text-foreground/75 tracking-tight m-0 max-w-[24ch] text-balance">
-        {archetype.tagline}
-      </p>
-    )}
-  </div>
-);
+}) => {
+  // Initials = first 2 chars of archetype name, uppercased. Drops a
+  // trailing period if present so "The Builder." doesn't become "TH".
+  const cleanName = archetype.name.replace(/\.$/, "").trim();
+  const initials = cleanName.slice(0, 2).toUpperCase();
+  return (
+    <div className="flex-1 min-h-0 flex flex-col">
+      {/* Archetype name keeps its display size — this is the branded
+          hook, not a body heading, so HEADING (28-32px) would underplay
+          it. PULLQUOTE governs the tagline below. */}
+      <h1
+        className="font-heading font-bold text-[44px] sm:text-[52px] leading-[1.0] tracking-[-0.04em] m-0 mb-3 text-balance"
+        style={color ? { color } : undefined}
+      >
+        {cleanName}.
+      </h1>
+      {archetype.tagline && (
+        <p className={`font-heading ${PULLQUOTE} text-foreground/75 tracking-tight m-0 max-w-[24ch] text-balance`}>
+          {archetype.tagline}
+        </p>
+      )}
+      {/* Stream C C.3 visual anchor — gradient initials emblem fills
+          the previously-empty bottom of the card. Stream D will swap
+          this for <ArchetypeRadial>. */}
+      <VisualAnchor>
+        <div className="mx-auto h-[120px] w-[120px] rounded-full bg-gradient-to-br from-gold/30 to-gold/10 border border-gold/40 flex items-center justify-center">
+          <span className="font-heading text-2xl font-bold text-gold-dark">{initials}</span>
+        </div>
+      </VisualAnchor>
+    </div>
+  );
+};
 
 const Body = ({ headline, body }: { headline?: string; body?: string }) => (
   <div className="flex-1 min-h-0 flex flex-col">
     {headline && (
-      <h2 className="font-heading font-bold text-[28px] sm:text-[30px] leading-[1.1] tracking-[-0.02em] text-foreground m-0 mb-4 text-balance">
+      <h2 className={`${HEADING} text-foreground m-0 mb-4 text-balance`}>
         {headline}
       </h2>
     )}
     {body && (
-      <p className="font-sans text-[14.5px] leading-[1.65] text-foreground/80 m-0 overflow-y-auto">
+      <p className={`font-sans ${BODY} m-0 overflow-y-auto`}>
         {body}
       </p>
     )}
@@ -312,9 +384,12 @@ const Body = ({ headline, body }: { headline?: string; body?: string }) => (
 );
 
 const Pullquote = ({ children }: { children: string }) => (
-  <div className="flex-1 min-h-0 flex flex-col justify-center">
+  // Per Stream C C.1: pullquote moves to the bottom of the card so the
+  // empty bottom-two-thirds gap disappears. PULLQUOTE constant sizes it
+  // larger than the prior text-[22px] body-block treatment.
+  <div className="flex-1 min-h-0 flex flex-col justify-end">
     <blockquote className="m-0 border-l-2 border-gold pl-5 py-1">
-      <p className="font-heading italic font-medium text-[22px] sm:text-[24px] leading-[1.25] text-foreground tracking-[-0.01em] m-0 text-balance">
+      <p className={`font-heading ${PULLQUOTE} text-foreground tracking-[-0.01em] m-0 text-balance`}>
         {children}
       </p>
     </blockquote>
@@ -339,38 +414,40 @@ const WhereYouBelong = ({
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
-      <h2 className="font-heading font-bold text-[26px] sm:text-[30px] leading-[1.05] tracking-[-0.025em] text-foreground m-0 mb-4 text-balance">
+      <h2 className={`${HEADING} text-foreground m-0 mb-4 text-balance`}>
         {totalSchools} school{totalSchools === 1 ? "" : "s"}, {countries.length} {countries.length === 1 ? "country" : "countries"}.
       </h2>
       {topMatch && (
         <div className="mb-3">
-          <p className="text-[12px] uppercase tracking-[0.08em] font-semibold text-gold-dark m-0 mb-1">
+          <p className="text-[11px] uppercase tracking-[0.18em] font-semibold text-gold-dark m-0 mb-1">
             Top match
           </p>
-          <p className="font-heading font-semibold text-[16px] text-foreground m-0 leading-tight">
+          <p className={`font-heading font-semibold ${CLOSER} text-foreground m-0 leading-tight`}>
             {topMatch.name}
           </p>
           {topMatch.location && (
-            <p className="text-[13px] text-muted-foreground m-0 mt-0.5">{topMatch.location}</p>
+            <p className={`${BODY} text-muted-foreground m-0 mt-0.5`}>{topMatch.location}</p>
           )}
         </div>
       )}
+      {/* Larger flag tiles per Stream C C.1 — country rows carry more
+          visual weight; sparse adjacency strip rendered below. */}
       <div className="overflow-y-auto flex-shrink">
         {countries.map((c, i) => (
           <div
             key={`${c.name}-${i}`}
-            className="grid grid-cols-[24px_1fr_auto] items-center gap-3 py-2.5 border-t border-border/60 last:border-b"
+            className="grid grid-cols-[40px_1fr_auto] items-center gap-3 py-3 border-t border-border/60 last:border-b"
           >
-            <span className="text-[18px] leading-none">{c.flag}</span>
+            <span className="text-[30px] leading-none">{c.flag}</span>
             <div className="min-w-0">
-              <p className="font-heading font-semibold text-[14px] text-foreground m-0 leading-tight">
+              <p className={`font-heading font-semibold ${BODY} text-foreground m-0 leading-tight`}>
                 {c.name}
               </p>
               {c.anchors && (
                 <p className="text-[12px] text-muted-foreground m-0 mt-0.5 truncate">{c.anchors}</p>
               )}
             </div>
-            <span className="font-heading font-semibold text-[16px] text-foreground tabular-nums">
+            <span className="font-heading font-semibold text-[18px] text-foreground tabular-nums">
               {c.count}
             </span>
           </div>
@@ -431,17 +508,17 @@ const EssayCard = ({
 }) => (
   <div className="flex-1 min-h-0 flex flex-col">
     {pre && (
-      <p className="font-heading font-medium text-[16px] leading-[1.2] text-[hsl(43_44%_96%)]/60 m-0">
+      <p className={`font-heading font-medium ${CLOSER} text-[hsl(43_44%_96%)]/60 m-0`}>
         {pre}
       </p>
     )}
     {closer && (
-      <h2 className="font-heading italic font-bold text-[28px] sm:text-[32px] leading-[1.1] tracking-[-0.025em] text-gold-light m-0 mt-2 mb-4 max-w-[14ch] text-balance">
+      <h2 className={`${HEADING} italic text-gold-light m-0 mt-2 mb-4 max-w-[14ch] text-balance`}>
         {closer}
       </h2>
     )}
     {body && (
-      <p className="font-sans text-[14.5px] leading-[1.65] text-[hsl(43_44%_96%)]/80 m-0 overflow-y-auto">
+      <p className={`font-sans ${BODY} text-[hsl(43_44%_96%)]/80 m-0 overflow-y-auto`}>
         {body}
       </p>
     )}
@@ -455,40 +532,36 @@ const WhatYoureAvoiding = ({
 }) => (
   <div className="flex-1 min-h-0 flex flex-col">
     {block.headline && (
-      <h2 className="font-heading font-bold text-[24px] sm:text-[26px] leading-[1.1] tracking-[-0.02em] text-foreground m-0 mb-3 text-balance">
+      <h2 className={`${HEADING} text-foreground m-0 mb-3 text-balance`}>
         {block.headline}
       </h2>
     )}
     {block.body && (
-      <p className="font-sans text-[13px] leading-[1.6] text-foreground/70 m-0 mb-3">{block.body}</p>
+      <p className={`font-sans ${BODY} text-foreground/70 m-0 mb-3`}>{block.body}</p>
     )}
-    <div className="overflow-y-auto">
+    {/* Stream C C.3 visual anchor — priority-color left-border bars.
+        Type enum is high/medium (no third tier), so:
+          high → red (Now), medium → amber (Soon). */}
+    <VisualAnchor className="space-y-1.5">
       {block.items.map((it, i) => (
         <div
           key={i}
-          className="py-2.5 grid grid-cols-[44px_1fr] items-start gap-3 border-t border-border/60 last:border-b"
+          className={[
+            "border-l-[3px] pl-2.5 py-1.5",
+            it.priority === "high" ? "border-red-500" : "border-amber-500",
+          ].join(" ")}
         >
-          <span
-            className={[
-              "text-[11px] uppercase tracking-[0.06em] font-semibold",
-              it.priority === "high" ? "text-gold-dark" : "text-muted-foreground",
-            ].join(" ")}
-          >
-            {it.priority === "high" ? "Now" : "Soon"}
-          </span>
-          <div>
-            <p className="font-heading font-semibold text-[13.5px] text-foreground m-0 leading-snug">
-              {it.title}
+          <p className={`font-heading font-semibold ${BODY} text-foreground/90 leading-tight m-0`}>
+            {it.title}
+          </p>
+          {it.action && (
+            <p className="text-[12px] text-muted-foreground leading-snug mt-0.5 m-0">
+              {it.action}
             </p>
-            {it.action && (
-              <p className="text-[12.5px] text-muted-foreground m-0 mt-0.5 leading-relaxed">
-                {it.action}
-              </p>
-            )}
-          </div>
+          )}
         </div>
       ))}
-    </div>
+    </VisualAnchor>
   </div>
 );
 
@@ -497,22 +570,40 @@ const MondayMoveCard = ({
 }: {
   move: { headline?: string; sub?: string; body?: string };
 }) => (
+  // Per Stream C C.4: Monday Move now uses the shared HEADING constant
+  // (was 30-36px, oversized vs body — heading-to-body ratio now matches
+  // the other frames).
   <div className="flex-1 min-h-0 flex flex-col">
     {move.headline && (
-      <h2 className="font-heading font-bold text-[30px] sm:text-[36px] leading-[1.0] tracking-[-0.03em] text-foreground m-0 mb-3 text-balance">
+      <h2 className={`${HEADING} text-foreground m-0 mb-3 text-balance`}>
         {move.headline}
       </h2>
     )}
     {move.sub && (
-      <p className="font-heading font-medium text-[16px] leading-[1.25] text-muted-foreground m-0 mb-3 max-w-[26ch] text-balance">
+      <p className={`font-heading font-medium ${BODY} text-muted-foreground m-0 mb-3 max-w-[26ch] text-balance`}>
         {move.sub}
       </p>
     )}
     {move.body && (
-      <p className="font-sans text-[14px] leading-[1.65] text-foreground/80 m-0 overflow-y-auto">
+      <p className={`font-sans ${BODY} m-0`}>
         {move.body}
       </p>
     )}
+    {/* Stream C C.3 visual anchor — Mon-Sun pill strip with Monday
+        highlighted in gold (the "Monday move"). */}
+    <VisualAnchor className="flex gap-1.5 justify-center">
+      {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((d, i) => (
+        <div
+          key={d}
+          className={[
+            "h-8 w-8 rounded-full text-[10px] font-semibold flex items-center justify-center",
+            i === 0 ? "bg-gold text-primary" : "bg-muted/40 text-muted-foreground",
+          ].join(" ")}
+        >
+          {d}
+        </div>
+      ))}
+    </VisualAnchor>
   </div>
 );
 
