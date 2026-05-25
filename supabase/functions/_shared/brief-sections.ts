@@ -1,4 +1,43 @@
 /**
+ * AUDIT 2026-05-25 (Stream A — copy regen v2) — slop sources identified
+ * in the live report and where the current prompts allow them:
+ *   (1) whatToWrite tautology ("Your essay starts —" / "That's where the
+ *       essay starts.") — both the GOLD EXEMPLAR + the closer-shape
+ *       instruction explicitly allow self-referential "That's where it
+ *       starts" copy, and the title slot has no "must be a complete
+ *       opening sentence" constraint, so the model emits a preamble.
+ *   (2) whatsBlockingYou repeat — neither the prompt nor the validator
+ *       forbids the section headline echoing the first entry's title,
+ *       so the model happily emits the same sentence twice ("You don't
+ *       know what you want to study yet." top + body open).
+ *   (3) whereYouStand demographic opener ("Most students in Kazakhstan
+ *       your age pursue a direct path toward IT or finance.") — the
+ *       prompt instructs "PILE-CONTRAST observation. Most kids in their
+ *       year go into one of {peerPiles}…" which directly teaches the
+ *       Demographic-opener shape; nothing bans it.
+ *   (4) whereYouStand slop verbs ("oversaturated piles", "less common
+ *       narrative", "potential to be a standout") — banned-vocab list
+ *       doesn't include "oversaturated", "less common", "narrative",
+ *       "standout", or "potential to be"; nothing flags them.
+ *   (5) whereYouStand hedging body ("maybe", "perhaps", "sometime in
+ *       the last two years") — speculative-tense markers are explicitly
+ *       REQUIRED in whatToWrite but spill into whereYouStand because
+ *       no per-section cap exists; "maybe/perhaps/likely/sometime" are
+ *       all unbanned globally.
+ *   (6) Empty body fields (Hidden Advantage card renders as a floating
+ *       italic quote with no surrounding context) — the SHARED_JSON_RULES
+ *       say "OMIT that optional key" rather than emit generic; combined
+ *       with the lead being "ONE sentence (max ~25 words)" the model
+ *       sometimes ships a sub-10-word lead + omits body. Need to make
+ *       lead and body non-optional with min content gates.
+ *
+ * Fix path (A.2-A.6): expand banned-vocab (kill hedging adverbs +
+ * demographic-cliché openers + slop verbs), rewrite each section
+ * prompt with explicit sentence/word caps + structural rules, add
+ * checkHeadlineDoesNotRepeatFirstEntry validator on whatsBlockingYou,
+ * rewrite whatToWrite title slot as an actual opening line, ban
+ * demographic openers explicitly in whereYouStand prompt.
+ *
  * Brief section specs — v7 (spec lock 2026-05-22).
  *
  * Five journey sections (IDs unchanged from v6 for renderer wire-
