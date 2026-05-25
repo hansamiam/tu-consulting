@@ -1,5 +1,12 @@
 /* AcademyHookCta — Discover detail-sheet membership upsell.
  *
+ * NAVY TOKEN NOTE (Stream F audit 2026-05-25):
+ *   This component intentionally uses bg-muted/30 (cream surface) — not navy.
+ *   Its primary CTA uses <Button> default variant which resolves to bg-primary
+ *   (--primary: 210 58% 22%) — the canonical brand-navy matching the footer.
+ *   No hardcoded hex. No navy clash here.
+ *   Use className="bg-brand-navy" for any future navy surfaces in this component.
+ *
  * Lives below the static scholarship info in the detail sheet and inside
  * the "expired but reopens_annually" banner. Sam re-pointed this from a
  * "strategy report" prompt to a MEMBERSHIP prompt on 2026-05-25 — live
