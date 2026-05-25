@@ -311,11 +311,16 @@ const tryParse = (raw: string): unknown | null => {
 };
 
 /** Semantic-validator helper — every section runs this after JSON-shape
- *  validation. Returns the first failing reason if any. */
+ *  validation. Returns the first failing reason if any.
+ *
+ *  `excludeHedging` is opt-in per section. Card 03 (essay seed) is the
+ *  one card that legitimately needs speculative tense ("sometime",
+ *  "maybe", "probably") in body prose — every other card commits to
+ *  the present moment and the hedging-pool fires normally. */
 const semanticCheck = (
   obj: Record<string, unknown>,
   ctx: BriefContext,
-  opts: { mustNameIntakeField: boolean },
+  opts: { mustNameIntakeField: boolean; excludeHedging?: boolean },
 ): ValidatorResult => {
   // Flatten every string in the payload (recursive) into one corpus
   // so we can scan banned-vocab and specific-anchor presence in one
@@ -329,8 +334,9 @@ const semanticCheck = (
   walk(obj);
   const text = corpus.join(" \n ");
 
-  // Banned-vocab scan (incl. cultural-context bans).
-  const hits = scanBannedVocab(text, ctx.culturalContext);
+  // Banned-vocab scan (incl. cultural-context bans). Per-section
+  // opt-out of the hedging-pool for Card 03 essay seed only.
+  const hits = scanBannedVocab(text, ctx.culturalContext, { excludeHedging: opts.excludeHedging });
   if (hits.length > 0) {
     const first = hits[0];
     return { ok: false, reason: `banned-vocab hit (${first.label}): "${first.match}"` };
@@ -504,8 +510,9 @@ forces a regen, so save the round-trip and avoid them up front):
 - Hedging adverbs: "sometime", "sometimes", "maybe", "perhaps",
   "likely", "potentially".
 - Slop verbs / overcooked words: "stands out", "standout",
-  "narrative", "oversaturated", "pile", "embark", "unlock",
-  "journey", "potential to be", "carve a unique", "less common".
+  "narrative", "oversaturated", "oversaturated pile",
+  "stuck in the pile", "embark", "unlock", "journey",
+  "potential to be", "carve a unique", "less common".
 - Demographic-cliché opener tokens: "your age", "most students in",
   "pursue a direct path", "stick to the traditional".
 - Strategy-jargon: "moat", "leverage", "positioning", "your cohort",
@@ -892,10 +899,12 @@ ${SHARED_JSON_RULES}`,
     if (/that'?s where the essay starts/i.test(closer)) {
       return { ok: false, reason: "essaySeed.closer tautologically restates the title — emit a real next-action imperative" };
     }
-    // Now apply standard semantic check — but allow speculative tokens
-    // ONLY where they appear in intake fields the student wrote. The
-    // hedging-pool is enforced as part of the default scan.
-    return semanticCheck(obj, ctx, { mustNameIntakeField: true });
+    // Card 03 (essay seed) is the one section where speculative tense
+    // is structurally required — the prompt asks the student to imagine
+    // a moment from intake. The hedging-pool ("sometime", "maybe",
+    // "probably") is therefore excluded HERE ONLY. Every other card
+    // still enforces it via the default scan.
+    return semanticCheck(obj, ctx, { mustNameIntakeField: true, excludeHedging: true });
   },
 };
 

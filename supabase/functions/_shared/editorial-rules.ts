@@ -157,8 +157,10 @@ BANNED HEDGING ADVERBS + AI-SLOP VERBS + DEMOGRAPHIC OPENERS
   (Card 03 / essay seed is the one exception — it REQUIRES speculative
   tense. Every other card must commit.)
 - Slop verbs / overcooked words: "stands out," "standout," "narrative,"
-  "oversaturated," "pile," "embark," "unlock," "journey," "potential to be,"
-  "carve a unique," "less common."
+  "oversaturated," "oversaturated pile," "stuck in the pile," "embark,"
+  "unlock," "journey," "potential to be," "carve a unique," "less common."
+  (Note: plain "pile" is allowed and intentional — used in Card 01
+  peer-pile contrast. Only the overcooked combinations are banned.)
 - Demographic-cliché openers — never open prose with these patterns:
   "your age," "most students in," "pursue a direct path," "stick to the
   traditional." Address THIS person, never their demographic bucket.
@@ -281,7 +283,12 @@ export const HEDGING_AND_CLICHE_BANNED: ReadonlyArray<{ pattern: RegExp; label: 
   { pattern: /\bstandout\b/i, label: "slop-verb" },
   { pattern: /\bnarrative\b/i, label: "slop-verb" },
   { pattern: /\boversaturated\b/i, label: "slop-verb" },
-  { pattern: /\bpile\b/i, label: "slop-verb" },
+  // "pile" is intentionally load-bearing in the editorial system
+  // (Card 01 peer-pile contrast, BriefPlan.pileContrast). Only its
+  // overcooked combinations are banned — "oversaturated pile" /
+  // "the pile is full" / "stuck in the pile" patterns.
+  { pattern: /\boversaturated pile\b/i, label: "slop-verb" },
+  { pattern: /\bstuck in the pile\b/i, label: "slop-verb" },
   { pattern: /\bembark\b/i, label: "slop-verb" },
   { pattern: /\bunlock\b/i, label: "slop-verb" },
   { pattern: /\bjourney\b/i, label: "slop-verb" },

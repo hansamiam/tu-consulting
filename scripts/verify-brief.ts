@@ -311,20 +311,58 @@ function testCertainMajorCase(sample: SampleBrief): TestResult {
 
 // ─── Test 3: Anti-slop pass ──────────────────────────────────────
 
+/** Sections (and the plan) scanned separately so we can exempt the
+ *  one card that legitimately needs speculative tense in body prose.
+ *  Card 03 (whatToWrite / essay seed) opts out of the hedging-pool;
+ *  every other surface enforces it. */
 function testAntiSlop(sample: SampleBrief): TestResult {
   const name = "3 · Anti-slop pass";
   const { intake, brief } = sample;
   const cult = resolveCulturalContext(intake.nationality);
-  const prose = allBriefProse(brief);
-  const hits = scanBannedVocab(prose, cult);
 
-  if (hits.length === 0) {
+  const allHits: Array<{ match: string; label: string }> = [];
+
+  // Scan plan's user-facing anchors only (identityClaim, pileContrast,
+  // mondayMoveArtifact, essaySeedType). The plan's reason fields are
+  // internal/debug metadata documenting WHY the model picked an
+  // archetype / gap — never rendered to the user and exempt from
+  // slop scanning.
+  if (brief.plan) {
+    const userFacingPlanFields = {
+      identityClaim: brief.plan.identityClaim,
+      pileContrast: brief.plan.pileContrast,
+      essaySeedType: brief.plan.essaySeedType,
+      mondayMoveArtifact: brief.plan.mondayMoveArtifact,
+      countryBuckets: brief.plan.countryBuckets,
+    };
+    const planText = collectStrings(userFacingPlanFields).join(" \n ");
+    allHits.push(...scanBannedVocab(planText, cult));
+  }
+  // Scan each section, exempting hedging-pool ONLY for whatToWrite.
+  // Section keys that aren't generated prose (topMatches / handoff /
+  // liveMatches are curated DB data, not LLM output) skip scanning.
+  const NON_PROSE_SECTION_KEYS = new Set(["topMatches", "handoff", "liveMatches", "matchedScholarships"]);
+  for (const [sectionId, section] of Object.entries(brief.sections)) {
+    if (NON_PROSE_SECTION_KEYS.has(sectionId)) continue;
+    // Within a generated section, strip nested non-prose keys (e.g. a
+    // section may carry its own handoff/topMatches sub-block).
+    const stripped = section && typeof section === "object" && !Array.isArray(section)
+      ? Object.fromEntries(
+          Object.entries(section as Record<string, unknown>).filter(([k]) => !NON_PROSE_SECTION_KEYS.has(k)),
+        )
+      : section;
+    const sectionText = collectStrings(stripped).join(" \n ");
+    const excludeHedging = sectionId === "whatToWrite";
+    allHits.push(...scanBannedVocab(sectionText, cult, { excludeHedging }));
+  }
+
+  if (allHits.length === 0) {
     return pass(name, "no banned vocab anywhere in the brief");
   }
 
-  const lines = hits.slice(0, 10).map((h) => `  - ${h.label}: "${h.match}"`);
-  if (hits.length > 10) lines.push(`  - ... and ${hits.length - 10} more`);
-  return fail(name, `${hits.length} banned-vocab hit(s):`, ...lines);
+  const lines = allHits.slice(0, 10).map((h) => `  - ${h.label}: "${h.match}"`);
+  if (allHits.length > 10) lines.push(`  - ... and ${allHits.length - 10} more`);
+  return fail(name, `${allHits.length} banned-vocab hit(s):`, ...lines);
 }
 
 // ─── Test 4: Specific-anchor reality check ───────────────────────
