@@ -484,9 +484,11 @@ activity, course, country, major) and saying something specific about
 THAT field. The card cites THEIR file, never the average kid's file.
 
 STRUCTURE — the card has four beats:
-  1. HEADLINE: MAX 10 words. Names what the student IS, never what
-     they aren't (no antithesis: "You're not X, you're Y" is banned).
-     Direct identity claim only. Quotable. NO banned vocab.
+  1. HEADLINE (the archetype tagline): MAX 8 words. Names what the
+     student IS, never what they aren't (no antithesis: "You're not X,
+     you're Y" is banned). Direct identity claim only — never
+     "you have the potential to be X" / "you could be X" / "you're
+     becoming X" hedging. Present tense, IS. Quotable. NO banned vocab.
   2. LEAD: ONE sentence, MAX 20 words. Cites at least one specific
      intake field by name (GPA / IELTS / country / major / activity).
   3. BODY: MAX 2 sentences. Each sentence MAX 25 words. Concrete
@@ -496,11 +498,26 @@ STRUCTURE — the card has four beats:
      mood only — "the time will come to lead with it" / "worth
      surfacing when you're ready". NEVER bare imperative.
 
+BANNED-VOCAB REMINDER (cross-referenced from editorial-rules.ts —
+the validator scans for these post-generation; emitting any of them
+forces a regen, so save the round-trip and avoid them up front):
+- Hedging adverbs: "sometime", "sometimes", "maybe", "perhaps",
+  "likely", "potentially".
+- Slop verbs / overcooked words: "stands out", "standout",
+  "narrative", "oversaturated", "pile", "embark", "unlock",
+  "journey", "potential to be", "carve a unique", "less common".
+- Demographic-cliché opener tokens: "your age", "most students in",
+  "pursue a direct path", "stick to the traditional".
+- Strategy-jargon: "moat", "leverage", "positioning", "your cohort",
+  "north star", "your edge", "stand out".
+- Antithesis-slop: "You're not X. You're Y." / "Not X — Y." / "Where
+  others X, you Y." Direct identity statements only.
+
 GOLD EXEMPLAR — match this prose-quality bar:
   Student: Yerlan, Kazakhstan, GPA 3.7, AP Calc + Math Olympiad
   regional medal (2024), debate captain.
   Output:
-    headline: "Math is your native language. Debate is your second."
+    headline: "Math is your native language."
     lead:     "Yerlan, your 3.7 GPA carries an AP Calc grade most of your debate teammates don't have."
     body:     "Your 2024 Math Olympiad medal proves the math wasn't a coincidence — you train at it. Pairing that with debate captaincy is the rare combo Cambridge land-economy and Toronto Rotman both look for."
     pullquote: "Lead with the overlap when you write."
@@ -508,7 +525,7 @@ GOLD EXEMPLAR — match this prose-quality bar:
 OUTPUT — emit a JSON object exactly matching this shape:
 {
   "kicker": "01 · Where you stand",
-  "headline": "string — MAX 10 words. Direct identity claim. NO 'You're not X, you're Y' antithesis. NO banned vocab.",
+  "headline": "string — MAX 8 words. Direct identity claim (present tense, IS). NO 'You're not X, you're Y' antithesis. NO 'you have the potential to be' hedging. NO banned vocab.",
   "lead": "string — ONE sentence, MAX 20 words. Cites at least one specific intake field by name. Drop-cap rendered.",
   "body": "string — MAX 2 sentences. Each sentence ≤ 25 words. Concrete examples only — zero hedging adverbs. NO demographic-cliché openers ('Most students in {country}…'). References at least 2 named intake fields total.",
   "pullquote": "string — ONE sentence, MAX 15 words. Standalone reframe. Suggestion mood only. No 'Stop.' / 'Do this.' / 'Start now.'."
@@ -526,8 +543,13 @@ ${SHARED_JSON_RULES}`;
       }
     }
     const headline = (obj.headline as string).trim();
-    if (headline.split(/\s+/).length > 10) {
-      return { ok: false, reason: `headline >10 words (${headline.split(/\s+/).length})` };
+    if (headline.split(/\s+/).length > 8) {
+      return { ok: false, reason: `headline >8 words (${headline.split(/\s+/).length})` };
+    }
+    // "Potential to be" / "could be" / "have the potential" hedging
+    // turns the identity claim into a wish. Force present-tense IS.
+    if (/\b(you have the potential to be|you could be|you're becoming)\b/i.test(headline)) {
+      return { ok: false, reason: "headline uses potential/becoming hedging — must be present-tense direct identity claim" };
     }
     const lead = (obj.lead as string).trim();
     if (lead.split(/\s+/).length > 20) {
@@ -647,16 +669,16 @@ GOLD EXEMPLAR — match this prose-quality bar:
       [0] country: "Canada"
           cities:  "Toronto, Vancouver, Montreal"
           schools:
-            - { name: "University of Toronto", lore: "Where the kid running policy resolutions on weekends finds three other people doing the same in the same dorm. Big enough to disappear into when you need to, dense enough that the overlap shows up at lunch." }
-            - { name: "McGill",                lore: "Policy-school energy without giving up the math. The dual-major kids here aren't unusual — they're the ones who pick the program." }
+            - { name: "University of Toronto", lore: "Big enough to disappear in; the math-and-policy dual majors find each other at lunch." }
+            - { name: "McGill",                lore: "Dual-major math-and-policy kids here aren't unusual — they're the standard intake." }
       [1] country: "United Kingdom"
           cities:  "Edinburgh, Glasgow"
           schools:
-            - { name: "University of Edinburgh", lore: "Where the STEM-with-policy combination isn't unusual, it's the standard. Quieter prestige, lower selectivity, better fit. Not Oxbridge — the smarter middle." }
+            - { name: "University of Edinburgh", lore: "STEM-with-policy is the standard track here; quieter prestige than Oxbridge, better fit." }
       [2] country: "Singapore"
           cities:  null
           schools:
-            - { name: "NUS", lore: "English-medium, scholarship-heavy, six-hour flight from home. The place that gets your visa stamped the first time you ask." }
+            - { name: "NUS", lore: "English-medium, scholarship-heavy, six-hour flight from Almaty — visa stamps come on first ask." }
 
 OUTPUT — emit a JSON object exactly matching this shape:
 {
@@ -670,7 +692,7 @@ OUTPUT — emit a JSON object exactly matching this shape:
       "schools": [
         {
           "name": "string — exact school name from LIVE CONTEXT (do not invent)",
-          "lore": "string — 1 to 2 sentences. The school's PERSONALITY for THIS student. Plain English. References Card 01's identity claim or the archetype. NO banned vocab."
+          "lore": "string — ONE sentence, MAX 18 words. The school's PERSONALITY for THIS student — CONCRETE + SPECIFIC to that school (e.g. 'TUM's CS program runs in English from year 1; ~30% of intake is international.'). NEVER generic platitudes ('a strong program with great research opportunities' / 'world-class faculty' / 'rigorous curriculum'). References Card 01's identity claim or the archetype. NO banned vocab."
         }
         // 1 to 3 schools per bucket
       ]
@@ -682,8 +704,14 @@ OUTPUT — emit a JSON object exactly matching this shape:
 ABSOLUTE RULES:
 - 1 to 3 buckets. 1 to 3 schools per bucket. ≤ 9 schools total.
 - Every school MUST exist in LIVE CONTEXT. Do not invent.
-- Every lore sentence MUST reference at least one specific element
-  from Card 01 (identity claim / pile contrast) or the archetype.
+- Every lore is ONE sentence, ≤18 words, and CONCRETE — names a
+  named program, language of instruction, intake mix, location detail,
+  or scholarship hook specific to that school. Banned generic
+  platitudes include: "a strong program", "great research
+  opportunities", "world-class faculty", "rigorous curriculum",
+  "excellent reputation", "internationally recognized".
+- Every lore MUST reference at least one specific element from
+  Card 01 (identity claim / pile contrast) or the archetype.
 - No 'reach' / 'target' / 'safety' / 'elite' / 'top-10' anywhere.
 - Country selection rules:
   · If the NO-TARGETCOUNTRIES BRANCH note above is present, use the
@@ -719,6 +747,22 @@ ${SHARED_JSON_RULES}`;
         const name = (s as { name?: unknown }).name;
         if (typeof name !== "string" || name.trim().length === 0) {
           return { ok: false, reason: "every school must have a name" };
+        }
+        const lore = (s as { lore?: unknown }).lore;
+        if (typeof lore === "string" && lore.trim().length > 0) {
+          const loreWords = lore.trim().split(/\s+/);
+          if (loreWords.length > 18) {
+            return {
+              ok: false,
+              reason: `lore for "${name}" is >18 words (${loreWords.length}); tighten to one concrete sentence.`,
+            };
+          }
+          if (/\b(a strong program|great research opportunities|world[- ]class faculty|rigorous curriculum|excellent reputation|internationally recognized)\b/i.test(lore)) {
+            return {
+              ok: false,
+              reason: `lore for "${name}" uses generic platitude — rewrite with a concrete school-specific anchor.`,
+            };
+          }
         }
       }
     }
@@ -1099,25 +1143,28 @@ GOLD EXEMPLAR — match this prose-quality bar:
   Student: Yerlan (same as Cards 01-04)
   Output:
     kicker:    "05 · Your Monday Move"
-    headline:  "Open a Google Doc this week. Title it 'math in debate.'"
+    headline:  "Open a Google Doc; title it 'math in debate.'"
     lead:      "One move that opens the rest."
-    mondayMove.body: "Inside, list three specific times something from a math class showed up in a debate round you ran. Don't polish. Don't make them sound profound. Just three lines, one per moment. Stop when you have three."
-    mondayMove.closer: "Once those three lines exist on the page, the essay has somewhere to start."
+    mondayMove.body: "List three times calc showed up mid-debate-round. Don't polish — three lines is the whole bar."
+    mondayMove.closer: "Once the three lines exist, the essay starts."
 
 OUTPUT — emit a JSON object exactly matching this shape:
 {
   "kicker": "05 · Your Monday Move",
-  "headline": "string — 6 to 12 words. The move, named as a verb-led instruction. Concrete artifact. Example shape: 'Open a Google Doc this week. Title it [X].'",
+  "headline": "string — MAX 12 words AS ONE complete action (imperative mood). The move, verb-led. Concrete artifact. Example: 'Open a Google Doc and title it [X].'",
   "lead": "string — ONE sentence (max ~12 words) framing the move. Drop-cap rendered.",
   "mondayMove": {
     "headline": "string — same as the section headline above (for renderer convenience — emit it again so the card component doesn't need to peek upstream).",
-    "body": "string — 3 to 5 sentences, 50 to 80 words. Explains the move, anchors to Cards 02-03 anchors, includes AT LEAST ONE low-bar permission phrase ('don't polish' / 'just list' / 'don't make it good' / 'no need to' / 'stop when').",
-    "closer": "string — ONE sentence in 'Once X exists, Y starts' or 'Once X is done, Y follows' pattern. Quiet confidence, NOT hype. NO imperative."
+    "body": "string — MAX 2 sentences. Each sentence ≤25 words. Anchors to Cards 02-03 anchors and includes AT LEAST ONE low-bar permission phrase ('don't polish' / 'just list' / 'don't make it good' / 'no need to' / 'stop when').",
+    "closer": "string — ONE imperative sentence, MAX 10 words. Quiet confidence, concrete. Example: 'Once the three lines exist, the essay starts.' NO hype, NO additional prescriptions."
   }
 }
 
 ABSOLUTE RULES:
 - ONE move only. No "and then" / "after that" chaining in the headline.
+- headline ≤12 words AS one imperative-mood action.
+- body ≤2 sentences, each ≤25 words.
+- closer ≤10 words, imperative.
 - Time-cost implicit ≤ 1 hour. No "register for the SAT" / "email three professors."
 - body MUST contain a low-bar permission phrase.
 - closer does NOT prescribe additional actions.
@@ -1127,6 +1174,11 @@ ${SHARED_JSON_RULES}`,
   validate: (raw, ctx) => {
     const obj = tryParse(raw) as Record<string, unknown> | null;
     if (!obj) return { ok: false, reason: "not valid JSON" };
+    // Section headline cap — ≤12 words.
+    const sectionHeadline = typeof obj.headline === "string" ? obj.headline.trim() : "";
+    if (sectionHeadline && sectionHeadline.split(/\s+/).length > 12) {
+      return { ok: false, reason: `headline >12 words (${sectionHeadline.split(/\s+/).length})` };
+    }
     const mondayMove = obj.mondayMove as Record<string, unknown> | undefined;
     if (!mondayMove || typeof mondayMove !== "object") {
       return { ok: false, reason: "mondayMove object missing" };
@@ -1134,6 +1186,16 @@ ${SHARED_JSON_RULES}`,
     const body = typeof mondayMove.body === "string" ? mondayMove.body : "";
     if (body.trim().length < 30) {
       return { ok: false, reason: "mondayMove.body missing or too short" };
+    }
+    // Body sentence + per-sentence word caps — ≤2 sentences, ≤25 words each.
+    const bodySentences = body.trim().split(/(?<=[.!?])\s+/).filter((s) => s.trim().length > 0);
+    if (bodySentences.length > 2) {
+      return { ok: false, reason: `mondayMove.body >2 sentences (${bodySentences.length})` };
+    }
+    for (const s of bodySentences) {
+      if (s.split(/\s+/).length > 25) {
+        return { ok: false, reason: `mondayMove.body sentence >25 words: "${s.slice(0, 60)}…"` };
+      }
     }
     // Body MUST contain a low-bar permission phrase.
     if (
@@ -1144,10 +1206,17 @@ ${SHARED_JSON_RULES}`,
         reason: "mondayMove.body must include a low-bar permission phrase (don't polish / just list / stop when ... / etc.)",
       };
     }
-    // Closer must NOT use a bare imperative (preserved from v6 rules).
+    // Closer caps — ≤10 words, no bare-imperative-closer preachy openers.
     const closer = typeof mondayMove.closer === "string" ? mondayMove.closer : "";
-    if (closer && /^(Stop|Do this|Don't|Begin|Start now)\.?\s/i.test(closer.trim())) {
-      return { ok: false, reason: "mondayMove.closer uses bare imperative — must be suggestion mood" };
+    if (!closer.trim()) {
+      return { ok: false, reason: "mondayMove.closer missing" };
+    }
+    const closerWords = closer.trim().split(/\s+/);
+    if (closerWords.length > 10) {
+      return { ok: false, reason: `mondayMove.closer >10 words (${closerWords.length})` };
+    }
+    if (/^(Stop|Do this|Don't|Begin|Start now)\.?\s/i.test(closer.trim())) {
+      return { ok: false, reason: "mondayMove.closer uses bare-imperative-closer preachy opener" };
     }
     return semanticCheck(obj, ctx, { mustNameIntakeField: true });
   },
