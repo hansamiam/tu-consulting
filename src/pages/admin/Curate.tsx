@@ -19,7 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, CheckCircle2, EyeOff, Search, RefreshCw, Loader2 } from "lucide-react";
+import { ExternalLink, CheckCircle2, EyeOff, Search, RefreshCw, Loader2, Eye } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface Row {
@@ -37,6 +37,25 @@ interface Row {
   created_at: string | null;
   data_source: string | null;
 }
+
+/* Mirrors the three server-side filters in src/pages/Discover.tsx
+   (lifecycle + verification + future deadline). Kept in sync by hand —
+   if the Discover query changes, update this predicate too. */
+const isDiscoverVisible = (r: Row): boolean => {
+  const today = new Date().toISOString().slice(0, 10);
+  const lifecycleOk =
+    r.lifecycle_status === "active" ||
+    r.lifecycle_status === "reopens_annually" ||
+    r.lifecycle_status === null;
+  const verifOk =
+    r.verification_status === null ||
+    r.verification_status === "verified" ||
+    r.verification_status === "stale" ||
+    r.verification_status === "pending";
+  const deadlineOk =
+    r.application_deadline !== null && r.application_deadline >= today;
+  return lifecycleOk && verifOk && deadlineOk;
+};
 
 const fmtRelative = (iso: string | null): string => {
   if (!iso) return "—";
@@ -64,6 +83,39 @@ const FILTERS: { key: StatusFilter; label: string }[] = [
   { key: "reopens_annually", label: "Reopens annually" },
   { key: "superseded", label: "Superseded" },
   { key: "closed_archived", label: "Archived" },
+];
+
+type VerifFilter = "any" | "verified" | "stale" | "pending" | "broken" | "null";
+const VERIF_FILTERS: { key: VerifFilter; label: string }[] = [
+  { key: "any", label: "Any verif" },
+  { key: "verified", label: "Verified" },
+  { key: "stale", label: "Stale" },
+  { key: "pending", label: "Pending" },
+  { key: "broken", label: "Broken" },
+  { key: "null", label: "Unverified" },
+];
+
+type VisibilityFilter = "any" | "visible" | "hidden_from_discover";
+const VISIBILITY_FILTERS: { key: VisibilityFilter; label: string }[] = [
+  { key: "any", label: "Any visibility" },
+  { key: "visible", label: "On Discover" },
+  { key: "hidden_from_discover", label: "Not on Discover" },
+];
+
+type SortKey =
+  | "scraped_new"
+  | "scraped_old"
+  | "deadline_soon"
+  | "deadline_far"
+  | "name_az"
+  | "value_high";
+const SORTS: { key: SortKey; label: string }[] = [
+  { key: "scraped_new", label: "Newest scraped" },
+  { key: "scraped_old", label: "Oldest scraped" },
+  { key: "deadline_soon", label: "Deadline soonest" },
+  { key: "deadline_far", label: "Deadline farthest" },
+  { key: "name_az", label: "Name A→Z" },
+  { key: "value_high", label: "Award value (high→low)" },
 ];
 
 const fmtDeadline = (iso: string | null): string => {
@@ -96,7 +148,10 @@ const Curate = () => {
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("inactive");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [verifFilter, setVerifFilter] = useState<VerifFilter>("any");
+  const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>("any");
+  const [sortKey, setSortKey] = useState<SortKey>("scraped_new");
 
   const load = async () => {
     setLoading(true);
@@ -129,18 +184,61 @@ const Curate = () => {
 
   const filtered = useMemo(() => {
     let list = rows;
-    if (statusFilter !== "all") {
+    const q = search.trim().toLowerCase();
+
+    // A non-empty search overrides the status filter — "find me this thing"
+    // shouldn't be silently scoped to one lifecycle bucket. (The Numerix
+    // trap: searching while filtered to Hidden hid the live duplicate.)
+    if (!q && statusFilter !== "all") {
       list = list.filter((r) => r.lifecycle_status === statusFilter);
     }
-    const q = search.trim().toLowerCase();
+    if (verifFilter !== "any") {
+      list = list.filter((r) =>
+        verifFilter === "null"
+          ? r.verification_status === null
+          : r.verification_status === verifFilter,
+      );
+    }
+    if (visibilityFilter !== "any") {
+      list = list.filter((r) => {
+        const visible = isDiscoverVisible(r);
+        return visibilityFilter === "visible" ? visible : !visible;
+      });
+    }
     if (q) {
       list = list.filter((r) => {
         const hay = `${r.scholarship_name} ${r.provider_name ?? ""} ${r.host_country ?? ""}`.toLowerCase();
         return hay.includes(q);
       });
     }
-    return list;
-  }, [rows, search, statusFilter]);
+
+    const sorted = [...list];
+    const farFuture = "9999-12-31";
+    sorted.sort((a, b) => {
+      switch (sortKey) {
+        case "scraped_new":
+          return (b.created_at ?? "").localeCompare(a.created_at ?? "");
+        case "scraped_old":
+          return (a.created_at ?? "").localeCompare(b.created_at ?? "");
+        case "deadline_soon":
+          return (a.application_deadline ?? farFuture).localeCompare(b.application_deadline ?? farFuture);
+        case "deadline_far":
+          return (b.application_deadline ?? "").localeCompare(a.application_deadline ?? "");
+        case "name_az":
+          return a.scholarship_name.localeCompare(b.scholarship_name);
+        case "value_high":
+          return (b.estimated_total_value_usd ?? 0) - (a.estimated_total_value_usd ?? 0);
+        default:
+          return 0;
+      }
+    });
+    return sorted;
+  }, [rows, search, statusFilter, verifFilter, visibilityFilter, sortKey]);
+
+  const discoverVisibleCount = useMemo(
+    () => rows.filter(isDiscoverVisible).length,
+    [rows],
+  );
 
   const counts = useMemo(() => {
     const m: Record<string, number> = {};
@@ -182,7 +280,7 @@ const Curate = () => {
           </Button>
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 mb-2">
           {FILTERS.map((f) => (
             <button
               key={f.key}
@@ -204,15 +302,68 @@ const Curate = () => {
           ))}
         </div>
 
-        <div className="relative mb-4">
-          <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name, provider, or country…"
-            className="pl-9"
-          />
+        <div className="flex flex-wrap gap-2 mb-2">
+          {VERIF_FILTERS.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setVerifFilter(f.key)}
+              className={`text-[11px] uppercase tracking-[0.14em] px-2.5 py-1 rounded-full border transition-colors ${
+                verifFilter === f.key
+                  ? "bg-foreground/90 text-background border-foreground/90"
+                  : "bg-card text-muted-foreground border-border hover:text-foreground"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
+
+        <div className="flex flex-wrap gap-2 mb-4">
+          {VISIBILITY_FILTERS.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setVisibilityFilter(f.key)}
+              className={`text-[11px] uppercase tracking-[0.14em] px-2.5 py-1 rounded-full border transition-colors ${
+                visibilityFilter === f.key
+                  ? "bg-foreground/90 text-background border-foreground/90"
+                  : "bg-card text-muted-foreground border-border hover:text-foreground"
+              }`}
+            >
+              {f.label}
+              {f.key === "visible" && (
+                <span className="ml-1.5 text-[10px] opacity-70">{discoverVisibleCount}</span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid sm:grid-cols-[1fr_220px] gap-2 mb-4">
+          <div className="relative">
+            <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search name, provider, or country…"
+              className="pl-9"
+            />
+          </div>
+          <select
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value as SortKey)}
+            className="h-10 rounded-md border border-border bg-card text-sm px-3 text-foreground"
+            aria-label="Sort by"
+          >
+            {SORTS.map((s) => (
+              <option key={s.key} value={s.key}>{`Sort: ${s.label}`}</option>
+            ))}
+          </select>
+        </div>
+
+        {search.trim() && statusFilter !== "all" && (
+          <p className="text-xs text-muted-foreground mb-3">
+            Searching across <span className="text-foreground">all statuses</span> — the "{FILTERS.find((f) => f.key === statusFilter)?.label}" tab is suspended while a search is active.
+          </p>
+        )}
 
         <Card>
           <CardHeader>
@@ -298,9 +449,19 @@ const Curate = () => {
                             {fmtRelative(r.created_at)}
                           </td>
                           <td className="py-2.5 px-3">
-                            <Badge variant="outline" className={`text-[10.5px] uppercase tracking-wider ${statusBadgeClass(r.lifecycle_status)}`}>
-                              {r.lifecycle_status ?? "null"}
-                            </Badge>
+                            <div className="flex items-center gap-1.5">
+                              <Badge variant="outline" className={`text-[10.5px] uppercase tracking-wider ${statusBadgeClass(r.lifecycle_status)}`}>
+                                {r.lifecycle_status ?? "null"}
+                              </Badge>
+                              {isDiscoverVisible(r) && (
+                                <span
+                                  title="Passes all Discover filters — visible to users right now"
+                                  className="inline-flex items-center gap-1 text-[9.5px] uppercase tracking-wider text-success border border-success/40 bg-success/10 rounded-full px-1.5 py-0.5"
+                                >
+                                  <Eye className="h-2.5 w-2.5" /> on discover
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="py-2.5 pl-3 text-right whitespace-nowrap">
                             {isActive ? (
