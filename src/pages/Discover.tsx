@@ -4565,30 +4565,11 @@ const Discover = ({ language = "en" }: Props) => {
                           // suggesting click-to-sort that wasn't reliable.
                           return (
                             <>
-                              {/* 2026-05-25: prominent "Go to Workspace" CTA above
-                                  the saved list. Sam called out that the shortlist
-                                  → workspace connection was nearly invisible —
-                                  shortlisting was the dead-end. The CTA leads to
-                                  /pipeline where deadline tracking + status + notes
-                                  live. Navy primary so the user can't miss it. */}
-                              <div className="mb-5 rounded-2xl border border-[hsl(var(--navy-deep)/0.18)] bg-gradient-to-br from-[hsl(var(--navy-deep)/0.04)] to-transparent px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
-                                <div className="min-w-0 flex-1">
-                                  <p className="font-heading font-semibold text-foreground text-[15px] tracking-tight m-0 leading-snug">
-                                    {t(`${items.length} saved — track them in Workspace`, `${items.length} в шортлисте — следите в Workspace`)}
-                                  </p>
-                                  <p className="text-[13px] text-muted-foreground mt-0.5 m-0 leading-snug">
-                                    {t("Deadlines, statuses, notes — all your saved scholarships in one place.", "Дедлайны, статусы, заметки — все сохранённые стипендии в одном месте.")}
-                                  </p>
-                                </div>
-                                <Button
-                                  size="default"
-                                  onClick={() => navigate(language === "ru" ? "/pipeline/ru" : "/pipeline")}
-                                  className="bg-[hsl(var(--navy-deep))] hover:bg-[hsl(var(--navy))] text-[hsl(43_44%_96%)] gap-1.5 shrink-0"
-                                >
-                                  {t("Go to Workspace", "Открыть Workspace")}
-                                  <ArrowRight className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
+                              {/* "Go to Workspace" CTA retired 2026-05-25
+                                  with the Workspace unpublish. The saved
+                                  list is the shortlist; we'll add the
+                                  workspace bridge back when the Pipeline
+                                  page reships in a future update. */}
                               <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
                                 <div className="hidden sm:grid grid-cols-[minmax(0,1fr),170px,128px] items-center gap-4 px-4 py-2.5 border-b border-border bg-canvas-soft/50 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                                   <span>{t("Scholarship", "Стипендия")}</span>
