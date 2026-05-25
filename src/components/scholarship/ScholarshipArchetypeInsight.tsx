@@ -95,9 +95,15 @@ export const ScholarshipArchetypeInsight = ({ scholarshipId }: Props) => {
 
   if (!text) return null;
 
+  // Pull-quote frame — subtle gold left border + a touch of padding so
+  // the insight reads as its own section without an AI-slop eyebrow
+  // ("Personalized for you" etc) above it. Matches the BriefStory
+  // Pullquote treatment so users recognise the editorial register.
   return (
-    <p className="font-heading italic text-[15px] leading-[1.5] text-foreground/75 m-0 max-w-2xl">
-      {text}
-    </p>
+    <blockquote className="not-prose m-0 mb-2 border-l-2 border-gold/70 pl-4 py-1">
+      <p className="font-heading italic text-[15.5px] leading-[1.55] text-foreground m-0 max-w-2xl">
+        {text}
+      </p>
+    </blockquote>
   );
 };

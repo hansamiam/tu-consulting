@@ -22,7 +22,7 @@
  */
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Info } from "lucide-react";
+import { ArrowRight, ExternalLink, Info } from "lucide-react";
 import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
 import { shortCountry, accentForCountry } from "@/lib/countryAccent";
 import { CountryArt } from "@/lib/countryArt";
@@ -264,11 +264,20 @@ export const HeroCard = ({
                 </a>
               </Button>
             )}
-            {/* 2026-05-25: secondary "How to win it" CTA dropped. The
-                per-profile match analysis it pointed at was retired in
-                favor of static pre-generated mini-guides (PR #106 /
-                #108); the lead "Apply on official site" button stands
-                alone until a richer secondary reveal comes back. */}
+            {/* 2026-05-25 (late): secondary CTA back. Opens the detail
+                sheet which now carries the personalized archetype
+                insight + static mini-guide ("How to win it" / "What to
+                prepare" / "Watch out"). Label matches the mini-guide's
+                first section title so the user knows what's behind it. */}
+            <Button
+              size="lg"
+              variant="ghost"
+              onClick={onExpand}
+              className="text-white hover:bg-white/15 font-semibold inline-flex items-center gap-1.5"
+            >
+              {t("How to win it", "Как выиграть")}
+              <ArrowRight className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
