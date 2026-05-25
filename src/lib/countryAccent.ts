@@ -300,6 +300,20 @@ export const canonicalCountry = (country: string): string => {
   if (/^multiple/i.test(c)) return "Multiple countries";
   if (/^various/i.test(c)) return "Multiple countries";
   if (/^global$/i.test(c) || /^international$/i.test(c) || /^worldwide$/i.test(c)) return "Multiple countries";
+  // Eligibility-bucket phrases that leaked into the host_country column
+  // from LLM extractions ("Any developing country", "Developing nations",
+  // "Commonwealth countries", "OECD countries"). These describe APPLICANT
+  // eligibility, not where the scholarship is hosted, so they pollute the
+  // host-country dropdown. Roll into "Multiple countries".
+  if (/\b(developing|commonwealth|oecd|low.?income|middle.?income|emerging)\s+(country|countries|nation|nations)\b/i.test(c)) return "Multiple countries";
+  if (/^any\s+(country|countries|nation|nations)/i.test(c)) return "Multiple countries";
+  // Comma-separated multi-country strings ("United Kingdom, United
+  // States, Australia, Canada") roll into "Multiple countries" — they
+  // aren't a country, they're a multi-way bucket. Threshold: 2+ commas
+  // (i.e., 3+ items). A single comma is usually "City, Country" pairs
+  // ("Dubai, UAE") which we leave alone for the downstream length/alias
+  // rules to canonicalize.
+  if ((c.match(/,/g) || []).length >= 2) return "Multiple countries";
   const stripped = c.replace(/\s*[/(]\s*multiple.*$/i, "").trim();
   const lower = stripped.toLowerCase();
   if (COUNTRY_ALIASES[lower]) return COUNTRY_ALIASES[lower];
