@@ -36,7 +36,12 @@ const FOOTER_LINKS_RU = [
  * uses, so the surface feels uniform. The component renders its own
  * bg-primary block when isDark, so callers don't need to wrap in a
  * navy <footer>. Pass variant="light" only when the footer must read
- * cream (e.g. modal/embed contexts). */
+ * cream (e.g. modal/embed contexts).
+ *
+ * NAVY TOKEN NOTE (Stream F audit 2026-05-25):
+ *   bg-primary is the canonical brand-navy reference (--primary: 210 58% 22%).
+ *   This is intentionally different from --navy-deep (210 74% 13%) used in essay
+ *   frames. The bg-brand-navy Tailwind token maps to --primary for consistency. */
 export const Footer = ({ language, variant = "dark" }: FooterProps) => {
   const text = {
     en: {
