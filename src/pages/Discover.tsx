@@ -864,15 +864,17 @@ const bannerCountry = (s: { host_country: string | null; eligible_countries: str
  * pattern used elsewhere. The filter pipeline expands to a country
  * list at evaluation time. Country names use the same canonicalCountry
  * forms the dropdown uses so the predicate matches. */
-/* Five tight regions, picked so every group has real catalogue weight
- * and the chip row doesn't overflow into a second line on mobile. Asia
- * + Oceania merged (only 10 Oceania rows total); Africa + MENA merged
- * (shared geography + small per-region count); Americas consolidates
- * North + Latin. Russia & Central Asia stays separate because it's the
- * primary audience region (Kazakhstan / Bishkek users) and dropping
- * it into Asia would hide it. Country lists include common spelling
- * variants (USA/United States, Turkey/Türkiye) so the filter matches
- * what's actually in the data. */
+/* Four regions covering where scholarships are HOSTED (not where the
+ * applicant is from). Asia + Oceania merged; Africa + MENA merged;
+ * Americas consolidates North + Latin. Country lists include common
+ * spelling variants (USA/United States, Turkey/Türkiye) so the filter
+ * matches what's actually in the data.
+ *
+ * 2026-05-24: dropped the "Russia & Central Asia" region. host_country
+ * is where the SCHOLARSHIP is, not the applicant — and the catalog has
+ * effectively zero scholarships hosted IN those countries (most rows
+ * are EU / UK / US / AU programs that just happen to accept CIS
+ * applicants). Surfacing it as a region implied otherwise. */
 const REGIONS: Record<string, string[]> = {
   "Europe": [
     "United Kingdom", "Germany", "France", "Netherlands", "Switzerland",
@@ -901,10 +903,6 @@ const REGIONS: Record<string, string[]> = {
     "United Arab Emirates", "Saudi Arabia", "Qatar", "Israel",
     "Turkey", "Turkiye", "Türkiye",
     "Jordan", "Lebanon", "Oman", "Kuwait", "Bahrain",
-  ],
-  "Russia & Central Asia": [
-    "Russia", "Kazakhstan", "Uzbekistan", "Kyrgyzstan", "Tajikistan",
-    "Turkmenistan", "Azerbaijan", "Armenia", "Georgia", "Mongolia",
   ],
 };
 
@@ -2300,8 +2298,7 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
                   r === "Europe" ? "Европа" :
                   r === "Asia & Pacific" ? "Азия и ТО" :
                   r === "Americas" ? "Америка" :
-                  r === "Africa & MENA" ? "Африка и БВ" :
-                  r === "Russia & Central Asia" ? "СНГ" : r;
+                  r === "Africa & MENA" ? "Африка и БВ" : r;
                 return (
                   <button
                     key={r}
@@ -2331,8 +2328,12 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
 
       <Separator className="!my-5" />
       <div className="space-y-3">
+        {/* "Eligible only" toggle removed 2026-05-24 — gave bogus results
+            for any visitor without a filled profile (no profile data →
+            nothing classified eligible → switch silently hid every row).
+            Once a profile exists, eligibility surfaces inline on each
+            card and in the deep-dive panel, so this switch was redundant. */}
         {([
-          { id: "oe", label: t("Eligible only",      "Только подходящие"),       key: "onlyEligible"    as keyof FilterState },
           { id: "cs", label: t("Closing in 90 days", "Закрываются за 90 дней"),   key: "closingSoon"     as keyof FilterState },
         ] as const).map((row) => (
           <div key={row.id} className="flex items-center justify-between">
