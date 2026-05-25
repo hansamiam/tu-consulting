@@ -1,43 +1,42 @@
 /**
- * <ScholarshipArchetypeInsight /> — single-line "fortune cookie"
- * observation for the (scholarship × current-user archetype) pair.
+ * <ScholarshipArchetypeInsight /> — the "Personalized for you" section
+ * at the top of the scholarship detail sheet.
  *
- * Reads from public.scholarship_archetype_insights, keyed on
- * (scholarship_id, archetype_id). Renders nothing when:
- *   · the user has no archetype yet (no brief generated)
- *   · the cell is null in DB (eligibility hard-gate skipped it, or
- *     the LLM validator rejected the output past max retries)
+ * Three states. The component picks the right one based on whether the
+ * user has built a profile yet and whether they're a paid member.
  *
- * Members-only gate (2026-05-25 reinstate): the insight is the
- * personalized-strategy hook that justifies Membership. Non-members
- * see the blurred teaser through PremiumGate; members see the cell
- * in full. Same paywall shape as the prior ScholarshipDeepDive.
+ *   1. NO PROFILE     → CTA card prompting the wizard. "Will this
+ *                       scholarship work for you?" + Build my profile.
+ *   2. PROFILE + FREE → Members-only paywall card. Their profile is
+ *                       saved, the matched read exists, but they need
+ *                       Membership to unlock it.
+ *   3. PROFILE + MEMBER → The actual single-sentence personalized
+ *                         observation, pull-quote framed.
  *
- * Template variables — the "pseudo-LLM cheap personalization" layer:
- * cells can include {{nationality}}, {{targetCountry}}, {{major}},
- * {{firstName}} etc, substituted from the wizard profile at render.
- * Zero LLM cost per view; the line still reads as if written for
- * THIS user specifically.
+ * Word "archetype" is INTERNAL vocabulary only — never user-facing.
+ * Externally it's "your profile" / "your background" / "your read".
+ *
+ * Template variables (member render only): cells include {{nationality}},
+ * {{targetCountry}}, {{major}}, {{firstName}} etc, substituted from the
+ * wizard profile at render time. Zero LLM cost per view.
  */
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { Award, ArrowRight, Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserArchetype } from "@/hooks/useUserArchetype";
 import { useAuth } from "@/contexts/AuthContext";
 import { getStoredProfile } from "@/components/discover/DiscoverProfileGate";
-import { PremiumGate } from "@/components/PremiumGate";
 import { isAdminUser } from "@/lib/adminMode";
 
 interface Props {
   scholarshipId: string;
 }
 
-/** Substitute {{var}} placeholders with profile values. Falls back to
- *  a neutral phrase when the profile doesn't have that field, so the
- *  sentence still reads naturally for a non-signed-in or sparse user.
- *
- *  Each variable maps to a wizard intake field — this is the
- *  pseudo-LLM personalization layer: zero per-view cost, but the
- *  cell reads as if written for THIS user. */
+/** Substitute {{var}} placeholders with profile values. Each var maps
+ *  to a wizard intake field — pseudo-LLM personalization at $0/view.
+ *  Falls back to a neutral phrase per var when the profile lacks it. */
 function fillTemplate(text: string): string {
   const profile = (getStoredProfile() || {}) as Record<string, unknown>;
   const fullName = String(profile.fullName || "").trim();
@@ -70,6 +69,90 @@ function fillTemplate(text: string): string {
     .replace(/\{\{englishScore\}\}/g, englishScore);
 }
 
+const SectionHeader = () => (
+  <h3 className="font-heading text-[22px] sm:text-[24px] font-bold tracking-tight text-foreground m-0 mb-3">
+    Personalized for you
+  </h3>
+);
+
+/** State 1 — user hasn't built a profile yet. CTA into the wizard. */
+const BuildProfileCard = () => (
+  <section className="not-prose mb-8">
+    <SectionHeader />
+    <div className="rounded-2xl border-2 border-dashed border-gold/45 bg-gradient-to-br from-gold/[0.06] via-card to-card p-6 sm:p-7">
+      <div className="flex items-start gap-4 sm:gap-5">
+        <div className="shrink-0 w-12 h-12 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center">
+          <Award className="w-5 h-5 text-gold-dark" strokeWidth={1.75} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-gold-dark m-0 mb-2">
+            Personalized analysis
+          </p>
+          <h4 className="font-heading text-[20px] sm:text-[22px] font-bold leading-tight tracking-tight text-foreground m-0 mb-2.5">
+            Will this scholarship work for you?
+          </h4>
+          <p className="text-[14px] leading-[1.55] text-foreground/75 m-0 mb-5 max-w-prose">
+            Build your profile (60 seconds) and we&apos;ll show you a match
+            breakdown vs your background, a strategy specific to your story,
+            and what to prepare first.
+          </p>
+          <Button variant="gold" asChild className="gap-1.5">
+            <Link to="/topuni-ai">
+              Build my profile
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </div>
+  </section>
+);
+
+/** State 2 — profile exists, user is free-tier. Membership paywall. */
+const PaywallCard = () => (
+  <section className="not-prose mb-8">
+    <SectionHeader />
+    <div className="rounded-2xl border-2 border-dashed border-gold/45 bg-gradient-to-br from-gold/[0.06] via-card to-card p-6 sm:p-7">
+      <div className="flex items-start gap-4 sm:gap-5">
+        <div className="shrink-0 w-12 h-12 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center">
+          <Lock className="w-5 h-5 text-gold-dark" strokeWidth={1.75} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-gold-dark m-0 mb-2">
+            Members only
+          </p>
+          <h4 className="font-heading text-[20px] sm:text-[22px] font-bold leading-tight tracking-tight text-foreground m-0 mb-2.5">
+            Your read on this one is behind Membership.
+          </h4>
+          <p className="text-[14px] leading-[1.55] text-foreground/75 m-0 mb-5 max-w-prose">
+            We&apos;ve already matched this scholarship to your specific
+            background. Members unlock the read for every scholarship in
+            the catalog.
+          </p>
+          <Button variant="gold" asChild className="gap-1.5">
+            <Link to="/pricing">
+              Become a member
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </div>
+  </section>
+);
+
+/** State 3 — member with profile. Renders the actual insight. */
+const MemberInsight = ({ text }: { text: string }) => (
+  <section className="not-prose mb-8">
+    <SectionHeader />
+    <blockquote className="m-0 border-l-2 border-gold/70 pl-4 py-1">
+      <p className="font-heading italic text-[15.5px] leading-[1.55] text-foreground m-0 max-w-2xl">
+        {text}
+      </p>
+    </blockquote>
+  </section>
+);
+
 export const ScholarshipArchetypeInsight = ({ scholarshipId }: Props) => {
   const archetypeId = useUserArchetype();
   const { user, subscription } = useAuth();
@@ -80,8 +163,10 @@ export const ScholarshipArchetypeInsight = ({ scholarshipId }: Props) => {
   );
   const [text, setText] = useState<string | null>(null);
 
+  // Only fetch the cell if we'll actually render it (member with a
+  // profile). Free-tier and no-profile users never need the DB read.
   useEffect(() => {
-    if (!scholarshipId || !archetypeId) {
+    if (!scholarshipId || !archetypeId || !isMember) {
       setText(null);
       return;
     }
@@ -102,33 +187,13 @@ export const ScholarshipArchetypeInsight = ({ scholarshipId }: Props) => {
       setText(t && t.trim() ? fillTemplate(t) : null);
     })();
     return () => { cancelled = true; };
-  }, [scholarshipId, archetypeId]);
+  }, [scholarshipId, archetypeId, isMember]);
 
+  if (!archetypeId) return <BuildProfileCard />;
+  if (!isMember) return <PaywallCard />;
+  // Member with profile but no cell (eligibility-skipped pair) — render
+  // nothing rather than a misleading CTA. The mini-guide below still
+  // carries static value for the user.
   if (!text) return null;
-
-  // Pull-quote frame — subtle gold left border + a touch of padding so
-  // the insight reads as its own section without an AI-slop eyebrow
-  // ("Personalized for you" etc) above it. Matches BriefStory's
-  // Pullquote treatment so users recognise the editorial register.
-  const insight = (
-    <blockquote className="not-prose m-0 mb-2 border-l-2 border-gold/70 pl-4 py-1">
-      <p className="font-heading italic text-[15.5px] leading-[1.55] text-foreground m-0 max-w-2xl">
-        {text}
-      </p>
-    </blockquote>
-  );
-
-  // Members read it. Non-members see the blurred teaser + Membership
-  // CTA — same PremiumGate pattern used elsewhere in the codebase.
-  if (isMember) return insight;
-
-  return (
-    <PremiumGate
-      gateId="scholarship-personalized-insight"
-      headline="Members read every scholarship through your archetype lens."
-      subline="One line per scholarship, written for your specific applicant shape — what to lean on, what to mute, where this fund's panel actually looks."
-    >
-      {insight}
-    </PremiumGate>
-  );
+  return <MemberInsight text={text} />;
 };
