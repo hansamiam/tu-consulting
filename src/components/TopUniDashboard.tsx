@@ -3228,61 +3228,41 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           }
         </h1>
         {isProfileFilled && (() => {
-          /* Premium intake summary — replaced the tag-chip strip with a
-             single italic peer-voice line that reads like the brief is
-             addressing the reader. The chips felt utilitarian and looked
-             tacky stacked under a personal greeting; the line below pairs
-             with the "Welcome, [Name]" headline like one breath. Test
-             scores live on a quieter sub-row only when present, so users
-             who put in IELTS/SAT still see them acknowledged without
-             cluttering the headline. */
+          /* 2026-05-25 redesign: the previous summary line mixed italic
+             "Aiming" + bold "Computer Science" + italic "in" + bold
+             "Netherlands and Hungary" — the alternating italic/bold rhythm
+             read as jarring on Samuel's walkthrough. Replaced with a quiet
+             monocase meta line — same data, no italic-vs-bold dance. */
           const fmtCountries = (cs: string[]): string => {
             if (cs.length === 0) return "";
             if (cs.length === 1) return cs[0];
-            if (cs.length === 2) return `${cs[0]} ${t("and", "и")} ${cs[1]}`;
-            return `${cs.slice(0, -1).join(", ")} ${t("and", "и")} ${cs[cs.length - 1]}`;
+            if (cs.length === 2) return `${cs[0]} ${t("&", "и")} ${cs[1]}`;
+            return `${cs.slice(0, -1).join(", ")} ${t("&", "и")} ${cs[cs.length - 1]}`;
           };
           const countriesPhrase = fmtCountries(profile.targetCountries);
           const hasMajor = profile.major && profile.major !== "Undecided" && profile.major !== "Не определился";
           const hasCountries = countriesPhrase.length > 0;
           const hasGpa = !!profile.gpa;
           const hasScores = !!(profile.ielts || profile.toefl || profile.sat);
-          // The "Aiming" prefix only makes sense when there's a target —
-          // major OR countries. With both absent (open-target user
-          // dropping in just a GPA) the prefix orphaned itself, reading
-          // "Aiming · 3.8 GPA" which is grammatical garbage. Suppress
-          // the prefix in that case and let the GPA stand alone.
-          const showAimingPrefix = hasMajor || hasCountries;
+          const parts: string[] = [];
+          if (hasMajor) parts.push(profile.major);
+          if (hasCountries) parts.push(countriesPhrase);
+          if (hasGpa) parts.push(`${profile.gpa} GPA`);
+          const testParts = [
+            profile.ielts && `IELTS ${profile.ielts}`,
+            profile.toefl && `TOEFL ${profile.toefl}`,
+            profile.sat && `SAT ${profile.sat}`,
+          ].filter(Boolean) as string[];
           return (
-            <div className="mt-3 space-y-1">
-              <p className="text-base md:text-[17px] italic text-muted-foreground leading-relaxed">
-                {showAimingPrefix && (isRu ? "Цель — " : "Aiming ")}
-                {hasMajor && (
-                  <>
-                    <span className="not-italic font-semibold text-foreground">{profile.major}</span>
-                    {hasCountries && (isRu ? " в " : " in ")}
-                  </>
-                )}
-                {hasCountries && !hasMajor && (isRu ? "" : "for ")}
-                {hasCountries && (
-                  <span className="not-italic font-semibold text-foreground">{countriesPhrase}</span>
-                )}
-                {hasGpa && (
-                  <>
-                    {showAimingPrefix && <span className="text-muted-foreground/60"> · </span>}
-                    <span className="not-italic font-medium text-foreground/85">
-                      {profile.gpa} {t("GPA", "GPA")}
-                    </span>
-                  </>
-                )}
-              </p>
+            <div className="mt-2 space-y-0.5">
+              {parts.length > 0 && (
+                <p className="text-[14.5px] text-muted-foreground leading-relaxed">
+                  {parts.join(" · ")}
+                </p>
+              )}
               {hasScores && (
-                <p className="text-xs text-muted-foreground/70 tracking-wide">
-                  {[
-                    profile.ielts && `IELTS ${profile.ielts}`,
-                    profile.toefl && `TOEFL ${profile.toefl}`,
-                    profile.sat && `SAT ${profile.sat}`,
-                  ].filter(Boolean).join(" · ")}
+                <p className="text-[13px] text-muted-foreground/65">
+                  {testParts.join(" · ")}
                 </p>
               )}
             </div>
@@ -3352,84 +3332,18 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           </div>
         )}
 
-        {/* MY PATHWAY TAB */}
+        {/* MY PATHWAY TAB
+            2026-05-25 redesign: the previous "Your strategy report" Card
+            (border + CardHeader with title + Share/Print/Regenerate
+            buttons + outer rounded box) was competing with the brief
+            content inside it. Sam: "random ass border arbitrary boxing."
+            Stripped: no Card wrapper, no header bar, no action row.
+            Share/Print/Regenerate are gone — Share moves into BriefStory
+            itself eventually, Print is dropped until it works cleanly,
+            Regenerate has no real user need (the wizard's "Restart"
+            covers it). The brief now sits directly on the canvas. */}
         <TabsContent value="pathway">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
-              <div className="flex flex-col gap-0.5">
-                <CardTitle className="flex items-center gap-2">
-                  <GraduationCap className="w-5 h-5 text-accent" />
-                  {t("Your strategy report", "Ваш стратегический отчёт")}
-                </CardTitle>
-                {pathwayGeneratedAt && !pathwayLoading && (() => {
-                  const elapsed = Math.max(0, Date.now() - pathwayGeneratedAt);
-                  const mins = Math.floor(elapsed / 60_000);
-                  const hrs = Math.floor(mins / 60);
-                  const days = Math.floor(hrs / 24);
-                  const stamp =
-                    mins < 1 ? t("just now", "только что")
-                    : mins < 60 ? t(`${mins} min ago`, `${mins} мин. назад`)
-                    : hrs < 24 ? t(`${hrs} hr ago`, `${hrs} ч. назад`)
-                    : t(`${days}d ago`, `${days} дн. назад`);
-                  return (
-                    <p className="text-[11px] text-muted-foreground pl-7">
-                      {t(`Generated ${stamp} · saved automatically`,
-                         `Сгенерировано ${stamp} · сохранено автоматически`)}
-                    </p>
-                  );
-                })()}
-              </div>
-              {pathwayGenerated && hasBrief && (
-                <div className="flex items-center gap-2 flex-wrap justify-end">
-                  {/* 2026-05-20: BriefMasthead retired entirely. Action
-                      buttons (Share / Print / Regenerate) now live here
-                      in the Card header — the brief itself stays
-                      content-only, no chrome competing with the report. */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={openShare}
-                    className="gap-1.5"
-                  >
-                    <Share2 className="w-3.5 h-3.5" />
-                    {t("Share", "Поделиться")}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.print()}
-                    className="gap-1.5"
-                  >
-                    <Printer className="w-3.5 h-3.5" />
-                    {t("Print", "Печать")}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    // Confirm before wiping a non-empty brief — pre-fix
-                    // a misclick on Regenerate restarted the entire
-                    // generation and the user lost the brief they were
-                    // reading. Per-section regen still goes through
-                    // its own focused flow (no confirm), since the user
-                    // explicitly clicks a section's regen icon and is
-                    // only replacing one bucket.
-                    onClick={() => {
-                      if (hasBrief && !window.confirm(t(
-                        "Regenerate the full strategy report? Your current report will be replaced.",
-                        "Сгенерировать отчёт заново? Текущий отчёт будет заменён.",
-                      ))) return;
-                      generatePathway();
-                    }}
-                    disabled={pathwayLoading}
-                    className="gap-1.5"
-                  >
-                    {pathwayLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                    {t("Regenerate", "Обновить")}
-                  </Button>
-                </div>
-              )}
-            </CardHeader>
-            <CardContent>
+          <div>
               {!isProfileFilled && !hasBrief && (
                 <div className="text-center py-12 space-y-4">
                   <GraduationCap className="w-10 h-10 mx-auto text-muted-foreground/40" />
@@ -3521,7 +3435,13 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                     (yellow header bands, tables, slide numbers) so we
                     drop the prose wrapper entirely — the wrapper was
                     fighting the deck's own typography. */}
-                <div className="grid xl:grid-cols-[1fr_220px] gap-x-10 print:block">
+                {/* 2026-05-25: dropped the xl:grid-cols-[1fr_220px] right-
+                    column rail (BriefChapterNav was its only consumer). The
+                    rail was visible on wide screens as a sticky chapter list
+                    and contributed to the cramped/squashed feel of the brief
+                    on the left half. BriefChapterNav can return as an in-
+                    flow anchor block later if we miss it. */}
+                <div className="print:block">
                 <div id="printable-report" className="min-w-0">
                   {/* 2026-05-20: BriefMasthead block ripped out per user.
                       Was rendering "TopUni · Strategy report / Generated
@@ -3795,68 +3715,20 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                       in the funnel. Anti-pattern: marketing chrome
                       that bloats the page and competes with the
                       strategy content for the user's attention. */}
-                  {!pathwayLoading && (pathwayContent || Object.keys(magazineSections).length > 0) && (
-                    <div className="not-prose mt-10 pt-6 border-t border-border/60 flex items-center justify-between gap-3 flex-wrap print:hidden">
-                      <p className="text-sm text-muted-foreground leading-snug max-w-md">
-                        {t("Ready to explore every scholarship that fits your profile?", "Готовы посмотреть все стипендии, подходящие вашему профилю?")}
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1.5"
-                        onClick={() => navigate(isRu ? "/discover/ru" : "/discover")}
-                      >
-                        {t("Open the database", "Открыть базу")}
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  )}
-
-                  {/* Brief artisanal footer — model + word count + timestamp.
-                      Tiny premium touch the user sees only when they finish
-                      reading. Print-only disclaimer stays separate below. */}
-                  {!pathwayLoading && (
-                    <div className="not-prose mt-10 pt-6 border-t border-border print:hidden">
-                      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-[11px] text-muted-foreground">
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                          <span className="font-mono tabular-nums">
-                            {pathwayContent.trim().split(/\s+/).filter(Boolean).length.toLocaleString(isRu ? "ru" : "en")} {t("words", "слов")}
-                          </span>
-                          <span className="text-muted-foreground/30">·</span>
-                          <span>{t(`Generated ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`,
-                                  `Создано ${new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}`)}</span>
-                          <span className="text-muted-foreground/30">·</span>
-                          <span>
-                            {reportGrade === "premium"
-                              ? <span className="inline-flex items-center gap-1 font-semibold text-gold-dark"><Crown className="w-2.5 h-2.5" /> {t("Member tier", "Уровень Membership")}</span>
-                              : <span>{t("Standard tier", "Базовый уровень")}</span>}
-                          </span>
-                        </div>
-                        <span className="text-muted-foreground/50">
-                          TopUni AI · v1.2
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Print-only footer disclaimer */}
-                  <div className="print-only mt-12 pt-6 border-t border-foreground/20 hidden">
-                    <p className="text-[10px] text-foreground/55 leading-relaxed m-0">
-                      Generated by TopUni AI · topuni.com · This report is a starting point for your application strategy. Verify scholarship details, deadlines, and eligibility on official institution websites before applying. © {new Date().getFullYear()} TopUni.
-                    </p>
-                  </div>
+                  {/* 2026-05-25: bottom "Open the database" outline-button
+                      CTA + the artisanal X-words / Generated / Standard tier
+                      footer + TopUni AI · v1.2 stamp all retired. The new
+                      BriefStory carries its own primary "Open Discover" navy
+                      CTA at the end of the scroll. */}
                 </div>
-                {/* Sticky chapter nav — only when the brief has settled and
-                    has multiple sections. Hidden under xl so mobile/tablet
-                    keeps the brief full-width. */}
-                {!pathwayLoading && (
-                  <BriefChapterNav briefContent={pathwayContent} isRu={isRu} />
-                )}
+                {/* BriefChapterNav retired 2026-05-25 along with the two-
+                    column rail. It only had value as a sticky right-rail
+                    table-of-contents — and the new vertical-scroll layout
+                    is short enough that a TOC overshoots. */}
                 </div>
                 </FocusScholarshipContext.Provider>
               )}
-            </CardContent>
-          </Card>
+          </div>
         </TabsContent>
 
         {/* (Predictor / Essays / Tracker / Scholarships matcher tabs removed —

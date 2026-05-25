@@ -123,7 +123,7 @@ export function SaveBriefPrompt({
           </DialogTitle>
           <DialogDescription className="text-sm leading-relaxed">
             {t(
-              "Right now everything lives on this browser only — clear your cookies and it's gone. Pick an email + password and we'll keep your brief across devices plus remind you before each deadline.",
+              "Right now everything lives on this browser only — clear your cookies and it's gone. Pick an email + password and we'll keep your strategy across devices plus remind you before each deadline.",
               "Сейчас всё хранится только в этом браузере — очистите cookies и оно пропадёт. Email + пароль — синхронизация на всех устройствах и напоминания за день до каждого дедлайна.",
             )}
           </DialogDescription>

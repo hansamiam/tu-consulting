@@ -8,7 +8,8 @@
  * on mobile. Background scroll locked while open. The whole panel
  * scrolls internally; the hero strip pins to the top so the action
  * row stays reachable as the user scrolls the AI deep dive below. */
-import { useMemo } from "react";
+// useMemo dropped 2026-05-25 — only consumer was deepDiveProfile,
+// retired with the ScholarshipMiniGuide swap.
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +21,12 @@ import {
   GraduationCap,
   Globe,
 } from "lucide-react";
-import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
+// 2026-05-25: swapped from ScholarshipDeepDive (per-profile, Gemini-Flash
+// per call) to ScholarshipMiniGuide (static, pre-generated per scholarship,
+// no API per view). Deep-dive function + component stay in tree for the
+// future per-profile feature revival — see
+// project_topuni_deep_dive_decisions_2026_05_25.md.
+import { ScholarshipMiniGuide } from "@/components/scholarship/ScholarshipMiniGuide";
 import { AcademyHookCta } from "@/components/discover/AcademyHookCta";
 import {
   cleanScholarshipName, cleanProvider, humanizeDegreeLabel,
@@ -82,24 +88,10 @@ const fmtDays = (d: string | null, lang: Lang): { text: string; tone: "danger" |
 };
 
 export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave, isBookmarked, lang = "en" }: Props) => {
-  // Stable deep-dive profile (memo'd to prevent re-firing the LLM call
-  // on every Discover re-render — was a perf bug earlier today).
-  const deepDiveProfile = useMemo(() => ({
-    fullName: undefined,
-    nationality: profile.country,
-    major: profile.field,
-    field: profile.field,
-    gradeLevel: profile.degrees?.[0] || "",
-    targetCountries: s?.host_country ? [s.host_country] : undefined,
-    gpa: profile.gpa,
-    gpaScale: profile.gpaScale,
-    ielts: profile.ielts,
-    toefl: profile.toefl,
-    sat: profile.sat,
-  }), [
-    profile.country, profile.field, profile.degrees, s?.host_country,
-    profile.gpa, profile.gpaScale, profile.ielts, profile.toefl, profile.sat,
-  ]);
+  // deepDiveProfile useMemo removed 2026-05-25 along with the swap from
+  // ScholarshipDeepDive (per-profile) to ScholarshipMiniGuide (static).
+  // `profile` is still needed by the parent for filtering/match math —
+  // we just no longer plumb it through this dialog.
 
   if (!s) return null;
   const ru = lang === "ru";
@@ -220,18 +212,12 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
             </p>
           </div>
 
-          {/* Scrollable body — ScholarshipDeepDive carries the personalised
-              analysis (match breakdown, how-to-win, ideal-candidate). */}
+          {/* Scrollable body — ScholarshipMiniGuide reads the pre-generated
+              static guide from scholarship_mini_guides. Renders nothing if
+              no row exists (graceful degrade — the static prose below
+              still renders). */}
           <div className="overflow-y-auto flex-1 px-6 sm:px-9 py-5 sm:py-6 space-y-5">
-            <div>
-              <h3 className="font-heading text-lg font-bold tracking-tight text-foreground mb-4">
-                {t("Personalised for you", "Персонально для вас")}
-              </h3>
-              <ScholarshipDeepDive
-                scholarshipId={s.scholarship_id}
-                profile={deepDiveProfile}
-              />
-            </div>
+            <ScholarshipMiniGuide scholarshipId={s.scholarship_id} language={lang} />
             {/* F12 stitch — Academy upsell below the deep-dive analysis.
                 Soft "want help winning this?" pointer to the strategy
                 brief wizard. Doesn't require Academy infra to ship — it

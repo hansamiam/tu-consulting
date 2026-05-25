@@ -52,9 +52,13 @@ import { EditorialCard } from "@/components/brief/primitives/EditorialCard";
 import { PullQuote } from "@/components/brief/primitives/PullQuote";
 import { EditorialProse } from "@/components/brief/primitives/EditorialProse";
 import { LeadParagraph } from "@/components/brief/primitives/LeadParagraph";
-import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
+// 2026-05-25: swapped from ScholarshipDeepDive (per-profile) to
+// ScholarshipMiniGuide (static, pre-generated). Deep-dive code stays
+// in tree for the future per-profile feature revival.
+import { ScholarshipMiniGuide } from "@/components/scholarship/ScholarshipMiniGuide";
 import { ScholarshipOutcomesBlock } from "@/components/scholarship/ScholarshipOutcomesBlock";
-import { getStoredProfile } from "@/components/discover/DiscoverProfileGate";
+// getStoredProfile import retired 2026-05-25 along with ScholarshipDeepDive's
+// per-profile gating. The static mini-guide doesn't need profile context.
 import { isAggregatorUrl } from "@/lib/aggregatorUrls";
 import {
   cleanScholarshipName,
@@ -790,38 +794,11 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
           <Fact icon={<Globe />} label={t("Citizenship", "Гражданство")} value={s.citizenship_requirements ? truncate(s.citizenship_requirements, 60) : t("any", "любое")} />
         </div>
 
-        {/* Personalized deep dive — calls scholarship-deep-dive edge fn with
-            the visitor's locally-stored profile, renders match-score
-            breakdown + odds + strategy + 30-day plan above the static
-            scholarship info below. Soft-fails to a build-profile prompt
-            when no profile is on file, or hides on edge-fn error.
-
-            Sits BEFORE the editorial sections so a visitor with a stored
-            profile sees the personalised verdict first — that is the
-            value. The static eligibility / how-to-win prose below is the
-            same for everyone and acts as the SEO body. */}
-        {(() => {
-          const stored = getStoredProfile();
-          // The DiscoverProfile shape from getStoredProfile uses different
-          // keys than our edge fn expects — adapt here.
-          const profileForDive = stored ? {
-            fullName: stored.fullName,
-            nationality: stored.nationality,
-            major: stored.fieldOfInterest,
-            field: stored.fieldOfInterest,
-            gradeLevel: stored.targetDegree,
-            targetCountries: [],
-            gpa: stored.gpa,
-            ielts: stored.ieltsScore,
-          } : null;
-          return (
-            <ScholarshipDeepDive
-              scholarshipId={s.scholarship_id}
-              profile={profileForDive}
-              onBuildProfile={() => navigate("/discover")}
-            />
-          );
-        })()}
+        {/* Static "How this scholarship plays" — pre-generated mini-guide
+            keyed on scholarship_id. Generic to the scholarship, not per-
+            profile. Renders nothing if no row exists in
+            scholarship_mini_guides (graceful degrade). */}
+        <ScholarshipMiniGuide scholarshipId={s.scholarship_id} language={isRu ? "ru" : "en"} />
 
         {/* WHY THIS FITS — editorial lead with drop cap. Sets the tone for
             the rest of the page: this is the personalised pitch for THIS
