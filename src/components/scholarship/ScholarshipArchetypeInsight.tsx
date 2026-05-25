@@ -28,7 +28,11 @@ interface Props {
 
 /** Substitute {{var}} placeholders with profile values. Falls back to
  *  a neutral phrase when the profile doesn't have that field, so the
- *  sentence still reads naturally for a non-signed-in or sparse user. */
+ *  sentence still reads naturally for a non-signed-in or sparse user.
+ *
+ *  Each variable maps to a wizard intake field — this is the
+ *  pseudo-LLM personalization layer: zero per-view cost, but the
+ *  cell reads as if written for THIS user. */
 function fillTemplate(text: string): string {
   const profile = (getStoredProfile() || {}) as Record<string, unknown>;
   const fullName = String(profile.fullName || "").trim();
@@ -40,11 +44,25 @@ function fillTemplate(text: string): string {
   const targetCountry = targets[0] || "the host country";
   const major =
     String(profile.major || profile.fieldOfStudy || "").trim() || "your field";
+  const careerGoal = String(profile.careerGoal || "").trim() || "your career direction";
+  const namedSchools = String(profile.namedSchools || "").trim() || "your dream school";
+  const gradeLevel = String(profile.gradeLevel || "").trim() || "your stage";
+  const topActivity = String(profile.topActivity || "").trim() || "your top activity";
+  const gpa = String(profile.gpa || "").trim();
+  const ielts = String(profile.ielts || "").trim();
+  const toefl = String(profile.toefl || "").trim();
+  const englishScore = ielts ? `IELTS ${ielts}` : toefl ? `TOEFL ${toefl}` : "your English score";
   return text
     .replace(/\{\{firstName\}\}/g, firstName)
     .replace(/\{\{nationality\}\}/g, nationality)
     .replace(/\{\{targetCountry\}\}/g, targetCountry)
-    .replace(/\{\{major\}\}/g, major);
+    .replace(/\{\{major\}\}/g, major)
+    .replace(/\{\{careerGoal\}\}/g, careerGoal)
+    .replace(/\{\{namedSchools\}\}/g, namedSchools)
+    .replace(/\{\{gradeLevel\}\}/g, gradeLevel)
+    .replace(/\{\{topActivity\}\}/g, topActivity)
+    .replace(/\{\{gpa\}\}/g, gpa || "your GPA")
+    .replace(/\{\{englishScore\}\}/g, englishScore);
 }
 
 export const ScholarshipArchetypeInsight = ({ scholarshipId }: Props) => {
