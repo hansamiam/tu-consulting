@@ -3277,28 +3277,33 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
             compete with the brief content but shows up at the moment
             the user is reading their plan, the right context to
             decide "yes, I want this saved". */}
+        {/* 2026-05-25 redesign: signed-out users had a subtle "Saved on
+            this device. Sign in to keep it" text-link that Samuel called
+            out as too quiet — losing the brief to a cookie clear is a real
+            risk and the CTA needs to read like one. Now: signed-in users
+            get the same quiet shield line; signed-out users get a real
+            navy primary button with the loss-aversion framing inline. */}
         {pathwayGenerated && (
-          <p className="mt-3 text-[11px] text-muted-foreground/75 flex items-center gap-1.5">
-            {user ? (
-              <>
-                <Shield className="w-3 h-3 text-gold-dark/70" />
-                {t("Synced to your account · accessible from any device", "Сохранено в аккаунт · доступно с любого устройства")}
-              </>
-            ) : (
-              <>
-                <span>
-                  {t("Saved on this device. ", "Сохранено на устройстве. ")}
-                  <button
-                    type="button"
-                    onClick={() => navigate(isRu ? "/account/ru" : "/account")}
-                    className="text-gold-dark hover:text-foreground underline-offset-2 hover:underline"
-                  >
-                    {t("Sign in to keep it", "Войти чтобы сохранить навсегда")}
-                  </button>
-                </span>
-              </>
-            )}
-          </p>
+          user ? (
+            <p className="mt-3 text-[11px] text-muted-foreground/75 flex items-center gap-1.5">
+              <Shield className="w-3 h-3 text-gold-dark/70" />
+              {t("Synced to your account · accessible from any device", "Сохранено в аккаунт · доступно с любого устройства")}
+            </p>
+          ) : (
+            <div className="mt-5 inline-flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => navigate(isRu ? "/account/ru" : "/account")}
+                className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--navy-deep))] hover:bg-[hsl(var(--navy))] text-[hsl(43_44%_96%)] font-semibold text-sm px-5 py-2.5 transition-colors"
+              >
+                {t("Save your strategy", "Сохранить стратегию")}
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+              <span className="text-[12px] text-muted-foreground/80">
+                {t("Lives in this browser only until you do.", "Хранится только в этом браузере, пока вы не войдёте.")}
+              </span>
+            </div>
+          )
         )}
       </motion.div>
 

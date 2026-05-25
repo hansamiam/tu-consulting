@@ -140,13 +140,14 @@ export function GenerationPipeline({ profile, isRu = false }: Props) {
         animate={{ opacity: 1, y: 0 }}
         className="mb-6"
       >
-        <div className="flex items-center gap-2 mb-2">
+        {/* 2026-05-25: stripped the "WORKING" 10px mono-uppercase
+            tracking-[0.22em] eyebrow — that style is exactly the
+            AI-template smell Samuel called out on the brief. Pulse dot
+            alone says the same thing without the templated label. */}
+        <div className="mb-3">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold-dark opacity-60" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-gold-dark" />
-          </span>
-          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark">
-            {t("Working", "Идёт работа")}
           </span>
         </div>
         <h3 className="font-heading text-2xl font-bold text-foreground tracking-tight mb-1">
@@ -211,14 +212,14 @@ export function GenerationPipeline({ profile, isRu = false }: Props) {
                     <motion.span
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gold-dark whitespace-nowrap"
+                      className="text-[11px] font-medium text-gold-dark whitespace-nowrap"
                     >
-                      {t("Running…", "Выполняется…")}
+                      {t("running", "идёт")}
                     </motion.span>
                   )}
                   {isDone && (
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-600 whitespace-nowrap">
-                      {t("Done", "Готово")}
+                    <span className="text-[11px] font-medium text-emerald-700 whitespace-nowrap">
+                      {t("done", "готово")}
                     </span>
                   )}
                 </div>
