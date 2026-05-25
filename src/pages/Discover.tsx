@@ -1981,26 +1981,16 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
 
       <div className="relative p-4 flex flex-col flex-1 gap-3">
 
-        {/* NEW pill — first 7 days after a scholarship lands in the
-            catalogue. 2026-05-25: absolutely-positioned in the top-
-            right of the card body so it doesn't push the title down
-            on rows with the pill vs rows without — the prior inline
-            placement broke line-spacing across the grid. */}
-        {isNewScholarship(s.created_at) && (
-          <span className="absolute top-3 right-3 z-10 inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 ring-1 ring-emerald-500/30 px-1.5 py-0.5 rounded-full">
-            <span className="h-1 w-1 rounded-full bg-emerald-500" />
-            {ru ? "Новое" : "New"}
-          </span>
-        )}
+        {/* NEW pill lives at the bottom alongside the Full-ride sticker
+            (see the badge row below). Keeping it out of the title's
+            top-right kills the overlap on long names like "MEXT Japanese
+            Government Scholarship -..." that the prior absolute-top-right
+            placement collided with. */}
 
         {/* Title + provider. Title gets 3 lines (was 2 — too much truncation
             on long names like "MEXT Japanese Government Scholarship -..."
             in the screenshot). Provider truncates on a single line below. */}
         <div className="min-w-0">
-          {/* (NEW pill moved out of the flow above — see comment.) */}
-          {false && isNewScholarship(s.created_at) && (
-            <span className="hidden" />
-          )}
           <h3 className="font-heading text-[15px] font-semibold leading-[1.2] tracking-[-0.01em] text-foreground group-hover:text-gold-dark transition-colors mb-1 break-words">
             {cleanScholarshipName(s.scholarship_name)}
           </h3>
@@ -2116,19 +2106,28 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
               the per-criteria why. */}
         </div>
 
-        {/* Full-ride badge only. Quick-apply retired 2026-05-11 per
-            user feedback — "most quick-apply are only if you're
-            already applying to a whole-ass university." The signal
-            misled students into thinking a scholarship was
-            standalone-easy when it was actually attached to a
-            broader application. The underlying effort_level data
+        {/* Sticker row — Full-ride + NEW pills share this row at the
+            bottom of the card body. NEW relocated here 2026-05-25 from
+            an absolute top-3/right-3 position that overlapped long
+            titles. Row renders when EITHER pill is present.
+            Quick-apply retired 2026-05-11 per user feedback — "most
+            quick-apply are only if you're already applying to a
+            whole-ass university." The underlying effort_level data
             still drives sorting but isn't surfaced as a chip. */}
-        {isFullRide && (
-          <div className="flex items-center gap-1.5">
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gold-dark bg-gold/10 ring-1 ring-gold/30 px-1.5 py-0.5 rounded">
-              <Award className="h-2.5 w-2.5" />
-              {ru ? "Полное" : "Full ride"}
-            </span>
+        {(isFullRide || isNewScholarship(s.created_at)) && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {isFullRide && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gold-dark bg-gold/10 ring-1 ring-gold/30 px-1.5 py-0.5 rounded">
+                <Award className="h-2.5 w-2.5" />
+                {ru ? "Полное" : "Full ride"}
+              </span>
+            )}
+            {isNewScholarship(s.created_at) && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 ring-1 ring-emerald-500/30 px-1.5 py-0.5 rounded">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                {ru ? "Новое" : "New"}
+              </span>
+            )}
           </div>
         )}
 
