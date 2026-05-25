@@ -4109,7 +4109,11 @@ const Discover = ({ language = "en" }: Props) => {
                   the user starts working. */}
               <div className="sticky top-16 z-30 bg-background/92 backdrop-blur-xl border-b border-border shadow-[0_1px_0_0_rgba(0,0,0,0.02)]">
                 <div className="max-w-7xl mx-auto px-6 sm:px-8 py-3 flex items-center gap-2.5 flex-wrap">
-                  <div className="relative flex-1 min-w-[200px] max-w-md">
+                  {/* Search input — uncapped so it fills the toolbar row
+                      instead of orphan-ing the right half on wide screens.
+                      Sam called this out 2026-05-25; previous max-w-md
+                      capped the input at 28rem regardless of viewport. */}
+                  <div className="relative flex-1 min-w-[200px]">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                     <Input ref={searchInputRef} value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} placeholder={t("Search names, providers, fields, tags…   (/ to focus)", "Поиск по названию, организации, направлению, тегам…   (/ — фокус)")}
                       className="pl-10 h-10 text-sm rounded-lg" />
@@ -4131,7 +4135,7 @@ const Discover = ({ language = "en" }: Props) => {
                   </Button>
 
                   <Select value={sortBy} onValueChange={v => setSortBy(v as SortBy)}>
-                    <SelectTrigger className="w-[156px] h-10 text-sm rounded-lg"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="w-[176px] h-10 text-sm rounded-lg"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {/* Pared down to three sorts: trending/value/alpha
                           retired because A→Z exposed how many dupe rows
