@@ -62,6 +62,11 @@ export interface ScholarshipCardData {
   // to the provider name. Optional so older callers / surfaces that
   // don't fetch the join still work.
   provider_trust_tier?: "high" | "medium" | "low" | "unknown" | null;
+  // Lifecycle bucket. When 'reopens_annually' + is_flagship_program=true
+  // + no future application_deadline, the card renders a "Reopens
+  // annually — TBD" pill instead of the urgency countdown.
+  lifecycle_status?: string | null;
+  is_flagship_program?: boolean | null;
 }
 
 /** Activity stats — passed in by the parent if available. The card hides
@@ -97,6 +102,7 @@ const COPY = {
     daysLeft: (n: number) => `${n} days left`,
     monthsLeft: (n: number) => `${n} month${n === 1 ? "" : "s"}`,
     rolling: "Rolling deadline",
+    annualTbd: "Reopens annually · next cycle TBD",
     closed: "Closed",
     coverage: { full_ride: "Full ride", tuition_only: "Tuition", stipend: "Stipend", partial: "Partial", other: "Funding" },
     featured: "FEATURED",
@@ -129,6 +135,7 @@ const COPY = {
       return `${n} месяцев`;
     },
     rolling: "Без жёсткого дедлайна",
+    annualTbd: "Открывается ежегодно · даты будут позже",
     closed: "Закрыто",
     coverage: { full_ride: "Полное", tuition_only: "Обучение", stipend: "Стипендия", partial: "Частичное", other: "Финансирование" },
     featured: "ИЗБРАННОЕ",
@@ -226,12 +233,23 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
   const days = r.application_deadline
     ? Math.ceil((new Date(r.application_deadline).getTime() - Date.now()) / 86400_000)
     : null;
+  // Flagship-annual rows whose next cycle hasn't been announced get a
+  // distinct "Reopens annually · TBD" treatment so the card doesn't lie
+  // by claiming a rolling deadline. Subtle gold accent mirrors the
+  // "FEATURED" treatment elsewhere.
+  const isFlagshipAnnualNoDeadline =
+    r.application_deadline === null &&
+    r.is_flagship_program === true &&
+    r.lifecycle_status === "reopens_annually";
   // Restrained urgency palette — red ONLY when truly urgent (≤7d).
   // Past that we step down to amber and finally muted, instead of
   // painting every card with a colored alarm.
   let urgencyText: string;
   let urgencyClass: string;
-  if (days === null) {
+  if (isFlagshipAnnualNoDeadline) {
+    urgencyText = t.annualTbd;
+    urgencyClass = "bg-gold/10 text-gold-dark border-gold/30 dark:text-gold dark:border-gold/40";
+  } else if (days === null) {
     urgencyText = t.rolling;
     urgencyClass = "bg-muted/40 text-muted-foreground border-transparent";
   } else if (days <= 0) {

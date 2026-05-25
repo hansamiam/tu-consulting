@@ -209,6 +209,18 @@ interface Scholarship {
    * aggregator competitors who never reconcile sources. Surface as a
    * "Cross-verified" badge on cards when >= 2. */
   consensus_score?: number | null;
+  /* Lifecycle bucket — 'active' | 'reopens_annually' | 'closed_recent' |
+   * 'closed_archived' | null. Discover filters on the first two. UI uses
+   * it to render the "Reopens annually — date TBD" treatment for flagship
+   * rows whose next-cycle deadline hasn't been published yet. */
+  lifecycle_status?: string | null;
+  /* TRUE for canonical flagship programs (Chevening, Fulbright, DAAD,
+   * Heinrich Böll, Swiss ESKAS, Erasmus Mundus, MasterCard Foundation,
+   * MEXT, KGSP, etc). When TRUE + lifecycle='reopens_annually', the row
+   * surfaces on Discover even without a future application_deadline,
+   * with a TBD label. Set by a DB trigger via KNOWN_ANNUAL_PROGRAMS_RE
+   * pattern on scholarship_name + provider_name. */
+  is_flagship_program?: boolean | null;
 }
 
 interface Profile {
@@ -1072,7 +1084,10 @@ const deadlineDisplay = (d: string | null, lang: Lang = "en", deadlineType?: str
       return { text: ru ? "Без даты" : "Rolling", cls: "text-foreground/40", urgent: false };
     }
     if (t === "annual" || t === "reopens_annually") {
-      return { text: ru ? "Ежегодно" : "Annual", cls: "text-foreground/55", urgent: false };
+      // Flagship annual programs in their off-cycle. The dot disambiguates
+      // "this program runs every year, the next cycle's date isn't out yet"
+      // from a defunct row. Gold-ish accent applied at render site.
+      return { text: ru ? "Ежегодная · TBD" : "Annual · TBD", cls: "text-gold-dark/85", urgent: false };
     }
     if (t === "one-time" || t === "one_time") {
       return { text: ru ? "Разовая" : "One-time", cls: "text-foreground/55", urgent: false };
@@ -2803,7 +2818,7 @@ const Discover = ({ language = "en" }: Props) => {
             "canonical_deadline_iso, canonical_funding_text, canonical_funding_usd, " +
             "canonical_official_url, canonical_quality_score, canonical_key, cover_image_url, " +
             "created_at, confidence, data_completeness_score, provider_id, consensus_score, " +
-            "lifecycle_status"
+            "lifecycle_status, is_flagship_program"
           )
           .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
           // Lifecycle filter — closed-recent + closed-archived rows are
@@ -2813,16 +2828,16 @@ const Discover = ({ language = "en" }: Props) => {
           // passed last night gets flipped today). Direct /scholarships/:id
           // lookups still work for saved-pipeline + shared-brief links.
           .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null")
-          // 2026-05-19: any row whose deadline hasn't passed yet, no upper
-          // bound. User direction: "basically everything in the scholarships
-          // tag section of opportunitiesforyouth.org and opportunitytracker.ug
-          // that deadline hasn't passed should be there". With the +1yr LLM
-          // auto-roll-forward function disabled (see migration
-          // 20260518170000) and stale-vintage source rows killed, far-future
-          // deadlines are now trustworthy when they exist. Rows with NULL
-          // deadlines remain filtered out (they're either unknown-cycle or
-          // legacy hand-uploads).
-          .gte("application_deadline", new Date().toISOString().slice(0, 10))
+          // 2026-05-24: Flagship-program bypass. The deadline gate is
+          // satisfied by EITHER a future deadline OR being a flagship
+          // annual program in its off-cycle (lifecycle=reopens_annually
+          // + is_flagship_program=true). Pre-fix, a student looking for
+          // "Fulbright 2027" got zero results between cycles because
+          // application_deadline was NULL — even though Fulbright reopens
+          // every year. Now the row surfaces with a "Reopens annually —
+          // date TBD" treatment so students can save it and prep early.
+          // Non-flagship rows still need a future application_deadline.
+          .or(`application_deadline.gte.${new Date().toISOString().slice(0, 10)},and(lifecycle_status.eq.reopens_annually,is_flagship_program.eq.true)`)
           .order("estimated_total_value_usd", { ascending: false }),
         supabase
           .from("scholarship_stats")
