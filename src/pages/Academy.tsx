@@ -1,15 +1,15 @@
 // Academy — members area + public landing. The CurrentCohort
 // section renders dynamically: members see the live cohort + events,
 // non-members see a membership CTA, and the section self-hides in
-// the transition gap between cohorts. Two access cards at the bottom
-// route members to the deeper resources library (/academy/resources)
-// and non-members to the public lead-magnet primer (/lesson).
+// the transition gap between cohorts. The bottom of the page is a
+// single "Coming Soon — Click for a Preview" link out to the
+// lead-magnet primer at /lesson (30-slide deck + video).
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
-import { Award, Lock, FileText, ArrowRight } from "lucide-react";
+import { Award, ArrowRight } from "lucide-react";
 import samuelPhoto from "@/assets/samuel.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
 import CurrentCohort from "@/components/academy/CurrentCohort";
@@ -112,66 +112,22 @@ const Academy = ({ language = "en" }: AcademyProps) => {
           (the resources block below already covers "coming soon"). */}
       <PastWorkshops language={language} />
 
-      {/* ACCESS CARDS — two doors out of /academy:
-          (1) Members area → /academy/resources (gated file/link library;
-              the public landing no longer renders the resource list inline
-              so non-members don't see the "Resources are landing soon"
-              empty-state copy that read as half-built).
-          (2) Free primer → /lesson (lead-magnet 30-slide deck + video,
-              the Instagram funnel destination — same surface non-members
-              already hit from IG bio links).
-          Members-area card uses lock framing so the value of membership
-          is visible without the resource list itself being on display. */}
+      {/* COMING SOON — single link to the lead-magnet primer at /lesson
+          (30-slide deck + video). Replaces the prior two-card grid
+          (Members area + Free primer) which read as half-built ChatGPT-
+          style subtext stacks. Keep this minimal — one line, one link. */}
       <section className="max-w-3xl mx-auto px-4 pt-6 pb-14">
-        <div className="grid sm:grid-cols-2 gap-4">
-          <Link
-            to={ru ? "/academy/resources/ru" : "/academy/resources"}
-            className="group block rounded-2xl border border-gold/30 bg-gradient-to-br from-gold/[0.08] to-transparent hover:from-gold/[0.14] p-6 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <Lock className="h-4 w-4 text-gold-dark" />
-              <p className="text-[10.5px] uppercase tracking-[0.22em] text-gold-dark font-semibold">
-                {t("Members area", "Зона участников")}
-              </p>
-            </div>
-            <h3 className="font-heading font-semibold text-foreground text-lg tracking-tight leading-snug mb-1.5">
-              {t("Templates, frameworks, deep dives.", "Шаблоны, фреймворки, разборы.")}
-            </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {t(
-                "The working files we use with private clients.",
-                "Рабочие файлы, которые мы используем с частными клиентами.",
-              )}
-            </p>
-            <p className="mt-3 text-sm text-gold-dark font-semibold inline-flex items-center gap-1 group-hover:gap-2 transition-all">
-              {t("Open resources", "Открыть ресурсы")} <ArrowRight className="h-3.5 w-3.5" />
-            </p>
-          </Link>
-
-          <Link
-            to={ru ? "/lesson/ru" : "/lesson"}
-            className="group block rounded-2xl border border-border bg-card hover:bg-muted/40 p-6 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <p className="text-[10.5px] uppercase tracking-[0.22em] text-muted-foreground font-semibold">
-                {t("Free primer", "Бесплатный материал")}
-              </p>
-            </div>
-            <h3 className="font-heading font-semibold text-foreground text-lg tracking-tight leading-snug mb-1.5">
-              {t("How to get in — the 30-slide playbook.", "Как поступить — 30 слайдов.")}
-            </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {t(
-                "The deck we hand out on Instagram.",
-                "Гид с нашего Instagram.",
-              )}
-            </p>
-            <p className="mt-3 text-sm text-foreground font-semibold inline-flex items-center gap-1 group-hover:gap-2 transition-all">
-              {t("Read the primer", "Открыть материал")} <ArrowRight className="h-3.5 w-3.5" />
-            </p>
-          </Link>
-        </div>
+        <Link
+          to={ru ? "/lesson/ru" : "/lesson"}
+          className="group block rounded-2xl border border-gold/30 bg-gradient-to-br from-gold/[0.08] to-transparent hover:from-gold/[0.14] p-8 text-center transition-colors"
+        >
+          <h3 className="font-heading font-semibold text-foreground text-xl tracking-tight">
+            {t("Coming soon.", "Скоро.")}{" "}
+            <span className="text-gold-dark inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+              {t("Click for a preview", "Открыть превью")} <ArrowRight className="h-4 w-4" />
+            </span>
+          </h3>
+        </Link>
       </section>
 
       {/* Bottom bookend — short gradient ramp into the navy footer.
