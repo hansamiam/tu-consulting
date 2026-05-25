@@ -150,6 +150,19 @@ Direct identity statements only ("Math is your native language.",
 "Action is your first instinct."). Define what the reader IS, never
 through what they aren't.
 
+BANNED HEDGING ADVERBS + AI-SLOP VERBS + DEMOGRAPHIC OPENERS
+(added 2026-05-25 Stream A copy regen v2):
+- Hedging adverbs that make prose feel non-committal and AI-generated:
+  "sometime," "sometimes," "maybe," "perhaps," "likely," "potentially."
+  (Card 03 / essay seed is the one exception — it REQUIRES speculative
+  tense. Every other card must commit.)
+- Slop verbs / overcooked words: "stands out," "standout," "narrative,"
+  "oversaturated," "pile," "embark," "unlock," "journey," "potential to be,"
+  "carve a unique," "less common."
+- Demographic-cliché openers — never open prose with these patterns:
+  "your age," "most students in," "pursue a direct path," "stick to the
+  traditional." Address THIS person, never their demographic bucket.
+
 BANNED PADDING — redundant frequency / consolation phrasing
 (added 2026-05-25):
 - "refreshed daily," "updated daily," "every single day" — tacky
@@ -243,18 +256,65 @@ export const CIS_CULTURAL_BANNED: ReadonlyArray<{ pattern: RegExp; label: string
 ];
 
 /**
+ * Hedging adverbs + demographic-cliché openers + AI-slop verbs
+ * (added 2026-05-25 Stream A copy regen v2 in response to Samuel's
+ * live-report flags: "Most students in Kazakhstan your age pursue a
+ * direct path toward IT or finance.", "oversaturated piles", "less
+ * common narrative", "potential to be a standout", "sometime in the
+ * last two years", etc.).
+ *
+ * CAREFUL: card 03 (whatToWrite / essay seed) REQUIRES speculative
+ * tense markers ("sometime", "maybe", "perhaps", "likely"). The
+ * scanner's `excludeHedging` option lets that section skip this
+ * pool while every other section still enforces it.
+ */
+export const HEDGING_AND_CLICHE_BANNED: ReadonlyArray<{ pattern: RegExp; label: string }> = [
+  // hedging adverbs — make prose feel uncertain and AI-generated
+  { pattern: /\bsometime\b/i, label: "hedging-adverb" },
+  { pattern: /\bsometimes\b/i, label: "hedging-adverb" },
+  { pattern: /\bmaybe\b/i, label: "hedging-adverb" },
+  { pattern: /\bperhaps\b/i, label: "hedging-adverb" },
+  { pattern: /\blikely\b/i, label: "hedging-adverb" },
+  { pattern: /\bpotentially\b/i, label: "hedging-adverb" },
+  // slop verbs / overcooked words
+  { pattern: /\bstands? out\b/i, label: "slop-verb" },
+  { pattern: /\bstandout\b/i, label: "slop-verb" },
+  { pattern: /\bnarrative\b/i, label: "slop-verb" },
+  { pattern: /\boversaturated\b/i, label: "slop-verb" },
+  { pattern: /\bpile\b/i, label: "slop-verb" },
+  { pattern: /\bembark\b/i, label: "slop-verb" },
+  { pattern: /\bunlock\b/i, label: "slop-verb" },
+  { pattern: /\bjourney\b/i, label: "slop-verb" },
+  { pattern: /\bpotential to be\b/i, label: "slop-verb" },
+  { pattern: /\bcarve a unique\b/i, label: "slop-verb" },
+  { pattern: /\bless common\b/i, label: "slop-verb" },
+  // demographic-cliché openers
+  { pattern: /\byour age\b/i, label: "demographic-opener" },
+  { pattern: /\bmost students in\b/i, label: "demographic-opener" },
+  { pattern: /\bpursue a direct path\b/i, label: "demographic-opener" },
+  { pattern: /\bstick to the traditional\b/i, label: "demographic-opener" },
+];
+
+/**
  * Helper: scan a string for any banned-vocabulary matches and return
  * an array of {match, label} hits. Empty array means clean.
  *
  * @param text — the AI output to scan
  * @param culturalContext — optional, "central_asia" enables CIS-specific bans
+ * @param opts.excludeHedging — when true, skip the HEDGING_AND_CLICHE_BANNED
+ *   pool. Use for sections that legitimately require speculative tense
+ *   (e.g. card 03 essay seed, which mandates ≥2 of "sometime / maybe /
+ *   probably / there was likely"). Every other surface should leave it
+ *   undefined / false so the hedging pool fires normally.
  */
 export function scanBannedVocab(
   text: string,
   culturalContext?: string,
+  opts?: { excludeHedging?: boolean },
 ): Array<{ match: string; label: string }> {
   const hits: Array<{ match: string; label: string }> = [];
-  const pools = [BANNED_VOCABULARY];
+  const pools: Array<ReadonlyArray<{ pattern: RegExp; label: string }>> = [BANNED_VOCABULARY];
+  if (!opts?.excludeHedging) pools.push(HEDGING_AND_CLICHE_BANNED);
   if (culturalContext === "central_asia") pools.push(CIS_CULTURAL_BANNED);
   for (const pool of pools) {
     for (const { pattern, label } of pool) {
