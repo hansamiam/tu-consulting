@@ -1,14 +1,17 @@
 // Academy — members area + public landing. The CurrentCohort
 // section renders dynamically: members see the live cohort + events,
 // non-members see a membership CTA, and the section self-hides in
-// the transition gap between cohorts.
+// the transition gap between cohorts. Two access cards at the bottom
+// route members to the deeper resources library (/academy/resources)
+// and non-members to the public lead-magnet primer (/lesson).
 import { useEffect } from "react";
+import { Link } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
+import { Award, Lock, FileText, ArrowRight } from "lucide-react";
 import samuelPhoto from "@/assets/samuel.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
-import AcademyResourceList from "@/components/academy/AcademyResourceList";
 import CurrentCohort from "@/components/academy/CurrentCohort";
 import PastWorkshops from "@/components/academy/PastWorkshops";
 
@@ -43,6 +46,9 @@ const Academy = ({ language = "en" }: AcademyProps) => {
       <section className="relative -mt-16 bg-gradient-to-br from-primary via-primary to-primary/90 pt-32 sm:pt-36 pb-20 sm:pb-28 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(var(--gold)/0.1),_transparent_60%)]" />
         <div className="relative max-w-3xl mx-auto px-4 text-center">
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 bg-gold/15 border border-gold/40 px-3 py-1 rounded-full text-gold text-xs font-semibold mb-6">
+            <Award className="h-3.5 w-3.5" /> {t("Starting in June", "Старт в июне")}
+          </motion.div>
           <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="text-4xl sm:text-6xl font-heading font-bold text-primary-foreground mb-5 leading-tight tracking-tight">
             TopUni <span className="text-gold">Academy</span>
           </motion.h1>
@@ -106,33 +112,67 @@ const Academy = ({ language = "en" }: AcademyProps) => {
           (the resources block below already covers "coming soon"). */}
       <PastWorkshops language={language} />
 
-      {/* RESOURCES — members-only file/link library. The list renders
-          even when empty so members know the system is live; the
-          actual download is gated by academy-resource-url. */}
+      {/* ACCESS CARDS — two doors out of /academy:
+          (1) Members area → /academy/resources (gated file/link library;
+              the public landing no longer renders the resource list inline
+              so non-members don't see the "Resources are landing soon"
+              empty-state copy that read as half-built).
+          (2) Free primer → /lesson (lead-magnet 30-slide deck + video,
+              the Instagram funnel destination — same surface non-members
+              already hit from IG bio links).
+          Members-area card uses lock framing so the value of membership
+          is visible without the resource list itself being on display. */}
       <section className="max-w-3xl mx-auto px-4 pt-6 pb-14">
-        <div className="mb-8 text-center">
-          <p className="text-[10.5px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-3">
-            {t("Resources", "Ресурсы")}
-          </p>
-          <h2 className="font-heading text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-            {t("Templates, frameworks, deep dives.", "Шаблоны, фреймворки, разборы.")}
-          </h2>
-          <p className="text-muted-foreground text-sm mt-2 max-w-md mx-auto">
-            {t(
-              "Members get the working files we use with private clients.",
-              "Участники получают рабочие файлы, которые мы используем с частными клиентами.",
-            )}
-          </p>
-        </div>
-        <AcademyResourceList language={language} />
-      </section>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Link
+            to={ru ? "/academy/resources/ru" : "/academy/resources"}
+            className="group block rounded-2xl border border-gold/30 bg-gradient-to-br from-gold/[0.08] to-transparent hover:from-gold/[0.14] p-6 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <Lock className="h-4 w-4 text-gold-dark" />
+              <p className="text-[10.5px] uppercase tracking-[0.22em] text-gold-dark font-semibold">
+                {t("Members area", "Зона участников")}
+              </p>
+            </div>
+            <h3 className="font-heading font-semibold text-foreground text-lg tracking-tight leading-snug mb-1.5">
+              {t("Templates, frameworks, deep dives.", "Шаблоны, фреймворки, разборы.")}
+            </h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {t(
+                "The working files we use with private clients. Sign in with your member account.",
+                "Рабочие файлы, которые мы используем с частными клиентами. Войдите с аккаунтом участника.",
+              )}
+            </p>
+            <p className="mt-3 text-sm text-gold-dark font-semibold inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+              {t("Open resources", "Открыть ресурсы")} <ArrowRight className="h-3.5 w-3.5" />
+            </p>
+          </Link>
 
-      {/* Original CTA section retired here per user direction — "less is more".
-          The "Doors open in June" callout + Build-strategy/Open-Discover
-          buttons duplicated CTA the visitor already had via the global
-          nav. The Academy hero badge ("Launching in June") communicates
-          timing on its own; Discover and TopUni AI are reachable from
-          every page via Navigation. */}
+          <Link
+            to={ru ? "/lesson/ru" : "/lesson"}
+            className="group block rounded-2xl border border-border bg-card hover:bg-muted/40 p-6 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              <p className="text-[10.5px] uppercase tracking-[0.22em] text-muted-foreground font-semibold">
+                {t("Free primer", "Бесплатный материал")}
+              </p>
+            </div>
+            <h3 className="font-heading font-semibold text-foreground text-lg tracking-tight leading-snug mb-1.5">
+              {t("How to get in — the 30-slide playbook.", "Как поступить — 30 слайдов.")}
+            </h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {t(
+                "The free guide we hand out on Instagram. Watch the video, scroll the deck, no signup needed.",
+                "Бесплатный гид с нашего Instagram. Видео + слайды, без регистрации.",
+              )}
+            </p>
+            <p className="mt-3 text-sm text-foreground font-semibold inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+              {t("Read the primer", "Открыть материал")} <ArrowRight className="h-3.5 w-3.5" />
+            </p>
+          </Link>
+        </div>
+      </section>
 
       {/* Bottom bookend — short gradient ramp into the navy footer.
           Pre-fix this was h-32/40 (128-160px) which felt like dead air

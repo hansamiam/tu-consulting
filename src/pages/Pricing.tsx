@@ -144,13 +144,13 @@ const Pricing = ({ language = "en" }: PricingProps) => {
   const [authOpen, setAuthOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [foundingLeft, setFoundingLeft] = useState<number | null>(null);
-  // Cohort cap default — 50 for the early-access tier (was 100 pre
-  // 2026-05-10). 50 gives ~6-8 weeks of organic signup runway at this
+  // Cohort cap default — 20 for the early-access tier (was 50, was 100
+  // pre 2026-05-10). 20 keeps the "founding-20" framing tight enough that
   // stage of the business, scarcity reads as "almost full" by week 3,
   // and the next tier (launch discount) takes over without a gap. The
   // production value still comes from `founding_member_counter.cap` in
   // Supabase — this is just the fallback when the table is empty.
-  const [foundingCap, setFoundingCap] = useState<number>(50);
+  const [foundingCap, setFoundingCap] = useState<number>(20);
   // Billing interval — annual saves ~23% vs month-to-month. Default
   // monthly (lower commitment threshold, easier conversion).
   const [billingInterval, setBillingInterval] = useState<"month" | "year">("month");

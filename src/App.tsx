@@ -61,6 +61,7 @@ const Admin                = lazy(() => import("./pages/Admin"));
 const FunnelDashboard      = lazy(() => import("./pages/FunnelDashboard"));
 const AdminInsights        = lazy(() => import("./pages/AdminInsights"));
 const Academy              = lazy(() => import("./pages/Academy"));
+const AcademyResources     = lazy(() => import("./pages/AcademyResources"));
 // /academy/live retired 2026-05-20 — real Zoom/Meet embed isn't viable
 // and the fake video-shell chrome was visual dead weight. The route is
 // kept and now redirects to /lesson (the lead-magnet page with the
@@ -253,6 +254,8 @@ const App = () => (
           <Route path="/admin/source-candidates" element={<AdminSourceCandidates />} />
           <Route path="/academy" element={<Academy language="en" />} />
           <Route path="/academy/ru" element={<Academy language="ru" />} />
+          <Route path="/academy/resources"    element={<AcademyResources language="en" />} />
+          <Route path="/academy/resources/ru" element={<AcademyResources language="ru" />} />
           <Route path="/academy/live"    element={<Navigate to="/lesson" replace />} />
           <Route path="/academy/live/ru" element={<Navigate to="/lesson/ru" replace />} />
           <Route path="/lesson" element={<LeadMagnet language="en" />} />
