@@ -104,9 +104,8 @@ const Slide: React.FC<{
       {children}
     </div>
 
-    <footer className="flex items-center justify-between px-8 sm:px-14 py-4 border-t border-neutral-100 text-[10.5px] uppercase tracking-[0.22em] font-medium">
-      <span className="text-neutral-400">TopUni · Strategy report</span>
-      <span className="text-neutral-500 tabular-nums">{String(number).padStart(2, "0")} / 05</span>
+    <footer className="px-8 sm:px-14 py-4 border-t border-neutral-100 text-[10.5px] uppercase tracking-[0.22em] font-medium text-neutral-400">
+      TopUni · Strategy report
     </footer>
   </article>
 );
@@ -156,13 +155,10 @@ const Cover: React.FC<{ studentName: string; gradeLabel?: string; generatedAt?: 
           for <span className="text-gold">{firstName}</span>
         </p>
       </div>
-      <footer className="relative flex items-center justify-between px-8 sm:px-14 py-4 border-t border-white/10 text-[10.5px] uppercase tracking-[0.22em] font-medium">
-        <span className="text-neutral-500">
-          {gradeLabel && <span className="text-gold">{gradeLabel}</span>}
-          {gradeLabel && dateLine && <span className="mx-2 text-neutral-700">·</span>}
-          {dateLine && <span>{dateLine}</span>}
-        </span>
-        <span className="text-neutral-500 tabular-nums">01 / 05</span>
+      <footer className="relative px-8 sm:px-14 py-4 border-t border-white/10 text-[10.5px] uppercase tracking-[0.22em] font-medium text-neutral-500">
+        {gradeLabel && <span className="text-gold">{gradeLabel}</span>}
+        {gradeLabel && dateLine && <span className="mx-2 text-neutral-700">·</span>}
+        {dateLine && <span>{dateLine}</span>}
       </footer>
     </article>
   );
@@ -644,8 +640,23 @@ export const BriefDeck: React.FC<Props> = (props) => {
   return (
     <div id="printable-report-inner" className="relative">
       {streamError && (
-        <div className="my-6 mx-auto max-w-md text-center text-rose-500 text-sm">
-          Brief generation failed: {streamError}. Try regenerating.
+        <div
+          role="alert"
+          className="my-6 mx-auto max-w-lg rounded-xl border border-rose-200 bg-rose-50 px-6 py-5 text-center"
+        >
+          <p className="font-heading text-base font-semibold text-rose-900 mb-1">
+            Strategy generation stopped partway.
+          </p>
+          <p className="text-sm text-rose-700/90 mb-4">
+            {streamError}
+          </p>
+          <Link
+            to="/topuni-ai"
+            className="inline-flex items-center gap-1.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium px-4 py-2 transition-colors"
+          >
+            Try again
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
       )}
       <CardStack cards={cards} archetypeColor={archetype?.color} />
@@ -725,7 +736,7 @@ const CardStack: React.FC<CardStackProps> = ({ cards, archetypeColor }) => {
     const url = typeof window !== "undefined" ? window.location.href : "";
     const shareData = {
       title: `TopUni AI · ${cardKicker}`,
-      text: `My TopUni AI brief said: ${cardKicker}. topuni.kz/ai`,
+      text: `My TopUni strategy said: ${cardKicker}. topuni.kz/ai`,
       url,
     };
     if (typeof navigator !== "undefined" && (navigator as Navigator & { share?: (d: ShareData) => Promise<void> }).share) {

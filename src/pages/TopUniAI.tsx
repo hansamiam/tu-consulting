@@ -155,6 +155,28 @@ interface WizardDraft {
  *  rather than stale half-finished answers from a different intent. */
 const DRAFT_TTL_MS = 14 * 86400_000;
 
+/** Sanitize a numeric-input value and clamp it to a max. Keeps users
+ *  from typing "9000" into IELTS or "1600000" into SAT. Allows a single
+ *  decimal point when `allowDecimal` is true. Returns the string the
+ *  input should display — the caller stores it in state as-is. */
+const clampScore = (raw: string, max: number, allowDecimal: boolean): string => {
+  // Strip everything except digits and (maybe) a single decimal point.
+  const stripped = allowDecimal
+    ? raw.replace(/[^0-9.]/g, "")
+    : raw.replace(/[^0-9]/g, "");
+  // Collapse multiple decimals into the first one.
+  let cleaned = stripped;
+  if (allowDecimal) {
+    const parts = stripped.split(".");
+    if (parts.length > 2) cleaned = `${parts[0]}.${parts.slice(1).join("")}`;
+  }
+  if (cleaned === "" || cleaned === ".") return cleaned;
+  const num = parseFloat(cleaned);
+  if (isNaN(num)) return "";
+  if (num > max) return String(max);
+  return cleaned;
+};
+
 const loadDraft = (): Partial<WizardDraft> | null => {
   try {
     const raw = localStorage.getItem(WIZARD_DRAFT_KEY);
@@ -942,6 +964,13 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                                 const cleaned = parts.length > 2
                                   ? `${parts[0]}.${parts.slice(1).join("")}`
                                   : v;
+                                // Clamp at the chosen scale so users can't type 9999 on a 4.0 scale.
+                                const max = parseFloat(gpaScale);
+                                const num = parseFloat(cleaned);
+                                if (!isNaN(num) && !isNaN(max) && num > max) {
+                                  setGpa(String(max));
+                                  return;
+                                }
                                 setGpa(cleaned);
                               }}
                               inputMode="decimal"
@@ -972,16 +1001,34 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           </div>
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">IELTS</Label>
-                          <Input value={ielts} onChange={e => setIelts(e.target.value)} placeholder={t("Score or skip · e.g. 7.0", "Балл или пропусти · напр. 7.0")} className="h-11 bg-card" />
+                          <Label className="text-xs uppercase tracking-wider font-medium">IELTS <span className="text-muted-foreground/70 font-normal normal-case">(0–9)</span></Label>
+                          <Input
+                            value={ielts}
+                            inputMode="decimal"
+                            onChange={e => setIelts(clampScore(e.target.value, 9, true))}
+                            placeholder={t("Score or skip · e.g. 7.0", "Балл или пропусти · напр. 7.0")}
+                            className="h-11 bg-card"
+                          />
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">TOEFL</Label>
-                          <Input value={toefl} onChange={e => setToefl(e.target.value)} placeholder={t("Score or skip · e.g. 100", "Балл или пропусти · напр. 100")} className="h-11 bg-card" />
+                          <Label className="text-xs uppercase tracking-wider font-medium">TOEFL <span className="text-muted-foreground/70 font-normal normal-case">(0–120)</span></Label>
+                          <Input
+                            value={toefl}
+                            inputMode="numeric"
+                            onChange={e => setToefl(clampScore(e.target.value, 120, false))}
+                            placeholder={t("Score or skip · e.g. 100", "Балл или пропусти · напр. 100")}
+                            className="h-11 bg-card"
+                          />
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">SAT</Label>
-                          <Input value={sat} onChange={e => setSat(e.target.value)} placeholder={t("Score or skip · e.g. 1450", "Балл или пропусти · напр. 1450")} className="h-11 bg-card" />
+                          <Label className="text-xs uppercase tracking-wider font-medium">SAT <span className="text-muted-foreground/70 font-normal normal-case">(400–1600)</span></Label>
+                          <Input
+                            value={sat}
+                            inputMode="numeric"
+                            onChange={e => setSat(clampScore(e.target.value, 1600, false))}
+                            placeholder={t("Score or skip · e.g. 1450", "Балл или пропусти · напр. 1450")}
+                            className="h-11 bg-card"
+                          />
                         </div>
                       </div>
                     </div>
