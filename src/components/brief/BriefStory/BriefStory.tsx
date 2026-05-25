@@ -97,8 +97,13 @@ export const BriefStory = ({
   const deck = useDeck({ total: Math.max(total, 1) });
   const inverted = surfaces[deck.active]?.navy === true;
 
+  // 2026-05-25: a mid-stream error used to wipe ALL slides off-frame
+  // (showError gated everything). Now: if cards loaded before the error,
+  // keep them — only show the standalone ErrorSlide when nothing arrived.
+  // Partial-error case surfaces a small retry strip below the frame.
   const showSkeleton = loading && total === 0;
-  const showError = !!error;
+  const showErrorOnly = !!error && total === 0;
+  const showPartialError = !!error && total > 0;
 
   return (
     <div className="w-full flex flex-col items-center gap-5 py-2 sm:py-4">
@@ -136,8 +141,8 @@ export const BriefStory = ({
 
         <div className="absolute inset-0">
           {showSkeleton && <Skeleton />}
-          {showError && <ErrorSlide error={error!} />}
-          {!showSkeleton && !showError && surfaces.map((surface, i) => (
+          {showErrorOnly && <ErrorSlide error={error!} />}
+          {!showSkeleton && !showErrorOnly && surfaces.map((surface, i) => (
             <div
               key={surface.id}
               className={[
@@ -161,7 +166,7 @@ export const BriefStory = ({
           ))}
         </div>
 
-        {total > 1 && !showError && (
+        {total > 1 && !showErrorOnly && (
           <div className="absolute inset-0 grid grid-cols-[1fr_2fr] z-20">
             <button type="button" aria-label="Previous" onClick={deck.prev} className="cursor-pointer focus:outline-none" />
             <button type="button" aria-label="Next" onClick={deck.next} className="cursor-pointer focus:outline-none" />
@@ -220,7 +225,27 @@ export const BriefStory = ({
         </div>
       )}
 
-      {total > 1 && deck.active === total - 1 && !showError && (
+      {/* Partial-stream-error strip — visible whenever some cards
+          rendered but the stream errored before completing. Sits below
+          the frame so the user keeps what loaded + can retry. */}
+      {showPartialError && (
+        <div
+          role="alert"
+          className="w-full max-w-[400px] rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 flex items-center justify-between gap-3 -mt-2"
+        >
+          <p className="text-[13px] text-rose-900 m-0 leading-snug">
+            Generation stopped partway. Some cards may be missing.
+          </p>
+          <Link
+            to="/topuni-ai"
+            className="text-[13px] font-semibold text-rose-700 hover:text-rose-900 underline-offset-2 hover:underline whitespace-nowrap"
+          >
+            Try again
+          </Link>
+        </div>
+      )}
+
+      {total > 1 && deck.active === total - 1 && !error && (
         <Link
           to="/discover"
           className="group block w-full max-w-[400px] mt-3 rounded-2xl bg-[hsl(var(--navy-deep))] hover:bg-[hsl(var(--navy))] text-[hsl(43_44%_96%)] px-6 py-5 transition-colors"
