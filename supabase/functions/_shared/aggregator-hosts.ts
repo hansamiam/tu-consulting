@@ -59,6 +59,25 @@ export const AGGREGATOR_HOSTS: ReadonlyArray<string> = [
   // scholarship_sources as the wrong-domain entry. Treat the variant as an
   // aggregator so we don't accidentally re-promote it.
   "opportunitytracker.ug",
+  // Added 2026-05-24:
+  // - oyaop.com: now an active discovery hub. Aggregator URLs from it
+  //   must NEVER end up stored as official_url on a row.
+  // - mastersportal.com / bachelorsportal.com / phdportal.com: the
+  //   Studyportals family (studyportals.com already listed). Surfaced in
+  //   3+ source_url rows but is the same aggregator structure.
+  // - scholarshipowl.com: lead-gen aggregator that hides the real
+  //   funding page behind an email-capture wall.
+  // - scholarshippoints.com / niche.com / chegg.com: US scholarship
+  //   search portals that frequently rank above genuine official pages
+  //   for branded queries. Preempt before catalog pollution.
+  "oyaop.com",
+  "mastersportal.com",
+  "bachelorsportal.com",
+  "phdportal.com",
+  "scholarshipowl.com",
+  "scholarshippoints.com",
+  "niche.com",
+  "chegg.com",
 ];
 
 /**

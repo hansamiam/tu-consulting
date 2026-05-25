@@ -85,6 +85,7 @@ import {
   cleanProvider,
   compactAward,
   humanizeDemographic,
+  typicalOpenMonth,
 } from "@/lib/scholarshipFields";
 import { daysUntil } from "@/lib/dates";
 import { ALL_COUNTRIES } from "@/data/countries";
@@ -1052,7 +1053,12 @@ const fmtValue = (v: number) => v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}
 
 type Lang = "en" | "ru";
 
-const deadlineDisplay = (d: string | null, lang: Lang = "en", deadlineType?: string | null) => {
+const deadlineDisplay = (
+  d: string | null,
+  lang: Lang = "en",
+  deadlineType?: string | null,
+  typicalMonth?: string | null,
+) => {
   // Restrained color scale — red only when truly urgent (≤7d). Past that,
   // we rely on muted tones. The previous palette painted half the
   // database red, which made every card look like an alarm.
@@ -1072,7 +1078,15 @@ const deadlineDisplay = (d: string | null, lang: Lang = "en", deadlineType?: str
       return { text: ru ? "Без даты" : "Rolling", cls: "text-foreground/40", urgent: false };
     }
     if (t === "annual" || t === "reopens_annually") {
-      return { text: ru ? "Ежегодно" : "Annual", cls: "text-foreground/55", urgent: false };
+      // Flagship annual programs in their off-cycle. If we know the
+      // typical open month for this specific program (e.g. DAAD typically
+      // opens Sep), show that as a planning anchor; otherwise fall back
+      // to TBD. Gold accent on the label highlights "this isn't dead, it
+      // reopens" vs. a stale data row.
+      const annualLabel = typicalMonth
+        ? (ru ? `Ежегодная · ~${typicalMonth}` : `Annual · typical ${typicalMonth}`)
+        : (ru ? "Ежегодная · TBD" : "Annual · TBD");
+      return { text: annualLabel, cls: "text-gold-dark/85", urgent: false };
     }
     if (t === "one-time" || t === "one_time") {
       return { text: ru ? "Разовая" : "One-time", cls: "text-foreground/55", urgent: false };
@@ -1645,7 +1659,7 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
   lang?: Lang;
 }) => {
   const ru = lang === "ru";
-  const dl = deadlineDisplay(s.application_deadline, lang, s.deadline_type);
+  const dl = deadlineDisplay(s.application_deadline, lang, s.deadline_type, typicalOpenMonth(s.scholarship_name, s.provider_name));
   const hasRealScore = s.match > 0 && (s.reasons.length > 0 || s.warnings.length > 0);
   const isFullRide = s.coverage_type === "full_ride";
   const bannerCtry = bannerCountry(s);
@@ -1883,7 +1897,7 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
 }) => {
   const ru = lang === "ru";
   const tier = TIER[s.priority];
-  const dl = deadlineDisplay(s.application_deadline, lang, s.deadline_type);
+  const dl = deadlineDisplay(s.application_deadline, lang, s.deadline_type, typicalOpenMonth(s.scholarship_name, s.provider_name));
   /* Why-it-fits text. Falls back to scoring reasons ONLY when at
    * least one of them is a meaty insight (not a generic "Matches X
    * level" auto-reason). Without this filter the card surfaces
@@ -3248,7 +3262,20 @@ const Discover = ({ language = "en" }: Props) => {
       // "Master's Degree", "Graduate", "graduate"). Strict equality
       // missed most rows. Normalize both sides into one of three
       // canonical buckets before comparing.
-      list = list.filter(s => s.target_degree_level?.some(d => degreeBucket(d) === degreeBucket(filters.degree)));
+      const wantBucket = degreeBucket(filters.degree);
+      list = list.filter(s => s.target_degree_level?.some(d => degreeBucket(d) === wantBucket));
+      // Sort tie-break: pure single-level rows surface ahead of multi-
+      // level ones so the filter feels precise. User flagged that
+      // bachelor/master views looked similar — root cause is multi-
+      // level rows (Heinrich Böll, MasterCard, ERSU) legitimately
+      // matching both. Putting pure-Bachelor rows first when the
+      // filter is Bachelor preserves the multi-level matches without
+      // burying the user's intent.
+      list = [...list].sort((a, b) => {
+        const aLen = a.target_degree_level?.length ?? 99;
+        const bLen = b.target_degree_level?.length ?? 99;
+        return aLen - bLen;
+      });
     }
     if (filters.selectivity !== "all") {
       // "Competitive" (high) intentionally matches both `high` and `very_high`
@@ -4893,7 +4920,7 @@ const Discover = ({ language = "en" }: Props) => {
                   // redundant with Total value). Total value carries the $$.
                   { label: "Total value", render: s => s.estimated_total_value_usd ? <span className="text-gold-dark font-bold">{fmtValue(s.estimated_total_value_usd)}</span> : "—", isEmpty: s => !s.estimated_total_value_usd },
                   { label: "Deadline", render: s => {
-                      const dl = deadlineDisplay(s.application_deadline, "en", s.deadline_type);
+                      const dl = deadlineDisplay(s.application_deadline, "en", s.deadline_type, typicalOpenMonth(s.scholarship_name, s.provider_name));
                       return <span className={dl.cls}>{dateOnly(s.application_deadline) || dl.text} {s.application_deadline && <span className="text-muted-foreground/70 text-xs ml-1">({dl.text})</span>}</span>;
                     }
                   },
@@ -5007,7 +5034,7 @@ const Discover = ({ language = "en" }: Props) => {
             <div className="mt-6 space-y-3">
               {ranked.filter(s => shortlist.has(s.scholarship_id)).map(s => {
                 const tier = TIER[s.priority];
-                const dl = deadlineDisplay(s.application_deadline, "en", s.deadline_type);
+                const dl = deadlineDisplay(s.application_deadline, "en", s.deadline_type, typicalOpenMonth(s.scholarship_name, s.provider_name));
                 return (
                   <button key={s.scholarship_id}
                     onClick={() => { setShortlistOpen(false); openDetailRoute(s); }}

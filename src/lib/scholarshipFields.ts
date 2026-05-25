@@ -272,3 +272,63 @@ export const compactAward = (s: AwardSource): string | null => {
   }
   return null;
 };
+
+/* ─── Typical-open month per known flagship program ─────────────────────
+ *
+ * For flagship annual scholarships in their off-cycle, the Discover card
+ * renders "Annual · typical Oct" instead of "Annual · TBD" when we can
+ * pin the typical month from public history. Numbers below come from
+ * the published application windows (open date, not deadline) for
+ * recent cycles — they're directional, not contractual.
+ *
+ * When a program legitimately has a varying or split window (Fulbright
+ * country-by-country, MEXT Embassy vs University tracks), we pick the
+ * single most-common month so the label still gives a planning anchor.
+ *
+ * If you add a program, also add its regex to KNOWN_ANNUAL_PROGRAMS_RE
+ * in supabase/functions/_shared/scholarshipFields.ts so it gets the
+ * is_flagship_program=true flag (otherwise the bypass + the label both
+ * miss it).
+ */
+const TYPICAL_OPEN_MONTH_RULES: ReadonlyArray<{ pattern: RegExp; month: string }> = [
+  { pattern: /\bchevening\b/i,                                       month: "Sep" },
+  { pattern: /\bfulbright\b/i,                                        month: "May" },
+  { pattern: /\bdaad\b|\bdeutschlandstipendium\b/i,                   month: "Sep" },
+  { pattern: /\bheinrich b[oö]ll\b/i,                                 month: "Mar" },
+  { pattern: /\bswiss government\b/i,                                 month: "Sep" },
+  { pattern: /\berasmus mundus\b/i,                                   month: "Oct" },
+  { pattern: /\bmastercard foundation\b/i,                            month: "Jan" },
+  { pattern: /\bmext\b/i,                                              month: "May" },
+  { pattern: /\bkgsp\b|\bkorean government scholarship\b/i,           month: "Feb" },
+  { pattern: /\bgates cambridge\b/i,                                  month: "Sep" },
+  { pattern: /\brhodes scholar/i,                                     month: "Jun" },
+  { pattern: /\bclarendon\b/i,                                        month: "Sep" },
+  { pattern: /\bvanier\b/i,                                            month: "Aug" },
+  { pattern: /\beiffel\b/i,                                           month: "Oct" },
+  { pattern: /\bknight[-\s]?hennessy\b/i,                             month: "May" },
+  { pattern: /\bschwarzman\b/i,                                       month: "May" },
+  { pattern: /\bczech government scholar/i,                           month: "Sep" },
+  { pattern: /\bcommonwealth (scholarship|shared|master)/i,           month: "Oct" },
+  { pattern: /\bjoint japan\/world bank\b/i,                          month: "Feb" },
+  { pattern: /\baga khan\b/i,                                          month: "Mar" },
+  { pattern: /\bswedish institute\b/i,                                month: "Feb" },
+  { pattern: /\borange knowledge\b|\bholland scholar/i,               month: "Feb" },
+  { pattern: /\baustralia awards\b/i,                                 month: "Feb" },
+  { pattern: /\byenching\b/i,                                          month: "Sep" },
+  { pattern: /\btrudeau\b/i,                                           month: "Dec" },
+  { pattern: /\bp\.?d\.?\s?soros\b/i,                                 month: "Oct" },
+  { pattern: /\bjack kent cooke\b/i,                                  month: "Oct" },
+  { pattern: /\bmarshall scholar/i,                                   month: "Sep" },
+];
+
+/** Returns the typical month a flagship program opens applications, or
+ *  null if the program isn't recognised. Matched against
+ *  "{scholarship_name} | {provider_name}" so either side can trigger. */
+export function typicalOpenMonth(
+  scholarshipName: string | null | undefined,
+  providerName: string | null | undefined,
+): string | null {
+  const hay = `${scholarshipName ?? ""} | ${providerName ?? ""}`;
+  const hit = TYPICAL_OPEN_MONTH_RULES.find((r) => r.pattern.test(hay));
+  return hit ? hit.month : null;
+}
