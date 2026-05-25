@@ -716,11 +716,13 @@ ${SHARED_JSON_RULES}`;
 };
 
 /* 03 — ESSAY ONLY YOU CAN WRITE (renderer-wire ID: whatToWrite)
-   Payload shape kept at 3 entries for renderer wire-compat, but the
-   prompt now asks for ONE primary essay seed in the first entry +
-   2 supporting variations. The first entry is the spec's "ONE essay
-   seed"; the 2 follow-ups give the renderer the multi-angle UX it
-   expects without claiming three independent stories. */
+   Stream-A regen-v2 (2026-05-25) — pivot away from "speculative tense
+   essay seed" toward "the actual opening line of the essay, grounded
+   in a named intake moment." The title slot now holds the opening
+   line itself (not a preamble like "Your essay starts —"), the body
+   names ONE specific intake-grounded moment with concrete anchors
+   (year, course, activity), and the closer is one imperative under
+   10 words. */
 const whatToWrite: SectionSpec = {
   id: "whatToWrite",
   heading: "What to write",
@@ -728,21 +730,15 @@ const whatToWrite: SectionSpec = {
   buildPrompt: (ctx) => `
 You are writing CARD 03 of a 5-card admissions strategy brief in the
 v7 spec. This card is called THE ESSAY ONLY YOU CAN WRITE. Its job:
-name the SINGLE primary essay seed this student is uniquely positioned
-to develop, plus 2 alternate angles for breadth. The seed must connect
-to the specific identity claim from Card 01.
+hand the student the literal opening line of the essay they should
+write, plus the one specific intake-grounded moment that line points
+at.
 
-CRITICAL RULE — SPECULATIVE TENSE for the seed:
-The brief cannot KNOW specific moments from the student's life. So the
-essay seed must propose a TYPE of moment they could find, using
-speculative tense: "sometime in the last two years...", "maybe X,
-maybe Y...", "there was likely a moment when...". The student finds
-the moment; the brief names where to look. Never assert a specific
-moment happened.
-
-v7 Phase 3 (#13 part 2) reshape: produce ONE essay seed (not three
-angles). The renderer's fallback path still accepts the v6 entries[]
-shape from old cached briefs; new generations are pure v7.
+CORE PIVOT (Stream-A regen-v2):
+The title slot is NOT a meta-preamble like "Your essay starts —" or
+"The math-in-debate moment". It IS the actual opening sentence of the
+essay. Write it as the first line the admissions reader sees. The body
+then names the ONE concrete moment that line opens into.
 ${sparseAndFramingNote(ctx)}
 STUDENT PROFILE:
 ${profileBlock(ctx)}
@@ -750,32 +746,36 @@ ${profileBlock(ctx)}
 ${planBlock(ctx)}
 
 GOLD EXEMPLAR — match this prose-quality bar:
-  Student: Yerlan (same as Cards 01-02)
+  Student: Yerlan, Kazakhstan, GPA 3.7, AP Calc + Math Olympiad
+    regional medal (2024), debate captain.
   Output:
     kicker:  "03 · The essay only you can write"
-    headline: "The essay you should write doesn't exist yet — but the seed for it does."
-    lead:     "One specific kind of moment to find. Then it starts itself."
-    essaySeed.title: "The math-in-debate moment"
-    essaySeed.body: "Sometime in the last two years, something from a math class showed up inside a debate round you were running. Maybe a stat that turned the room. Maybe a calculation you did mid-rebuttal that made the other side stop. Maybe a piece of game theory that explained why a strategy worked. Find that exact moment — the one where the two halves of you actually met."
-    essaySeed.closer: "That's where the essay starts."
+    headline: "Here's the opening line. The rest is yours."
+    lead:     "One sentence to start. One moment to ground it."
+    essaySeed.title: "The day my AP Calc proof won a debate round."
+    essaySeed.body: "In your 2024 regional Math Olympiad year, calculus stopped being a class and started being a tool you reached for everywhere — including the debate stage. Open on that crossover moment: the round where a clean derivative did the rhetorical work nothing else could. Build out from there."
+    essaySeed.closer: "Open the doc. Write that first line."
 
 OUTPUT — emit a JSON object exactly matching this shape:
 {
   "kicker": "03 · The essay only you can write",
-  "headline": "string — 8 to 14 words. Names the essay's existence as a possibility, not a finished thing. 'The essay you should write doesn't exist yet — but the seed for it does.' is the template shape.",
-  "lead": "string — ONE sentence (max ~15 words). Drop-cap rendered.",
+  "headline": "string — 6 to 12 words. Frames the card. Do NOT say 'Your essay starts' or 'That's where the essay starts' (banned tautology with closer).",
+  "lead": "string — ONE sentence (max 15 words). Drop-cap rendered.",
   "essaySeed": {
-    "title": "string — short evocative title for the seed, max 6 words. ('The math-in-debate moment')",
-    "body": "string — 3 to 5 sentences in SPECULATIVE TENSE. Anchors to Card 02's pile-contrast / Card 01's identity claim. Proposes a TYPE of moment to find, without naming a specific moment we can't know existed. Uses 'sometime' / 'maybe' / 'probably' / 'there was likely' markers — at least 2 of them.",
-    "closer": "string — 1 sentence, 5 to 12 words. Imperative-with-permission: 'Find that moment.' / 'That's where it starts.' NOT coercive: 'Write this essay now' is forbidden."
+    "title": "string — ONE complete opening sentence for the essay. MAX 14 WORDS. This IS the first line of the essay, not a label for it. NEVER 'Your essay starts —' or any preamble shape.",
+    "body": "string — MAX 3 sentences. Each sentence ≤ 25 words. Names ONE specific moment grounded in intake: a concrete year, course, activity, project, or test result by name. NEVER 'sometime in the last two years' / 'maybe / perhaps / likely'. Commit to the moment.",
+    "closer": "string — ONE imperative sentence, MAX 10 words. Tells the student the literal next action ('Open the doc. Write that line.' / 'Type it. Don't edit yet.'). NOT 'That's where the essay starts.' (tautology). NOT 'Write this essay now.' (coercive)."
   }
 }
 
 ABSOLUTE RULES:
-- Single seed. No alternate angles, no "or instead try..." chaining.
-- body MUST contain ≥ 2 speculative-tense markers (sometime / maybe / probably / there was likely / there's likely / likely a moment / might have been / may have been).
-- No fake biographical specifics. All particulars must be intake-grounded.
-- DO NOT also emit an "entries" field. The v6 three-angles shape is intentionally retired in new generations.
+- title slot = the opening sentence itself, not a meta-label.
+- body uses concrete anchors (year / course / test / activity by name).
+  Zero hedging adverbs — they are now in the banned-vocab pool.
+- closer is a real action verb + object in ≤ 10 words. NO repeat of the
+  title's phrasing.
+- DO NOT also emit an "entries" field. The v6 three-angles shape is
+  intentionally retired in new generations.
 
 ${SHARED_JSON_RULES}`,
   validate: (raw, ctx) => {
@@ -785,24 +785,44 @@ ${SHARED_JSON_RULES}`,
     if (!seed || typeof seed !== "object") {
       return { ok: false, reason: "essaySeed object missing" };
     }
+    const title = typeof seed.title === "string" ? seed.title.trim() : "";
+    if (title.length < 6) {
+      return { ok: false, reason: "essaySeed.title missing or too short" };
+    }
+    // Title must be a real opening sentence — not a preamble shape.
+    if (/^(your essay starts|the .* moment$|here'?s where|that'?s where)/i.test(title)) {
+      return { ok: false, reason: "essaySeed.title is a meta-preamble; emit the actual opening sentence of the essay (≤14 words)" };
+    }
+    if (title.split(/\s+/).length > 14) {
+      return { ok: false, reason: `essaySeed.title >14 words (${title.split(/\s+/).length})` };
+    }
     const body = typeof seed.body === "string" ? seed.body : "";
     if (body.trim().length < 30) {
       return { ok: false, reason: "essaySeed.body missing or too short" };
     }
-    // Body MUST use speculative tense in at least 2 places.
-    const specRe = /\b(sometime|maybe|probably|there was likely|there's likely|likely a moment|might have been|may have been)\b/gi;
-    const matches = body.match(specRe) ?? [];
-    if (matches.length < 2) {
-      return {
-        ok: false,
-        reason: `essaySeed.body must use speculative tense ≥ 2 times (sometime/maybe/probably/there was likely) — found ${matches.length}. Concrete biographical assertions are forbidden.`,
-      };
+    // Body sentence cap — max 3 sentences.
+    const bodySentences = body.split(/(?<=[.!?])\s+/).filter((s) => s.trim().length > 0);
+    if (bodySentences.length > 3) {
+      return { ok: false, reason: `essaySeed.body >3 sentences (${bodySentences.length})` };
     }
-    // Closer must NOT be a coercive imperative.
+    // Closer present + ≤10 words + not coercive + not tautology with title.
     const closer = typeof seed.closer === "string" ? seed.closer.trim() : "";
-    if (closer && /^(Write this|Submit|Send|Publish)\b/i.test(closer)) {
-      return { ok: false, reason: "essaySeed.closer too coercive — use suggestion mood (e.g., 'Find that moment.' / 'That's where it starts.')" };
+    if (closer.length < 4) {
+      return { ok: false, reason: "essaySeed.closer missing or too short" };
     }
+    const closerWords = closer.split(/\s+/);
+    if (closerWords.length > 10) {
+      return { ok: false, reason: `essaySeed.closer >10 words (${closerWords.length})` };
+    }
+    if (/^(Write this|Submit|Send|Publish)\b/i.test(closer)) {
+      return { ok: false, reason: "essaySeed.closer too coercive — use a small concrete action ('Open the doc.' / 'Type that line.')" };
+    }
+    if (/that'?s where the essay starts/i.test(closer)) {
+      return { ok: false, reason: "essaySeed.closer tautologically restates the title — emit a real next-action imperative" };
+    }
+    // Now apply standard semantic check — but allow speculative tokens
+    // ONLY where they appear in intake fields the student wrote. The
+    // hedging-pool is enforced as part of the default scan.
     return semanticCheck(obj, ctx, { mustNameIntakeField: true });
   },
 };
