@@ -273,62 +273,66 @@ export const compactAward = (s: AwardSource): string | null => {
   return null;
 };
 
-/* ─── Typical-open month per known flagship program ─────────────────────
+/* ─── Typical-deadline month per known flagship program ─────────────────
  *
  * For flagship annual scholarships in their off-cycle, the Discover card
- * renders "Annual · typical Oct" instead of "Annual · TBD" when we can
- * pin the typical month from public history. Numbers below come from
- * the published application windows (open date, not deadline) for
- * recent cycles — they're directional, not contractual.
+ * renders "Annual · deadline ~Oct" instead of "Annual · TBD" when we
+ * can pin the typical month from public history. Months are when the
+ * APPLICATION CLOSES — what the user actually needs to plan against —
+ * not when applications open. (Earlier draft of this map had open dates,
+ * which was the wrong anchor; Samuel caught it 2026-05-24.)
  *
- * When a program legitimately has a varying or split window (Fulbright
- * country-by-country, MEXT Embassy vs University tracks), we pick the
- * single most-common month so the label still gives a planning anchor.
+ * When a program legitimately has a varying or split deadline window
+ * (Fulbright country-by-country, MEXT Embassy vs University tracks,
+ * Heinrich Böll two intake rounds), we pick the most-common deadline
+ * month so the label still gives a planning anchor — better directional
+ * than nothing.
  *
  * If you add a program, also add its regex to KNOWN_ANNUAL_PROGRAMS_RE
  * in supabase/functions/_shared/scholarshipFields.ts so it gets the
  * is_flagship_program=true flag (otherwise the bypass + the label both
  * miss it).
  */
-const TYPICAL_OPEN_MONTH_RULES: ReadonlyArray<{ pattern: RegExp; month: string }> = [
-  { pattern: /\bchevening\b/i,                                       month: "Sep" },
-  { pattern: /\bfulbright\b/i,                                        month: "May" },
-  { pattern: /\bdaad\b|\bdeutschlandstipendium\b/i,                   month: "Sep" },
-  { pattern: /\bheinrich b[oö]ll\b/i,                                 month: "Mar" },
-  { pattern: /\bswiss government\b/i,                                 month: "Sep" },
-  { pattern: /\berasmus mundus\b/i,                                   month: "Oct" },
-  { pattern: /\bmastercard foundation\b/i,                            month: "Jan" },
-  { pattern: /\bmext\b/i,                                              month: "May" },
-  { pattern: /\bkgsp\b|\bkorean government scholarship\b/i,           month: "Feb" },
-  { pattern: /\bgates cambridge\b/i,                                  month: "Sep" },
-  { pattern: /\brhodes scholar/i,                                     month: "Jun" },
-  { pattern: /\bclarendon\b/i,                                        month: "Sep" },
-  { pattern: /\bvanier\b/i,                                            month: "Aug" },
-  { pattern: /\beiffel\b/i,                                           month: "Oct" },
-  { pattern: /\bknight[-\s]?hennessy\b/i,                             month: "May" },
-  { pattern: /\bschwarzman\b/i,                                       month: "May" },
+const TYPICAL_DEADLINE_MONTH_RULES: ReadonlyArray<{ pattern: RegExp; month: string }> = [
+  { pattern: /\bchevening\b/i,                                       month: "Nov" }, // early November
+  { pattern: /\bfulbright\b/i,                                        month: "Oct" }, // country-specific; many close Sep-Oct
+  { pattern: /\bdaad\b|\bdeutschlandstipendium\b/i,                   month: "Oct" }, // DAAD STEM track
+  { pattern: /\bheinrich b[oö]ll\b/i,                                 month: "Mar" }, // two intakes; March is the broader one
+  { pattern: /\bswiss government\b/i,                                 month: "Nov" }, // ESKAS, varies by country Aug-Dec
+  { pattern: /\berasmus mundus\b/i,                                   month: "Jan" },
+  { pattern: /\bmastercard foundation\b/i,                            month: "Mar" }, // varies by partner; most Mar-May
+  { pattern: /\bmext\b/i,                                              month: "May" }, // Embassy track recommendation
+  { pattern: /\bkgsp\b|\bkorean government scholarship\b/i,           month: "Mar" }, // Embassy track
+  { pattern: /\bgates cambridge\b/i,                                  month: "Dec" }, // US deadline mid-Oct; intl Dec — use Dec
+  { pattern: /\brhodes scholar/i,                                     month: "Sep" }, // US Oct; many countries Sep
+  { pattern: /\bclarendon\b/i,                                        month: "Jan" }, // varies by department; Jan is broad
+  { pattern: /\bvanier\b/i,                                            month: "Nov" }, // institutional submission deadline
+  { pattern: /\beiffel\b/i,                                           month: "Jan" },
+  { pattern: /\bknight[-\s]?hennessy\b/i,                             month: "Oct" }, // ~early Oct (Oct 6-8 in 2026)
+  { pattern: /\bschwarzman\b/i,                                       month: "Sep" }, // Sep for non-Chinese applicants
   { pattern: /\bczech government scholar/i,                           month: "Sep" },
   { pattern: /\bcommonwealth (scholarship|shared|master)/i,           month: "Oct" },
   { pattern: /\bjoint japan\/world bank\b/i,                          month: "Feb" },
   { pattern: /\baga khan\b/i,                                          month: "Mar" },
   { pattern: /\bswedish institute\b/i,                                month: "Feb" },
   { pattern: /\borange knowledge\b|\bholland scholar/i,               month: "Feb" },
-  { pattern: /\baustralia awards\b/i,                                 month: "Feb" },
-  { pattern: /\byenching\b/i,                                          month: "Sep" },
+  { pattern: /\baustralia awards\b/i,                                 month: "Apr" },
+  { pattern: /\byenching\b/i,                                          month: "Dec" },
   { pattern: /\btrudeau\b/i,                                           month: "Dec" },
   { pattern: /\bp\.?d\.?\s?soros\b/i,                                 month: "Oct" },
-  { pattern: /\bjack kent cooke\b/i,                                  month: "Oct" },
+  { pattern: /\bjack kent cooke\b/i,                                  month: "Nov" },
   { pattern: /\bmarshall scholar/i,                                   month: "Sep" },
 ];
 
-/** Returns the typical month a flagship program opens applications, or
- *  null if the program isn't recognised. Matched against
- *  "{scholarship_name} | {provider_name}" so either side can trigger. */
-export function typicalOpenMonth(
+/** Returns the typical DEADLINE month for a flagship program (when its
+ *  application closes), or null if the program isn't recognised. Matched
+ *  against "{scholarship_name} | {provider_name}" so either side can
+ *  trigger. */
+export function typicalDeadlineMonth(
   scholarshipName: string | null | undefined,
   providerName: string | null | undefined,
 ): string | null {
   const hay = `${scholarshipName ?? ""} | ${providerName ?? ""}`;
-  const hit = TYPICAL_OPEN_MONTH_RULES.find((r) => r.pattern.test(hay));
+  const hit = TYPICAL_DEADLINE_MONTH_RULES.find((r) => r.pattern.test(hay));
   return hit ? hit.month : null;
 }
