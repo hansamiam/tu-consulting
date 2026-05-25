@@ -122,8 +122,20 @@ export const HeroCard = ({
   return (
     <section
       aria-label={t("Featured scholarship", "Рекомендуемая стипендия")}
-      className="relative w-full rounded-2xl overflow-hidden mb-6 ring-1 ring-border/60 shadow-sm"
+      className="
+        relative w-full rounded-2xl overflow-hidden mb-6
+        ring-1 ring-[hsl(var(--navy-deep)/0.18)]
+        shadow-[0_12px_28px_-12px_hsl(var(--navy-deep)/0.22),0_4px_8px_-2px_hsl(var(--navy-deep)/0.08)]
+        transition-shadow duration-300
+        hover:shadow-[0_18px_36px_-12px_hsl(var(--navy-deep)/0.28),0_6px_12px_-2px_hsl(var(--navy-deep)/0.10)]
+      "
     >
+      {/* Gold hairline accent — top edge brand presence without color noise. */}
+      <div
+        className="absolute top-0 inset-x-0 h-px z-20 bg-gradient-to-r from-transparent via-gold/55 to-transparent"
+        aria-hidden
+      />
+
       {/* Hero strip — same idiom as ExpandedScholarshipDialog */}
       <div className={`relative bg-gradient-to-br ${accent} text-white`}>
         {scholarship.cover_image_url ? (
@@ -157,6 +169,14 @@ export const HeroCard = ({
         />
         <span
           className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent"
+          aria-hidden
+        />
+
+        {/* One-shot shine — a slow diagonal highlight sweeps across once
+            on mount. Pure visual polish; reduced-motion users skip via
+            the prefers-reduced-motion guard in src/index.css. */}
+        <span
+          className="hero-shine pointer-events-none absolute inset-0 z-[1]"
           aria-hidden
         />
 

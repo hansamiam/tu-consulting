@@ -238,6 +238,30 @@
   .bg-canvas-soft { background-color: hsl(var(--canvas-soft)); }
   .bg-surface { background-color: hsl(var(--surface)); }
 
+  /* HeroCard one-shot shine — a slow diagonal highlight sweeps across the
+     featured-scholarship banner once on mount. Premium polish without
+     looping motion that'd burn attention. Respects prefers-reduced-motion. */
+  .hero-shine {
+    background: linear-gradient(
+      115deg,
+      transparent 0%,
+      transparent 38%,
+      hsl(41 61% 65% / 0.16) 50%,
+      transparent 62%,
+      transparent 100%
+    );
+    background-size: 220% 100%;
+    background-position: 120% 0;
+    animation: hero-shine-sweep 2.4s cubic-bezier(0.22, 1, 0.36, 1) 0.4s 1 forwards;
+  }
+  @keyframes hero-shine-sweep {
+    from { background-position: 120% 0; }
+    to { background-position: -40% 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-shine { animation: none; background: none; }
+  }
+
   /* BriefStory print mode — stack the 7 absolute-positioned slides
      vertically, full bleed, one per page. The deck chrome (top bar,
      sidebars, footer, frame controls, tap zones, progress) is hidden
