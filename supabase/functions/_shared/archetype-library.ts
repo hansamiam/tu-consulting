@@ -51,7 +51,10 @@ export type ArchetypeId =
   | "open-question"
   | "tight-lane"
   | "recoverer"
-  | "contrarian";
+  | "contrarian"
+  | "family-anchor"
+  | "caregiver"
+  | "working-kid";
 
 export interface Archetype {
   id: ArchetypeId;
@@ -184,6 +187,28 @@ export const ARCHETYPE_LIBRARY: ReadonlyArray<Archetype> = [
     tagline: "You argue with the room. Schools eventually need that.",
     color: "#3A414E", // charcoal-navy — independent, gray-blue dissent
   },
+  // Three archetypes added 2026-05-25 after the adversary audit surfaced
+  // real applicant shapes the original 16 missed. Each is detector-gated
+  // on intake-corpus keyword patterns that students already write into
+  // existing form fields — no new questions added.
+  {
+    id: "family-anchor",
+    name: "The Family Anchor",
+    tagline: "You're the load-bearing kid. Schools eventually notice.",
+    color: "#7C5A48", // warm earth-brown — grounded, caretaker
+  },
+  {
+    id: "caregiver",
+    name: "The Caregiver",
+    tagline: "You learned what most adults never have to.",
+    color: "#5B7A8B", // dusty sea-blue — quiet weight, gentle
+  },
+  {
+    id: "working-kid",
+    name: "The Working Kid",
+    tagline: "You learned what work means before your classmates.",
+    color: "#806045", // bronze-tan — labor, hands, time
+  },
 ];
 
 /** Quick lookup by id. Throws if the id isn't in the library — that
@@ -283,7 +308,21 @@ const CONTRARIAN_KEYWORDS =
   /\b(disagree|argued? against|challenged|questioned|opposed|dissent|contrarian|skeptic|push.?back|protest|controversial|unpopular opinion)\b/i;
 
 const RECOVERY_KEYWORDS =
-  /\b(survived|recovered|after.{1,20}(illness|surgery|accident|loss|death|divorce|moving|moved)|despite|came back|second chance|relapse|sober|broke up|got back|kept going)\b/i;
+  /\b(survived|recovered|after.{1,20}(illness|surgery|accident|loss|death|divorce|moving|moved)|despite|came back|second chance|relapse|sober|broke up|got back|kept going|missed (a|one|two) (year|semester|month)|repeated (a|the) (year|grade)|gap year|lost a year|displaced|refugee|war broke|crisis at home|family crisis|family emergency)\b/i;
+
+// Added 2026-05-25 — adversary audit found the original detectors missed
+// real applicant shapes. Each pattern is intentionally permissive on what
+// students write into existing fields (extracurriculars, background,
+// careerGoal) so the rewrite is fully backend; no new form questions.
+
+const FAMILY_ANCHOR_KEYWORDS =
+  /\b(took care of (my )?(younger )?(siblings?|brother|sister|cousin)|raised (my )?(siblings?|brother|sister)|translated for (my )?(parents?|family|mom|dad|grand)|oldest (sibling|child|of)|first.?gen|first.?generation|parents.? (don.?t|do not) speak|parents.? work(ed)? (two|multiple) jobs|stepped up for|interpreter for (my )?(family|parents))\b/i;
+
+const CAREGIVER_KEYWORDS =
+  /\b((took care of|cared for|caregiver|helped (during|with)|looked after).{0,40}(illness|surgery|chronic|disability|disabled|mental health|depression|anxiety|cancer|treatment|alzheimer|dementia|stroke|hospital|nursing|dialysis|chemo)|terminal diagnosis|in remission|special needs (sibling|brother|sister|cousin|family))\b/i;
+
+const WORKING_KID_KEYWORDS =
+  /\b(worked (at|in|as|during|after|through) (school|class|high.?school|weekends|nights|summers?)|part.?time job|full.?time job (in|during).{0,15}school|delivered (food|packages|pizza)|cashier|bagger|barista|babysit(ting|ter)|nanny|waited tables|waiter|waitress|server at|paid (for|my|the) (rent|tuition|books|food|bills)|to (help with|cover|pay for) rent)\b/i;
 
 const FOREIGN_LANE_KEYWORDS =
   /\b(third.?culture|bilingual|trilingual|multilingual|grew up in.{1,30}(and|then)|lived in (multiple|two|three|several)|immigrant|expat|exchange|international school|moved (to|from|here))\b/i;
@@ -484,6 +523,42 @@ function detectOpenQuestion(input: ArchetypeDetectionInput): ArchetypeMatch | nu
   };
 }
 
+function detectFamilyAnchor(input: ArchetypeDetectionInput): ArchetypeMatch | null {
+  const corpus = buildCorpus(input);
+  if (FAMILY_ANCHOR_KEYWORDS.test(corpus)) {
+    return {
+      id: "family-anchor",
+      confidence: 80,
+      reason: "intake names load-bearing family role (sibling care, translation, first-gen pull)",
+    };
+  }
+  return null;
+}
+
+function detectCaregiver(input: ArchetypeDetectionInput): ArchetypeMatch | null {
+  const corpus = buildCorpus(input);
+  if (CAREGIVER_KEYWORDS.test(corpus)) {
+    return {
+      id: "caregiver",
+      confidence: 82,
+      reason: "intake names care-taking for someone with illness / disability / chronic condition",
+    };
+  }
+  return null;
+}
+
+function detectWorkingKid(input: ArchetypeDetectionInput): ArchetypeMatch | null {
+  const corpus = buildCorpus(input);
+  if (WORKING_KID_KEYWORDS.test(corpus)) {
+    return {
+      id: "working-kid",
+      confidence: 78,
+      reason: "intake names paid work during HS — necessity-coded, not resume-coded",
+    };
+  }
+  return null;
+}
+
 function detectQuietBuilder(input: ArchetypeDetectionInput): ArchetypeMatch | null {
   // Quiet Builder fires when there's activity content but NO obvious
   // leadership / competition signal. The student is doing stuff but
@@ -513,12 +588,17 @@ export function detectArchetype(
   input: ArchetypeDetectionInput,
 ): ArchetypeMatch | null {
   const detectors: Array<(i: ArchetypeDetectionInput) => ArchetypeMatch | null> = [
+    // High-specificity heuristics first — these fire on strong signals
+    // that the more general detectors would also accept.
+    detectCaregiver,
+    detectFamilyAnchor,
     detectBridgeDomainKid,
     detectTightLane,
     detectOpenQuestion,
     detectCompetitionKid,
     detectForeignLaneNative,
     detectRecoverer,
+    detectWorkingKid,
     detectSelfTaught,
     detectOperator,
     detectCommunityAnchor,
