@@ -420,4 +420,48 @@
   #printable-report [class*="absolute left-0"][class*="bg-"] {
     background: #333 !important;
   }
+
+  /* ── Full-page print pass (Stream F 2026-05-25) ─────────────────────
+     Applied when #printable-report is NOT present (e.g. user hits
+     Cmd+P from the strategy-report page header). Hides all nav chrome,
+     resets surfaces for ink economy, adds A4 page setup. The
+     #printable-report block above already handles targeted-print mode. */
+
+  /* Hide nav chrome, share controls, tabs, sticky bars, share buttons.
+     data-print-hide attr is the opt-in escape hatch for any element
+     that must not appear in the printed output. */
+  nav,
+  header[role="banner"],
+  aside,
+  [data-print-hide],
+  .sticky {
+    display: none !important;
+  }
+
+  /* Hide action buttons outside printable report context (masthead
+     share/print CTAs, etc.) — handled by .print:hidden on the elements
+     themselves, but belt + suspenders here. */
+  [data-print-hide] button,
+  [data-print-hide] a {
+    display: none !important;
+  }
+
+  /* Page setup — A4, generous margins for readability */
+  @page {
+    size: A4;
+    margin: 1.5cm 1.8cm;
+  }
+
+  /* Section breaks — avoid breaking inside, allow breaks between */
+  section,
+  [data-print-section] {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  section + section {
+    page-break-before: auto;
+  }
+
+  /* Charts: monochrome-safe form */
+  svg { color: #000 !important; }
 }

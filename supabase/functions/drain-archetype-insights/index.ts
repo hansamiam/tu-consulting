@@ -36,7 +36,7 @@ import {
   type ArchetypeId,
 } from '../_shared/archetype-library.ts'
 
-const PROMPT_VERSION = 1
+const PROMPT_VERSION = 2
 const DEFAULT_BATCH_SIZE = 8
 const DEFAULT_VISIBILITY_TIMEOUT_S = 90 // long enough for the LLM call
 const MAX_RETRIES = 3
@@ -147,17 +147,44 @@ function buildPrompt(archetypeId: ArchetypeId, s: ScholarshipFacts): { system: s
   if (s.strategy_notes) facts.push(`Strategy notes: ${s.strategy_notes.slice(0, 400)}`)
   if (s.common_rejection_reasons) facts.push(`Common rejection reasons: ${s.common_rejection_reasons.slice(0, 300)}`)
 
+  // v2 prompt (2026-05-25): v1 produced LinkedIn-coach output ("Your X
+  // will shine in Y") instead of the dry observational fortune-cookie
+  // Sam asked for. v2: forbid praise/encouragement vocabulary, require a
+  // specific element from the facts, model the older-sibling tone with
+  // concrete bad/good examples.
   const system = [
-    'You write one-sentence "fortune cookie" insights for scholarship cards.',
-    'Each insight applies to ONE student archetype reading ONE scholarship.',
-    'Style: a single short sentence, ≤ 25 words, conversational and confident.',
-    'BANNED: fit predictions ("you would be competitive"), eligibility claims',
-    '("you qualify"), numeric claims not in the facts, multi-sentence outputs,',
-    'questions, second-person commands like "you should". No emoji. No quotes.',
-    'The insight must cite something SPECIFIC about THIS scholarship that this',
-    'archetype in particular should know — not a generic platitude that fits',
-    'any scholarship.',
-  ].join(' ')
+    'You write one-sentence observations about how a specific student archetype reads a specific scholarship\'s selection signals.',
+    '',
+    'NOT advice. NOT a pep talk. NOT a coaching tip. An observation — wry, dry, slightly literary — that sounds like an older sibling who\'s seen this scholarship\'s outcomes, naming the angle THIS archetype tends to under- or over-emphasize.',
+    '',
+    'Length: 14–22 words. Exactly one sentence.',
+    '',
+    'BANNED OPENERS — never start with:',
+    '- "Your <noun>" (e.g. "Your unique perspective", "Your discipline", "Your initiative") — this is coach-talk.',
+    '- "As a <archetype>"',
+    '- Any praise of the archetype before getting to the observation.',
+    '',
+    'BANNED VOCAB:',
+    '- "shine", "compelling", "anchor", "superpower", "key to success", "strongest asset", "stand out", "set yourself apart", "transform", "elevate"',
+    '- Predictive claims: "you will be competitive", "your chances", "your odds", "your fit"',
+    '- Numeric claims not in the FACTS block.',
+    '- Multi-sentence outputs, questions, "you should" commands, emoji, quotes.',
+    '',
+    'REQUIRED:',
+    '- Cite one CONCRETE element from the FACTS block (the language requirement, the panel\'s known taste, the specific demographic gate, the funding cap, the field restriction, the timing window, the proposal format, etc.).',
+    '- Frame the archetype\'s typical mistake OR typical leverage AGAINST that specific element.',
+    '- Read like a single observation, not a checklist.',
+    '',
+    'GOOD examples (for tone — content varies by pair):',
+    '- "Bridge-domain kids tend to lead with one half here; the panel actually reads for the seam between."',
+    '- "Operators crowd these applications with founded-X bullets; this fund weighs one specific operational outcome instead."',
+    '- "Recoverers underweight the recovery itself — this committee uses it as proof of trajectory."',
+    '',
+    'BAD examples (what NOT to write):',
+    '- "Your unique perspective will shine in your application."',
+    '- "As a Self-Taught student, your initiative is your superpower."',
+    '- "Building strong connections is the key to success here."',
+  ].join('\n')
 
   const user = [
     `ARCHETYPE: ${arch.name} — ${arch.tagline}`,
@@ -165,37 +192,48 @@ function buildPrompt(archetypeId: ArchetypeId, s: ScholarshipFacts): { system: s
     'SCHOLARSHIP FACTS:',
     ...facts,
     '',
-    `Write one sentence (≤25 words) for a ${arch.name} reading this scholarship's card.`,
-    'It should reference a specific selection-signal cue from the facts above (ideal candidate, how to win,',
-    'strategy notes, or rejection reasons) and frame how this archetype should approach it.',
-    'Do NOT predict their fit; do NOT make eligibility claims; do NOT cite numbers that aren\'t in the facts.',
+    `Write ONE observation (14–22 words) about how a ${arch.name} reads this scholarship's selection signals.`,
+    'Anchor on ONE concrete element from the FACTS block. Voice: dry, observational, older-sibling. No praise openers, no coaching vocab.',
     'Output ONLY the sentence. No preamble. No quotes.',
   ].join('\n')
 
   return { system, user }
 }
 
-/** Output validator. Returns the cleaned text or null if it fails. */
+/** Output validator. Returns the cleaned text or null if it fails.
+ *
+ *  v2 (2026-05-25): tightened to reject the LinkedIn-coach patterns v1
+ *  produced. "Your X will shine" / "your unique perspective" / "key to
+ *  success" / "strongest asset" — all banned. */
 function validateInsight(raw: string): { ok: true; text: string } | { ok: false; reason: string } {
   const stripped = raw.trim().replace(/^["'"]+|["'"]+$/g, '').replace(/\s+/g, ' ')
   if (!stripped) return { ok: false, reason: 'empty output' }
   // Single sentence — count sentence-terminating punctuation. Allow ONE.
   const sentenceTerms = (stripped.match(/[.!?](?=\s|$)/g) || []).length
   if (sentenceTerms > 1) return { ok: false, reason: 'multi-sentence' }
-  // Length cap.
+  // Length window.
   const wordCount = stripped.split(/\s+/).length
-  if (wordCount > 28) return { ok: false, reason: `too long (${wordCount} words)` }
-  if (wordCount < 4) return { ok: false, reason: `too short (${wordCount} words)` }
-  // Banned predictive vocab.
+  if (wordCount > 26) return { ok: false, reason: `too long (${wordCount} words)` }
+  if (wordCount < 8) return { ok: false, reason: `too short (${wordCount} words)` }
+  // Banned coach-talk openers — the v1 failure mode.
+  if (/^your\s+\w+/i.test(stripped)) return { ok: false, reason: 'starts with "Your <noun>" (coach-talk)' }
+  if (/^as\s+a\s+/i.test(stripped)) return { ok: false, reason: 'starts with "As a"' }
+  // Banned predictive / fit-claim vocab.
   if (/\byou\s+(would|will|could|might)\s+(be\s+)?(competitive|a\s+strong|qualify|win)/i.test(stripped)) {
     return { ok: false, reason: 'predictive fit claim' }
   }
-  if (/\byour\s+(odds|chances|fit)\b/i.test(stripped)) {
+  if (/\byour\s+(odds|chances|fit|application\s+will)\b/i.test(stripped)) {
     return { ok: false, reason: 'odds/fit claim' }
   }
+  // Banned coach-talk vocab (LinkedIn / pep-talk smell).
+  if (/\b(shine|superpower|strongest\s+asset|key\s+to\s+success|stand\s+out\s+from|compelling\s+pitch|set\s+yourself\s+apart|transform\s+your)\b/i.test(stripped)) {
+    return { ok: false, reason: 'banned coach-talk vocab' }
+  }
   if (/\?$/.test(stripped)) return { ok: false, reason: 'question' }
-  // Banned AI-template stack we already maintain.
-  if (/\bas\s+a\s+\b/i.test(stripped)) return { ok: false, reason: '"as a [archetype]" hedge' }
+  // Banned AI-template "As a <archetype>" hedge anywhere in sentence.
+  if (/\bas\s+a\s+(self|quiet|tight|late|foreign|bridge|community|working|caregiver|family)/i.test(stripped)) {
+    return { ok: false, reason: '"as a [archetype]" hedge' }
+  }
   return { ok: true, text: stripped }
 }
 

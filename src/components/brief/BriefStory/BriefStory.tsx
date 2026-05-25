@@ -52,6 +52,8 @@ import { ArrowLeft, ArrowRight, Compass, Pause, Play } from "lucide-react";
 import type { BriefStoryProps } from "./types";
 import { buildStoryData } from "./utils";
 import { useDeck } from "./useDeck";
+import { tokenToIso } from "@/lib/adjacent-countries";
+import { useAdjacentSuggestions } from "@/lib/use-adjacent-suggestions";
 
 // ─── Type scale ────────────────────────────────────────────────────────
 // Type scale for Story cards. Sized for the 400px-wide 9:16 frame.
@@ -402,6 +404,14 @@ const WhereYouBelong = ({
   countries: Array<{ flag: string; name: string; count: number; anchors?: string }>;
 }) => {
   const totalSchools = countries.reduce((acc, c) => acc + c.count, 0);
+
+  // Sparse: fewer than 3 countries — show adjacent-tier suggestions.
+  const isSparse = countries.length < 3;
+  const primaryIso = isSparse && countries[0]
+    ? tokenToIso(countries[0].name)
+    : null;
+  const adjacentSamples = useAdjacentSuggestions(primaryIso);
+
   return (
     <div className="flex-1 min-h-0 flex flex-col">
       <h2 className={`${HEADING} text-foreground m-0 mb-4 text-balance`}>
@@ -421,8 +431,8 @@ const WhereYouBelong = ({
         </div>
       )}
       {/* Larger flag tiles per Stream C C.1 — country rows carry more
-          visual weight; Stream E will append an adjacency strip later. */}
-      <div className="overflow-y-auto">
+          visual weight; sparse adjacency strip rendered below. */}
+      <div className="overflow-y-auto flex-shrink">
         {countries.map((c, i) => (
           <div
             key={`${c.name}-${i}`}
@@ -443,8 +453,48 @@ const WhereYouBelong = ({
           </div>
         ))}
       </div>
+
+      {/* Sparse adjacency strip — horizontal scroll, 3 mini-cards */}
+      {isSparse && adjacentSamples.length > 0 && (
+        <div className="mt-3 shrink-0">
+          <p className="text-[10px] uppercase tracking-[0.12em] font-semibold text-foreground/45 m-0 mb-2">
+            You might also fit
+          </p>
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+            {adjacentSamples.map((sample) => (
+              <Link
+                key={sample.iso}
+                to={`/discover?country=${encodeURIComponent(sample.sampleSchool ? (STORY_COUNTRY_EN[sample.iso] ?? sample.iso) : sample.iso)}`}
+                className="shrink-0 flex flex-col gap-0.5 rounded-lg border border-border/60 bg-foreground/[0.03] hover:border-gold/50 hover:bg-gold/8 px-3 py-2 transition-colors min-w-[100px] max-w-[130px]"
+              >
+                <span className="font-heading font-semibold text-[12px] text-foreground leading-tight">
+                  {sample.name}
+                </span>
+                {sample.sampleSchool && (
+                  <span className="font-heading text-[10.5px] text-foreground/55 leading-snug line-clamp-2">
+                    {sample.sampleSchool}
+                  </span>
+                )}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
+};
+
+// English country names by ISO — used for Discover link params in the story frame.
+const STORY_COUNTRY_EN: Record<string, string> = {
+  DEU: "Germany", NLD: "Netherlands", GBR: "United Kingdom",
+  USA: "United States", CAN: "Canada", AUS: "Australia",
+  NZL: "New Zealand", IRL: "Ireland", TUR: "Türkiye",
+  HUN: "Hungary", POL: "Poland", CZE: "Czechia",
+  AUT: "Austria", CHE: "Switzerland", FRA: "France",
+  ITA: "Italy", ESP: "Spain", PRT: "Portugal",
+  SWE: "Sweden", NOR: "Norway", DNK: "Denmark",
+  FIN: "Finland", EST: "Estonia", BEL: "Belgium",
+  SGP: "Singapore", JPN: "Japan", KOR: "South Korea",
 };
 
 const EssayCard = ({

@@ -201,7 +201,7 @@ export function BriefMasthead({
             still works as a printed PDF page-1. Pro-only download is a soft
             upsell; non-Pro users see the same button leading to the comparison
             modal via the parent dashboard's Pro-upgrade flow. */}
-        <div className="mt-6 flex flex-wrap items-center gap-2 print:hidden">
+        <div className="mt-6 flex flex-wrap items-center gap-2 print:hidden" data-print-hide>
           {onShare && (
             <Button
               variant="outline"
@@ -223,6 +223,7 @@ export function BriefMasthead({
             onClick={handlePrint}
             disabled={isStreaming}
             className="gap-1.5 h-9"
+            data-print-hide
             title={t("Print or save as PDF via your browser", "Печать или PDF через браузер", isRu)}
           >
             <Printer className="w-3.5 h-3.5" />
@@ -243,6 +244,13 @@ export function BriefMasthead({
             </Button>
           )}
         </div>
+        <p className="text-[11px] text-muted-foreground mt-2" data-print-hide>
+          {t(
+            "Opens print dialog — choose \"Save as PDF\" for download.",
+            "Открывает диалог печати — выберите «Сохранить как PDF» для скачивания.",
+            isRu,
+          )}
+        </p>
       </div>
     </motion.section>
   );

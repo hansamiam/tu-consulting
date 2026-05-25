@@ -31,6 +31,11 @@ verify_jwt = false
 # requireAdminOrService(req). Letting it own auth.
 verify_jwt = false
 
+[functions.drain-archetype-insights]
+# Self-gates via requireAdminOrService(req). Cron-driven (30s) + manual
+# admin-UI invocation. Letting it own auth.
+verify_jwt = false
+
 [functions.send-transactional-email]
 verify_jwt = true
 
