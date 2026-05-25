@@ -140,7 +140,10 @@ export const ARCHETYPE_LIBRARY: ReadonlyArray<Archetype> = [
   {
     id: "quant",
     name: "The Quant",
-    tagline: "You're not 'good at math.' You're inside it.",
+    // 2026-05-25: Samuel called out "You're not 'good at math.' You're
+    // inside it." as classic ChatGPT antithesis-slop ("not-X, but-Y").
+    // Replaced with a direct identity statement — no "not/but" rhetoric.
+    tagline: "Math is your native language.",
     color: "#1D3A5C", // deep navy — analytical, precise
   },
   {
