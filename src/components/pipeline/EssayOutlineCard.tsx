@@ -123,18 +123,12 @@ export const EssayOutlineCard = ({ scholarshipName, essayPrompt, essayTitle, wor
     onInsert(`## ${s.title} (~${s.suggested_words} words)\n_${s.hint}_\n\n`);
   };
 
+  // 2026-05-25: "Generate outline" CTA archived per Sam — feature
+  // returning in a future update. Hide the component when no outline
+  // is loaded (the only entry point was this button). Once we revive
+  // the outline flow, restore the Button branch below.
   if (!outline && !loading) {
-    return (
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={requestOutline}
-        className="gap-1.5"
-      >
-        <ListTree className="w-3.5 h-3.5" />
-        {t("Generate outline", "Получить структуру")}
-      </Button>
-    );
+    return null;
   }
 
   return (

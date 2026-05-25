@@ -510,34 +510,11 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                 <span className="text-[10px] tabular-nums text-muted-foreground/70">{rows.length}</span>
               </div>
 
-              {/* Two-mode toggle now — Calendar mode retired in favor
-                  of the always-visible MiniDeadlineCalendar below the
-                  list. Stage groups by status; Deadline is a flat list
-                  sorted by date. */}
-              <div className="inline-flex items-center w-full rounded-md border border-border bg-card overflow-hidden mb-3">
-                <button
-                  type="button"
-                  onClick={() => setBoardView("category")}
-                  className={`flex-1 h-7 text-[11px] font-medium transition-colors ${
-                    boardView === "category"
-                      ? "bg-foreground/[0.06] text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {t("Stage", "Этап")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBoardView("list")}
-                  className={`flex-1 h-7 text-[11px] font-medium transition-colors ${
-                    boardView === "list"
-                      ? "bg-foreground/[0.06] text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {t("Deadline", "Дедлайн")}
-                </button>
-              </div>
+              {/* 2026-05-25: Stage / Deadline view toggle retired.
+                  Both views were nearly identical at the saved-list scale
+                  Sam ships against — the difference wasn't worth a toggle.
+                  Defaulting to "category" (Stage) since it groups by
+                  status, which is what users glance at first. */}
 
               {(() => {
                 // Collapse threshold — a bucket showing more than this
