@@ -4055,9 +4055,9 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                                   "Читаю ваш профиль и брифинг — через секунду подготовлю отправную точку.")
                               : referProfile
                               ? (pathwayContent && pathwayContent.length > 200
-                                  ? t(`I have your profile and your strategy brief in front of me. Ask me anything — applications, essays, funding, tests, visa.`,
+                                  ? t(`I have your profile and your strategy in front of me. Ask me anything — applications, essays, funding, tests, visa.`,
                                       `У меня уже есть ваш профиль и стратегический отчёт. Задайте любой вопрос — заявки, эссе, финансирование, тесты, виза.`)
-                                  : t(`I have your profile in front of me. Generate your strategy brief on the Strategy tab and I'll have full context.`,
+                                  : t(`I have your profile in front of me. Generate your strategy on the Strategy tab and I'll have full context.`,
                                       `У меня уже есть ваш профиль. Сгенерируйте стратегический отчёт на вкладке Strategy — и я получу полный контекст.`))
                               : t("Ask me anything about applications, essays, scholarships, tests, or visas. Complete your profile for tailored answers.",
                                   "Спросите о заявках, эссе, стипендиях, тестах или визах. Заполните профиль для персональных ответов.")}

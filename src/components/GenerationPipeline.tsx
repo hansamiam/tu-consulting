@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Check,
   Loader2,
@@ -9,7 +9,6 @@ import {
   FileText,
   Calendar,
   Brain,
-  Zap,
 } from "lucide-react";
 
 /**
@@ -233,24 +232,6 @@ export function GenerationPipeline({ profile, isRu = false }: Props) {
           );
         })}
       </ul>
-
-      {/* Trust footer */}
-      <AnimatePresence>
-        {elapsed > 8000 && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="mt-8 pt-6 border-t border-border/60 flex items-start gap-2.5 text-xs text-muted-foreground leading-relaxed"
-          >
-            <Zap className="w-3.5 h-3.5 text-gold-dark shrink-0 mt-0.5" />
-            <p>
-              {t("Each section is being written specifically for your profile — not pulled from a template. The brief is yours to keep, share, and download as a PDF.",
-                 "Каждая секция пишется специально под ваш профиль — не из шаблона. Брифинг ваш: сохраните, поделитесь, скачайте PDF.")}
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

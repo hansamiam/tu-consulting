@@ -213,6 +213,60 @@ Deno.serve(async (req) => {
     return json(404, { error: "Scholarship not found" });
   }
 
+  // ─── Pre-flight eligibility gate ────────────────────────────────────────
+  // Hard-block deep-dives when the user's nationality is not in the
+  // scholarship's eligible_countries list. The LLM prompt USED to be
+  // trusted to surface this as a "miss" via the AUDIENCE GATE clause,
+  // but the model hallucinates encouragement instead (e.g. on
+  // Commonwealth Shared Scholarship — closed to non-Commonwealth
+  // citizens — it told a Kazakhstani user "demonstrate how your work
+  // could lead to impact in Kazakhstan" rather than flagging
+  // ineligibility). Checking in code is cheaper AND deterministic.
+  //
+  // Gate fires only when:
+  //   1. User actually provided a nationality (skip for anon "(unspecified)"),
+  //   2. The row has a non-empty eligible_countries array (open-to-all rows
+  //      leave it empty), AND
+  //   3. The user's nationality doesn't appear in that array.
+  // Country name matching is case-insensitive + trimmed; aliases (UK vs
+  // United Kingdom etc.) will leak through but the common cases are clean.
+  const userNationalityRaw = (body.profile.nationality || "").trim();
+  const userNationalityLc = userNationalityRaw.toLowerCase();
+  const eligibleList = Array.isArray(scholarship.eligible_countries)
+    ? (scholarship.eligible_countries as string[])
+    : [];
+  if (
+    userNationalityLc &&
+    eligibleList.length > 0 &&
+    !eligibleList.some(c => c.toLowerCase().trim() === userNationalityLc)
+  ) {
+    const eligibleListShort = eligibleList.length <= 6
+      ? eligibleList.join(", ")
+      : `${eligibleList.slice(0, 6).join(", ")}, and ${eligibleList.length - 6} more`;
+    const stub: DeepDiveOutput = {
+      match: {
+        overall_score: 0,
+        breakdown: [{
+          label: "Citizenship",
+          status: "miss",
+          detail: `Open only to citizens of ${eligibleListShort}. Your nationality (${userNationalityRaw}) doesn't match.`,
+        }],
+      },
+      strategy: {
+        headline: "You aren't eligible to apply for this one.",
+        points: [],
+        avoid: [],
+      },
+      odds: {
+        bucket: "aspirational",
+        rationale: "",
+        typical_admit_profile: "",
+      },
+      thirty_day: { items: [] },
+    };
+    return json(200, { ...stub, _ineligible: true });
+  }
+
   // ─── Cache hit? ─────────────────────────────────────────────────────────
   // Two conditions for a hit:
   //   1. schema_version matches (output shape is current)

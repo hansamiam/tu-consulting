@@ -155,6 +155,28 @@ interface WizardDraft {
  *  rather than stale half-finished answers from a different intent. */
 const DRAFT_TTL_MS = 14 * 86400_000;
 
+/** Sanitize a numeric-input value and clamp it to a max. Keeps users
+ *  from typing "9000" into IELTS or "1600000" into SAT. Allows a single
+ *  decimal point when `allowDecimal` is true. Returns the string the
+ *  input should display — the caller stores it in state as-is. */
+const clampScore = (raw: string, max: number, allowDecimal: boolean): string => {
+  // Strip everything except digits and (maybe) a single decimal point.
+  const stripped = allowDecimal
+    ? raw.replace(/[^0-9.]/g, "")
+    : raw.replace(/[^0-9]/g, "");
+  // Collapse multiple decimals into the first one.
+  let cleaned = stripped;
+  if (allowDecimal) {
+    const parts = stripped.split(".");
+    if (parts.length > 2) cleaned = `${parts[0]}.${parts.slice(1).join("")}`;
+  }
+  if (cleaned === "" || cleaned === ".") return cleaned;
+  const num = parseFloat(cleaned);
+  if (isNaN(num)) return "";
+  if (num > max) return String(max);
+  return cleaned;
+};
+
 const loadDraft = (): Partial<WizardDraft> | null => {
   try {
     const raw = localStorage.getItem(WIZARD_DRAFT_KEY);
@@ -773,7 +795,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                                 aria-pressed={selected}
                                 className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[36px] ${
                                   selected
-                                    ? "bg-gold-dark text-cream border-gold-dark"
+                                    ? "bg-gold/15 text-gold-dark border-gold"
                                     : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
                                 }`}
                               >
@@ -906,7 +928,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         {t("How does your academic record look?", "Как выглядит твоя успеваемость?")}
                       </h2>
                       <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[50ch]">
-                        {t("Just what you've got. Skip the tests you haven't taken.", "Только то, что есть. Пропускай тесты, которые не сдавал.")}
+                        {t("Skip the tests you haven't taken.", "Пропускай тесты, которые не сдавал.")}
                       </p>
                     </div>
                     <div className="grid gap-5">
@@ -942,6 +964,13 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                                 const cleaned = parts.length > 2
                                   ? `${parts[0]}.${parts.slice(1).join("")}`
                                   : v;
+                                // Clamp at the chosen scale so users can't type 9999 on a 4.0 scale.
+                                const max = parseFloat(gpaScale);
+                                const num = parseFloat(cleaned);
+                                if (!isNaN(num) && !isNaN(max) && num > max) {
+                                  setGpa(String(max));
+                                  return;
+                                }
                                 setGpa(cleaned);
                               }}
                               inputMode="decimal"
@@ -972,16 +1001,34 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           </div>
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">IELTS</Label>
-                          <Input value={ielts} onChange={e => setIelts(e.target.value)} placeholder={t("Score or skip · e.g. 7.0", "Балл или пропусти · напр. 7.0")} className="h-11 bg-card" />
+                          <Label className="text-xs uppercase tracking-wider font-medium">IELTS <span className="text-muted-foreground/70 font-normal normal-case">(0–9)</span></Label>
+                          <Input
+                            value={ielts}
+                            inputMode="decimal"
+                            onChange={e => setIelts(clampScore(e.target.value, 9, true))}
+                            placeholder={t("Score or skip · e.g. 7.0", "Балл или пропусти · напр. 7.0")}
+                            className="h-11 bg-card"
+                          />
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">TOEFL</Label>
-                          <Input value={toefl} onChange={e => setToefl(e.target.value)} placeholder={t("Score or skip · e.g. 100", "Балл или пропусти · напр. 100")} className="h-11 bg-card" />
+                          <Label className="text-xs uppercase tracking-wider font-medium">TOEFL <span className="text-muted-foreground/70 font-normal normal-case">(0–120)</span></Label>
+                          <Input
+                            value={toefl}
+                            inputMode="numeric"
+                            onChange={e => setToefl(clampScore(e.target.value, 120, false))}
+                            placeholder={t("Score or skip · e.g. 100", "Балл или пропусти · напр. 100")}
+                            className="h-11 bg-card"
+                          />
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">SAT</Label>
-                          <Input value={sat} onChange={e => setSat(e.target.value)} placeholder={t("Score or skip · e.g. 1450", "Балл или пропусти · напр. 1450")} className="h-11 bg-card" />
+                          <Label className="text-xs uppercase tracking-wider font-medium">SAT <span className="text-muted-foreground/70 font-normal normal-case">(400–1600)</span></Label>
+                          <Input
+                            value={sat}
+                            inputMode="numeric"
+                            onChange={e => setSat(clampScore(e.target.value, 1600, false))}
+                            placeholder={t("Score or skip · e.g. 1450", "Балл или пропусти · напр. 1450")}
+                            className="h-11 bg-card"
+                          />
                         </div>
                       </div>
                     </div>
@@ -1005,7 +1052,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               aria-pressed={selected}
                               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[36px] ${
                                 selected
-                                  ? "bg-gold-dark text-cream border-gold-dark"
+                                  ? "bg-gold/15 text-gold-dark border-gold"
                                   : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
                               }`}
                             >
@@ -1047,7 +1094,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         {t("What are you chasing?", "К чему вы стремитесь?")}
                       </h2>
                       <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[52ch]">
-                        {t("Field, timeline, and what matters most. We'll match across every geography that fits.", "Область, сроки и приоритеты. Подберём программы по всему миру.")}
+                        {t("Field, timeline, and what matters most.", "Область, сроки и приоритеты.")}
                       </p>
                     </div>
                     <div className="space-y-6">
@@ -1158,7 +1205,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               aria-pressed={selected}
                               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[36px] ${
                                 selected
-                                  ? "bg-gold-dark text-cream border-gold-dark"
+                                  ? "bg-gold/15 text-gold-dark border-gold"
                                   : isOther
                                     ? "bg-card text-foreground border-dashed border-border hover:border-gold-dark/60"
                                     : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
@@ -1182,7 +1229,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               type="button"
                               onClick={() => toggleCountry(token)}
                               aria-pressed={true}
-                              className="inline-flex items-center gap-1.5 rounded-full border bg-gold-dark text-cream border-gold-dark px-3 py-1.5 text-xs font-medium min-h-[36px]"
+                              className="inline-flex items-center gap-1.5 rounded-full border bg-gold/15 text-gold-dark border-gold px-3 py-1.5 text-xs font-medium min-h-[36px]"
                             >
                               <Check className="w-3 h-3" />
                               {countryLabel(token, language === "ru" ? "ru" : "en")}
@@ -1304,8 +1351,8 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         {t("Tell us more — or skip ahead.", "Расскажите больше — или пропустите.")}
                       </h2>
                       <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[54ch]">
-                        {t("Optional. Each detail makes your essay angles and shortlist sharper. Anything you share stays private to your report.",
-                           "По желанию. Каждая деталь усиливает идеи эссе и подбор. Всё остаётся приватным в вашем отчёте.")}
+                        {t("Optional. Each detail makes your essay angles and shortlist sharper.",
+                           "По желанию. Каждая деталь усиливает идеи эссе и подбор.")}
                       </p>
                     </div>
                     <div className="space-y-5">
@@ -1344,7 +1391,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                                   aria-pressed={selected}
                                   className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[34px] ${
                                     selected
-                                      ? "bg-gold-dark text-cream border-gold-dark"
+                                      ? "bg-gold/15 text-gold-dark border-gold"
                                       : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
                                   }`}
                                 >
@@ -1375,7 +1422,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                                     aria-pressed={selected}
                                     className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[34px] ${
                                       selected
-                                        ? "bg-gold-dark text-cream border-gold-dark"
+                                        ? "bg-gold/15 text-gold-dark border-gold"
                                         : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
                                     }`}
                                   >
@@ -1472,8 +1519,8 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           <div className="text-center pt-2" aria-live="polite">
                             {showNudge ? (
                               <p className="text-[12px] text-muted-foreground leading-snug">
-                                {t("Your brief will read more general with shorter answers. Even one line per box sharpens it.",
-                                   "С короткими ответами отчёт будет более общим. Даже одна строка в каждом поле его уточняет.")}
+                                {t("Even one line per box sharpens your strategy.",
+                                   "Даже одна строка в каждом поле уточняет вашу стратегию.")}
                                 {" "}
                                 <button
                                   type="button"

@@ -38,30 +38,30 @@ const COPY: Record<Variant, { en: { headline: string; body: string; cta: string 
   detail_sheet: {
     en: {
       headline: "Want help winning this one?",
-      body: "Build a Top Uni strategy brief — your fit, the angle, what to prepare first.",
-      cta: "Build my brief",
+      body: "Get your Top Uni strategy — your fit, the angle, what to prepare first.",
+      cta: "Get my strategy",
     },
     ru: {
       headline: "Хотите помочь подать сильно?",
-      body: "Соберите стратегический брифинг Top Uni — где вы подходите, какой угол, что готовить в первую очередь.",
-      cta: "Собрать брифинг",
+      body: "Получите стратегию Top Uni — где вы подходите, какой угол, что готовить в первую очередь.",
+      cta: "Получить стратегию",
     },
   },
   expired_reopens: {
     en: {
       headline: "We'll help you target the next cycle",
-      body: "This program reopens annually. Get your brief now and you'll be ready when applications open again.",
-      cta: "Build my brief",
+      body: "This program reopens annually. Get your strategy now and be ready when applications open again.",
+      cta: "Get my strategy",
     },
     ru: {
       headline: "Подготовим вас к следующему циклу",
-      body: "Программа открывается каждый год. Соберите брифинг сейчас — будете готовы, когда снова откроют подачу.",
-      cta: "Собрать брифинг",
+      body: "Программа открывается каждый год. Получите стратегию сейчас — будете готовы, когда снова откроют подачу.",
+      cta: "Получить стратегию",
     },
   },
   generic: {
-    en: { headline: "", body: "", cta: "Build my brief" },
-    ru: { headline: "", body: "", cta: "Собрать брифинг" },
+    en: { headline: "", body: "", cta: "Get my strategy" },
+    ru: { headline: "", body: "", cta: "Получить стратегию" },
   },
 };
 

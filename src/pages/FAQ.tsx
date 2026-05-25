@@ -15,7 +15,7 @@ const FAQS: { category: string; q: string; a: string }[] = [
   {
     category: "Membership",
     q: "How much is TopUni Membership and what's included?",
-    a: "TopUni Membership is $39/month or $360/year (saving $108 vs paying monthly). It includes a personalised AI strategy brief, the full Discover scholarship database with strategy notes, the Workspace (application pipeline + deadline calendar + essay drafts with AI critique), live monthly workshops with our founders, the recordings library, and direct line to the founder team. Founding-cohort members get a discount via a code at checkout.",
+    a: "TopUni Membership is $39/month or $360/year (saving $108 vs paying monthly). It includes a personalised AI strategy, the full Discover scholarship database with strategy notes, the Workspace (application pipeline + deadline calendar + essay drafts with AI critique), live monthly workshops with our founders, the recordings library, and direct line to the founder team. Founding-cohort members get a discount via a code at checkout.",
   },
   {
     category: "Membership",
@@ -30,7 +30,7 @@ const FAQS: { category: string; q: string; a: string }[] = [
   {
     category: "Membership",
     q: "What happens to my saved scholarships, essays, and notes if I cancel?",
-    a: "Your saved data stays on your account. Cancellation removes access to membership features (deeper Discover retrieval, monthly workshops, the strategy brief, etc.) but the scholarships you saved, the essay drafts you wrote, the deadlines you tracked, and the notes you took are all still there if you re-subscribe. We don't believe in vendor-lock-in dressed up as a subscription.",
+    a: "Your saved data stays on your account. Cancellation removes access to membership features (deeper Discover retrieval, monthly workshops, the strategy, etc.) but the scholarships you saved, the essay drafts you wrote, the deadlines you tracked, and the notes you took are all still there if you re-subscribe. We don't believe in vendor-lock-in dressed up as a subscription.",
   },
   {
     category: "Membership",
@@ -181,7 +181,7 @@ const FAQ = () => {
             Still deciding?
           </p>
           <p className="text-sm text-muted-foreground leading-relaxed mb-5 max-w-xl mx-auto">
-            Try the wizard for free — your strategy brief is yours regardless of whether you become a member.
+            Try the wizard for free — your strategy is yours regardless of whether you become a member.
           </p>
           <div className="flex flex-wrap gap-2.5 justify-center">
             <Button variant="gold" onClick={() => navigate("/topuni-ai")} className="gap-2">
