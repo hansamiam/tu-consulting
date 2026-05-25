@@ -2228,13 +2228,15 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
    * a single "Women" entry (uses the virtual "women-any" value the
    * filter pipeline expands to OR-match both DB tags). Refugees + displaced
    * likewise merged via "refugee-any". Dropped: indigenous / lgbtq /
-   * underrepresented-minority — zero matching rows, the option was just
-   * dead UI weight. Re-add when a real scholarship lands. */
+   * underrepresented-minority — zero matching rows.
+   * Dropped 2026-05-25: first-gen + need-based. The HYPSM need-based
+   * track exists but is the exception, not the catalog. Surfacing
+   * these as filter chips implied the broader catalog discriminates
+   * meaningfully on them and it doesn't. Same prune applied to the
+   * wizard intake self-ID chips for parity. */
   const demographicOpts = [
     { v: "all", l: t("All applicants", "Все") },
     { v: "women-any", l: t("Women", "Женщины") },
-    { v: "first-gen", l: t("First-gen", "Первое поколение") },
-    { v: "low-income", l: t("Need-based", "По доходу") },
     { v: "refugee-any", l: t("Refugees", "Беженцы") },
     { v: "disability", l: t("Disability", "Инвалидность") },
   ];
@@ -3794,8 +3796,6 @@ const Discover = ({ language = "en" }: Props) => {
                               targets them — re-add when real rows land. */}
                           {[
                             { v: "women", l: t("Women", "Женщины") },
-                            { v: "first-gen", l: t("First-gen", "Первое поколение") },
-                            { v: "low-income", l: t("Need-based", "По доходу") },
                             { v: "refugee", l: t("Refugee", "Беженцы") },
                             { v: "disability", l: t("Disability", "Инвалидность") },
                           ].map(d => {
