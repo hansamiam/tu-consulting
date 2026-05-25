@@ -4384,16 +4384,18 @@ const Discover = ({ language = "en" }: Props) => {
                         </p>
                       </Link>
 
-                      {/* Local-state indicator — app feel */}
-                      <div className="text-[10px] text-muted-foreground/70 px-2">
-                        <span className="inline-flex items-center gap-1.5">
-                          <span className="h-1.5 w-1.5 rounded-full bg-success" />
-                          {shortlist.size + Object.keys(statusMap).length + Object.keys(notesMap).length} items saved locally
-                          {!isMember && shortlist.size >= SHORTLIST_FREE_LIMIT && (
-                            <span className="text-warning"> · saves locked</span>
-                          )}
-                        </span>
-                      </div>
+                      {/* Free-tier shortlist-cap notice. The "items saved
+                          locally" status line was removed — it was an
+                          internal-state breadcrumb that gave away the
+                          local-storage scaffolding without offering the
+                          user any actionable signal. The saves-locked
+                          warning still matters (it tells the user why
+                          a save just failed) so keep it standalone. */}
+                      {!isMember && shortlist.size >= SHORTLIST_FREE_LIMIT && (
+                        <div className="text-[10px] text-warning px-2">
+                          Saves locked — upgrade to keep shortlisting.
+                        </div>
+                      )}
                     </div>
                   </aside>
 

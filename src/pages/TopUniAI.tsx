@@ -442,11 +442,6 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
   // specific scholarship — the country gets added to the saved profile
   // even though there's no UI affordance for it).
 
-  // 2026-05-19: surface "saving / saved" beneath the progress pips.
-  // Auto-save has always written silently; adding a quiet reassurance
-  // signals that closing the tab is safe.
-  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
-
   /* Auto-save the wizard draft to localStorage whenever any field
      changes. This way the user can close the tab mid-wizard and come
      back to where they were instead of losing 5 minutes of profile
@@ -477,7 +472,6 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
         ts: Date.now(),
       };
       localStorage.setItem(WIZARD_DRAFT_KEY, JSON.stringify(draftPayload));
-      setDraftSavedAt(Date.now());
     } catch { /* ignore quota / private-mode errors */ }
   }, [
     screen,
@@ -628,19 +622,6 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                   );
                 })}
               </div>
-
-              {/* "Saved" indicator — quiet, sits beneath the progress bar.
-                  Renders only when the auto-save has fired at least once,
-                  so on first-render an empty draft doesn't claim to be
-                  saved. */}
-              {draftSavedAt && (
-                <div className="flex items-center justify-center mb-7 -mt-3">
-                  <span className="text-[10.5px] text-muted-foreground/80 inline-flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-success" />
-                    {t("Progress auto-saved on this device", "Прогресс сохранён на этом устройстве")}
-                  </span>
-                </div>
-              )}
 
               {/* Hub-context indicator — confirms to the user why a field
                   in this wizard is pre-filled. Cleared by the user with
