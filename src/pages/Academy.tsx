@@ -139,8 +139,8 @@ const Academy = ({ language = "en" }: AcademyProps) => {
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
               {t(
-                "The working files we use with private clients. Sign in with your member account.",
-                "Рабочие файлы, которые мы используем с частными клиентами. Войдите с аккаунтом участника.",
+                "The working files we use with private clients.",
+                "Рабочие файлы, которые мы используем с частными клиентами.",
               )}
             </p>
             <p className="mt-3 text-sm text-gold-dark font-semibold inline-flex items-center gap-1 group-hover:gap-2 transition-all">
@@ -163,8 +163,8 @@ const Academy = ({ language = "en" }: AcademyProps) => {
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
               {t(
-                "The free guide we hand out on Instagram. Watch the video, scroll the deck, no signup needed.",
-                "Бесплатный гид с нашего Instagram. Видео + слайды, без регистрации.",
+                "The deck we hand out on Instagram.",
+                "Гид с нашего Instagram.",
               )}
             </p>
             <p className="mt-3 text-sm text-foreground font-semibold inline-flex items-center gap-1 group-hover:gap-2 transition-all">
