@@ -56,7 +56,7 @@ import {
   composeExtracurriculars,
 } from "@/lib/ec-chips";
 import { useNavigate } from "react-router-dom";
-import { saveProfile } from "@/components/discover/DiscoverProfileGate";
+import { saveProfile, getStoredProfile } from "@/components/discover/DiscoverProfileGate";
 import { projectToDiscoverProfile } from "@/lib/topuniIntakeProjection";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -195,6 +195,30 @@ const loadDraft = (): Partial<WizardDraft> | null => {
   } catch { return null; }
 };
 
+// When the wizard mounts without a draft (TTL expired, signed up via
+// Discover's quick wizard instead, or coming in fresh from "Strengthen
+// profile" on Discover), seed initial state from the persisted
+// DiscoverProfile so known fields pre-fill instead of the user staring
+// at a blank form. DiscoverProfile is what Settings + the Discover
+// quick wizard both write to, so this also fixes Settings→AI form drift.
+const seedFromDiscoverProfile = (): Partial<WizardDraft> => {
+  const p = getStoredProfile();
+  if (!p) return {};
+  return {
+    fullName: p.fullName,
+    email: p.email,
+    nationality: p.nationality,
+    gradeLevel: p.targetDegree ?? p.educationLevel,
+    gpa: p.gpa,
+    gpaScale: p.gpaScale,
+    ielts: p.ieltsScore,
+    toefl: p.toeflScore,
+    sat: p.satScore,
+    major: p.fieldOfInterest,
+    targetCountries: p.targetCountries,
+  };
+};
+
 interface TopUniAIProps {
   /** Language for visible copy. RU also flips the document title +
    *  the saveProfile redirect target to /discover/ru. */
@@ -248,12 +272,13 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
     return () => { document.title = prev; };
   }, [ru]);
 
-  // Load any in-progress draft on first render. The hub-context handoff
-  // effect runs separately and may overwrite specific fields (country
-  // prefill etc.) after this — that's intentional: a fresh hub click
-  // should shape the draft, not be ignored. Empty string defaults are
-  // used when the draft is absent or partial.
-  const draft = useMemo(() => loadDraft(), []);
+  // Load any in-progress draft on first render. If no draft exists (or
+  // it expired), fall back to the persisted DiscoverProfile so known
+  // fields pre-fill — fixes "Strengthen profile → blank form" and keeps
+  // Settings edits visible here. The hub-context handoff effect runs
+  // separately and may overwrite specific fields (country prefill etc.)
+  // after this — that's intentional.
+  const draft = useMemo(() => loadDraft() ?? seedFromDiscoverProfile(), []);
 
   // 2026-05-19: surface a toast when we restore a meaningful draft so
   // the user understands why fields are pre-filled. Fires once on
