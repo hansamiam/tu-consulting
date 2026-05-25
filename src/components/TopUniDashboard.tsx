@@ -3542,6 +3542,38 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                                 <BriefChapterNavWrapper sections={magazineSections} lang={language} />
                               </aside>
                             </div>
+                          ) : isDesktop ? (
+                            // Story tab on desktop: the bare 400px 9:16
+                            // BriefStory card looks orphaned on a wide
+                            // canvas. Wrap it in a phone-preview chrome
+                            // with a "Share Story" side panel that
+                            // explains what the user is looking at and
+                            // points to the long-form report.
+                            <div className="mx-auto max-w-3xl">
+                              <div className="rounded-3xl border border-border/60 bg-card p-6 sm:p-10 flex flex-col sm:flex-row items-center gap-8">
+                                <BriefStory
+                                  sections={magazineSections}
+                                  student={studentMeta}
+                                />
+                                <div className="flex-1 space-y-4 max-w-xs">
+                                  <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
+                                    {t("Share Story", "История")}
+                                  </p>
+                                  <h2 className="font-heading text-xl font-bold leading-tight">
+                                    {t("This is the version you'd post to Instagram.", "Эту версию можно опубликовать в Instagram.")}
+                                  </h2>
+                                  <p className="text-sm text-muted-foreground leading-snug">
+                                    {t("Swipe through, screenshot the slides you like, share to your story.", "Листайте, делайте скриншоты любимых слайдов, делитесь в сторис.")}
+                                  </p>
+                                  <button
+                                    onClick={() => setTab("read")}
+                                    className="text-xs font-semibold underline-offset-4 hover:underline"
+                                  >
+                                    {t("Read the full report →", "Читать полный отчёт →")}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
                           ) : (
                             <BriefStory
                               sections={magazineSections}
