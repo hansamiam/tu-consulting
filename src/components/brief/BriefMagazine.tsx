@@ -24,17 +24,33 @@ import { WhereYouCanLand } from "./sections/WhereYouCanLand";
 import { WhatToWrite } from "./sections/WhatToWrite";
 import { WhatsBlockingYou } from "./sections/WhatsBlockingYou";
 import { WhatToDoThisMonth } from "./sections/WhatToDoThisMonth";
+import { ArchetypeRadial, ARCHETYPE_AXES } from "./ArchetypeRadial";
+import { WhereYouCanLandViz } from "./sections/WhereYouCanLandViz";
+import { SectionDivider } from "./primitives/SectionDivider";
+import { DeadlineTimeline } from "./DeadlineTimeline";
+import { FundingStack } from "./FundingStack";
 import {
   SECTION_ORDER,
   SECTION_KICKERS,
   type BriefSections,
   type SectionId,
+  type ArchetypePayload,
   type WhereYouStandPayload,
   type WhereYouCanLandPayload,
   type WhatToWritePayload,
   type WhatsBlockingYouPayload,
   type WhatToDoThisMonthPayload,
 } from "./types";
+
+/** Subset of LiveMatch the deadline + funding charts need. Mirrors the
+ *  LiveMatchLite shape inside DeadlineTimeline.tsx / FundingStack.tsx. */
+interface LiveMatchLite {
+  scholarship_id: string;
+  scholarship_name: string;
+  provider_name?: string | null;
+  application_deadline?: string | null;
+  estimated_total_value_usd?: number | null;
+}
 
 interface CommonProps {
   studentName: string;
@@ -43,6 +59,11 @@ interface CommonProps {
   generatedAt?: string;
   onShare?: () => void;
   onPrint?: () => void;
+  /** Optional live-match list for deadline + funding charts. When
+   *  absent (e.g. SharedBrief), the charts skip themselves. */
+  liveMatches?: LiveMatchLite[];
+  /** Whether to render Russian copy in the charts. */
+  isRu?: boolean;
 }
 
 interface StaticProps extends CommonProps {
@@ -67,13 +88,43 @@ interface StreamProps extends CommonProps {
 
 type Props = StaticProps | StreamProps;
 
+const ArchetypeCard: React.FC<{ payload: ArchetypePayload }> = ({ payload }) => {
+  const axes = ARCHETYPE_AXES[payload.id] ?? ARCHETYPE_AXES.default;
+  const color = payload.color || "#1A3B66";
+  return (
+    <section id="brief-archetype">
+      <SectionDivider kicker={SECTION_KICKERS.archetype} headline={payload.name} />
+      {payload.tagline && (
+        <p className="font-heading italic text-foreground/85 text-[17px] sm:text-[18.5px] leading-[1.55] text-center max-w-2xl mx-auto mt-4">
+          {payload.tagline}
+        </p>
+      )}
+      <div className="flex justify-center my-8" style={{ color }}>
+        <ArchetypeRadial axes={axes} archetypeColor={color} size={240} />
+      </div>
+      {payload.reason && (
+        <p className="text-muted-foreground text-[13.5px] leading-relaxed text-center max-w-xl mx-auto">
+          {payload.reason}
+        </p>
+      )}
+    </section>
+  );
+};
+
 const renderSection = (id: SectionId, payload: unknown): React.ReactNode => {
   if (!payload || typeof payload !== "object") return null;
   switch (id) {
+    case "archetype":
+      return <ArchetypeCard payload={payload as ArchetypePayload} />;
     case "whereYouStand":
       return <WhereYouStand payload={payload as WhereYouStandPayload} />;
     case "whereYouCanLand":
-      return <WhereYouCanLand payload={payload as WhereYouCanLandPayload} />;
+      return (
+        <>
+          <WhereYouCanLandViz buckets={(payload as WhereYouCanLandPayload).buckets ?? []} />
+          <WhereYouCanLand payload={payload as WhereYouCanLandPayload} />
+        </>
+      );
     case "whatToWrite":
       return <WhatToWrite payload={payload as WhatToWritePayload} />;
     case "whatsBlockingYou":
@@ -187,6 +238,22 @@ export const BriefMagazine: React.FC<Props> = (props) => {
           return (
             <React.Fragment key={id}>
               {renderSection(id, payload)}
+              {/* After "Where you can land", surface the live-match
+                  charts when the caller passed liveMatches. The two
+                  charts answer the natural follow-up questions:
+                  "when is everything due?" + "how much could I win?". */}
+              {id === "whereYouCanLand" && props.liveMatches && props.liveMatches.length > 0 && (
+                <div className="my-10 space-y-6">
+                  <DeadlineTimeline
+                    liveMatches={props.liveMatches as Parameters<typeof DeadlineTimeline>[0]["liveMatches"]}
+                    isRu={!!props.isRu}
+                  />
+                  <FundingStack
+                    liveMatches={props.liveMatches as Parameters<typeof FundingStack>[0]["liveMatches"]}
+                    isRu={!!props.isRu}
+                  />
+                </div>
+              )}
             </React.Fragment>
           );
         }
