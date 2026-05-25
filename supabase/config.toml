@@ -144,6 +144,9 @@ verify_jwt = false
 [functions.promote-pending-cron]
 verify_jwt = false
 
+[functions.fresh-keep-cron]
+verify_jwt = false
+
 [functions.og-brief]
 verify_jwt = false
 
