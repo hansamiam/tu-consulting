@@ -1,5 +1,34 @@
 import type { Config } from "tailwindcss";
 
+/*
+ * NAVY COLOR AUDIT — 2026-05-25
+ *
+ * Hardcoded hex found:
+ *   - src/components/brief/HandoffBridge.tsx: archetypeColor = "#1A3B66" (default prop fallback)
+ *     → This is the archetype-accent color, not the brand footer navy. Left as-is because
+ *       it's a dynamic prop overridden per-archetype; it does not clash with the footer.
+ *
+ * Files using bg-primary / bg-[hsl(var(--primary))]:
+ *   - src/components/Footer.tsx: bg-primary (THE canonical brand footer navy reference)
+ *
+ * Files using hsl(var(--navy-deep)) / hsl(var(--navy)) inline:
+ *   - src/components/brief/BriefStory/BriefStory.tsx: bg-[hsl(var(--navy-deep))] (essay frame)
+ *   - src/components/TopUniDashboard.tsx: bg-[hsl(var(--navy-deep))] (Open Discover CTA inline)
+ *
+ * TWO different navies confirmed:
+ *   --primary:   210 58% 22%  ← footer "brand navy" (slightly brighter / more saturated)
+ *   --navy-deep: 210 74% 13%  ← deep accent navy used in essay frame + CTA buttons (darker)
+ *   --navy:      210 70% 20%  ← mid-tone navy (gradient overlays)
+ *
+ * The AcademyHookCta component does NOT use navy — it uses bg-muted/30.
+ * The clash Samuel saw is --navy-deep CTAs (very dark) vs --primary footer (brighter navy).
+ *
+ * Resolution: unify all user-facing CTA navy to --primary (the footer reference).
+ * The navy / navy-deep tokens remain for decorative gradients and shadows.
+ * A new `brand-navy` alias is added pointing to --primary so components
+ * can use bg-brand-navy and always match the footer.
+ */
+
 export default {
   darkMode: ["class"],
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
@@ -59,6 +88,10 @@ export default {
           DEFAULT: "hsl(var(--navy))",
           deep: "hsl(var(--navy-deep))",
         },
+        /* brand-navy: canonical brand navy — always matches the footer.
+         * Maps to --primary so Open Discover CTAs, essay frames, and
+         * the footer all resolve to the same rendered value. */
+        "brand-navy": "hsl(var(--primary))",
         gold: {
           DEFAULT: "hsl(var(--gold))",
           light: "hsl(var(--gold-light))",
