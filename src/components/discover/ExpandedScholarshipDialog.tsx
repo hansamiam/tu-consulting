@@ -44,6 +44,8 @@ interface ScholarshipLite {
   award_amount_text: string | null;
   estimated_total_value_usd: number | null;
   application_deadline: string | null;
+  early_deadline?: string | null;
+  early_decision_type?: string | null;
   deadline_type: string | null;
   target_degree_level: string[] | null;
   target_fields: string[] | null;
@@ -101,6 +103,22 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
   const cleanedProv = cleanProvider(s.provider_name);
   const country = s.host_country ? shortCountry(s.host_country) : null;
   const dl = fmtDays(s.application_deadline, lang);
+  // 2026-05-26: US undergrad rows carry a second early-round deadline
+  // (REA/EA/ED/SCEA — type lives in early_decision_type). When present,
+  // surface it alongside the regular deadline so students see both rather
+  // than only the RD date.
+  const earlyDl = s.early_deadline ? fmtDays(s.early_deadline, lang) : null;
+  const earlyTypeLabel = ((): string | null => {
+    const k = (s.early_decision_type || "").toUpperCase();
+    if (!k || !earlyDl) return null;
+    if (k === "ED" || k === "ED_I") return t("Early Decision", "Early Decision");
+    if (k === "ED_II") return t("Early Decision II", "Early Decision II");
+    if (k === "EA") return t("Early Action", "Early Action");
+    if (k === "REA") return t("Restrictive Early Action", "Restrictive Early Action");
+    if (k === "SCEA") return t("Single Choice Early Action", "Single Choice Early Action");
+    if (k === "PRIORITY") return t("Priority", "Priority");
+    return k;
+  })();
   const accent = s.host_country ? accentForCountry(s.host_country) : "from-foreground/40 to-foreground/60";
 
   return (
@@ -191,14 +209,35 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
               to inline label-value pairs — easier to scan and never
               clips text. */}
           <div className="px-6 sm:px-9 py-4 border-b border-border bg-card space-y-1.5">
-            <p className="text-sm leading-relaxed text-foreground">
-              <span className="font-semibold">{t("Deadline", "Дедлайн")}:</span>{" "}
-              <span className={
-                dl.tone === "danger" ? "text-destructive font-semibold"
-                : dl.tone === "warn" ? "text-amber-700 dark:text-amber-400 font-medium"
-                : "text-foreground/85"
-              }>{dl.text}</span>
-            </p>
+            {earlyDl && earlyTypeLabel ? (
+              <>
+                <p className="text-sm leading-relaxed text-foreground">
+                  <span className="font-semibold">{earlyTypeLabel}:</span>{" "}
+                  <span className={
+                    earlyDl.tone === "danger" ? "text-destructive font-semibold"
+                    : earlyDl.tone === "warn" ? "text-amber-700 dark:text-amber-400 font-medium"
+                    : "text-foreground/85"
+                  }>{earlyDl.text}</span>
+                </p>
+                <p className="text-sm leading-relaxed text-foreground">
+                  <span className="font-semibold">{t("Regular Decision", "Regular Decision")}:</span>{" "}
+                  <span className={
+                    dl.tone === "danger" ? "text-destructive font-semibold"
+                    : dl.tone === "warn" ? "text-amber-700 dark:text-amber-400 font-medium"
+                    : "text-foreground/85"
+                  }>{dl.text}</span>
+                </p>
+              </>
+            ) : (
+              <p className="text-sm leading-relaxed text-foreground">
+                <span className="font-semibold">{t("Deadline", "Дедлайн")}:</span>{" "}
+                <span className={
+                  dl.tone === "danger" ? "text-destructive font-semibold"
+                  : dl.tone === "warn" ? "text-amber-700 dark:text-amber-400 font-medium"
+                  : "text-foreground/85"
+                }>{dl.text}</span>
+              </p>
+            )}
             <p className="text-sm leading-relaxed text-foreground">
               <span className="font-semibold">{t("Levels", "Уровни")}:</span>{" "}
               <span className="text-foreground/85">
