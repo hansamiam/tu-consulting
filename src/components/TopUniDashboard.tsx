@@ -3225,25 +3225,20 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      {/* Header — kept lean: back button, name, profile chips. The
-          AI-Powered badge and "Your university planning dashboard"
-          subtitle were filler. */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        <button onClick={onBack} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
+      {/* 2026-05-26 editorial-refresh: the prior header was a giant
+          "Welcome, Daniel" + a flat dot-separated CS · Germany · 2 GPA
+          line — Sam called it terrible. Replaced with a magazine-style
+          slug: initials disc on the left, a STUDENT FILE / 2026 CYCLE
+          eyebrow above the first name, then labeled stat pills (FIELD /
+          TARGET / GPA / IELTS / TOEFL / SAT) instead of an unsigned
+          dot-separated list. Same data, real hierarchy. */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
+        <button onClick={onBack} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-5">
           <ArrowLeft className="w-4 h-4" /> {t("Back", "Назад")}
         </button>
-        <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground tracking-tight">
-          {isProfileFilled
-            ? t(`Welcome, ${profile.fullName.split(" ")[0]}`, `Добро пожаловать, ${profile.fullName.split(" ")[0]}`)
-            : t("Your dashboard", "Ваша панель")
-          }
-        </h1>
-        {isProfileFilled && (() => {
-          /* 2026-05-25 redesign: the previous summary line mixed italic
-             "Aiming" + bold "Computer Science" + italic "in" + bold
-             "Netherlands and Hungary" — the alternating italic/bold rhythm
-             read as jarring on Samuel's walkthrough. Replaced with a quiet
-             monocase meta line — same data, no italic-vs-bold dance. */
+        {isProfileFilled ? (() => {
+          const firstName = (profile.fullName || "").trim().split(" ")[0] || (t("Student", "Студент"));
+          const initial = firstName.charAt(0).toUpperCase();
           const fmtCountries = (cs: string[]): string => {
             if (cs.length === 0) return "";
             if (cs.length === 1) return cs[0];
@@ -3254,31 +3249,55 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
           const hasMajor = profile.major && profile.major !== "Undecided" && profile.major !== "Не определился";
           const hasCountries = countriesPhrase.length > 0;
           const hasGpa = !!profile.gpa;
-          const hasScores = !!(profile.ielts || profile.toefl || profile.sat);
-          const parts: string[] = [];
-          if (hasMajor) parts.push(profile.major);
-          if (hasCountries) parts.push(countriesPhrase);
-          if (hasGpa) parts.push(`${profile.gpa} GPA`);
-          const testParts = [
-            profile.ielts && `IELTS ${profile.ielts}`,
-            profile.toefl && `TOEFL ${profile.toefl}`,
-            profile.sat && `SAT ${profile.sat}`,
-          ].filter(Boolean) as string[];
+          /* Compress the grade-level slug ("PhD applicant" / "Working
+             professional" / "Bachelor's") into a stat label. Empty for
+             empty input — no "Stage: undefined" leak. */
+          const stageLabel = (profile.gradeLevel || "").trim();
+          type Stat = { label: string; value: string };
+          const stats: Stat[] = [];
+          if (stageLabel) stats.push({ label: t("Stage", "Этап"), value: stageLabel });
+          if (hasMajor) stats.push({ label: t("Field", "Сфера"), value: profile.major });
+          if (hasCountries) stats.push({ label: t("Target", "Цели"), value: countriesPhrase });
+          if (hasGpa) stats.push({ label: "GPA", value: profile.gpa });
+          if (profile.ielts) stats.push({ label: "IELTS", value: profile.ielts });
+          if (profile.toefl) stats.push({ label: "TOEFL", value: profile.toefl });
+          if (profile.sat) stats.push({ label: "SAT", value: profile.sat });
           return (
-            <div className="mt-2 space-y-0.5">
-              {parts.length > 0 && (
-                <p className="text-[14.5px] text-muted-foreground leading-relaxed">
-                  {parts.join(" · ")}
+            <div className="flex items-start gap-4 sm:gap-5">
+              <div
+                aria-hidden
+                className="hidden sm:flex shrink-0 h-16 w-16 rounded-2xl items-center justify-center bg-gradient-to-br from-gold/20 via-gold/10 to-transparent border border-gold/30 shadow-[0_1px_0_rgba(0,0,0,0.02)]"
+              >
+                <span className="font-heading text-[26px] font-bold text-gold-dark tracking-[-0.02em]">{initial}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10.5px] uppercase tracking-[0.22em] text-gold-dark font-semibold mb-1.5">
+                  {t("Student file · 2026 cycle", "Дело студента · цикл 2026")}
                 </p>
-              )}
-              {hasScores && (
-                <p className="text-[13px] text-muted-foreground/65">
-                  {testParts.join(" · ")}
-                </p>
-              )}
+                <h1 className="font-heading text-[32px] sm:text-[40px] font-bold text-foreground tracking-[-0.02em] leading-[1.05]">
+                  {firstName}
+                </h1>
+                {stats.length > 0 && (
+                  <div className="mt-3.5 flex flex-wrap gap-1.5">
+                    {stats.map(s => (
+                      <div
+                        key={s.label}
+                        className="inline-flex items-baseline gap-1.5 rounded-md bg-card/70 border border-border/60 px-2.5 py-1"
+                      >
+                        <span className="text-[9.5px] uppercase tracking-[0.14em] text-muted-foreground font-semibold">{s.label}</span>
+                        <span className="text-[12.5px] text-foreground font-medium leading-none">{s.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           );
-        })()}
+        })() : (
+          <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground tracking-tight">
+            {t("Your dashboard", "Ваша панель")}
+          </h1>
+        )}
 
         {/* Trust indicator — concrete payoff for the wizard's "Save your
             strategy report" promise. Signed-in users see a quiet
