@@ -1099,17 +1099,40 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                             className="h-11 bg-card"
                           />
                         </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">SAT <span className="text-muted-foreground/70 font-normal normal-case">(400–1600)</span></Label>
-                          <Input
-                            value={sat}
-                            inputMode="numeric"
-                            onChange={e => setSat(clampScore(e.target.value, 1600, false))}
-                            placeholder={t("Score or skip · e.g. 1450", "Балл или пропусти · напр. 1450")}
-                            className="h-11 bg-card"
-                          />
-                        </div>
+                        {/* 2026-05-26 degree-branched intake: SAT is for
+                            US undergrad admission. Master's / PhD / Working-
+                            professional applicants don't use SAT, so hiding
+                            it removes a field that wastes their time and
+                            telegraphs the wizard was built undergrad-first.
+                            GRE/GMAT capture is a separate backend
+                            migration (no column yet) — deferred until the
+                            grad-scholarship corpus actually needs the score. */}
+                        {!isGraduateApp && (
+                          <div className="space-y-1.5">
+                            <Label className="text-xs uppercase tracking-wider font-medium">SAT <span className="text-muted-foreground/70 font-normal normal-case">(400–1600)</span></Label>
+                            <Input
+                              value={sat}
+                              inputMode="numeric"
+                              onChange={e => setSat(clampScore(e.target.value, 1600, false))}
+                              placeholder={t("Score or skip · e.g. 1450", "Балл или пропусти · напр. 1450")}
+                              className="h-11 bg-card"
+                            />
+                          </div>
+                        )}
                       </div>
+                      {isGraduateApp && (
+                        <p className="text-[12px] text-muted-foreground/70 italic">
+                          {isPhDApp
+                            ? t(
+                                "Skipping SAT — graduate admissions weight GRE / subject scores instead. We'll capture those on the next pass.",
+                                "Пропускаем SAT — в магистратуре/аспирантуре смотрят на GRE и предметные тесты. Добавим в следующем апдейте.",
+                              )
+                            : t(
+                                "Skipping SAT — graduate admissions look at GRE / GMAT instead. We'll capture those on the next pass.",
+                                "Пропускаем SAT — для магистратуры смотрят на GRE / GMAT. Добавим в следующем апдейте.",
+                              )}
+                        </p>
+                      )}
                     </div>
                     {/* Foreign-languages chip set moved to Step 1 (You)
                         on 2026-05-25 — it's identity context (what
