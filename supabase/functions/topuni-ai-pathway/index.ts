@@ -938,7 +938,7 @@ serve(async (req) => {
           // collapses to `string` and the row type fell back to
           // GenericStringError, breaking .filter()/spread downstream.
           .select(
-            `scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, target_degree_level, target_fields, target_demographics, partner_universities, eligible_countries, application_deadline, deadline_type, min_gpa, gpa_scale, min_ielts, min_toefl, selectivity_level, ideal_candidate_profile, eligibility_requirements, citizenship_requirements, official_url, source_url, last_verified_at, verification_status, confidence, data_completeness_score, why_this_fits, strategy_notes`,
+            `scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, target_degree_level, target_fields, target_demographics, partner_universities, eligible_countries, application_deadline, deadline_type, early_deadline, early_decision_type, min_gpa, gpa_scale, min_ielts, min_toefl, selectivity_level, ideal_candidate_profile, eligibility_requirements, citizenship_requirements, official_url, source_url, last_verified_at, verification_status, confidence, data_completeness_score, why_this_fits, strategy_notes`,
           )
           .in("scholarship_id", ids)
           // Drop rows the LLM should never see in its prompt context. Per
@@ -966,7 +966,7 @@ serve(async (req) => {
       let q = supabase
         .from("scholarships")
         .select(
-          `scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, target_degree_level, target_fields, application_deadline, eligibility_requirements, citizenship_requirements, official_url, source_url, last_verified_at, verification_status, why_this_fits, strategy_notes`,
+          `scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, target_degree_level, target_fields, application_deadline, deadline_type, early_deadline, early_decision_type, eligibility_requirements, citizenship_requirements, official_url, source_url, last_verified_at, verification_status, why_this_fits, strategy_notes`,
         )
         .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
           .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null");
@@ -991,7 +991,7 @@ serve(async (req) => {
       const { data: focusRow } = await supabase
         .from("scholarships")
         .select(
-          `scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, target_degree_level, target_fields, application_deadline, eligibility_requirements, citizenship_requirements, official_url, source_url, last_verified_at, verification_status, why_this_fits, strategy_notes, how_to_win, ideal_candidate_profile`,
+          `scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, target_degree_level, target_fields, application_deadline, deadline_type, early_deadline, early_decision_type, eligibility_requirements, citizenship_requirements, official_url, source_url, last_verified_at, verification_status, why_this_fits, strategy_notes, how_to_win, ideal_candidate_profile`,
         )
         .eq("scholarship_id", focusScholarshipId)
         .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
@@ -1116,7 +1116,15 @@ serve(async (req) => {
         ? `\n   Ideal candidate: ${ideal}`
         : "";
 
-      const deadlineLine = `${s.application_deadline || "varies"}${s.deadline_type ? ` (${s.deadline_type})` : ""}`;
+      // 2026-05-26: US undergrad rows now carry BOTH an early-round date
+      // (EA/ED/REA/SCEA — see early_decision_type) and a regular-decision
+      // date in application_deadline. Surface both to the LLM so the
+      // strategy report can cite the binding/non-binding nature and the
+      // single most actionable deadline for the student's timeline.
+      const earlyLine = s.early_deadline
+        ? `; early ${s.early_deadline}${s.early_decision_type ? ` (${s.early_decision_type})` : ""}`
+        : "";
+      const deadlineLine = `${s.application_deadline || "varies"}${s.deadline_type ? ` (${s.deadline_type})` : ""}${earlyLine}`;
 
       return `${i + 1}. ${cleanedName}${sim}${eligTag}${focusTag}
    Provider: ${cleanedProv}; host: ${cleanedCountry}

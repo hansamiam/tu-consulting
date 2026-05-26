@@ -1,3 +1,10 @@
+// AUTO-GENERATED — do not edit by hand.
+// Regenerate with: npm run gen:types
+//
+// This file mirrors the public schema of the live Supabase project.
+// After any migration that changes the schema, re-run the generator
+// so the TypeScript types stay in sync.
+
 export type Json =
   | string
   | number
@@ -423,6 +430,39 @@ export type Database = {
             referencedColumns: ["program_id"]
           },
         ]
+      }
+      archetype_assignments: {
+        Row: {
+          archetype_id: string
+          assigned_at: string
+          confidence: number | null
+          detector_version: string
+          id: string
+          intake_snapshot: Json | null
+          reason: string | null
+          user_id: string | null
+        }
+        Insert: {
+          archetype_id: string
+          assigned_at?: string
+          confidence?: number | null
+          detector_version?: string
+          id?: string
+          intake_snapshot?: Json | null
+          reason?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          archetype_id?: string
+          assigned_at?: string
+          confidence?: number | null
+          detector_version?: string
+          id?: string
+          intake_snapshot?: Json | null
+          reason?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       bookings: {
         Row: {
@@ -1654,6 +1694,68 @@ export type Database = {
         }
         Relationships: []
       }
+      scholarship_archetype_insights: {
+        Row: {
+          archetype_id: string
+          eligibility_skipped: boolean
+          generated_at: string
+          generator_model: string | null
+          insight_text: string | null
+          prompt_version: number
+          scholarship_id: string
+          skip_reason: string | null
+        }
+        Insert: {
+          archetype_id: string
+          eligibility_skipped?: boolean
+          generated_at?: string
+          generator_model?: string | null
+          insight_text?: string | null
+          prompt_version?: number
+          scholarship_id: string
+          skip_reason?: string | null
+        }
+        Update: {
+          archetype_id?: string
+          eligibility_skipped?: boolean
+          generated_at?: string
+          generator_model?: string | null
+          insight_text?: string | null
+          prompt_version?: number
+          scholarship_id?: string
+          skip_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scholarship_archetype_insights_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_archetype_insights_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships_active_v"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_archetype_insights_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships_needing_embedding"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_archetype_insights_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships_url_check_queue"
+            referencedColumns: ["scholarship_id"]
+          },
+        ]
+      }
       scholarship_checklists: {
         Row: {
           cost_estimate_usd: number | null
@@ -1900,6 +2002,62 @@ export type Database = {
             foreignKeyName: "scholarship_evidence_scholarship_id_fkey"
             columns: ["scholarship_id"]
             isOneToOne: false
+            referencedRelation: "scholarships_url_check_queue"
+            referencedColumns: ["scholarship_id"]
+          },
+        ]
+      }
+      scholarship_mini_guides: {
+        Row: {
+          content: Json
+          generated_at: string
+          notes: string | null
+          schema_version: number
+          scholarship_id: string
+          source: string
+        }
+        Insert: {
+          content: Json
+          generated_at?: string
+          notes?: string | null
+          schema_version?: number
+          scholarship_id: string
+          source?: string
+        }
+        Update: {
+          content?: Json
+          generated_at?: string
+          notes?: string | null
+          schema_version?: number
+          scholarship_id?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scholarship_mini_guides_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: true
+            referencedRelation: "scholarships"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_mini_guides_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: true
+            referencedRelation: "scholarships_active_v"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_mini_guides_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: true
+            referencedRelation: "scholarships_needing_embedding"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_mini_guides_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: true
             referencedRelation: "scholarships_url_check_queue"
             referencedColumns: ["scholarship_id"]
           },
@@ -2184,6 +2342,8 @@ export type Database = {
           data_source: string
           deadline_type: string | null
           duration_text: string | null
+          early_deadline: string | null
+          early_decision_type: string | null
           effort_level: string | null
           effort_reason: string | null
           eligibility_requirements: string | null
@@ -2202,6 +2362,7 @@ export type Database = {
           ideal_candidate_profile: string | null
           interview_required: boolean | null
           is_featured: boolean
+          is_flagship_program: boolean
           is_published: boolean
           language_requirements: string | null
           last_gate_checked_at: string | null
@@ -2283,6 +2444,8 @@ export type Database = {
           data_source?: string
           deadline_type?: string | null
           duration_text?: string | null
+          early_deadline?: string | null
+          early_decision_type?: string | null
           effort_level?: string | null
           effort_reason?: string | null
           eligibility_requirements?: string | null
@@ -2301,6 +2464,7 @@ export type Database = {
           ideal_candidate_profile?: string | null
           interview_required?: boolean | null
           is_featured?: boolean
+          is_flagship_program?: boolean
           is_published?: boolean
           language_requirements?: string | null
           last_gate_checked_at?: string | null
@@ -2382,6 +2546,8 @@ export type Database = {
           data_source?: string
           deadline_type?: string | null
           duration_text?: string | null
+          early_deadline?: string | null
+          early_decision_type?: string | null
           effort_level?: string | null
           effort_reason?: string | null
           eligibility_requirements?: string | null
@@ -2400,6 +2566,7 @@ export type Database = {
           ideal_candidate_profile?: string | null
           interview_required?: boolean | null
           is_featured?: boolean
+          is_flagship_program?: boolean
           is_published?: boolean
           language_requirements?: string | null
           last_gate_checked_at?: string | null
@@ -3057,6 +3224,8 @@ export type Database = {
           created_at: string
           email: string | null
           field_of_study: string | null
+          first_to_apply_abroad: string | null
+          foreign_languages_learned: string[] | null
           full_name: string | null
           gpa: number | null
           gpa_scale: number | null
@@ -3066,6 +3235,7 @@ export type Database = {
           last_nudge_sent_at: string | null
           location_weight: number | null
           major: string | null
+          major_certainty: string | null
           nationality: string | null
           nudge_opt_out: boolean
           prestige_weight: number | null
@@ -3086,6 +3256,8 @@ export type Database = {
           created_at?: string
           email?: string | null
           field_of_study?: string | null
+          first_to_apply_abroad?: string | null
+          foreign_languages_learned?: string[] | null
           full_name?: string | null
           gpa?: number | null
           gpa_scale?: number | null
@@ -3095,6 +3267,7 @@ export type Database = {
           last_nudge_sent_at?: string | null
           location_weight?: number | null
           major?: string | null
+          major_certainty?: string | null
           nationality?: string | null
           nudge_opt_out?: boolean
           prestige_weight?: number | null
@@ -3115,6 +3288,8 @@ export type Database = {
           created_at?: string
           email?: string | null
           field_of_study?: string | null
+          first_to_apply_abroad?: string | null
+          foreign_languages_learned?: string[] | null
           full_name?: string | null
           gpa?: number | null
           gpa_scale?: number | null
@@ -3124,6 +3299,7 @@ export type Database = {
           last_nudge_sent_at?: string | null
           location_weight?: number | null
           major?: string | null
+          major_certainty?: string | null
           nationality?: string | null
           nudge_opt_out?: boolean
           prestige_weight?: number | null
@@ -3808,6 +3984,11 @@ export type Database = {
       }
       _canonicalize_field: { Args: { f: string }; Returns: string }
       app_cron_token: { Args: never; Returns: string }
+      archetype_insights_queue_depth: { Args: never; Returns: number }
+      archive_archetype_insight: {
+        Args: { p_msg_id: number }
+        Returns: boolean
+      }
       canonicalize_field_array: { Args: { p_arr: string[] }; Returns: string[] }
       canonicalize_field_of_study: { Args: { p_raw: string }; Returns: string }
       canonicalize_provider: { Args: { p_raw: string }; Returns: string }
@@ -3824,6 +4005,7 @@ export type Database = {
         Args: { p_scholarship_id: string }
         Returns: number
       }
+      delete_archetype_insight: { Args: { p_msg_id: number }; Returns: boolean }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -3969,6 +4151,15 @@ export type Database = {
       normalize_tags: { Args: { p_tags: string[] }; Returns: string[] }
       normalize_target_field: { Args: { raw: string }; Returns: string }
       provider_slug: { Args: { p_name: string }; Returns: string }
+      read_archetype_insights_batch: {
+        Args: { batch_size: number; vt: number }
+        Returns: {
+          enqueued_at: string
+          message: Json
+          msg_id: number
+          read_ct: number
+        }[]
+      }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
@@ -4033,6 +4224,10 @@ export type Database = {
           s: Database["public"]["Tables"]["scholarships"]["Row"]
         }
         Returns: boolean
+      }
+      seed_archetype_insights_queue_for_published: {
+        Args: never
+        Returns: number
       }
       topuni_outcomes_aggregate: {
         Args: never
