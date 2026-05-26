@@ -316,6 +316,15 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
   const [whatsapp, setWhatsapp] = useState(draft?.whatsapp ?? "");
   const [nationality, setNationality] = useState(draft?.nationality ?? "");
   const [gradeLevel, setGradeLevel] = useState(draft?.gradeLevel ?? "");
+  // 2026-05-26 cofounder branch: Step-1 grade-level determines whether
+  // the rest of the wizard asks about extracurriculars (undergraduate
+  // track), professional experience (Master's / working-professional),
+  // or research output (PhD applicant). Graduate-tier scholarships
+  // (Schwarzman, Chevening, Fulbright, etc.) don't weigh ECs — asking
+  // about IMO medals + photography for a PhD candidate is noise.
+  const isPhDApp = gradeLevel === "PhD applicant";
+  const isMastersApp = gradeLevel === "Master's" || gradeLevel === "Working professional";
+  const isGraduateApp = isPhDApp || isMastersApp;
   const [gpa, setGpa] = useState(draft?.gpa ?? "");
   // GPA scale picker — defaults to 4.0 (US standard, the most common
   // baseline most students think in). The brief generator + Discover
@@ -1413,53 +1422,30 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           className="min-h-[70px] resize-none bg-card"
                         />
                       </div>
+                      {/* 2026-05-26 degree-branched intake. Bachelor's track
+                          keeps the EC chips + textarea — undergraduate
+                          admissions and undergrad scholarships care about
+                          activities, leadership, hobbies. Master's track
+                          replaces EC with work / professional projects.
+                          PhD track replaces EC with research experience,
+                          publications, and target supervisors. All three
+                          paths write to the same `extracurriculars` field
+                          downstream so the brief generator + Discover read
+                          a single canonical free-text block; the LABEL on
+                          the field is what shifts. */}
                       <div className="space-y-2">
-                        <Label htmlFor="extracurriculars" className="text-xs uppercase tracking-wider font-medium">{t("What do you like to do outside class?", "Чем ты любишь заниматься помимо учёбы?")}</Label>
-                        {/* 2026-05-23 sparse-input pass: broad-first EC chip
-                            row. Leads with culturally inclusive options
-                            (Tutoring, Part-time job, Family responsibilities,
-                            Creating online, Self-taught skill). Elite-coded
-                            chips (Olympiads, Debate, Research, etc.) live
-                            behind "+ More activities…" so they're reachable
-                            but don't telegraph the Crimson Education default.
-                            On Generate the selected tokens are prepended to
-                            this textarea as `tags: ...` so the backend reads
-                            them as a single extracurriculars field. */}
-                        <div className="space-y-1.5">
-                          <p className="text-muted-foreground text-xs">{t("Quick picks — tap any that apply.", "Быстрый выбор — отметь подходящее.")}</p>
-                          <div className="flex flex-wrap gap-2">
-                            {EC_BROAD_CHIPS.map((c) => {
-                              const selected = selectedECTags.includes(c.token);
-                              return (
-                                <button
-                                  key={c.token}
-                                  type="button"
-                                  onClick={() => toggleECTag(c.token)}
-                                  aria-pressed={selected}
-                                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[34px] ${
-                                    selected
-                                      ? "bg-gold/15 text-gold-dark border-gold"
-                                      : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
-                                  }`}
-                                >
-                                  {selected && <Check className="w-3 h-3" />}
-                                  {ecChipLabel(c.token, language === "ru" ? "ru" : "en")}
-                                </button>
-                              );
-                            })}
-                          </div>
-                          {!showMoreECChips && (
-                            <button
-                              type="button"
-                              onClick={() => setShowMoreECChips(true)}
-                              className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline mt-1"
-                            >
-                              + {t("More activities…", "Ещё активности…")}
-                            </button>
-                          )}
-                          {showMoreECChips && (
-                            <div className="flex flex-wrap gap-2 pt-1">
-                              {EC_ELITE_EXPANDABLE.map((c) => {
+                        <Label htmlFor="extracurriculars" className="text-xs uppercase tracking-wider font-medium">
+                          {isPhDApp
+                            ? t("Research experience, publications, target supervisors", "Исследовательский опыт, публикации, целевые научные руководители")
+                            : isMastersApp
+                            ? t("Work or research experience", "Опыт работы или исследований")
+                            : t("What do you like to do outside class?", "Чем ты любишь заниматься помимо учёбы?")}
+                        </Label>
+                        {!isGraduateApp && (
+                          <div className="space-y-1.5">
+                            <p className="text-muted-foreground text-xs">{t("Quick picks — tap any that apply.", "Быстрый выбор — отметь подходящее.")}</p>
+                            <div className="flex flex-wrap gap-2">
+                              {EC_BROAD_CHIPS.map((c) => {
                                 const selected = selectedECTags.includes(c.token);
                                 return (
                                   <button
@@ -1479,11 +1465,58 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                                 );
                               })}
                             </div>
-                          )}
-                        </div>
+                            {!showMoreECChips && (
+                              <button
+                                type="button"
+                                onClick={() => setShowMoreECChips(true)}
+                                className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline mt-1"
+                              >
+                                + {t("More activities…", "Ещё активности…")}
+                              </button>
+                            )}
+                            {showMoreECChips && (
+                              <div className="flex flex-wrap gap-2 pt-1">
+                                {EC_ELITE_EXPANDABLE.map((c) => {
+                                  const selected = selectedECTags.includes(c.token);
+                                  return (
+                                    <button
+                                      key={c.token}
+                                      type="button"
+                                      onClick={() => toggleECTag(c.token)}
+                                      aria-pressed={selected}
+                                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[34px] ${
+                                        selected
+                                          ? "bg-gold/15 text-gold-dark border-gold"
+                                          : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
+                                      }`}
+                                    >
+                                      {selected && <Check className="w-3 h-3" />}
+                                      {ecChipLabel(c.token, language === "ru" ? "ru" : "en")}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
                         <Textarea
                           id="extracurriculars"
-                          placeholder={t("e.g. tutored my cousins for 2 years, ran a small reselling IG, IMO bronze, photography", "напр. репетировал сестру 2 года, веду IG-магазин, бронза IMO, фотография")}
+                          placeholder={
+                            isPhDApp
+                              ? t(
+                                  "e.g. 2 publications in computational biology, RA in Dr. X's lab at NU, targeting Stanford CS-AI faculty",
+                                  "напр. 2 публикации по биоинформатике, исследователь в лаборатории д-ра X в НУ, целюсь в группу CS-AI Стэнфорда",
+                                )
+                              : isMastersApp
+                              ? t(
+                                  "e.g. 2 yrs analyst at Halyk Finance, led migration to Snowflake; thesis project on credit-risk ML",
+                                  "напр. 2 года аналитиком в Halyk Finance, провёл миграцию на Snowflake; дипломный проект по ML кредитного риска",
+                                )
+                              : t(
+                                  "e.g. tutored my cousins for 2 years, ran a small reselling IG, IMO bronze, photography",
+                                  "напр. репетировал сестру 2 года, веду IG-магазин, бронза IMO, фотография",
+                                )
+                          }
                           value={extracurriculars}
                           onChange={(e) => setExtracurriculars(e.target.value)}
                           className="min-h-[90px] resize-none bg-card"
