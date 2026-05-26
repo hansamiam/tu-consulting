@@ -356,7 +356,15 @@ function isolateJson(raw: string): string {
    raw JSON string + parsed payload — the SSE emitter forwards the JSON
    verbatim and the renderer parses on the client. */
 async function generateSection(spec: SectionSpec, ctx: BriefContext): Promise<SectionResult> {
-  const sysContent = `You are TopUni AI, an expert admissions strategist. You output ONLY a valid JSON object matching the schema in the user message. No markdown fences. No preamble.`;
+  // 2026-05-26 cofounder report: when the wizard was filled in Russian
+  // the magazine brief still came back English. ctx.lang ("English" /
+  // "Russian") was threaded through from the request but the section-
+  // generator system prompt never instructed the model on output
+  // language. Single-line directive — JSON keys stay English, string
+  // VALUES localize.
+  const sysContent = `You are TopUni AI, an expert admissions strategist. You output ONLY a valid JSON object matching the schema in the user message. No markdown fences. No preamble.
+
+LANGUAGE: write EVERY string value (kicker / headline / body / lead / bullets / labels / any user-facing text) in ${ctx.lang}. JSON keys stay as the English identifiers the schema specifies; only the VALUES are localized.`;
 
   let firstRaw = "";
   let firstReason: string | undefined;
@@ -433,7 +441,12 @@ async function generateBriefPlan(planCtx: PlanContext): Promise<{
   regenerated: boolean;
   llmBacked: boolean;
 }> {
-  const sysContent = `You are TopUni AI's brief PLANNER. You output ONLY a valid JSON object matching the schema in the user message. No markdown fences, no preamble.`;
+  // 2026-05-26: see generateSection for context. Plan strings (archetype
+  // tagline, narrative throughline, reasons) feed downstream section
+  // generators, so they need to render in the form's language too.
+  const sysContent = `You are TopUni AI's brief PLANNER. You output ONLY a valid JSON object matching the schema in the user message. No markdown fences, no preamble.
+
+LANGUAGE: write EVERY string value the schema asks for (taglines, narrative throughline, reasons, any user-facing text) in ${planCtx.lang}. JSON keys + canonical archetype IDs stay in English; only the VALUES are localized.`;
   let firstReason: string | undefined;
   for (let attempt = 1; attempt <= 2; attempt++) {
     const prompt =
