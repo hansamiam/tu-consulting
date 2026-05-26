@@ -1495,9 +1495,10 @@ STUDENT PROFILE:
 - Name: ${profile.fullName}
 - Nationality: ${profile.nationality || 'Not specified'}
 - GPA: ${profile.gpa || 'Not provided'}
-- IELTS: ${profile.ielts || 'Not taken'}
-- TOEFL: ${profile.toefl || 'Not taken'}
-- SAT: ${profile.sat || 'Not taken'}
+- IELTS: ${profile.ielts ? `${profile.ielts} (taken)` : (Array.isArray(profile.notTakenTests) && profile.notTakenTests.includes('ielts') ? 'NOT YET TAKEN — student confirmed' : 'Unknown')}
+- TOEFL: ${profile.toefl ? `${profile.toefl} (taken)` : (Array.isArray(profile.notTakenTests) && profile.notTakenTests.includes('toefl') ? 'NOT YET TAKEN — student confirmed' : 'Unknown')}
+- SAT: ${profile.sat ? `${profile.sat} (taken)` : (Array.isArray(profile.notTakenTests) && profile.notTakenTests.includes('sat') ? 'NOT YET TAKEN — student confirmed' : 'Unknown')}
+- Tests the student has confirmed NOT YET TAKEN: ${Array.isArray(profile.notTakenTests) && profile.notTakenTests.length > 0 ? profile.notTakenTests.join(', ').toUpperCase() : 'none flagged'}
 - Grade Level: ${profile.gradeLevel}
 - Target Countries: ${targetCountries.join(', ') || 'Open'}
 - Intended Major: ${profile.major || 'Undecided'}

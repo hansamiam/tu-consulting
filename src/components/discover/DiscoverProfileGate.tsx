@@ -72,6 +72,13 @@ export interface DiscoverProfile {
   // Legacy tokens siblings_have / parents_have are accepted on read
   // (drafts from before 2026-05-25) and normalized to "no" at parse time.
   firstToApplyAbroad?: "yes" | "no" | "unsure" | "siblings_have" | "parents_have";
+  /** 2026-05-26 Sam: explicit list of standardized tests the user marked
+   *  "Not yet" on the wizard. Brief generator reads this to switch from
+   *  critique-the-score advice ("your IELTS 6.0 is below threshold") to
+   *  plan-a-registration advice ("you haven't taken IELTS yet — register
+   *  for the November sitting to hit Jan 1 deadlines"). Undefined = no
+   *  explicit signal (legacy drafts). Values: "ielts" | "toefl" | "sat". */
+  notTakenTests?: string[];
 }
 
 const STORAGE_KEY = "topuni_discover_profile";
