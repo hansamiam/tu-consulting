@@ -149,6 +149,13 @@ interface WizardDraft {
   /** Sparse-input pass (2026-05-23). Step 3 broad-first EC chip
    *  selections. Prepended to extracurriculars textarea on Generate. */
   selectedECTags?: string[];
+  /** 2026-05-26 — per-test "Taken / Not yet" chip state. Persisted so a
+   *  page refresh keeps the user's answer rather than collapsing back to
+   *  "unspecified" + an empty score field. Drives the brief generator's
+   *  notTakenTests pathway. */
+  ieltsState?: "unspecified" | "taken" | "not_yet";
+  toeflState?: "unspecified" | "taken" | "not_yet";
+  satState?: "unspecified" | "taken" | "not_yet";
   /** Wall-clock ms — drafts older than 14 days are dropped on read. */
   ts?: number;
 }
@@ -414,6 +421,23 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
   // Users who want a quick pass click "Skip" and never see them; users
   // who want a sharper brief fill them in. Each maps directly into
   // the topuni-ai-pathway prompt's PROFILE section.
+  // 2026-05-26 Sam: empty score was ambiguous — could mean "haven't taken
+  // the test yet" OR "took it but skipped the field". Strategy report
+  // needs to know the difference (register-for-test advice vs critique-
+  // existing-score advice). Tri-state per test: "unspecified" (haven't
+  // answered the toggle), "taken" (chip = "Taken", score input visible),
+  // "not_yet" (chip = "Not yet", score cleared + brief sees "not taken").
+  type TestState = "unspecified" | "taken" | "not_yet";
+  const [ieltsState, setIeltsState] = useState<TestState>(
+    (draft?.ieltsState as TestState) ?? (draft?.ielts ? "taken" : "unspecified"),
+  );
+  const [toeflState, setToeflState] = useState<TestState>(
+    (draft?.toeflState as TestState) ?? (draft?.toefl ? "taken" : "unspecified"),
+  );
+  const [satState, setSatState] = useState<TestState>(
+    (draft?.satState as TestState) ?? (draft?.sat ? "taken" : "unspecified"),
+  );
+
   const [careerGoal, setCareerGoal] = useState<string>(draft?.careerGoal ?? "");
   const [extracurriculars, setExtracurriculars] = useState<string>(draft?.extracurriculars ?? "");
   const [background, setBackground] = useState<string>(draft?.background ?? "");
@@ -533,6 +557,10 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
         firstToApplyAbroad,
         // Sparse-input pass — Step 3 EC chip selections.
         selectedECTags: selectedECTags.length > 0 ? selectedECTags : undefined,
+        // 2026-05-26 — per-test taken/not-yet chip state. Persisted so a
+        // page refresh keeps the user's answer rather than resetting to
+        // "unspecified" + an empty score input.
+        ieltsState, toeflState, satState,
         ts: Date.now(),
       };
       localStorage.setItem(WIZARD_DRAFT_KEY, JSON.stringify(draftPayload));
@@ -544,6 +572,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
     prestige, scholarship, careerRoi, visaAccess, locationPref,
     careerGoal, extracurriculars, background, namedSchools,
     foreignLanguages, firstToApplyAbroad, selectedECTags,
+    ieltsState, toeflState, satState,
   ]);
 
   /* Once the user transitions to the dashboard the wizard answers are
@@ -1079,46 +1108,100 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                             </div>
                           </div>
                         </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">IELTS <span className="text-muted-foreground/70 font-normal normal-case">(0–9)</span></Label>
-                          <Input
-                            value={ielts}
-                            inputMode="decimal"
-                            onChange={e => setIelts(clampScore(e.target.value, 9, true))}
-                            placeholder={t("Score or skip · e.g. 7.0", "Балл или пропусти · напр. 7.0")}
-                            className="h-11 bg-card"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">TOEFL <span className="text-muted-foreground/70 font-normal normal-case">(0–120)</span></Label>
-                          <Input
-                            value={toefl}
-                            inputMode="numeric"
-                            onChange={e => setToefl(clampScore(e.target.value, 120, false))}
-                            placeholder={t("Score or skip · e.g. 100", "Балл или пропусти · напр. 100")}
-                            className="h-11 bg-card"
-                          />
-                        </div>
-                        {/* 2026-05-26 degree-branched intake: SAT is for
-                            US undergrad admission. Master's / PhD / Working-
-                            professional applicants don't use SAT, so hiding
-                            it removes a field that wastes their time and
-                            telegraphs the wizard was built undergrad-first.
-                            GRE/GMAT capture is a separate backend
-                            migration (no column yet) — deferred until the
-                            grad-scholarship corpus actually needs the score. */}
-                        {!isGraduateApp && (
-                          <div className="space-y-1.5">
-                            <Label className="text-xs uppercase tracking-wider font-medium">SAT <span className="text-muted-foreground/70 font-normal normal-case">(400–1600)</span></Label>
-                            <Input
-                              value={sat}
-                              inputMode="numeric"
-                              onChange={e => setSat(clampScore(e.target.value, 1600, false))}
-                              placeholder={t("Score or skip · e.g. 1450", "Балл или пропусти · напр. 1450")}
-                              className="h-11 bg-card"
-                            />
+                        {/* 2026-05-26 Sam: empty score was ambiguous (haven't
+                            taken vs took-but-skipped). Per-test taken/not-yet
+                            chip — only show the score input when the user
+                            confirms "Taken". When "Not yet", the brief
+                            generator sees the test in notTakenTests and
+                            switches from critique-the-score advice to plan-
+                            a-registration advice. */}
+                        {([
+                          {
+                            key: "ielts" as const,
+                            label: "IELTS",
+                            scale: "(0–9)",
+                            state: ieltsState,
+                            setState: setIeltsState,
+                            value: ielts,
+                            setValue: setIelts,
+                            clamp: (v: string) => clampScore(v, 9, true),
+                            inputMode: "decimal" as const,
+                            placeholder: t("e.g. 7.0", "напр. 7.0"),
+                          },
+                          {
+                            key: "toefl" as const,
+                            label: "TOEFL",
+                            scale: "(0–120)",
+                            state: toeflState,
+                            setState: setToeflState,
+                            value: toefl,
+                            setValue: setToefl,
+                            clamp: (v: string) => clampScore(v, 120, false),
+                            inputMode: "numeric" as const,
+                            placeholder: t("e.g. 100", "напр. 100"),
+                          },
+                          ...(!isGraduateApp ? [{
+                            key: "sat" as const,
+                            label: "SAT",
+                            scale: "(400–1600)",
+                            state: satState,
+                            setState: setSatState,
+                            value: sat,
+                            setValue: setSat,
+                            clamp: (v: string) => clampScore(v, 1600, false),
+                            inputMode: "numeric" as const,
+                            placeholder: t("e.g. 1450", "напр. 1450"),
+                          }] : []),
+                        ]).map(({ key, label, scale, state, setState, value, setValue, clamp, inputMode, placeholder }) => (
+                          <div key={key} className="space-y-2">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <Label className="text-xs uppercase tracking-wider font-medium">
+                                {label} <span className="text-muted-foreground/70 font-normal normal-case">{scale}</span>
+                              </Label>
+                              <div className="flex rounded-md overflow-hidden border border-border bg-card text-[11px]">
+                                <button
+                                  type="button"
+                                  onClick={() => setState("taken")}
+                                  className={`px-2.5 py-1 font-medium transition-colors ${
+                                    state === "taken"
+                                      ? "bg-gold-dark text-primary-foreground"
+                                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                  }`}
+                                >
+                                  {t("Taken", "Сдал(а)")}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { setState("not_yet"); setValue(""); }}
+                                  className={`px-2.5 py-1 font-medium border-l border-border transition-colors ${
+                                    state === "not_yet"
+                                      ? "bg-foreground/85 text-background"
+                                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                  }`}
+                                >
+                                  {t("Not yet", "Ещё нет")}
+                                </button>
+                              </div>
+                            </div>
+                            {state === "taken" && (
+                              <Input
+                                value={value}
+                                inputMode={inputMode}
+                                onChange={e => setValue(clamp(e.target.value))}
+                                placeholder={placeholder}
+                                className="h-11 bg-card"
+                              />
+                            )}
+                            {state === "not_yet" && (
+                              <p className="text-[11.5px] text-muted-foreground/85 italic leading-relaxed">
+                                {t(
+                                  "We'll fold a registration plan into your strategy.",
+                                  "Добавим план регистрации в твою стратегию.",
+                                )}
+                              </p>
+                            )}
                           </div>
-                        )}
+                        ))}
                       </div>
                       {isGraduateApp && (
                         <p className="text-[12px] text-muted-foreground/70 italic">
@@ -1605,6 +1688,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                             background, namedSchools,
                             foreignLanguages: foreignLanguages.length > 0 ? foreignLanguages : undefined,
                             firstToApplyAbroad,
+                            ieltsState, toeflState, satState,
                           }));
                         } catch { /* localStorage may be unavailable; brief still renders */ }
                         setScreen("dashboard");

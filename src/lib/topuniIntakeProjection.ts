@@ -71,6 +71,14 @@ interface IntakeFields {
   // for backward-compat with drafts created before 2026-05-25 and
   // normalized to "no" by readers.
   firstToApplyAbroad?: "yes" | "no" | "unsure" | "siblings_have" | "parents_have";
+  /** 2026-05-26 Sam: explicit "have you taken this test?" state per test.
+   *  "unspecified" = user never answered the toggle (treat as unknown).
+   *  "taken" = score should be present in the ielts/toefl/sat field.
+   *  "not_yet" = test not taken — brief should suggest a registration
+   *  plan rather than critique a missing score. */
+  ieltsState?: "unspecified" | "taken" | "not_yet";
+  toeflState?: "unspecified" | "taken" | "not_yet";
+  satState?: "unspecified" | "taken" | "not_yet";
 }
 
 /** Project the wizard's intake into the DiscoverProfile shape that
@@ -109,4 +117,20 @@ export const projectToDiscoverProfile = (intake: IntakeFields): DiscoverProfile 
   foreignLanguages: intake.foreignLanguages && intake.foreignLanguages.length > 0
     ? intake.foreignLanguages : undefined,
   firstToApplyAbroad: intake.firstToApplyAbroad,
+  // notTakenTests: array of canonical test slugs the user explicitly
+  // marked "not yet". Brief reads this to decide whether a missing
+  // ielts/toefl/sat field = "haven't taken yet, suggest registration"
+  // vs "took it but skipped the input field". Empty/undefined = no
+  // explicit signal.
+  notTakenTests: [
+    intake.ieltsState === "not_yet" ? "ielts" : null,
+    intake.toeflState === "not_yet" ? "toefl" : null,
+    intake.satState === "not_yet" ? "sat" : null,
+  ].filter((t): t is string => t !== null).length > 0
+    ? [
+        intake.ieltsState === "not_yet" ? "ielts" : null,
+        intake.toeflState === "not_yet" ? "toefl" : null,
+        intake.satState === "not_yet" ? "sat" : null,
+      ].filter((t): t is string => t !== null)
+    : undefined,
 });
