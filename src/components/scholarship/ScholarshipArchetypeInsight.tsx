@@ -153,6 +153,11 @@ const MemberInsight = ({ text }: { text: string }) => (
   </section>
 );
 
+// TEMP 2026-05-27: paywall disabled — any user with a profile sees the
+// pregenerated insight. Flip back to `false` to restore the members-only
+// gate without touching the PaywallCard code below.
+const PUBLIC_INSIGHTS_TEMP = true;
+
 export const ScholarshipArchetypeInsight = ({ scholarshipId }: Props) => {
   const archetypeId = useUserArchetype();
   const { user, subscription } = useAuth();
@@ -161,12 +166,11 @@ export const ScholarshipArchetypeInsight = ({ scholarshipId }: Props) => {
     subscription.is_founding_member ||
     isAdminUser(user)
   );
+  const canRead = PUBLIC_INSIGHTS_TEMP || isMember;
   const [text, setText] = useState<string | null>(null);
 
-  // Only fetch the cell if we'll actually render it (member with a
-  // profile). Free-tier and no-profile users never need the DB read.
   useEffect(() => {
-    if (!scholarshipId || !archetypeId || !isMember) {
+    if (!scholarshipId || !archetypeId || !canRead) {
       setText(null);
       return;
     }
@@ -187,7 +191,7 @@ export const ScholarshipArchetypeInsight = ({ scholarshipId }: Props) => {
       setText(t && t.trim() ? fillTemplate(t) : null);
     })();
     return () => { cancelled = true; };
-  }, [scholarshipId, archetypeId, isMember]);
+  }, [scholarshipId, archetypeId, canRead]);
 
   // State routing keyed on whether the user has built a profile —
   // NOT on whether a row exists in archetype_assignments. The
@@ -198,7 +202,7 @@ export const ScholarshipArchetypeInsight = ({ scholarshipId }: Props) => {
   // client-side, so archetypeId is non-null whenever a profile exists.
   const hasProfile = !!getStoredProfile();
   if (!hasProfile) return <BuildProfileCard />;
-  if (!isMember) return <PaywallCard />;
+  if (!canRead) return <PaywallCard />;
   // Member with profile but no cell (eligibility-skipped pair) — render
   // nothing rather than a misleading CTA. The mini-guide below still
   // carries static value for the user.
