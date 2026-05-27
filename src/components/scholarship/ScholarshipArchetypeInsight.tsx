@@ -165,7 +165,7 @@ const MemberInsight = ({ text }: { text: string }) => (
 const PUBLIC_INSIGHTS_TEMP = true;
 
 export const ScholarshipArchetypeInsight = ({ scholarshipId }: Props) => {
-  const archetypeId = useUserArchetype();
+  const detectedArchetype = useUserArchetype();
   const { user, subscription } = useAuth();
   const isMember = !!subscription && (
     subscription.is_active ||
@@ -173,12 +173,16 @@ export const ScholarshipArchetypeInsight = ({ scholarshipId }: Props) => {
     isAdminUser(user)
   );
   const canRead = PUBLIC_INSIGHTS_TEMP || isMember;
+  // TEMP 2026-05-27 (paired with PUBLIC_INSIGHTS_TEMP): when previewing
+  // insights with the paywall down, visitors without a stored profile
+  // fall back to the "open-question" archetype — populated on every
+  // scholarship that has any insight at all — so the surface renders.
+  // Revert when PUBLIC_INSIGHTS_TEMP flips back to false.
+  const archetypeId = detectedArchetype || (PUBLIC_INSIGHTS_TEMP ? "open-question" : null);
   const [text, setText] = useState<string | null>(null);
 
   useEffect(() => {
     if (!scholarshipId || !archetypeId || !canRead) {
-      // Debug aid 2026-05-27 — diagnose Sam's "empty section" report.
-      // Remove once the root cause is known + fixed.
       console.log("[insight] skip-fetch", { scholarshipId, archetypeId, canRead });
       setText(null);
       return;
@@ -216,20 +220,15 @@ export const ScholarshipArchetypeInsight = ({ scholarshipId }: Props) => {
   // useUserArchetype falls back to running the deterministic detector
   // client-side, so archetypeId is non-null whenever a profile exists.
   const hasProfile = !!getStoredProfile();
-  if (!hasProfile) return <BuildProfileCard />;
+  // With PUBLIC_INSIGHTS_TEMP on, the "no profile" gate is bypassed —
+  // anyone can preview the insight via the open-question fallback above.
+  if (!hasProfile && !PUBLIC_INSIGHTS_TEMP) return <BuildProfileCard />;
   if (!canRead) return <PaywallCard />;
-  // Profile exists but no insight text materialised — could be:
-  //   - archetypeId still resolving (rare; useUserArchetype seeds from
-  //     stored profile synchronously on init so this is millis at most)
-  //   - cell genuinely empty for this (archetype × scholarship) pair
-  //     (eligibility-skipped or validator-rejected)
-  //   - DB read failed
-  // 2026-05-27: previously returned null here, which created an empty
-  // void on the sheet between the deadline header and the Academy CTA —
-  // Sam called this out hard. Fall through to BuildProfileCard so the
-  // surface always carries weight; copy still reads correctly for
-  // already-built profiles ("refine your profile for sharper matches"
-  // is the implicit ask).
-  if (!text) return <BuildProfileCard />;
+  // Still fetching or genuine cell-empty. Render nothing rather than the
+  // misleading "Build my profile" card (PR #166's fallback misrepresented
+  // the state: fetch-pending, missing-row, and no-profile all collapsed
+  // into the same CTA, so users who HAD built profiles still saw the
+  // build-profile prompt). Empty space is more honest than wrong copy.
+  if (!text) return null;
   return <MemberInsight text={text} />;
 };
