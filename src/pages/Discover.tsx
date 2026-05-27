@@ -4037,36 +4037,49 @@ const Discover = ({ language = "en" }: Props) => {
                *  StitchHero is the new default. Selections always renders
                *  3 tiles (rank-driven, profile-independent) so the row
                *  never disappears for cold visitors. */}
-              {!loading && ranked.length > 0 && (
+              {!loading && ranked.length > 0 && (() => {
+                // Hero-eligibility gate (preserved from #172): only render the
+                // hero from a row with a real cover_image_url + canonical_overview
+                // + an official URL. Prevents the "name only, missing image"
+                // Makerere-Mastercard moment Sam called out. If no row in
+                // `ranked` qualifies, suppress the entire Stitch hero+selections
+                // block — the rest of Discover still renders below.
+                const heroEligible = ranked.find(r =>
+                  !!r.cover_image_url
+                  && !!(r as { canonical_overview?: string | null }).canonical_overview
+                  && !!((r as { canonical_official_url?: string | null }).canonical_official_url || r.official_url),
+                );
+                if (!heroEligible) return null;
+                return (
                 <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-5 space-y-10 sm:space-y-12">
                   <StitchHero
                     scholarship={{
-                      scholarship_id: ranked[0].scholarship_id,
-                      scholarship_name: ranked[0].scholarship_name,
-                      provider_name: ranked[0].provider_name,
-                      host_country: ranked[0].host_country,
-                      coverage_type: ranked[0].coverage_type,
-                      award_amount_text: ranked[0].award_amount_text,
-                      application_deadline: ranked[0].application_deadline,
-                      cover_image_url: ranked[0].cover_image_url,
-                      canonical_overview: (ranked[0] as { canonical_overview?: string | null }).canonical_overview ?? null,
-                      official_url: ranked[0].official_url,
+                      scholarship_id: heroEligible.scholarship_id,
+                      scholarship_name: heroEligible.scholarship_name,
+                      provider_name: heroEligible.provider_name,
+                      host_country: heroEligible.host_country,
+                      coverage_type: heroEligible.coverage_type,
+                      award_amount_text: heroEligible.award_amount_text,
+                      application_deadline: heroEligible.application_deadline,
+                      cover_image_url: heroEligible.cover_image_url,
+                      canonical_overview: (heroEligible as { canonical_overview?: string | null }).canonical_overview ?? null,
+                      official_url: heroEligible.official_url,
                     }}
-                    description={(ranked[0] as { canonical_overview?: string | null }).canonical_overview ?? null}
-                    isBookmarked={shortlist.has(ranked[0].scholarship_id)}
-                    onBookmark={(e) => { e.stopPropagation(); toggleBookmark(ranked[0].scholarship_id); }}
-                    onExpand={() => openDetailRoute(ranked[0])}
+                    description={(heroEligible as { canonical_overview?: string | null }).canonical_overview ?? null}
+                    isBookmarked={shortlist.has(heroEligible.scholarship_id)}
+                    onBookmark={(e) => { e.stopPropagation(); toggleBookmark(heroEligible.scholarship_id); }}
+                    onExpand={() => openDetailRoute(heroEligible)}
                     lang={language}
                   />
 
                   {/* Selections for you — full-width, always-on row of
                    *  3 image-forward tiles. Uses sections.strong when a
                    *  profile is filled, otherwise the top of `ranked`
-                   *  (skipping the hero scholarship at index 0). */}
+                   *  (excluding the chosen hero scholarship). */}
                   {(() => {
                     const seed = sections.strong.length > 0
                       ? sections.strong
-                      : ranked.slice(1, 7);
+                      : ranked.filter(r => r.scholarship_id !== heroEligible.scholarship_id).slice(0, 6);
                     const items = seed.slice(0, 6);
                     if (items.length === 0) return null;
                     return (
