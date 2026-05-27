@@ -163,28 +163,6 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
   })();
   const accent = s.host_country ? accentForCountry(s.host_country) : "from-foreground/40 to-foreground/60";
 
-  /* 2026-05-27: nationality-mismatch warning. Only fires when the
-   * data is human-verified — the unverified/suspicious/broken catalog
-   * may carry wrong eligibility values in either direction, so
-   * surfacing a confident "not for you" badge on those would risk
-   * scaring users away from rows they ARE eligible for. */
-  const isVerified = s.eligibility_audit_status === "verified";
-  const showIneligibleBanner = (() => {
-    if (!isVerified) return false;
-    if (!profile?.country) return false;
-    const list = s.eligible_countries;
-    if (!list || list.length === 0) return false;
-    const inclusiveRe = /^(any|any country|all countries|all nationalities|worldwide|international|open to all|open to international|no nationality restriction)$/i;
-    const openToAll = list.some(c => inclusiveRe.test((c || "").trim()));
-    if (openToAll) return false;
-    const u = profile.country.toLowerCase();
-    const match = list.some(c => {
-      const cl = (c || "").toLowerCase();
-      return cl.includes(u) || u.includes(cl);
-    });
-    return !match;
-  })();
-
   return (
     <Sheet open={!!s} onOpenChange={(o) => !o && onClose()}>
       <SheetContent
@@ -321,28 +299,6 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
               no row exists (graceful degrade — the static prose below
               still renders). */}
           <div className="overflow-y-auto flex-1 px-6 sm:px-9 py-5 sm:py-6 space-y-5">
-            {/* Nationality-mismatch banner — only shown for verified
-                rows. Sits at the top of the scrollable body so the
-                user can't miss it while still being able to read the
-                rest of the page (cohort use case: applying for a
-                friend, student, or comparing options). */}
-            {showIneligibleBanner && (
-              <div className="rounded-lg border border-destructive/30 bg-destructive/[0.06] px-4 py-3 flex items-start gap-3">
-                <span aria-hidden className="text-destructive text-base leading-none mt-0.5">⚠</span>
-                <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-destructive leading-snug">
-                    {ru
-                      ? `Не открыта для граждан страны: ${profile.country}`
-                      : `Not open to citizens of ${profile.country}`}
-                  </p>
-                  <p className="text-[12px] text-destructive/80 leading-snug mt-0.5">
-                    {ru
-                      ? "Этот список стран мы вручную проверили по сайту провайдера. Если вы подаёте за друга или ученика — данные ниже всё равно актуальны."
-                      : "We've human-verified the country list against the provider's site. If you're browsing for a friend or student, the rest of the details below still apply."}
-                  </p>
-                </div>
-              </div>
-            )}
             {/* Full canonical_overview — Sam asked the banner to show
                 only the first sentence and to let the rest reveal here
                 in the pull-up (2026-05-27). The hero banner stays
