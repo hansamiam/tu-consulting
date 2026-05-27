@@ -106,11 +106,18 @@ const score = (s: Scholarship, p: Profile): Scored => {
   let match = 50;
   let eligibility: Scored["eligibility"] = "likely";
 
-  // Country eligibility
-  if (s.eligible_countries && p.country) {
-    const list = s.eligible_countries.map(c => c.toLowerCase());
-    const allCountries = list.some(c => c.includes("all countries"));
-    const matched = allCountries || list.some(c => c.includes(p.country.toLowerCase()));
+  // Country eligibility — 2026-05-27 (PM) hardening. Same root-cause
+  // as Discover.tsx: "any" / "worldwide" / "open to all" are the
+  // strings that actually appear in eligible_countries arrays, not
+  // the long-form "all countries". Recognize the full inclusive
+  // vocabulary; mark not_eligible only when we genuinely know the
+  // user is excluded.
+  const INCLUSIVE = /^(any|all countries|all nationalities|any nationality|open to all|open to international|all international|worldwide|no nationality restriction)$/i;
+  if (s.eligible_countries && s.eligible_countries.length > 0 && p.country) {
+    const list = s.eligible_countries.map(c => c.toLowerCase().trim());
+    const openToAll = list.some(c => INCLUSIVE.test(c));
+    const userCountry = p.country.toLowerCase();
+    const matched = openToAll || list.some(c => c.includes(userCountry));
     if (matched) { match += 15; reasons.push(`Open to ${p.country}`); }
     else { eligibility = "not_eligible"; match -= 40; reasons.push(`Not open to ${p.country}`); }
   }
@@ -275,6 +282,11 @@ const DiscoverApp = ({ language = "en" }: Props) => {
     if (!submitted) return rows.map(r => score(r, DEFAULT_PROFILE));
     return rows
       .map(r => score(r, profile))
+      // 2026-05-27 (PM): hard-filter not_eligible. Eligibility is a
+      // categorical constraint, never a soft demotion — showing a row
+      // we know the user is ineligible for is a worse failure than
+      // hiding a row whose data we're unsure about.
+      .filter(r => r.eligibility !== "not_eligible")
       .sort((a, b) => {
         const elig = { eligible: 0, likely: 1, missing: 2, not_eligible: 3 };
         if (elig[a.eligibility] !== elig[b.eligibility]) return elig[a.eligibility] - elig[b.eligibility];
