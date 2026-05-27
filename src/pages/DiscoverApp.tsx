@@ -282,11 +282,11 @@ const DiscoverApp = ({ language = "en" }: Props) => {
     if (!submitted) return rows.map(r => score(r, DEFAULT_PROFILE));
     return rows
       .map(r => score(r, profile))
-      // 2026-05-27 (PM): hard-filter not_eligible. Eligibility is a
-      // categorical constraint, never a soft demotion — showing a row
-      // we know the user is ineligible for is a worse failure than
-      // hiding a row whose data we're unsure about.
-      .filter(r => r.eligibility !== "not_eligible")
+      // 2026-05-27 (PM, revised): not_eligible sorts to the bottom but
+      // is no longer hidden. Users sometimes browse for a friend or
+      // student with different nationality; hiding the row would
+      // break that use case. The sort key below already pushes
+      // not_eligible to the end of the list.
       .sort((a, b) => {
         const elig = { eligible: 0, likely: 1, missing: 2, not_eligible: 3 };
         if (elig[a.eligibility] !== elig[b.eligibility]) return elig[a.eligibility] - elig[b.eligibility];
