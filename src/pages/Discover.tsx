@@ -93,6 +93,7 @@ import { isAggregatorUrl, domainFor } from "@/lib/aggregatorUrls";
 import { useSemanticScholarshipMatch } from "@/hooks/useSemanticScholarshipMatch";
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
 import { useScholarshipTracking, useTrackView } from "@/hooks/useScholarshipTracking";
+import { useInferredCountry } from "@/hooks/useInferredCountry";
 import { Lock } from "lucide-react";
 import { toast } from "sonner";
 
@@ -218,6 +219,13 @@ interface Scholarship {
 
 interface Profile {
   country: string;
+  /* Trust level of the country field. "user" = explicitly entered via
+   *  wizard (apply hard eligibility rules). "ip" = inferred from
+   *  Vercel's geolocation header for a cold visitor (apply soft +15 /
+   *  +7 boosts but NEVER the -40 not-eligible penalty — a Kazakh
+   *  student browsing from a UK IP shouldn't be told Commonwealth
+   *  scholarships aren't for them). Undefined = legacy / no signal. */
+  countrySource?: "user" | "ip";
   /* Multi-select: students applying to multiple levels can mark all that
    * apply. Scoring matches against any selected level. Empty array =
    * unspecified (not a constraint). */
@@ -466,6 +474,14 @@ const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: numbe
     const specific = matchesNationality(p.country, s.eligible_countries);
     if (specific) { match += 15; reasons.push(`Open to ${p.country} nationals`); }
     else if (openToAll) { match += 7; reasons.push("Open to all nationalities"); }
+    else if (p.countrySource === "ip") {
+      // IP-inferred country is a guess, not a citizenship claim. A
+      // Kazakh student on a UK IP would get Commonwealth scholarships
+      // hidden under -40 + not_eligible. Skip the hard penalty for
+      // inferred country; the +15 / +7 boosts above still fire for
+      // the common case (real UK visitor sees UK-friendly programs
+      // surface) but never punish the wrong-guess case.
+    }
     else { eligibility = "not_eligible"; match -= 40; warnings.push(`Not open to ${p.country} nationals`); }
   }
 
@@ -2593,6 +2609,15 @@ const Discover = ({ language = "en" }: Props) => {
   const [fetchKey, setFetchKey] = useState(0);
   const retryCatalog = () => { setCatalogError(null); setLoading(true); setFetchKey(k => k + 1); };
   const [profile, setProfile] = useState<Profile>({ country: "", degrees: [], gpa: "", gpaScale: "4.0", ielts: "", toefl: "", sat: "", field: "", demographics: [], targetCountries: [] });
+  /* IP-inferred country for cold visitors. Hydrates profile.country
+   * with countrySource: "ip" when no explicit profile exists, so the
+   * hero + Selections + ranking get a soft personalization signal
+   * instead of generic fallback ordering. Always surfaced via the
+   * disclosure pill above the hero — never silent. */
+  const inferredCountry = useInferredCountry();
+  const [inferredPillDismissed, setInferredPillDismissed] = useState<boolean>(() => {
+    try { return localStorage.getItem("topuni_inferred_pill_dismissed_v1") === "1"; } catch { return false; }
+  });
   // Round-28 IA: /discover always lands you in the database. Previously
   // we showed a big "answer 4 questions" landing wall that forked users
   // out to /topuni-ai — TopUni AI and Discover felt like two products.
@@ -2998,6 +3023,7 @@ const Discover = ({ language = "en" }: Props) => {
       };
       setProfile({
         country: stored.nationality || "",
+        countrySource: stored.nationality ? "user" : undefined,
         degrees: rawLevels.length > 0 ? rawLevels.map(canonicalize) : [],
         gpa: stored.gpa || "", gpaScale: stored.gpaScale || "4.0",
         ielts: stored.ieltsScore || "",
@@ -3020,6 +3046,21 @@ const Discover = ({ language = "en" }: Props) => {
       window.removeEventListener("tu:profile", onSelf);
     };
   }, [user?.id]);
+
+  /* Cold-visitor country hydration. When the explicit profile has no
+   * country (no wizard run, no DB profile) AND the inferred-country
+   * fetch resolved with a country name, write it into profile.country
+   * with countrySource: "ip" so scoreScholarship picks up the soft
+   * boost. The hard -40 penalty stays gated off inside scoreScholarship
+   * itself — see the countrySource === "ip" branch. */
+  useEffect(() => {
+    if (inferredCountry.loading) return;
+    if (!inferredCountry.name) return;
+    setProfile(prev => {
+      if (prev.country) return prev; // explicit wins; never overwrite
+      return { ...prev, country: inferredCountry.name!, countrySource: "ip" };
+    });
+  }, [inferredCountry.loading, inferredCountry.name]);
 
   useEffect(() => {
     if (phase !== "analyzing") return;
@@ -3048,7 +3089,7 @@ const Discover = ({ language = "en" }: Props) => {
     // their target-country preferences shouldn't be wiped just because
     // they're tweaking a different field.
     const existingTargetCountries = getStoredProfile()?.targetCountries ?? [];
-    const p: Profile = { country, degrees: wiz.degrees, gpa: wiz.gpa, gpaScale: wiz.gpaScale, ielts: wiz.ielts, toefl: wiz.toefl, sat: wiz.sat, field: wiz.field, demographics: wiz.demographics, targetCountries: existingTargetCountries };
+    const p: Profile = { country, countrySource: country ? "user" : undefined, degrees: wiz.degrees, gpa: wiz.gpa, gpaScale: wiz.gpaScale, ielts: wiz.ielts, toefl: wiz.toefl, sat: wiz.sat, field: wiz.field, demographics: wiz.demographics, targetCountries: existingTargetCountries };
     setProfile(p);
     saveProfile({
       fullName: wiz.fullName, email: wiz.email, nationality: country,
@@ -4078,8 +4119,48 @@ const Discover = ({ language = "en" }: Props) => {
                   && !!((r as { canonical_official_url?: string | null }).canonical_official_url || r.official_url),
                 );
                 if (!heroEligible) return null;
+                const showInferredPill =
+                  profile.countrySource === "ip"
+                  && !!inferredCountry.name
+                  && !!inferredCountry.flag
+                  && !inferredPillDismissed;
                 return (
                 <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-5 space-y-10 sm:space-y-12">
+                  {/* IP-inferred country disclosure — surfaces the soft
+                   *  personalization signal (Sam asked for IP-based
+                   *  placeholder citizenship 2026-05-27). Dismissible;
+                   *  "change" deep-links to /topuni-ai for the real
+                   *  profile wizard. Never appears once the user has
+                   *  explicit countrySource: "user". */}
+                  {showInferredPill && (
+                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/40 px-3.5 py-2 -mb-6 sm:-mb-8">
+                      <p className="text-[12px] sm:text-[13px] text-foreground/85 leading-snug min-w-0">
+                        <span aria-hidden className="mr-1.5">{inferredCountry.flag}</span>
+                        {t(
+                          `Showing matches based on your location — ${inferredCountry.name}.`,
+                          `Подборка по вашей геолокации — ${inferredCountry.name}.`,
+                        )}{" "}
+                        <button
+                          type="button"
+                          onClick={() => navigate(language === "ru" ? "/topuni-ai/ru" : "/topuni-ai")}
+                          className="font-semibold text-foreground underline-offset-2 hover:underline"
+                        >
+                          {t("Not you? Set your profile", "Не вы? Укажите профиль")}
+                        </button>
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setInferredPillDismissed(true);
+                          try { localStorage.setItem("topuni_inferred_pill_dismissed_v1", "1"); } catch { /* private mode */ }
+                        }}
+                        aria-label={t("Dismiss", "Скрыть")}
+                        className="shrink-0 text-muted-foreground hover:text-foreground transition-colors p-1 -mr-1"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
                   <StitchHero
                     scholarship={{
                       scholarship_id: heroEligible.scholarship_id,
