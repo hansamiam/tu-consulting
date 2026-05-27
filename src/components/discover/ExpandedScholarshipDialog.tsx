@@ -51,6 +51,7 @@ interface ScholarshipLite {
   target_degree_level: string[] | null;
   target_fields: string[] | null;
   citizenship_requirements: string | null;
+  eligible_countries: string[] | null;
   eligible_countries?: string[] | null;
   /* 2026-05-27: data-quality flag for the eligible_countries column.
    * Used to gate the red "not for your nationality" banner — we only
@@ -88,6 +89,26 @@ interface Props {
 
 const MONTH_LONG_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const MONTH_LONG_RU = ["январе","феврале","марте","апреле","мае","июне","июле","августе","сентябре","октябре","ноябре","декабре"];
+
+// Citizenship line: prefer the structured eligible_countries array
+// (source of truth) over citizenship_requirements (freetext summary that
+// often degrades to placeholders like "Hold the nationality of a country
+// appearing in the specified list" when the LLM extractor didn't follow
+// the source's country-list link). 96/98 published rows have a real
+// eligible_countries array as of 2026-05-27.
+const OPEN_TO_ALL_MARKERS = ["any", "all", "open", "worldwide", "international"];
+function renderCitizenship(
+  countries: string[] | null,
+  summary: string | null,
+  t: (en: string, ru: string) => string,
+): string {
+  const list = (countries ?? []).map(c => (c ?? "").trim()).filter(Boolean);
+  if (list.length === 1 && OPEN_TO_ALL_MARKERS.includes(list[0].toLowerCase())) {
+    return t("Open to all nationalities", "Открыто для всех национальностей");
+  }
+  if (list.length > 0) return list.join(", ");
+  return summary || t("Open", "Открыто всем");
+}
 
 const fmtDays = (d: string | null, lang: Lang, isInferred?: boolean | null): { text: string; tone: "danger" | "warn" | "neutral" } => {
   const ru = lang === "ru";
@@ -291,7 +312,7 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
             <p className="text-sm leading-relaxed text-foreground">
               <span className="font-semibold">{t("Citizenship", "Гражданство")}:</span>{" "}
               <span className="text-foreground/85">
-                {s.citizenship_requirements || t("Open", "Открыто всем")}
+                {renderCitizenship(s.eligible_countries, s.citizenship_requirements, t)}
               </span>
             </p>
           </div>
