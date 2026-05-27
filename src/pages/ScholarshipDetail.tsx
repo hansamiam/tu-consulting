@@ -68,6 +68,11 @@ import {
   humanizeDegreeLabel,
 } from "@/lib/scholarshipFields";
 import { shortCountry } from "@/lib/countryAccent";
+import { EditModeProvider } from "@/contexts/EditModeContext";
+import { EditModeToggle } from "@/components/admin/EditModeToggle";
+import { InlineEdit } from "@/components/admin/InlineEdit";
+import { useScholarshipEdit } from "@/components/admin/useScholarshipEdit";
+import { AdminMetadataPanel } from "@/components/admin/AdminMetadataPanel";
 
 interface Scholarship {
   scholarship_id: string;
@@ -144,6 +149,16 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
   const { user } = useAuth();
   const tracker = useApplicationTracker();
   const [s, setS] = useState<Scholarship | null>(null);
+  // Admin inline-edit hook — no-op for non-admin sessions (RLS rejects the
+  // write anyway). Wired by InlineEdit children of the page.
+  const { saving: savingEdit, saveScholarshipField } = useScholarshipEdit(s?.scholarship_id ?? "");
+  const editField = <K extends keyof Scholarship>(field: K) => async (next: string | string[] | null): Promise<boolean> => {
+    if (!s) return false;
+    const before = s[field];
+    const ok = await saveScholarshipField(field as string, before as unknown, next as unknown);
+    if (ok) setS({ ...s, [field]: next as Scholarship[K] });
+    return ok;
+  };
   const [similar, setSimilar] = useState<SimilarScholarship[]>([]);
   const [stats, setStats] = useState<ScholarshipStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -591,8 +606,30 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
   }
 
   return (
+    <EditModeProvider>
     <div className="min-h-screen bg-background">
       <Navigation language={language} />
+      <EditModeToggle />
+      <AdminMetadataPanel
+        scholarship={{
+          scholarship_id: s.scholarship_id,
+          provider_name: s.provider_name,
+          host_country: s.host_country,
+          official_url: s.official_url,
+          coverage_type: s.coverage_type,
+          award_amount_text: s.award_amount_text,
+          application_deadline: s.application_deadline,
+          target_degree_level: s.target_degree_level,
+          target_fields: s.target_fields,
+          target_demographics: (s as Scholarship & { target_demographics?: string[] | null }).target_demographics ?? null,
+          eligible_countries: s.eligible_countries,
+          citizenship_requirements: s.citizenship_requirements,
+          cover_image_url: (s as Scholarship & { cover_image_url?: string | null }).cover_image_url ?? null,
+        }}
+        onSaved={(patch) => setS({ ...s, ...patch } as Scholarship)}
+        onDeleted={() => navigate(ru ? "/discover/ru" : "/discover")}
+        scholarshipName={s.scholarship_name}
+      />
 
       {/* HERO — editorial masthead matching the strategy-report magazine.
           The previous dark-navy block was the eyesore the user called
@@ -617,7 +654,9 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
             </span>
           </div>
           <h1 className="font-heading text-4xl sm:text-5xl md:text-6xl font-bold text-foreground tracking-[-0.025em] leading-[1.02] mb-4">
-            {cleanScholarshipName(s.scholarship_name)}
+            <InlineEdit field="scholarship_name" variant="text" value={s.scholarship_name} onSave={editField("scholarship_name")} saving={savingEdit}>
+              {cleanScholarshipName(s.scholarship_name)}
+            </InlineEdit>
           </h1>
           {(() => {
             const p = cleanProvider(s.provider_name);
@@ -816,10 +855,26 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
       <section className="max-w-[860px] mx-auto px-5 sm:px-8 py-10 sm:py-14 space-y-12 sm:space-y-14">
         {/* Key facts row */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <Fact icon={<Wallet />} label={t("Award", "Финансирование")} value={s.award_amount_text || compactAward(s) || (s.estimated_total_value_usd ? `~$${Math.round(s.estimated_total_value_usd / 1000)}K total` : "—")} />
-          <Fact icon={<Calendar />} label={t("Deadline", "Дедлайн")} value={formattedDeadline ?? (s.deadline_type ?? t("varies", "разные"))} />
-          <Fact icon={<GraduationCap />} label={t("Levels", "Уровни")} value={(s.target_degree_level ?? []).map(humanizeDegreeLabel).join(", ") || t("any", "любой")} />
-          <Fact icon={<Globe />} label={t("Citizenship", "Гражданство")} value={citizenshipFactValue(s.eligible_countries, s.citizenship_requirements, isRu)} />
+          <Fact icon={<Wallet />} label={t("Award", "Финансирование")} value={
+            <InlineEdit field="award_amount_text" variant="text" value={s.award_amount_text} onSave={editField("award_amount_text")} saving={savingEdit} label="Award amount">
+              <span>{s.award_amount_text || compactAward(s) || (s.estimated_total_value_usd ? `~$${Math.round(s.estimated_total_value_usd / 1000)}K total` : "—")}</span>
+            </InlineEdit>
+          } />
+          <Fact icon={<Calendar />} label={t("Deadline", "Дедлайн")} value={
+            <InlineEdit field="application_deadline" variant="date" value={s.application_deadline} onSave={editField("application_deadline")} saving={savingEdit} label="Application deadline (ISO)">
+              <span>{formattedDeadline ?? (s.deadline_type ?? t("varies", "разные"))}</span>
+            </InlineEdit>
+          } />
+          <Fact icon={<GraduationCap />} label={t("Levels", "Уровни")} value={
+            <InlineEdit field="target_degree_level" variant="chip-array" value={s.target_degree_level} onSave={editField("target_degree_level")} saving={savingEdit} label="Target levels">
+              <span>{(s.target_degree_level ?? []).map(humanizeDegreeLabel).join(", ") || t("any", "любой")}</span>
+            </InlineEdit>
+          } />
+          <Fact icon={<Globe />} label={t("Citizenship", "Гражданство")} value={
+            <InlineEdit field="eligible_countries" variant="chip-array" value={s.eligible_countries} onSave={editField("eligible_countries")} saving={savingEdit} label="Eligible countries (empty = open to all)">
+              <span>{citizenshipFactValue(s.eligible_countries, s.citizenship_requirements, isRu)}</span>
+            </InlineEdit>
+          } />
         </div>
 
         {/* "Top Uni Insights" — pre-generated 3-bullet strategy notes
@@ -834,7 +889,9 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
         {s.why_this_fits && (
           <div>
             <Kicker label={t("Why this fits", "Почему это подходит")} centered />
-            <LeadParagraph text={s.why_this_fits} />
+            <InlineEdit field="why_this_fits" variant="textarea" value={s.why_this_fits} onSave={editField("why_this_fits")} saving={savingEdit} label="Why this fits">
+              <LeadParagraph text={s.why_this_fits} />
+            </InlineEdit>
           </div>
         )}
 
@@ -848,7 +905,9 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
               <EditorialCard accent="neutral">
                 <CardKicker label={t("Eligibility", "Кто может подавать")} />
                 <p className="font-heading text-foreground/85 text-[15.5px] leading-[1.7] whitespace-pre-line">
-                  {s.eligibility_requirements}
+                  <InlineEdit field="eligibility_requirements" variant="textarea" value={s.eligibility_requirements} onSave={editField("eligibility_requirements")} saving={savingEdit} label="Eligibility">
+                    {s.eligibility_requirements}
+                  </InlineEdit>
                 </p>
               </EditorialCard>
             )}
@@ -856,7 +915,9 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
               <EditorialCard accent="emerald">
                 <CardKicker label={t("Ideal candidate", "Идеальный кандидат")} accent="emerald" />
                 <p className="font-heading text-foreground/85 text-[15.5px] leading-[1.7] whitespace-pre-line">
-                  {s.ideal_candidate_profile}
+                  <InlineEdit field="ideal_candidate_profile" variant="textarea" value={s.ideal_candidate_profile} onSave={editField("ideal_candidate_profile")} saving={savingEdit} label="Ideal candidate">
+                    {s.ideal_candidate_profile}
+                  </InlineEdit>
                 </p>
               </EditorialCard>
             )}
@@ -883,7 +944,9 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
         {s.how_to_win && (
           <div>
             <Kicker label={t("How to win it", "Как выиграть")} centered />
-            <EditorialProse text={s.how_to_win} />
+            <InlineEdit field="how_to_win" variant="textarea" value={s.how_to_win} onSave={editField("how_to_win")} saving={savingEdit} label="How to win">
+              <EditorialProse text={s.how_to_win} />
+            </InlineEdit>
           </div>
         )}
 
@@ -898,7 +961,9 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
               icon={<AlertCircle className="w-3.5 h-3.5" />}
             />
             <p className="font-heading text-foreground/85 text-[15.5px] leading-[1.7] whitespace-pre-line">
-              {s.common_rejection_reasons}
+              <InlineEdit field="common_rejection_reasons" variant="textarea" value={s.common_rejection_reasons} onSave={editField("common_rejection_reasons")} saving={savingEdit} label="Rejection reasons">
+                {s.common_rejection_reasons}
+              </InlineEdit>
             </p>
           </EditorialCard>
         )}
@@ -913,7 +978,9 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
               icon={<ShieldAlert className="w-3.5 h-3.5" />}
             />
             <p className="font-heading text-foreground/85 text-[15.5px] leading-[1.7] whitespace-pre-line">
-              {s.weak_candidate_warning}
+              <InlineEdit field="weak_candidate_warning" variant="textarea" value={s.weak_candidate_warning} onSave={editField("weak_candidate_warning")} saving={savingEdit} label="Don't apply if">
+                {s.weak_candidate_warning}
+              </InlineEdit>
             </p>
           </EditorialCard>
         )}
@@ -928,7 +995,9 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
               {t("Start here", "Начните здесь")}
             </p>
             <p className="font-heading text-foreground text-base sm:text-[17px] leading-[1.6] whitespace-pre-line">
-              {s.what_to_prepare_first}
+              <InlineEdit field="what_to_prepare_first" variant="textarea" value={s.what_to_prepare_first} onSave={editField("what_to_prepare_first")} saving={savingEdit} label="Start here">
+                {s.what_to_prepare_first}
+              </InlineEdit>
             </p>
           </div>
         )}
@@ -1183,6 +1252,7 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
 
       <Footer language={language} />
     </div>
+    </EditModeProvider>
   );
 };
 
@@ -1332,7 +1402,7 @@ const Section = ({ title, body, children, tone = "neutral" }: {
   );
 };
 
-const Fact = ({ icon, label, value }: { icon?: React.ReactNode; label: string; value: string }) => (
+const Fact = ({ icon, label, value }: { icon?: React.ReactNode; label: string; value: React.ReactNode }) => (
   <div className="bg-muted/40 border border-border rounded-lg px-3 py-2.5">
     <div className="flex items-center gap-1.5 text-muted-foreground mb-0.5">
       {icon && <span className="w-3 h-3 [&>*]:w-3 [&>*]:h-3">{icon}</span>}

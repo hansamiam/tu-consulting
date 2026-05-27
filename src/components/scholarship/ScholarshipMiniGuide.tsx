@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAdminUser } from "@/lib/adminMode";
+import { useEditMode } from "@/contexts/EditModeContext";
+import { toast } from "@/hooks/use-toast";
 import { countryFlag } from "@/lib/country-chips";
 import { accentForCountry } from "@/lib/countryAccent";
 
@@ -14,10 +16,14 @@ import { accentForCountry } from "@/lib/countryAccent";
  * of the Discover right-panel pull-up. Hand-written 3-bullet summary,
  * sourced from public.scholarship_mini_guides.top_insights (TEXT[3]).
  *
- * Three render states:
+ * Render states:
  *   1. PAYWALL DOWN + bullets present → render the 3 numbered bullets
  *   2. PAYWALL UP + free user        → "Become a member to unlock..."
- *   3. No bullets uploaded yet       → "Top Uni notes coming soon..."
+ *   3. No bullets uploaded yet       → "More notes coming soon." + a
+ *                                       graphic link to a related verified
+ *                                       scholarship that does have bullets
+ *   4. ADMIN + edit mode             → 3 editable textareas, save writes
+ *                                       to top_insights + audit row
  *
  * The legacy multi-section guide (who_fits / how_to_win / what_to_prepare
  * / typical_admit / watch_out in `content` JSONB) ran too long for this
@@ -47,13 +53,16 @@ export const ScholarshipMiniGuide = ({ scholarshipId, language = "en", hostCount
   const [bullets, setBullets] = useState<string[] | null>(null);
   const [related, setRelated] = useState<RelatedScholarship | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const { user, subscription } = useAuth();
+  const { isEditing } = useEditMode();
   const isMember = !!subscription && (
     subscription.is_active ||
     subscription.is_founding_member ||
     isAdminUser(user)
   );
   const canRead = PUBLIC_INSIGHTS_TEMP || isMember;
+  const adminEditing = isAdminUser(user) && isEditing;
   const t = (en: string, ru: string) => (language === "ru" ? ru : en);
 
   useEffect(() => {
@@ -75,8 +84,6 @@ export const ScholarshipMiniGuide = ({ scholarshipId, language = "en", hostCount
         const row = data as { top_insights?: string[] | null } | null;
         const list = Array.isArray(row?.top_insights) ? row!.top_insights! : null;
         setBullets(list && list.length > 0 ? list : null);
-        // No bullets for this scholarship yet — pick a related one that
-        // DOES have bullets so the user has somewhere useful to click.
         if (!list || list.length === 0) {
           const pick = await findRelatedScholarship(scholarshipId, hostCountry);
           if (!cancelled && pick) setRelated(pick);
@@ -87,8 +94,73 @@ export const ScholarshipMiniGuide = ({ scholarshipId, language = "en", hostCount
     return () => { cancelled = true; };
   }, [scholarshipId, hostCountry]);
 
+  // Admin save: upsert top_insights array on mini_guides + write audit row.
+  // Mirrors useScholarshipEdit's two-write pattern (update then audit; audit
+  // failure is soft-logged, not reverted — same as saveMiniGuideField).
+  const saveBullets = async (next: string[], before: string[] | null): Promise<boolean> => {
+    if (!user) return false;
+    setSaving(true);
+    const cleaned = next.map(s => (s || "").trim()).filter(Boolean);
+    if (cleaned.length !== 3) {
+      toast({
+        title: "Top Uni Insights need exactly 3 bullets",
+        description: `You have ${cleaned.length} non-empty rows.`,
+        variant: "destructive",
+      });
+      setSaving(false);
+      return false;
+    }
+    const emptyContent = {
+      schema_version: 1,
+      who_fits: "",
+      how_to_win: [],
+      watch_out: [],
+      what_to_prepare: [],
+      typical_admit: "",
+    };
+    const { error: upErr } = await supabase
+      .from("scholarship_mini_guides")
+      .upsert(
+        {
+          scholarship_id: scholarshipId,
+          content: emptyContent as never,
+          top_insights: cleaned,
+          source: "hand_curated_admin",
+        },
+        { onConflict: "scholarship_id" }
+      );
+    if (upErr) {
+      setSaving(false);
+      toast({ title: "Save failed", description: upErr.message, variant: "destructive" });
+      return false;
+    }
+    const { error: auditErr } = await supabase.from("scholarship_edits").insert({
+      scholarship_id: scholarshipId,
+      editor_user_id: user.id,
+      editor_email: user.email ?? "unknown",
+      field_name: "mini_guide.top_insights",
+      value_before: (before ?? []) as never,
+      value_after: cleaned as never,
+    });
+    if (auditErr) console.warn("[admin-edit] top_insights audit failed (save persisted)", auditErr);
+    setBullets(cleaned);
+    setSaving(false);
+    toast({ title: "Saved" });
+    return true;
+  };
+
   if (loading) return null;
   if (!canRead) return <PaywallCard t={t} />;
+  if (adminEditing) {
+    return (
+      <EditableBullets
+        t={t}
+        initial={bullets ?? ["", "", ""]}
+        saving={saving}
+        onSave={(next) => saveBullets(next, bullets)}
+      />
+    );
+  }
   if (!bullets) return <ComingSoonCard t={t} related={related} language={language} />;
 
   return (
@@ -125,6 +197,58 @@ const SectionEyebrow = ({ t }: { t: (en: string, ru: string) => string }) => (
   </div>
 );
 
+const EditableBullets = ({
+  t,
+  initial,
+  saving,
+  onSave,
+}: {
+  t: (en: string, ru: string) => string;
+  initial: string[];
+  saving: boolean;
+  onSave: (next: string[]) => Promise<boolean>;
+}) => {
+  const padded = [...initial];
+  while (padded.length < 3) padded.push("");
+  const [drafts, setDrafts] = useState<string[]>(padded.slice(0, 3));
+
+  const setAt = (i: number, v: string) => {
+    const next = [...drafts];
+    next[i] = v;
+    setDrafts(next);
+  };
+
+  return (
+    <section className="not-prose mb-8 max-w-2xl">
+      <SectionEyebrow t={t} />
+      <p className="text-[11px] uppercase tracking-[0.18em] font-semibold text-foreground/55 m-0 mb-3">
+        Admin · edit the 3 bullets, then save
+      </p>
+      <ol className="space-y-3 m-0 pl-0 list-none">
+        {drafts.map((b, i) => (
+          <li key={i} className="grid grid-cols-[28px_1fr] gap-3.5 items-start">
+            <span className="font-heading text-[20px] font-bold text-brand-navy tabular-nums leading-[1.25]">
+              {i + 1}.
+            </span>
+            <textarea
+              value={b}
+              onChange={(e) => setAt(i, e.target.value)}
+              placeholder={`Bullet ${i + 1}…`}
+              rows={2}
+              className="w-full rounded-md border border-foreground/20 bg-background px-2.5 py-1.5 text-[14px] leading-[1.55] resize-y focus:outline-none focus:ring-1 focus:ring-gold/40"
+            />
+          </li>
+        ))}
+      </ol>
+      <div className="mt-4">
+        <Button size="sm" variant="default" onClick={() => onSave(drafts)} disabled={saving}>
+          {saving ? "Saving…" : "Save"}
+        </Button>
+      </div>
+    </section>
+  );
+};
+
 const ComingSoonCard = ({
   t,
   related,
@@ -150,7 +274,6 @@ const ComingSoonCard = ({
             className="group block rounded-xl border border-gold/35 bg-gradient-to-br from-gold/[0.06] via-card to-card hover:border-gold/60 hover:from-gold/[0.12] transition-all overflow-hidden"
           >
             <div className="flex items-stretch min-w-0">
-              {/* Graphic — country-accented gradient block + flag emoji */}
               <div
                 className={`shrink-0 w-16 sm:w-20 flex items-center justify-center bg-gradient-to-br ${accentForCountry(related.host_country || "") || "from-gold/20 to-gold/5"}`}
               >
@@ -176,61 +299,6 @@ const ComingSoonCard = ({
     </div>
   </section>
 );
-
-async function findRelatedScholarship(
-  excludeId: string,
-  hostCountry: string | null,
-): Promise<RelatedScholarship | null> {
-  type Row = {
-    scholarship_id: string;
-    scholarships: {
-      scholarship_name: string;
-      provider_name: string | null;
-      host_country: string | null;
-      verified: boolean | null;
-    } | null;
-  };
-
-  const baseSelect = "scholarship_id, scholarships!inner(scholarship_name, provider_name, host_country, verified)";
-
-  // Same-country first
-  if (hostCountry) {
-    const { data } = await supabase
-      .from("scholarship_mini_guides")
-      .select(baseSelect)
-      .not("top_insights", "is", null)
-      .neq("scholarship_id", excludeId)
-      .eq("scholarships.verified", true)
-      .eq("scholarships.host_country", hostCountry)
-      .limit(1);
-    const row = (data as unknown as Row[] | null)?.[0];
-    if (row?.scholarships) {
-      return {
-        scholarship_id: row.scholarship_id,
-        scholarship_name: row.scholarships.scholarship_name,
-        provider_name: row.scholarships.provider_name,
-        host_country: row.scholarships.host_country,
-      };
-    }
-  }
-
-  // Fallback — any verified scholarship with bullets
-  const { data } = await supabase
-    .from("scholarship_mini_guides")
-    .select(baseSelect)
-    .not("top_insights", "is", null)
-    .neq("scholarship_id", excludeId)
-    .eq("scholarships.verified", true)
-    .limit(1);
-  const row = (data as unknown as Row[] | null)?.[0];
-  if (!row?.scholarships) return null;
-  return {
-    scholarship_id: row.scholarship_id,
-    scholarship_name: row.scholarships.scholarship_name,
-    provider_name: row.scholarships.provider_name,
-    host_country: row.scholarships.host_country,
-  };
-}
 
 const PaywallCard = ({ t }: { t: (en: string, ru: string) => string }) => (
   <section className="not-prose mb-8">
@@ -260,3 +328,55 @@ const PaywallCard = ({ t }: { t: (en: string, ru: string) => string }) => (
     </div>
   </section>
 );
+
+async function findRelatedScholarship(
+  excludeId: string,
+  hostCountry: string | null,
+): Promise<RelatedScholarship | null> {
+  type Row = {
+    scholarship_id: string;
+    scholarships: {
+      scholarship_name: string;
+      provider_name: string | null;
+      host_country: string | null;
+      verified: boolean | null;
+    } | null;
+  };
+  const baseSelect = "scholarship_id, scholarships!inner(scholarship_name, provider_name, host_country, verified)";
+
+  if (hostCountry) {
+    const { data } = await supabase
+      .from("scholarship_mini_guides")
+      .select(baseSelect)
+      .not("top_insights", "is", null)
+      .neq("scholarship_id", excludeId)
+      .eq("scholarships.verified", true)
+      .eq("scholarships.host_country", hostCountry)
+      .limit(1);
+    const row = (data as unknown as Row[] | null)?.[0];
+    if (row?.scholarships) {
+      return {
+        scholarship_id: row.scholarship_id,
+        scholarship_name: row.scholarships.scholarship_name,
+        provider_name: row.scholarships.provider_name,
+        host_country: row.scholarships.host_country,
+      };
+    }
+  }
+
+  const { data } = await supabase
+    .from("scholarship_mini_guides")
+    .select(baseSelect)
+    .not("top_insights", "is", null)
+    .neq("scholarship_id", excludeId)
+    .eq("scholarships.verified", true)
+    .limit(1);
+  const row = (data as unknown as Row[] | null)?.[0];
+  if (!row?.scholarships) return null;
+  return {
+    scholarship_id: row.scholarship_id,
+    scholarship_name: row.scholarships.scholarship_name,
+    provider_name: row.scholarships.provider_name,
+    host_country: row.scholarships.host_country,
+  };
+}
