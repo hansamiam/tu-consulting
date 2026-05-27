@@ -86,6 +86,13 @@ export interface DiscoverProfile {
    *  explicit signal (legacy drafts). Values: "ielts" | "toefl" | "sat" |
    *  "gre" | "gmat". */
   notTakenTests?: string[];
+  /** 2026-05-27 Sam: named-scholarship awareness chips on Step 3. The
+   *  brief generator uses this to lead with programs the student
+   *  already recognises rather than introducing every option cold.
+   *  Empty/undefined = no explicit signal. Tokens are the canonical
+   *  scholarship_name from the scholarships table so a brief-side
+   *  JOIN works exactly. */
+  knownScholarships?: string[];
 }
 
 const STORAGE_KEY = "topuni_discover_profile";

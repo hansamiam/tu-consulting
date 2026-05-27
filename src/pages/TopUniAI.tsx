@@ -59,6 +59,7 @@ import { useNavigate } from "react-router-dom";
 import { saveProfile, getStoredProfile } from "@/components/discover/DiscoverProfileGate";
 import { projectToDiscoverProfile } from "@/lib/topuniIntakeProjection";
 import { detectArchetypeOrFallback, getArchetype } from "../../supabase/functions/_shared/archetype-library";
+import { KNOWN_SCHOLARSHIP_CHIPS, knownScholarshipLabel } from "@/lib/known-scholarship-chips";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -150,6 +151,8 @@ interface WizardDraft {
   /** Sparse-input pass (2026-05-23). Step 3 broad-first EC chip
    *  selections. Prepended to extracurriculars textarea on Generate. */
   selectedECTags?: string[];
+  /** Step 3 known-scholarship awareness chips (2026-05-27). */
+  knownScholarships?: string[];
   /** 2026-05-26 — per-test "Taken / Not yet" chip state. Persisted so a
    *  page refresh keeps the user's answer rather than collapsing back to
    *  "unspecified" + an empty score field. Drives the brief generator's
@@ -414,6 +417,18 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
       prev.includes(token) ? prev.filter((t) => t !== token) : [...prev, token],
     );
   };
+  // 2026-05-27 Sam: known-scholarship awareness chips on Step 3.
+  // Optional multi-select; tokens are canonical scholarship_name from
+  // the catalog so a future brief-side JOIN can light up "you already
+  // know about X — here's the actual edge case for it" framing.
+  const [knownScholarships, setKnownScholarships] = useState<string[]>(
+    Array.isArray(draft?.knownScholarships) ? draft!.knownScholarships! : [],
+  );
+  const toggleKnownScholarship = (token: string) => {
+    setKnownScholarships((prev) =>
+      prev.includes(token) ? prev.filter((t) => t !== token) : [...prev, token],
+    );
+  };
   // countrySearch state retired with the target-countries section.
   // ALL_COUNTRIES still imported for the nationality typeahead.
   const [major, setMajor] = useState(draft?.major ?? "");
@@ -586,6 +601,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
         firstToApplyAbroad,
         // Sparse-input pass — Step 3 EC chip selections.
         selectedECTags: selectedECTags.length > 0 ? selectedECTags : undefined,
+        knownScholarships: knownScholarships.length > 0 ? knownScholarships : undefined,
         // 2026-05-26 — per-test taken/not-yet chip state. Persisted so a
         // page refresh keeps the user's answer rather than resetting to
         // "unspecified" + an empty score input.
@@ -602,7 +618,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
     targetCountries, major, budget, scholarshipNeeded, timeline,
     prestige, scholarship, careerRoi, visaAccess, locationPref,
     careerGoal, extracurriculars, background, namedSchools,
-    foreignLanguages, firstToApplyAbroad, selectedECTags,
+    foreignLanguages, firstToApplyAbroad, selectedECTags, knownScholarships,
     ieltsState, toeflState, satState,
     greState, gmatState, gre, gmat,
   ]);
@@ -1504,6 +1520,40 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         )}
                       </DialogContent>
                     </Dialog>
+                    {/* Known-scholarship awareness chips (2026-05-27).
+                        "Any scholarships already on your radar?" — optional
+                        multi-select; signals user awareness of named
+                        programs and lets the brief generator lead with
+                        what they recognise. Tokens are canonical
+                        scholarship_name from the catalog. Per the
+                        2026-05-27 competitor audit, NO scholarship-
+                        consulting platform asks this at intake. */}
+                    <div className="pt-2">
+                      <Label className="text-xs uppercase tracking-wider font-medium">{t("Any scholarships on your radar?", "Какие стипендии уже на радаре?")}</Label>
+                      <p className="text-muted-foreground text-xs mt-1 mb-3">{t("Pick any you've heard of — optional.", "Отметь, о каких ты слышал(а) — по желанию.")}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {KNOWN_SCHOLARSHIP_CHIPS.map((c) => {
+                          const selected = knownScholarships.includes(c.token);
+                          return (
+                            <button
+                              key={c.token}
+                              type="button"
+                              onClick={() => toggleKnownScholarship(c.token)}
+                              aria-pressed={selected}
+                              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[36px] ${
+                                selected
+                                  ? "bg-gold/15 text-gold-dark border-gold"
+                                  : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
+                              }`}
+                            >
+                              {selected && <Check className="w-3 h-3" />}
+                              <span className="leading-none" aria-hidden>{c.flag}</span>
+                              {knownScholarshipLabel(c.token, language === "ru" ? "ru" : "en")}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                     {/* Priorities sliders — folded into Step 02 on 2026-05-20
                         when 4 steps collapsed to 3. Three sliders that
                         shape the brief: prestige, scholarship need, visa
@@ -1746,6 +1796,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                             foreignLanguages: foreignLanguages.length > 0 ? foreignLanguages : undefined,
                             firstToApplyAbroad,
                             ieltsState, toeflState, satState, greState, gmatState,
+                            knownScholarships,
                           }));
                         } catch { /* localStorage may be unavailable; brief still renders */ }
                         setScreen("dashboard");
