@@ -260,10 +260,14 @@ const App = () => (
           <Route path="/academy/ru" element={<Academy language="ru" />} />
           <Route path="/academy/resources"    element={<AcademyResources language="en" />} />
           <Route path="/academy/resources/ru" element={<AcademyResources language="ru" />} />
-          <Route path="/academy/live"    element={<Navigate to="/lesson" replace />} />
-          <Route path="/academy/live/ru" element={<Navigate to="/lesson/ru" replace />} />
-          <Route path="/lesson" element={<LeadMagnet language="en" />} />
-          <Route path="/lesson/ru" element={<LeadMagnet language="ru" />} />
+          <Route path="/academy/live"    element={<Navigate to="/intro" replace />} />
+          <Route path="/academy/live/ru" element={<Navigate to="/intro/ru" replace />} />
+          <Route path="/intro" element={<LeadMagnet language="en" />} />
+          <Route path="/intro/ru" element={<LeadMagnet language="ru" />} />
+          {/* Backward-compat — /lesson was renamed to /intro 2026-05-27.
+              Keep redirects so shared links don't 404. */}
+          <Route path="/lesson"    element={<Navigate to="/intro" replace />} />
+          <Route path="/lesson/ru" element={<Navigate to="/intro/ru" replace />} />
           <Route path="/blog/guide/:slug" element={<CountryGuide language="en" />} />
           <Route path="/blog/guide/:slug/ru" element={<CountryGuide language="ru" />} />
           {/* /prep/* routes removed — Prep is spinning off as its own product */}

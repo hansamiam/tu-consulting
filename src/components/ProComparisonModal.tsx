@@ -179,7 +179,7 @@ export const ProComparisonModal = ({ open, onOpenChange, gateId }: Props) => {
           <div className="flex items-baseline justify-between mb-4">
             <div>
               <div className="font-heading text-2xl font-bold tabular-nums">
-                $39<span className="text-sm font-normal text-muted-foreground">/month</span>
+                $39.99<span className="text-sm font-normal text-muted-foreground">/month</span>
               </div>
               <div className="text-[11px] text-muted-foreground">30-day money-back guarantee · cancel anytime</div>
             </div>

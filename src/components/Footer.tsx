@@ -119,14 +119,6 @@ export const Footer = ({ language, variant = "dark" }: FooterProps) => {
                 <span>{INSTAGRAM_HANDLE}</span>
               </a>
             </div>
-            <p>
-              <a
-                href="mailto:team@topuniconsulting.com"
-                className={`${accentLink} transition-colors text-xs break-all`}
-              >
-                team@topuniconsulting.com
-              </a>
-            </p>
           </div>
 
           {/* Right cluster — Explore list */}

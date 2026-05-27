@@ -13,15 +13,14 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { CancellationSaveDialog } from "@/components/account/CancellationSaveDialog";
 import {
-  Crown, ExternalLink, Loader2, LogOut, Calendar, Bell, BellOff, ArrowRight,
+  Crown, ExternalLink, Loader2, LogOut, Calendar, ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
-import { format, formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { ru as ruLocale, enUS } from "date-fns/locale";
 
 interface Props {
@@ -48,26 +47,12 @@ export const MembershipSettings = ({ language = "en", variant = "embedded" }: Pr
 
   const [portalLoading, setPortalLoading] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-  const [profileMeta, setProfileMeta] = useState<{ nudge_opt_out: boolean; last_nudge_sent_at: string | null }>({ nudge_opt_out: false, last_nudge_sent_at: null });
 
   useEffect(() => {
     if (!user) return;
-    (async () => {
-      const { data } = await supabase
-        .from("student_profiles")
-        .select("nudge_opt_out, last_nudge_sent_at")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (data) {
-        setProfileMeta({
-          nudge_opt_out: !!data.nudge_opt_out,
-          last_nudge_sent_at: data.last_nudge_sent_at ?? null,
-        });
-      }
-      // Best-effort subscription refresh on mount — covers the case where
-      // the user just landed back here from Stripe checkout/portal.
-      void refreshSubscription();
-    })();
+    // Best-effort subscription refresh on mount — covers the case where
+    // the user just landed back here from Stripe checkout/portal.
+    void refreshSubscription();
   }, [user?.id, refreshSubscription]);
 
   if (!user) return null;
@@ -88,22 +73,6 @@ export const MembershipSettings = ({ language = "en", variant = "embedded" }: Pr
     setPortalLoading(false);
     if (error || !data?.url) { toast.error(t("Couldn't open billing portal. Try again.", "Не удалось открыть портал. Попробуйте снова.")); return; }
     window.open(data.url, "_blank");
-  };
-
-  const toggleNudge = async (next: boolean) => {
-    setProfileMeta((p) => ({ ...p, nudge_opt_out: !next }));
-    const { error } = await supabase
-      .from("student_profiles")
-      .update({ nudge_opt_out: !next })
-      .eq("user_id", user.id);
-    if (error) {
-      setProfileMeta((p) => ({ ...p, nudge_opt_out: !p.nudge_opt_out }));
-      toast.error(t("Couldn't update nudge preference.", "Не удалось обновить настройки."));
-    } else {
-      toast.success(next
-        ? t("Weekly nudges resumed.", "Еженедельные напоминания включены.")
-        : t("Weekly nudges paused.", "Еженедельные напоминания на паузе."));
-    }
   };
 
   const homePath = ru ? "/ru" : "/";
@@ -176,36 +145,10 @@ export const MembershipSettings = ({ language = "en", variant = "embedded" }: Pr
           )}
         </Card>
 
-        {/* Notifications + sign out */}
-        <Card className="p-5 space-y-5">
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-1.5">
-              {t("Notifications", "Уведомления")}
-            </p>
-            <div className="flex items-start justify-between gap-3 mt-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  {profileMeta.nudge_opt_out
-                    ? <BellOff className="w-4 h-4 text-muted-foreground" />
-                    : <Bell className="w-4 h-4 text-gold-dark" />}
-                  <p className="font-semibold text-sm text-foreground">{t("Weekly nudges", "Еженедельные напоминания")}</p>
-                </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  {t(
-                    "Sundays at 10 UTC, your AI coach reads your tracker state and writes a tight 3-things-this-week check-in.",
-                    "По воскресеньям в 10 UTC ваш AI-коуч читает ваш трекер и пишет короткий план «3 вещи на эту неделю».",
-                  )}
-                </p>
-                {profileMeta.last_nudge_sent_at && !profileMeta.nudge_opt_out && (
-                  <p className="text-[10px] text-muted-foreground/70 mt-1.5">
-                    {t("Last sent", "Последнее")} {formatDistanceToNow(new Date(profileMeta.last_nudge_sent_at), dateOpts)} {t("ago", "назад")}
-                  </p>
-                )}
-              </div>
-              <Switch checked={!profileMeta.nudge_opt_out} onCheckedChange={toggleNudge} />
-            </div>
-          </div>
-
+        {/* Sign out — Notifications block (Weekly nudges) pulled
+            2026-05-27 per Sam; we may bring it back when the nudges
+            feature is ready to be promoted again. */}
+        <Card className="p-5">
           <Button
             variant="ghost"
             size="sm"

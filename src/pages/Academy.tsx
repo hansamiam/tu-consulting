@@ -118,7 +118,7 @@ const Academy = ({ language = "en" }: AcademyProps) => {
           style subtext stacks. Keep this minimal — one line, one link. */}
       <section className="max-w-3xl mx-auto px-4 pt-6 pb-14">
         <Link
-          to={ru ? "/lesson/ru" : "/lesson"}
+          to={ru ? "/intro/ru" : "/intro"}
           className="group block rounded-2xl border border-gold/30 bg-gradient-to-br from-gold/[0.08] to-transparent hover:from-gold/[0.14] p-8 text-center transition-colors"
         >
           <h3 className="font-heading font-semibold text-foreground text-xl tracking-tight">
