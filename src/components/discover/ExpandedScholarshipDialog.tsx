@@ -280,42 +280,52 @@ const DialogBody = ({ s: sProp, profile, onClose, onApply, onSave, isBookmarked,
               <>
                 <p className="text-sm leading-relaxed text-foreground">
                   <span className="font-semibold">{earlyTypeLabel}:</span>{" "}
-                  <span className={
-                    earlyDl.tone === "danger" ? "text-destructive font-semibold"
-                    : earlyDl.tone === "warn" ? "text-amber-700 dark:text-amber-400 font-medium"
-                    : "text-foreground/85"
-                  }>{earlyDl.text}</span>
+                  <InlineEdit field="early_deadline" variant="date" value={s.early_deadline ?? null} onSave={editField("early_deadline", s.early_deadline ?? null)} saving={savingEdit} label="Early deadline (ISO)">
+                    <span className={
+                      earlyDl.tone === "danger" ? "text-destructive font-semibold"
+                      : earlyDl.tone === "warn" ? "text-amber-700 dark:text-amber-400 font-medium"
+                      : "text-foreground/85"
+                    }>{earlyDl.text}</span>
+                  </InlineEdit>
                 </p>
                 <p className="text-sm leading-relaxed text-foreground">
                   <span className="font-semibold">{t("Regular Decision", "Regular Decision")}:</span>{" "}
-                  <span className={
-                    dl.tone === "danger" ? "text-destructive font-semibold"
-                    : dl.tone === "warn" ? "text-amber-700 dark:text-amber-400 font-medium"
-                    : "text-foreground/85"
-                  }>{dl.text}</span>
+                  <InlineEdit field="application_deadline" variant="date" value={s.application_deadline} onSave={editField("application_deadline", s.application_deadline)} saving={savingEdit} label="Application deadline (ISO)">
+                    <span className={
+                      dl.tone === "danger" ? "text-destructive font-semibold"
+                      : dl.tone === "warn" ? "text-amber-700 dark:text-amber-400 font-medium"
+                      : "text-foreground/85"
+                    }>{dl.text}</span>
+                  </InlineEdit>
                 </p>
               </>
             ) : (
               <p className="text-sm leading-relaxed text-foreground">
                 <span className="font-semibold">{t("Deadline", "Дедлайн")}:</span>{" "}
-                <span className={
-                  dl.tone === "danger" ? "text-destructive font-semibold"
-                  : dl.tone === "warn" ? "text-amber-700 dark:text-amber-400 font-medium"
-                  : "text-foreground/85"
-                }>{dl.text}</span>
+                <InlineEdit field="application_deadline" variant="date" value={s.application_deadline} onSave={editField("application_deadline", s.application_deadline)} saving={savingEdit} label="Application deadline (ISO)">
+                  <span className={
+                    dl.tone === "danger" ? "text-destructive font-semibold"
+                    : dl.tone === "warn" ? "text-amber-700 dark:text-amber-400 font-medium"
+                    : "text-foreground/85"
+                  }>{dl.text}</span>
+                </InlineEdit>
               </p>
             )}
             <p className="text-sm leading-relaxed text-foreground">
               <span className="font-semibold">{t("Levels", "Уровни")}:</span>{" "}
-              <span className="text-foreground/85">
-                {(s.target_degree_level ?? []).map(humanizeDegreeLabel).join(", ") || t("Any", "Любой")}
-              </span>
+              <InlineEdit field="target_degree_level" variant="chip-array" value={s.target_degree_level} onSave={editField("target_degree_level", s.target_degree_level)} saving={savingEdit} label="Target levels (e.g. master, phd)">
+                <span className="text-foreground/85">
+                  {(s.target_degree_level ?? []).map(humanizeDegreeLabel).join(", ") || t("Any", "Любой")}
+                </span>
+              </InlineEdit>
             </p>
             <p className="text-sm leading-relaxed text-foreground">
               <span className="font-semibold">{t("Citizenship", "Гражданство")}:</span>{" "}
-              <span className="text-foreground/85">
-                {renderCitizenship(s.eligible_countries, s.citizenship_requirements, t)}
-              </span>
+              <InlineEdit field="eligible_countries" variant="chip-array" value={s.eligible_countries} onSave={editField("eligible_countries", s.eligible_countries)} saving={savingEdit} label="Eligible countries (empty = open to all)">
+                <span className="text-foreground/85">
+                  {renderCitizenship(s.eligible_countries, s.citizenship_requirements, t)}
+                </span>
+              </InlineEdit>
             </p>
           </div>
 
