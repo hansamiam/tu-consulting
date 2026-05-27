@@ -1,139 +1,167 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { ArrowRight, Lock } from "lucide-react";
 import { motion } from "framer-motion";
-import { Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useEditMode } from "@/contexts/EditModeContext";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAdminUser } from "@/lib/adminMode";
-import { InlineEdit } from "@/components/admin/InlineEdit";
-import { useScholarshipEdit } from "@/components/admin/useScholarshipEdit";
-import { Button } from "@/components/ui/button";
+import { useEditMode } from "@/contexts/EditModeContext";
 import { toast } from "@/hooks/use-toast";
+import { countryFlag } from "@/lib/country-chips";
+import { accentForCountry } from "@/lib/countryAccent";
 
 /**
- * <ScholarshipMiniGuide /> — pre-generated static guide for one scholarship,
- * read from public.scholarship_mini_guides. Generic to the scholarship
- * (NOT per-profile) — replaces the live scholarship-deep-dive call.
+ * <ScholarshipMiniGuide /> — the "Top Uni Insights" block at the bottom
+ * of the Discover right-panel pull-up. Hand-written 3-bullet summary,
+ * sourced from public.scholarship_mini_guides.top_insights (TEXT[3]).
  *
- * 2026-05-27: when an admin is in edit mode, each block becomes inline-
- * editable (textarea per line, add/remove rows for the list fields).
- * Saves write back to scholarship_mini_guides.content via read-modify-write.
+ * Render states:
+ *   1. PAYWALL DOWN + bullets present → render the 3 numbered bullets
+ *   2. PAYWALL UP + free user        → "Become a member to unlock..."
+ *   3. No bullets uploaded yet       → "More notes coming soon." + a
+ *                                       graphic link to a related verified
+ *                                       scholarship that does have bullets
+ *   4. ADMIN + edit mode             → 3 editable textareas, save writes
+ *                                       to top_insights + audit row
+ *
+ * The legacy multi-section guide (who_fits / how_to_win / what_to_prepare
+ * / typical_admit / watch_out in `content` JSONB) ran too long for this
+ * surface — kept in the database for a future longer-form page, but no
+ * longer rendered here.
  */
 
-export interface MiniGuideContent {
-  schema_version: number;
-  who_fits: string;
-  how_to_win: string[];
-  watch_out: string[];
-  what_to_prepare: string[];
-  typical_admit: string;
-}
+// TEMP 2026-05-27: paywall disabled — anyone can see Top Uni Insights.
+// Flip to `false` to restore the members-only gate when the founding-20
+// launch flips. Mirrors the same flag in ScholarshipArchetypeInsight.
+const PUBLIC_INSIGHTS_TEMP = true;
 
 interface Props {
   scholarshipId: string;
   language?: "en" | "ru";
+  hostCountry?: string | null;
 }
 
-export const ScholarshipMiniGuide = ({ scholarshipId, language = "en" }: Props) => {
-  const [content, setContent] = useState<MiniGuideContent | null>(null);
-  const [loading, setLoading] = useState(true);
-  const { isEditing } = useEditMode();
-  const { user } = useAuth();
-  const { saving, saveMiniGuideField } = useScholarshipEdit(scholarshipId);
-  const adminEditing = isAdminUser(user) && isEditing;
+interface RelatedScholarship {
+  scholarship_id: string;
+  scholarship_name: string;
+  provider_name: string | null;
+  host_country: string | null;
+}
 
-  const t = useMemo(() => (en: string, ru: string) => (language === "ru" ? ru : en), [language]);
+export const ScholarshipMiniGuide = ({ scholarshipId, language = "en", hostCountry = null }: Props) => {
+  const [bullets, setBullets] = useState<string[] | null>(null);
+  const [related, setRelated] = useState<RelatedScholarship | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const { user, subscription } = useAuth();
+  const { isEditing } = useEditMode();
+  const isMember = !!subscription && (
+    subscription.is_active ||
+    subscription.is_founding_member ||
+    isAdminUser(user)
+  );
+  const canRead = PUBLIC_INSIGHTS_TEMP || isMember;
+  const adminEditing = isAdminUser(user) && isEditing;
+  const t = (en: string, ru: string) => (language === "ru" ? ru : en);
 
   useEffect(() => {
-    if (!scholarshipId) {
-      console.log("[mini-guide] no-scholarship-id");
-      return;
-    }
+    if (!scholarshipId) return;
     let cancelled = false;
     setLoading(true);
+    setRelated(null);
     (async () => {
       const { data, error } = await supabase
         .from("scholarship_mini_guides")
-        .select("content")
+        .select("top_insights")
         .eq("scholarship_id", scholarshipId)
         .maybeSingle();
       if (cancelled) return;
       if (error) {
-        console.warn("[mini-guide] fetch error", { scholarshipId, error });
-        setContent(null);
-      } else if (data?.content) {
-        setContent(data.content as MiniGuideContent);
+        console.warn("[top-uni-insights] fetch error", { scholarshipId, error });
+        setBullets(null);
       } else {
-        console.log("[mini-guide] no-row-found", { scholarshipId });
-        setContent(null);
+        const row = data as { top_insights?: string[] | null } | null;
+        const list = Array.isArray(row?.top_insights) ? row!.top_insights! : null;
+        setBullets(list && list.length > 0 ? list : null);
+        if (!list || list.length === 0) {
+          const pick = await findRelatedScholarship(scholarshipId, hostCountry);
+          if (!cancelled && pick) setRelated(pick);
+        }
       }
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [scholarshipId]);
+  }, [scholarshipId, hostCountry]);
 
-  const saveField = async <K extends keyof MiniGuideContent>(
-    key: K,
-    valueBefore: MiniGuideContent[K],
-    valueAfter: MiniGuideContent[K]
-  ): Promise<boolean> => {
-    if (!content) return false;
-    const next = { ...content, [key]: valueAfter } as MiniGuideContent;
-    const ok = await saveMiniGuideField(scholarshipId, String(key), valueBefore, valueAfter, next as unknown as Record<string, unknown>);
-    if (ok) setContent(next);
-    return ok;
+  // Admin save: upsert top_insights array on mini_guides + write audit row.
+  // Mirrors useScholarshipEdit's two-write pattern (update then audit; audit
+  // failure is soft-logged, not reverted — same as saveMiniGuideField).
+  const saveBullets = async (next: string[], before: string[] | null): Promise<boolean> => {
+    if (!user) return false;
+    setSaving(true);
+    const cleaned = next.map(s => (s || "").trim()).filter(Boolean);
+    if (cleaned.length !== 3) {
+      toast({
+        title: "Top Uni Insights need exactly 3 bullets",
+        description: `You have ${cleaned.length} non-empty rows.`,
+        variant: "destructive",
+      });
+      setSaving(false);
+      return false;
+    }
+    const emptyContent = {
+      schema_version: 1,
+      who_fits: "",
+      how_to_win: [],
+      watch_out: [],
+      what_to_prepare: [],
+      typical_admit: "",
+    };
+    const { error: upErr } = await supabase
+      .from("scholarship_mini_guides")
+      .upsert(
+        {
+          scholarship_id: scholarshipId,
+          content: emptyContent as never,
+          top_insights: cleaned,
+          source: "hand_curated_admin",
+        },
+        { onConflict: "scholarship_id" }
+      );
+    if (upErr) {
+      setSaving(false);
+      toast({ title: "Save failed", description: upErr.message, variant: "destructive" });
+      return false;
+    }
+    const { error: auditErr } = await supabase.from("scholarship_edits").insert({
+      scholarship_id: scholarshipId,
+      editor_user_id: user.id,
+      editor_email: user.email ?? "unknown",
+      field_name: "mini_guide.top_insights",
+      value_before: (before ?? []) as never,
+      value_after: cleaned as never,
+    });
+    if (auditErr) console.warn("[admin-edit] top_insights audit failed (save persisted)", auditErr);
+    setBullets(cleaned);
+    setSaving(false);
+    toast({ title: "Saved" });
+    return true;
   };
 
   if (loading) return null;
-
-  // 2026-05-27: when no mini-guide row exists for this scholarship, show a
-  // "Top Uni notes coming soon" placeholder rather than vanishing the section.
-  if (!content) {
+  if (!canRead) return <PaywallCard t={t} />;
+  if (adminEditing) {
     return (
-      <section className="not-prose mb-8 max-w-2xl">
-        <p className="m-0 mb-2 text-[12px] uppercase tracking-[0.08em] font-semibold text-foreground/55">
-          {t("How this scholarship plays", "Как работает эта стипендия")}
-        </p>
-        <div className="rounded-2xl border border-dashed border-foreground/15 bg-foreground/[0.02] px-5 py-6">
-          <p className="font-heading text-[15px] leading-[1.55] text-foreground/70 m-0">
-            {t(
-              "Top Uni notes coming soon. We're writing the strategy read for this scholarship — back with it shortly.",
-              "Заметки Top Uni скоро появятся. Мы готовим стратегический разбор этой стипендии — вернёмся с ним совсем скоро."
-            )}
-          </p>
-          {adminEditing && (
-            <div className="mt-3">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={async () => {
-                  const seed: MiniGuideContent = {
-                    schema_version: 1,
-                    who_fits: "",
-                    how_to_win: [],
-                    watch_out: [],
-                    what_to_prepare: [],
-                    typical_admit: "",
-                  };
-                  const { error } = await supabase
-                    .from("scholarship_mini_guides")
-                    .insert({ scholarship_id: scholarshipId, content: seed as never });
-                  if (error) {
-                    toast({ title: "Could not create mini-guide", description: error.message, variant: "destructive" });
-                    return;
-                  }
-                  setContent(seed);
-                  toast({ title: "Mini-guide created — fill in the sections" });
-                }}
-              >
-                Admin: start a mini-guide
-              </Button>
-            </div>
-          )}
-        </div>
-      </section>
+      <EditableBullets
+        t={t}
+        initial={bullets ?? ["", "", ""]}
+        saving={saving}
+        onSave={(next) => saveBullets(next, bullets)}
+      />
     );
   }
+  if (!bullets) return <ComingSoonCard t={t} related={related} language={language} />;
 
   return (
     <motion.section
@@ -142,200 +170,213 @@ export const ScholarshipMiniGuide = ({ scholarshipId, language = "en" }: Props) 
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       className="not-prose mb-8 max-w-2xl"
     >
-      <p className="m-0 mb-2 text-[12px] uppercase tracking-[0.08em] font-semibold text-foreground/55">
-        {t("How this scholarship plays", "Как работает эта стипендия")}
-      </p>
-      <h3 className="font-heading text-[22px] sm:text-[26px] font-bold tracking-[-0.02em] leading-[1.15] text-foreground m-0 mb-6 text-balance">
-        <InlineEdit
-          field="who_fits"
-          variant="textarea"
-          value={content.who_fits}
-          onSave={(next) => saveField("who_fits", content.who_fits, (next as string) ?? "")}
-          saving={saving}
-          label="Who fits (display headline)"
-        >
-          {content.who_fits || (adminEditing ? <em className="text-foreground/40">empty</em> : null)}
-        </InlineEdit>
-      </h3>
-
-      <ListBlock
-        title={t("How to win it", "Как выиграть")}
-        items={content.how_to_win}
-        editing={adminEditing}
-        saving={saving}
-        field="how_to_win"
-        renderItem={(pt, i) => (
-          <li
-            key={i}
-            className="grid grid-cols-[20px_1fr] gap-3 text-[15px] leading-[1.6] text-foreground/85"
-          >
-            <span className="font-heading font-semibold text-foreground/45 tabular-nums">
-              {String(i + 1).padStart(2, "0")}
+      <SectionEyebrow t={t} />
+      <ol className="space-y-4 m-0 pl-0 list-none">
+        {bullets.slice(0, 3).map((b, i) => (
+          <li key={i} className="grid grid-cols-[28px_1fr] gap-3.5 items-start">
+            <span className="font-heading text-[20px] font-bold text-brand-navy tabular-nums leading-[1.25]">
+              {i + 1}.
             </span>
-            <span>{pt}</span>
+            <p className="text-[15px] leading-[1.55] text-foreground/90 m-0">
+              {b}
+            </p>
           </li>
-        )}
-        ordered
-        onSave={(nextItems) => saveField("how_to_win", content.how_to_win, nextItems)}
-      />
-
-      <ListBlock
-        title={t("What to prepare", "Что подготовить")}
-        items={content.what_to_prepare}
-        editing={adminEditing}
-        saving={saving}
-        field="what_to_prepare"
-        renderItem={(pt, i) => (
-          <li
-            key={i}
-            className="grid grid-cols-[20px_1fr] gap-3 text-[15px] leading-[1.6] text-foreground/85"
-          >
-            <span className="font-heading text-foreground/45 leading-[1.6]">·</span>
-            <span>{pt}</span>
-          </li>
-        )}
-        onSave={(nextItems) => saveField("what_to_prepare", content.what_to_prepare, nextItems)}
-      />
-
-      <Block title={t("Typical winner", "Кто обычно выигрывает")}>
-        <p className="text-[15px] leading-[1.6] text-foreground/85 m-0">
-          <InlineEdit
-            field="typical_admit"
-            variant="textarea"
-            value={content.typical_admit}
-            onSave={(next) => saveField("typical_admit", content.typical_admit, (next as string) ?? "")}
-            saving={saving}
-            label="Typical winner"
-          >
-            {content.typical_admit || (adminEditing ? <em className="text-foreground/40">empty</em> : null)}
-          </InlineEdit>
-        </p>
-      </Block>
-
-      {(content.watch_out.length > 0 || adminEditing) && (
-        <ListBlock
-          title={t("Watch out", "Будьте осторожны")}
-          items={content.watch_out}
-          editing={adminEditing}
-          saving={saving}
-          field="watch_out"
-          renderItem={(a, i) => (
-            <li
-              key={i}
-              className="grid grid-cols-[20px_1fr] gap-3 text-[15px] leading-[1.6] text-foreground/85"
-            >
-              <span className="text-rose-700/80 leading-[1.6]">!</span>
-              <span>{a}</span>
-            </li>
-          )}
-          onSave={(nextItems) => saveField("watch_out", content.watch_out, nextItems)}
-        />
-      )}
+        ))}
+      </ol>
     </motion.section>
   );
 };
 
-const Block = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <div className="mt-7 pt-6 border-t border-border/50">
-    <p className="m-0 mb-3 text-[12px] uppercase tracking-[0.08em] font-semibold text-foreground/55">
-      {title}
+const SectionEyebrow = ({ t }: { t: (en: string, ru: string) => string }) => (
+  <div className="flex items-center gap-2.5 mb-5">
+    <span className="h-px w-6 bg-gold/60" aria-hidden />
+    <p className="text-[11px] uppercase tracking-[0.22em] font-bold text-gold-dark m-0">
+      {t("Top Uni Insights", "Заметки Top Uni")}
     </p>
-    {children}
+    <span className="h-px flex-1 bg-gold/15" aria-hidden />
   </div>
 );
 
-const ListBlock = ({
-  title,
-  items,
-  editing,
+const EditableBullets = ({
+  t,
+  initial,
   saving,
-  field,
-  renderItem,
-  ordered,
   onSave,
 }: {
-  title: string;
-  items: string[];
-  editing: boolean;
+  t: (en: string, ru: string) => string;
+  initial: string[];
   saving: boolean;
-  field: string;
-  renderItem: (item: string, i: number) => React.ReactNode;
-  ordered?: boolean;
   onSave: (next: string[]) => Promise<boolean>;
 }) => {
-  const [draftIdx, setDraftIdx] = useState<number | null>(null);
-  const [draftText, setDraftText] = useState("");
+  const padded = [...initial];
+  while (padded.length < 3) padded.push("");
+  const [drafts, setDrafts] = useState<string[]>(padded.slice(0, 3));
 
-  const Wrap = ordered ? "ol" : "ul";
-
-  const saveAt = async (i: number, next: string) => {
-    const copy = [...items];
-    copy[i] = next;
-    const ok = await onSave(copy);
-    if (ok) setDraftIdx(null);
-  };
-
-  const removeAt = async (i: number) => {
-    const copy = items.filter((_, idx) => idx !== i);
-    await onSave(copy);
-  };
-
-  const addNew = async () => {
-    const v = draftText.trim();
-    if (!v) return;
-    const copy = [...items, v];
-    const ok = await onSave(copy);
-    if (ok) {
-      setDraftText("");
-      setDraftIdx(null);
-    }
+  const setAt = (i: number, v: string) => {
+    const next = [...drafts];
+    next[i] = v;
+    setDrafts(next);
   };
 
   return (
-    <Block title={title}>
-      <Wrap className="space-y-2.5 m-0 pl-0 list-none">
-        {items.map((pt, i) =>
-          editing ? (
-            <li key={i} className="grid grid-cols-[20px_1fr_auto] gap-3 items-start text-[15px] leading-[1.6]">
-              <span className="font-heading text-foreground/45 leading-[1.6]">{ordered ? String(i + 1).padStart(2, "0") : "·"}</span>
-              <InlineEdit
-                field={`${field}[${i}]`}
-                variant="textarea"
-                value={pt}
-                onSave={(next) => saveAt(i, ((next as string) ?? "").trim())}
-                saving={saving}
-              >
-                <span>{pt}</span>
-              </InlineEdit>
-              <button
-                type="button"
-                onClick={() => removeAt(i)}
-                className="text-foreground/40 hover:text-rose-600 p-1"
-                aria-label="Remove item"
-              >
-                <X className="size-3.5" />
-              </button>
-            </li>
-          ) : (
-            renderItem(pt, i)
-          )
-        )}
-      </Wrap>
-      {editing && (
-        <div className="mt-3 flex items-center gap-2">
-          <input
-            type="text"
-            value={draftText}
-            onChange={(e) => setDraftText(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addNew(); } }}
-            placeholder="Add a new item…"
-            className="flex-1 rounded-sm border border-foreground/15 bg-background px-2 py-1 text-[14px] font-sans"
-          />
-          <Button type="button" size="sm" variant="outline" onClick={addNew} disabled={saving || !draftText.trim()} className="gap-1 h-7">
-            <Plus className="size-3" /> Add
-          </Button>
-        </div>
-      )}
-    </Block>
+    <section className="not-prose mb-8 max-w-2xl">
+      <SectionEyebrow t={t} />
+      <p className="text-[11px] uppercase tracking-[0.18em] font-semibold text-foreground/55 m-0 mb-3">
+        Admin · edit the 3 bullets, then save
+      </p>
+      <ol className="space-y-3 m-0 pl-0 list-none">
+        {drafts.map((b, i) => (
+          <li key={i} className="grid grid-cols-[28px_1fr] gap-3.5 items-start">
+            <span className="font-heading text-[20px] font-bold text-brand-navy tabular-nums leading-[1.25]">
+              {i + 1}.
+            </span>
+            <textarea
+              value={b}
+              onChange={(e) => setAt(i, e.target.value)}
+              placeholder={`Bullet ${i + 1}…`}
+              rows={2}
+              className="w-full rounded-md border border-foreground/20 bg-background px-2.5 py-1.5 text-[14px] leading-[1.55] resize-y focus:outline-none focus:ring-1 focus:ring-gold/40"
+            />
+          </li>
+        ))}
+      </ol>
+      <div className="mt-4">
+        <Button size="sm" variant="default" onClick={() => onSave(drafts)} disabled={saving}>
+          {saving ? "Saving…" : "Save"}
+        </Button>
+      </div>
+    </section>
   );
 };
+
+const ComingSoonCard = ({
+  t,
+  related,
+  language,
+}: {
+  t: (en: string, ru: string) => string;
+  related: RelatedScholarship | null;
+  language: "en" | "ru";
+}) => (
+  <section className="not-prose mb-8 max-w-2xl">
+    <SectionEyebrow t={t} />
+    <div className="rounded-2xl border border-dashed border-foreground/15 bg-foreground/[0.02] px-5 py-6">
+      <p className="font-heading text-[15px] leading-[1.55] text-foreground/70 m-0">
+        {t("More notes coming soon.", "Скоро будут новые заметки.")}
+      </p>
+      {related && (
+        <div className="mt-5 pt-5 border-t border-foreground/10">
+          <p className="text-[10.5px] uppercase tracking-[0.18em] font-bold text-gold-dark m-0 mb-2.5">
+            {t("In the meantime, check this one out", "А пока что посмотрите эту")}
+          </p>
+          <Link
+            to={`/scholarships/${related.scholarship_id}${language === "ru" ? "/ru" : ""}`}
+            className="group block rounded-xl border border-gold/35 bg-gradient-to-br from-gold/[0.06] via-card to-card hover:border-gold/60 hover:from-gold/[0.12] transition-all overflow-hidden"
+          >
+            <div className="flex items-stretch min-w-0">
+              <div
+                className={`shrink-0 w-16 sm:w-20 flex items-center justify-center bg-gradient-to-br ${accentForCountry(related.host_country || "") || "from-gold/20 to-gold/5"}`}
+              >
+                <span className="text-2xl sm:text-[28px] leading-none drop-shadow-sm">
+                  {countryFlag(related.host_country || "") || "🎓"}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 min-w-0 flex-1 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="font-heading text-[14.5px] font-bold text-foreground leading-tight m-0 line-clamp-2">
+                    {related.scholarship_name}
+                  </p>
+                  <p className="text-[12px] text-foreground/60 m-0 mt-0.5 truncate">
+                    {[related.provider_name, related.host_country].filter(Boolean).join(" · ")}
+                  </p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-gold-dark shrink-0 transition-transform group-hover:translate-x-0.5" />
+              </div>
+            </div>
+          </Link>
+        </div>
+      )}
+    </div>
+  </section>
+);
+
+const PaywallCard = ({ t }: { t: (en: string, ru: string) => string }) => (
+  <section className="not-prose mb-8">
+    <div className="rounded-2xl border-2 border-dashed border-gold/45 bg-gradient-to-br from-gold/[0.06] via-card to-card p-6 sm:p-7">
+      <div className="flex items-start gap-4 sm:gap-5">
+        <div className="shrink-0 w-12 h-12 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center">
+          <Lock className="w-5 h-5 text-gold-dark" strokeWidth={1.75} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-gold-dark m-0 mb-2">
+            {t("Members only", "Только для участников")}
+          </p>
+          <h4 className="font-heading text-[20px] sm:text-[22px] font-bold leading-tight tracking-tight text-foreground m-0 mb-4">
+            {t(
+              "Become a member to unlock Top Uni Insights.",
+              "Станьте участником, чтобы открыть заметки Top Uni."
+            )}
+          </h4>
+          <Button variant="gold" asChild className="gap-1.5">
+            <Link to="/pricing">
+              {t("Become a member", "Стать участником")}
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </div>
+  </section>
+);
+
+async function findRelatedScholarship(
+  excludeId: string,
+  hostCountry: string | null,
+): Promise<RelatedScholarship | null> {
+  type Row = {
+    scholarship_id: string;
+    scholarships: {
+      scholarship_name: string;
+      provider_name: string | null;
+      host_country: string | null;
+      verified: boolean | null;
+    } | null;
+  };
+  const baseSelect = "scholarship_id, scholarships!inner(scholarship_name, provider_name, host_country, verified)";
+
+  if (hostCountry) {
+    const { data } = await supabase
+      .from("scholarship_mini_guides")
+      .select(baseSelect)
+      .not("top_insights", "is", null)
+      .neq("scholarship_id", excludeId)
+      .eq("scholarships.verified", true)
+      .eq("scholarships.host_country", hostCountry)
+      .limit(1);
+    const row = (data as unknown as Row[] | null)?.[0];
+    if (row?.scholarships) {
+      return {
+        scholarship_id: row.scholarship_id,
+        scholarship_name: row.scholarships.scholarship_name,
+        provider_name: row.scholarships.provider_name,
+        host_country: row.scholarships.host_country,
+      };
+    }
+  }
+
+  const { data } = await supabase
+    .from("scholarship_mini_guides")
+    .select(baseSelect)
+    .not("top_insights", "is", null)
+    .neq("scholarship_id", excludeId)
+    .eq("scholarships.verified", true)
+    .limit(1);
+  const row = (data as unknown as Row[] | null)?.[0];
+  if (!row?.scholarships) return null;
+  return {
+    scholarship_id: row.scholarship_id,
+    scholarship_name: row.scholarships.scholarship_name,
+    provider_name: row.scholarships.provider_name,
+    host_country: row.scholarships.host_country,
+  };
+}
