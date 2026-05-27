@@ -51,7 +51,7 @@ interface RelatedScholarship {
 
 export const ScholarshipMiniGuide = ({ scholarshipId, language = "en", hostCountry = null }: Props) => {
   const [bullets, setBullets] = useState<string[] | null>(null);
-  const [related, setRelated] = useState<RelatedScholarship | null>(null);
+  const [related, setRelated] = useState<RelatedScholarship[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { user, subscription } = useAuth();
@@ -69,7 +69,7 @@ export const ScholarshipMiniGuide = ({ scholarshipId, language = "en", hostCount
     if (!scholarshipId) return;
     let cancelled = false;
     setLoading(true);
-    setRelated(null);
+    setRelated([]);
     (async () => {
       const { data, error } = await supabase
         .from("scholarship_mini_guides")
@@ -85,8 +85,8 @@ export const ScholarshipMiniGuide = ({ scholarshipId, language = "en", hostCount
         const list = Array.isArray(row?.top_insights) ? row!.top_insights! : null;
         setBullets(list && list.length > 0 ? list : null);
         if (!list || list.length === 0) {
-          const pick = await findRelatedScholarship(scholarshipId, hostCountry);
-          if (!cancelled && pick) setRelated(pick);
+          const picks = await findRelatedScholarships(scholarshipId, hostCountry, 2);
+          if (!cancelled) setRelated(picks);
         }
       }
       setLoading(false);
@@ -188,12 +188,12 @@ export const ScholarshipMiniGuide = ({ scholarshipId, language = "en", hostCount
 };
 
 const SectionEyebrow = ({ t }: { t: (en: string, ru: string) => string }) => (
-  <div className="flex items-center gap-2.5 mb-5">
-    <span className="h-px w-6 bg-gold/60" aria-hidden />
-    <p className="text-[11px] uppercase tracking-[0.22em] font-bold text-gold-dark m-0">
+  <div className="flex items-center gap-3 mb-6">
+    <span className="h-[2px] w-7 bg-gold/70" aria-hidden />
+    <p className="text-[13px] sm:text-[14px] uppercase tracking-[0.26em] font-extrabold text-gold-dark m-0">
       {t("Top Uni Insights", "Заметки Top Uni")}
     </p>
-    <span className="h-px flex-1 bg-gold/15" aria-hidden />
+    <span className="h-[2px] flex-1 bg-gold/20" aria-hidden />
   </div>
 );
 
@@ -255,45 +255,53 @@ const ComingSoonCard = ({
   language,
 }: {
   t: (en: string, ru: string) => string;
-  related: RelatedScholarship | null;
+  related: RelatedScholarship[];
   language: "en" | "ru";
 }) => (
   <section className="not-prose mb-8 max-w-2xl">
     <SectionEyebrow t={t} />
     <div className="rounded-2xl border border-dashed border-foreground/15 bg-foreground/[0.02] px-5 py-6">
-      <p className="font-heading text-[15px] leading-[1.55] text-foreground/70 m-0">
+      <p className="font-heading text-[19px] sm:text-[20px] leading-[1.35] font-bold tracking-[-0.005em] text-foreground/90 m-0">
         {t("More notes coming soon.", "Скоро будут новые заметки.")}
       </p>
-      {related && (
+      {related.length > 0 && (
         <div className="mt-5 pt-5 border-t border-foreground/10">
-          <p className="text-[10.5px] uppercase tracking-[0.18em] font-bold text-gold-dark m-0 mb-2.5">
-            {t("In the meantime, check this one out", "А пока что посмотрите эту")}
+          <p className="text-[11px] uppercase tracking-[0.2em] font-bold text-gold-dark m-0 mb-3">
+            {t(
+              "In the meantime, browse more scholarships like these",
+              "А пока — посмотрите похожие стипендии"
+            )}
           </p>
-          <Link
-            to={`/scholarships/${related.scholarship_id}${language === "ru" ? "/ru" : ""}`}
-            className="group block rounded-xl border border-gold/35 bg-gradient-to-br from-gold/[0.06] via-card to-card hover:border-gold/60 hover:from-gold/[0.12] transition-all overflow-hidden"
-          >
-            <div className="flex items-stretch min-w-0">
-              <div
-                className={`shrink-0 w-16 sm:w-20 flex items-center justify-center bg-gradient-to-br ${accentForCountry(related.host_country || "") || "from-gold/20 to-gold/5"}`}
+          <div className="space-y-2.5">
+            {related.map((r) => (
+              <Link
+                key={r.scholarship_id}
+                to={`/scholarships/${r.scholarship_id}${language === "ru" ? "/ru" : ""}`}
+                className="group block rounded-xl border border-gold/35 bg-gradient-to-br from-gold/[0.06] via-card to-card hover:border-gold/60 hover:from-gold/[0.12] transition-all overflow-hidden"
               >
-                <span className="text-2xl sm:text-[28px] leading-none drop-shadow-sm">
-                  {countryFlag(related.host_country || "") || "🎓"}
-                </span>
-              </div>
-              <div className="flex items-center gap-3 min-w-0 flex-1 px-4 py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="font-heading text-[14.5px] font-bold text-foreground leading-tight m-0 line-clamp-2">
-                    {related.scholarship_name}
-                  </p>
-                  <p className="text-[12px] text-foreground/60 m-0 mt-0.5 truncate">
-                    {[related.provider_name, related.host_country].filter(Boolean).join(" · ")}
-                  </p>
+                <div className="flex items-stretch min-w-0">
+                  <div
+                    className={`shrink-0 w-16 sm:w-20 flex items-center justify-center bg-gradient-to-br ${accentForCountry(r.host_country || "") || "from-gold/20 to-gold/5"}`}
+                  >
+                    <span className="text-2xl sm:text-[28px] leading-none drop-shadow-sm">
+                      {countryFlag(r.host_country || "") || "🎓"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 min-w-0 flex-1 px-4 py-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-heading text-[14.5px] font-bold text-foreground leading-tight m-0 line-clamp-2">
+                        {r.scholarship_name}
+                      </p>
+                      <p className="text-[12px] text-foreground/60 m-0 mt-0.5 truncate">
+                        {[r.provider_name, r.host_country].filter(Boolean).join(" · ")}
+                      </p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-gold-dark shrink-0 transition-transform group-hover:translate-x-0.5" />
+                  </div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-gold-dark shrink-0 transition-transform group-hover:translate-x-0.5" />
-              </div>
-            </div>
-          </Link>
+              </Link>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -329,10 +337,11 @@ const PaywallCard = ({ t }: { t: (en: string, ru: string) => string }) => (
   </section>
 );
 
-async function findRelatedScholarship(
+async function findRelatedScholarships(
   excludeId: string,
   hostCountry: string | null,
-): Promise<RelatedScholarship | null> {
+  desiredCount: number,
+): Promise<RelatedScholarship[]> {
   type Row = {
     scholarship_id: string;
     scholarships: {
@@ -343,7 +352,24 @@ async function findRelatedScholarship(
     } | null;
   };
   const baseSelect = "scholarship_id, scholarships!inner(scholarship_name, provider_name, host_country, verified)";
+  const seen = new Set<string>([excludeId]);
+  const out: RelatedScholarship[] = [];
+  const push = (rows: Row[] | null | undefined) => {
+    for (const r of rows ?? []) {
+      if (out.length >= desiredCount) return;
+      if (seen.has(r.scholarship_id) || !r.scholarships) continue;
+      seen.add(r.scholarship_id);
+      out.push({
+        scholarship_id: r.scholarship_id,
+        scholarship_name: r.scholarships.scholarship_name,
+        provider_name: r.scholarships.provider_name,
+        host_country: r.scholarships.host_country,
+      });
+    }
+  };
 
+  // Same host country first — most relevant signal we have without
+  // pulling the matcher pipeline.
   if (hostCountry) {
     const { data } = await supabase
       .from("scholarship_mini_guides")
@@ -352,31 +378,21 @@ async function findRelatedScholarship(
       .neq("scholarship_id", excludeId)
       .eq("scholarships.verified", true)
       .eq("scholarships.host_country", hostCountry)
-      .limit(1);
-    const row = (data as unknown as Row[] | null)?.[0];
-    if (row?.scholarships) {
-      return {
-        scholarship_id: row.scholarship_id,
-        scholarship_name: row.scholarships.scholarship_name,
-        provider_name: row.scholarships.provider_name,
-        host_country: row.scholarships.host_country,
-      };
-    }
+      .limit(desiredCount);
+    push(data as unknown as Row[] | null);
   }
 
-  const { data } = await supabase
-    .from("scholarship_mini_guides")
-    .select(baseSelect)
-    .not("top_insights", "is", null)
-    .neq("scholarship_id", excludeId)
-    .eq("scholarships.verified", true)
-    .limit(1);
-  const row = (data as unknown as Row[] | null)?.[0];
-  if (!row?.scholarships) return null;
-  return {
-    scholarship_id: row.scholarship_id,
-    scholarship_name: row.scholarships.scholarship_name,
-    provider_name: row.scholarships.provider_name,
-    host_country: row.scholarships.host_country,
-  };
+  // Top up with any verified-with-insights row if we didn't fill.
+  if (out.length < desiredCount) {
+    const { data } = await supabase
+      .from("scholarship_mini_guides")
+      .select(baseSelect)
+      .not("top_insights", "is", null)
+      .neq("scholarship_id", excludeId)
+      .eq("scholarships.verified", true)
+      .limit(desiredCount * 2);
+    push(data as unknown as Row[] | null);
+  }
+
+  return out;
 }
