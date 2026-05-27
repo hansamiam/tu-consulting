@@ -86,10 +86,10 @@ const BuildProfileCard = () => (
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-gold-dark m-0 mb-2">
-            Personalized analysis
+            Scholarship strategy
           </p>
           <h4 className="font-heading text-[20px] sm:text-[22px] font-bold leading-tight tracking-tight text-foreground m-0 mb-2.5">
-            Get your personalized scholarship strategy.
+            Get your scholarship strategy.
           </h4>
           <p className="text-[14px] leading-[1.55] text-foreground/75 m-0 mb-5 max-w-prose">
             Build your profile (60 seconds) and we&apos;ll show you what to
