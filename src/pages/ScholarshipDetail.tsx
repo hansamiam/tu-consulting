@@ -498,16 +498,17 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
     if (!s?.application_deadline) return null;
     const d = new Date(s.application_deadline);
     if (Number.isNaN(d.getTime())) return null;
-    // 2026-05-27: inferred-deadline rows (annual programs with their
-    // application_deadline bumped from a past cycle) show "Typically
-    // [Month] [Year]" so users know to verify before applying.
+    // 2026-05-27 (pm): inferred-deadline rows show "TBD (typically [Month])"
+    // — month only, no year. Annual programs land on the same month each
+    // cycle, so the year added false precision and read as contradictory
+    // next to the word "typically".
     if (s.is_deadline_inferred) {
       const monthLabel = d.toLocaleDateString(language === "ru" ? "ru-RU" : undefined, {
         month: "long",
       });
       return language === "ru"
-        ? `Обычно ${monthLabel} ${d.getFullYear()}`
-        : `Typically ${monthLabel} ${d.getFullYear()}`;
+        ? `TBD (обычно в ${monthLabel})`
+        : `TBD (typically ${monthLabel})`;
     }
     return d.toLocaleDateString(language === "ru" ? "ru-RU" : undefined, {
       month: "short",
