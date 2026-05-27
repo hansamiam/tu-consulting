@@ -27,7 +27,6 @@ import {
 // future per-profile feature revival — see
 // project_topuni_deep_dive_decisions_2026_05_25.md.
 import { ScholarshipMiniGuide } from "@/components/scholarship/ScholarshipMiniGuide";
-import { ScholarshipArchetypeInsight } from "@/components/scholarship/ScholarshipArchetypeInsight";
 import { AcademyHookCta } from "@/components/discover/AcademyHookCta";
 import {
   cleanScholarshipName, cleanProvider, humanizeDegreeLabel,
@@ -309,12 +308,14 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
                 {s.canonical_overview.trim()}
               </p>
             )}
-            {/* Personalised single-line insight for THIS user's archetype.
-                Reads from scholarship_archetype_insights (pre-gen matrix).
-                Renders nothing when the user has no archetype yet, when
-                the cell is null (eligibility-skipped or validator-rejected),
-                or when the user isn't signed in. */}
-            <ScholarshipArchetypeInsight scholarshipId={s.scholarship_id} />
+            {/* 2026-05-27: Pulled the ScholarshipArchetypeInsight section.
+                The (archetype × scholarship) matrix produced one-line AI-slop
+                cells ("…demands commitment to a strategic discipline, not
+                exploration of options") that read worse than nothing in a
+                "Personalized for you" frame. Data + generator stay in tree;
+                surface is gone until the cells are regenerated to the
+                mini-guide quality bar. ScholarshipMiniGuide carries the
+                substantive content. */}
             <ScholarshipMiniGuide scholarshipId={s.scholarship_id} language={lang} />
             {/* F12 stitch — Academy upsell below the deep-dive analysis.
                 Soft "want help winning this?" pointer to the strategy
