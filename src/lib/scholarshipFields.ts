@@ -75,7 +75,10 @@ const DEMOGRAPHIC_LABEL: Record<string, string> = {
   "women": "Women",
   "men": "Men",
   "lgbtq": "LGBTQ+",
-  "first-gen": "First-gen",
+  // "first-gen" removed 2026-05-27: tag was conflating Top Uni's CIS
+  // audience (parents often college-educated; the wizard's "first in
+  // family to apply abroad" is about going-abroad-first, not first-gen
+  // college). Sam called this out as inaccurate.
   "low-income": "Need-based",
   "refugee": "Refugees",
   "displaced": "Displaced",

@@ -2848,22 +2848,14 @@ const Discover = ({ language = "en" }: Props) => {
     }
     return DEFAULT_FILTERS;
   });
-  // Default sort depends on whether the user has profile data. With a
-  // profile, "best match" is meaningful (the score actually scores). Without
-  // a profile, every row's match=0, so "best match" produces effectively
-  // random order — bad first impression. Default to "deadline" when there's
-  // no profile so unprofiled visitors see actionable closing-soon programs
-  // first. Once they build a profile and the page reloads, the default flips
-  // to "match" automatically (lazy initializer reads stored profile).
-  const [sortBy, setSortBy] = useState<SortBy>(() => {
-    // Dashboard framing — lead with the freshest scholarships so the
-    // page reads as a stream of newly-discovered programs (the way
-    // opportunitiesforyouth.org does), not a static catalog. If the
-    // user has a profile we still default to Best match because the
-    // scoring signal is meaningful for them.
-    const stored = getStoredProfile();
-    return stored?.nationality ? "match" : "newest";
-  });
+  // 2026-05-27 Sam: default to "match" for EVERYONE. Previously
+  // unprofiled visitors got "newest" — but the long-tail US undergrad
+  // financial-aid rows ingested last week then dominated the view and
+  // crowded out the flagship-quality programs that carry the catalog.
+  // Without a profile, match falls back to a curated quality blend
+  // (featured + canonical_quality_score) which reads as a ranked
+  // catalog, not a feed of random additions.
+  const [sortBy, setSortBy] = useState<SortBy>("match");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [shortlistOpen, setShortlistOpen] = useState(false);
 
@@ -4276,10 +4268,22 @@ const Discover = ({ language = "en" }: Props) => {
                   DB on first deploy; we degrade gracefully because we
                   derive the hero from `ranked` instead of querying that
                   table. */}
-              {!loading && ranked.length > 0 && (
+              {!loading && ranked.length > 0 && (() => {
+                // 2026-05-27 Sam: hero slot must look magazine-quality.
+                // Only pick from rows with cover_image_url AND flushed-out
+                // canonical fields (overview + URL). Falling back to a
+                // bare row produces the "name only, missing image"
+                // Makerere-MasterCard moment Sam called out.
+                const heroEligible = ranked.find(r =>
+                  !!r.cover_image_url
+                  && !!r.canonical_overview
+                  && !!(r.canonical_official_url || r.official_url),
+                );
+                if (!heroEligible) return null;
+                return (
                 <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-5">
                   {(() => {
-                const heroScholarship = ranked[0];
+                const heroScholarship = heroEligible;
                 // Profile-quality classifier — mirrors the spec F4 buckets.
                 // rich = country + degrees + (field OR targetCountries OR demographics)
                 // partial = country + degrees only (or 2-of-3 of the above)
@@ -4317,7 +4321,8 @@ const Discover = ({ language = "en" }: Props) => {
                 );
                   })()}
                 </div>
-              )}
+                );
+              })()}
 
               {/* Sticky toolbar — search · filters · sort · view-mode · hidden · compare.
                   Sticks below the global Nav (h-16 = 64px) so the filter row is always
