@@ -133,6 +133,12 @@ const shareScholarship = async (
 interface Scholarship {
   scholarship_id: string; scholarship_name: string; provider_name: string | null;
   official_url: string | null; host_country: string | null; eligible_countries: string[] | null;
+  /* 2026-05-27: data-quality state on the eligible_countries column.
+   * 'verified' = human/audit-confirmed against the provider; safe to
+   * surface explicit "not for your nationality" warnings on. Other
+   * values = soft signal only (we suspect not-eligible, but the data
+   * could be wrong). The UI gates its red warning on 'verified'. */
+  eligibility_audit_status: "unverified" | "verified" | "suspicious" | "broken" | null;
   target_degree_level: string[] | null; target_fields: string[] | null;
   award_amount_text: string | null; estimated_total_value_usd: number | null;
   coverage_type: string; min_gpa: number | null; gpa_scale: number | null;
@@ -1984,6 +1990,26 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
 
       <div className="relative p-4 flex flex-col flex-1 gap-3">
 
+        {/* "Not for your nationality" warning ribbon — only when the
+            row's eligibility data is human-verified. Unverified data
+            could be wrong in either direction, so we don't surface
+            this as a confident statement until the audit has run.
+            Sits at the very top of the card body so a user scanning a
+            list of results can't miss it. */}
+        {s.eligibility === "not_eligible" && s.eligibility_audit_status === "verified" && (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="-mt-1 -mx-1 px-2.5 py-1.5 rounded-md bg-destructive/[0.07] border border-destructive/20 flex items-start gap-2"
+          >
+            <span aria-hidden className="text-destructive text-[11px] mt-px">⚠</span>
+            <span className="text-[11px] leading-snug text-destructive font-medium">
+              {lang === "ru"
+                ? "Не открыта для граждан вашей страны"
+                : "Not open to your nationality"}
+            </span>
+          </div>
+        )}
+
         {/* NEW pill lives at the bottom alongside the Full-ride sticker
             (see the badge row below). Keeping it out of the title's
             top-right kills the overlap on long names like "MEXT Japanese
@@ -2777,7 +2803,7 @@ const Discover = ({ language = "en" }: Props) => {
           // Scholarship interface, add it here too.
           .select(
             "scholarship_id, scholarship_name, provider_name, official_url, host_country, " +
-            "eligible_countries, target_degree_level, target_fields, award_amount_text, " +
+            "eligible_countries, eligibility_audit_status, target_degree_level, target_fields, award_amount_text, " +
             "estimated_total_value_usd, coverage_type, min_gpa, gpa_scale, min_ielts, " +
             "min_toefl, min_sat, language_requirements, citizenship_requirements, " +
             "application_deadline, deadline_type, is_deadline_inferred, required_documents, essay_required, " +
@@ -3298,16 +3324,18 @@ const Discover = ({ language = "en" }: Props) => {
         list = list.filter(s => s.host_country && canonicalCountry(s.host_country) === filters.hostCountry);
       }
     }
-    // 2026-05-27 (PM): hard eligibility filter, always-on. `not_eligible`
-    // is set only when we have HIGH confidence the user is excluded:
-    // a non-empty eligible_countries list, a user country on record, no
-    // nationality match, and the list isn't open-to-all. Showing a row
-    // we know the user can't apply to is a worse failure mode than
-    // hiding a row whose data we're unsure about — eligibility should
-    // never be a soft demotion. `filters.onlyEligible` is retained on
-    // the state object as a no-op for backward URL/preference compat;
-    // we hide ineligible rows unconditionally.
-    list = list.filter(s => s.eligibility !== "not_eligible");
+    // 2026-05-27 (PM, revised): eligibility filter is OPT-IN, not
+    // default-on. Earlier this session we hard-filtered all
+    // not_eligible rows; reverted because (a) users may be looking up
+    // scholarships for a friend / student with different nationality,
+    // and (b) the data layer still has unverified rows where
+    // false-negative hides would lose real opportunities. Default is
+    // now sort-to-bottom + visible "not for your nationality" badge.
+    // The filter toggle stays as an explicit user choice for the
+    // power-user "only show me what I'm eligible for" flow.
+    if (filters.onlyEligible) {
+      list = list.filter(s => s.eligibility !== "not_eligible");
+    }
     if (filters.closingSoon) list = list.filter(s => { const d = s.application_deadline ? Math.ceil((new Date(s.application_deadline).getTime() - Date.now()) / 86400000) : null; return d !== null && d > 0 && d <= 90; });
     if (!showHidden) list = list.filter(s => !hidden.has(s.scholarship_id));
     if (sortBy === "deadline") {
