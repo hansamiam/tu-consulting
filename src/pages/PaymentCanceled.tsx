@@ -51,9 +51,9 @@ export default function PaymentCanceled({ language = "en" }: Props) {
               </p>
               <p className="text-sm text-muted-foreground">
                 {isRu
-                  ? "Карта отклонена, не работает 3D Secure, или просто остались сомнения? Напишите нам "
-                  : "Card declined, 3D Secure issue, or just a hesitation? Email us at "}
-                <a href="mailto:team@topuniconsulting.com" className="text-accent hover:underline">team@topuniconsulting.com</a>{" "}
+                  ? "Карта отклонена, не работает 3D Secure, или просто остались сомнения? Напишите нам в "
+                  : "Card declined, 3D Secure issue, or just a hesitation? DM us on "}
+                <a href="https://www.instagram.com/top_uni_consulting/" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">@top_uni_consulting</a>{" "}
                 {isRu ? "и мы поможем." : "and we'll sort it out."}
               </p>
             </div>

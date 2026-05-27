@@ -81,9 +81,9 @@ export default function ThankYou() {
                 <AlertTriangle className="w-14 h-14 text-yellow-400 mx-auto mb-4" />
                 <h1 className="text-2xl md:text-4xl font-bold text-gold mb-3">We couldn't verify your payment automatically</h1>
                 <p className="text-primary-foreground/90 max-w-2xl mx-auto">
-                  Don't worry — if Stripe charged your card, your booking is safe. Email{" "}
-                  <a href="mailto:team@topuniconsulting.com" className="underline">team@topuniconsulting.com</a>{" "}
-                  with your receipt and we'll confirm within a few hours.
+                  Don't worry — if Stripe charged your card, your booking is safe. DM{" "}
+                  <a href="https://www.instagram.com/top_uni_consulting/" target="_blank" rel="noopener noreferrer" className="underline">@top_uni_consulting</a>{" "}
+                  on Instagram with your receipt and we'll confirm within a few hours.
                 </p>
               </>
             ) : result?.paid ? (
@@ -101,8 +101,8 @@ export default function ThankYou() {
                 <AlertTriangle className="w-14 h-14 text-yellow-400 mx-auto mb-4" />
                 <h1 className="text-2xl md:text-3xl font-bold text-gold mb-3">Payment is processing</h1>
                 <p className="text-primary-foreground/90 max-w-2xl mx-auto">
-                  Stripe says your payment is still being confirmed. Refresh this page in a minute, or email{" "}
-                  <a href="mailto:team@topuniconsulting.com" className="underline">team@topuniconsulting.com</a>.
+                  Stripe says your payment is still being confirmed. Refresh this page in a minute, or DM{" "}
+                  <a href="https://www.instagram.com/top_uni_consulting/" target="_blank" rel="noopener noreferrer" className="underline">@top_uni_consulting</a> on Instagram.
                 </p>
               </>
             )}

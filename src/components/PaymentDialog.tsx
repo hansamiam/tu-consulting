@@ -267,8 +267,8 @@ export const PaymentDialog = ({
       toast({
         title: language === "en" ? "Couldn't start checkout" : "Не удалось начать оплату",
         description: language === "en"
-          ? "Please try again or contact team@topuniconsulting.com"
-          : "Попробуйте снова или напишите на team@topuniconsulting.com",
+          ? "Please try again or DM @top_uni_consulting on Instagram"
+          : "Попробуйте снова или напишите @top_uni_consulting в Instagram",
         variant: "destructive",
       });
     }

@@ -70,9 +70,9 @@ const FAQRu = () => {
           <CardHeader className="pb-4 md:pb-6">
             <CardTitle className="text-lg md:text-2xl text-primary">Быстрые ответы</CardTitle>
             <CardDescription className="text-xs md:text-base">
-              Не можете найти то, что ищете? Напишите нам на{" "}
-              <a href="mailto:team@topuniconsulting.com" className="text-accent hover:underline">
-                team@topuniconsulting.com
+              Не можете найти то, что ищете? Напишите нам в Instagram —{" "}
+              <a href="https://www.instagram.com/top_uni_consulting/" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
+                @top_uni_consulting
               </a>
             </CardDescription>
           </CardHeader>
