@@ -70,10 +70,10 @@ export const StitchHero = ({
 
   return (
     <article className="relative overflow-hidden rounded-2xl border border-border bg-card">
-      {/* Image / accent surface. Reaches an aspect-[21/9] on desktop
-          for the magazine sweep, drops to aspect-[4/5] on mobile so
-          the title has room without dwarfing the screen. */}
-      <div className={`relative w-full aspect-[4/5] sm:aspect-[16/9] lg:aspect-[21/9] bg-gradient-to-br ${accent}`}>
+      {/* Image / accent surface. Tighter aspect than rev 2 — rev 3
+          dropped to ~3:1 on desktop so the hero doesn't dominate the
+          viewport. Mobile stays squarer (4:5) so the title fits. */}
+      <div className={`relative w-full aspect-[4/5] sm:aspect-[2/1] lg:aspect-[3/1] bg-gradient-to-br ${accent}`}>
         {showCover ? (
           <img
             src={scholarship.cover_image_url!}
@@ -88,9 +88,13 @@ export const StitchHero = ({
           />
         )}
 
-        {/* Darken bottom-left for text legibility — keeps the image
-            visible on the right. Stronger on mobile (full-width title). */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/40 to-black/20 sm:bg-gradient-to-tr sm:from-black/80 sm:via-black/40 sm:to-transparent pointer-events-none" />
+        {/* Navy overlay — rev 3 swaps the neutral black gradient for
+            a brand-navy cast (hsl(var(--navy-deep))). The deeper navy
+            anchors the text and ties the hero to the rest of the
+            navy/gold product chrome. Stronger on mobile (full-width
+            title); on desktop the gradient stays bottom-left so the
+            image reads on the right half. */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--navy-deep))]/90 via-[hsl(var(--navy-deep))]/55 to-[hsl(var(--navy-deep))]/15 sm:bg-gradient-to-tr sm:from-[hsl(var(--navy-deep))]/90 sm:via-[hsl(var(--navy-deep))]/50 sm:to-transparent pointer-events-none" />
 
         {/* Save heart — top-right. */}
         {onBookmark && (

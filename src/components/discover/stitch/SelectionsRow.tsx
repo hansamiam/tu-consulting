@@ -85,9 +85,10 @@ const SelectionTile = ({ s, index, onSelect, isBookmarked: _isBookmarked, onBook
       onClick={onSelect}
       className="group relative shrink-0 snap-start w-[300px] sm:w-auto sm:flex-1 rounded-2xl overflow-hidden bg-card border border-border hover:border-foreground/25 hover:shadow-lg transition-all cursor-pointer flex flex-col"
     >
-      {/* Image — 4:3 ratio. CountryArt silhouette over country accent
-          if no cover image. */}
-      <div className={`relative aspect-[4/3] bg-gradient-to-br ${accent} overflow-hidden`}>
+      {/* Image — 16:10 (rev 3: tighter than the 4:3 of rev 2 so tiles
+          don't dominate the row). CountryArt silhouette over country
+          accent if no cover image. */}
+      <div className={`relative aspect-[16/10] bg-gradient-to-br ${accent} overflow-hidden`}>
         {s.cover_image_url ? (
           <img
             src={s.cover_image_url}
@@ -101,6 +102,9 @@ const SelectionTile = ({ s, index, onSelect, isBookmarked: _isBookmarked, onBook
             className="absolute inset-0 h-full w-full opacity-45 text-white p-8"
           />
         )}
+        {/* Subtle navy fade top-left so the country pill reads against
+            light images. Soft enough not to obscure the photo. */}
+        <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[hsl(var(--navy-deep))]/35 via-[hsl(var(--navy-deep))]/10 to-transparent pointer-events-none" />
         {/* Country pill — top-left, white, small. */}
         <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] bg-white/95 text-foreground px-2 py-1 rounded shadow-sm">
           {flag ? (

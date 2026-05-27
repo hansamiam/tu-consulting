@@ -4071,29 +4071,13 @@ const Discover = ({ language = "en" }: Props) => {
                     if (items.length === 0) return null;
                     return (
                       <section>
-                        <header className="flex items-end justify-between gap-3 mb-5 sm:mb-6">
-                          <div>
-                            <h3 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-                              {t("Selections for you", "Подборка для вас")}
-                            </h3>
-                            <p className="text-[13px] text-muted-foreground mt-1 hidden sm:block">
-                              {t("A short list of programmes worth your time first.", "Подборка программ, на которые стоит посмотреть в первую очередь.")}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setAppSection("browse");
-                              // Smooth-scroll to the catalog anchor below.
-                              requestAnimationFrame(() => {
-                                document.getElementById("discover-catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                              });
-                            }}
-                            className="shrink-0 inline-flex items-center gap-1.5 text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.16em] text-foreground hover:text-gold-dark transition-colors"
-                          >
-                            {t("View all", "Показать все")}
-                            <ArrowRight className="h-3.5 w-3.5" />
-                          </button>
+                        <header className="mb-5 sm:mb-6">
+                          <h3 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                            {t("Selections for you", "Подборка для вас")}
+                          </h3>
+                          <p className="text-[13px] text-muted-foreground mt-1 hidden sm:block">
+                            {t("A short list of programmes worth your time first.", "Подборка программ, на которые стоит посмотреть в первую очередь.")}
+                          </p>
                         </header>
                         <SelectionsRow
                           items={items.map(s => ({
@@ -4678,20 +4662,13 @@ const Discover = ({ language = "en" }: Props) => {
                             <>
                               {catalogItems.length > 0 && (
                                 <section id="discover-catalog" className="scroll-mt-32">
-                                  <header className="flex items-end justify-between gap-3 mb-5 sm:mb-6">
-                                    <div>
-                                      <h3 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-                                        {t("Full Catalog", "Полный каталог")}
-                                      </h3>
-                                      <p className="text-[13px] text-muted-foreground mt-1">
-                                        {t("Every published programme in the database.", "Все опубликованные программы базы.")}
-                                      </p>
-                                    </div>
-                                    <span className="shrink-0 text-[11px] sm:text-[12px] font-medium uppercase tracking-[0.14em] text-muted-foreground tabular-nums">
-                                      {catalogExpanded
-                                        ? t(`Showing 1–${catalogItems.length} of ${catalogItems.length}`, `Показано 1–${catalogItems.length} из ${catalogItems.length}`)
-                                        : t(`Showing 1–${catalogVisible.length} of ${catalogItems.length}`, `Показано 1–${catalogVisible.length} из ${catalogItems.length}`)}
-                                    </span>
+                                  <header className="mb-5 sm:mb-6">
+                                    <h3 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                                      {t("Full Catalog", "Полный каталог")}
+                                    </h3>
+                                    <p className="text-[13px] text-muted-foreground mt-1">
+                                      {t("Every published programme in the database.", "Все опубликованные программы базы.")}
+                                    </p>
                                   </header>
                                   <div className="grid sm:grid-cols-2 gap-4 sm:gap-5 auto-rows-fr">
                                     {catalogVisible.map((s, i) => <MemoScholarCard {...cardProps(s, i)} />)}
