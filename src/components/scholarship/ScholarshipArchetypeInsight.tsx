@@ -173,11 +173,19 @@ export const ScholarshipArchetypeInsight = ({ scholarshipId }: Props) => {
     isAdminUser(user)
   );
   const canRead = PUBLIC_INSIGHTS_TEMP || isMember;
-  // TEMP 2026-05-27 (paired with PUBLIC_INSIGHTS_TEMP): when previewing
-  // insights with the paywall down, visitors without a stored profile
-  // fall back to the "open-question" archetype — populated on every
-  // scholarship that has any insight at all — so the surface renders.
-  // Revert when PUBLIC_INSIGHTS_TEMP flips back to false.
+  // Coverage of the (scholarship × archetype) matrix is uneven — some
+  // archetypes (tight-lane, recoverer, contrarian, family-anchor,
+  // caregiver, working-kid) have 30–85% null cells across the catalog,
+  // while open-question is 100% populated on every scholarship that has
+  // any insight at all.
+  //
+  // TEMP 2026-05-27 (paired with PUBLIC_INSIGHTS_TEMP): cascade fetch.
+  // Try the detected archetype first; if its cell is null/empty, fall
+  // back to open-question so the surface always renders during the
+  // paywall-down preview window. Revert when PUBLIC_INSIGHTS_TEMP
+  // flips back to false (members should see the bare empty state for
+  // sparse cells, not a generic fallback, so the matrix coverage gap
+  // is visible to us and we keep generating cells).
   const archetypeId = detectedArchetype || (PUBLIC_INSIGHTS_TEMP ? "open-question" : null);
   const [text, setText] = useState<string | null>(null);
 
@@ -189,20 +197,32 @@ export const ScholarshipArchetypeInsight = ({ scholarshipId }: Props) => {
     }
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
-        .from("scholarship_archetype_insights" as never)
-        .select("insight_text")
-        .eq("scholarship_id", scholarshipId)
-        .eq("archetype_id", archetypeId)
-        .maybeSingle();
+      const fetchCell = async (aid: string) => {
+        const { data, error } = await supabase
+          .from("scholarship_archetype_insights" as never)
+          .select("insight_text")
+          .eq("scholarship_id", scholarshipId)
+          .eq("archetype_id", aid)
+          .maybeSingle();
+        if (error) {
+          console.warn("[insight] fetch error", { scholarshipId, archetypeId: aid, error });
+          return null;
+        }
+        const t = (data as { insight_text?: string | null } | null)?.insight_text ?? null;
+        return t && t.trim() ? t : null;
+      };
+
+      let t = await fetchCell(archetypeId);
       if (cancelled) return;
-      if (error) {
-        console.warn("[insight] fetch error", { scholarshipId, archetypeId, error });
-        setText(null);
-        return;
+      if (!t && PUBLIC_INSIGHTS_TEMP && archetypeId !== "open-question") {
+        // Cascade fallback. The detected archetype has no cell for this
+        // scholarship — try open-question (100% coverage) so the
+        // preview surface still renders something.
+        console.log("[insight] cascade-to-open-question", { scholarshipId, tried: archetypeId });
+        t = await fetchCell("open-question");
+        if (cancelled) return;
       }
-      const t = (data as { insight_text?: string | null } | null)?.insight_text ?? null;
-      if (!t || !t.trim()) {
+      if (!t) {
         console.log("[insight] cell-empty", { scholarshipId, archetypeId });
         setText(null);
         return;
