@@ -545,7 +545,11 @@ const DiscoverApp = ({ language = "en" }: Props) => {
                                   <Badge variant="outline" className={`gap-1 ${Elig.cls}`}><ElIcon className="h-3 w-3" />{Elig.label}</Badge>
                                 </>
                               )}
-                              {s.coverage_type === "full_ride" && <Badge className="bg-gold/15 text-gold-dark border-gold/30 border" variant="outline"><Award className="h-3 w-3 mr-1" />Full ride</Badge>}
+                              {/* Full-ride badge stripped 2026-05-27 (user direction:
+                                  "strip all full ride stickers from entries"). The
+                                  +12 match-score boost on coverage_type==full_ride
+                                  in scoreScholarship() stays — funding signal still
+                                  drives ranking. */}
                               {days !== null && days > 0 && days < 60 && (
                                 <Badge variant="outline" className="border-destructive/30 text-destructive"><Clock className="h-3 w-3 mr-1" />{days}d left</Badge>
                               )}

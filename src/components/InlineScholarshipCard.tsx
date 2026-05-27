@@ -133,9 +133,14 @@ export function InlineScholarshipCard({ scholarship: s, showMeta = true }: Props
                 award_amount_text: s.award_amount_text,
                 estimated_total_value_usd: null,
               }) || coverage;
-              return award ? (
+              // Full-ride label stripped 2026-05-27 from inline pills
+              // ("strip all full ride stickers from entries"). Show the
+              // $-figure when we have one, otherwise show nothing rather
+              // than the bare "Full ride" sticker.
+              if (!award || /^Full ride$/i.test(award) || award === "Funded") return null;
+              return (
                 <span className="text-[11px] text-foreground/70 whitespace-nowrap">· {award}</span>
-              ) : null;
+              );
             })()}
             <span className={`text-[11px] tabular-nums whitespace-nowrap inline-flex items-center gap-0.5 ${dl.cls}`}>
               <Calendar className="w-2.5 h-2.5 inline-block" /> {dl.text}

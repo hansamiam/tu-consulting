@@ -68,18 +68,6 @@ const fmtDeadline = (iso: string | null, lang: Lang): { text: string; tone: "dan
   return { text: ru ? `${days} дн` : `${days} days`, tone: "neutral" };
 };
 
-const coverageLabel = (cov: string | null, lang: Lang): string | null => {
-  if (!cov) return null;
-  const ru = lang === "ru";
-  switch (cov) {
-    case "full_ride":    return ru ? "Полное покрытие" : "Full ride";
-    case "tuition_only": return ru ? "Только обучение" : "Tuition only";
-    case "stipend":      return ru ? "Стипендия" : "Stipend";
-    case "partial":      return ru ? "Частичное"  : "Partial";
-    default: return cov;
-  }
-};
-
 export const HeroCard = ({
   scholarship,
   heroReason,
@@ -98,7 +86,11 @@ export const HeroCard = ({
   const accent = scholarship.host_country
     ? accentForCountry(scholarship.host_country)
     : "from-foreground/40 to-foreground/60";
-  const cov = coverageLabel(scholarship.coverage_type, lang);
+  // Coverage chip stripped 2026-05-27 ("strip all full ride stickers
+  // from entries"). The HeroCard still surfaces the award amount via
+  // awardBadge below; coverage label was the duplicated noisy chip
+  // ("Full ride" beside "$50K") the user called out.
+  const cov: string | null = null;
 
   // award_amount_text is sometimes a tight money figure ("$25,000 / year")
   // and sometimes a free-text sentence pulled from the source page

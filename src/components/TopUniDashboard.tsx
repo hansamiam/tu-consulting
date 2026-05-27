@@ -3728,17 +3728,16 @@ const TopUniDashboard = ({ profile, language, onBack }: TopUniDashboardProps) =>
                                   {cleanScholarshipName(m.scholarship_name)}
                                 </h4>
                                 <p className="text-xs text-muted-foreground truncate mb-2">
-                                  {compactAward({
-                                    coverage_type: m.coverage_type,
-                                    award_amount_text: m.award_amount_text,
-                                    estimated_total_value_usd: m.estimated_total_value_usd ?? null,
-                                  }) || (() => {
-                                    const ct = m.coverage_type;
-                                    if (ct === "full_ride") return t("Full ride", "Полное покрытие");
-                                    if (ct === "tuition_only") return t("Tuition", "Обучение");
-                                    if (ct === "stipend") return t("Stipend", "Стипендия");
-                                    if (ct === "partial") return t("Partial funding", "Частичное");
-                                    return t("Funding", "Финансирование");
+                                  {(() => {
+                                    // Full-ride sticker stripped 2026-05-27;
+                                    // show the $-figure when we have one,
+                                    // otherwise fall through to provider-only.
+                                    const award = compactAward({
+                                      coverage_type: m.coverage_type,
+                                      award_amount_text: m.award_amount_text,
+                                      estimated_total_value_usd: m.estimated_total_value_usd ?? null,
+                                    });
+                                    return award && !/^Full ride$/i.test(award) ? <>{award}</> : null;
                                   })()}
                                   {(() => { const cp = cleanProvider(m.provider_name); return cp ? <span className="text-muted-foreground/60"> · {cp}</span> : null; })()}
                                 </p>
