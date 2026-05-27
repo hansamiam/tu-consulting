@@ -4224,19 +4224,23 @@ const Discover = ({ language = "en" }: Props) => {
                           );
                         })()
                       ) : (
-                        // Pre-profile: a single CTA back to the wizard.
-                        // Drop the counters — the toolbar below already
-                        // shows a result count, so two scales of "X
-                        // scholarships" was redundant.
+                        // Pre-profile: body promises what the profile does
+                        // HERE (filters the feed) — CTA promises what's
+                        // over THERE (the strategy report at /topuni-ai).
+                        // Two different jobs so the line and the button
+                        // don't repeat the same claim. Avoids the
+                        // "we'll rank scholarships against your profile"
+                        // overpromise — ranking quality isn't validated
+                        // enough to lead with.
                         <div className="flex items-center justify-between gap-3 flex-wrap">
                           <div>
                             <p className="text-[10px] uppercase tracking-[0.18em] text-gold-dark font-semibold mb-0.5">
-                              {t("Personalised view", "Персональный вид")}
+                              {t("Personalise", "Персонализация")}
                             </p>
                             <p className="text-sm text-foreground/85 leading-snug">
                               {t(
-                                "Add your country, level, and field — we'll rank these scholarships against your profile.",
-                                "Укажите страну, уровень и направление — мы отсортируем стипендии по вашему профилю.",
+                                "Add your country, level, and field to personalise your feed.",
+                                "Укажите страну, уровень и направление — лента подстроится под вас.",
                               )}
                             </p>
                           </div>
@@ -4244,7 +4248,7 @@ const Discover = ({ language = "en" }: Props) => {
                             onClick={() => navigate(language === "ru" ? "/topuni-ai/ru" : "/topuni-ai")}
                             className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-gold-dark hover:text-foreground transition-colors group whitespace-nowrap"
                           >
-                            {t("Build my profile", "Заполнить профиль")}
+                            {t("Get my strategy", "Получить стратегию")}
                             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                           </button>
                         </div>
