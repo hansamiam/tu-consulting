@@ -4071,13 +4071,30 @@ const Discover = ({ language = "en" }: Props) => {
                     if (items.length === 0) return null;
                     return (
                       <section>
-                        <header className="mb-5 sm:mb-6">
-                          <h3 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-                            {t("Selections for you", "Подборка для вас")}
-                          </h3>
-                          <p className="text-[13px] text-muted-foreground mt-1 hidden sm:block">
-                            {t("A short list of programmes worth your time first.", "Подборка программ, на которые стоит посмотреть в первую очередь.")}
-                          </p>
+                        <header className="flex items-end justify-between gap-3 mb-4 sm:mb-5">
+                          <div>
+                            <h3 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                              {t("Selections for you", "Подборка для вас")}
+                            </h3>
+                            <p className="text-[13px] text-muted-foreground mt-1 hidden sm:block">
+                              {t("A short list of programmes worth your time first.", "Подборка программ, на которые стоит посмотреть в первую очередь.")}
+                            </p>
+                          </div>
+                          {/* See more → scroll-to-catalog affordance.
+                           *  Rev 4: replaces the deleted "VIEW ALL" link.
+                           *  Selections + Hero are designed to sit in the
+                           *  first viewport — this nudge tells the user
+                           *  there's a full catalog further down. */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              document.getElementById("discover-catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                            }}
+                            className="shrink-0 inline-flex items-center gap-1.5 text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.16em] text-foreground hover:text-gold-dark transition-colors"
+                          >
+                            {t("See more", "Показать ещё")}
+                            <ArrowRight className="h-3.5 w-3.5" />
+                          </button>
                         </header>
                         <SelectionsRow
                           items={items.map(s => ({
@@ -4666,11 +4683,8 @@ const Discover = ({ language = "en" }: Props) => {
                                     <h3 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
                                       {t("Full Catalog", "Полный каталог")}
                                     </h3>
-                                    <p className="text-[13px] text-muted-foreground mt-1">
-                                      {t("Every published programme in the database.", "Все опубликованные программы базы.")}
-                                    </p>
                                   </header>
-                                  <div className="grid sm:grid-cols-2 gap-4 sm:gap-5 auto-rows-fr">
+                                  <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5 auto-rows-fr">
                                     {catalogVisible.map((s, i) => <MemoScholarCard {...cardProps(s, i)} />)}
                                   </div>
                                   {(catalogHidden > 0 || catalogExpanded) && catalogItems.length > CATALOG_INITIAL && (

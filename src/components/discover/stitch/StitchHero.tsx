@@ -70,10 +70,10 @@ export const StitchHero = ({
 
   return (
     <article className="relative overflow-hidden rounded-2xl border border-border bg-card">
-      {/* Image / accent surface. Tighter aspect than rev 2 — rev 3
-          dropped to ~3:1 on desktop so the hero doesn't dominate the
-          viewport. Mobile stays squarer (4:5) so the title fits. */}
-      <div className={`relative w-full aspect-[4/5] sm:aspect-[2/1] lg:aspect-[3/1] bg-gradient-to-br ${accent}`}>
+      {/* Image / accent surface. Rev 4: hero further compacted to
+          ~16:5 desktop so it fits comfortably above-the-fold with
+          Selections row. Mobile stays 4:5 (title needs height). */}
+      <div className={`relative w-full aspect-[4/5] sm:aspect-[16/8] lg:aspect-[16/5] bg-gradient-to-br ${accent}`}>
         {showCover ? (
           <img
             src={scholarship.cover_image_url!}
@@ -108,7 +108,7 @@ export const StitchHero = ({
         )}
 
         {/* Content stack — bottom-left. */}
-        <div className="absolute inset-0 flex flex-col justify-end p-6 sm:p-10 lg:p-12 max-w-3xl">
+        <div className="absolute inset-0 flex flex-col justify-end p-5 sm:p-8 lg:p-10 max-w-3xl">
           {/* Kicker pills row. */}
           <div className="flex items-center gap-2 flex-wrap mb-4">
             <span className="inline-flex items-center text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.18em] bg-gold text-primary px-2.5 py-1 rounded">
@@ -121,14 +121,16 @@ export const StitchHero = ({
             )}
           </div>
 
-          {/* Title — Montserrat heading, big, multi-line, white. */}
-          <h2 className="font-heading text-3xl sm:text-5xl lg:text-6xl font-bold leading-[1.05] tracking-[-0.02em] text-white max-w-2xl mb-4">
+          {/* Title — Montserrat heading. Rev 4: dropped a size step
+              (was 6xl on desktop, dwarfed long titles like "Fulbright
+              Foreign Student Program"). Now 3xl→4xl→5xl scale. */}
+          <h2 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold leading-[1.1] tracking-[-0.015em] text-white max-w-2xl mb-3">
             {cleanedName}
           </h2>
 
           {/* Description — only when we have meaningful copy. */}
           {description && (
-            <p className="text-white/85 text-sm sm:text-base lg:text-lg leading-relaxed max-w-xl mb-6 line-clamp-2 sm:line-clamp-3">
+            <p className="text-white/85 text-[13px] sm:text-sm lg:text-base leading-relaxed max-w-xl mb-5 line-clamp-2">
               {description}
             </p>
           )}
