@@ -196,7 +196,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           loadSubscription(newSession?.user?.id ?? null);
           if (newSession?.user?.id) {
             void import("@/components/discover/DiscoverProfileGate")
-              .then((m) => m.pullProfileFromDb(newSession.user!.id))
+              .then(async (m) => {
+                // Retry any sync that silently failed on a previous
+                // saveProfile (e.g. user was offline at Generate, then
+                // signed in on a flaky connection). Best-effort — the
+                // pull still runs even if the retry fails.
+                await m.retryProfileSyncIfFailed().catch(() => null);
+                await m.pullProfileFromDb(newSession.user!.id);
+              })
               .catch(() => { /* sync failure non-fatal */ });
           }
         }, 0);
@@ -209,7 +216,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       loadSubscription(existing?.user?.id ?? null).finally(() => setLoading(false));
       if (existing?.user?.id) {
         void import("@/components/discover/DiscoverProfileGate")
-          .then((m) => m.pullProfileFromDb(existing.user!.id))
+          .then(async (m) => {
+            await m.retryProfileSyncIfFailed().catch(() => null);
+            await m.pullProfileFromDb(existing.user!.id);
+          })
           .catch(() => { /* sync failure non-fatal */ });
       }
     });
