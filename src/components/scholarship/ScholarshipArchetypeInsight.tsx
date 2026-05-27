@@ -218,9 +218,18 @@ export const ScholarshipArchetypeInsight = ({ scholarshipId }: Props) => {
   const hasProfile = !!getStoredProfile();
   if (!hasProfile) return <BuildProfileCard />;
   if (!canRead) return <PaywallCard />;
-  // Member with profile but no cell (eligibility-skipped pair) — render
-  // nothing rather than a misleading CTA. The mini-guide below still
-  // carries static value for the user.
-  if (!text) return null;
+  // Profile exists but no insight text materialised — could be:
+  //   - archetypeId still resolving (rare; useUserArchetype seeds from
+  //     stored profile synchronously on init so this is millis at most)
+  //   - cell genuinely empty for this (archetype × scholarship) pair
+  //     (eligibility-skipped or validator-rejected)
+  //   - DB read failed
+  // 2026-05-27: previously returned null here, which created an empty
+  // void on the sheet between the deadline header and the Academy CTA —
+  // Sam called this out hard. Fall through to BuildProfileCard so the
+  // surface always carries weight; copy still reads correctly for
+  // already-built profiles ("refine your profile for sharper matches"
+  // is the implicit ask).
+  if (!text) return <BuildProfileCard />;
   return <MemberInsight text={text} />;
 };
