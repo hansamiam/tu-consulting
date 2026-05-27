@@ -84,6 +84,7 @@ import {
   cleanProvider,
   compactAward,
   humanizeDemographic,
+  humanizeDegreeLabel,
 } from "@/lib/scholarshipFields";
 import { daysUntil } from "@/lib/dates";
 import { ALL_COUNTRIES } from "@/data/countries";
@@ -4096,7 +4097,7 @@ const Discover = ({ language = "en" }: Props) => {
                                   {profile.degrees && profile.degrees.length > 0 && (
                                     <span className="inline-flex items-center gap-1 text-[11px] text-foreground/85 bg-card border border-border/70 px-2.5 py-1 rounded-full font-medium">
                                       <GraduationCap className="h-3 w-3 text-gold-dark" />
-                                      {profile.degrees.join(" / ")}
+                                      {profile.degrees.map(humanizeDegreeLabel).join(" / ")}
                                     </span>
                                   )}
                                   {profile.field && (
@@ -4713,7 +4714,14 @@ const Discover = ({ language = "en" }: Props) => {
                             the browse card, just filtered to the bookmarked
                             set. */}
                         {appSection === "shortlist" && (() => {
-                          const items = filtered.filter(s => shortlist.has(s.scholarship_id));
+                          // 2026-05-27: Shortlist must be FILTER-INDEPENDENT.
+                          // Previously pulled from `filtered`, so toggling any
+                          // filter chip on the browse view caused the shortlist
+                          // tab to flicker / drop items. A saved scholarship
+                          // should appear here regardless of the current filter
+                          // state — that's the whole point of saving it. Pull
+                          // from `rows` (the full catalog) instead.
+                          const items = rows.filter(s => shortlist.has(s.scholarship_id));
                           if (items.length === 0) {
                             return (
                               <div className="border border-dashed border-border rounded-3xl p-14 text-center bg-canvas-soft/40">
