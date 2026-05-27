@@ -240,15 +240,18 @@ export const ScholarshipArchetypeInsight = ({ scholarshipId }: Props) => {
   // useUserArchetype falls back to running the deterministic detector
   // client-side, so archetypeId is non-null whenever a profile exists.
   const hasProfile = !!getStoredProfile();
-  // With PUBLIC_INSIGHTS_TEMP on, the "no profile" gate is bypassed —
-  // anyone can preview the insight via the open-question fallback above.
   if (!hasProfile && !PUBLIC_INSIGHTS_TEMP) return <BuildProfileCard />;
   if (!canRead) return <PaywallCard />;
-  // Still fetching or genuine cell-empty. Render nothing rather than the
-  // misleading "Build my profile" card (PR #166's fallback misrepresented
-  // the state: fetch-pending, missing-row, and no-profile all collapsed
-  // into the same CTA, so users who HAD built profiles still saw the
-  // build-profile prompt). Empty space is more honest than wrong copy.
-  if (!text) return null;
+  // Always render the section during PUBLIC_INSIGHTS_TEMP preview.
+  // If the cascade fetch hasn't returned yet OR genuinely produced nothing
+  // (network failure, RLS issue, every cell null — all unexpected during
+  // the preview window since open-question has 100% coverage), render a
+  // generic strategic nudge instead of nothing. Blank space was hiding
+  // the surface entirely and made the preview look broken.
+  if (!text) {
+    return <MemberInsight text={fillTemplate(
+      "Strong programs reward {{firstName}} for specific, well-researched applications — lead with your strongest evidence in {{major}} and concrete reasons this fund fits where you're headed."
+    )} />;
+  }
   return <MemberInsight text={text} />;
 };
