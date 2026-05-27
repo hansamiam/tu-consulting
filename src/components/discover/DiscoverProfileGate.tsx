@@ -94,6 +94,38 @@ const STORAGE_KEY = "topuni_discover_profile";
 // dormant (the wizard primarily persists profile to localStorage and
 // only round-trips to student_profiles at AuthCallback time).
 const PROFILE_CHANGED_TS_KEY = "topuni_profile_changed_at";
+// Last cross-device sync outcome. Pre-2026-05-27 syncProfileToDb was a
+// fire-and-forget with an empty catch — failures were invisible. Now
+// the function writes its result here so callers can: (a) display a
+// "saved locally, not synced" state, (b) retry on next mount, and
+// (c) avoid pulling a stale DB row over a newer local edit. Shape:
+// { at: number, status: "ok" | "pending" | "failed", reason?: string }.
+const PROFILE_SYNC_STATE_KEY = "topuni_profile_sync_state";
+
+export interface ProfileSyncState {
+  /** Wall-clock ms when the sync attempt resolved. */
+  at: number;
+  status: "ok" | "pending" | "failed";
+  /** Short, human-readable reason — only populated on `failed`. */
+  reason?: string;
+}
+
+const writeSyncState = (s: ProfileSyncState): void => {
+  try { localStorage.setItem(PROFILE_SYNC_STATE_KEY, JSON.stringify(s)); } catch { /* quota / private-mode */ }
+};
+
+/** Read the last cross-device sync outcome. Returns null if no sync
+ *  has been attempted yet (typically: a fresh anon profile that hasn't
+ *  signed in). */
+export const getProfileSyncState = (): ProfileSyncState | null => {
+  try {
+    const raw = localStorage.getItem(PROFILE_SYNC_STATE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed.at !== "number") return null;
+    return parsed as ProfileSyncState;
+  } catch { return null; }
+};
 
 export const getStoredProfile = (): DiscoverProfile | null => {
   try {
@@ -236,25 +268,64 @@ const dbColumnsToProfile = (row: StudentProfileRow): Partial<DiscoverProfile> =>
 };
 
 /** Push the local profile to student_profiles (authed users only).
- *  Fire-and-forget — sync failures are non-fatal; localStorage is the
- *  source of truth for the current session. */
-export async function syncProfileToDb(profile: DiscoverProfile): Promise<void> {
+ *  Fire-and-forget at the call site (we don't block the UI thread on
+ *  a network round-trip), but no longer swallows failures silently —
+ *  every attempt writes a status to topuni_profile_sync_state so the
+ *  app can detect and recover from network / RLS / quota failures. */
+export async function syncProfileToDb(profile: DiscoverProfile): Promise<ProfileSyncState> {
+  writeSyncState({ at: Date.now(), status: "pending" });
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user?.id) return;
+    if (!user?.id) {
+      // Anon user — no remote sync target. Leave the state as "pending"
+      // is misleading (the work isn't queued, it's gated on sign-in).
+      // Clear it instead.
+      const cleared: ProfileSyncState = { at: Date.now(), status: "ok", reason: "anon" };
+      writeSyncState(cleared);
+      return cleared;
+    }
     const cols = profileToDbColumns(profile);
     // Only upsert non-empty payloads. An anon-era profile saved
     // before sign-in might have just (fullName, email, nationality);
     // those are still worth round-tripping so the brief-staleness
     // mechanism works cross-device.
-    if (!cols.full_name && !cols.email && !cols.nationality) return;
-    await supabase.from("student_profiles").upsert(
+    if (!cols.full_name && !cols.email && !cols.nationality) {
+      const empty: ProfileSyncState = { at: Date.now(), status: "ok", reason: "empty-profile" };
+      writeSyncState(empty);
+      return empty;
+    }
+    const { error } = await supabase.from("student_profiles").upsert(
       { user_id: user.id, ...cols, updated_at: new Date().toISOString() },
       { onConflict: "user_id" },
     );
-  } catch {
-    /* Sync failure is non-fatal — localStorage already holds the value. */
+    if (error) {
+      const failed: ProfileSyncState = { at: Date.now(), status: "failed", reason: error.message || "upsert-error" };
+      writeSyncState(failed);
+      console.warn("[profile-sync] upsert failed:", error);
+      return failed;
+    }
+    const ok: ProfileSyncState = { at: Date.now(), status: "ok" };
+    writeSyncState(ok);
+    return ok;
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : "unknown";
+    const failed: ProfileSyncState = { at: Date.now(), status: "failed", reason };
+    writeSyncState(failed);
+    console.warn("[profile-sync] threw:", e);
+    return failed;
   }
+}
+
+/** Retry the most recent sync if it's in a failed state. Safe to call
+ *  multiple times — no-op when the last sync succeeded or no sync has
+ *  been attempted yet. Intended call sites: app mount, sign-in callback,
+ *  and any surface that depends on a fresh DB-side profile. */
+export async function retryProfileSyncIfFailed(): Promise<ProfileSyncState | null> {
+  const state = getProfileSyncState();
+  if (!state || state.status !== "failed") return state;
+  const profile = getStoredProfile();
+  if (!profile) return state;
+  return syncProfileToDb(profile);
 }
 
 /** On sign-in, pull the user's authoritative profile from the DB and
