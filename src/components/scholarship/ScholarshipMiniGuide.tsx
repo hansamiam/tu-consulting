@@ -85,7 +85,7 @@ export const ScholarshipMiniGuide = ({ scholarshipId, language = "en", hostCount
         const list = Array.isArray(row?.top_insights) ? row!.top_insights! : null;
         setBullets(list && list.length > 0 ? list : null);
         if (!list || list.length === 0) {
-          const picks = await findRelatedScholarships(scholarshipId, hostCountry, 2);
+          const picks = await findRelatedScholarships(scholarshipId, hostCountry, 1);
           if (!cancelled) setRelated(picks);
         }
       }
@@ -187,13 +187,21 @@ export const ScholarshipMiniGuide = ({ scholarshipId, language = "en", hostCount
   );
 };
 
-const SectionEyebrow = ({ t }: { t: (en: string, ru: string) => string }) => (
-  <div className="flex items-center gap-3 mb-6">
-    <span className="h-[2px] w-7 bg-gold/70" aria-hidden />
-    <p className="text-[13px] sm:text-[14px] uppercase tracking-[0.26em] font-extrabold text-gold-dark m-0">
-      {t("Top Uni Insights", "Заметки Top Uni")}
-    </p>
-    <span className="h-[2px] flex-1 bg-gold/20" aria-hidden />
+/* Premium magazine-section eyebrow. Three layers:
+ *  - a small solid gold "marker" square that anchors the eye
+ *  - the label itself: chunky letters with generous tracking
+ *  - a thick gold underline below — short, like a section divider,
+ *    not a wispy line that flanks the text
+ * Reads more like an editorial title block than a sub-label. */
+const SectionEyebrow = ({ t, attached = false }: { t: (en: string, ru: string) => string; attached?: boolean }) => (
+  <div className={attached ? "mb-2" : "mb-5"}>
+    <div className="inline-flex items-center gap-2.5">
+      <span className="h-2.5 w-2.5 rounded-[2px] bg-gold-dark" aria-hidden />
+      <p className="text-[14px] sm:text-[15px] uppercase tracking-[0.32em] font-black text-gold-dark m-0 leading-none">
+        {t("Top Uni Insights", "Заметки Top Uni")}
+      </p>
+    </div>
+    <span className="block h-[3px] w-14 bg-gold rounded-full mt-2.5" aria-hidden />
   </div>
 );
 
@@ -257,56 +265,56 @@ const ComingSoonCard = ({
   t: (en: string, ru: string) => string;
   related: RelatedScholarship[];
   language: "en" | "ru";
-}) => (
-  <section className="not-prose mb-8 max-w-2xl">
-    <SectionEyebrow t={t} />
-    <div className="rounded-2xl border border-dashed border-foreground/15 bg-foreground/[0.02] px-5 py-6">
-      <p className="font-heading text-[19px] sm:text-[20px] leading-[1.35] font-bold tracking-[-0.005em] text-foreground/90 m-0">
+}) => {
+  // Single suggestion — the user found two too noisy.
+  const pick = related[0];
+  return (
+    <section className="not-prose mb-8 max-w-2xl">
+      <SectionEyebrow t={t} attached />
+      {/* No bordered box — the headline reads as the section's direct
+          value (a magazine subhead under the eyebrow), not as content
+          inside a separate placeholder block. */}
+      <p className="font-heading text-[22px] sm:text-[24px] leading-[1.3] font-bold tracking-[-0.01em] text-foreground/90 m-0 mb-7">
         {t("More notes coming soon.", "Скоро будут новые заметки.")}
       </p>
-      {related.length > 0 && (
-        <div className="mt-5 pt-5 border-t border-foreground/10">
-          <p className="text-[11px] uppercase tracking-[0.2em] font-bold text-gold-dark m-0 mb-3">
+      {pick && (
+        <div>
+          <p className="text-[13px] text-foreground/65 italic m-0 mb-3">
             {t(
-              "In the meantime, browse more scholarships like these",
-              "А пока — посмотрите похожие стипендии"
+              "in the meantime, browse more scholarships",
+              "а пока — посмотрите другие стипендии"
             )}
           </p>
-          <div className="space-y-2.5">
-            {related.map((r) => (
-              <Link
-                key={r.scholarship_id}
-                to={`/scholarships/${r.scholarship_id}${language === "ru" ? "/ru" : ""}`}
-                className="group block rounded-xl border border-gold/35 bg-gradient-to-br from-gold/[0.06] via-card to-card hover:border-gold/60 hover:from-gold/[0.12] transition-all overflow-hidden"
+          <Link
+            to={`/scholarships/${pick.scholarship_id}${language === "ru" ? "/ru" : ""}`}
+            className="group block rounded-xl border border-gold/35 bg-gradient-to-br from-gold/[0.06] via-card to-card hover:border-gold/60 hover:from-gold/[0.12] transition-all overflow-hidden"
+          >
+            <div className="flex items-stretch min-w-0">
+              <div
+                className={`shrink-0 w-16 sm:w-20 flex items-center justify-center bg-gradient-to-br ${accentForCountry(pick.host_country || "") || "from-gold/20 to-gold/5"}`}
               >
-                <div className="flex items-stretch min-w-0">
-                  <div
-                    className={`shrink-0 w-16 sm:w-20 flex items-center justify-center bg-gradient-to-br ${accentForCountry(r.host_country || "") || "from-gold/20 to-gold/5"}`}
-                  >
-                    <span className="text-2xl sm:text-[28px] leading-none drop-shadow-sm">
-                      {countryFlag(r.host_country || "") || "🎓"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 min-w-0 flex-1 px-4 py-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-heading text-[14.5px] font-bold text-foreground leading-tight m-0 line-clamp-2">
-                        {r.scholarship_name}
-                      </p>
-                      <p className="text-[12px] text-foreground/60 m-0 mt-0.5 truncate">
-                        {[r.provider_name, r.host_country].filter(Boolean).join(" · ")}
-                      </p>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-gold-dark shrink-0 transition-transform group-hover:translate-x-0.5" />
-                  </div>
+                <span className="text-2xl sm:text-[28px] leading-none drop-shadow-sm">
+                  {countryFlag(pick.host_country || "") || "🎓"}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 min-w-0 flex-1 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="font-heading text-[14.5px] font-bold text-foreground leading-tight m-0 line-clamp-2">
+                    {pick.scholarship_name}
+                  </p>
+                  <p className="text-[12px] text-foreground/60 m-0 mt-0.5 truncate">
+                    {[pick.provider_name, pick.host_country].filter(Boolean).join(" · ")}
+                  </p>
                 </div>
-              </Link>
-            ))}
-          </div>
+                <ArrowRight className="w-4 h-4 text-gold-dark shrink-0 transition-transform group-hover:translate-x-0.5" />
+              </div>
+            </div>
+          </Link>
         </div>
       )}
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 const PaywallCard = ({ t }: { t: (en: string, ru: string) => string }) => (
   <section className="not-prose mb-8">
