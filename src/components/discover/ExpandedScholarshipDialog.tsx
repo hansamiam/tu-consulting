@@ -33,6 +33,12 @@ import {
 } from "@/lib/scholarshipFields";
 import { shortCountry, accentForCountry } from "@/lib/countryAccent";
 import { CountryArt } from "@/lib/countryArt";
+import { useEffect, useState } from "react";
+import { EditModeProvider } from "@/contexts/EditModeContext";
+import { EditModeToggle } from "@/components/admin/EditModeToggle";
+import { InlineEdit } from "@/components/admin/InlineEdit";
+import { useScholarshipEdit } from "@/components/admin/useScholarshipEdit";
+import { AdminMetadataPanel } from "@/components/admin/AdminMetadataPanel";
 
 interface ScholarshipLite {
   scholarship_id: string;
@@ -131,11 +137,27 @@ const fmtDays = (d: string | null, lang: Lang, isInferred?: boolean | null): { t
   return { text: ru ? `${d} · ${days} дн` : `${d} · ${days} days`, tone: "neutral" };
 };
 
-export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave, isBookmarked, lang = "en" }: Props) => {
-  // deepDiveProfile useMemo removed 2026-05-25 along with the swap from
-  // ScholarshipDeepDive (per-profile) to ScholarshipMiniGuide (static).
-  // `profile` is still needed by the parent for filtering/match math —
-  // we just no longer plumb it through this dialog.
+export const ExpandedScholarshipDialog = (props: Props) => {
+  return (
+    <EditModeProvider>
+      <DialogBody {...props} />
+    </EditModeProvider>
+  );
+};
+
+const DialogBody = ({ s: sProp, profile, onClose, onApply, onSave, isBookmarked, lang = "en" }: Props) => {
+  // 2026-05-27: admin inline-edit holds optimistic local state so changes
+  // appear in the dialog immediately. The parent (Discover) will refetch
+  // its catalog on next reload — so the local override is per-open-session.
+  const [s, setS] = useState(sProp);
+  useEffect(() => { setS(sProp); }, [sProp?.scholarship_id, sProp]);
+  const { saving: savingEdit, saveScholarshipField } = useScholarshipEdit(s?.scholarship_id ?? "");
+  const editField = (field: string, before: unknown) => async (next: string | string[] | null): Promise<boolean> => {
+    if (!s) return false;
+    const ok = await saveScholarshipField(field, before, next);
+    if (ok) setS({ ...s, [field]: next } as ScholarshipLite);
+    return ok;
+  };
 
   if (!s) return null;
   const ru = lang === "ru";
@@ -217,14 +239,18 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
                 )}
               </div>
               <h2 className="font-heading text-2xl sm:text-3xl font-bold tracking-[-0.02em] leading-tight mb-2 max-w-3xl">
-                {cleanedName}
+                <InlineEdit field="scholarship_name" variant="text" value={s.scholarship_name} onSave={editField("scholarship_name", s.scholarship_name)} saving={savingEdit}>
+                  {cleanedName}
+                </InlineEdit>
               </h2>
-              {cleanedProv && (
+              {(cleanedProv || s.provider_name !== null) && (
                 <p
                   className="text-sm sm:text-base text-white/90 mb-5 leading-snug"
                   style={{ display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2, overflow: "hidden" } as React.CSSProperties}
                 >
-                  {cleanedProv}
+                  <InlineEdit field="provider_name" variant="text" value={s.provider_name} onSave={editField("provider_name", s.provider_name)} saving={savingEdit}>
+                    {cleanedProv ?? ""}
+                  </InlineEdit>
                 </p>
               )}
               <div className="flex flex-wrap items-center gap-2">
@@ -298,14 +324,41 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
               no row exists (graceful degrade — the static prose below
               still renders). */}
           <div className="overflow-y-auto flex-1 px-6 sm:px-9 py-5 sm:py-6 space-y-5">
+            <EditModeToggle />
+            <AdminMetadataPanel
+              scholarship={{
+                scholarship_id: s.scholarship_id,
+                provider_name: s.provider_name,
+                host_country: s.host_country,
+                official_url: s.official_url,
+                coverage_type: s.coverage_type,
+                award_amount_text: s.award_amount_text,
+                application_deadline: s.application_deadline,
+                target_degree_level: s.target_degree_level,
+                target_fields: s.target_fields,
+                target_demographics: null,
+                eligible_countries: s.eligible_countries,
+                citizenship_requirements: s.citizenship_requirements,
+              }}
+              onSaved={(patch) => setS({ ...s, ...patch } as ScholarshipLite)}
+            />
             {/* Full canonical_overview — Sam asked the banner to show
                 only the first sentence and to let the rest reveal here
                 in the pull-up (2026-05-27). The hero banner stays
                 editorial-restrained; this is where the whole story
                 lives unclipped. */}
-            {s.canonical_overview && s.canonical_overview.trim().length > 0 && (
+            {((s as ScholarshipLite & { canonical_overview?: string | null }).canonical_overview ?? "").trim().length > 0 && (
               <p className="text-[14px] leading-relaxed text-foreground/85 whitespace-pre-line">
-                {s.canonical_overview.trim()}
+                <InlineEdit
+                  field="canonical_overview"
+                  variant="textarea"
+                  value={(s as ScholarshipLite & { canonical_overview?: string | null }).canonical_overview ?? null}
+                  onSave={editField("canonical_overview", (s as ScholarshipLite & { canonical_overview?: string | null }).canonical_overview)}
+                  saving={savingEdit}
+                  label="Overview"
+                >
+                  {((s as ScholarshipLite & { canonical_overview?: string | null }).canonical_overview ?? "").trim()}
+                </InlineEdit>
               </p>
             )}
             {/* 2026-05-27: Pulled the ScholarshipArchetypeInsight section.
