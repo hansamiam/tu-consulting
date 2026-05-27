@@ -52,6 +52,13 @@ interface IntakeFields {
   ielts: string;
   toefl: string;
   sat: string;
+  /** GRE total score (260–340). Captured on Step 2 for graduate
+   *  applicants. Empty string when not provided. */
+  gre?: string;
+  /** GMAT total score (200–800). Captured on Step 2 for Master's-track
+   *  applicants. Empty string when not provided. PhD applicants are not
+   *  asked for GMAT (the test serves business / management programs). */
+  gmat?: string;
   major: string;
   budget: string;
   targetCountries: string[];
@@ -79,6 +86,8 @@ interface IntakeFields {
   ieltsState?: "unspecified" | "taken" | "not_yet";
   toeflState?: "unspecified" | "taken" | "not_yet";
   satState?: "unspecified" | "taken" | "not_yet";
+  greState?: "unspecified" | "taken" | "not_yet";
+  gmatState?: "unspecified" | "taken" | "not_yet";
 }
 
 /** Project the wizard's intake into the DiscoverProfile shape that
@@ -97,6 +106,8 @@ export const projectToDiscoverProfile = (intake: IntakeFields): DiscoverProfile 
   ieltsScore: intake.ielts || undefined,
   toeflScore: intake.toefl || undefined,
   satScore: intake.sat || undefined,
+  greScore: intake.gre?.trim() || undefined,
+  gmatScore: intake.gmat?.trim() || undefined,
   fieldOfInterest: intake.major || undefined,
   budgetRange: intake.budget || undefined,
   // targetCountries = where the student wants to STUDY. Drives the
@@ -122,15 +133,14 @@ export const projectToDiscoverProfile = (intake: IntakeFields): DiscoverProfile 
   // ielts/toefl/sat field = "haven't taken yet, suggest registration"
   // vs "took it but skipped the input field". Empty/undefined = no
   // explicit signal.
-  notTakenTests: [
-    intake.ieltsState === "not_yet" ? "ielts" : null,
-    intake.toeflState === "not_yet" ? "toefl" : null,
-    intake.satState === "not_yet" ? "sat" : null,
-  ].filter((t): t is string => t !== null).length > 0
-    ? [
-        intake.ieltsState === "not_yet" ? "ielts" : null,
-        intake.toeflState === "not_yet" ? "toefl" : null,
-        intake.satState === "not_yet" ? "sat" : null,
-      ].filter((t): t is string => t !== null)
-    : undefined,
+  notTakenTests: (() => {
+    const t = [
+      intake.ieltsState === "not_yet" ? "ielts" : null,
+      intake.toeflState === "not_yet" ? "toefl" : null,
+      intake.satState === "not_yet" ? "sat" : null,
+      intake.greState === "not_yet" ? "gre" : null,
+      intake.gmatState === "not_yet" ? "gmat" : null,
+    ].filter((x): x is string => x !== null);
+    return t.length > 0 ? t : undefined;
+  })(),
 });

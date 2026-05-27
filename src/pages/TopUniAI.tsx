@@ -156,6 +156,10 @@ interface WizardDraft {
   ieltsState?: "unspecified" | "taken" | "not_yet";
   toeflState?: "unspecified" | "taken" | "not_yet";
   satState?: "unspecified" | "taken" | "not_yet";
+  greState?: "unspecified" | "taken" | "not_yet";
+  gmatState?: "unspecified" | "taken" | "not_yet";
+  gre?: string;
+  gmat?: string;
   /** Wall-clock ms — drafts older than 14 days are dropped on read. */
   ts?: number;
 }
@@ -342,6 +346,8 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
   const [ielts, setIelts] = useState(draft?.ielts ?? "");
   const [toefl, setToefl] = useState(draft?.toefl ?? "");
   const [sat, setSat] = useState(draft?.sat ?? "");
+  const [gre, setGre] = useState(draft?.gre ?? "");
+  const [gmat, setGmat] = useState(draft?.gmat ?? "");
   const [targetCountries, setTargetCountries] = useState<string[]>(Array.isArray(draft?.targetCountries) ? draft!.targetCountries! : []);
   // 2026-05-23: country chips restored. Step 2 renders 11 default chips
   // + an "Other" chip that opens a typeahead modal. Cap at 3 per
@@ -436,6 +442,12 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
   );
   const [satState, setSatState] = useState<TestState>(
     (draft?.satState as TestState) ?? (draft?.sat ? "taken" : "unspecified"),
+  );
+  const [greState, setGreState] = useState<TestState>(
+    (draft?.greState as TestState) ?? (draft?.gre ? "taken" : "unspecified"),
+  );
+  const [gmatState, setGmatState] = useState<TestState>(
+    (draft?.gmatState as TestState) ?? (draft?.gmat ? "taken" : "unspecified"),
   );
 
   const [careerGoal, setCareerGoal] = useState<string>(draft?.careerGoal ?? "");
@@ -561,6 +573,8 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
         // page refresh keeps the user's answer rather than resetting to
         // "unspecified" + an empty score input.
         ieltsState, toeflState, satState,
+        greState, gmatState,
+        gre: gre || undefined, gmat: gmat || undefined,
         ts: Date.now(),
       };
       localStorage.setItem(WIZARD_DRAFT_KEY, JSON.stringify(draftPayload));
@@ -573,6 +587,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
     careerGoal, extracurriculars, background, namedSchools,
     foreignLanguages, firstToApplyAbroad, selectedECTags,
     ieltsState, toeflState, satState,
+    greState, gmatState, gre, gmat,
   ]);
 
   /* Once the user transitions to the dashboard the wizard answers are
@@ -1152,6 +1167,36 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                             inputMode: "numeric" as const,
                             placeholder: t("e.g. 1450", "напр. 1450"),
                           }] : []),
+                          // Graduate-track tests. GRE for any graduate
+                          // applicant; GMAT only for Master's-track
+                          // (business-school flavour — PhD applicants
+                          // rarely sit GMAT). The 2026-05-27 "next pass"
+                          // footnote that used to live below is now an
+                          // actual capture path.
+                          ...(isGraduateApp ? [{
+                            key: "gre" as const,
+                            label: "GRE",
+                            scale: "(260–340)",
+                            state: greState,
+                            setState: setGreState,
+                            value: gre,
+                            setValue: setGre,
+                            clamp: (v: string) => clampScore(v, 340, false),
+                            inputMode: "numeric" as const,
+                            placeholder: t("e.g. 320", "напр. 320"),
+                          }] : []),
+                          ...(isMastersApp ? [{
+                            key: "gmat" as const,
+                            label: "GMAT",
+                            scale: "(200–800)",
+                            state: gmatState,
+                            setState: setGmatState,
+                            value: gmat,
+                            setValue: setGmat,
+                            clamp: (v: string) => clampScore(v, 800, false),
+                            inputMode: "numeric" as const,
+                            placeholder: t("e.g. 720", "напр. 720"),
+                          }] : []),
                         ]).map(({ key, label, scale, state, setState, value, setValue, clamp, inputMode, placeholder }) => (
                           <div key={key} className="space-y-2">
                             <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -1203,17 +1248,12 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           </div>
                         ))}
                       </div>
-                      {isGraduateApp && (
+                      {isPhDApp && (
                         <p className="text-[12px] text-muted-foreground/70 italic">
-                          {isPhDApp
-                            ? t(
-                                "Skipping SAT — graduate admissions weight GRE / subject scores instead. We'll capture those on the next pass.",
-                                "Пропускаем SAT — в магистратуре/аспирантуре смотрят на GRE и предметные тесты. Добавим в следующем апдейте.",
-                              )
-                            : t(
-                                "Skipping SAT — graduate admissions look at GRE / GMAT instead. We'll capture those on the next pass.",
-                                "Пропускаем SAT — для магистратуры смотрят на GRE / GMAT. Добавим в следующем апдейте.",
-                              )}
+                          {t(
+                            "Subject GRE scores can be added later — write them under Step 4 (Research experience) for now.",
+                            "Предметные GRE можно добавить позже — впиши их в Шаге 4 (Исследовательский опыт).",
+                          )}
                         </p>
                       )}
                     </div>
@@ -1676,7 +1716,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         try {
                           saveProfile(projectToDiscoverProfile({
                             fullName, email, nationality, gradeLevel,
-                            gpa, gpaScale, ielts, toefl, sat, major, budget,
+                            gpa, gpaScale, ielts, toefl, sat, gre, gmat, major, budget,
                             targetCountries,
                             careerGoal,
                             // 2026-05-23: chip tag-line prepended to free
@@ -1688,7 +1728,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                             background, namedSchools,
                             foreignLanguages: foreignLanguages.length > 0 ? foreignLanguages : undefined,
                             firstToApplyAbroad,
-                            ieltsState, toeflState, satState,
+                            ieltsState, toeflState, satState, greState, gmatState,
                           }));
                         } catch { /* localStorage may be unavailable; brief still renders */ }
                         setScreen("dashboard");

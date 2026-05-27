@@ -27,6 +27,12 @@ export interface DiscoverProfile {
   ieltsScore?: string;
   toeflScore?: string;
   satScore?: string;
+  /** Graduate-admissions standardized tests. Captured for Master's +
+   *  PhD applicants on Step 2; brief generator reads these to switch
+   *  Card 02 (HIDDEN ADVANTAGE) framing from undergrad-style essay-and-
+   *  EC angles to graduate-style research/work-experience angles. */
+  greScore?: string;
+  gmatScore?: string;
   budgetRange?: string;
   fieldOfInterest?: string;
   /* Self-identified demographic tags — used to boost match scores
@@ -77,7 +83,8 @@ export interface DiscoverProfile {
    *  critique-the-score advice ("your IELTS 6.0 is below threshold") to
    *  plan-a-registration advice ("you haven't taken IELTS yet — register
    *  for the November sitting to hit Jan 1 deadlines"). Undefined = no
-   *  explicit signal (legacy drafts). Values: "ielts" | "toefl" | "sat". */
+   *  explicit signal (legacy drafts). Values: "ielts" | "toefl" | "sat" |
+   *  "gre" | "gmat". */
   notTakenTests?: string[];
 }
 
