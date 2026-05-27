@@ -270,8 +270,22 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
           {/* Scrollable body — ScholarshipMiniGuide reads the pre-generated
               static guide from scholarship_mini_guides. Renders nothing if
               no row exists (graceful degrade — the static prose below
-              still renders). */}
+              still renders).
+
+              i18n policy (2026-05-27): scholarship-level prose (mini-guide
+              content, archetype insight cells) is authored in English in
+              the DB. We don't auto-translate at render (drift) and we
+              don't precompute Russian (sync hell). For RU users we render
+              one small framing line so the English below reads as
+              INTENTIONAL ("authentic provider wording") rather than as a
+              translation that's broken. Section headers within the
+              children still localise via their own t() calls. */}
           <div className="overflow-y-auto flex-1 px-6 sm:px-9 py-5 sm:py-6 space-y-5">
+            {ru && (
+              <p className="text-[12px] leading-snug text-foreground/55 border-l-2 border-gold/30 pl-3 italic">
+                Подробности программы — на английском, как у официального источника.
+              </p>
+            )}
             {/* Personalised single-line insight for THIS user's archetype.
                 Reads from scholarship_archetype_insights (pre-gen matrix).
                 Renders nothing when the user has no archetype yet, when
