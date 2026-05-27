@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
-import { Plus, Trash2, Edit, LogIn, GraduationCap, Building, Award, FileText, Database, ListChecks, BarChart3, Inbox } from "lucide-react";
+import { Plus, Trash2, Edit, LogIn, GraduationCap, Building, Award, FileText, Database, ListChecks, BarChart3, Inbox, AlertTriangle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const Admin = () => {
@@ -201,6 +201,7 @@ const Admin = () => {
             <Button variant="outline" size="sm" onClick={() => nav("/admin/queue")} className="gap-1.5"><ListChecks className="h-4 w-4" />AI scrape queue</Button>
             <Button variant="outline" size="sm" onClick={() => nav("/admin/submissions")} className="gap-1.5"><Inbox className="h-4 w-4" />User submissions</Button>
             <Button variant="outline" size="sm" onClick={() => nav("/admin/partner-inquiries")} className="gap-1.5"><Inbox className="h-4 w-4" />Partner inquiries</Button>
+            <Button variant="outline" size="sm" onClick={() => nav("/admin/deadline-audit")} className="gap-1.5"><AlertTriangle className="h-4 w-4" />Deadline audit</Button>
             <Button variant="outline" size="sm" onClick={() => nav("/admin/academy/resources")} className="gap-1.5"><FileText className="h-4 w-4" />Academy resources</Button>
             <Button variant="outline" size="sm" onClick={() => nav("/admin/insights")} className="gap-1.5"><BarChart3 className="h-4 w-4" />Insights</Button>
             <Button variant="outline" size="sm" onClick={() => supabase.auth.signOut()}>Sign out</Button>

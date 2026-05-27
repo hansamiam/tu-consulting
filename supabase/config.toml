@@ -152,6 +152,15 @@ verify_jwt = false
 [functions.fresh-keep-cron]
 verify_jwt = false
 
+# verify_jwt = false: fanned out to by audit-deadlines-cron via
+# supa.functions.invoke(); cron gateway calls hit with apikey header
+# from public.app_cron_token(). In-body auth via requireAdminOrService.
+[functions.audit-deadlines]
+verify_jwt = false
+
+[functions.audit-deadlines-cron]
+verify_jwt = false
+
 [functions.og-brief]
 verify_jwt = false
 
