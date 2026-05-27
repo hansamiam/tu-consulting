@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ArrowRight, Mail } from "lucide-react";
+import { ArrowRight, Instagram } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 
@@ -86,7 +86,7 @@ const FAQS: { category: string; q: string; a: string }[] = [
   {
     category: "Trust",
     q: "Can my school or organisation partner with TopUni?",
-    a: "Yes. We're building a partner programme for foundations, universities, and program providers who want to actively promote their scholarship to matched students — priority placement, alerts to eligible profiles, reach analytics. Email team@topuniconsulting.com or use the partner page at /submit.",
+    a: "Yes. We're building a partner programme for foundations, universities, and program providers who want to actively promote their scholarship to matched students — priority placement, alerts to eligible profiles, reach analytics. DM @top_uni_consulting on Instagram or use the partner page at /submit.",
   },
 ];
 
@@ -140,9 +140,9 @@ const FAQ = () => {
             Common questions about TopUni.
           </h1>
           <p className="text-primary-foreground/75 text-sm sm:text-base max-w-xl leading-relaxed">
-            What people ask us most. If your question isn't here, email{" "}
-            <a href="mailto:team@topuniconsulting.com" className="text-gold-light hover:underline">team@topuniconsulting.com</a>
-            {" "}— we read every message.
+            What people ask us most. If your question isn't here, DM{" "}
+            <a href="https://www.instagram.com/top_uni_consulting/" target="_blank" rel="noopener noreferrer" className="text-gold-light hover:underline">@top_uni_consulting</a>
+            {" "}on Instagram — we read every message.
           </p>
         </div>
       </section>
@@ -191,9 +191,9 @@ const FAQ = () => {
               See membership pricing
             </Button>
             <Button variant="ghost" asChild className="gap-2">
-              <a href="mailto:team@topuniconsulting.com">
-                <Mail className="w-4 h-4" />
-                Email us
+              <a href="https://www.instagram.com/top_uni_consulting/" target="_blank" rel="noopener noreferrer">
+                <Instagram className="w-4 h-4" />
+                DM us on Instagram
               </a>
             </Button>
           </div>

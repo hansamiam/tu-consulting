@@ -70,7 +70,7 @@ const COPY = {
     successCtaPrimary: "Submit another",
     successCtaSecondary: "Back to scholarships",
     duplicate: "Looks like that URL is already in our database or pending review. Thanks for thinking of us!",
-    failed: "Couldn't submit. Try again, or email team@topuniconsulting.com.",
+    failed: "Couldn't submit. Try again, or DM @top_uni_consulting on Instagram.",
     requireName: "Scholarship name is required.",
     requireUrl: "Official URL is required.",
     invalidUrl: "Please enter a valid URL (starting with https://).",
@@ -115,7 +115,7 @@ const COPY = {
     successCtaPrimary: "Предложить ещё",
     successCtaSecondary: "К стипендиям",
     duplicate: "Похоже эта ссылка уже в нашей базе или на ревью. Спасибо что подумали о нас!",
-    failed: "Не удалось отправить. Попробуйте снова или напишите team@topuniconsulting.com.",
+    failed: "Не удалось отправить. Попробуйте снова или напишите @top_uni_consulting в Instagram.",
     requireName: "Название стипендии обязательно.",
     requireUrl: "Официальная ссылка обязательна.",
     invalidUrl: "Введите корректную ссылку (начинающуюся с https://).",
@@ -293,10 +293,12 @@ const SubmitScholarship = ({ language = "en" }: SubmitProps) => {
               : "Represent a foundation, university, or program and want to actively promote your scholarship to matched students? We're building a paid partnership programme — priority placement, alerts to eligible profiles, reach analytics."}
           </p>
           <a
-            href="mailto:team@topuniconsulting.com?subject=TopUni%20partnership%20interest"
+            href="https://www.instagram.com/top_uni_consulting/"
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-gold-dark hover:underline underline-offset-4"
           >
-            {language === "ru" ? "Написать нам" : "Email us"}
+            {language === "ru" ? "Написать в Instagram" : "DM us on Instagram"}
             <ArrowRight className="h-3.5 w-3.5" />
           </a>
         </div>

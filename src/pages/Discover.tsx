@@ -4591,8 +4591,8 @@ const Discover = ({ language = "en" }: Props) => {
                           </p>
                           <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                             {t(
-                              "Check your connection or try again. If this keeps happening, email team@topuniconsulting.com.",
-                              "Проверьте соединение или попробуйте снова. Если повторяется, напишите team@topuniconsulting.com.",
+                              "Check your connection or try again. If this keeps happening, DM @top_uni_consulting on Instagram.",
+                              "Проверьте соединение или попробуйте снова. Если повторяется, напишите @top_uni_consulting в Instagram.",
                             )}
                           </p>
                         </div>

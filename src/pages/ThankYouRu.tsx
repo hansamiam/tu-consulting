@@ -76,8 +76,8 @@ export default function ThankYouRu() {
                 <h1 className="text-2xl md:text-4xl font-bold text-gold mb-3">Не удалось автоматически подтвердить оплату</h1>
                 <p className="text-primary-foreground/90 max-w-2xl mx-auto">
                   Если карта была списана — бронирование в безопасности. Напишите{" "}
-                  <a href="mailto:team@topuniconsulting.com" className="underline">team@topuniconsulting.com</a>{" "}
-                  с чеком, и мы подтвердим в течение нескольких часов.
+                  <a href="https://www.instagram.com/top_uni_consulting/" target="_blank" rel="noopener noreferrer" className="underline">@top_uni_consulting</a>{" "}
+                  в Instagram с чеком, и мы подтвердим в течение нескольких часов.
                 </p>
               </>
             ) : result?.paid ? (
@@ -95,8 +95,8 @@ export default function ThankYouRu() {
                 <AlertTriangle className="w-14 h-14 text-yellow-400 mx-auto mb-4" />
                 <h1 className="text-2xl md:text-3xl font-bold text-gold mb-3">Оплата обрабатывается</h1>
                 <p className="text-primary-foreground/90 max-w-2xl mx-auto">
-                  Stripe ещё подтверждает платёж. Обновите страницу через минуту или напишите на{" "}
-                  <a href="mailto:team@topuniconsulting.com" className="underline">team@topuniconsulting.com</a>.
+                  Stripe ещё подтверждает платёж. Обновите страницу через минуту или напишите{" "}
+                  <a href="https://www.instagram.com/top_uni_consulting/" target="_blank" rel="noopener noreferrer" className="underline">@top_uni_consulting</a> в Instagram.
                 </p>
               </>
             )}

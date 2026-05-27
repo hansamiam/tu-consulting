@@ -220,8 +220,8 @@ export const CalendarSubscribeDialog = ({ open, onOpenChange, language = "en" }:
         ) : (
           <p className="text-sm text-muted-foreground py-6">
             {t(
-              "Couldn't generate a feed token. Sign in and try again, or email team@topuniconsulting.com.",
-              "Не удалось создать токен. Войдите и попробуйте снова или напишите team@topuniconsulting.com.",
+              "Couldn't generate a feed token. Sign in and try again, or DM @top_uni_consulting on Instagram.",
+              "Не удалось создать токен. Войдите и попробуйте снова или напишите @top_uni_consulting в Instagram.",
             )}
           </p>
         )}

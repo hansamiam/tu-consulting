@@ -220,7 +220,7 @@ const AdminInsights = () => {
           <ShieldAlert className="w-8 h-8 text-muted-foreground/50 mx-auto mb-3" />
           <h1 className="font-heading text-2xl font-bold mb-3">Admin only</h1>
           <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-            This page is for the TopUni team. Reach out at team@topuniconsulting.com if you think you should have access.
+            This page is for the TopUni team. DM @top_uni_consulting on Instagram if you think you should have access.
           </p>
           <Button variant="outline" asChild><Link to="/">Back to TopUni</Link></Button>
         </div>
