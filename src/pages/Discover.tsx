@@ -59,7 +59,8 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
 import { track } from "@/lib/analytics";
-import { HeroCard } from "@/components/discover/HeroCard";
+import { StitchHero } from "@/components/discover/stitch/StitchHero";
+import { SelectionsRow } from "@/components/discover/stitch/SelectionsRow";
 import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
 import { ExpandedScholarshipDialog } from "@/components/discover/ExpandedScholarshipDialog";
 // MatchScoreBreakdown import retired round 33 — the per-row hover
@@ -4028,61 +4029,117 @@ const Discover = ({ language = "en" }: Props) => {
                   DB on first deploy; we degrade gracefully because we
                   derive the hero from `ranked` instead of querying that
                   table. */}
+              {/* Stitch revamp 2026-05-27 (rev 2): full-bleed magazine
+               *  hero + full-width "Selections for you" row, both lifted
+               *  above the sidebar+main flex so they span max-w-7xl. The
+               *  prior HeroCard render is preserved one-import-up
+               *  (`HeroCard`) and reachable if we need to roll back;
+               *  StitchHero is the new default. Selections always renders
+               *  3 tiles (rank-driven, profile-independent) so the row
+               *  never disappears for cold visitors. */}
               {!loading && ranked.length > 0 && (() => {
-                // 2026-05-27 Sam: hero slot must look magazine-quality.
-                // Only pick from rows with cover_image_url AND flushed-out
-                // canonical fields (overview + URL). Falling back to a
-                // bare row produces the "name only, missing image"
-                // Makerere-MasterCard moment Sam called out.
+                // Hero-eligibility gate (preserved from #172): only render the
+                // hero from a row with a real cover_image_url + canonical_overview
+                // + an official URL. Prevents the "name only, missing image"
+                // Makerere-Mastercard moment Sam called out. If no row in
+                // `ranked` qualifies, suppress the entire Stitch hero+selections
+                // block — the rest of Discover still renders below.
                 const heroEligible = ranked.find(r =>
                   !!r.cover_image_url
-                  && !!r.canonical_overview
-                  && !!(r.canonical_official_url || r.official_url),
+                  && !!(r as { canonical_overview?: string | null }).canonical_overview
+                  && !!((r as { canonical_official_url?: string | null }).canonical_official_url || r.official_url),
                 );
                 if (!heroEligible) return null;
                 return (
-                <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-5">
-                  {(() => {
-                const heroScholarship = heroEligible;
-                // Profile-quality classifier — mirrors the spec F4 buckets.
-                // rich = country + degrees + (field OR targetCountries OR demographics)
-                // partial = country + degrees only (or 2-of-3 of the above)
-                // sparse = exactly one signal
-                // empty = nothing
-                const signals = [
-                  !!profile.country,
-                  (profile.degrees?.length ?? 0) > 0,
-                  !!profile.field,
-                  (profile.targetCountries?.length ?? 0) > 0,
-                  (profile.demographics?.length ?? 0) > 0,
-                ].filter(Boolean).length;
-                const profileQuality: "rich" | "partial" | "sparse" | "empty" =
-                  signals >= 4 ? "rich" :
-                  signals >= 2 ? "partial" :
-                  signals >= 1 ? "sparse" : "empty";
-                return (
-                  <HeroCard
+                <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-5 space-y-10 sm:space-y-12">
+                  <StitchHero
                     scholarship={{
-                      scholarship_id: heroScholarship.scholarship_id,
-                      scholarship_name: heroScholarship.scholarship_name,
-                      provider_name: heroScholarship.provider_name,
-                      host_country: heroScholarship.host_country,
-                      coverage_type: heroScholarship.coverage_type,
-                      award_amount_text: heroScholarship.award_amount_text,
-                      application_deadline: heroScholarship.application_deadline,
-                      cover_image_url: heroScholarship.cover_image_url,
-                      official_url: heroScholarship.official_url,
+                      scholarship_id: heroEligible.scholarship_id,
+                      scholarship_name: heroEligible.scholarship_name,
+                      provider_name: heroEligible.provider_name,
+                      host_country: heroEligible.host_country,
+                      coverage_type: heroEligible.coverage_type,
+                      award_amount_text: heroEligible.award_amount_text,
+                      application_deadline: heroEligible.application_deadline,
+                      cover_image_url: heroEligible.cover_image_url,
+                      canonical_overview: (heroEligible as { canonical_overview?: string | null }).canonical_overview ?? null,
+                      official_url: heroEligible.official_url,
                     }}
-                    heroReason={null}
-                    profileQuality={profileQuality}
-                    onExpand={() => openDetailRoute(heroScholarship)}
+                    description={(heroEligible as { canonical_overview?: string | null }).canonical_overview ?? null}
+                    isBookmarked={shortlist.has(heroEligible.scholarship_id)}
+                    onBookmark={(e) => { e.stopPropagation(); toggleBookmark(heroEligible.scholarship_id); }}
+                    onExpand={() => openDetailRoute(heroEligible)}
                     lang={language}
                   />
-                );
+
+                  {/* Selections for you — full-width, always-on row of
+                   *  3 image-forward tiles. Uses sections.strong when a
+                   *  profile is filled, otherwise the top of `ranked`
+                   *  (excluding the chosen hero scholarship). */}
+                  {(() => {
+                    const seed = sections.strong.length > 0
+                      ? sections.strong
+                      : ranked.filter(r => r.scholarship_id !== heroEligible.scholarship_id).slice(0, 6);
+                    const items = seed.slice(0, 6);
+                    if (items.length === 0) return null;
+                    return (
+                      <section>
+                        <header className="flex items-end justify-between gap-3 mb-4 sm:mb-5">
+                          <div>
+                            <h3 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                              {t("Selections for you", "Подборка для вас")}
+                            </h3>
+                            <p className="text-[13px] text-muted-foreground mt-1 hidden sm:block">
+                              {t("Opportunities to fund your education.", "Возможности для финансирования образования.")}
+                            </p>
+                          </div>
+                          {/* See more → scroll-to-catalog affordance.
+                           *  Rev 4: replaces the deleted "VIEW ALL" link.
+                           *  Selections + Hero are designed to sit in the
+                           *  first viewport — this nudge tells the user
+                           *  there's a full catalog further down. */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              document.getElementById("discover-catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                            }}
+                            className="shrink-0 inline-flex items-center gap-1.5 text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.16em] text-foreground hover:text-gold-dark transition-colors"
+                          >
+                            {t("See more", "Показать ещё")}
+                            <ArrowRight className="h-3.5 w-3.5" />
+                          </button>
+                        </header>
+                        <SelectionsRow
+                          items={items.map(s => ({
+                            scholarship_id: s.scholarship_id,
+                            scholarship_name: s.scholarship_name,
+                            provider_name: s.provider_name,
+                            host_country: s.host_country,
+                            coverage_type: s.coverage_type,
+                            award_amount_text: s.award_amount_text,
+                            estimated_total_value_usd: s.estimated_total_value_usd,
+                            application_deadline: s.application_deadline,
+                            cover_image_url: s.cover_image_url,
+                            canonical_overview: (s as { canonical_overview?: string | null }).canonical_overview ?? null,
+                            provider_trust_tier: (s as { provider_trust_tier?: "high" | "verified" | null }).provider_trust_tier ?? null,
+                          }))}
+                          cardProps={(_, i) => {
+                            const sch = items[i];
+                            return {
+                              onSelect: () => openDetailRoute(sch),
+                              isBookmarked: shortlist.has(sch.scholarship_id),
+                              onBookmark: (e: React.MouseEvent) => { e.stopPropagation(); toggleBookmark(sch.scholarship_id); },
+                            };
+                          }}
+                          lang={language}
+                        />
+                      </section>
+                    );
                   })()}
                 </div>
                 );
               })()}
+
 
               {/* Sticky toolbar — search · filters · sort · view-mode · hidden · compare.
                   Sticks below the global Nav (h-16 = 64px) so the filter row is always
@@ -4605,107 +4662,70 @@ const Discover = ({ language = "en" }: Props) => {
                           // Browse now always falls through to the
                           // priority-section grid below.
 
-                          // Grid view — three sections by priority when the
-                          // user has profile signal driving the bucketing.
-                          // Without profile signal, every row falls into
-                          // sections.stretch with the "Selective" subtitle —
-                          // misleading for unprofiled users since we're not
-                          // declaring those rows selective, we just don't
-                          // know enough about them to bucket. Detect that
-                          // case (no rows in strong/competitive) and render
-                          // the cards as one undifferentiated grid with a
-                          // neutral "All scholarships" header instead.
-                          const hasProfileBucketing = sections.strong.length > 0 || sections.competitive.length > 0;
-                          // Per-section pagination helper. Renders the first
-                          // SECTION_PAGE_SIZE cards by default; "Show more"
-                          // expands the section to show the rest. Section
-                          // identity is keyed (strong/competitive/stretch/
-                          // "all") so user-expanded state survives re-ranking.
-                          const renderSectionGrid = (key: string, items: typeof sections.strong) => {
-                            const expanded = expandedSections.has(key);
-                            const visible = expanded ? items : items.slice(0, SECTION_PAGE_SIZE);
-                            const hidden = items.length - visible.length;
-                            return (
-                              <>
-                                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
-                                  {visible.map((s, i) => <MemoScholarCard {...cardProps(s, i)} />)}
-                                </div>
-                                {(hidden > 0 || expanded) && items.length > SECTION_PAGE_SIZE && (
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleSectionExpanded(key)}
-                                    className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground hover:text-gold-dark transition-colors px-3 py-2 rounded-md border border-dashed border-border/60 hover:border-gold/40"
-                                  >
-                                    {/* 2026-05-18 round 2: dropped the "(+N)"
-                                        count from grid-view expand affordance,
-                                        same reason as the list-view one. */}
-                                    {expanded
-                                      ? t("Show less", "Свернуть")
-                                      : t("Show more", "Показать ещё")}
-                                  </button>
-                                )}
-                              </>
-                            );
-                          };
+                          // Grid view — unified catalog rendering. The
+                          // prior 3-bucket split (strong/competitive/
+                          // stretch) was visible-but-redundant: every
+                          // row already has a fit tag on its card, and
+                          // the section headers were generating wordy
+                          // banners. Stitch revamp 2026-05-27 merges
+                          // them into one "Full Catalog" surface ordered
+                          // by the user-selected sort.
+                          // (renderSectionGrid + SECTION_PAGE_SIZE retired
+                          // here — the new render block below replaces
+                          // them entirely.)
 
-                          if (!hasProfileBucketing && sections.stretch.length > 0) {
-                            return (
-                              <section>
-                                {/* 2026-05-18: bulletin-feed framing for the
-                                    no-profile state. Pre-fix this header read
-                                    "Database · All scholarships" with a
-                                    static "build your profile" subtitle,
-                                    which made the page feel like a
-                                    one-shot catalog. Reframed as a live
-                                    feed — the active sort dictates the
-                                    framing so "Newest first" reads as a
-                                    bulletin, "Deadline first" reads as
-                                    closing-soon urgency. */}
-                                <SectionHeader
-                                  title={
-                                    sortBy === "newest"
-                                      ? t("Latest opportunities", "Последние возможности")
-                                      : sortBy === "deadline"
-                                        ? t("Application windows opening + closing", "Окна подачи — открытие и закрытие")
-                                        : t("All scholarships", "Все стипендии")
-                                  }
-                                  subtitle={
-                                    sortBy === "newest"
-                                      ? t("Updated continuously — fresh additions surface first.", "Обновляется постоянно — новые позиции сверху.")
-                                      : sortBy === "deadline"
-                                        ? t("Sorted by what closes next so urgent programs surface first.", "Отсортировано по ближайшим дедлайнам.")
-                                        : t("Build your profile (top right) to see which ones fit you best.", "Заполните профиль (вверху справа), чтобы увидеть, какие подходят лучше.")
-                                  }
-                                />
-                                {renderSectionGrid("all", sections.stretch)}
-                                {lockedCount > 0 && <PaywallCard lockedCount={lockedCount} className="mt-4" lang={language} />}
-                              </section>
-                            );
-                          }
+                          // Stitch revamp 2026-05-27 (rev 2):
+                          //   - "Selections for you" rendered ABOVE this
+                          //     flex container as a full-width row.
+                          //   - This block now only renders the Catalog —
+                          //     a 2-col grid with limited initial view
+                          //     (CATALOG_INITIAL=6) and a prominent
+                          //     centered "View all" CTA that expands the
+                          //     rest in-place. No pagination, no page
+                          //     numbers.
+                          const catalogItems = [...sections.strong, ...sections.competitive, ...sections.stretch];
+                          const CATALOG_INITIAL = 6;
+                          const catalogExpanded = expandedSections.has("more");
+                          const catalogVisible = catalogExpanded ? catalogItems : catalogItems.slice(0, CATALOG_INITIAL);
+                          const catalogHidden = catalogItems.length - catalogVisible.length;
                           return (
                             <>
-                              {/* Two-section layout 2026-05-25 (was three):
-                                  the prior "Strong fit / These align with
-                                  your profile / Selections for you / More
-                                  flagship programs" stack read as wordy
-                                  and over-segmented. Now: top bucket is
-                                  the profile-aligned "Selections for you",
-                                  everything else folds into a single "More
-                                  flagship programs" bucket (formerly the
-                                  competitive + stretch split). */}
-                              {sections.strong.length > 0 && (
-                                <section>
-                                  <SectionHeader
-                                    title={t("Selections for you", "Подборка для вас")} />
-                                  {renderSectionGrid("strong", sections.strong)}
-                                </section>
-                              )}
-
-                              {(sections.competitive.length > 0 || sections.stretch.length > 0) && (
-                                <section>
-                                  <SectionHeader
-                                    title={t("Catalog", "Каталог")} />
-                                  {renderSectionGrid("more", [...sections.competitive, ...sections.stretch])}
+                              {catalogItems.length > 0 && (
+                                <section id="discover-catalog" className="scroll-mt-32">
+                                  <header className="mb-5 sm:mb-6">
+                                    <h3 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                                      {t("More Scholarships", "Больше стипендий")}
+                                    </h3>
+                                    <p className="text-[13px] text-muted-foreground mt-1">
+                                      {/* "The world is your oyster" → no
+                                       *  literal RU translation; the
+                                       *  equivalent idiom "Весь мир в
+                                       *  ваших руках" (the whole world
+                                       *  is in your hands) carries the
+                                       *  same spirit. */}
+                                      {t("The world is your oyster.", "Весь мир в ваших руках.")}
+                                    </p>
+                                  </header>
+                                  <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5 auto-rows-fr">
+                                    {catalogVisible.map((s, i) => <MemoScholarCard {...cardProps(s, i)} />)}
+                                  </div>
+                                  {(catalogHidden > 0 || catalogExpanded) && catalogItems.length > CATALOG_INITIAL && (
+                                    <div className="mt-7 flex justify-center">
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleSectionExpanded("more")}
+                                        className="inline-flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.16em] text-foreground bg-card hover:bg-canvas-soft border border-border hover:border-foreground/30 px-6 py-3 rounded-lg transition-all"
+                                      >
+                                        {catalogExpanded
+                                          ? t("Show less", "Свернуть")
+                                          : t("View all", "Показать все")}
+                                        {!catalogExpanded && (
+                                          <span className="text-muted-foreground tabular-nums">({catalogItems.length})</span>
+                                        )}
+                                        <ArrowRight className={`h-3.5 w-3.5 transition-transform ${catalogExpanded ? "rotate-180" : ""}`} />
+                                      </button>
+                                    </div>
+                                  )}
                                 </section>
                               )}
 
