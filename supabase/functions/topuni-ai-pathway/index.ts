@@ -1367,6 +1367,10 @@ ${EDITORIAL_RULES}`;
             confidence: planResult.plan.archetype.confidence,
             reason: planResult.plan.archetype.reason,
             intake_snapshot: {
+              // Tag fallback runs so counselor queries can split real
+              // "open-question" matches from "no detector fired" runs
+              // without parsing the reason string.
+              _isFallback: planResult.plan.archetype.isFallback === true,
               nationality: profile.nationality,
               gradeLevel: profile.gradeLevel,
               majorCertainty: profile.majorCertainty,

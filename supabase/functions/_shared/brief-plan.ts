@@ -85,6 +85,12 @@ export interface BriefPlan {
     confidence: number;
     /** Short prose explanation, telemetry + Card 01 prompt context. */
     reason: string;
+    /** True when the detector floor wasn't cleared and we fell back to
+     *  the synthetic "open-question" archetype. Card 01 + the archetype
+     *  reveal MUST soften their identity claim in this state — the
+     *  user genuinely landed somewhere we couldn't read with
+     *  confidence, not in the open-question pattern. */
+    isFallback?: boolean;
   };
 
   /** Card 01 headline seed. Stylized identity claim, 1 sentence,
@@ -477,6 +483,7 @@ export function buildFallbackPlan(ctx: PlanContext): BriefPlan {
       id: archMatch.id,
       confidence: archMatch.confidence,
       reason: archMatch.reason,
+      ...(archMatch.isFallback ? { isFallback: true } : {}),
     },
     identityClaim: getArchetype(archMatch.id).tagline,
     pileContrast:

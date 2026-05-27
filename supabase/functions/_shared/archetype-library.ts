@@ -254,6 +254,14 @@ interface ArchetypeMatch {
    *  the regen-prompt context if the LLM wants to know the heuristic's
    *  reasoning. */
   reason: string;
+  /** True when this match is the synthetic "open-question" fallback
+   *  (detector floor not cleared OR no detector fired). Distinct from
+   *  a genuine open-question hit — downstream consumers can branch on
+   *  it to (a) tag the row in archetype_assignments for counselor
+   *  audit, (b) soften archetype-confident framings in the brief, or
+   *  (c) prompt the user to add narrative for sharper detection.
+   *  Undefined / absent on real detector matches. */
+  isFallback?: boolean;
 }
 
 /* ─── Heuristic helpers ───────────────────────────────────────────── */
@@ -636,5 +644,6 @@ export function detectArchetypeOrFallback(
       match
         ? `no archetype above the 60-confidence floor (best was ${match.id} at ${match.confidence}); falling back to Open Question`
         : "no detector fired; falling back to Open Question (largest-cohort default)",
+    isFallback: true,
   };
 }
