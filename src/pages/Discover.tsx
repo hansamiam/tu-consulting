@@ -1079,9 +1079,8 @@ const deadlineDisplay = (d: string | null, lang: Lang = "en", deadlineType?: str
   if (isInferred) {
     const dt = new Date(d);
     const monthLabel = (ru ? MONTH_RU : MONTH_EN)[dt.getMonth()] ?? "";
-    const yr = dt.getFullYear();
     return {
-      text: ru ? `Обычно ${monthLabel} ${yr}` : `Typically ${monthLabel} ${yr}`,
+      text: ru ? `Обычно ${monthLabel}` : `Typically ${monthLabel}`,
       cls: "text-foreground/55",
       urgent: false,
     };

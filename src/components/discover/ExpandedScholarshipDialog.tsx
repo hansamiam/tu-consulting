@@ -87,13 +87,13 @@ const fmtDays = (d: string | null, lang: Lang, isInferred?: boolean | null): { t
   const ru = lang === "ru";
   if (!d) return { text: ru ? "Без дедлайна" : "Rolling deadline", tone: "neutral" };
   // 2026-05-27: inferred annual cycle — date IS present but was bumped
-  // forward from a past cycle. Show as "Typically [Month] [Year]" so
-  // users know to verify before applying.
+  // forward from a past cycle. Show as "Typically [Month]" (no year) —
+  // pinning a year defeats the word "typically."
   if (isInferred) {
     const dt = new Date(d);
     const month = (ru ? MONTH_LONG_RU : MONTH_LONG_EN)[dt.getMonth()] ?? "";
     return {
-      text: ru ? `Обычно в ${month} ${dt.getFullYear()}` : `Typically ${month} ${dt.getFullYear()}`,
+      text: ru ? `Обычно в ${month}` : `Typically ${month}`,
       tone: "neutral",
     };
   }
