@@ -2612,12 +2612,13 @@ const Discover = ({ language = "en" }: Props) => {
   /* IP-inferred country for cold visitors. Hydrates profile.country
    * with countrySource: "ip" when no explicit profile exists, so the
    * hero + Selections + ranking get a soft personalization signal
-   * instead of generic fallback ordering. Always surfaced via the
-   * disclosure pill above the hero — never silent. */
+   * instead of generic fallback ordering. Intentionally SILENT — Sam
+   * decided 2026-05-27 that the disclosure pill was over-surfaced and
+   * was tricking the dashboard into hiding the wizard CTA. The signal
+   * only affects scoring; every UI check that decides whether to show
+   * profile-prompting affordances ignores IP-derived country and gates
+   * on countrySource === "user" instead. */
   const inferredCountry = useInferredCountry();
-  const [inferredPillDismissed, setInferredPillDismissed] = useState<boolean>(() => {
-    try { return localStorage.getItem("topuni_inferred_pill_dismissed_v1") === "1"; } catch { return false; }
-  });
   // Round-28 IA: /discover always lands you in the database. Previously
   // we showed a big "answer 4 questions" landing wall that forked users
   // out to /topuni-ai — TopUni AI and Discover felt like two products.
@@ -3939,20 +3940,27 @@ const Discover = ({ language = "en" }: Props) => {
                   — the catalogue scale signal lives in the toolbar
                   result-count below. */}
               {(() => {
+                /* IP-derived country is a SILENT scoring signal — it
+                 *  must NOT cause this panel to flip into "Built for
+                 *  you" mode, otherwise the wizard CTA hides itself
+                 *  for a cold visitor that hasn't actually filled the
+                 *  profile. Every check below treats inferred country
+                 *  as absent. */
+                const explicitCountry = profile.countrySource === "user" ? profile.country : "";
                 const isProfileFilled = !!(
-                  profile.country ||
+                  explicitCountry ||
                   (profile.degrees && profile.degrees.length > 0) ||
                   profile.field ||
                   profile.gpa ||
                   profile.ielts
                 );
-                const countryFlag = profile.country
-                  ? ALL_COUNTRIES.find(c => c.v.toLowerCase() === profile.country.toLowerCase())?.f ?? null
+                const countryFlag = explicitCountry
+                  ? ALL_COUNTRIES.find(c => c.v.toLowerCase() === explicitCountry.toLowerCase())?.f ?? null
                   : null;
                 const fieldEmoji = profile.field
                   ? FIELDS.find(f => f.v === profile.field)?.i ?? null
                   : null;
-                const countryAccent = accentForCountry(profile.country);
+                const countryAccent = accentForCountry(explicitCountry);
                 const targetCountryChips = (profile.targetCountries ?? []).slice(0, 3);
                 return (
                   <div className="relative bg-canvas-soft/60 border-b border-border/60 overflow-hidden">
@@ -3969,7 +3977,7 @@ const Discover = ({ language = "en" }: Props) => {
                           // nudge so users with thin profiles see a clear
                           // path to better matches.
                           const filled = [
-                            !!profile.country,
+                            !!explicitCountry,
                             (profile.degrees?.length ?? 0) > 0,
                             !!profile.field,
                             (profile.targetCountries?.length ?? 0) > 0,
@@ -3998,10 +4006,10 @@ const Discover = ({ language = "en" }: Props) => {
                                     : t("Your scholarship feed", "Ваша лента стипендий")}
                                 </h2>
                                 <div className="flex items-center gap-1.5 flex-wrap mt-2 min-w-0">
-                                  {profile.country && (
+                                  {explicitCountry && (
                                     <span className={`inline-flex items-center gap-1 text-[11px] font-semibold text-white px-2.5 py-1 rounded-full bg-gradient-to-r ${countryAccent}`}>
                                       {countryFlag && <span className="text-[12px] leading-none">{countryFlag}</span>}
-                                      {profile.country}
+                                      {explicitCountry}
                                     </span>
                                   )}
                                   {profile.degrees && profile.degrees.length > 0 && (
@@ -4119,48 +4127,8 @@ const Discover = ({ language = "en" }: Props) => {
                   && !!((r as { canonical_official_url?: string | null }).canonical_official_url || r.official_url),
                 );
                 if (!heroEligible) return null;
-                const showInferredPill =
-                  profile.countrySource === "ip"
-                  && !!inferredCountry.name
-                  && !!inferredCountry.flag
-                  && !inferredPillDismissed;
                 return (
                 <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-5 space-y-10 sm:space-y-12">
-                  {/* IP-inferred country disclosure — surfaces the soft
-                   *  personalization signal (Sam asked for IP-based
-                   *  placeholder citizenship 2026-05-27). Dismissible;
-                   *  "change" deep-links to /topuni-ai for the real
-                   *  profile wizard. Never appears once the user has
-                   *  explicit countrySource: "user". */}
-                  {showInferredPill && (
-                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/40 px-3.5 py-2 -mb-6 sm:-mb-8">
-                      <p className="text-[12px] sm:text-[13px] text-foreground/85 leading-snug min-w-0">
-                        <span aria-hidden className="mr-1.5">{inferredCountry.flag}</span>
-                        {t(
-                          `Showing matches based on your location — ${inferredCountry.name}.`,
-                          `Подборка по вашей геолокации — ${inferredCountry.name}.`,
-                        )}{" "}
-                        <button
-                          type="button"
-                          onClick={() => navigate(language === "ru" ? "/topuni-ai/ru" : "/topuni-ai")}
-                          className="font-semibold text-foreground underline-offset-2 hover:underline"
-                        >
-                          {t("Not you? Set your profile", "Не вы? Укажите профиль")}
-                        </button>
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setInferredPillDismissed(true);
-                          try { localStorage.setItem("topuni_inferred_pill_dismissed_v1", "1"); } catch { /* private mode */ }
-                        }}
-                        aria-label={t("Dismiss", "Скрыть")}
-                        className="shrink-0 text-muted-foreground hover:text-foreground transition-colors p-1 -mr-1"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  )}
                   <StitchHero
                     scholarship={{
                       scholarship_id: heroEligible.scholarship_id,
