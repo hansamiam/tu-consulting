@@ -2176,33 +2176,10 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
               </>
             );
           })()}
-          {/* Chip priority on the band — full-ride moved OUT 2026-05-10
-              (now lives as a ticker tag in the card's action row so the
-              band stays visually clean and the silhouette has room to
-              breathe). One demographic chip allowed inline if there's
-              no full-ride; otherwise the band is just country. */}
-          {(() => {
-            const secondary: React.ReactNode[] = [];
-            if (s.target_demographics && s.target_demographics.length > 0) {
-              secondary.push(
-                // Drop the max-w-[40%] cap: with the tight country
-                // alias above ("UK" instead of "United Kingdom") there's
-                // plenty of room for the demographic word, and the cap
-                // was producing chopped chips ("Need-bas…").
-                // whitespace-nowrap keeps the chip on one line; the
-                // outer min-w-0 + flex-1 still prevents overflow.
-                <span key="dm" className="inline-flex items-center gap-1 text-gold-dark shrink-0 whitespace-nowrap">
-                  {humanizeDemographic(s.target_demographics[0])}
-                </span>,
-              );
-            }
-            return secondary.length > 0 ? (
-              <>
-                <span className="text-muted-foreground/50 shrink-0">·</span>
-                {secondary[0]}
-              </>
-            ) : null;
-          })()}
+          {/* Demographic chip on the band pulled 2026-05-27. See
+              docs/archived-features-2026-05.md — target_demographics
+              tagging isn't trustworthy enough yet to surface as a chip.
+              Band stays country-only until re-tagging pass. */}
         </span>
       </div>
 
@@ -2490,17 +2467,10 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
         </div>
       ))}
 
-      {/* Eligibility group — was a pill grid of 10 chips that dominated
-          the panel. Now a Select; same DB tags, ~80% less space. */}
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">{t("Eligibility", "Категория")}</p>
-        <Select value={filters.demographic} onValueChange={v => setFilters(f => ({ ...f, demographic: v }))}>
-          <SelectTrigger className="h-8 text-[13px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {demographicOpts.map(o => <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Eligibility dropdown pulled 2026-05-27 — see
+          docs/archived-features-2026-05.md. demographicOpts and the
+          filter pipeline branch (filters.demographic) stay in place so
+          revival is a re-render, not a rebuild. */}
 
       {/* Field + Host country — kept tight as compact dropdowns side-by-side.
           The panel was previously 2 stacked dropdown sections; this shrinks
@@ -4005,45 +3975,11 @@ const Discover = ({ language = "en" }: Props) => {
                         <Input value={wiz.sat} onChange={e => setWiz(w => ({ ...w, sat: e.target.value }))} placeholder={t("e.g. 1450", "напр. 1450")}
                           className="bg-primary-foreground/[0.04] border-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/25 h-12 backdrop-blur-md focus-visible:border-gold/50" />
                       </div>
-                      {/* Optional self-identification — surfaces extra match
-                          boost on programs designed for these groups.
-                          Multi-select chips; nothing required. */}
-                      <div className="space-y-2 pt-2">
-                        <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/45">{t("Eligibility groups (optional)", "Категории (необязательно)")}</label>
-                        <p className="text-[11px] text-primary-foreground/40 -mt-1">{t("Tap any that apply — surfaces programs designed for you.", "Отметьте подходящее — откроем программы, созданные специально для вас.")}</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {/* Self-ID chips pruned to the cohorts with ≥1 real
-                              scholarship in the catalogue. Same set as the
-                              eligibility filter dropdown so user expectations
-                              line up. Indigenous / LGBTQ / underrepresented-
-                              minority dropped as no scholarship in the DB
-                              targets them — re-add when real rows land. */}
-                          {[
-                            { v: "women", l: t("Women", "Женщины") },
-                            { v: "refugee", l: t("Refugee", "Беженцы") },
-                            { v: "disability", l: t("Disability", "Инвалидность") },
-                          ].map(d => {
-                            const on = wiz.demographics.includes(d.v);
-                            return (
-                              <button
-                                key={d.v}
-                                type="button"
-                                onClick={() => setWiz(w => ({
-                                  ...w,
-                                  demographics: on ? w.demographics.filter(x => x !== d.v) : [...w.demographics, d.v],
-                                }))}
-                                className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors backdrop-blur-md ${
-                                  on
-                                    ? "bg-gold text-primary border border-gold"
-                                    : "bg-primary-foreground/[0.04] text-primary-foreground/75 border border-primary-foreground/15 hover:bg-primary-foreground/[0.08]"
-                                }`}
-                              >
-                                {d.l}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
+                      {/* Wizard self-ID chips pulled 2026-05-27 — see
+                          docs/archived-features-2026-05.md. Scoring
+                          logic in scoreOne (target_demographics overlap)
+                          stays untouched; profile.demographics simply
+                          stays empty, so the boost is a no-op. */}
                     </div>
                     <Button variant="gold" size="lg" className="mt-10 px-12 gap-2 text-base" onClick={completeWizard}>
                       {t("Reveal my matches", "Показать совпадения")}
