@@ -644,8 +644,18 @@ const DiscoverApp = ({ language = "en" }: Props) => {
                     {openDetail.application_deadline && (
                       <div className="flex justify-between"><span className="text-muted-foreground">{isRu ? "Дедлайн" : "Deadline"}</span><span className="font-medium">{new Date(openDetail.application_deadline).toLocaleDateString(isRu ? "ru-RU" : "en-US", { year: "numeric", month: "short", day: "numeric" })}</span></div>
                     )}
-                    {openDetail.citizenship_requirements && (
-                      <div className="col-span-2 flex justify-between"><span className="text-muted-foreground">{isRu ? "Гражданство" : "Citizenship"}</span><span className="font-medium text-right">{openDetail.citizenship_requirements}</span></div>
+                    {(openDetail.eligible_countries?.length || openDetail.citizenship_requirements) && (
+                      <div className="col-span-2 flex justify-between gap-3">
+                        <span className="text-muted-foreground shrink-0">{isRu ? "Гражданство" : "Citizenship"}</span>
+                        <span className="font-medium text-right">
+                          {openDetail.eligible_countries && openDetail.eligible_countries.length > 0
+                            && !(openDetail.eligible_countries.length === 1 && ["any","all","open","worldwide","international"].includes(openDetail.eligible_countries[0].toLowerCase()))
+                            ? openDetail.eligible_countries.join(", ")
+                            : (openDetail.eligible_countries?.length === 1 && ["any","all","open","worldwide","international"].includes(openDetail.eligible_countries[0].toLowerCase()))
+                              ? (isRu ? "Открыто для всех" : "Open to all nationalities")
+                              : openDetail.citizenship_requirements}
+                        </span>
+                      </div>
                     )}
                   </div>
                 </section>

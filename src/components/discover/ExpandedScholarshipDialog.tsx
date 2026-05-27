@@ -51,6 +51,7 @@ interface ScholarshipLite {
   target_degree_level: string[] | null;
   target_fields: string[] | null;
   citizenship_requirements: string | null;
+  eligible_countries: string[] | null;
   official_url: string | null;
   duration_text?: string | null;
   cover_image_url?: string | null;
@@ -82,6 +83,30 @@ interface Props {
 
 const MONTH_LONG_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const MONTH_LONG_RU = ["январе","феврале","марте","апреле","мае","июне","июле","августе","сентябре","октябре","ноябре","декабре"];
+
+// Render the citizenship line. When eligible_countries has a real list,
+// show those countries — that's the actual answer. citizenship_requirements
+// is a freetext summary that often degrades to placeholder strings like
+// "Hold the nationality of a country appearing in the specified list" when
+// the LLM extractor didn't follow the source's "see country list" link.
+// The structured array is the source of truth; the summary is fallback only.
+const OPEN_TO_ALL_MARKERS = ["any", "all", "open", "worldwide", "international"];
+function renderCitizenship(
+  countries: string[] | null,
+  summary: string | null,
+  t: (en: string, ru: string) => string,
+): string {
+  const list = (countries ?? [])
+    .map(c => (c ?? "").trim())
+    .filter(Boolean);
+  // "Open to all" sentinel — single-entry arrays like ["any"] / ["all"].
+  if (list.length === 1 && OPEN_TO_ALL_MARKERS.includes(list[0].toLowerCase())) {
+    return t("Open to all nationalities", "Открыто для всех национальностей");
+  }
+  if (list.length > 0) return list.join(", ");
+  // Fallback: structured list missing, use the freetext summary if any.
+  return summary || t("Open", "Открыто всем");
+}
 
 const fmtDays = (d: string | null, lang: Lang, isInferred?: boolean | null): { text: string; tone: "danger" | "warn" | "neutral" } => {
   const ru = lang === "ru";
@@ -262,7 +287,7 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
             <p className="text-sm leading-relaxed text-foreground">
               <span className="font-semibold">{t("Citizenship", "Гражданство")}:</span>{" "}
               <span className="text-foreground/85">
-                {s.citizenship_requirements || t("Open", "Открыто всем")}
+                {renderCitizenship(s.eligible_countries, s.citizenship_requirements, t)}
               </span>
             </p>
           </div>

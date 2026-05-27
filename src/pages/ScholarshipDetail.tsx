@@ -817,7 +817,7 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
           <Fact icon={<Wallet />} label={t("Award", "Финансирование")} value={s.award_amount_text || compactAward(s) || (s.estimated_total_value_usd ? `~$${Math.round(s.estimated_total_value_usd / 1000)}K total` : "—")} />
           <Fact icon={<Calendar />} label={t("Deadline", "Дедлайн")} value={formattedDeadline ?? (s.deadline_type ?? t("varies", "разные"))} />
           <Fact icon={<GraduationCap />} label={t("Levels", "Уровни")} value={(s.target_degree_level ?? []).map(humanizeDegreeLabel).join(", ") || t("any", "любой")} />
-          <Fact icon={<Globe />} label={t("Citizenship", "Гражданство")} value={s.citizenship_requirements ? truncate(s.citizenship_requirements, 60) : t("any", "любое")} />
+          <Fact icon={<Globe />} label={t("Citizenship", "Гражданство")} value={citizenshipFactValue(s.eligible_countries, s.citizenship_requirements, isRu)} />
         </div>
 
         {/* Static "How this scholarship plays" — pre-generated mini-guide
@@ -1354,6 +1354,32 @@ const Chip = ({ children, tone = "neutral" }: { children: React.ReactNode; tone?
 
 function truncate(s: string, n: number): string {
   return s.length > n ? s.slice(0, n - 1) + "…" : s;
+}
+
+// Citizenship fact value: prefer the structured eligible_countries array
+// (the source of truth) over citizenship_requirements (a freetext summary
+// that often degrades to placeholders like "Hold the nationality of a
+// country appearing in the specified list" when the LLM didn't follow
+// the source's "see country list" link).
+const OPEN_TO_ALL = ["any", "all", "open", "worldwide", "international"];
+function citizenshipFactValue(
+  countries: string[] | null,
+  summary: string | null,
+  ru: boolean,
+): string {
+  const list = (countries ?? []).map(c => (c ?? "").trim()).filter(Boolean);
+  if (list.length === 1 && OPEN_TO_ALL.includes(list[0].toLowerCase())) {
+    return ru ? "любое" : "any";
+  }
+  if (list.length > 0) {
+    // The fact tile is compact — show first 2 + count rather than the
+    // full list. Detail dialog shows the full list inline.
+    if (list.length <= 2) return list.join(", ");
+    return ru
+      ? `${list[0]}, ${list[1]} и ещё ${list.length - 2}`
+      : `${list[0]}, ${list[1]} +${list.length - 2} more`;
+  }
+  return summary ? truncate(summary, 60) : (ru ? "любое" : "any");
 }
 
 function setMeta(name: string, content: string, isProperty = false) {
