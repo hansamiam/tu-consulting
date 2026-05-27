@@ -63,6 +63,7 @@ import { StitchHero } from "@/components/discover/stitch/StitchHero";
 import { SelectionsRow } from "@/components/discover/stitch/SelectionsRow";
 import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
 import { ExpandedScholarshipDialog } from "@/components/discover/ExpandedScholarshipDialog";
+import { NewScholarshipButton } from "@/components/admin/NewScholarshipButton";
 // MatchScoreBreakdown import retired round 33 — the per-row hover
 // popover that wrapped the MatchGauge was removed; rows convey fit
 // via section bucketing + sort order now. Re-import if a future
@@ -2741,6 +2742,23 @@ const Discover = ({ language = "en" }: Props) => {
   const openDetailRoute = useCallback((s: Scored) => {
     setOpenDetail(s);
   }, []);
+  /* Admin-only: after creating a new scholarship via the New
+     Scholarship floating button, fetch the row and pop it open in the
+     detail dialog so admin can immediately edit-in-place. We don't
+     refetch the catalog — the new row is unpublished by default and
+     wouldn't appear anyway; admin flips is_published later. */
+  const openNewlyCreatedById = useCallback(async (newId: string) => {
+    const { data, error } = await supabase
+      .from("scholarships")
+      .select("*")
+      .eq("scholarship_id", newId)
+      .maybeSingle();
+    if (error || !data) {
+      console.warn("[admin-create] could not fetch new row", { newId, error });
+      return;
+    }
+    setOpenDetail({ ...(data as object) } as unknown as Scored);
+  }, []);
   /* Application tracker — offline-first hook that mirrors localStorage
      and (when authed) syncs to Postgres `application_tracker`. Replaces
      the four separate useState + useEffect blobs that lived here. */
@@ -5280,7 +5298,9 @@ const Discover = ({ language = "en" }: Props) => {
           onSave={() => openDetail && toggleBookmark(openDetail.scholarship_id)}
           isBookmarked={openDetail ? shortlist.has(openDetail.scholarship_id) : false}
           lang={language}
+          onDeleted={() => setOpenDetail(null)}
         />
+        <NewScholarshipButton onCreated={openNewlyCreatedById} />
       </div>
     </div>
   );
