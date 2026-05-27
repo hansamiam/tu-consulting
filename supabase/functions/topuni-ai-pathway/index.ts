@@ -1415,7 +1415,7 @@ ${EDITORIAL_RULES}`;
         try {
           const sections = await accumulated;
           if (sections && Object.keys(sections).length > 0) {
-            await supabase.from("brief_cache").upsert({
+            const { error: cacheErr } = await supabase.from("brief_cache").upsert({
               profile_hash: briefProfileHash,
               language: cacheLang,
               grade,
@@ -1431,6 +1431,15 @@ ${EDITORIAL_RULES}`;
               prompt_version: PROMPT_VERSION,
               generated_at: new Date().toISOString(),
             } as never, { onConflict: "profile_hash,language,grade" });
+            // If the cache upsert failed (RLS / constraint / quota), do
+            // NOT queue the brief-generated email — the recipient would
+            // click through to a blank page. Fail closed: surface the
+            // server-side error in logs, skip email + lead capture, and
+            // let the user re-Generate (which will retry the cache write).
+            if (cacheErr) {
+              console.warn("[brief-cache] magazine upsert failed — skipping email + lead capture", cacheErr);
+              return;
+            }
 
             // Fire the brief-generated email immediately — for BOTH authed
             // users AND anon users who provided an email in the wizard.
@@ -1551,7 +1560,7 @@ ${grade === "premium" ? premiumSections : basicSections}`;
         const raw = await basicAccum;
         const content = extractContentFromSse(raw);
         if (content && content.length > 200) {
-          await supabase.from("brief_cache").upsert({
+          const { error: basicCacheErr } = await supabase.from("brief_cache").upsert({
             profile_hash: briefProfileHash,
             language: cacheLang,
             grade,
@@ -1561,6 +1570,13 @@ ${grade === "premium" ? premiumSections : basicSections}`;
             prompt_version: PROMPT_VERSION,
             generated_at: new Date().toISOString(),
           }, { onConflict: "profile_hash,language,grade" });
+          // Same fail-closed contract as the magazine path above: if the
+          // cache write failed, don't promise the user an email + link
+          // that would land on a blank page.
+          if (basicCacheErr) {
+            console.warn("[brief-cache] basic upsert failed — skipping email + lead capture", basicCacheErr);
+            return;
+          }
 
           // Mirror of the magazine path — fire brief-generated to BOTH
           // authed users AND anon users with an email. Anon users still
