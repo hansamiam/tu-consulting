@@ -60,6 +60,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
 import { track } from "@/lib/analytics";
 import { HeroCard } from "@/components/discover/HeroCard";
+import { SelectionsRow } from "@/components/discover/stitch/SelectionsRow";
 import { ScholarshipDeepDive } from "@/components/scholarship/ScholarshipDeepDive";
 import { ExpandedScholarshipDialog } from "@/components/discover/ExpandedScholarshipDialog";
 // MatchScoreBreakdown import retired round 33 — the per-row hover
@@ -4649,25 +4650,23 @@ const Discover = ({ language = "en" }: Props) => {
                           };
 
                           if (!hasProfileBucketing && sections.stretch.length > 0) {
+                            // Pre-profile catalog uses the same Stitch
+                            // "limited rows + View all" treatment as the
+                            // post-profile catalog. Header copy still
+                            // adapts to the active sort (bulletin framing).
+                            const PRE_INITIAL = 8;
+                            const preExpanded = expandedSections.has("all");
+                            const preVisible = preExpanded ? sections.stretch : sections.stretch.slice(0, PRE_INITIAL);
+                            const preHidden = sections.stretch.length - preVisible.length;
                             return (
                               <section>
-                                {/* 2026-05-18: bulletin-feed framing for the
-                                    no-profile state. Pre-fix this header read
-                                    "Database · All scholarships" with a
-                                    static "build your profile" subtitle,
-                                    which made the page feel like a
-                                    one-shot catalog. Reframed as a live
-                                    feed — the active sort dictates the
-                                    framing so "Newest first" reads as a
-                                    bulletin, "Deadline first" reads as
-                                    closing-soon urgency. */}
                                 <SectionHeader
                                   title={
                                     sortBy === "newest"
                                       ? t("Latest opportunities", "Последние возможности")
                                       : sortBy === "deadline"
                                         ? t("Application windows opening + closing", "Окна подачи — открытие и закрытие")
-                                        : t("All scholarships", "Все стипендии")
+                                        : t("Catalog", "Каталог")
                                   }
                                   subtitle={
                                     sortBy === "newest"
@@ -4677,35 +4676,87 @@ const Discover = ({ language = "en" }: Props) => {
                                         : t("Build your profile (top right) to see which ones fit you best.", "Заполните профиль (вверху справа), чтобы увидеть, какие подходят лучше.")
                                   }
                                 />
-                                {renderSectionGrid("all", sections.stretch)}
+                                <div className="grid sm:grid-cols-2 gap-4 sm:gap-5 auto-rows-fr">
+                                  {preVisible.map((s, i) => <MemoScholarCard {...cardProps(s, i)} />)}
+                                </div>
+                                {(preHidden > 0 || preExpanded) && sections.stretch.length > PRE_INITIAL && (
+                                  <div className="mt-7 flex justify-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleSectionExpanded("all")}
+                                      className="inline-flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.16em] text-foreground bg-card hover:bg-canvas-soft border border-border hover:border-foreground/30 px-6 py-3 rounded-lg transition-all"
+                                    >
+                                      {preExpanded
+                                        ? t("Show less", "Свернуть")
+                                        : t("View all", "Показать все")}
+                                      {!preExpanded && (
+                                        <span className="text-muted-foreground tabular-nums">({sections.stretch.length})</span>
+                                      )}
+                                      <ArrowRight className={`h-3.5 w-3.5 transition-transform ${preExpanded ? "rotate-180" : ""}`} />
+                                    </button>
+                                  </div>
+                                )}
                                 {lockedCount > 0 && <PaywallCard lockedCount={lockedCount} className="mt-4" lang={language} />}
                               </section>
                             );
                           }
+                          // Stitch revamp 2026-05-27:
+                          //   - "Selections for you" → horizontal scroll
+                          //     of 3:4 portrait tiles (max 6). Replaces
+                          //     the prior 3-col grid for sections.strong.
+                          //   - "Catalog" → 2-col grid with limited initial
+                          //     view (CATALOG_INITIAL=8) and a centered
+                          //     "View all" CTA that expands the rest
+                          //     in-place (no pagination, no page numbers).
+                          const catalogItems = [...sections.competitive, ...sections.stretch];
+                          const CATALOG_INITIAL = 8;
+                          const catalogExpanded = expandedSections.has("more");
+                          const catalogVisible = catalogExpanded ? catalogItems : catalogItems.slice(0, CATALOG_INITIAL);
+                          const catalogHidden = catalogItems.length - catalogVisible.length;
                           return (
                             <>
-                              {/* Two-section layout 2026-05-25 (was three):
-                                  the prior "Strong fit / These align with
-                                  your profile / Selections for you / More
-                                  flagship programs" stack read as wordy
-                                  and over-segmented. Now: top bucket is
-                                  the profile-aligned "Selections for you",
-                                  everything else folds into a single "More
-                                  flagship programs" bucket (formerly the
-                                  competitive + stretch split). */}
                               {sections.strong.length > 0 && (
                                 <section>
                                   <SectionHeader
-                                    title={t("Selections for you", "Подборка для вас")} />
-                                  {renderSectionGrid("strong", sections.strong)}
+                                    title={t("Selections for you", "Подборка для вас")}
+                                    subtitle={t("Hand-picked picks aligned to your profile.", "Подборки под ваш профиль.")} />
+                                  <SelectionsRow
+                                    items={sections.strong.slice(0, 6)}
+                                    cardProps={(s) => ({
+                                      onSelect: () => openDetailRoute(s),
+                                      isBookmarked: shortlist.has(s.scholarship_id),
+                                      onBookmark: (e: React.MouseEvent) => { e.stopPropagation(); toggleBookmark(s.scholarship_id); },
+                                    })}
+                                    lang={language}
+                                  />
                                 </section>
                               )}
 
                               {(sections.competitive.length > 0 || sections.stretch.length > 0) && (
                                 <section>
                                   <SectionHeader
-                                    title={t("Catalog", "Каталог")} />
-                                  {renderSectionGrid("more", [...sections.competitive, ...sections.stretch])}
+                                    title={t("Catalog", "Каталог")}
+                                    subtitle={t("Every program in the database — open to anyone.", "Все программы базы — открыты для всех.")} />
+                                  <div className="grid sm:grid-cols-2 gap-4 sm:gap-5 auto-rows-fr">
+                                    {catalogVisible.map((s, i) => <MemoScholarCard {...cardProps(s, i)} />)}
+                                  </div>
+                                  {(catalogHidden > 0 || catalogExpanded) && catalogItems.length > CATALOG_INITIAL && (
+                                    <div className="mt-7 flex justify-center">
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleSectionExpanded("more")}
+                                        className="inline-flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.16em] text-foreground bg-card hover:bg-canvas-soft border border-border hover:border-foreground/30 px-6 py-3 rounded-lg transition-all"
+                                      >
+                                        {catalogExpanded
+                                          ? t("Show less", "Свернуть")
+                                          : t("View all", "Показать все")}
+                                        {!catalogExpanded && (
+                                          <span className="text-muted-foreground tabular-nums">({catalogItems.length})</span>
+                                        )}
+                                        <ArrowRight className={`h-3.5 w-3.5 transition-transform ${catalogExpanded ? "rotate-180" : ""}`} />
+                                      </button>
+                                    </div>
+                                  )}
                                 </section>
                               )}
 
