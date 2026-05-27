@@ -4094,8 +4094,6 @@ const Discover = ({ language = "en" }: Props) => {
                       official_url: heroEligible.official_url,
                     }}
                     description={(heroEligible as { canonical_overview?: string | null }).canonical_overview ?? null}
-                    isBookmarked={shortlist.has(heroEligible.scholarship_id)}
-                    onBookmark={(e) => { e.stopPropagation(); toggleBookmark(heroEligible.scholarship_id); }}
                     onExpand={() => openDetailRoute(heroEligible)}
                     lang={language}
                   />
@@ -4103,11 +4101,17 @@ const Discover = ({ language = "en" }: Props) => {
                   {/* Selections for you — full-width, always-on row of
                    *  3 image-forward tiles. Uses sections.strong when a
                    *  profile is filled, otherwise the top of `ranked`
-                   *  (excluding the chosen hero scholarship). */}
+                   *  (excluding the chosen hero scholarship). All three
+                   *  tiles MUST have cover_image_url — without an image
+                   *  the tile reads as a hollow silhouette card and
+                   *  breaks the editorial rhythm of the row (Sam
+                   *  flagged the imageless Mastercard Foundation tile
+                   *  on 2026-05-27). Same predicate as the hero gate. */}
                   {(() => {
-                    const seed = sections.strong.length > 0
-                      ? sections.strong
-                      : ranked.filter(r => r.scholarship_id !== heroEligible.scholarship_id).slice(0, 6);
+                    const hasImage = (r: { cover_image_url?: string | null }) => !!r.cover_image_url;
+                    const seed = (sections.strong.length > 0 ? sections.strong : ranked)
+                      .filter(r => r.scholarship_id !== heroEligible.scholarship_id)
+                      .filter(hasImage);
                     const items = seed.slice(0, 6);
                     if (items.length === 0) return null;
                     return (
