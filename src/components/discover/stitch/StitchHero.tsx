@@ -9,10 +9,20 @@
  * Reuses cleanScholarshipName, cleanProvider, accentForCountry,
  * CountryArt — the visual language stays inside the same palette.
  */
-import { Bookmark, BookmarkCheck, Clock, ExternalLink, Heart, ArrowRight } from "lucide-react";
+import { Clock, ExternalLink, ArrowRight } from "lucide-react";
 import { CountryArt } from "@/lib/countryArt";
-import { accentForCountry, shortCountry } from "@/lib/countryAccent";
+import { accentForCountry } from "@/lib/countryAccent";
 import { cleanScholarshipName, cleanProvider } from "@/lib/scholarshipFields";
+
+/* First-sentence extractor — banner shows only the opening sentence
+ * for editorial restraint; the full overview lives in the detail
+ * pull-up so nothing is cut off, just visually deferred. Falls back
+ * to the raw text when no sentence boundary is found. */
+const firstSentence = (text: string): string => {
+  const trimmed = text.trim();
+  const m = trimmed.match(/^[\s\S]+?[.!?](?=\s|$)/);
+  return (m ? m[0] : trimmed).trim();
+};
 
 type Lang = "en" | "ru";
 
@@ -32,11 +42,13 @@ export interface StitchHeroScholarship {
 
 interface StitchHeroProps {
   scholarship: StitchHeroScholarship;
-  /** One-line description / why-this-scholarship. Falls back to a
-   *  short editorial line if not provided. */
+  /** Full canonical_overview from the scholarship row. The banner
+   *  renders ONLY the first sentence (editorial restraint); the full
+   *  text is shown when the user opens the detail pull-up. */
   description?: string | null;
-  isBookmarked?: boolean;
-  onBookmark?: (e: React.MouseEvent) => void;
+  /** Open the detail pull-up. Fires on click anywhere on the banner
+   *  surface (except the "Open official site" anchor, which navigates
+   *  externally). */
   onExpand: () => void;
   lang?: Lang;
 }
@@ -54,22 +66,35 @@ const fmtDaysLeft = (iso: string | null, lang: Lang): string | null => {
 export const StitchHero = ({
   scholarship,
   description,
-  isBookmarked,
-  onBookmark,
   onExpand,
   lang = "en",
 }: StitchHeroProps) => {
   const cleanedName = cleanScholarshipName(scholarship.scholarship_name);
   const cleanedProv = cleanProvider(scholarship.provider_name);
-  const country = scholarship.host_country ? shortCountry(scholarship.host_country) : null;
   const accent = accentForCountry(scholarship.host_country);
   const daysLeft = fmtDaysLeft(scholarship.application_deadline, lang);
   const officialUrl = scholarship.official_url;
   const showCover = !!scholarship.cover_image_url;
-  const ru = lang === "ru";
+  const descriptionFirstSentence = description ? firstSentence(description) : null;
 
+  /* The entire banner is clickable — opens the right-hand detail
+   * pull-up. The "Open official site" anchor inside stops propagation
+   * so its native external navigation isn't hijacked. Sam tried
+   * clicking the big banner expecting the pull-up (2026-05-27) and
+   * nothing happened; this wires that affordance. */
   return (
-    <article className="relative overflow-hidden rounded-2xl border border-border bg-card">
+    <article
+      role="button"
+      tabIndex={0}
+      onClick={onExpand}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onExpand();
+        }
+      }}
+      className="relative overflow-hidden rounded-2xl border border-border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2"
+    >
       {/* Image / accent surface. Rev 4: hero further compacted to
           ~16:5 desktop so it fits comfortably above-the-fold with
           Selections row. Mobile stays 4:5 (title needs height). */}
@@ -96,16 +121,11 @@ export const StitchHero = ({
             image reads on the right half. */}
         <div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--navy-deep))]/90 via-[hsl(var(--navy-deep))]/55 to-[hsl(var(--navy-deep))]/15 sm:bg-gradient-to-tr sm:from-[hsl(var(--navy-deep))]/90 sm:via-[hsl(var(--navy-deep))]/50 sm:to-transparent pointer-events-none" />
 
-        {/* Save heart — top-right. */}
-        {onBookmark && (
-          <button
-            onClick={onBookmark}
-            aria-label={isBookmarked ? t(lang, "Unsave", "Убрать") : t(lang, "Save", "Сохранить")}
-            className="absolute top-4 right-4 z-10 inline-flex items-center justify-center h-10 w-10 rounded-full bg-white/90 hover:bg-white text-foreground backdrop-blur-sm transition-colors shadow-md"
-          >
-            {isBookmarked ? <BookmarkCheck className="h-5 w-5 text-gold-dark" /> : <Heart className="h-5 w-5" />}
-          </button>
-        )}
+        {/* Save heart removed 2026-05-27. The top-right floating icon
+            on a hero that already carries a "Featured" pill and a CTA
+            row read as competing chrome — and the bookmark affordance
+            is available inside the detail pull-up that this banner
+            now opens on click. */}
 
         {/* Content stack — bottom-left. Rev 7: smaller bottom padding
          *  so the title sits closer to the bottom edge. */}
@@ -128,10 +148,12 @@ export const StitchHero = ({
             {cleanedName}
           </h2>
 
-          {/* Description — only when we have meaningful copy. */}
-          {description && (
-            <p className="text-white/85 text-[13px] sm:text-sm lg:text-base leading-relaxed max-w-xl mb-5 line-clamp-2">
-              {description}
+          {/* Description — banner shows ONLY the first sentence. The
+              full canonical_overview renders inside the detail
+              pull-up so longer copy isn't cut mid-clause here. */}
+          {descriptionFirstSentence && (
+            <p className="text-white/85 text-[13px] sm:text-sm lg:text-base leading-relaxed max-w-xl mb-5">
+              {descriptionFirstSentence}
             </p>
           )}
 
@@ -142,6 +164,7 @@ export const StitchHero = ({
                 href={officialUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
                 className="inline-flex items-center gap-2 text-[12px] sm:text-[13px] font-bold uppercase tracking-[0.14em] bg-white text-primary px-5 sm:px-6 py-3 sm:py-3.5 rounded-lg hover:bg-white/90 transition-colors"
               >
                 {t(lang, "Open official site", "Открыть сайт")}
@@ -149,7 +172,7 @@ export const StitchHero = ({
               </a>
             ) : (
               <button
-                onClick={onExpand}
+                onClick={(e) => { e.stopPropagation(); onExpand(); }}
                 className="inline-flex items-center gap-2 text-[12px] sm:text-[13px] font-bold uppercase tracking-[0.14em] bg-white text-primary px-5 sm:px-6 py-3 sm:py-3.5 rounded-lg hover:bg-white/90 transition-colors"
               >
                 {t(lang, "View details", "Подробнее")}

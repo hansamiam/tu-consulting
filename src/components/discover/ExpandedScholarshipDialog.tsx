@@ -323,6 +323,16 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
                 </div>
               </div>
             )}
+            {/* Full canonical_overview — Sam asked the banner to show
+                only the first sentence and to let the rest reveal here
+                in the pull-up (2026-05-27). The hero banner stays
+                editorial-restrained; this is where the whole story
+                lives unclipped. */}
+            {s.canonical_overview && s.canonical_overview.trim().length > 0 && (
+              <p className="text-[14px] leading-relaxed text-foreground/85 whitespace-pre-line">
+                {s.canonical_overview.trim()}
+              </p>
+            )}
             {/* Personalised single-line insight for THIS user's archetype.
                 Reads from scholarship_archetype_insights (pre-gen matrix).
                 Renders nothing when the user has no archetype yet, when
