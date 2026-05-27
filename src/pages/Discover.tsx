@@ -2006,25 +2006,6 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
 
       <div className="relative p-4 flex flex-col flex-1 gap-3">
 
-        {/* "Not for your nationality" warning ribbon — only when the
-            row's eligibility data is human-verified. Unverified data
-            could be wrong in either direction, so we don't surface
-            this as a confident statement until the audit has run.
-            Sits at the very top of the card body so a user scanning a
-            list of results can't miss it. */}
-        {s.eligibility === "not_eligible" && s.eligibility_audit_status === "verified" && (
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="-mt-1 -mx-1 px-2.5 py-1.5 rounded-md bg-destructive/[0.07] border border-destructive/20 flex items-start gap-2"
-          >
-            <span aria-hidden className="text-destructive text-[11px] mt-px">⚠</span>
-            <span className="text-[11px] leading-snug text-destructive font-medium">
-              {lang === "ru"
-                ? "Не открыта для граждан вашей страны"
-                : "Not open to your nationality"}
-            </span>
-          </div>
-        )}
 
         {/* NEW pill lives at the bottom alongside the Full-ride sticker
             (see the badge row below). Keeping it out of the title's
