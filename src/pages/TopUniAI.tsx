@@ -1350,19 +1350,26 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                       <div className="space-y-1.5">
                         <Label className="text-xs uppercase tracking-wider font-medium">{t("What do you want to study?", "Что ты хочешь изучать?")}</Label>
                         {(() => {
+                          // Alphabetical so a 38-item dropdown is scannable.
+                          // Previous order was clustered by domain (STEM →
+                          // social sci → arts) but the clustering wasn't
+                          // visually labelled, so it read as random.
+                          // "Undecided" pinned at top — it's the "I don't
+                          // know yet" escape hatch and a likely default for
+                          // younger users.
                           const MAJORS = [
                             "Undecided",
-                            "Computer Science", "Engineering", "Business", "Economics",
-                            "Mathematics", "Physics", "Chemistry", "Biology",
-                            "Medicine & Public Health", "Law", "International Relations",
-                            "Public Policy", "Political Science", "Psychology",
-                            "Sociology", "Anthropology", "History", "Philosophy",
-                            "Literature", "Linguistics", "Education", "Architecture",
-                            "Design", "Environmental Studies", "Sustainability",
-                            "Data Science", "Artificial Intelligence", "Statistics",
-                            "Finance", "Marketing", "Communications", "Journalism",
-                            "Music", "Visual Arts", "Performing Arts", "Film",
-                            "Cultural Studies", "Development Studies", "Social Work",
+                            "Anthropology", "Architecture", "Artificial Intelligence",
+                            "Biology", "Business", "Chemistry", "Communications",
+                            "Computer Science", "Cultural Studies", "Data Science",
+                            "Design", "Development Studies", "Economics", "Education",
+                            "Engineering", "Environmental Studies", "Film", "Finance",
+                            "History", "International Relations", "Journalism", "Law",
+                            "Linguistics", "Literature", "Marketing", "Mathematics",
+                            "Medicine & Public Health", "Music", "Performing Arts",
+                            "Philosophy", "Physics", "Political Science", "Psychology",
+                            "Public Policy", "Social Work", "Sociology", "Statistics",
+                            "Sustainability", "Visual Arts",
                           ];
                           const isOther = !!major && !MAJORS.includes(major);
                           const selectValue = isOther ? "__other__" : (major || "");
