@@ -88,6 +88,9 @@ interface IntakeFields {
   satState?: "unspecified" | "taken" | "not_yet";
   greState?: "unspecified" | "taken" | "not_yet";
   gmatState?: "unspecified" | "taken" | "not_yet";
+  /** Step 3 known-scholarship chips. Optional — tokens match the
+   *  canonical scholarship_name from the catalog. */
+  knownScholarships?: string[];
 }
 
 /** Project the wizard's intake into the DiscoverProfile shape that
@@ -128,6 +131,8 @@ export const projectToDiscoverProfile = (intake: IntakeFields): DiscoverProfile 
   foreignLanguages: intake.foreignLanguages && intake.foreignLanguages.length > 0
     ? intake.foreignLanguages : undefined,
   firstToApplyAbroad: intake.firstToApplyAbroad,
+  knownScholarships: intake.knownScholarships && intake.knownScholarships.length > 0
+    ? intake.knownScholarships : undefined,
   // notTakenTests: array of canonical test slugs the user explicitly
   // marked "not yet". Brief reads this to decide whether a missing
   // ielts/toefl/sat field = "haven't taken yet, suggest registration"
