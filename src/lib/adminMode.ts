@@ -20,6 +20,7 @@
 const ADMIN_EMAILS = [
   "samuel.shn.han@gmail.com",
   "nurzada.abdivalieva@gmail.com",
+  "alima140105@gmail.com",
 ];
 
 const ADMIN_FLAG_KEY = "topuni_admin";
