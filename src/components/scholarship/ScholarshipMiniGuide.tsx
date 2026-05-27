@@ -31,10 +31,19 @@ const PUBLIC_INSIGHTS_TEMP = true;
 interface Props {
   scholarshipId: string;
   language?: "en" | "ru";
+  hostCountry?: string | null;
 }
 
-export const ScholarshipMiniGuide = ({ scholarshipId, language = "en" }: Props) => {
+interface RelatedScholarship {
+  scholarship_id: string;
+  scholarship_name: string;
+  provider_name: string | null;
+  host_country: string | null;
+}
+
+export const ScholarshipMiniGuide = ({ scholarshipId, language = "en", hostCountry = null }: Props) => {
   const [bullets, setBullets] = useState<string[] | null>(null);
+  const [related, setRelated] = useState<RelatedScholarship | null>(null);
   const [loading, setLoading] = useState(true);
   const { user, subscription } = useAuth();
   const isMember = !!subscription && (
@@ -49,6 +58,7 @@ export const ScholarshipMiniGuide = ({ scholarshipId, language = "en" }: Props) 
     if (!scholarshipId) return;
     let cancelled = false;
     setLoading(true);
+    setRelated(null);
     (async () => {
       const { data, error } = await supabase
         .from("scholarship_mini_guides")
@@ -63,15 +73,21 @@ export const ScholarshipMiniGuide = ({ scholarshipId, language = "en" }: Props) 
         const row = data as { top_insights?: string[] | null } | null;
         const list = Array.isArray(row?.top_insights) ? row!.top_insights! : null;
         setBullets(list && list.length > 0 ? list : null);
+        // No bullets for this scholarship yet — pick a related one that
+        // DOES have bullets so the user has somewhere useful to click.
+        if (!list || list.length === 0) {
+          const pick = await findRelatedScholarship(scholarshipId, hostCountry);
+          if (!cancelled && pick) setRelated(pick);
+        }
       }
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [scholarshipId]);
+  }, [scholarshipId, hostCountry]);
 
   if (loading) return null;
   if (!canRead) return <PaywallCard t={t} />;
-  if (!bullets) return <ComingSoonCard t={t} />;
+  if (!bullets) return <ComingSoonCard t={t} related={related} language={language} />;
 
   return (
     <motion.section
@@ -107,7 +123,15 @@ const SectionEyebrow = ({ t }: { t: (en: string, ru: string) => string }) => (
   </div>
 );
 
-const ComingSoonCard = ({ t }: { t: (en: string, ru: string) => string }) => (
+const ComingSoonCard = ({
+  t,
+  related,
+  language,
+}: {
+  t: (en: string, ru: string) => string;
+  related: RelatedScholarship | null;
+  language: "en" | "ru";
+}) => (
   <section className="not-prose mb-8 max-w-2xl">
     <SectionEyebrow t={t} />
     <div className="rounded-2xl border border-dashed border-foreground/15 bg-foreground/[0.02] px-5 py-6">
@@ -117,9 +141,87 @@ const ComingSoonCard = ({ t }: { t: (en: string, ru: string) => string }) => (
           "Заметки Top Uni скоро — мы готовим стратегический разбор для этой стипендии."
         )}
       </p>
+      {related && (
+        <div className="mt-5 pt-5 border-t border-foreground/10">
+          <p className="text-[10.5px] uppercase tracking-[0.18em] font-bold text-gold-dark m-0 mb-2.5">
+            {t("In the meantime", "А пока что")}
+          </p>
+          <Link
+            to={`/scholarships/${related.scholarship_id}${language === "ru" ? "/ru" : ""}`}
+            className="group block rounded-xl border border-gold/30 bg-gradient-to-br from-gold/[0.05] via-card to-card hover:border-gold/55 hover:from-gold/[0.09] transition-all px-4 py-3"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="min-w-0 flex-1">
+                <p className="font-heading text-[14.5px] font-bold text-foreground leading-tight m-0 truncate">
+                  {related.scholarship_name}
+                </p>
+                <p className="text-[12px] text-foreground/60 m-0 mt-0.5 truncate">
+                  {[related.provider_name, related.host_country].filter(Boolean).join(" · ")}
+                </p>
+              </div>
+              <ArrowRight className="w-4 h-4 text-gold-dark shrink-0 transition-transform group-hover:translate-x-0.5" />
+            </div>
+          </Link>
+        </div>
+      )}
     </div>
   </section>
 );
+
+async function findRelatedScholarship(
+  excludeId: string,
+  hostCountry: string | null,
+): Promise<RelatedScholarship | null> {
+  type Row = {
+    scholarship_id: string;
+    scholarships: {
+      scholarship_name: string;
+      provider_name: string | null;
+      host_country: string | null;
+      verified: boolean | null;
+    } | null;
+  };
+
+  const baseSelect = "scholarship_id, scholarships!inner(scholarship_name, provider_name, host_country, verified)";
+
+  // Same-country first
+  if (hostCountry) {
+    const { data } = await supabase
+      .from("scholarship_mini_guides")
+      .select(baseSelect)
+      .not("top_insights", "is", null)
+      .neq("scholarship_id", excludeId)
+      .eq("scholarships.verified", true)
+      .eq("scholarships.host_country", hostCountry)
+      .limit(1);
+    const row = (data as unknown as Row[] | null)?.[0];
+    if (row?.scholarships) {
+      return {
+        scholarship_id: row.scholarship_id,
+        scholarship_name: row.scholarships.scholarship_name,
+        provider_name: row.scholarships.provider_name,
+        host_country: row.scholarships.host_country,
+      };
+    }
+  }
+
+  // Fallback — any verified scholarship with bullets
+  const { data } = await supabase
+    .from("scholarship_mini_guides")
+    .select(baseSelect)
+    .not("top_insights", "is", null)
+    .neq("scholarship_id", excludeId)
+    .eq("scholarships.verified", true)
+    .limit(1);
+  const row = (data as unknown as Row[] | null)?.[0];
+  if (!row?.scholarships) return null;
+  return {
+    scholarship_id: row.scholarship_id,
+    scholarship_name: row.scholarships.scholarship_name,
+    provider_name: row.scholarships.provider_name,
+    host_country: row.scholarships.host_country,
+  };
+}
 
 const PaywallCard = ({ t }: { t: (en: string, ru: string) => string }) => (
   <section className="not-prose mb-8">

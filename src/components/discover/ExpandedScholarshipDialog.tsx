@@ -316,7 +316,7 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
                 surface is gone until the cells are regenerated to the
                 mini-guide quality bar. ScholarshipMiniGuide carries the
                 substantive content. */}
-            <ScholarshipMiniGuide scholarshipId={s.scholarship_id} language={lang} />
+            <ScholarshipMiniGuide scholarshipId={s.scholarship_id} language={lang} hostCountry={s.host_country} />
             {/* F12 stitch — Academy upsell below the deep-dive analysis.
                 Soft "want help winning this?" pointer to the strategy
                 brief wizard. Doesn't require Academy infra to ship — it

@@ -55,6 +55,8 @@ import {
   ShieldCheck,
   RefreshCw,
   Sparkles,
+  BookOpen,
+  Award,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getStoredProfile, saveProfile } from "@/components/discover/DiscoverProfileGate";
@@ -4113,7 +4115,7 @@ const Discover = ({ language = "en" }: Props) => {
                                   )}
                                   {profile.field && (
                                     <span className="inline-flex items-center gap-1 text-[11px] text-foreground/85 bg-card border border-border/70 px-2.5 py-1 rounded-full font-medium">
-                                      {fieldEmoji && <span className="leading-none">{fieldEmoji}</span>}
+                                      <BookOpen className="h-3 w-3 text-gold-dark" />
                                       {profile.field}
                                     </span>
                                   )}
@@ -4128,6 +4130,7 @@ const Discover = ({ language = "en" }: Props) => {
                                   )}
                                   {profile.gpa && (
                                     <span className="inline-flex items-center gap-1 text-[11px] text-foreground/85 bg-card border border-border/70 px-2.5 py-1 rounded-full font-medium">
+                                      <Award className="h-3 w-3 text-gold-dark" />
                                       GPA {profile.gpa}{profile.gpaScale && profile.gpaScale !== "4.0" ? `/${profile.gpaScale}` : ""}
                                     </span>
                                   )}

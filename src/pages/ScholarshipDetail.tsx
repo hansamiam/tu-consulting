@@ -826,7 +826,7 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
             keyed on scholarship_id. Generic to the scholarship, not per-
             profile. Renders nothing if no row exists in
             scholarship_mini_guides (graceful degrade). */}
-        <ScholarshipMiniGuide scholarshipId={s.scholarship_id} language={isRu ? "ru" : "en"} />
+        <ScholarshipMiniGuide scholarshipId={s.scholarship_id} language={isRu ? "ru" : "en"} hostCountry={s.host_country} />
 
         {/* WHY THIS FITS — editorial lead with drop cap. Sets the tone for
             the rest of the page: this is the personalised pitch for THIS
