@@ -107,8 +107,9 @@ export const StitchHero = ({
           </button>
         )}
 
-        {/* Content stack — bottom-left. */}
-        <div className="absolute inset-0 flex flex-col justify-end p-5 sm:p-8 lg:p-10 max-w-3xl">
+        {/* Content stack — bottom-left. Rev 7: smaller bottom padding
+         *  so the title sits closer to the bottom edge. */}
+        <div className="absolute inset-0 flex flex-col justify-end p-5 pb-4 sm:p-8 sm:pb-5 lg:p-10 lg:pb-6 max-w-3xl">
           {/* Kicker pills row. */}
           <div className="flex items-center gap-2 flex-wrap mb-4">
             <span className="inline-flex items-center text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.18em] bg-gold text-primary px-2.5 py-1 rounded">
@@ -121,10 +122,9 @@ export const StitchHero = ({
             )}
           </div>
 
-          {/* Title — Montserrat heading. Rev 4: dropped a size step
-              (was 6xl on desktop, dwarfed long titles like "Fulbright
-              Foreign Student Program"). Now 3xl→4xl→5xl scale. */}
-          <h2 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold leading-[1.1] tracking-[-0.015em] text-white max-w-2xl mb-3">
+          {/* Title — Montserrat heading. Rev 7: another step down so
+           *  long titles read in proportion to the new shorter hero. */}
+          <h2 className="font-heading text-xl sm:text-2xl lg:text-3xl font-bold leading-[1.1] tracking-[-0.015em] text-white max-w-2xl mb-3">
             {cleanedName}
           </h2>
 
