@@ -24,6 +24,8 @@ import {
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { setPostAuthRedirect } from "@/lib/postAuthRedirect";
+import { EmbeddedCheckoutPanel } from "@/components/pricing/EmbeddedCheckoutPanel";
+import { hasStripePublishableKey } from "@/lib/stripeClient";
 
 interface PricingProps { language?: "en" | "ru"; }
 
@@ -177,6 +179,13 @@ const Pricing = ({ language = "en" }: PricingProps) => {
     return () => { document.title = prev; };
   }, [language]);
 
+  // 2026-05-27: Stripe Embedded Checkout. When VITE_STRIPE_PUBLISHABLE_KEY
+  // is set, /pricing renders the Stripe form inline below the price card —
+  // no redirect off-domain, so the pitch + payment live on the same screen.
+  // When the env var is missing, the legacy redirect-mode flow still works.
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const wantsEmbed = hasStripePublishableKey();
+
   const startCheckout = async () => {
     if (!user) {
       setPostAuthRedirect(language === "ru" ? "/pricing/ru" : "/pricing");
@@ -185,14 +194,28 @@ const Pricing = ({ language = "en" }: PricingProps) => {
     }
     setLoading(true);
     const { data, error } = await supabase.functions.invoke("create-subscription-checkout", {
-      body: { tier: "founding", interval: billingInterval },
+      body: { tier: "founding", interval: billingInterval, embedded: wantsEmbed },
     });
     setLoading(false);
-    if (error || !data?.url) {
+    if (error) {
       toast.error((data && (data as { error?: string }).error) || (language === "ru" ? "Не удалось начать оплату. Попробуйте снова." : "Couldn't start checkout. Please try again."));
       return;
     }
-    window.location.href = data.url;
+    if (wantsEmbed) {
+      const cs = (data as { client_secret?: string } | null)?.client_secret;
+      if (!cs) {
+        toast.error(language === "ru" ? "Не удалось начать оплату. Попробуйте снова." : "Couldn't start checkout. Please try again.");
+        return;
+      }
+      setClientSecret(cs);
+      return;
+    }
+    const url = (data as { url?: string } | null)?.url;
+    if (!url) {
+      toast.error(language === "ru" ? "Не удалось начать оплату. Попробуйте снова." : "Couldn't start checkout. Please try again.");
+      return;
+    }
+    window.location.href = url;
   };
 
   // "Currently a founding-tier subscriber" = tier=founding AND active.
@@ -442,6 +465,18 @@ const Pricing = ({ language = "en" }: PricingProps) => {
             </motion.div>
           </div>
         </section>
+
+        {/* Embedded Stripe Checkout — renders inline below the final CTA
+            when the user starts checkout and we have a publishable key.
+            Replaces the Stripe redirect flow so the pitch + payment form
+            live on the same screen. */}
+        {clientSecret && (
+          <EmbeddedCheckoutPanel
+            clientSecret={clientSecret}
+            language={language}
+            onClose={() => setClientSecret(null)}
+          />
+        )}
       </main>
 
       <Footer language={language} />
