@@ -14,6 +14,14 @@
  *   • Lovable     → AI_PROVIDER=lovable   + LOVABLE_API_KEY=<key>     (default if unset)
  *   • OpenAI      → AI_PROVIDER=openai    + OPENAI_API_KEY=<key>
  *   • Anthropic   → AI_PROVIDER=anthropic + ANTHROPIC_API_KEY=<key>
+ *   • Google      → AI_PROVIDER=google    + GEMINI_API_KEY=<key>
+ *
+ * Google note: we hit Google's OpenAI-compatible endpoint
+ * (generativelanguage.googleapis.com/v1beta/openai/...) so the request
+ * shape is identical to OpenAI — same auth header, same body. "flash"
+ * maps to gemini-2.5-flash, "pro" to gemini-2.5-pro. Embeddings fall
+ * back to OpenAI (Gemini embeddings have a different vector dimension
+ * and the catalog is already indexed with text-embedding-3-small).
  *
  * Model naming: callers pass an OpenAI-style model id (e.g. "gpt-4o-mini",
  * "gpt-4o", "text-embedding-3-small") and we translate to the active
@@ -22,7 +30,7 @@
  * we route legacy "google/..." names through unchanged.
  */
 
-type Provider = "lovable" | "openai" | "anthropic";
+type Provider = "lovable" | "openai" | "anthropic" | "google";
 
 export type AITier = "flash" | "pro" | "embed-small";
 
@@ -32,16 +40,19 @@ const MODEL_BY_TIER: Record<AITier, Record<Provider, string>> = {
     lovable:   "google/gemini-3-flash-preview",
     openai:    "gpt-4o-mini",
     anthropic: "claude-haiku-4-5-20251001",
+    google:    "gemini-2.5-flash",
   },
   pro: {
     lovable:   "google/gemini-2.5-pro",
     openai:    "gpt-4o",
     anthropic: "claude-sonnet-4-6",
+    google:    "gemini-2.5-pro",
   },
   "embed-small": {
     lovable:   "text-embedding-3-small",
     openai:    "text-embedding-3-small",
     anthropic: "text-embedding-3-small", // Anthropic doesn't ship embeddings; fallback caller should use OpenAI
+    google:    "text-embedding-3-small", // Same — Google embeddings have different dim, falls through to OpenAI
   },
 };
 
@@ -49,7 +60,7 @@ const MODEL_BY_TIER: Record<AITier, Record<Provider, string>> = {
    with existing deployments. */
 export function getProvider(): Provider {
   const raw = (Deno.env.get("AI_PROVIDER") || "").toLowerCase();
-  if (raw === "openai" || raw === "anthropic" || raw === "lovable") return raw;
+  if (raw === "openai" || raw === "anthropic" || raw === "lovable" || raw === "google") return raw;
   return "lovable";
 }
 
@@ -57,30 +68,41 @@ function getApiKey(provider: Provider): string {
   const k =
     provider === "openai" ? Deno.env.get("OPENAI_API_KEY") :
     provider === "anthropic" ? Deno.env.get("ANTHROPIC_API_KEY") :
+    provider === "google" ? Deno.env.get("GEMINI_API_KEY") :
     Deno.env.get("LOVABLE_API_KEY");
-  if (!k) throw new Error(`AI gateway: missing ${provider.toUpperCase()}_API_KEY`);
+  if (!k) {
+    const envName =
+      provider === "google" ? "GEMINI_API_KEY" :
+      `${provider.toUpperCase()}_API_KEY`;
+    throw new Error(`AI gateway: missing ${envName}`);
+  }
   return k;
 }
 
 function chatBaseUrl(provider: Provider): string {
   if (provider === "openai") return "https://api.openai.com/v1/chat/completions";
   if (provider === "anthropic") return "https://api.anthropic.com/v1/messages";
+  // Google's OpenAI-compat shim — same request body as OpenAI, just a
+  // different base URL + the GEMINI_API_KEY as the bearer.
+  if (provider === "google") return "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
   return "https://ai.gateway.lovable.dev/v1/chat/completions";
 }
 
 function embeddingsUrl(provider: Provider): string {
   if (provider === "openai") return "https://api.openai.com/v1/embeddings";
-  // Lovable proxies OpenAI embeddings; Anthropic doesn't have native embeddings,
-  // so we route through OpenAI directly when provider=anthropic.
-  if (provider === "anthropic") return "https://api.openai.com/v1/embeddings";
+  // Lovable proxies OpenAI embeddings; Anthropic + Google don't have
+  // drop-in compatible embeddings (Google's vector dim differs and the
+  // pgvector index is sized for text-embedding-3-small), so both route
+  // through OpenAI directly.
+  if (provider === "anthropic" || provider === "google") return "https://api.openai.com/v1/embeddings";
   return "https://ai.gateway.lovable.dev/v1/embeddings";
 }
 
 function embeddingsKey(provider: Provider): string {
-  // For Anthropic users, embeddings still need OpenAI; we read OPENAI_API_KEY explicitly
-  if (provider === "anthropic") {
+  // Anthropic + Google: embeddings still need OpenAI; read OPENAI_API_KEY explicitly.
+  if (provider === "anthropic" || provider === "google") {
     const k = Deno.env.get("OPENAI_API_KEY");
-    if (!k) throw new Error("AI gateway: anthropic provider requires OPENAI_API_KEY for embeddings");
+    if (!k) throw new Error(`AI gateway: ${provider} provider requires OPENAI_API_KEY for embeddings`);
     return k;
   }
   return getApiKey(provider);
@@ -135,7 +157,7 @@ export async function chatCompletions(opts: ChatCompletionsOpts): Promise<Respon
     });
   }
 
-  // Lovable + OpenAI use the same OpenAI-compatible shape.
+  // Lovable + OpenAI + Google all use the same OpenAI-compatible shape.
   // The `reasoning` field is provider/model-specific:
   //   - Lovable's gateway accepts it for Gemini 2.5 family.
   //   - OpenAI rejects it as "Unrecognized request argument" on every
@@ -143,6 +165,11 @@ export async function chatCompletions(opts: ChatCompletionsOpts): Promise<Respon
   //     models accept it. Forwarding it unconditionally 400'd every
   //     enrich-university call (and every brief-sections call) until
   //     this gate was added.
+  //   - Google's OpenAI shim ignores most non-standard fields silently,
+  //     but we still strip `reasoning` to keep the request body honest.
+  //     Gemini 2.5 controls reasoning via its native `thinkingConfig`
+  //     which the OpenAI shim does NOT expose; if we need to flip that,
+  //     switch to the native `:generateContent` endpoint for that call.
   const supportsReasoning =
     provider === "lovable"
     || (provider === "openai" && /^o[1-9]/i.test(model));
