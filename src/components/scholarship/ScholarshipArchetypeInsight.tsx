@@ -36,34 +36,24 @@ interface Props {
 
 /** Substitute {{var}} placeholders with profile values. Each var maps
  *  to a wizard intake field — pseudo-LLM personalization at $0/view.
- *  Returns null when the profile is too sparse for the template to read
- *  as personalized — caller renders nothing rather than "John from your
- *  home country, studying your field, targeting the host country." Three
- *  fields are load-bearing: nationality, major, targetCountry. If two or
- *  more of those are missing AND the template actually references them,
- *  the personalization promise is broken — drop the surface. */
-function fillTemplate(text: string): string | null {
+ *  Always returns a string with neutral fallbacks for any missing field.
+ *  The aggressive "return null when sparse" gate from PR #159 has been
+ *  reverted: per 2026-05-27 testing, it killed renders for users whose
+ *  cell text didn't reference critical vars at all (the gate's
+ *  `usesCritical` check was correct but the surface still felt empty
+ *  to Sam, who expected to SEE insights for the paywall-down preview).
+ *  Slightly-degraded fallback sentences are better than empty space. */
+function fillTemplate(text: string): string {
   const profile = (getStoredProfile() || {}) as Record<string, unknown>;
   const fullName = String(profile.fullName || "").trim();
   const firstName = fullName.split(/\s+/)[0] || "you";
-  const nationalityRaw = String(profile.nationality || "").trim();
+  const nationality = String(profile.nationality || "").trim() || "your home country";
   const targets = Array.isArray(profile.targetCountries)
     ? (profile.targetCountries as string[]).filter(Boolean)
     : [];
-  const targetCountryRaw = targets[0] || "";
-  const majorRaw = String(profile.major || profile.fieldOfStudy || "").trim();
-  const criticalMissing =
-    (nationalityRaw ? 0 : 1) +
-    (targetCountryRaw ? 0 : 1) +
-    (majorRaw ? 0 : 1);
-  const usesCritical =
-    /\{\{nationality\}\}/.test(text) ||
-    /\{\{targetCountry\}\}/.test(text) ||
-    /\{\{major\}\}/.test(text);
-  if (criticalMissing >= 2 && usesCritical) return null;
-  const nationality = nationalityRaw || "your home country";
-  const targetCountry = targetCountryRaw || "the host country";
-  const major = majorRaw || "your field";
+  const targetCountry = targets[0] || "the host country";
+  const major =
+    String(profile.major || profile.fieldOfStudy || "").trim() || "your field";
   const careerGoal = String(profile.careerGoal || "").trim() || "your career direction";
   const namedSchools = String(profile.namedSchools || "").trim() || "your dream school";
   const gradeLevel = String(profile.gradeLevel || "").trim() || "your stage";
@@ -187,6 +177,9 @@ export const ScholarshipArchetypeInsight = ({ scholarshipId }: Props) => {
 
   useEffect(() => {
     if (!scholarshipId || !archetypeId || !canRead) {
+      // Debug aid 2026-05-27 — diagnose Sam's "empty section" report.
+      // Remove once the root cause is known + fixed.
+      console.log("[insight] skip-fetch", { scholarshipId, archetypeId, canRead });
       setText(null);
       return;
     }
@@ -200,11 +193,17 @@ export const ScholarshipArchetypeInsight = ({ scholarshipId }: Props) => {
         .maybeSingle();
       if (cancelled) return;
       if (error) {
+        console.warn("[insight] fetch error", { scholarshipId, archetypeId, error });
         setText(null);
         return;
       }
       const t = (data as { insight_text?: string | null } | null)?.insight_text ?? null;
-      setText(t && t.trim() ? fillTemplate(t) : null);
+      if (!t || !t.trim()) {
+        console.log("[insight] cell-empty", { scholarshipId, archetypeId });
+        setText(null);
+        return;
+      }
+      setText(fillTemplate(t));
     })();
     return () => { cancelled = true; };
   }, [scholarshipId, archetypeId, canRead]);
