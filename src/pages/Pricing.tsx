@@ -345,7 +345,7 @@ const Pricing = ({ language = "en" }: PricingProps) => {
                 {billingInterval === "month" ? (
                   <>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-5xl sm:text-6xl font-bold text-foreground tabular-nums leading-none">$39</span>
+                      <span className="text-5xl sm:text-6xl font-bold text-foreground tabular-nums leading-none">$39.99</span>
                       <span className="text-muted-foreground">{t.perMonth}</span>
                     </div>
                     <p className="text-[12px] text-muted-foreground mt-3 leading-relaxed">

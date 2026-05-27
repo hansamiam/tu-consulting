@@ -111,7 +111,7 @@ export const PremiumGate = ({
             <ArrowRight className="w-3.5 h-3.5" />
           </Button>
           <p className="text-[10px] text-muted-foreground/70 mt-3">
-            $39/month · 30-day money-back guarantee · cancel anytime
+            $39.99/month · 30-day money-back guarantee · cancel anytime
           </p>
         </div>
       </motion.div>

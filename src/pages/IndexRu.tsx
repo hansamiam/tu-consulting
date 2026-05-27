@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Crown } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/hero-campus.jpg";
 import samuelPhoto from "@/assets/samuel.jpg";
@@ -280,14 +280,14 @@ const IndexRu = () => {
             }}
           >
             <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
-              <motion.div {...fadeUp()} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gold/30 bg-gold/10 text-gold-dark text-[11px] font-medium tracking-[0.18em] uppercase mb-7">
-                <Crown className="h-3.5 w-3.5" /> Ранний доступ · первые 20 закрепляют цену навсегда
+              <motion.div {...fadeUp()} className="inline-flex items-center px-3 py-1 rounded-full border border-gold/30 bg-gold/10 text-gold-dark text-[11px] font-medium tracking-[0.18em] uppercase mb-7">
+                Ранняя скидка для первых 50
               </motion.div>
               <motion.h2 {...fadeUp(0.05)} className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.1] mb-5">
-                Стать участником, $39/мес.
+                Стать участником, $39.99/мес.
               </motion.h2>
               <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-lg mb-9 max-w-xl mx-auto leading-relaxed">
-                Академия · ежемесячные живые воркшопы и office hours с командой · новые инструменты и обновления каждый месяц.
+                Живые воркшопы и office hours с командой. Новые обновления каждый месяц.
               </motion.p>
               <motion.div {...fadeUp(0.2)} className="flex flex-wrap items-center justify-center gap-3">
                 <Button
