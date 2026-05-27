@@ -36,18 +36,34 @@ interface Props {
 
 /** Substitute {{var}} placeholders with profile values. Each var maps
  *  to a wizard intake field — pseudo-LLM personalization at $0/view.
- *  Falls back to a neutral phrase per var when the profile lacks it. */
-function fillTemplate(text: string): string {
+ *  Returns null when the profile is too sparse for the template to read
+ *  as personalized — caller renders nothing rather than "John from your
+ *  home country, studying your field, targeting the host country." Three
+ *  fields are load-bearing: nationality, major, targetCountry. If two or
+ *  more of those are missing AND the template actually references them,
+ *  the personalization promise is broken — drop the surface. */
+function fillTemplate(text: string): string | null {
   const profile = (getStoredProfile() || {}) as Record<string, unknown>;
   const fullName = String(profile.fullName || "").trim();
   const firstName = fullName.split(/\s+/)[0] || "you";
-  const nationality = String(profile.nationality || "").trim() || "your home country";
+  const nationalityRaw = String(profile.nationality || "").trim();
   const targets = Array.isArray(profile.targetCountries)
     ? (profile.targetCountries as string[]).filter(Boolean)
     : [];
-  const targetCountry = targets[0] || "the host country";
-  const major =
-    String(profile.major || profile.fieldOfStudy || "").trim() || "your field";
+  const targetCountryRaw = targets[0] || "";
+  const majorRaw = String(profile.major || profile.fieldOfStudy || "").trim();
+  const criticalMissing =
+    (nationalityRaw ? 0 : 1) +
+    (targetCountryRaw ? 0 : 1) +
+    (majorRaw ? 0 : 1);
+  const usesCritical =
+    /\{\{nationality\}\}/.test(text) ||
+    /\{\{targetCountry\}\}/.test(text) ||
+    /\{\{major\}\}/.test(text);
+  if (criticalMissing >= 2 && usesCritical) return null;
+  const nationality = nationalityRaw || "your home country";
+  const targetCountry = targetCountryRaw || "the host country";
+  const major = majorRaw || "your field";
   const careerGoal = String(profile.careerGoal || "").trim() || "your career direction";
   const namedSchools = String(profile.namedSchools || "").trim() || "your dream school";
   const gradeLevel = String(profile.gradeLevel || "").trim() || "your stage";
