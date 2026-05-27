@@ -104,8 +104,11 @@ export const DiscoverAppBar = ({ language = "en" }: Props) => {
           aria-label="Discover"
         >
           <div className="leading-tight hidden sm:block">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark">TopUni</p>
-            <p className="font-heading text-lg sm:text-xl font-bold tracking-tight text-foreground -mt-0.5 leading-none">Discover</p>
+            {/* Brand-logo treatment now matches Navigation.tsx — Montserrat
+                bold "TopUni" carries the wordmark; "Discover" sits below
+                as a small uppercase product tag (2026-05-27). */}
+            <p className="font-heading text-lg sm:text-xl font-bold tracking-tight text-foreground leading-none">TopUni</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold-dark mt-1">Discover</p>
           </div>
         </Link>
 
