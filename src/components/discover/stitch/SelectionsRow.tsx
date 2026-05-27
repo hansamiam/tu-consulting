@@ -1,16 +1,15 @@
-/* SelectionsRow — Stitch revamp 2026-05-27.
+/* SelectionsRow — Stitch revamp 2026-05-27 (rev 2).
  *
- * Horizontal scroll-snap row of medium portrait tiles (3:4) for the
- * top profile-aligned scholarships. Replaces the prior 3-col grid for
- * `sections.strong`. Edge-peek on mobile teaches the user to scroll;
- * desktop shows ~3 across with no scrollbar.
+ * Horizontal row of 3 image-forward editorial tiles. Each tile shows
+ * a country pill on the image, scholarship name with a verified pill
+ * inline, two-line description, and Funding / Institution meta rows.
  *
- * Reuses the same country accent / CountryArt / clean* helpers as
- * ScholarCard, so the visual language stays consistent — this is a
- * shape variant, not a tonal shift.
+ * Always shows — even without a profile. Caller passes the top-N
+ * ranked scholarships; this row caps display at the visible width
+ * (3 on desktop, scroll-snap on mobile).
  */
+import { CheckCircle2, Globe, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
-import { Bookmark, BookmarkCheck, CheckCircle2 } from "lucide-react";
 import { CountryArt } from "@/lib/countryArt";
 import { accentForCountry, shortCountry, canonicalCountry } from "@/lib/countryAccent";
 import { cleanScholarshipName, cleanProvider, compactAward } from "@/lib/scholarshipFields";
@@ -30,20 +29,11 @@ export interface SelectionTileScholarship {
   estimated_total_value_usd?: number | null;
   application_deadline: string | null;
   cover_image_url?: string | null;
+  canonical_overview?: string | null;
   provider_trust_tier?: "high" | "verified" | null;
 }
 
 const t = (lang: Lang, en: string, ru: string) => (lang === "ru" ? ru : en);
-
-const fmtDaysLeft = (iso: string | null, lang: Lang): { text: string; tone: "danger" | "warn" | "neutral" } => {
-  if (!iso) return { text: t(lang, "Rolling", "Без даты"), tone: "neutral" };
-  const days = Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000);
-  if (days < 0) return { text: t(lang, "Closed", "Закрыто"), tone: "neutral" };
-  if (days === 0) return { text: t(lang, "Closes today", "Закрытие сегодня"), tone: "danger" };
-  if (days <= 7) return { text: t(lang, `${days}d left`, `${days} дн`), tone: "danger" };
-  if (days <= 30) return { text: t(lang, `${days}d left`, `${days} дн`), tone: "warn" };
-  return { text: t(lang, `${days}d`, `${days} дн`), tone: "neutral" };
-};
 
 interface SelectionTileProps {
   s: SelectionTileScholarship;
@@ -54,111 +44,105 @@ interface SelectionTileProps {
   lang?: Lang;
 }
 
-const SelectionTile = ({ s, index, onSelect, isBookmarked, onBookmark, lang = "en" }: SelectionTileProps) => {
+/* Pull a sensible 2-line description from a scholarship row. Prefers
+ * canonical_overview (curated), falls back to a constructed line from
+ * coverage type + provider so the card never looks empty. */
+const deriveDescription = (s: SelectionTileScholarship, lang: Lang): string => {
+  if (s.canonical_overview && s.canonical_overview.trim().length > 20) {
+    return s.canonical_overview.trim();
+  }
+  const ru = lang === "ru";
+  const cov = s.coverage_type;
+  if (cov === "full_ride") return ru ? "Полное финансирование с проживанием и стипендией." : "Fully-funded award covering tuition, living costs, and travel.";
+  if (cov === "tuition_only") return ru ? "Покрытие стоимости обучения." : "Tuition support for an accredited degree programme.";
+  if (cov === "stipend") return ru ? "Ежемесячная стипендия на период обучения." : "Monthly stipend support across the duration of study.";
+  if (cov === "partial") return ru ? "Частичное финансирование обучения." : "Partial funding toward your degree costs.";
+  return ru ? "Конкурсное финансирование от ведущего фонда." : "Competitive funding from a leading provider.";
+};
+
+const SelectionTile = ({ s, index, onSelect, isBookmarked: _isBookmarked, onBookmark: _onBookmark, lang = "en" }: SelectionTileProps) => {
+  void _isBookmarked; void _onBookmark;
   const accent = accentForCountry(s.host_country);
-  const country = s.host_country ? shortCountry(s.host_country, { tight: true }) : null;
-  const flag = country
-    ? ALL_COUNTRIES.find(c => c.v.toLowerCase() === canonicalCountry(s.host_country!).toLowerCase())?.f
-      ?? ALL_COUNTRIES.find(c => c.v.toLowerCase() === s.host_country!.toLowerCase())?.f
+  const country = s.host_country ? shortCountry(s.host_country, { tight: false }) : null;
+  const countryLabel = country ? country.toUpperCase() : t(lang, "GLOBAL", "ГЛОБАЛЬНО");
+  const flag = s.host_country
+    ? (ALL_COUNTRIES.find(c => c.v.toLowerCase() === canonicalCountry(s.host_country!).toLowerCase())?.f
+        ?? ALL_COUNTRIES.find(c => c.v.toLowerCase() === s.host_country!.toLowerCase())?.f)
     : null;
+  const cleanedName = cleanScholarshipName(s.scholarship_name);
+  const cleanedProv = cleanProvider(s.provider_name);
   const award = compactAward(s);
-  const dl = fmtDaysLeft(s.application_deadline, lang);
   const verified = s.provider_trust_tier === "high";
-  const isFullRide = s.coverage_type === "full_ride";
+  const description = deriveDescription(s, lang);
 
   return (
     <motion.article
       initial={{ opacity: 0, y: 8 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-30px" }}
-      transition={{ delay: Math.min(index * 0.05, 0.25), duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ delay: Math.min(index * 0.06, 0.25), duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ y: -3 }}
       onClick={onSelect}
-      className="group relative shrink-0 snap-center w-[260px] sm:w-[300px] rounded-xl overflow-hidden bg-card border border-border hover:border-foreground/25 hover:shadow-lg transition-all cursor-pointer flex flex-col"
+      className="group relative shrink-0 snap-start w-[300px] sm:w-auto sm:flex-1 rounded-2xl overflow-hidden bg-card border border-border hover:border-foreground/25 hover:shadow-lg transition-all cursor-pointer flex flex-col"
     >
-      {/* Top visual — 3:4 country accent surface with CountryArt
-          silhouette and the kicker label / save button overlaid. Image
-          support could plug in via `cover_image_url` later; for now
-          the silhouette is the editorial visual. */}
-      <div className={`relative aspect-[3/4] bg-gradient-to-br ${accent} overflow-hidden`}>
+      {/* Image — 4:3 ratio. CountryArt silhouette over country accent
+          if no cover image. */}
+      <div className={`relative aspect-[4/3] bg-gradient-to-br ${accent} overflow-hidden`}>
         {s.cover_image_url ? (
           <img
             src={s.cover_image_url}
             alt=""
             loading="lazy"
-            className="absolute inset-0 h-full w-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+            className="absolute inset-0 h-full w-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
           />
         ) : (
           <CountryArt
             country={s.host_country}
-            className="absolute inset-0 h-full w-full opacity-50 text-white p-6"
+            className="absolute inset-0 h-full w-full opacity-45 text-white p-8"
           />
         )}
-        {/* Bottom navy fade so the kicker reads against any silhouette. */}
-        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/55 via-black/20 to-transparent pointer-events-none" />
-
-        {/* Save button — top-right. */}
-        <button
-          onClick={onBookmark}
-          aria-label={isBookmarked ? t(lang, "Unsave", "Убрать") : t(lang, "Save", "Сохранить")}
-          className="absolute top-2.5 right-2.5 inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/85 hover:bg-white text-foreground backdrop-blur-sm transition-colors shadow-sm"
-        >
-          {isBookmarked ? <BookmarkCheck className="h-4 w-4 text-gold-dark" /> : <Bookmark className="h-4 w-4" />}
-        </button>
-
-        {/* Verified kicker — top-left, gold pill. */}
-        {verified && (
-          <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.16em] bg-gold text-primary px-2 py-1 rounded-full shadow-sm">
-            <CheckCircle2 className="h-3 w-3" />
-            {t(lang, "Verified", "Проверено")}
-          </span>
-        )}
-
-        {/* Full-ride sticker — bottom-right when applicable. */}
-        {isFullRide && (
-          <span className="absolute bottom-2.5 right-2.5 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.16em] bg-primary text-primary-foreground px-2 py-1 rounded-full">
-            {t(lang, "Full ride", "Полное")}
-          </span>
-        )}
-
-        {/* Country + flag — bottom-left, white text over the fade. */}
-        {country && (
-          <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
-            {flag && <span className="text-[13px] leading-none" aria-hidden>{flag}</span>}
-            <span>{country}</span>
-          </div>
-        )}
+        {/* Country pill — top-left, white, small. */}
+        <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] bg-white/95 text-foreground px-2 py-1 rounded shadow-sm">
+          {flag ? (
+            <span className="text-[11px] leading-none" aria-hidden>{flag}</span>
+          ) : (
+            <Globe className="h-3 w-3" />
+          )}
+          {countryLabel}
+        </span>
       </div>
 
-      {/* Caption — name + award + deadline pill. */}
-      <div className="p-3.5 flex flex-col gap-2 flex-1">
-        <h3 className="font-heading text-[15px] font-semibold leading-[1.2] tracking-[-0.01em] text-foreground group-hover:text-gold-dark transition-colors line-clamp-2">
-          {cleanScholarshipName(s.scholarship_name)}
-        </h3>
-        {(() => {
-          const p = cleanProvider(s.provider_name);
-          if (!p) return null;
-          return (
-            <p className="text-[11px] text-muted-foreground/85 line-clamp-1 leading-snug">{p}</p>
-          );
-        })()}
-        <div className="mt-auto flex items-center justify-between gap-2 pt-1 min-w-0">
-          {award ? (
-            <span className="text-[12px] font-semibold text-gold-dark truncate">{award}</span>
-          ) : (
-            <span className="text-[12px] text-muted-foreground/70 italic">{t(lang, "Funded", "Финансируется")}</span>
+      {/* Caption — name + verified, description, meta rows. */}
+      <div className="p-4 sm:p-5 flex flex-col gap-3 flex-1">
+        <div className="flex items-start justify-between gap-2 min-w-0">
+          <h3 className="font-heading text-[17px] sm:text-[18px] font-bold leading-tight tracking-[-0.01em] text-foreground group-hover:text-gold-dark transition-colors line-clamp-2 min-w-0">
+            {cleanedName}
+          </h3>
+          {verified && (
+            <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-success bg-success/10 px-1.5 py-0.5 rounded mt-1">
+              <CheckCircle2 className="h-3 w-3" />
+              {t(lang, "Verified", "Проверено")}
+            </span>
           )}
-          <span
-            className={`shrink-0 inline-flex items-center text-[10px] font-semibold uppercase tracking-[0.12em] px-2 py-0.5 rounded-full ${
-              dl.tone === "danger"
-                ? "bg-destructive/12 text-destructive"
-                : dl.tone === "warn"
-                  ? "bg-gold/15 text-gold-dark"
-                  : "bg-muted text-muted-foreground"
-            }`}
-          >
-            {dl.text}
-          </span>
+        </div>
+
+        <p className="text-[13px] text-muted-foreground leading-snug line-clamp-2">
+          {description}
+        </p>
+
+        <div className="mt-auto pt-3 border-t border-border/60 space-y-1.5">
+          <div className="flex items-center justify-between gap-3 text-[12px] min-w-0">
+            <span className="text-muted-foreground/80 shrink-0">{t(lang, "Funding", "Финансирование")}</span>
+            <span className="font-semibold text-foreground truncate text-right">
+              {award || t(lang, "Funded", "Финансируется")}
+            </span>
+          </div>
+          {cleanedProv && (
+            <div className="flex items-center justify-between gap-3 text-[12px] min-w-0">
+              <span className="text-muted-foreground/80 shrink-0">{t(lang, "Institution", "Учреждение")}</span>
+              <span className="text-foreground/85 truncate text-right">{cleanedProv}</span>
+            </div>
+          )}
         </div>
       </div>
     </motion.article>
@@ -167,9 +151,6 @@ const SelectionTile = ({ s, index, onSelect, isBookmarked, onBookmark, lang = "e
 
 export interface SelectionsRowProps {
   items: SelectionTileScholarship[];
-  /** Map a scholarship to its existing Discover card props. We pass
-   *  only the keys we need (select + bookmark) to keep this component
-   *  focused; status/hide/compare live in the open detail dialog. */
   cardProps: (s: SelectionTileScholarship, i: number) => {
     onSelect: () => void;
     isBookmarked: boolean;
@@ -180,25 +161,38 @@ export interface SelectionsRowProps {
 
 export const SelectionsRow = ({ items, cardProps, lang = "en" }: SelectionsRowProps) => {
   if (items.length === 0) return null;
+  /* Cap at 3 visible tiles on desktop. Mobile/tablet show ~1.2 with
+   * edge-peek so the user feels the row is scrollable. The full set
+   * (up to 6) is still in the DOM so horizontal scroll reveals the
+   * rest — but the "VIEW ALL →" link is the primary affordance. */
+  const visibleItems = items.slice(0, 6);
   return (
-    <div className="relative -mx-5 sm:-mx-8">
-      {/* Edge fade — subtle right gradient hints there's more to scroll
-          on viewports where the row clips. Hidden on desktop where the
-          row typically fits without clipping. */}
-      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-background to-transparent z-10 sm:hidden" />
+    <div className="relative -mx-5 sm:mx-0">
       <div
-        className="flex gap-4 sm:gap-5 overflow-x-auto snap-x snap-mandatory pl-5 sm:pl-8 pr-5 sm:pr-8 pb-2 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
+        className="flex sm:grid sm:grid-cols-3 gap-4 sm:gap-6 overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none pl-5 pr-5 sm:pl-0 sm:pr-0 pb-2 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
         role="list"
         aria-label={lang === "ru" ? "Подборка для вас" : "Selections for you"}
       >
-        {items.map((s, i) => {
+        {visibleItems.slice(0, 3).map((s, i) => {
           const props = cardProps(s, i);
           return (
-            <div role="listitem" key={s.scholarship_id}>
+            <div role="listitem" key={s.scholarship_id} className="sm:contents">
               <SelectionTile s={s} index={i} lang={lang} {...props} />
             </div>
           );
         })}
+        {/* Mobile-only: reveal 4-6 in the horizontal scroll so users
+         *  can scroll past the first 3 before clicking VIEW ALL. */}
+        <div className="contents sm:hidden">
+          {visibleItems.slice(3).map((s, i) => {
+            const props = cardProps(s, i + 3);
+            return (
+              <div role="listitem" key={s.scholarship_id}>
+                <SelectionTile s={s} index={i + 3} lang={lang} {...props} />
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
