@@ -52,7 +52,6 @@ interface ScholarshipLite {
   target_fields: string[] | null;
   citizenship_requirements: string | null;
   eligible_countries: string[] | null;
-  eligible_countries?: string[] | null;
   /* 2026-05-27: data-quality flag for the eligible_countries column.
    * Used to gate the red "not for your nationality" banner — we only
    * confidently warn when audit_status='verified', otherwise the data
