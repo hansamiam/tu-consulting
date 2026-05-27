@@ -86,14 +86,15 @@ const MONTH_LONG_RU = ["январе","феврале","марте","апрел�
 const fmtDays = (d: string | null, lang: Lang, isInferred?: boolean | null): { text: string; tone: "danger" | "warn" | "neutral" } => {
   const ru = lang === "ru";
   if (!d) return { text: ru ? "Без дедлайна" : "Rolling deadline", tone: "neutral" };
-  // 2026-05-27: inferred annual cycle — date IS present but was bumped
-  // forward from a past cycle. Show as "Typically [Month] [Year]" so
-  // users know to verify before applying.
+  // 2026-05-27 (pm): inferred annual cycle. Show "TBD (typically [Month])"
+  // — month only, NO year. Annual programs reopen on the same month each
+  // year, so the year decoration was implying false precision and the
+  // word "typically" plus a year felt contradictory.
   if (isInferred) {
     const dt = new Date(d);
     const month = (ru ? MONTH_LONG_RU : MONTH_LONG_EN)[dt.getMonth()] ?? "";
     return {
-      text: ru ? `Обычно в ${month} ${dt.getFullYear()}` : `Typically ${month} ${dt.getFullYear()}`,
+      text: ru ? `TBD (обычно в ${month})` : `TBD (typically ${month})`,
       tone: "neutral",
     };
   }

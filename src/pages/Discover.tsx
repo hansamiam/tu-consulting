@@ -1073,20 +1073,16 @@ const deadlineDisplay = (d: string | null, lang: Lang = "en", deadlineType?: str
     }
     return { text: ru ? "TBD" : "TBD", cls: "text-foreground/40", urgent: false };
   }
-  // 2026-05-27: inferred annual cycle — date IS present but was bumped
-  // forward from a past cycle. Tell the user this is a typical month,
-  // not an authoritative provider-confirmed date.
-  if (isInferred) {
-    const dt = new Date(d);
-    const monthLabel = (ru ? MONTH_RU : MONTH_EN)[dt.getMonth()] ?? "";
-    const yr = dt.getFullYear();
-    return {
-      text: ru ? `Обычно ${monthLabel} ${yr}` : `Typically ${monthLabel} ${yr}`,
-      cls: "text-foreground/55",
-      urgent: false,
-    };
-  }
+  // 2026-05-27 (pm): inferred annual cycle — date IS present but was
+  // bumped forward from a past cycle. On cards we show plain time-until
+  // (same format as authoritative deadlines) rather than "Typically
+  // [Month YYYY]". The detail panel still carries the "typically" caveat;
+  // cards stay scannable.
   const days = Math.ceil((new Date(d).getTime() - Date.now()) / 86400000);
+  if (isInferred && days > 0) {
+    if (days <= 90) return { text: ru ? `${days}д осталось` : `${days}d left`, cls: "text-foreground/55", urgent: false };
+    return { text: ru ? `${Math.ceil(days / 30)}мес` : `${Math.ceil(days / 30)}mo`, cls: "text-foreground/45", urgent: false };
+  }
   if (days <= 0) {
     // Annual programs whose last cycle just closed are still relevant —
     // they reopen next year. Show "Reopens annually" instead of a strikethrough
@@ -1881,204 +1877,6 @@ const MemoScholarRow = memo(ScholarRow, (prev, next) => (
   && prev.index === next.index
 ));
 
-/* ─── Shortlist note card — a "pinned to a cork board" cell ──────────────
- *
- * Replaces the dense list-row in the Saved scholarships view. The
- * shortlist is capped at SHORTLIST_FREE_LIMIT (5 on free), so a sparse
- * card grid stays airy rather than bloating. Each card carries:
- *   · Country accent stripe on top (same palette as the row/card)
- *   · Title + provider + deadline pin
- *   · A free-text "sticky note" textarea bound to the application_tracker
- *     `notes` field — already in the schema + hook, just never surfaced
- *     on this page. Local mirror + 400ms debounce keeps typing snappy
- *     while the hook handles its own 600ms DB flush.
- *   · Hover actions: bookmark (remove), open external, share
- *
- * Visual flourish: each card carries a deterministic 1° rotation
- * (hashed from scholarship_id, so it doesn't shift on rerender) for the
- * "tacked on a board" feel. Restrained — not a craft fair.
- */
-const ShortlistNoteCard = ({
-  s, index = 0, onSelect, isBookmarked, onBookmark, note, onNoteChange, lang = "en",
-}: {
-  s: Scored;
-  index?: number;
-  onSelect: () => void;
-  isBookmarked: boolean;
-  onBookmark: (e: React.MouseEvent) => void;
-  note: string;
-  onNoteChange: (text: string) => void;
-  lang?: Lang;
-}) => {
-  const ru = lang === "ru";
-  const dl = deadlineDisplay(s.application_deadline, lang, s.deadline_type, s.is_deadline_inferred);
-  const bannerCtry = bannerCountry(s);
-  const accent = accentForCountry(bannerCtry);
-  const countryLabel = bannerCtry ? shortCountry(bannerCtry) : null;
-  const provider = cleanProvider(s.provider_name);
-
-  /* Deterministic gentle rotation per scholarship_id so cards feel
-   * pinned, not server-rendered. Range ≈ [-1.2°, +1.2°]. Cards keep
-   * their rotation across rerenders — no jiggle on note edits. */
-  const rotateDeg = useMemo(() => {
-    let h = 0;
-    const id = s.scholarship_id;
-    for (let i = 0; i < id.length; i++) h = ((h * 31) + id.charCodeAt(i)) | 0;
-    return (((h % 24) + 24) % 24) / 10 - 1.2;
-  }, [s.scholarship_id]);
-
-  /* Local note mirror — typing into the hook on every keystroke would
-   * re-render every saved card via notesMap identity change. Mirror
-   * locally, flush via parent every 400ms (and on blur). */
-  const [localNote, setLocalNote] = useState(note);
-  const flushRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => { setLocalNote(note); }, [note]);
-  useEffect(() => () => { if (flushRef.current) clearTimeout(flushRef.current); }, []);
-  const commitNote = (val: string) => {
-    setLocalNote(val);
-    if (flushRef.current) clearTimeout(flushRef.current);
-    flushRef.current = setTimeout(() => { onNoteChange(val); flushRef.current = null; }, 400);
-  };
-  const flushNow = () => {
-    if (flushRef.current) {
-      clearTimeout(flushRef.current);
-      flushRef.current = null;
-      onNoteChange(localNote);
-    }
-  };
-
-  const officialUsable = !!s.official_url && !isAggregatorUrl(s.official_url);
-  const sourceUsable = !!s.source_url && !isAggregatorUrl(s.source_url);
-  const openHref = officialUsable ? s.official_url : sourceUsable ? s.source_url : null;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-30px" }}
-      transition={{ delay: Math.min(index * 0.04, 0.24), duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
-      style={{ transform: `rotate(${rotateDeg}deg)` }}
-      className="group relative bg-card border border-border/70 hover:border-gold/40 rounded-2xl shadow-[0_1px_2px_rgba(20,20,20,0.04),0_4px_16px_-8px_rgba(20,20,20,0.08)] hover:shadow-[0_2px_6px_rgba(20,20,20,0.06),0_12px_30px_-12px_rgba(20,20,20,0.18)] hover:-translate-y-0.5 hover:rotate-0 transition-all duration-300 overflow-hidden"
-      onClick={onSelect}
-      role="button"
-      tabIndex={0}
-    >
-      {/* Country accent — the same atlas palette as cards/rows */}
-      <div className={`h-1 bg-gradient-to-r ${accent}`} aria-hidden />
-
-      <div className="px-4 pt-3.5 pb-3.5">
-        {/* Meta row: country eyebrow + deadline pin */}
-        <div className="flex items-start justify-between gap-3 mb-2 min-h-[16px]">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground truncate">
-            {countryLabel ?? (ru ? "Стипендия" : "Scholarship")}
-          </span>
-          <span className={`shrink-0 text-[11px] tabular-nums font-semibold whitespace-nowrap ${dl.cls}`}>
-            {dl.text}
-          </span>
-        </div>
-
-        {/* Title */}
-        <h3
-          className="font-heading font-semibold text-[15px] text-foreground leading-snug tracking-tight group-hover:text-gold-dark transition-colors mb-1"
-          style={{ display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2, overflow: "hidden" } as React.CSSProperties}
-        >
-          {cleanScholarshipName(s.scholarship_name)}
-        </h3>
-        {provider && (
-          <p className="text-[11.5px] text-muted-foreground truncate mb-3">
-            {provider}
-          </p>
-        )}
-        {!provider && <div className="mb-3" />}
-
-        {/* The sticky-note. Yellow-warm tinted panel, italic placeholder,
-            no border focus ring — autosaves silently. */}
-        <div
-          onClick={(e) => e.stopPropagation()}
-          className="relative rounded-lg px-2.5 py-2 bg-[#FFF8E1] dark:bg-amber-500/[0.06] ring-1 ring-amber-200/60 dark:ring-amber-500/15 mb-3"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(to bottom, transparent 0, transparent 19px, rgba(180, 140, 60, 0.10) 19px, rgba(180, 140, 60, 0.10) 20px)",
-          }}
-        >
-          <textarea
-            value={localNote}
-            onChange={(e) => commitNote(e.target.value)}
-            onBlur={flushNow}
-            placeholder={ru ? "ваши мысли об этой стипендии…" : "what's on your mind about this one…"}
-            rows={3}
-            aria-label={ru ? "Заметка к стипендии" : "Note about this scholarship"}
-            className="w-full resize-none bg-transparent border-0 outline-none focus:outline-none focus:ring-0 text-[12.5px] text-foreground/90 placeholder:text-muted-foreground/60 placeholder:italic leading-[20px] font-medium"
-            style={{ minHeight: 60 }}
-          />
-        </div>
-
-        {/* Footer: save count subtle, hover-revealed actions on the right */}
-        <div
-          className="flex items-center justify-between gap-2"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <span className="text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground/70">
-            {ru ? "Сохранено" : "Saved"}
-          </span>
-          <div className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
-            {openHref && (
-              <a
-                href={openHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={officialUsable
-                  ? (ru ? "Открыть официальную страницу" : "Open official page")
-                  : (ru ? "Открыть источник" : "View source")}
-                title={officialUsable
-                  ? (ru ? "Открыть официальную страницу" : "Open official page")
-                  : (ru ? "Открыть источник" : "View source")}
-                className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-            )}
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); shareScholarship(s, lang); }}
-              aria-label={ru ? "Поделиться" : "Share"}
-              title={ru ? "Поделиться" : "Share"}
-              className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-            >
-              <Share2 className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={onBookmark}
-              aria-label={isBookmarked ? (ru ? "Удалить из сохранённых" : "Remove from saved") : (ru ? "Сохранить" : "Save")}
-              title={isBookmarked ? (ru ? "Сохранено — нажмите, чтобы удалить" : "Saved — click to remove") : (ru ? "Сохранить" : "Save")}
-              className={`inline-flex items-center justify-center h-7 w-7 rounded-md transition-colors ${
-                isBookmarked
-                  ? "text-gold-dark bg-gold/10 hover:bg-gold/15"
-                  : "text-muted-foreground hover:text-gold-dark hover:bg-muted/60"
-              }`}
-            >
-              {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
-            </button>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
-
-const MemoShortlistNoteCard = memo(ShortlistNoteCard, (prev, next) => (
-  prev.s === next.s
-  && prev.isBookmarked === next.isBookmarked
-  && prev.note === next.note
-  && prev.lang === next.lang
-  && prev.index === next.index
-  // onSelect/onBookmark/onNoteChange identities are stable across renders
-  // because Discover's `cp` builder constructs them inline per row, but
-  // since our render-list is capped at SHORTLIST_FREE_LIMIT (5) we can
-  // accept the inline-callback recreation cost — comparing the closures
-  // by identity would force a rerender on every parent render.
-));
 
 /* ─── Scholarship card — dense, product-grade, scannable in a 3-col grid ── */
 const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusChange, isHidden, onToggleHide, isComparing, onToggleCompare, index = 0, outcomes, lang = "en" }: {
@@ -4727,13 +4525,12 @@ const Discover = ({ language = "en" }: Props) => {
                           </div>
                         )}
 
-                        {/* Shortlist — saved scholarships rendered as a
-                            light "cork board" of note cards. Replaces the
-                            old admin-table row layout (2026-05-25). Each
-                            card carries the scholarship's identity (country
-                            stripe + title + deadline) plus a free-text
-                            sticky-note bound to the existing tracker
-                            `notes` field. */}
+                        {/* Shortlist — saved scholarships render as the
+                            same standard cards used in browse. Notepad
+                            cork-board variant removed 2026-05-27: a saved
+                            scholarship should look and behave exactly like
+                            the browse card, just filtered to the bookmarked
+                            set. */}
                         {appSection === "shortlist" && (() => {
                           const items = filtered.filter(s => shortlist.has(s.scholarship_id));
                           if (items.length === 0) {
@@ -4753,17 +4550,22 @@ const Discover = ({ language = "en" }: Props) => {
                             );
                           }
                           return (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6 px-1 sm:px-0 py-2">
+                            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
                               {items.map((s, i) => (
-                                <MemoShortlistNoteCard
+                                <MemoScholarCard
                                   key={s.scholarship_id}
                                   s={s}
                                   index={i}
                                   onSelect={() => openDetailRoute(s)}
                                   isBookmarked={shortlist.has(s.scholarship_id)}
                                   onBookmark={(e: React.MouseEvent) => { e.stopPropagation(); toggleBookmark(s.scholarship_id); }}
-                                  note={notesMap[s.scholarship_id] ?? ""}
-                                  onNoteChange={(text: string) => setNote(s.scholarship_id, text)}
+                                  status={statusMap[s.scholarship_id]}
+                                  onStatusChange={(st: AppStatus | null) => setStatus(s.scholarship_id, st)}
+                                  isHidden={hidden.has(s.scholarship_id)}
+                                  onToggleHide={(e: React.MouseEvent) => { e.stopPropagation(); toggleHide(s.scholarship_id); }}
+                                  isComparing={compareSet.has(s.scholarship_id)}
+                                  onToggleCompare={(e: React.MouseEvent) => { e.stopPropagation(); toggleCompare(s.scholarship_id); }}
+                                  outcomes={outcomesMap.get(s.scholarship_id)}
                                   lang={language}
                                 />
                               ))}
