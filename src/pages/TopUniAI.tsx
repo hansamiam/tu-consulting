@@ -58,6 +58,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { saveProfile, getStoredProfile } from "@/components/discover/DiscoverProfileGate";
 import { projectToDiscoverProfile } from "@/lib/topuniIntakeProjection";
+import { detectArchetypeOrFallback, getArchetype } from "../../supabase/functions/_shared/archetype-library";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -1749,14 +1750,61 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         } catch { /* localStorage may be unavailable; brief still renders */ }
                         setScreen("dashboard");
                       };
-                      // 2026-05-25: nudge + counter line dropped. The
-                      // "Even one line per box sharpens your strategy /
-                      // Add more" callout read as nagging; the
-                      // counter alternative ("X of 4 fields added") was
-                      // a salesy ratio. Page now just shows the inputs
-                      // and the Generate button with nothing in between.
+                      // 2026-05-27: archetype micro-reveal. Runs the
+                      // deterministic detector against the current form
+                      // state and shows a single warm line above the
+                      // Generate button — "Reading you as the ___" with
+                      // the archetype tagline. When the detector falls
+                      // back (no archetype clears the 60-confidence
+                      // floor) we show a softer line instead of forcing
+                      // a confident identity claim. Gated on the user
+                      // having filled at least one narrative field so it
+                      // doesn't feel premature; sparse forms see no
+                      // reveal at all. Per the 2026-05-27 competitor
+                      // audit — no scholarship-consulting platform
+                      // surfaces this kind of named-identity moment to
+                      // the user.
+                      const narrativeFilled = [careerGoal, extracurriculars, background, namedSchools]
+                        .some((s) => (s ?? "").trim().length > 6);
+                      const revealMatch = narrativeFilled
+                        ? detectArchetypeOrFallback({
+                            nationality,
+                            gradeLevel,
+                            major,
+                            targetCountries,
+                            careerGoal,
+                            extracurriculars: composeExtracurriculars(selectedECTags, extracurriculars) || extracurriculars,
+                            background,
+                            namedSchools,
+                            firstToApplyAbroad,
+                            foreignLanguages,
+                          })
+                        : null;
+                      const revealArch = revealMatch ? getArchetype(revealMatch.id) : null;
                       return (
                         <>
+                          {revealMatch && revealArch && (
+                            <div className="rounded-xl border border-gold/35 bg-gold/[0.04] px-5 py-4 mt-2">
+                              <p className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-gold-dark m-0 mb-1.5">
+                                {t("How we're reading this", "Как мы читаем")}
+                              </p>
+                              {revealMatch.isFallback ? (
+                                <p className="text-[14.5px] leading-[1.55] text-foreground m-0">
+                                  {t(
+                                    "Your story doesn't fit one obvious mold — that's useful information. Your strategy will lean into the specific texture of what you've shared, not a template.",
+                                    "Твоя история не вписывается в готовый шаблон — это полезный сигнал. Твоя стратегия будет работать с конкретной фактурой того, что ты рассказал(а), а не с шаблоном.",
+                                  )}
+                                </p>
+                              ) : (
+                                <p className="text-[14.5px] leading-[1.55] text-foreground m-0">
+                                  {t(
+                                    `Reading you as ${revealArch.name}. ${revealArch.tagline}`,
+                                    `Читаем тебя как ${revealArch.name}. ${revealArch.tagline}`,
+                                  )}
+                                </p>
+                              )}
+                            </div>
+                          )}
                           {/* 2026-05-20: dropped the redundant "Skip for
                               now" ghost button — it called the same
                               onGenerate handler as the primary CTA, so
