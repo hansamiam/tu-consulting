@@ -150,11 +150,11 @@ export const countryGuides: CountryGuide[] = [
     scholarships: [
       { name: "Need-based aid (Harvard, Yale, MIT, Princeton, Stanford, Amherst, Williams, Bowdoin)", coverage: "Up to 100% of demonstrated need", eligibility: "Need-blind for internationals at a small group of schools" },
       { name: "Davis United World College Scholars Program", coverage: "Variable, typically $10,000–$50,000/year", eligibility: "UWC graduates only" },
-      { name: "MasterCard Foundation Scholars Program", coverage: "Full ride", eligibility: "Specific partner universities; African students prioritized but some open to others" },
+      { name: "MasterCard Foundation Scholars Program", coverage: "Fully funded", eligibility: "Specific partner universities; African students prioritized but some open to others" },
       { name: "Merit scholarships at smaller liberal arts colleges", coverage: "$15,000–$40,000/year", eligibility: "Strong academics + test scores" },
     ],
     prosForCentralAsians: [
-      "Largest scholarship pool globally — full rides genuinely possible",
+      "Largest scholarship pool globally — fully funded awards genuinely possible",
       "Holistic admissions reward unique stories — your background is an asset, not a liability",
       "Strong post-study work options for STEM fields",
       "Diverse academic offerings: liberal arts, research, professional programs",
@@ -375,7 +375,7 @@ export const countryGuides: CountryGuide[] = [
     postStudyWorkRu: "PGWP: до 3 лет в зависимости от длительности программы. Сильный путь к PR через Express Entry или PNP.",
     scholarships: [
       { name: "Vanier Canada Graduate Scholarships", coverage: "CAD 50,000/year × 3 years", eligibility: "PhD only, exceptional research promise" },
-      { name: "Lester B. Pearson International Scholarship (UofT)", coverage: "Full ride: tuition, books, residence", eligibility: "Highly selective; school nomination required" },
+      { name: "Lester B. Pearson International Scholarship (UofT)", coverage: "Fully funded: tuition, books, residence", eligibility: "Highly selective; school nomination required" },
       { name: "UBC International Major Entrance Scholarship (IMES)", coverage: "Variable, partial to substantial", eligibility: "Top international applicants, automatic consideration" },
       { name: "York University International Student Scholarship", coverage: "CAD 35,000–180,000 over 4 years", eligibility: "Renewable; merit-based" },
     ],
@@ -812,7 +812,7 @@ export const countryGuides: CountryGuide[] = [
       { name: "Chinese Government Scholarship (CSC)", coverage: "Full: tuition + dorm + monthly stipend ($350–$500) + insurance", eligibility: "Multiple tracks; Type A via embassy, Type B via university", deadline: "Typically Jan–Apr" },
       { name: "Confucius Institute Scholarship", coverage: "Tuition + stipend for Chinese language and Chinese-related programs", eligibility: "Through Confucius Institutes; HSK test required" },
       { name: "Provincial and Municipal Government Scholarships (Beijing, Shanghai, Jiangsu)", coverage: "Tuition reduction or stipend", eligibility: "Apply via partner universities" },
-      { name: "University-specific (Tsinghua Schwarzman, Peking Yenching)", coverage: "Full ride for selected master's programs", eligibility: "Highly competitive; separate application" },
+      { name: "University-specific (Tsinghua Schwarzman, Peking Yenching)", coverage: "Fully funded for selected master's programs", eligibility: "Highly competitive; separate application" },
     ],
     prosForCentralAsians: [
       "Largest scholarship pool in Asia (CSC funds thousands annually)",

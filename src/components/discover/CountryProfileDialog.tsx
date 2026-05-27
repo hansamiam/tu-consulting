@@ -160,15 +160,12 @@ export const CountryProfileDialog = ({ universities, language }: Props) => {
                       {isExpanded && (
                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                           <div className="px-4 pb-4 space-y-3 border-t border-border pt-3">
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                               <div className="p-2 rounded bg-muted/30 text-center">
                                 <p className="text-lg font-bold text-foreground">{cp.uniCount}</p>
                                 <p className="text-[9px] text-muted-foreground">{l.unis}</p>
                               </div>
-                              <div className="p-2 rounded bg-muted/30 text-center">
-                                <p className="text-lg font-bold text-foreground">{cp.fullRideCount}</p>
-                                <p className="text-[9px] text-muted-foreground">{l.fullRides}</p>
-                              </div>
+                              {/* fullRide stat tile stripped 2026-05-27 */}
                               <div className="p-2 rounded bg-muted/30 text-center">
                                 <p className="text-lg font-bold text-green-500">{cp.freeCount}</p>
                                 <p className="text-[9px] text-muted-foreground">{l.freeUnis}</p>

@@ -236,7 +236,11 @@ export const compactAward = (s: AwardSource): string | null => {
   // Older rows may carry the aliases so handle them explicitly
   // instead of letting them fall through to a null label.
   const cov = s.coverage_type;
-  if (cov === "full_ride" || cov === "full_tuition") return "Full ride";
+  // "Full ride" label retired 2026-05-27 (user direction: "completely
+  // get rid of every single one because of edge cases"). For full_ride
+  // / full_tuition rows we now fall through to the $-figure / award
+  // text; if neither exists we return null and the chip silently drops.
+  // coverage_type stays in DB and still drives ranking + filters.
   if (s.award_amount_text) {
     const m = s.award_amount_text.match(/\$\s?([\d,.]+)\s?([KMkm])?/);
     if (m) {

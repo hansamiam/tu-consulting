@@ -121,7 +121,7 @@ const THEMES: Record<string, { titlePart: string; predicate: (r: ScholarshipRow)
   "full-funding": {
     titlePart: "Fully-funded",
     predicate: (r) => r.coverage_type === "full_ride",
-    introHint: "Programs that cover tuition AND living expenses — the full ride.",
+    introHint: "Programs that cover tuition AND living expenses.",
   },
   "closing-soon": {
     titlePart: "Closing soon",
@@ -810,7 +810,8 @@ const CrossLinkRow = ({ heading, basePath, items }: {
    and the largest single award. All numbers are computed locally — the
    card is honest if data is sparse (renders "—" rather than fabricating). */
 const HubStatsCard = ({ rows }: { rows: ScholarshipRow[] }) => {
-  const fullRides = rows.filter((r) => r.coverage_type === "full_ride").length;
+  // "Full rides" stat tile stripped 2026-05-27 ("completely get rid of
+  // every single one"). Grid collapses from 4 → 3 columns.
   const closingSoon = rows.filter((r) => {
     if (!r.application_deadline) return false;
     const d = Math.ceil((new Date(r.application_deadline).getTime() - Date.now()) / 86400_000);
@@ -822,9 +823,8 @@ const HubStatsCard = ({ rows }: { rows: ScholarshipRow[] }) => {
     !v ? "—" : v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `$${Math.round(v / 1000)}K` : `$${v}`;
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border/60 border border-border/60 rounded-xl overflow-hidden mb-8">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-border/60 border border-border/60 rounded-xl overflow-hidden mb-8">
       <Stat label="Total funding" value={fmtMoney(totalUsd)} hint="Estimated, summed across listed programs" />
-      <Stat label="Full rides" value={String(fullRides)} hint="Tuition + living covered" />
       <Stat label="Closing in 60 days" value={String(closingSoon)} hint="Apply this season" />
       <Stat label="Largest single award" value={fmtMoney(maxUsd)} hint="Top program by total value" />
     </div>
@@ -920,7 +920,7 @@ function buildHubFaqEntities(
   push(
     `Are there ${subject} for international students?`,
     `Yes — TopUni currently tracks ${rows.length} verified ${subject} for international applicants. ${
-      fullRides > 0 ? `Of those, ${fullRides} are full rides covering tuition and living costs. ` : ""
+      fullRides > 0 ? `Of those, ${fullRides} are fully funded covering tuition and living costs. ` : ""
     }${
       topFunding.length > 0 ? `Notable programs include ${topFunding.join(", ")}.` : ""
     }`.trim(),

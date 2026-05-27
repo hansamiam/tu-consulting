@@ -30,7 +30,7 @@ export const scholarshipPageSeo: Record<string, ScholarshipPageSeoEntry> = {
   },
   "by-country/united-states": {
     title: "US Scholarships for International Students | Top Uni 2026-2027",
-    metaDescription: "Verified US scholarships for international students — full-ride, need-based, and merit awards at top American universities. Build your strategy free with Top Uni.",
+    metaDescription: "Verified US scholarships for international students — fully funded, need-based, and merit awards at top American universities. Build your strategy free with Top Uni.",
     h1: "Scholarships in the United States for international students",
     intro: "American universities run some of the most generous need-based aid in the world — Harvard, Yale, MIT, and dozens more meet 100% of demonstrated need for international applicants — but the application game is brutal. Top Uni surfaces every US scholarship for international students with eligibility, deadline, and average award, then ranks them against your GPA, SAT, and target majors. Our team has been through Yale, Harvard, and Cambridge admissions and now helps students from Kazakhstan, Kyrgyzstan, and Central Asia run that gauntlet without paying $20K to a New York consultant.",
   },
@@ -60,7 +60,7 @@ export const scholarshipPageSeo: Record<string, ScholarshipPageSeoEntry> = {
   },
   "by-field/computer-science": {
     title: "Computer Science Scholarships Abroad | Top Uni 2026-2027",
-    metaDescription: "Top computer science scholarships for international students — full-ride and partial CS awards at MIT, ETH, NUS, KAIST. Free AI strategy plan.",
+    metaDescription: "Top computer science scholarships for international students — fully funded and partial CS awards at MIT, ETH, NUS, KAIST. Free AI strategy plan.",
     h1: "Computer science scholarships for international students",
     intro: "Computer science is the most over-applied and the most over-funded major in international admissions — top CS programs at MIT, Stanford, ETH Zurich, NUS, KAIST, and TUM all run dedicated funding for strong international applicants. Top Uni indexes verified computer science scholarships abroad — including AI/ML-specialist awards and women-in-tech programs — and ranks each against your GPA, math olympiad record, and project portfolio. Built by a Yale, Cambridge, and Harvard team that knows how CS admissions actually weights Central Asian applicants.",
   },
@@ -80,7 +80,7 @@ export const scholarshipPageSeo: Record<string, ScholarshipPageSeoEntry> = {
     title: "Fully-Funded Scholarships for International Students | Top Uni 2026-2027",
     metaDescription: "Browse fully-funded scholarships for international students — tuition, living costs, and flights covered. Verified programs, deadlines, AI-matched.",
     h1: "Fully-funded scholarships for international students",
-    intro: "Fully-funded means tuition, living stipend, health insurance, and usually flights — the full ride, not just a tuition discount. Top Uni indexes verified fully-funded scholarships for international students across every major destination: Chevening, Fulbright, DAAD, GKS, Turkiye Burslari, MEXT, university full-rides, and dozens more. The AI ranks each program against your profile so the list you see is the list you can actually win from Almaty or Bishkek.",
+    intro: "Fully-funded means tuition, living stipend, health insurance, and usually flights — covered end-to-end, not just a tuition discount. Top Uni indexes verified fully-funded scholarships for international students across every major destination: Chevening, Fulbright, DAAD, GKS, Turkiye Burslari, MEXT, university awards, and dozens more. The AI ranks each program against your profile so the list you see is the list you can actually win from Almaty or Bishkek.",
   },
   "theme/for-kazakhstan-students": {
     title: "Scholarships for Kazakhstan Students Abroad | Top Uni 2026-2027",

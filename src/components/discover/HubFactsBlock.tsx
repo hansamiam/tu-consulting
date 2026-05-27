@@ -39,8 +39,11 @@ interface Props {
   rows: Row[];
 }
 
+// "full ride" entry stripped 2026-05-27 ("completely get rid of every
+// single one"). Hub fact prose falls through to "fully funded" via the
+// editorial template instead of naming the coverage bucket.
 const COVERAGE_LABEL: Record<string, string> = {
-  full_ride: "full ride",
+  full_ride: "fully funded",
   tuition_only: "tuition only",
   stipend: "stipend",
   partial: "partial funding",

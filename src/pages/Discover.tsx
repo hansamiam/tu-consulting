@@ -1486,7 +1486,10 @@ function buildScholarshipBlurb(input: {
   // article; we'll prefix it where appropriate so phrases like "Funds"
   // / "Stipend for" / "Full ride" can lead naturally.
   const funding = (() => {
-    if (isFullRide) return "Full ride";
+    // "Full ride" copy stripped 2026-05-27 ("completely get rid of
+    // every single one"); the auto-blurb now falls through to a
+    // degree/field-only sentence when coverage is full_ride.
+    if (isFullRide) return null;
     if (coverage === "tuition_only") return "Tuition";
     if (coverage === "stipend") return "Stipend";
     if (coverage === "partial") return "Partial funding";
@@ -1539,9 +1542,9 @@ function buildScholarshipBlurb(input: {
   if (demo) {
     return `${prestigeAdj}${prestigeAdj ? "" : "Funds "}${demo.toLowerCase()} applicants${field ? ` in ${field.toLowerCase()}` : ""}.`;
   }
-  if (funding === "Full ride" && degree) {
-    return `${prestigeAdj}full-ride ${degree}${field ? ` in ${field.toLowerCase()}` : ""}.`.replace(/^h/, "H");
-  }
+  // "full-ride" prose branch stripped 2026-05-27. funding is now null
+  // for full_ride rows so this branch is unreachable; kept the next
+  // branch as the fallthrough.
   if (funding && degree) {
     return `${prestigeAdj}${funding.toLowerCase()} for a ${degree}${field ? ` in ${field.toLowerCase()}` : ""}.`.replace(/^./, c => c.toUpperCase());
   }

@@ -45,10 +45,12 @@ export const SmartRecommendations = ({ universities, profile, language }: Props)
         }
       }
 
-      // Scholarship availability
+      // Scholarship availability — score boost stays (still a useful
+      // ranking signal) but the "Full ride scholarship available"
+      // reason string was stripped 2026-05-27 alongside every other
+      // user-facing "Full ride" mention.
       if (uni.scholarships?.some(s => s.coverage_type === "full_ride")) {
         score += 15;
-        reasons.push("Full ride scholarship available");
       } else if (uni.scholarships?.length) {
         score += 5;
       }

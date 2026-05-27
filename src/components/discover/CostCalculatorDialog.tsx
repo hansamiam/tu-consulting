@@ -130,11 +130,10 @@ export const CostCalculatorDialog = ({ universities, language }: Props) => {
                   <p className="text-muted-foreground mt-0.5">{r.uni.city}, {r.uni.country}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  {r.hasFullRide ? (
-                    <Badge className="bg-accent text-accent-foreground text-xs">{l.fullRide}</Badge>
-                  ) : (
-                    <p className="text-lg font-bold text-foreground">{formatK(r.netCost)}</p>
-                  )}
+                  {/* FULL RIDE badge stripped 2026-05-27; net cost shows
+                      $0 (or close to it) when the row has full coverage,
+                      so the number itself communicates the same fact. */}
+                  <p className="text-lg font-bold text-foreground">{formatK(r.netCost)}</p>
                   <p className="text-muted-foreground text-[10px]">{l.forYears} {years} {l.years}</p>
                 </div>
               </div>

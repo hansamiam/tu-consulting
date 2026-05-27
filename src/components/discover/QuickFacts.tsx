@@ -66,12 +66,14 @@ export const QuickFacts = ({ universities, language }: Props) => {
     return { freeUnis, noIeltsPrograms, foundationCount, gapYearCount, fullRideCount, topFields, languages: langSet, countries: countrySet };
   }, [universities]);
 
+  // Full Ride stat tile stripped 2026-05-27 alongside the rest of the
+  // full-ride mentions ("completely get rid of every single one because
+  // of edge cases").
   const cards = [
     { icon: DollarSign, label: l.freeUnis, value: facts.freeUnis.length, color: "text-green-500", examples: facts.freeUnis.slice(0, 3).map(u => u.university_name) },
     { icon: BookOpen, label: l.noIelts, value: facts.noIeltsPrograms, color: "text-blue-500" },
     { icon: GraduationCap, label: l.foundationYear, value: facts.foundationCount, color: "text-purple-500" },
     { icon: Building2, label: l.gapYear, value: facts.gapYearCount, color: "text-accent" },
-    { icon: Award, label: l.fullRide, value: facts.fullRideCount, color: "text-amber-500" },
     { icon: Globe, label: l.countries, value: facts.countries.size, color: "text-accent" },
   ];
 

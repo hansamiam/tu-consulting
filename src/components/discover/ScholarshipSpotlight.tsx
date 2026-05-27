@@ -21,7 +21,7 @@ const t = {
   en: {
     title: "Scholarship Spotlight",
     subtitle: "Top funding opportunities across universities",
-    fullRide: "Full Ride",
+    fullRide: "Fully funded",
     stipend: "stipend",
     deadline: "Deadline",
     eligibility: "Eligibility",

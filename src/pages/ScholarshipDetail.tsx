@@ -347,7 +347,7 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
       ? (ru ? ` Принимающая страна: ${cleanCountry}.` : ` Hosted in ${cleanCountry}.`)
       : "";
     const coverage =
-      s.coverage_type === "full_ride" ? (ru ? "Полное покрытие — обучение и проживание." : "Full ride covering tuition + living.")
+      s.coverage_type === "full_ride" ? (ru ? "Финансирование обучения и проживания." : "Fully funded — tuition + living.")
       : s.coverage_type === "tuition_only" ? (ru ? "Покрывает обучение." : "Covers tuition.")
       : (ru ? "Стипендия." : "Stipend.");
     const deadline = s.application_deadline
@@ -1511,7 +1511,7 @@ function buildFaqEntities(s: Scholarship, cleanedName?: string): object[] {
   // null falls through to the generic line.
   const cov = s.coverage_type;
   const coverageWord =
-    cov === "full_ride" || cov === "full_tuition" ? "a full ride covering tuition and living costs"
+    cov === "full_ride" || cov === "full_tuition" ? "full funding covering tuition and living costs"
     : cov === "tuition_only" ? "tuition costs"
     : cov === "stipend" || cov === "stipend_only" ? "a living stipend"
     : cov === "partial" ? "partial funding"

@@ -46,8 +46,11 @@ interface Props {
   showMeta?: boolean;
 }
 
+// "Full ride" label retired 2026-05-27. full_ride falls back to
+// "Funded" generic label which the card-render gate also filters out
+// in favor of the $-figure when one exists.
 const COVERAGE_LABEL: Record<string, string> = {
-  full_ride: "Full ride",
+  full_ride: "Funded",
   tuition_only: "Tuition",
   stipend: "Stipend",
   partial: "Partial",
