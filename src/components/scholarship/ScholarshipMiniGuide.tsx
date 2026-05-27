@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAdminUser } from "@/lib/adminMode";
+import { countryFlag } from "@/lib/country-chips";
+import { accentForCountry } from "@/lib/countryAccent";
 
 /**
  * <ScholarshipMiniGuide /> — the "Top Uni Insights" block at the bottom
@@ -136,30 +138,37 @@ const ComingSoonCard = ({
     <SectionEyebrow t={t} />
     <div className="rounded-2xl border border-dashed border-foreground/15 bg-foreground/[0.02] px-5 py-6">
       <p className="font-heading text-[15px] leading-[1.55] text-foreground/70 m-0">
-        {t(
-          "Top Uni notes coming soon — we're writing the strategy read for this scholarship.",
-          "Заметки Top Uni скоро — мы готовим стратегический разбор для этой стипендии."
-        )}
+        {t("More notes coming soon.", "Скоро будут новые заметки.")}
       </p>
       {related && (
         <div className="mt-5 pt-5 border-t border-foreground/10">
           <p className="text-[10.5px] uppercase tracking-[0.18em] font-bold text-gold-dark m-0 mb-2.5">
-            {t("In the meantime", "А пока что")}
+            {t("In the meantime, check this one out", "А пока что посмотрите эту")}
           </p>
           <Link
             to={`/scholarships/${related.scholarship_id}${language === "ru" ? "/ru" : ""}`}
-            className="group block rounded-xl border border-gold/30 bg-gradient-to-br from-gold/[0.05] via-card to-card hover:border-gold/55 hover:from-gold/[0.09] transition-all px-4 py-3"
+            className="group block rounded-xl border border-gold/35 bg-gradient-to-br from-gold/[0.06] via-card to-card hover:border-gold/60 hover:from-gold/[0.12] transition-all overflow-hidden"
           >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="min-w-0 flex-1">
-                <p className="font-heading text-[14.5px] font-bold text-foreground leading-tight m-0 truncate">
-                  {related.scholarship_name}
-                </p>
-                <p className="text-[12px] text-foreground/60 m-0 mt-0.5 truncate">
-                  {[related.provider_name, related.host_country].filter(Boolean).join(" · ")}
-                </p>
+            <div className="flex items-stretch min-w-0">
+              {/* Graphic — country-accented gradient block + flag emoji */}
+              <div
+                className={`shrink-0 w-16 sm:w-20 flex items-center justify-center bg-gradient-to-br ${accentForCountry(related.host_country || "") || "from-gold/20 to-gold/5"}`}
+              >
+                <span className="text-2xl sm:text-[28px] leading-none drop-shadow-sm">
+                  {countryFlag(related.host_country || "") || "🎓"}
+                </span>
               </div>
-              <ArrowRight className="w-4 h-4 text-gold-dark shrink-0 transition-transform group-hover:translate-x-0.5" />
+              <div className="flex items-center gap-3 min-w-0 flex-1 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="font-heading text-[14.5px] font-bold text-foreground leading-tight m-0 line-clamp-2">
+                    {related.scholarship_name}
+                  </p>
+                  <p className="text-[12px] text-foreground/60 m-0 mt-0.5 truncate">
+                    {[related.provider_name, related.host_country].filter(Boolean).join(" · ")}
+                  </p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-gold-dark shrink-0 transition-transform group-hover:translate-x-0.5" />
+              </div>
             </div>
           </Link>
         </div>

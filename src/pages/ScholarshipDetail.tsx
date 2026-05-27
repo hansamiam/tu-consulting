@@ -822,10 +822,10 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
           <Fact icon={<Globe />} label={t("Citizenship", "Гражданство")} value={citizenshipFactValue(s.eligible_countries, s.citizenship_requirements, isRu)} />
         </div>
 
-        {/* Static "How this scholarship plays" — pre-generated mini-guide
+        {/* "Top Uni Insights" — pre-generated 3-bullet strategy notes
             keyed on scholarship_id. Generic to the scholarship, not per-
-            profile. Renders nothing if no row exists in
-            scholarship_mini_guides (graceful degrade). */}
+            profile. Falls back to "more notes coming soon" placeholder
+            if no row exists in scholarship_mini_guides. */}
         <ScholarshipMiniGuide scholarshipId={s.scholarship_id} language={isRu ? "ru" : "en"} hostCountry={s.host_country} />
 
         {/* WHY THIS FITS — editorial lead with drop cap. Sets the tone for
