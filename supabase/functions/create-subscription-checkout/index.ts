@@ -30,6 +30,12 @@ Deno.serve(async (req) => {
     const body = await req.json();
     // Backward-compat: accept legacy { tier, interval } payloads, but always treat as founding.
     const interval = body.interval === "year" ? "year" : "month";
+    // 2026-05-27: when ?embedded=true, return a client_secret for inline
+    // Stripe Checkout (ui_mode: "embedded") instead of a redirect URL.
+    // Lets the pricing page render the checkout form inline rather than
+    // bouncing the user to Stripe's hosted page — keeps Sam's full pitch
+    // and the payment form on the same screen.
+    const embedded = body.embedded === true;
 
     // Auth user
     const authHeader = req.headers.get("Authorization");
@@ -91,10 +97,10 @@ Deno.serve(async (req) => {
       ? requestedOrigin
       : PUBLIC_SITE;
 
-    const session = await stripe.checkout.sessions.create({
+    const baseSessionParams = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
-      mode: "subscription",
+      mode: "subscription" as const,
       line_items: [{ price: priceId, quantity: 1 }],
       allow_promotion_codes: true,
       subscription_data: {
@@ -111,6 +117,24 @@ Deno.serve(async (req) => {
         interval,
         founding_member_number: reservedFoundingNumber.toString(),
       },
+    };
+
+    if (embedded) {
+      // Embedded mode — Stripe renders the checkout inside our page.
+      // No cancel_url (the page itself handles closing the embed); on
+      // success, Stripe navigates the top frame to return_url.
+      const session = await stripe.checkout.sessions.create({
+        ...baseSessionParams,
+        ui_mode: "embedded",
+        return_url: `${origin}/account?subscribed=1&session_id={CHECKOUT_SESSION_ID}`,
+      });
+      return respondJson(200, { client_secret: session.client_secret, session_id: session.id }, corsHeaders);
+    }
+
+    // Legacy redirect mode — kept for callers that haven't migrated yet
+    // and as a fallback when VITE_STRIPE_PUBLISHABLE_KEY is missing.
+    const session = await stripe.checkout.sessions.create({
+      ...baseSessionParams,
       success_url: `${origin}/account?subscribed=1&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/pricing?canceled=1`,
     });

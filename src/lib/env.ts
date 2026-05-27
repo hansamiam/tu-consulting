@@ -24,6 +24,10 @@ export const ENV = {
     "VITE_SUPABASE_PUBLISHABLE_KEY",
     import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
   ),
+  /** Stripe publishable key (pk_live_… / pk_test_…). Optional — when
+   *  unset, /pricing falls back to the legacy redirect-mode checkout. */
+  STRIPE_PUBLISHABLE_KEY:
+    (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined)?.replace(/\s+/g, "") || "",
 } as const;
 
 /** Base URL for Supabase Edge Functions — e.g. `${EDGE_FUNCTIONS_URL}/topuni-chat`. */
