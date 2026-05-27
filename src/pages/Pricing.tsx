@@ -64,7 +64,7 @@ const COPY = {
     ],
     foundingPriceLabel: "Launch price",
     perMonth: "/month",
-    publicNote: "Early-access discount applies automatically. Promo codes accepted at checkout.",
+    publicNote: "Promo codes accepted at checkout.",
     publicNoteRest: "Cancel anytime — no long-term lock-in.",
     capacityClaimed: (claimed: number, cap: number) => `${claimed} / ${cap} claimed`,
     capacityLeft: (left: number) => `${left} left`,
@@ -81,8 +81,8 @@ const COPY = {
     finalH2a: "First",
     finalH2b: "early-access members lock the launch price for life.",
     finalH2c: "",
-    finalLeftPrefix: "spots left at the launch price. After they fill, the next 200 get a launch-discount tier (50% off year one). Then $39/mo standard.",
-    finalNoLeft: "Early access filled. The launch-discount tier is open now — 50% off year one for the next 200 members.",
+    finalLeftPrefix: "early-access spots left. Promo codes accepted at checkout.",
+    finalNoLeft: "Early-access cohort filled. Membership is still open at $39.99/mo — promo codes accepted at checkout.",
     finalGuarantee: "30-day money-back guarantee · Cancel anytime",
     notReady: "Not ready?",
     notReadyMid: "still gets you a personalized strategy from TopUni AI and your top 3 scholarship matches.",
@@ -110,7 +110,7 @@ const COPY = {
     ],
     foundingPriceLabel: "Цена запуска",
     perMonth: "/месяц",
-    publicNote: "Скидка для когорты основателей — по промокоду на оплате.",
+    publicNote: "Промокоды принимаются на оплате.",
     publicNoteRest: "Отмена в любой момент — без долгосрочных обязательств.",
     capacityClaimed: (claimed: number, cap: number) => `${claimed} / ${cap} занято`,
     capacityLeft: (left: number) => `${left} осталось`,
@@ -127,8 +127,8 @@ const COPY = {
     finalH2a: "Первые",
     finalH2b: "членов раннего доступа закрепляют цену запуска навсегда.",
     finalH2c: "",
-    finalLeftPrefix: "мест по цене запуска. После заполнения — следующие 200 получат тариф со скидкой запуска (−50% на первый год). Затем $39/мес стандарт.",
-    finalNoLeft: "Ранний доступ заполнен. Открыт тариф со скидкой запуска: −50% на первый год для следующих 200 членов.",
+    finalLeftPrefix: "мест раннего доступа осталось. Промокоды принимаются на оплате.",
+    finalNoLeft: "Когорта раннего доступа заполнена. Членство открыто за $39.99/мес — промокоды принимаются на оплате.",
     finalGuarantee: "Гарантия 30 дней · отмена в любой момент",
     notReady: "Ещё не готовы?",
     notReadyMid: "даёт вам персональную стратегию от TopUni AI и топ-3 подобранные стипендии.",
@@ -146,13 +146,12 @@ const Pricing = ({ language = "en" }: PricingProps) => {
   const [authOpen, setAuthOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [foundingLeft, setFoundingLeft] = useState<number | null>(null);
-  // Cohort cap default — 20 for the early-access tier (was 50, was 100
-  // pre 2026-05-10). 20 keeps the "founding-20" framing tight enough that
-  // stage of the business, scarcity reads as "almost full" by week 3,
-  // and the next tier (launch discount) takes over without a gap. The
+  // Cohort cap default — 50 for the early-access tier (re-bumped from
+  // 20 on 2026-05-27 per Sam's updated "first 50 signups" copy). The
   // production value still comes from `founding_member_counter.cap` in
-  // Supabase — this is just the fallback when the table is empty.
-  const [foundingCap, setFoundingCap] = useState<number>(20);
+  // Supabase — this is just the fallback for the initial render before
+  // the count fetch resolves.
+  const [foundingCap, setFoundingCap] = useState<number>(50);
   // Billing interval — annual saves ~23% vs month-to-month. Default
   // monthly (lower commitment threshold, easier conversion).
   const [billingInterval, setBillingInterval] = useState<"month" | "year">("month");

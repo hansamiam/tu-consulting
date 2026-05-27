@@ -11,18 +11,17 @@ const INSTAGRAM_HANDLE = "@top_uni_consulting";
 
 // Footer surfaces only what's NOT in primary nav (or what doubles as a
 // conversion driver). Workspace was removed because it lives in primary
-// nav; Pricing now also lives in footer-only since we trimmed it from
-// primary nav. Partner-with-us hidden 2026-05-09 — kept the route + page
-// for direct visits but pulled the public link surface until the funnel
-// is ready to push.
+// nav. Pricing pulled 2026-05-27 per Sam — the page stays reachable for
+// the Become-a-member CTAs but is no longer publicly advertised in the
+// footer surface. Partner-with-us hidden 2026-05-09 — kept the route +
+// page for direct visits but pulled the public link surface until the
+// funnel is ready to push.
 const FOOTER_LINKS_EN = [
   { to: "/team",      label: "Team" },
-  { to: "/pricing",   label: "Pricing" },
   { to: "/blog",      label: "Journal" },
 ];
 const FOOTER_LINKS_RU = [
   { to: "/team/ru",      label: "Команда" },
-  { to: "/pricing/ru",   label: "Цены" },
   { to: "/blog/ru",      label: "Блог" },
 ];
 
