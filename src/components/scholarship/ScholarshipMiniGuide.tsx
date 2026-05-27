@@ -63,7 +63,28 @@ export const ScholarshipMiniGuide = ({ scholarshipId, language = "en" }: Props) 
     return () => { cancelled = true; };
   }, [scholarshipId]);
 
-  if (loading || !content) return null;
+  if (loading) return null;
+  // 2026-05-27: when no mini-guide row exists for this scholarship, show a
+  // "Top Uni notes coming soon" placeholder rather than vanishing the section.
+  // Empty space was misread as "nothing on this scholarship"; the placeholder
+  // sets the expectation that strategy notes are in the pipeline.
+  if (!content) {
+    return (
+      <section className="not-prose mb-8 max-w-2xl">
+        <p className="m-0 mb-2 text-[12px] uppercase tracking-[0.08em] font-semibold text-foreground/55">
+          {t("How this scholarship plays", "Как работает эта стипендия")}
+        </p>
+        <div className="rounded-2xl border border-dashed border-foreground/15 bg-foreground/[0.02] px-5 py-6">
+          <p className="font-heading text-[15px] leading-[1.55] text-foreground/70 m-0">
+            {t(
+              "Top Uni notes coming soon. We're writing the strategy read for this scholarship — back with it shortly.",
+              "Заметки Top Uni скоро появятся. Мы готовим стратегический разбор этой стипендии — вернёмся с ним совсем скоро."
+            )}
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <motion.section
