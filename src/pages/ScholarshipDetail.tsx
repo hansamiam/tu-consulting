@@ -94,6 +94,7 @@ interface Scholarship {
   min_sat: number | null;
   application_deadline: string | null;
   deadline_type: string | null;
+  is_deadline_inferred?: boolean | null;
   required_documents: string[] | null;
   essay_required: boolean | null;
   recommendation_letters_required: number | null;
@@ -236,7 +237,7 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
         // we missed it here.
         const { data: rows } = await supabase
           .from("scholarships")
-          .select("scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, application_deadline, target_degree_level, target_fields, is_featured, why_this_fits, official_url")
+          .select("scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, application_deadline, deadline_type, is_deadline_inferred, target_degree_level, target_fields, is_featured, why_this_fits, official_url")
           .in("scholarship_id", ids.slice(0, 8))
           .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
           .or("lifecycle_status.in.(active,reopens_annually),lifecycle_status.is.null")
@@ -303,7 +304,7 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
 
         const { data: siblingRows } = await supabase
           .from("scholarships")
-          .select("scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, application_deadline, target_degree_level, target_fields, is_featured, why_this_fits, official_url")
+          .select("scholarship_id, scholarship_name, provider_name, host_country, coverage_type, award_amount_text, estimated_total_value_usd, application_deadline, deadline_type, is_deadline_inferred, target_degree_level, target_fields, is_featured, why_this_fits, official_url")
           .eq("provider_id", s.provider_id)
           .neq("scholarship_id", s.scholarship_id)
           .or("verification_status.is.null,verification_status.in.(verified,stale,pending)")
@@ -497,6 +498,17 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
     if (!s?.application_deadline) return null;
     const d = new Date(s.application_deadline);
     if (Number.isNaN(d.getTime())) return null;
+    // 2026-05-27: inferred-deadline rows (annual programs with their
+    // application_deadline bumped from a past cycle) show "Typically
+    // [Month] [Year]" so users know to verify before applying.
+    if (s.is_deadline_inferred) {
+      const monthLabel = d.toLocaleDateString(language === "ru" ? "ru-RU" : undefined, {
+        month: "long",
+      });
+      return language === "ru"
+        ? `Обычно ${monthLabel} ${d.getFullYear()}`
+        : `Typically ${monthLabel} ${d.getFullYear()}`;
+    }
     return d.toLocaleDateString(language === "ru" ? "ru-RU" : undefined, {
       month: "short",
       day: "numeric",
