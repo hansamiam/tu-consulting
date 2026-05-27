@@ -36,7 +36,10 @@ export const ScholarshipMiniGuide = ({ scholarshipId, language = "en" }: Props) 
   const t = useMemo(() => (en: string, ru: string) => (language === "ru" ? ru : en), [language]);
 
   useEffect(() => {
-    if (!scholarshipId) return;
+    if (!scholarshipId) {
+      console.log("[mini-guide] no-scholarship-id");
+      return;
+    }
     let cancelled = false;
     setLoading(true);
     (async () => {
@@ -47,11 +50,12 @@ export const ScholarshipMiniGuide = ({ scholarshipId, language = "en" }: Props) 
         .maybeSingle();
       if (cancelled) return;
       if (error) {
-        console.warn("[mini-guide] fetch error", error);
+        console.warn("[mini-guide] fetch error", { scholarshipId, error });
         setContent(null);
       } else if (data?.content) {
         setContent(data.content as MiniGuideContent);
       } else {
+        console.log("[mini-guide] no-row-found", { scholarshipId });
         setContent(null);
       }
       setLoading(false);
