@@ -3332,21 +3332,21 @@ const Discover = ({ language = "en" }: Props) => {
   /* Precomputed lowercase search index per scholarship_id → one merged
    * blob covering every field search hits (name, provider, country,
    * fields, eligible countries, best-for tags, demographics, prose
-   * editorial fields). Built ONCE per `ranked` change instead of
-   * re-lowercasing 7-10 strings × N rows × every keystroke. On a 5K-
-   * row catalog the keystroke loop drops from ~45ms (visibly janky on
-   * mobile) to a single .includes() per row.
+   * editorial fields). Built once per `ranked` change inside a useMemo
+   * (NOT on every keystroke — useMemo deps are [ranked], not the query).
    *
-   * Cache by scholarship_id so re-ranking (which changes the ranked
-   * array order/shape but not the row content) doesn't have to
-   * recompute every blob. The Map persists across renders. */
-  const searchBlobCacheRef = useRef<Map<string, string>>(new Map());
+   * 2026-05-27: Removed the cross-render Map cache that keyed only on
+   * scholarship_id. After an admin edit, the row's content changed but
+   * the cache held the stale blob — manifested as "search 'fl' finds
+   * Florence but 'flo' doesn't" right after Sam edited that row.
+   * useMemo re-builds the index whenever `ranked` (the array reference)
+   * changes, which already happens on optimistic updates. Skipping the
+   * cross-render cache makes every rebuild see the current row content.
+   * The keystroke hot path is unaffected — that's a pure .includes()
+   * against the precomputed Map. */
   const searchIndex = useMemo(() => {
-    const cache = searchBlobCacheRef.current;
     const out = new Map<string, string>();
     for (const s of ranked) {
-      const cached = cache.get(s.scholarship_id);
-      if (cached) { out.set(s.scholarship_id, cached); continue; }
       const parts: string[] = [
         s.scholarship_name,
         s.host_country ?? "",
@@ -3359,9 +3359,7 @@ const Discover = ({ language = "en" }: Props) => {
         s.ideal_candidate_profile ?? "",
         s.how_to_win ?? "",
       ];
-      const blob = parts.join(" ").toLowerCase();
-      cache.set(s.scholarship_id, blob);
-      out.set(s.scholarship_id, blob);
+      out.set(s.scholarship_id, parts.join(" ").toLowerCase());
     }
     return out;
   }, [ranked]);

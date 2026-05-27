@@ -284,10 +284,10 @@ const IndexRu = () => {
                 Ранняя скидка для первых 50
               </motion.div>
               <motion.h2 {...fadeUp(0.05)} className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.1] mb-5">
-                $19.99/мес <span className="text-gold-dark">с кодом NURZADA50</span>.
+                Стать участником, $39.99/мес.
               </motion.h2>
               <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-lg mb-9 max-w-xl mx-auto leading-relaxed">
-                Живые воркшопы и office hours с командой. Новые обновления каждый месяц. $39.99/мес после первых 50.
+                Живые воркшопы и office hours с командой. Новые обновления каждый месяц.
               </motion.p>
               <motion.div {...fadeUp(0.2)} className="flex flex-wrap items-center justify-center gap-3">
                 <Button

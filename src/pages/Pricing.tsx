@@ -64,7 +64,7 @@ const COPY = {
     ],
     foundingPriceLabel: "Launch price",
     perMonth: "/month",
-    publicNote: "Use code NURZADA50 at checkout — first 50 members lock $19.99/mo for life.",
+    publicNote: "Promo codes accepted at checkout.",
     publicNoteRest: "Cancel anytime — no long-term lock-in.",
     capacityClaimed: (claimed: number, cap: number) => `${claimed} / ${cap} claimed`,
     capacityLeft: (left: number) => `${left} left`,
@@ -81,8 +81,8 @@ const COPY = {
     finalH2a: "First",
     finalH2b: "early-access members lock the launch price for life.",
     finalH2c: "",
-    finalLeftPrefix: "spots left at $19.99/mo with code NURZADA50. After they fill, $39.99/mo standard.",
-    finalNoLeft: "Early-access cohort filled. Standard $39.99/mo is open — promo codes still accepted at checkout if you have one.",
+    finalLeftPrefix: "early-access spots left. Promo codes accepted at checkout.",
+    finalNoLeft: "Early-access cohort filled. Membership is still open at $39.99/mo — promo codes accepted at checkout.",
     finalGuarantee: "30-day money-back guarantee · Cancel anytime",
     notReady: "Not ready?",
     notReadyMid: "still gets you a personalized strategy from TopUni AI and your top 3 scholarship matches.",
@@ -110,7 +110,7 @@ const COPY = {
     ],
     foundingPriceLabel: "Цена запуска",
     perMonth: "/месяц",
-    publicNote: "Введите код NURZADA50 на оплате — первые 50 членов закрепляют $19.99/мес навсегда.",
+    publicNote: "Промокоды принимаются на оплате.",
     publicNoteRest: "Отмена в любой момент — без долгосрочных обязательств.",
     capacityClaimed: (claimed: number, cap: number) => `${claimed} / ${cap} занято`,
     capacityLeft: (left: number) => `${left} осталось`,
@@ -127,8 +127,8 @@ const COPY = {
     finalH2a: "Первые",
     finalH2b: "членов раннего доступа закрепляют цену запуска навсегда.",
     finalH2c: "",
-    finalLeftPrefix: "мест по $19.99/мес с кодом NURZADA50. После заполнения — $39.99/мес стандарт.",
-    finalNoLeft: "Когорта раннего доступа заполнена. Открыт стандарт $39.99/мес — промокоды принимаются на оплате, если у вас есть один.",
+    finalLeftPrefix: "мест раннего доступа осталось. Промокоды принимаются на оплате.",
+    finalNoLeft: "Когорта раннего доступа заполнена. Членство открыто за $39.99/мес — промокоды принимаются на оплате.",
     finalGuarantee: "Гарантия 30 дней · отмена в любой момент",
     notReady: "Ещё не готовы?",
     notReadyMid: "даёт вам персональную стратегию от TopUni AI и топ-3 подобранные стипендии.",
@@ -147,10 +147,10 @@ const Pricing = ({ language = "en" }: PricingProps) => {
   const [loading, setLoading] = useState(false);
   const [foundingLeft, setFoundingLeft] = useState<number | null>(null);
   // Cohort cap default — 50 for the early-access tier (re-bumped from
-  // 20 on 2026-05-27 to match NURZADA50's 50-redemption ceiling + Sam's
-  // updated "first 50 signups" copy). The production value still comes
-  // from `founding_member_counter.cap` in Supabase — this is just the
-  // fallback for the initial render before the count fetch resolves.
+  // 20 on 2026-05-27 per Sam's updated "first 50 signups" copy). The
+  // production value still comes from `founding_member_counter.cap` in
+  // Supabase — this is just the fallback for the initial render before
+  // the count fetch resolves.
   const [foundingCap, setFoundingCap] = useState<number>(50);
   // Billing interval — annual saves ~23% vs month-to-month. Default
   // monthly (lower commitment threshold, easier conversion).

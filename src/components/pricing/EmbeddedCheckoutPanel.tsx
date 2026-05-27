@@ -53,19 +53,6 @@ export const EmbeddedCheckoutPanel = ({ clientSecret, onClose, language = "en" }
             <X className="w-4 h-4" />
           </button>
         </div>
-        {/* Promo-code reminder — Stripe Checkout shows an "Add promotion
-            code" link inside the form, but most users miss it. Surface
-            the founding code prominently above the form so the price
-            they see on the card matches the price they pay. */}
-        <div className="px-5 sm:px-7 py-3 border-b border-border bg-gold/[0.04]">
-          <p className="text-[12px] sm:text-[13px] text-foreground/85 m-0 text-center leading-snug">
-            {language === "ru" ? (
-              <>💡 Введите код <span className="font-bold tabular-nums tracking-wide text-gold-dark">NURZADA50</span> на оплате — 50% навсегда, только для первых 50.</>
-            ) : (
-              <>💡 Use code <span className="font-bold tabular-nums tracking-wide text-gold-dark">NURZADA50</span> at checkout for 50% off forever — first 50 members only.</>
-            )}
-          </p>
-        </div>
         <EmbeddedCheckoutProvider stripe={stripe} options={{ clientSecret }}>
           <EmbeddedCheckout />
         </EmbeddedCheckoutProvider>
