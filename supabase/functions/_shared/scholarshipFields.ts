@@ -484,7 +484,9 @@ export function extractDemographicsFromCitizenship(raw: string | null | undefine
 /** Validates an array of demographic tags against the canonical set.
  *  Returns only the recognised values. Used to coerce LLM output. */
 const VALID_DEMOGRAPHICS = new Set([
-  "women", "men", "lgbtq", "first-gen", "low-income", "refugee",
+  // "first-gen" removed 2026-05-27 — see frontend scholarshipFields.ts
+  // for the rationale. Ingestion no longer tags rows with it.
+  "women", "men", "lgbtq", "low-income", "refugee",
   "displaced", "indigenous", "underrepresented-stem", "underrepresented-minority",
   "disability", "military-veteran", "rural", "mature-student",
 ]);
@@ -494,7 +496,9 @@ export function cleanTargetDemographics(raw: unknown): string[] {
   const seen = new Set<string>();
   const aliasMap: Record<string, string> = {
     "lgbtq+": "lgbtq", "lgbt": "lgbtq",
-    "first_generation": "first-gen", "first-generation": "first-gen", "firstgen": "first-gen",
+    // first-generation aliases removed 2026-05-27 — the canonical
+    // "first-gen" tag is no longer valid; inputs that would have
+    // mapped here get dropped by VALID_DEMOGRAPHICS.has() below.
     "low_income": "low-income", "lowincome": "low-income",
     "veteran": "military-veteran", "veterans": "military-veteran", "military": "military-veteran",
     "underrepresented": "underrepresented-minority", "minority": "underrepresented-minority", "minorities": "underrepresented-minority",
