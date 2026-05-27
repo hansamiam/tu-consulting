@@ -1347,17 +1347,23 @@ ${EDITORIAL_RULES}`;
       // weeks of real traffic. Fire-and-forget; never block the stream.
       // user_id is best-effort (null for pre-signup runs).
       (async () => {
+        let assignmentUserId: string | null = null;
+        const archId = planResult.plan.archetype.id;
         try {
-          let assignmentUserId: string | null = null;
           const auth = req.headers.get("Authorization");
           if (auth?.startsWith("Bearer ")) {
             const uc = createUserClient(auth);
             const { data: { user: u } } = await uc.auth.getUser();
             assignmentUserId = u?.id ?? null;
           }
-          await (supabase as any).from("archetype_assignments").insert({
+          // supabase-js insert() resolves with { data, error } — it does
+          // NOT throw on RLS denial / constraint violation / network. So
+          // the previous try/catch only caught synchronous throws (rare).
+          // Inspect the result error explicitly; without this, every RLS
+          // miss was an invisible telemetry hole.
+          const { error: insertErr } = await (supabase as any).from("archetype_assignments").insert({
             user_id: assignmentUserId,
-            archetype_id: planResult.plan.archetype.id,
+            archetype_id: archId,
             confidence: planResult.plan.archetype.confidence,
             reason: planResult.plan.archetype.reason,
             intake_snapshot: {
@@ -1381,8 +1387,16 @@ ${EDITORIAL_RULES}`;
             },
             detector_version: "v1",
           });
+          if (insertErr) {
+            console.warn(
+              `[telemetry] archetype_assignments insert FAILED — archetype=${archId} user=${assignmentUserId ?? "anon"} code=${(insertErr as any).code ?? "?"} msg=${insertErr.message ?? insertErr}`,
+            );
+          }
         } catch (e) {
-          console.warn("[telemetry] archetype_assignments insert failed:", e);
+          console.warn(
+            `[telemetry] archetype_assignments insert threw — archetype=${archId} user=${assignmentUserId ?? "anon"}:`,
+            e,
+          );
         }
       })();
 
