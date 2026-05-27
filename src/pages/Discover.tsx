@@ -84,6 +84,7 @@ import {
   cleanProvider,
   compactAward,
   humanizeDemographic,
+  humanizeDegreeLabel,
 } from "@/lib/scholarshipFields";
 import { daysUntil } from "@/lib/dates";
 import { ALL_COUNTRIES } from "@/data/countries";
@@ -378,6 +379,92 @@ const NATIONALITY_COUNTRY_FORMS: Record<string, string[]> = {
   "sri lankan":     ["sri lanka", "sri lankan"],
 };
 
+/* Continent / region tokens we sometimes get in eligible_countries
+ * because the LLM extracted the source's plain-English description
+ * ("Open to candidates from Africa, Asia and Latin America") instead
+ * of expanding to a country list. Pre-2026-05-27 the matcher would
+ * silently fail these (no country in the array matches the user's
+ * country, so they'd land on not_eligible) — fine for the strict
+ * filter case, BUT when paired with NULL eligible_countries it created
+ * the inverse bug where the row got the silent base-45 pass.
+ *
+ * We now expand any continent / region token into its country list
+ * BEFORE running the country match. The expander preserves any other
+ * countries that were already in the array.
+ */
+const CONTINENT_COUNTRIES: Record<string, string[]> = {
+  "africa": [
+    "Algeria","Angola","Benin","Botswana","Burkina Faso","Burundi","Cabo Verde","Cameroon",
+    "Central African Republic","Chad","Comoros","Congo","Democratic Republic of the Congo",
+    "Djibouti","Egypt","Equatorial Guinea","Eritrea","Eswatini","Ethiopia","Gabon","Gambia",
+    "Ghana","Guinea","Guinea-Bissau","Ivory Coast","Kenya","Lesotho","Liberia","Libya",
+    "Madagascar","Malawi","Mali","Mauritania","Mauritius","Morocco","Mozambique","Namibia",
+    "Niger","Nigeria","Rwanda","Sao Tome and Principe","Senegal","Seychelles","Sierra Leone",
+    "Somalia","South Africa","South Sudan","Sudan","Tanzania","Togo","Tunisia","Uganda",
+    "Zambia","Zimbabwe",
+  ],
+  "sub-saharan africa": [
+    "Angola","Benin","Botswana","Burkina Faso","Burundi","Cameroon","Central African Republic",
+    "Chad","Comoros","Congo","Democratic Republic of the Congo","Djibouti","Equatorial Guinea",
+    "Eritrea","Eswatini","Ethiopia","Gabon","Gambia","Ghana","Guinea","Guinea-Bissau","Ivory Coast",
+    "Kenya","Lesotho","Liberia","Madagascar","Malawi","Mali","Mauritania","Mauritius","Mozambique",
+    "Namibia","Niger","Nigeria","Rwanda","Sao Tome and Principe","Senegal","Seychelles","Sierra Leone",
+    "Somalia","South Africa","South Sudan","Sudan","Tanzania","Togo","Uganda","Zambia","Zimbabwe",
+  ],
+  "asia": [
+    "Afghanistan","Bangladesh","Bhutan","Cambodia","China","India","Indonesia","Iran","Iraq",
+    "Japan","Jordan","Kazakhstan","Kyrgyzstan","Laos","Lebanon","Malaysia","Maldives","Mongolia",
+    "Myanmar","Nepal","Pakistan","Palestine","Philippines","Singapore","South Korea","Sri Lanka",
+    "Syria","Taiwan","Tajikistan","Thailand","Timor-Leste","Turkmenistan","Uzbekistan","Vietnam","Yemen",
+  ],
+  "central asia": ["Kazakhstan","Kyrgyzstan","Tajikistan","Turkmenistan","Uzbekistan"],
+  "south asia":   ["Afghanistan","Bangladesh","Bhutan","India","Maldives","Nepal","Pakistan","Sri Lanka"],
+  "southeast asia": ["Brunei","Cambodia","Indonesia","Laos","Malaysia","Myanmar","Philippines","Singapore","Thailand","Timor-Leste","Vietnam"],
+  "middle east":  ["Bahrain","Cyprus","Egypt","Iran","Iraq","Israel","Jordan","Kuwait","Lebanon","Oman","Palestine","Qatar","Saudi Arabia","Syria","Turkey","United Arab Emirates","Yemen"],
+  "latin america": [
+    "Argentina","Belize","Bolivia","Brazil","Chile","Colombia","Costa Rica","Cuba","Dominican Republic",
+    "Ecuador","El Salvador","Guatemala","Guyana","Haiti","Honduras","Jamaica","Mexico","Nicaragua",
+    "Panama","Paraguay","Peru","Suriname","Trinidad and Tobago","Uruguay","Venezuela",
+  ],
+  "caribbean":    ["Antigua and Barbuda","Bahamas","Barbados","Belize","Cuba","Dominica","Dominican Republic","Grenada","Guyana","Haiti","Jamaica","Saint Lucia","Saint Vincent and the Grenadines","Suriname","Trinidad and Tobago"],
+  "europe":       ["Albania","Austria","Belarus","Belgium","Bosnia and Herzegovina","Bulgaria","Croatia","Czech Republic","Denmark","Estonia","Finland","France","Germany","Greece","Hungary","Iceland","Ireland","Italy","Kosovo","Latvia","Lithuania","Luxembourg","Malta","Moldova","Montenegro","Netherlands","North Macedonia","Norway","Poland","Portugal","Romania","Serbia","Slovakia","Slovenia","Spain","Sweden","Switzerland","Ukraine","United Kingdom"],
+  "eu":           ["Austria","Belgium","Bulgaria","Croatia","Cyprus","Czech Republic","Denmark","Estonia","Finland","France","Germany","Greece","Hungary","Ireland","Italy","Latvia","Lithuania","Luxembourg","Malta","Netherlands","Poland","Portugal","Romania","Slovakia","Slovenia","Spain","Sweden"],
+  "eu/eea":       ["Austria","Belgium","Bulgaria","Croatia","Cyprus","Czech Republic","Denmark","Estonia","Finland","France","Germany","Greece","Hungary","Iceland","Ireland","Italy","Latvia","Liechtenstein","Lithuania","Luxembourg","Malta","Netherlands","Norway","Poland","Portugal","Romania","Slovakia","Slovenia","Spain","Sweden"],
+  "non-eu/eea":   [], // sentinel: handled by openToAll fallback; resists explicit listing
+  "commonwealth": ["Antigua and Barbuda","Australia","Bahamas","Bangladesh","Barbados","Belize","Botswana","Brunei","Cameroon","Canada","Cyprus","Dominica","Eswatini","Fiji","Gabon","Gambia","Ghana","Grenada","Guyana","India","Jamaica","Kenya","Kiribati","Lesotho","Malawi","Malaysia","Maldives","Malta","Mauritius","Mozambique","Namibia","Nauru","New Zealand","Nigeria","Pakistan","Papua New Guinea","Rwanda","Saint Kitts and Nevis","Saint Lucia","Saint Vincent and the Grenadines","Samoa","Seychelles","Sierra Leone","Singapore","Solomon Islands","South Africa","Sri Lanka","Tanzania","Togo","Tonga","Trinidad and Tobago","Tuvalu","Uganda","United Kingdom","Vanuatu","Zambia"],
+};
+const CONTINENT_KEYS = Object.keys(CONTINENT_COUNTRIES);
+
+function expandEligibleCountries(list: string[]): string[] {
+  const out: string[] = [];
+  for (const raw of list) {
+    const norm = (raw ?? "").toLowerCase().trim();
+    if (!norm) continue;
+    // Direct continent match (preserves other countries already in the array).
+    if (CONTINENT_COUNTRIES[norm]) {
+      out.push(...CONTINENT_COUNTRIES[norm]);
+      continue;
+    }
+    // Looser match for stringy variants: "Sub-Saharan African countries"
+    // -> "sub-saharan africa"; "African countries" -> "africa". Try
+    // stripping "countries"/"nations"/"nationals" suffix words.
+    const stripped = norm.replace(/\b(countries|nations|nationals|countries\.?)\b/g, "").trim();
+    if (CONTINENT_COUNTRIES[stripped]) {
+      out.push(...CONTINENT_COUNTRIES[stripped]);
+      continue;
+    }
+    // Adjective -> noun: "african" -> "africa", "asian" -> "asia"
+    const denoun = stripped.replace(/n$/, "");
+    if (CONTINENT_KEYS.includes(denoun)) {
+      out.push(...CONTINENT_COUNTRIES[denoun]);
+      continue;
+    }
+    // Not a continent — leave as-is for the matcher.
+    out.push(raw);
+  }
+  return out;
+}
+
 /** True iff a scholarship's eligible_countries array contains any
  *  variant of the user's nationality. Word-boundary anchored so
  *  "Niger" doesn't false-match "Nigeria"; alias-extended so short
@@ -455,34 +542,48 @@ const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: numbe
   // matchesNationality handles country/adjectival aliasing + word
   // boundaries — see its docstring for the false-positive cases
   // ("Niger" vs "Nigeria", "Iraqi" vs "Iraq") it guards against.
-  if (s.eligible_countries && s.eligible_countries.length > 0 && p.country) {
-    // 2026-05-27 (PM): hard-eligibility incident — a Kazakh user saw
-    // Commonwealth Scholarships recommended (Commonwealth excludes
-    // non-Commonwealth countries). Root cause was two-fold:
-    //   1. The `openToAll` check matched only "all countries" / "all
-    //      nationalities" — it missed the literal "any" string that
-    //      most rows actually use (Harvard/MIT/Princeton/etc all carry
-    //      eligible_countries=["any"]). That mis-classified them as
-    //      not_eligible for everyone.
-    //   2. The filter at line ~3519 was opt-in, so not_eligible rows
-    //      were merely score-demoted, not hidden. They still surfaced.
-    // Fix:
-    //   - Use isInclusive() (already covers "any"/"all"/"worldwide"/
-    //     "open to international"/etc) for openToAll detection.
-    //   - Pair with the default-on hard filter below.
-    const openToAll = s.eligible_countries.some(c => isInclusive(c));
-    const specific = matchesNationality(p.country, s.eligible_countries);
-    if (specific) { match += 15; reasons.push(`Open to ${p.country} nationals`); }
-    else if (openToAll) { match += 7; reasons.push("Open to all nationalities"); }
-    else if (p.countrySource === "ip") {
-      // IP-inferred country is a guess, not a citizenship claim. A
-      // Kazakh student on a UK IP would get Commonwealth scholarships
-      // hidden under -40 + not_eligible. Skip the hard penalty for
-      // inferred country; the +15 / +7 boosts above still fire for
-      // the common case (real UK visitor sees UK-friendly programs
-      // surface) but never punish the wrong-guess case.
+  if (p.country) {
+    // 2026-05-27 (evening): SECOND eligibility incident — Kazakh user
+    // saw African-only scholarships (MasterCard UP, ZUKOnnect) ranked
+    // high. Root causes:
+    //   1. When eligible_countries was NULL the matcher skipped the
+    //      country check ENTIRELY (silent base-45 free pass).
+    //   2. Continent-name entries ("Africa","Asia","Latin America")
+    //      silently failed match — matcher looks for country names.
+    // New behaviour:
+    //   - NULL / empty / ["unknown"] -> mark "missing" + small penalty
+    //     + warning. No silent free pass.
+    //   - Continent / region token in array -> expanded via
+    //     expandEligibleCountries() BEFORE matching, so "Africa" no
+    //     longer false-negatives for an African user and definitely
+    //     doesn't false-positive for a Kazakh user.
+    //   - Else existing 2026-05-27 PM logic: specific / openToAll /
+    //     not_eligible. Original-PR comment block:
+    //
+    //     PM incident — Kazakh user saw Commonwealth scholarships.
+    //     Root cause: openToAll only matched "all countries"/"all
+    //     nationalities" and missed "any" (which Harvard/MIT/Princeton
+    //     all use). Fix: use isInclusive() which covers all variants,
+    //     paired with the default-on hard filter below.
+    const rawList = s.eligible_countries ?? [];
+    const isEmptyOrUnknown =
+      rawList.length === 0
+      || (rawList.length === 1 && (rawList[0] ?? "").toLowerCase().trim() === "unknown");
+    if (isEmptyOrUnknown) {
+      if (eligibility !== "not_eligible") eligibility = "missing";
+      match -= 3;
+      warnings.push("Eligibility unverified — confirm before applying");
+    } else {
+      const expanded = expandEligibleCountries(rawList);
+      const openToAll = expanded.some(c => isInclusive(c));
+      const specific  = matchesNationality(p.country, expanded);
+      if (specific) { match += 15; reasons.push(`Open to ${p.country} nationals`); }
+      else if (openToAll) { match += 7; reasons.push("Open to all nationalities"); }
+      else if (p.countrySource === "ip") {
+        // IP-inferred country is a guess; skip the hard penalty.
+      }
+      else { eligibility = "not_eligible"; match -= 40; warnings.push(`Not open to ${p.country} nationals`); }
     }
-    else { eligibility = "not_eligible"; match -= 40; warnings.push(`Not open to ${p.country} nationals`); }
   }
 
   // Degree level — match if scholarship targets ANY of the user's selected
@@ -3996,7 +4097,7 @@ const Discover = ({ language = "en" }: Props) => {
                                   {profile.degrees && profile.degrees.length > 0 && (
                                     <span className="inline-flex items-center gap-1 text-[11px] text-foreground/85 bg-card border border-border/70 px-2.5 py-1 rounded-full font-medium">
                                       <GraduationCap className="h-3 w-3 text-gold-dark" />
-                                      {profile.degrees.join(" / ")}
+                                      {profile.degrees.map(humanizeDegreeLabel).join(" / ")}
                                     </span>
                                   )}
                                   {profile.field && (
@@ -4613,7 +4714,14 @@ const Discover = ({ language = "en" }: Props) => {
                             the browse card, just filtered to the bookmarked
                             set. */}
                         {appSection === "shortlist" && (() => {
-                          const items = filtered.filter(s => shortlist.has(s.scholarship_id));
+                          // 2026-05-27: Shortlist must be FILTER-INDEPENDENT.
+                          // Previously pulled from `filtered`, so toggling any
+                          // filter chip on the browse view caused the shortlist
+                          // tab to flicker / drop items. A saved scholarship
+                          // should appear here regardless of the current filter
+                          // state — that's the whole point of saving it. Pull
+                          // from `rows` (the full catalog) instead.
+                          const items = rows.filter(s => shortlist.has(s.scholarship_id));
                           if (items.length === 0) {
                             return (
                               <div className="border border-dashed border-border rounded-3xl p-14 text-center bg-canvas-soft/40">
