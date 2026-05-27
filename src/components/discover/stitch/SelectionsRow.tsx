@@ -83,14 +83,13 @@ const SelectionTile = ({ s, index, onSelect, isBookmarked: _isBookmarked, onBook
       transition={{ delay: Math.min(index * 0.06, 0.2), duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ y: -2 }}
       onClick={onSelect}
-      className="group relative shrink-0 snap-start w-[320px] sm:w-auto rounded-2xl overflow-hidden bg-card border border-border hover:border-foreground/25 hover:shadow-lg transition-all cursor-pointer flex flex-col sm:flex-row"
+      className="group relative shrink-0 snap-start w-[300px] sm:w-auto rounded-2xl overflow-hidden bg-card border border-border hover:border-foreground/25 hover:shadow-lg transition-all cursor-pointer flex flex-col"
     >
-      {/* Image — horizontal layout on tablet+: image takes the left
-       *  ~42% of the tile, content fills the right. Mobile (single
-       *  column) keeps the stacked image-on-top look. The aspect ratio
-       *  is the visual driver for tile height — 16:11 on mobile,
-       *  fixed-height (h-full) on desktop so the row sits compact. */}
-      <div className={`relative w-full sm:w-[42%] shrink-0 aspect-[16/11] sm:aspect-auto sm:min-h-[180px] bg-gradient-to-br ${accent} overflow-hidden`}>
+      {/* Image — vertical stacked layout. Rev 5: short aspect (16:8)
+       *  so tile sits compact under the hero. Sam liked the rev-3
+       *  vertical look (image on top, content below) — keeping that
+       *  but pulling another ~50px out of the image height. */}
+      <div className={`relative aspect-[16/8] bg-gradient-to-br ${accent} overflow-hidden`}>
         {s.cover_image_url ? (
           <img
             src={s.cover_image_url}
@@ -118,7 +117,7 @@ const SelectionTile = ({ s, index, onSelect, isBookmarked: _isBookmarked, onBook
       </div>
 
       {/* Caption — name + verified, description, meta rows. */}
-      <div className="p-4 sm:p-4 flex flex-col gap-2 flex-1 min-w-0">
+      <div className="p-4 flex flex-col gap-2 flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2 min-w-0">
           <h3 className="font-heading text-[15px] sm:text-[16px] font-bold leading-tight tracking-[-0.01em] text-foreground group-hover:text-gold-dark transition-colors line-clamp-2 min-w-0">
             {cleanedName}
@@ -166,14 +165,16 @@ export interface SelectionsRowProps {
 
 export const SelectionsRow = ({ items, cardProps, lang = "en" }: SelectionsRowProps) => {
   if (items.length === 0) return null;
-  /* Rev 4: 2 tiles per row on desktop (horizontal-layout tiles), 1
-   * per row on mobile with horizontal scroll-snap. Cap visible at 2;
-   * scroll reveals more on mobile only. */
-  const visibleItems = items.slice(0, 4);
+  /* Rev 5: 3-col grid format, but only 2 tiles populated. Tiles
+   * occupy the first two slots; third slot is empty whitespace —
+   * Sam's call: keeps tile size sized for the 3-col format while
+   * keeping the row visually light. Mobile keeps horizontal
+   * scroll-snap. */
+  const visibleItems = items.slice(0, 3);
   return (
     <div className="relative -mx-5 sm:mx-0">
       <div
-        className="flex sm:grid sm:grid-cols-2 gap-4 sm:gap-5 overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none pl-5 pr-5 sm:pl-0 sm:pr-0 pb-2 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
+        className="flex sm:grid sm:grid-cols-3 gap-4 sm:gap-5 overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none pl-5 pr-5 sm:pl-0 sm:pr-0 pb-2 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
         role="list"
         aria-label={lang === "ru" ? "Подборка для вас" : "Selections for you"}
       >
@@ -185,7 +186,7 @@ export const SelectionsRow = ({ items, cardProps, lang = "en" }: SelectionsRowPr
             </div>
           );
         })}
-        {/* Mobile-only: reveal items 3-4 in the horizontal scroll. */}
+        {/* Mobile-only: reveal item 3 in the horizontal scroll. */}
         <div className="contents sm:hidden">
           {visibleItems.slice(2).map((s, i) => {
             const props = cardProps(s, i + 2);
