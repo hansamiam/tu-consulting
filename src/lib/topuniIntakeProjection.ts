@@ -8,32 +8,46 @@
 import type { DiscoverProfile } from "@/components/discover/DiscoverProfileGate";
 
 /** Normalise the wizard's grade-level label (free-text, EN or RU)
- *  into the canonical degree the student is APPLYING TO. Drives
- *  Discover's degree-match scoring. */
+ *  into the canonical degree the student is APPLYING TO — i.e. the
+ *  NEXT level after their current stage. Drives Discover's degree-match.
+ *
+ *  Invariant: a current bachelor's student should NOT see bachelor's
+ *  scholarships in Discover. Those fund the bachelor's program and
+ *  serve high-school applicants. A current bachelor's needs master's.
+ *
+ *  2026-05-27: the wizard's current options (TopUniAI.tsx:888) are flat
+ *  strings — "High School", "Gap Year", "Bachelor's", "Master's",
+ *  "PhD applicant", "Working professional". The earlier `bachelor.*current`
+ *  patterns matched a wizard design that no longer exists, so "Bachelor's"
+ *  fell through to `return gradeLevel` and got exact-matched against
+ *  bachelor's scholarships in Discover. Fixed by matching the actual
+ *  tokens the wizard now ships. */
 export const mapGradeLevelToTargetDegree = (gradeLevel: string): string => {
-  const g = gradeLevel.toLowerCase();
+  const g = gradeLevel.toLowerCase().trim();
   if (!g) return "";
-  // English patterns (TopUniAI.tsx wizard).
-  if (/grade|gap year/.test(g))                                return "undergraduate";
+
+  // English (TopUniAI.tsx wizard).
+  // Pre-bachelor's applicants → bachelor's programs.
+  if (/^high school$|grade|^gap year$/.test(g))                return "undergraduate";
   if (/transfer/.test(g))                                      return "undergraduate";
-  if (/bachelor.*current/.test(g))                             return "undergraduate";
-  if (/bachelor.*graduating/.test(g))                          return "master's";
-  if (/master.*current/.test(g))                               return "master's";
-  if (/master.*graduating/.test(g) || /phd applicant/.test(g)) return "PhD";
+  // Current bachelor's (mid or graduating) → master's programs.
+  if (/^bachelor's?$|bachelor.*current|bachelor.*graduating/.test(g)) return "master's";
+  // Current master's → PhD (the more common next step from a current-
+  // master's intake state; cross-master's transfers are rarer).
+  if (/^master's?$|master.*current|master.*graduating/.test(g)) return "PhD";
+  if (/phd applicant|^phd$|^doctor/.test(g))                   return "PhD";
+  // Working professionals re-entering school target master's by default.
   if (/working professional/.test(g))                          return "master's";
-  // Russian patterns (TopUniAIRu.tsx wizard).
+
+  // Russian (TopUniAIRu.tsx wizard).
   // "9 класс", "10 класс", "11 класс", "12 класс / Выпускник",
-  // "Gap Year", "Перевод из вуза", "Бакалавриат — учусь",
-  // "Бакалавриат — выпускаюсь", "Магистратура — учусь",
-  // "Магистратура — выпускаюсь", "PhD", "Работаю".
+  // "Gap Year", "Перевод из вуза", "Бакалавр", "Магистр", etc.
   if (/класс|выпускник школы/.test(g))                        return "undergraduate";
   if (/перевод/.test(g))                                       return "undergraduate";
-  if (/бакалавриат.*учусь/.test(g))                            return "undergraduate";
-  if (/бакалавриат.*выпускаюсь/.test(g))                       return "master's";
-  if (/магистратура.*учусь/.test(g))                           return "master's";
-  if (/магистратура.*выпускаюсь/.test(g))                      return "PhD";
-  if (/^phd$|^doctor/.test(g))                                 return "PhD";
+  if (/^бакалавр$|бакалавриат/.test(g))                        return "master's";
+  if (/^магистр$|магистратура/.test(g))                        return "PhD";
   if (/работаю/.test(g))                                       return "master's";
+
   return gradeLevel; // unknown — let downstream canonicalize try
 };
 
