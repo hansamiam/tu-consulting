@@ -42,3 +42,4 @@ deno.lock
 *.njsproj
 *.sln
 *.sw?
+scripts/backfill-output/
