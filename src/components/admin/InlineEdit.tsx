@@ -250,10 +250,18 @@ const ChipArrayEditor = ({
   useEffect(() => { inputRef.current?.focus(); }, []);
 
   const add = () => {
-    const v = draft.trim();
-    if (!v) return;
-    if (chips.includes(v)) { setDraft(""); return; }
-    setChips([...chips, v]);
+    const raw = draft.trim();
+    if (!raw) return;
+    // Split on commas OR newlines so admins can paste "Kazakhstan, Kyrgyzstan, Uzbekistan"
+    // or a multi-line list in one shot.
+    const tokens = raw
+      .split(/[,\n]/)
+      .map(t => t.trim())
+      .filter(t => t.length > 0);
+    if (tokens.length === 0) { setDraft(""); return; }
+    const next = [...chips];
+    for (const tok of tokens) if (!next.includes(tok)) next.push(tok);
+    setChips(next);
     setDraft("");
   };
 

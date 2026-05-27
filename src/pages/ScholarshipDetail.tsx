@@ -852,10 +852,26 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
       <section className="max-w-[860px] mx-auto px-5 sm:px-8 py-10 sm:py-14 space-y-12 sm:space-y-14">
         {/* Key facts row */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <Fact icon={<Wallet />} label={t("Award", "Финансирование")} value={s.award_amount_text || compactAward(s) || (s.estimated_total_value_usd ? `~$${Math.round(s.estimated_total_value_usd / 1000)}K total` : "—")} />
-          <Fact icon={<Calendar />} label={t("Deadline", "Дедлайн")} value={formattedDeadline ?? (s.deadline_type ?? t("varies", "разные"))} />
-          <Fact icon={<GraduationCap />} label={t("Levels", "Уровни")} value={(s.target_degree_level ?? []).map(humanizeDegreeLabel).join(", ") || t("any", "любой")} />
-          <Fact icon={<Globe />} label={t("Citizenship", "Гражданство")} value={citizenshipFactValue(s.eligible_countries, s.citizenship_requirements, isRu)} />
+          <Fact icon={<Wallet />} label={t("Award", "Финансирование")} value={
+            <InlineEdit field="award_amount_text" variant="text" value={s.award_amount_text} onSave={editField("award_amount_text")} saving={savingEdit} label="Award amount">
+              <span>{s.award_amount_text || compactAward(s) || (s.estimated_total_value_usd ? `~$${Math.round(s.estimated_total_value_usd / 1000)}K total` : "—")}</span>
+            </InlineEdit>
+          } />
+          <Fact icon={<Calendar />} label={t("Deadline", "Дедлайн")} value={
+            <InlineEdit field="application_deadline" variant="date" value={s.application_deadline} onSave={editField("application_deadline")} saving={savingEdit} label="Application deadline (ISO)">
+              <span>{formattedDeadline ?? (s.deadline_type ?? t("varies", "разные"))}</span>
+            </InlineEdit>
+          } />
+          <Fact icon={<GraduationCap />} label={t("Levels", "Уровни")} value={
+            <InlineEdit field="target_degree_level" variant="chip-array" value={s.target_degree_level} onSave={editField("target_degree_level")} saving={savingEdit} label="Target levels">
+              <span>{(s.target_degree_level ?? []).map(humanizeDegreeLabel).join(", ") || t("any", "любой")}</span>
+            </InlineEdit>
+          } />
+          <Fact icon={<Globe />} label={t("Citizenship", "Гражданство")} value={
+            <InlineEdit field="eligible_countries" variant="chip-array" value={s.eligible_countries} onSave={editField("eligible_countries")} saving={savingEdit} label="Eligible countries (empty = open to all)">
+              <span>{citizenshipFactValue(s.eligible_countries, s.citizenship_requirements, isRu)}</span>
+            </InlineEdit>
+          } />
         </div>
 
         {/* Static "How this scholarship plays" — pre-generated mini-guide
@@ -1383,7 +1399,7 @@ const Section = ({ title, body, children, tone = "neutral" }: {
   );
 };
 
-const Fact = ({ icon, label, value }: { icon?: React.ReactNode; label: string; value: string }) => (
+const Fact = ({ icon, label, value }: { icon?: React.ReactNode; label: string; value: React.ReactNode }) => (
   <div className="bg-muted/40 border border-border rounded-lg px-3 py-2.5">
     <div className="flex items-center gap-1.5 text-muted-foreground mb-0.5">
       {icon && <span className="w-3 h-3 [&>*]:w-3 [&>*]:h-3">{icon}</span>}
