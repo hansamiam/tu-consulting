@@ -81,7 +81,6 @@ import { accentForCountry, shortCountry, canonicalCountry } from "@/lib/countryA
 import {
   FIELD_JUNK,
   titleCaseField,
-  displayField,
   cleanScholarshipName,
   cleanProvider,
   compactAward,
@@ -2178,16 +2177,9 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
             user is on free — quiet, no animation, always inline. */}
         <div className="flex items-center gap-2 text-[11px] min-w-0">
           <span className={`tabular-nums font-medium shrink-0 ${dl.cls}`}>{dl.text}</span>
-          {(() => {
-            const fld = displayField(s.target_fields);
-            if (!fld) return null;
-            return (
-              <>
-                <span className="text-muted-foreground/30 shrink-0">·</span>
-                <span className="text-muted-foreground truncate min-w-0">{fld}</span>
-              </>
-            );
-          })()}
+          {/* Field display on cards pulled 2026-05-27 alongside the Field
+              filter — same reason: target_fields coverage was thin/noisy
+              and read worse than nothing. Bring back together. */}
           {/* Thin-data hint — when the row was extracted from a sparse
               provider page (low completeness score), surface a quiet
               "verify on official site" note so users don't trust the
@@ -2316,12 +2308,11 @@ const MemoScholarCard = memo(ScholarCard, (prev, next) => (
 ));
 
 /* ─── Filters Panel ──────────────────────────────────────────────────── */
-const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsAvailable, lang = "en" }: {
+const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, lang = "en" }: {
   filters: FilterState;
   setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
   activeCount: number;
   hostCountries: string[];
-  fieldsAvailable: string[];
   lang?: Lang;
 }) => {
   const ru = lang === "ru";
@@ -2398,22 +2389,12 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, fieldsA
           filter pipeline branch (filters.demographic) stay in place so
           revival is a re-render, not a rebuild. */}
 
-      {/* Field + Host country — kept tight as compact dropdowns side-by-side.
-          The panel was previously 2 stacked dropdown sections; this shrinks
-          that to a single row at all but the narrowest widths. */}
+      {/* Host country filter. The Field filter was pulled 2026-05-27 —
+          target_fields coverage was too thin/noisy to surface as a primary
+          filter. Matching against profile.field still runs invisibly in
+          scoreScholarship; only the user-facing surface is gone. Bring
+          back when coverage + taxonomy are ready. */}
       <div className="space-y-3">
-        {fieldsAvailable.length > 0 && (
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">{t("Field", "Направление")}</p>
-            <Select value={filters.field} onValueChange={v => setFilters(f => ({ ...f, field: v }))}>
-              <SelectTrigger className="h-8 text-[13px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("All fields", "Все направления")}</SelectItem>
-                {fieldsAvailable.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
         {hostCountries.length > 0 && (
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">{t("Region", "Регион")}</p>
@@ -4331,7 +4312,7 @@ const Discover = ({ language = "en" }: Props) => {
                       capped the input at 28rem regardless of viewport. */}
                   <div className="relative flex-1 min-w-[200px]">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                    <Input ref={searchInputRef} value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} placeholder={t("Search names, providers, fields, tags…   (/ to focus)", "Поиск по названию, организации, направлению, тегам…   (/ — фокус)")}
+                    <Input ref={searchInputRef} value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} placeholder={t("Search names, providers, tags…   (/ to focus)", "Поиск по названию, организации, тегам…   (/ — фокус)")}
                       className="pl-10 h-10 text-sm rounded-lg" />
                     {filters.search && <button onClick={() => setFilters(f => ({ ...f, search: "" }))} aria-label={t("Clear search", "Очистить поиск")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>}
                   </div>
@@ -4484,7 +4465,7 @@ const Discover = ({ language = "en" }: Props) => {
                           <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground flex items-center gap-2"><SlidersHorizontal className="h-3.5 w-3.5" />Refine</h3>
                           {activeFiltersCount > 0 && <Badge className="h-5 px-1.5 text-[10px] bg-gold/20 text-gold-dark border-0">{activeFiltersCount}</Badge>}
                         </div>
-                        <FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} fieldsAvailable={fieldsAvailable} lang={language} />
+                        <FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} lang={language} />
                       </div>
 
                       {/* Sidebar membership card — visible to anyone not yet
@@ -4994,7 +4975,6 @@ const Discover = ({ language = "en" }: Props) => {
                   { label: "Min requirements", render: minRequirements, isEmpty: s => s.min_gpa == null && s.min_ielts == null && s.min_toefl == null && s.min_sat == null },
                   { label: "Eligibility", render: s => isInclusive(s.citizenship_requirements) ? <span className="text-success">Open to all</span> : (s.citizenship_requirements || <span className="text-muted-foreground/60">—</span>), isEmpty: s => !s.citizenship_requirements },
                   { label: "Degree levels", render: s => s.target_degree_level?.map(humanizeDegree).join(", ") || <span className="text-muted-foreground/60">—</span>, isEmpty: s => !s.target_degree_level || s.target_degree_level.length === 0 },
-                  { label: "Fields funded", render: s => s.target_fields?.length ? s.target_fields.slice(0, 3).map(humanize).join(", ") + (s.target_fields.length > 3 ? `, +${s.target_fields.length - 3}` : "") : <span className="text-muted-foreground/60">—</span>, isEmpty: s => !s.target_fields || s.target_fields.length === 0 },
                   { label: "Application fee", render: s => s.application_fee_text || <span className="text-muted-foreground/60">—</span>, isEmpty: s => !s.application_fee_text },
                   { label: "Effort level", render: s => s.effort_level ? <span>{humanize(s.effort_level)}</span> : <span className="text-muted-foreground/60">—</span>, isEmpty: s => !s.effort_level },
                   { label: "Essay required", render: s => s.essay_required ? <span className="text-warning">Yes</span> : <span className="text-success">No</span>, isEmpty: s => s.essay_required == null },
@@ -5264,7 +5244,7 @@ const Discover = ({ language = "en" }: Props) => {
         <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
           <SheetContent side="left" className="w-[300px] overflow-y-auto">
             <SheetHeader><SheetTitle className="flex items-center gap-2"><SlidersHorizontal className="h-4 w-4" />{t("Filters", "Фильтры")}</SheetTitle></SheetHeader>
-            <div className="mt-5"><FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} fieldsAvailable={fieldsAvailable} lang={language} /></div>
+            <div className="mt-5"><FiltersPanel filters={filters} setFilters={setFilters} activeCount={activeFiltersCount} hostCountries={hostCountries} lang={language} /></div>
           </SheetContent>
         </Sheet>
 
