@@ -4039,10 +4039,6 @@ const Discover = ({ language = "en" }: Props) => {
                *  never disappears for cold visitors. */}
               {!loading && ranked.length > 0 && (
                 <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-5 space-y-10 sm:space-y-12">
-                  {/* Rev 5: hero wrapped in a narrower max-w container
-                   *  so it doesn't feel horizontally stretched. Selections
-                   *  + Catalog stay at the wider max-w-7xl. */}
-                  <div className="max-w-5xl mx-auto">
                   <StitchHero
                     scholarship={{
                       scholarship_id: ranked[0].scholarship_id,
@@ -4062,7 +4058,6 @@ const Discover = ({ language = "en" }: Props) => {
                     onExpand={() => openDetailRoute(ranked[0])}
                     lang={language}
                   />
-                  </div>
 
                   {/* Selections for you — full-width, always-on row of
                    *  3 image-forward tiles. Uses sections.strong when a
@@ -4686,7 +4681,7 @@ const Discover = ({ language = "en" }: Props) => {
                                 <section id="discover-catalog" className="scroll-mt-32">
                                   <header className="mb-5 sm:mb-6">
                                     <h3 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-                                      {t("The Catalog", "Каталог")}
+                                      {t("More Scholarships", "Больше стипендий")}
                                     </h3>
                                     <p className="text-[13px] text-muted-foreground mt-1">
                                       {/* "The world is your oyster" → no

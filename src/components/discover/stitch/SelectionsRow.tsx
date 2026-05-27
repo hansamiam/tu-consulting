@@ -165,11 +165,8 @@ export interface SelectionsRowProps {
 
 export const SelectionsRow = ({ items, cardProps, lang = "en" }: SelectionsRowProps) => {
   if (items.length === 0) return null;
-  /* Rev 5: 3-col grid format, but only 2 tiles populated. Tiles
-   * occupy the first two slots; third slot is empty whitespace —
-   * Sam's call: keeps tile size sized for the 3-col format while
-   * keeping the row visually light. Mobile keeps horizontal
-   * scroll-snap. */
+  /* Rev 6: 3-col grid fully populated — 3 tiles. Mobile keeps the
+   * horizontal scroll-snap. */
   const visibleItems = items.slice(0, 3);
   return (
     <div className="relative -mx-5 sm:mx-0">
@@ -178,7 +175,7 @@ export const SelectionsRow = ({ items, cardProps, lang = "en" }: SelectionsRowPr
         role="list"
         aria-label={lang === "ru" ? "Подборка для вас" : "Selections for you"}
       >
-        {visibleItems.slice(0, 2).map((s, i) => {
+        {visibleItems.map((s, i) => {
           const props = cardProps(s, i);
           return (
             <div role="listitem" key={s.scholarship_id} className="sm:contents">
@@ -186,17 +183,6 @@ export const SelectionsRow = ({ items, cardProps, lang = "en" }: SelectionsRowPr
             </div>
           );
         })}
-        {/* Mobile-only: reveal item 3 in the horizontal scroll. */}
-        <div className="contents sm:hidden">
-          {visibleItems.slice(2).map((s, i) => {
-            const props = cardProps(s, i + 2);
-            return (
-              <div role="listitem" key={s.scholarship_id}>
-                <SelectionTile s={s} index={i + 2} lang={lang} {...props} />
-              </div>
-            );
-          })}
-        </div>
       </div>
     </div>
   );
