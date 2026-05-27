@@ -790,7 +790,9 @@ const Pipeline = ({ language = "en" }: PipelineProps) => {
                     label={t("Coverage", "Покрытие")}
                     value={(() => {
                       const ct = openDetail.coverage_type;
-                      if (ct === "full_ride") return t("Full ride", "Полное");
+                      // "Full ride" label stripped 2026-05-27 — full_ride
+                      // falls through to generic "Funded" label.
+                      if (ct === "full_ride") return t("Fully funded", "Финансирование");
                       if (ct === "tuition_only") return t("Tuition only", "Только обучение");
                       if (ct === "stipend") return t("Stipend", "Стипендия");
                       if (ct === "partial") return t("Partial funding", "Частичное");
@@ -1053,7 +1055,8 @@ const QuickFactsStrip = ({
     "text-foreground/80";
   const fundingLabel = (() => {
     const c = scholarship.coverage_type?.toLowerCase();
-    if (c === "full_ride") return t("Full ride", "Полное");
+    // "Full ride" label stripped 2026-05-27.
+    if (c === "full_ride") return t("Fully funded", "Финансирование");
     if (c === "tuition_only") return t("Tuition", "Обучение");
     if (c === "partial") return t("Partial", "Частичное");
     if (c === "stipend") return t("Stipend", "Стипендия");

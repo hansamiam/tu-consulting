@@ -1486,7 +1486,10 @@ function buildScholarshipBlurb(input: {
   // article; we'll prefix it where appropriate so phrases like "Funds"
   // / "Stipend for" / "Full ride" can lead naturally.
   const funding = (() => {
-    if (isFullRide) return "Full ride";
+    // "Full ride" copy stripped 2026-05-27 ("completely get rid of
+    // every single one"); the auto-blurb now falls through to a
+    // degree/field-only sentence when coverage is full_ride.
+    if (isFullRide) return null;
     if (coverage === "tuition_only") return "Tuition";
     if (coverage === "stipend") return "Stipend";
     if (coverage === "partial") return "Partial funding";
@@ -1539,9 +1542,9 @@ function buildScholarshipBlurb(input: {
   if (demo) {
     return `${prestigeAdj}${prestigeAdj ? "" : "Funds "}${demo.toLowerCase()} applicants${field ? ` in ${field.toLowerCase()}` : ""}.`;
   }
-  if (funding === "Full ride" && degree) {
-    return `${prestigeAdj}full-ride ${degree}${field ? ` in ${field.toLowerCase()}` : ""}.`.replace(/^h/, "H");
-  }
+  // "full-ride" prose branch stripped 2026-05-27. funding is now null
+  // for full_ride rows so this branch is unreachable; kept the next
+  // branch as the fallthrough.
   if (funding && degree) {
     return `${prestigeAdj}${funding.toLowerCase()} for a ${degree}${field ? ` in ${field.toLowerCase()}` : ""}.`.replace(/^./, c => c.toUpperCase());
   }
@@ -1795,7 +1798,6 @@ const ScholarRow = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCha
   const ru = lang === "ru";
   const dl = deadlineDisplay(s.application_deadline, lang, s.deadline_type, s.is_deadline_inferred);
   const hasRealScore = s.match > 0 && (s.reasons.length > 0 || s.warnings.length > 0);
-  const isFullRide = s.coverage_type === "full_ride";
   const bannerCtry = bannerCountry(s);
   const accent = accentForCountry(bannerCtry);
   const award = compactAward(s);
@@ -2041,7 +2043,6 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
   const meatyReasons = s.reasons.filter(r => !/^Matches \w+( level)?$/i.test(r) && !/^Open to /.test(r) && !/^Touches your field/i.test(r));
   const why = s.why_this_fits || (meatyReasons.length > 0 ? meatyReasons.slice(0, 2).join(". ") : null);
   const award = compactAward(s);
-  const isFullRide = s.coverage_type === "full_ride";
   // Match score is meaningful only when the user has a real profile that
   // can score AGAINST. Without that, the score is 0 for every row and
   // showing "0/100" makes the card look broken. Use a heuristic: the
@@ -2178,9 +2179,12 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
             user is on free — quiet, no animation, always inline. */}
         <div className="flex items-center gap-2 text-[11px] min-w-0">
           <span className={`tabular-nums font-medium shrink-0 ${dl.cls}`}>{dl.text}</span>
-          {/* Field display on cards pulled 2026-05-27 alongside the Field
-              filter — same reason: target_fields coverage was thin/noisy
-              and read worse than nothing. Bring back together. */}
+          {/* Subject-tag chip stripped 2026-05-27 (user direction: "strip
+              all subject tags like artificial intelligence from entries").
+              target_fields stays in the DB for matching + filters; we just
+              don't render it as a per-card chip anymore. (Main had already
+              removed this alongside the Field filter — same reason: thin
+              coverage read worse than nothing.) */}
           {/* Thin-data hint — when the row was extracted from a sparse
               provider page (low completeness score), surface a quiet
               "verify on official site" note so users don't trust the
@@ -2229,28 +2233,16 @@ const ScholarCard = ({ s, onSelect, isBookmarked, onBookmark, status, onStatusCh
               the per-criteria why. */}
         </div>
 
-        {/* Sticker row — Full-ride + NEW pills share this row at the
-            bottom of the card body. NEW relocated here 2026-05-25 from
-            an absolute top-3/right-3 position that overlapped long
-            titles. Row renders when EITHER pill is present.
-            Quick-apply retired 2026-05-11 per user feedback — "most
-            quick-apply are only if you're already applying to a
-            whole-ass university." The underlying effort_level data
-            still drives sorting but isn't surfaced as a chip. */}
-        {(isFullRide || isNewScholarship(s.created_at)) && (
+        {/* Sticker row — NEW pill only. Full-ride pill stripped
+            2026-05-27 per user direction ("strip all full ride stickers
+            from entries"). coverage_type still drives ranking + curated
+            collections + filters, just not surfaced as a chip on cards. */}
+        {isNewScholarship(s.created_at) && (
           <div className="flex items-center gap-1.5 flex-wrap">
-            {isFullRide && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.16em] text-gold-dark bg-gold/10 ring-1 ring-gold/30 px-1.5 py-0.5 rounded">
-                <Award className="h-2.5 w-2.5" />
-                {ru ? "Полное" : "Full ride"}
-              </span>
-            )}
-            {isNewScholarship(s.created_at) && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 ring-1 ring-emerald-500/30 px-1.5 py-0.5 rounded">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                {ru ? "Новое" : "New"}
-              </span>
-            )}
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 ring-1 ring-emerald-500/30 px-1.5 py-0.5 rounded">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              {ru ? "Новое" : "New"}
+            </span>
           </div>
         )}
 

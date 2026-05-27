@@ -46,8 +46,11 @@ interface Props {
   showMeta?: boolean;
 }
 
+// "Full ride" label retired 2026-05-27. full_ride falls back to
+// "Funded" generic label which the card-render gate also filters out
+// in favor of the $-figure when one exists.
 const COVERAGE_LABEL: Record<string, string> = {
-  full_ride: "Full ride",
+  full_ride: "Funded",
   tuition_only: "Tuition",
   stipend: "Stipend",
   partial: "Partial",
@@ -133,9 +136,14 @@ export function InlineScholarshipCard({ scholarship: s, showMeta = true }: Props
                 award_amount_text: s.award_amount_text,
                 estimated_total_value_usd: null,
               }) || coverage;
-              return award ? (
+              // Full-ride label stripped 2026-05-27 from inline pills
+              // ("strip all full ride stickers from entries"). Show the
+              // $-figure when we have one, otherwise show nothing rather
+              // than the bare "Full ride" sticker.
+              if (!award || /^Full ride$/i.test(award) || award === "Funded") return null;
+              return (
                 <span className="text-[11px] text-foreground/70 whitespace-nowrap">· {award}</span>
-              ) : null;
+              );
             })()}
             <span className={`text-[11px] tabular-nums whitespace-nowrap inline-flex items-center gap-0.5 ${dl.cls}`}>
               <Calendar className="w-2.5 h-2.5 inline-block" /> {dl.text}

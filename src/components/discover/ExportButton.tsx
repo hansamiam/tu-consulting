@@ -21,7 +21,7 @@ export const ExportButton = ({ universities, language }: Props) => {
     const headers = [
       "University", "Country", "City", "Ranking", "Tuition (USD/yr)",
       "Language", "Foundation Year", "Gap Year", "Programs Count",
-      "Scholarships Count", "Full Ride Available",
+      "Scholarships Count",
     ];
 
     const rows = universities.map(u => [
@@ -35,7 +35,6 @@ export const ExportButton = ({ universities, language }: Props) => {
       u.gap_year_accepted ? "Yes" : "No",
       u.programs?.length || 0,
       u.scholarships?.length || 0,
-      u.scholarships?.some(s => s.coverage_type === "full_ride") ? "Yes" : "No",
     ]);
 
     const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");

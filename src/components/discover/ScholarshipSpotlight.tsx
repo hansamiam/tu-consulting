@@ -21,7 +21,7 @@ const t = {
   en: {
     title: "Scholarship Spotlight",
     subtitle: "Top funding opportunities across universities",
-    fullRide: "Full Ride",
+    fullRide: "Fully funded",
     stipend: "stipend",
     deadline: "Deadline",
     eligibility: "Eligibility",
@@ -87,9 +87,9 @@ export const ScholarshipSpotlight = ({ universities, language }: Props) => {
                 ) : (
                   <TooltipProvider><Tooltip><TooltipTrigger><ShieldAlert className="h-3 w-3 text-amber-500" /></TooltipTrigger><TooltipContent><p className="text-xs">Unverified</p></TooltipContent></Tooltip></TooltipProvider>
                 )}
-                {item.scholarship.coverage_type === "full_ride" && (
-                  <Badge className="bg-amber-500 text-white text-[10px]">{l.fullRide}</Badge>
-                )}
+                {/* Full ride badge stripped 2026-05-27 ("strip all
+                    full ride stickers from entries"). Sort order still
+                    pushes full_ride rows to top of the spotlight list. */}
               </div>
             </div>
             <p className="text-xs text-muted-foreground">{l.at} {item.uniName}</p>

@@ -64,7 +64,6 @@ import {
   cleanScholarshipName,
   cleanProvider,
   compactAward,
-  displayField,
   humanizeDegreeLabel,
 } from "@/lib/scholarshipFields";
 import { shortCountry } from "@/lib/countryAccent";
@@ -348,7 +347,7 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
       ? (ru ? ` Принимающая страна: ${cleanCountry}.` : ` Hosted in ${cleanCountry}.`)
       : "";
     const coverage =
-      s.coverage_type === "full_ride" ? (ru ? "Полное покрытие — обучение и проживание." : "Full ride covering tuition + living.")
+      s.coverage_type === "full_ride" ? (ru ? "Финансирование обучения и проживания." : "Fully funded — tuition + living.")
       : s.coverage_type === "tuition_only" ? (ru ? "Покрывает обучение." : "Covers tuition.")
       : (ru ? "Стипендия." : "Stipend.");
     const deadline = s.application_deadline
@@ -673,26 +672,16 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
             );
           })()}
           <div className="flex flex-wrap gap-2 mb-7">
-            {s.coverage_type && (
-              <span className="font-heading text-[11px] uppercase tracking-[0.18em] px-2.5 py-1 rounded-sm bg-gold/15 text-gold-dark font-semibold">
-                {s.coverage_type === "full_ride" ? t("Full ride", "Полное")
-                  : s.coverage_type === "tuition_only" ? t("Tuition only", "Только обучение")
-                  : t("Stipend", "Стипендия")}
-              </span>
-            )}
+            {/* Coverage + subject-field chips stripped 2026-05-27 (user
+                direction: "strip all full ride stickers and subject tags
+                like artificial intelligence from entries"). The funding
+                detail still shows further down the page in the dedicated
+                award/coverage section; underlying data stays in DB. */}
             {(s.target_degree_level ?? []).slice(0, 3).map((d) => (
               <span key={d} className="font-heading text-[11px] uppercase tracking-[0.18em] px-2.5 py-1 rounded-sm bg-muted/60 text-foreground/75 font-semibold">
                 {humanizeDegreeLabel(d)}
               </span>
             ))}
-            {(() => {
-              const fld = displayField(s.target_fields);
-              return fld ? (
-                <span key="field" className="font-heading text-[11px] uppercase tracking-[0.18em] px-2.5 py-1 rounded-sm bg-muted/60 text-foreground/75 font-semibold">
-                  {fld}
-                </span>
-              ) : null;
-            })()}
             {s.application_deadline && days !== null && (
               <span className={`inline-flex items-center gap-1.5 font-heading text-[11px] uppercase tracking-[0.18em] px-2.5 py-1 rounded-sm font-semibold ${
                 days <= 7 ? "bg-rose-500/15 text-rose-600 dark:text-rose-400" :
@@ -1522,7 +1511,7 @@ function buildFaqEntities(s: Scholarship, cleanedName?: string): object[] {
   // null falls through to the generic line.
   const cov = s.coverage_type;
   const coverageWord =
-    cov === "full_ride" || cov === "full_tuition" ? "a full ride covering tuition and living costs"
+    cov === "full_ride" || cov === "full_tuition" ? "full funding covering tuition and living costs"
     : cov === "tuition_only" ? "tuition costs"
     : cov === "stipend" || cov === "stipend_only" ? "a living stipend"
     : cov === "partial" ? "partial funding"

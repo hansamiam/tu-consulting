@@ -176,9 +176,8 @@ export const WatchlistDrawer = ({ universities, language }: WatchlistDrawerProps
                     <GraduationCap className="h-3 w-3" />
                     {uni.programs?.length || 0} programs
                   </Badge>
-                  {uni.scholarships?.some(s => s.coverage_type === "full_ride") && (
-                    <Badge className="text-xs bg-accent text-accent-foreground">Full Ride</Badge>
-                  )}
+                  {/* Full Ride badge stripped 2026-05-27 ("strip all
+                      full ride stickers from entries"). */}
                 </div>
                 {uni.website_url && (
                   <a href={uni.website_url} target="_blank" rel="noopener noreferrer"

@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { cleanScholarshipName, cleanProvider, displayField, compactAward } from "@/lib/scholarshipFields";
+import { cleanScholarshipName, cleanProvider, compactAward } from "@/lib/scholarshipFields";
 import { shortCountry } from "@/lib/countryAccent";
 
 /**
@@ -98,7 +98,7 @@ const COPY = {
     monthsLeft: (n: number) => `${n} month${n === 1 ? "" : "s"}`,
     rolling: "Rolling deadline",
     closed: "Closed",
-    coverage: { full_ride: "Full ride", tuition_only: "Tuition", stipend: "Stipend", partial: "Partial", other: "Funding" },
+    coverage: { full_ride: "Fully funded", tuition_only: "Tuition", stipend: "Stipend", partial: "Partial", other: "Funding" },
     featured: "FEATURED",
     viewDetails: "View details",
     share: "Share",
@@ -130,7 +130,7 @@ const COPY = {
     },
     rolling: "Без жёсткого дедлайна",
     closed: "Закрыто",
-    coverage: { full_ride: "Полное", tuition_only: "Обучение", stipend: "Стипендия", partial: "Частичное", other: "Финансирование" },
+    coverage: { full_ride: "Финансирование", tuition_only: "Обучение", stipend: "Стипендия", partial: "Частичное", other: "Финансирование" },
     featured: "ИЗБРАННОЕ",
     viewDetails: "Подробнее",
     share: "Поделиться",
@@ -282,24 +282,23 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
     award_amount_text: r.award_amount_text,
     estimated_total_value_usd: r.estimated_total_value_usd,
   });
-  const coverageLabel = (t.coverage as Record<string, string>)[r.coverage_type] ?? t.coverage.other;
-  // Headline: prefer compactAward (it already handles $K formatting +
-  // labels), then USD-only as a safety net (if compactAward returned
-  // null somehow), then coverage label.
-  const headlineValue: string | null = awardLabel ?? fmtUsd ?? coverageLabel;
-  // Subtitle: show coverage label beside the headline ONLY when the
-  // headline is a $-figure (so the user sees "$80K · Full ride"). When
-  // the headline IS the coverage label, suppress to avoid "Stipend ·
-  // Stipend" duplication.
-  const headlineIsDollar = !!awardLabel && /^\$/.test(awardLabel);
-  const showSubtitle = headlineIsDollar;
+  // Coverage labels retired from the card sticker (2026-05-27 user
+  // direction: "strip all full ride stickers"). The $-figure / compact
+  // award label is still shown when we have one; we no longer fall back
+  // to "Full ride" / "Stipend" / etc. as either headline or subtitle.
+  // coverage_type stays in the DB and still drives ranking + filters.
+  const headlineValue: string | null = awardLabel && !/^Full ride$/i.test(awardLabel)
+    ? awardLabel
+    : fmtUsd;
   const cleanedName = cleanScholarshipName(r.scholarship_name);
   const cleanedProvider = cleanProvider(r.provider_name);
   const hue = hueFromName(cleanedProvider || cleanedName);
 
-  // Tags row — country + level + field. Coverage is omitted here on
-  // purpose: it's already shown above as the subtitle to the funding
-  // amount, and seeing "Full ride" twice on the same card looks noisy.
+  // Tags row — country + level. Coverage + subject field were stripped
+  // 2026-05-27 (user direction: "strip all full ride stickers" and
+  // subject tags like "Artificial Intelligence" from entries). The
+  // underlying coverage_type / target_fields data stays in the DB; we
+  // just don't surface them as per-card chips anymore.
   const tags: { icon: React.ReactNode; label: string; tone?: "primary" | "muted" }[] = [];
   if (r.host_country) tags.push({ icon: <MapPin className="w-3 h-3" />, label: shortCountry(r.host_country) });
   if (r.target_degree_level && r.target_degree_level.length > 0) {
@@ -319,8 +318,6 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
     const levels = sorted.slice(0, 3).map((l) => (t.levels as Record<string, string>)[l.toLowerCase()] ?? l);
     tags.push({ icon: <GraduationCap className="w-3 h-3" />, label: levels.join(" · ") });
   }
-  const fld = displayField(r.target_fields);
-  if (fld) tags.push({ label: fld, icon: null as unknown as React.ReactNode });
 
   const detailPath = `/scholarships/${r.scholarship_id}`;
 
@@ -396,9 +393,6 @@ export function ScholarshipCard({ row: r, language = "en", onShare, index = 0, c
             <span className="font-heading font-bold text-xl sm:text-2xl tabular-nums text-foreground tracking-tight leading-none truncate">
               {headlineValue}
             </span>
-            {showSubtitle && (
-              <span className="text-xs text-muted-foreground truncate">· {coverageLabel}</span>
-            )}
           </div>
           {/* Long descriptive award text was rendered here previously
               (line-clamp-2 muted line) but produced wildly inconsistent

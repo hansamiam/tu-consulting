@@ -53,7 +53,7 @@ const deriveDescription = (s: SelectionTileScholarship, lang: Lang): string => {
   }
   const ru = lang === "ru";
   const cov = s.coverage_type;
-  if (cov === "full_ride") return ru ? "Полное финансирование с проживанием и стипендией." : "Fully-funded award covering tuition, living costs, and travel.";
+  if (cov === "full_ride") return ru ? "Финансирование с проживанием и стипендией." : "Award covering tuition, living costs, and travel.";
   if (cov === "tuition_only") return ru ? "Покрытие стоимости обучения." : "Tuition support for an accredited degree programme.";
   if (cov === "stipend") return ru ? "Ежемесячная стипендия на период обучения." : "Monthly stipend support across the duration of study.";
   if (cov === "partial") return ru ? "Частичное финансирование обучения." : "Partial funding toward your degree costs.";
