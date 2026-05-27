@@ -47,6 +47,7 @@ interface ScholarshipLite {
   early_deadline?: string | null;
   early_decision_type?: string | null;
   deadline_type: string | null;
+  is_deadline_inferred?: boolean | null;
   target_degree_level: string[] | null;
   target_fields: string[] | null;
   citizenship_requirements: string | null;
@@ -79,9 +80,23 @@ interface Props {
   lang?: Lang;
 }
 
-const fmtDays = (d: string | null, lang: Lang): { text: string; tone: "danger" | "warn" | "neutral" } => {
+const MONTH_LONG_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MONTH_LONG_RU = ["январе","феврале","марте","апреле","мае","июне","июле","августе","сентябре","октябре","ноябре","декабре"];
+
+const fmtDays = (d: string | null, lang: Lang, isInferred?: boolean | null): { text: string; tone: "danger" | "warn" | "neutral" } => {
   const ru = lang === "ru";
   if (!d) return { text: ru ? "Без дедлайна" : "Rolling deadline", tone: "neutral" };
+  // 2026-05-27: inferred annual cycle — date IS present but was bumped
+  // forward from a past cycle. Show as "Typically [Month] [Year]" so
+  // users know to verify before applying.
+  if (isInferred) {
+    const dt = new Date(d);
+    const month = (ru ? MONTH_LONG_RU : MONTH_LONG_EN)[dt.getMonth()] ?? "";
+    return {
+      text: ru ? `Обычно в ${month} ${dt.getFullYear()}` : `Typically ${month} ${dt.getFullYear()}`,
+      tone: "neutral",
+    };
+  }
   const days = Math.ceil((new Date(d).getTime() - Date.now()) / 86400000);
   if (days < 0)  return { text: ru ? "Закрыто" : "Closed", tone: "neutral" };
   if (days === 0) return { text: ru ? "Закрывается сегодня" : "Closes today", tone: "danger" };
@@ -102,7 +117,7 @@ export const ExpandedScholarshipDialog = ({ s, profile, onClose, onApply, onSave
   const cleanedName = cleanScholarshipName(s.scholarship_name);
   const cleanedProv = cleanProvider(s.provider_name);
   const country = s.host_country ? shortCountry(s.host_country) : null;
-  const dl = fmtDays(s.application_deadline, lang);
+  const dl = fmtDays(s.application_deadline, lang, s.is_deadline_inferred);
   // 2026-05-26: US undergrad rows carry a second early-round deadline
   // (REA/EA/ED/SCEA — type lives in early_decision_type). When present,
   // surface it alongside the regular deadline so students see both rather
