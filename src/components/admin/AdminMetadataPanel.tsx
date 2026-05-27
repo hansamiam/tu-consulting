@@ -3,6 +3,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isAdminUser } from "@/lib/adminMode";
 import { InlineEdit } from "./InlineEdit";
 import { useScholarshipEdit } from "./useScholarshipEdit";
+import { CoverImageEditor } from "./CoverImageEditor";
+import { DeleteScholarshipButton } from "./DeleteScholarshipButton";
 
 /**
  * Structured-field editor surfaced ONLY when an admin has flipped on
@@ -31,11 +33,15 @@ interface ScholarshipFields {
   target_demographics: string[] | null;
   eligible_countries: string[] | null;
   citizenship_requirements: string | null;
+  cover_image_url?: string | null;
+  is_published?: boolean | null;
 }
 
 interface Props {
   scholarship: ScholarshipFields;
   onSaved: (patch: Partial<ScholarshipFields>) => void;
+  onDeleted?: () => void;
+  scholarshipName?: string;
 }
 
 const COVERAGE_OPTIONS = [
@@ -48,7 +54,7 @@ const COVERAGE_OPTIONS = [
   { value: "unknown", label: "Unknown" },
 ];
 
-export const AdminMetadataPanel = ({ scholarship, onSaved }: Props) => {
+export const AdminMetadataPanel = ({ scholarship, onSaved, onDeleted, scholarshipName }: Props) => {
   const { user } = useAuth();
   const { isEditing } = useEditMode();
   const { saving, saveScholarshipField } = useScholarshipEdit(scholarship.scholarship_id);
@@ -149,9 +155,28 @@ export const AdminMetadataPanel = ({ scholarship, onSaved }: Props) => {
             </InlineEdit>
           </Row>
         </div>
-        <p className="text-[11px] text-foreground/60 mt-4">
-          Inline-edit prose (title, eligibility, how-to-win, etc.) directly in the article below by clicking the highlighted text. Changes here are saved per field with full audit log.
-        </p>
+
+        <div className="mt-5 pt-5 border-t border-amber-400/40">
+          <p className="text-[10.5px] uppercase tracking-[0.14em] font-semibold text-foreground/55 mb-2">Cover image</p>
+          <CoverImageEditor
+            scholarshipId={scholarship.scholarship_id}
+            currentUrl={scholarship.cover_image_url ?? null}
+            onSaved={(next) => onSaved({ cover_image_url: next })}
+          />
+        </div>
+
+        <div className="mt-5 pt-5 border-t border-amber-400/40 flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-[11px] text-foreground/60 max-w-md">
+            Inline-edit prose (title, eligibility, how-to-win, etc.) directly in the article below by clicking the highlighted text. Changes here are saved per field with full audit log.
+          </p>
+          {onDeleted && (
+            <DeleteScholarshipButton
+              scholarshipId={scholarship.scholarship_id}
+              scholarshipName={scholarshipName ?? "this scholarship"}
+              onDeleted={onDeleted}
+            />
+          )}
+        </div>
       </div>
     </section>
   );

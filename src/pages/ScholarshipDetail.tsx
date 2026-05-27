@@ -624,8 +624,11 @@ const ScholarshipDetail = ({ language = "en" }: ScholarshipDetailProps) => {
           target_demographics: (s as Scholarship & { target_demographics?: string[] | null }).target_demographics ?? null,
           eligible_countries: s.eligible_countries,
           citizenship_requirements: s.citizenship_requirements,
+          cover_image_url: (s as Scholarship & { cover_image_url?: string | null }).cover_image_url ?? null,
         }}
         onSaved={(patch) => setS({ ...s, ...patch } as Scholarship)}
+        onDeleted={() => navigate(ru ? "/discover/ru" : "/discover")}
+        scholarshipName={s.scholarship_name}
       />
 
       {/* HERO — editorial masthead matching the strategy-report magazine.

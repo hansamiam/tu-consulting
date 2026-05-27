@@ -89,6 +89,9 @@ interface Props {
   onSave: () => void;
   isBookmarked: boolean;
   lang?: Lang;
+  /** Admin-only: fired after a successful delete so the parent can
+   *  close the dialog AND refetch its catalog if it wants to. */
+  onDeleted?: () => void;
 }
 
 const MONTH_LONG_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -145,7 +148,7 @@ export const ExpandedScholarshipDialog = (props: Props) => {
   );
 };
 
-const DialogBody = ({ s: sProp, profile, onClose, onApply, onSave, isBookmarked, lang = "en" }: Props) => {
+const DialogBody = ({ s: sProp, profile, onClose, onApply, onSave, isBookmarked, lang = "en", onDeleted }: Props) => {
   // 2026-05-27: admin inline-edit holds optimistic local state so changes
   // appear in the dialog immediately. The parent (Discover) will refetch
   // its catalog on next reload — so the local override is per-open-session.
@@ -349,8 +352,11 @@ const DialogBody = ({ s: sProp, profile, onClose, onApply, onSave, isBookmarked,
                 target_demographics: null,
                 eligible_countries: s.eligible_countries,
                 citizenship_requirements: s.citizenship_requirements,
+                cover_image_url: s.cover_image_url ?? null,
               }}
               onSaved={(patch) => setS({ ...s, ...patch } as ScholarshipLite)}
+              onDeleted={() => { onClose(); onDeleted?.(); }}
+              scholarshipName={s.scholarship_name}
             />
             {/* Full canonical_overview — Sam asked the banner to show
                 only the first sentence and to let the rest reveal here
