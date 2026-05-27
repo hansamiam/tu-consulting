@@ -440,9 +440,22 @@ const scoreScholarship = (s: Scholarship, p: Profile, semanticSimilarity?: numbe
   // matchesNationality handles country/adjectival aliasing + word
   // boundaries — see its docstring for the false-positive cases
   // ("Niger" vs "Nigeria", "Iraqi" vs "Iraq") it guards against.
-  if (s.eligible_countries && p.country) {
-    const list = s.eligible_countries.map(c => c.toLowerCase());
-    const openToAll = list.some(c => c.includes("all countries") || c.includes("all nationalities"));
+  if (s.eligible_countries && s.eligible_countries.length > 0 && p.country) {
+    // 2026-05-27 (PM): hard-eligibility incident — a Kazakh user saw
+    // Commonwealth Scholarships recommended (Commonwealth excludes
+    // non-Commonwealth countries). Root cause was two-fold:
+    //   1. The `openToAll` check matched only "all countries" / "all
+    //      nationalities" — it missed the literal "any" string that
+    //      most rows actually use (Harvard/MIT/Princeton/etc all carry
+    //      eligible_countries=["any"]). That mis-classified them as
+    //      not_eligible for everyone.
+    //   2. The filter at line ~3519 was opt-in, so not_eligible rows
+    //      were merely score-demoted, not hidden. They still surfaced.
+    // Fix:
+    //   - Use isInclusive() (already covers "any"/"all"/"worldwide"/
+    //     "open to international"/etc) for openToAll detection.
+    //   - Pair with the default-on hard filter below.
+    const openToAll = s.eligible_countries.some(c => isInclusive(c));
     const specific = matchesNationality(p.country, s.eligible_countries);
     if (specific) { match += 15; reasons.push(`Open to ${p.country} nationals`); }
     else if (openToAll) { match += 7; reasons.push("Open to all nationalities"); }
@@ -3516,7 +3529,16 @@ const Discover = ({ language = "en" }: Props) => {
         list = list.filter(s => s.host_country && canonicalCountry(s.host_country) === filters.hostCountry);
       }
     }
-    if (filters.onlyEligible) list = list.filter(s => s.eligibility === "eligible" || s.eligibility === "likely");
+    // 2026-05-27 (PM): hard eligibility filter, always-on. `not_eligible`
+    // is set only when we have HIGH confidence the user is excluded:
+    // a non-empty eligible_countries list, a user country on record, no
+    // nationality match, and the list isn't open-to-all. Showing a row
+    // we know the user can't apply to is a worse failure mode than
+    // hiding a row whose data we're unsure about — eligibility should
+    // never be a soft demotion. `filters.onlyEligible` is retained on
+    // the state object as a no-op for backward URL/preference compat;
+    // we hide ineligible rows unconditionally.
+    list = list.filter(s => s.eligibility !== "not_eligible");
     if (filters.closingSoon) list = list.filter(s => { const d = s.application_deadline ? Math.ceil((new Date(s.application_deadline).getTime() - Date.now()) / 86400000) : null; return d !== null && d > 0 && d <= 90; });
     if (!showHidden) list = list.filter(s => !hidden.has(s.scholarship_id));
     if (sortBy === "deadline") {
