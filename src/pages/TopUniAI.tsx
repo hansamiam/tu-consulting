@@ -191,6 +191,22 @@ const clampScore = (raw: string, max: number, allowDecimal: boolean): string => 
   return cleaned;
 };
 
+/** Block the Step 3 Next button when the "Other" major free-text input
+ *  is obvious garbage — numbers only, punctuation only, or fewer than
+ *  three letter chars. Permissive on purpose: real majors include
+ *  multilingual labels ("Архитектура", "经济学"), single-word entries
+ *  ("Business"), and unusual specialities ("Quantum Biophysics"), so
+ *  the gate only blocks the keyboard-mash / number-only / sub-3-char
+ *  case. Anything mostly-letterish slips through to the brief generator
+ *  where dictionary checks would do more harm than good (false reject
+ *  on legitimate non-English fields). */
+const isPlausibleMajor = (raw: string): boolean => {
+  const trimmed = raw.trim();
+  if (trimmed.length < 3) return false;
+  const letterMatches = trimmed.match(/\p{L}/gu);
+  return !!letterMatches && letterMatches.length >= 3;
+};
+
 const loadDraft = (): Partial<WizardDraft> | null => {
   try {
     const raw = localStorage.getItem(WIZARD_DRAFT_KEY);
@@ -1528,7 +1544,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                       <Button
                         variant="gold"
                         onClick={() => goToStep(4)}
-                        disabled={!major.trim()}
+                        disabled={!isPlausibleMajor(major)}
                       >
                         {t("Next", "Далее")} <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
