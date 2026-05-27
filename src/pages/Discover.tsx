@@ -2598,15 +2598,14 @@ const ReqRow = ({ label, status, detail }: {
 /* ─── Inline animated stat ───────────────────────────────────────────── */
 /* ─── Section header ─────────────────────────────────────────────────── */
 const SectionHeader = ({ title, subtitle }: {
-  title: string; subtitle: string; count?: number; accentClass?: string;
+  title: string; subtitle?: string; count?: number; accentClass?: string;
 }) => (
-  // Eyebrow row (kicker + dot) dropped entirely — the uppercase mono
-  // tracked label + leading dot is the AI-template stack the no-AI-slop
-  // headers feedback bans. Title carries the section on its own.
   <Reveal className="flex items-end justify-between gap-4 mb-4 pb-3 border-b border-border/60">
     <div className="min-w-0">
       <h2 className="font-heading font-bold text-lg sm:text-xl text-foreground leading-tight tracking-tight">{title}</h2>
-      <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{subtitle}</p>
+      {subtitle ? (
+        <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{subtitle}</p>
+      ) : null}
     </div>
   </Reveal>
 );
@@ -4916,8 +4915,7 @@ const Discover = ({ language = "en" }: Props) => {
                               {sections.strong.length > 0 && (
                                 <section>
                                   <SectionHeader
-                                    title={t("Selections for you", "Подборка для вас")}
-                                    subtitle={t("Programs whose audience overlaps with your profile.", "Программы, чья аудитория совпадает с вашим профилем.")} />
+                                    title={t("Selections for you", "Подборка для вас")} />
                                   {renderSectionGrid("strong", sections.strong)}
                                 </section>
                               )}
@@ -4925,8 +4923,7 @@ const Discover = ({ language = "en" }: Props) => {
                               {(sections.competitive.length > 0 || sections.stretch.length > 0) && (
                                 <section>
                                   <SectionHeader
-                                    title={t("More flagship programs", "Больше флагманских программ")}
-                                    subtitle={t("More than a few ways to fund your education.", "Не один способ профинансировать обучение.")} />
+                                    title={t("Catalog", "Каталог")} />
                                   {renderSectionGrid("more", [...sections.competitive, ...sections.stretch])}
                                 </section>
                               )}
