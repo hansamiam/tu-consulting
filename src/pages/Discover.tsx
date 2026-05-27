@@ -95,6 +95,7 @@ import { useSemanticScholarshipMatch } from "@/hooks/useSemanticScholarshipMatch
 import { useApplicationTracker } from "@/hooks/useApplicationTracker";
 import { useScholarshipTracking, useTrackView } from "@/hooks/useScholarshipTracking";
 import { useInferredCountry } from "@/hooks/useInferredCountry";
+import { mapGradeLevelToTargetDegree } from "@/lib/topuniIntakeProjection";
 import { Lock } from "lucide-react";
 import { toast } from "sonner";
 
@@ -3095,7 +3096,17 @@ const Discover = ({ language = "en" }: Props) => {
     const apply = () => {
       const stored = getStoredProfile();
       if (!stored?.nationality) return;
-      const rawLevels = (stored.targetDegree || "")
+      // Re-derive at read time from educationLevel (which is preserved
+      // verbatim) so any stale stored targetDegree from before the
+      // 2026-05-27 grade-level-mapping fix gets repaired without
+      // forcing the user to re-run the wizard. educationLevel wins
+      // because it's the authoritative input; targetDegree was always
+      // a derived value.
+      const derivedTarget = stored.educationLevel
+        ? mapGradeLevelToTargetDegree(stored.educationLevel)
+        : "";
+      const rawSource = derivedTarget || stored.targetDegree || "";
+      const rawLevels = rawSource
         .split(/[,/]+/).map(s => s.trim()).filter(Boolean);
       const canonicalize = (lvl: string) => {
         const l = lvl.toLowerCase();
