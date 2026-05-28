@@ -909,17 +909,14 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         })()}
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Current stage", "Текущий этап")} <span className="text-rose-600 font-bold">*</span></Label>
+                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Degree you're applying for", "На какую степень поступаешь")} <span className="text-rose-500 font-bold ml-0.5">*</span></Label>
                         <Select value={gradeLevel} onValueChange={setGradeLevel}>
-                          <SelectTrigger className="h-11 bg-card"><SelectValue placeholder={t("Where are you in school right now?", "На каком ты этапе?")} /></SelectTrigger>
+                          <SelectTrigger className="h-11 bg-card"><SelectValue placeholder={t("Pick your target degree", "Выбери целевую степень")} /></SelectTrigger>
                           <SelectContent>
                             {([
-                              ["High School", "Школа"],
-                              ["Gap Year", "Gap Year"],
-                              ["Bachelor's", "Бакалавр"],
-                              ["Master's", "Магистр"],
-                              ["PhD applicant", "Аспирант / PhD"],
-                              ["Working professional", "Работаю"],
+                              ["Bachelor's",    "Бакалавриат"],
+                              ["Master's",      "Магистратура"],
+                              ["PhD applicant", "PhD"],
                             ] as const).map(([val, ruLabel]) => (
                               <SelectItem key={val} value={val}>{t(val, ruLabel)}</SelectItem>
                             ))}
@@ -927,70 +924,11 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         </Select>
                       </div>
                     </div>
-                    {/* First-in-family chip is identity context — drives
-                        cultural-context.firstAbroadFramingFor() in the
-                        brief (CIS = "leaving home" angle, US/LatAm =
-                        "first-gen college"). Kept on the Identity step.
-                        GPA + the three test scores were split off to
-                        Step 2 (Academics) on 2026-05-24 to relieve
-                        Step 1's vertical density. */}
-                    <div className="pt-2 space-y-5">
-                      <div>
-                        <Label className="text-xs uppercase tracking-wider font-medium">{t("First in your family to apply abroad?", "Первый в семье поступает за рубеж?")}</Label>
-                        <p className="text-muted-foreground text-xs mt-1 mb-3">{t("Pick one — optional.", "Выбери один — по желанию.")}</p>
-                        <div className="flex flex-wrap gap-2">
-                          {FIRST_ABROAD_CHIPS.map((c) => {
-                            const selected = firstToApplyAbroad === c.token;
-                            return (
-                              <button
-                                key={c.token}
-                                type="button"
-                                onClick={() => setFirstToApplyAbroad(selected ? undefined : c.token)}
-                                aria-pressed={selected}
-                                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[36px] ${
-                                  selected
-                                    ? "bg-gold/15 text-gold-dark border-gold"
-                                    : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
-                                }`}
-                              >
-                                {selected && <Check className="w-3 h-3" />}
-                                {firstAbroadLabel(c.token, language === "ru" ? "ru" : "en")}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                      {/* Foreign-languages chip set — moved here 2026-05-25
-                          (was on Step 2 Scores; didn't belong with test
-                          scores). Identity context; chip set deliberately
-                          omits English + CIS native languages so anything
-                          picked IS distinctive. */}
-                      <div>
-                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Foreign languages you're learning or speak", "Иностранные языки")}</Label>
-                        <p className="text-muted-foreground text-xs mt-1 mb-3">{t("Beyond your native and English. Pick all that apply — optional.", "Помимо родного и английского. Отметь все — по желанию.")}</p>
-                        <div className="flex flex-wrap gap-2">
-                          {LANGUAGE_CHIPS.map((c) => {
-                            const selected = foreignLanguages.includes(c.token);
-                            return (
-                              <button
-                                key={c.token}
-                                type="button"
-                                onClick={() => toggleForeignLanguage(c.token)}
-                                aria-pressed={selected}
-                                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[36px] ${
-                                  selected
-                                    ? "bg-gold/15 text-gold-dark border-gold"
-                                    : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
-                                }`}
-                              >
-                                {selected && <Check className="w-3 h-3" />}
-                                {languageLabel(c.token, language === "ru" ? "ru" : "en")}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
+                    {/* 2026-05-29 wizard rewrite per Samuel:
+                        First-in-family chip and foreign-languages chips
+                        cut from Step 1. They added friction without
+                        load-bearing intake signal. State hooks still
+                        exist for backward-compat with cached drafts. */}
                     {/* Account sign-up callout — collapsed-by-default
                         invitation to convert the email field into a
                         full account so the user's strategy report
@@ -1892,66 +1830,16 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                             )}
                           </div>
                         )}
-                        <Textarea
-                          id="extracurriculars"
-                          placeholder={
-                            isPhDApp
-                              ? t(
-                                  "e.g. 2 publications in computational biology, RA in Dr. X's lab at NU, targeting Stanford CS-AI faculty",
-                                  "напр. 2 публикации по биоинформатике, исследователь в лаборатории д-ра X в НУ, целюсь в группу CS-AI Стэнфорда",
-                                )
-                              : isMastersApp
-                              ? t(
-                                  "e.g. 2 yrs analyst at Halyk Finance, led migration to Snowflake; thesis project on credit-risk ML",
-                                  "напр. 2 года аналитиком в Halyk Finance, провёл миграцию на Snowflake; дипломный проект по ML кредитного риска",
-                                )
-                              : t(
-                                  "e.g. tutored my cousins for 2 years, ran a small reselling IG, IMO bronze, photography",
-                                  "напр. репетировал сестру 2 года, веду IG-магазин, бронза IMO, фотография",
-                                )
-                          }
-                          value={extracurriculars}
-                          onChange={(e) => setExtracurriculars(e.target.value)}
-                          className="min-h-[90px] resize-none bg-card"
-                        />
+                        {/* 2026-05-29 — extracurriculars textarea dropped.
+                            Grad applicants get structured chips on Step 2
+                            (Quant/Work/Research) instead. Bachelor applicants
+                            keep the EC chip set above. */}
                       </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="background" className="text-xs uppercase tracking-wider font-medium">{t("How would your friends describe you?", "Как твои друзья описали бы тебя?")}</Label>
-                        {/* Personality-eliciting placeholder per the
-                            covert-intake convention — examples model an
-                            introvert/extrovert/quirk shape so the brief
-                            generator can pick up personality signal
-                            without a separate explicit question. */}
-                        <Textarea
-                          id="background"
-                          placeholder={t(
-                            "e.g. introvert with strangers but the loudest in the group chat; shows up early; obsessed with one weird hobby",
-                            "напр. интроверт с незнакомыми, но самый громкий в чате; всегда прихожу заранее; одержим(а) одним странным хобби",
-                          )}
-                          value={background}
-                          onChange={(e) => setBackground(e.target.value)}
-                          className="min-h-[70px] resize-none bg-card"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="namedSchools" className="text-xs uppercase tracking-wider font-medium">{t("Dream school?", "Вуз мечты?")}</Label>
-                        {/* Single dream school + the reason, in one
-                            standardized line. The "—" in the placeholder
-                            teaches a `School — why` shape the brief
-                            generator parses cleanly. Singular by design:
-                            we want depth on ONE pick, not a list of
-                            three names without context. */}
-                        <Textarea
-                          id="namedSchools"
-                          placeholder={t(
-                            "e.g. Stanford — for the Knight-Hennessy Scholars program and the proximity to Bay Area startups",
-                            "напр. Stanford — ради программы Knight-Hennessy и близости к стартапам Bay Area",
-                          )}
-                          value={namedSchools}
-                          onChange={(e) => setNamedSchools(e.target.value)}
-                          className="min-h-[70px] resize-none bg-card"
-                        />
-                      </div>
+                      {/* 2026-05-29 — Background + Dream School textareas
+                          dropped per Samuel's wizard rewrite spec. They
+                          were covert-intake personality signals that the
+                          new structured intake covers more cleanly. State
+                          hooks remain for cached-draft backward compat. */}
                     </div>
 
                     {/* Generate handler shared by Skip + Generate buttons.
