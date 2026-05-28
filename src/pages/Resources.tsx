@@ -61,6 +61,15 @@ const FREE_RESOURCES: ResourceCard[] = [
     icon: Compass,
     pill: "New",
   },
+  {
+    slug: "personal-statement-workbook",
+    title: "The Personal Statement Workbook",
+    blurb: "Not a kit of \"winning essays\". The 5-move architecture of statements that land + 15 prompts + 10 phrases that auto-bin you.",
+    href: "/personal-statement-workbook",
+    format: "14-page workbook",
+    icon: FileSignature,
+    pill: "New",
+  },
 ];
 
 const PAID_RESOURCES: ResourceCard[] = [

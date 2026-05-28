@@ -43,6 +43,15 @@ export const PRODUCT_CATALOG: ProductCatalogEntry[] = [
     pricing: "free",
     status: "draft",
   },
+  {
+    slug: "personal-statement-workbook",
+    route: "/personal-statement-workbook",
+    title: "The Personal Statement Workbook",
+    blurb: "Not a kit of \"winning essays\" to copy. The 5-move architecture of statements that land + 15 prompts that pull your version of each move + 10 phrases that auto-bin you.",
+    format: "14-page workbook",
+    pricing: "free",
+    status: "draft",
+  },
   // Paid
   {
     slug: "recommendation-letter-asks",
