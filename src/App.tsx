@@ -69,6 +69,7 @@ const AcademyResources     = lazy(() => import("./pages/AcademyResources"));
 // AcademyLive page file kept in tree as scratch; not imported.
 const LeadMagnet           = lazy(() => import("./pages/LeadMagnet"));
 const UnderratedScholarships = lazy(() => import("./pages/UnderratedScholarships"));
+const Resources             = lazy(() => import("./pages/Resources"));
 const CountryGuide         = lazy(() => import("./pages/CountryGuide"));
 const NotFound             = lazy(() => import("./pages/NotFound"));
 const PaymentCanceled      = lazy(() => import("./pages/PaymentCanceled"));
@@ -266,6 +267,7 @@ const App = () => (
           <Route path="/intro" element={<LeadMagnet language="en" />} />
           <Route path="/intro/ru" element={<LeadMagnet language="ru" />} />
           <Route path="/underrated-scholarships" element={<UnderratedScholarships />} />
+          <Route path="/resources" element={<Resources />} />
           {/* Backward-compat — /lesson was renamed to /intro 2026-05-27.
               Keep redirects so shared links don't 404. */}
           <Route path="/lesson"    element={<Navigate to="/intro" replace />} />
