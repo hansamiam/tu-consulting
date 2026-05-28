@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthDialog } from "@/components/auth/AuthDialog";
+import { RESOURCES_VISIBLE } from "@/lib/featureFlags";
 // ActivityBell removed from nav 2026-05-09 — it duplicated workspace
 // state. The bell-feed lives inside /pipeline as ActivityFeedSection
 // (same hooks, surfaced where users manage their commitments).
@@ -92,12 +93,16 @@ const Navigation = ({ language = "en", variant = "default", overlayThreshold = 8
   // Workspace inside the navItems array, which made it shift
   // position based on auth state and visually compete with the
   // Sign-in button when both could appear.
-  const navItems = [
+  // Resources hidden by default — gated on VITE_RESOURCES_VISIBLE
+  // while the new digital-products catalog is in preview.
+  const baseNavItems = [
     { label: "TopUni AI",                                     path: isRussian ? "/topuni-ai/ru" : "/topuni-ai" },
     { label: isRussian ? "Подбор"       : "Discover",          path: isRussian ? "/discover/ru" : "/discover" },
     { label: isRussian ? "Академия"    : "Academy",           path: isRussian ? "/academy/ru" : "/academy" },
-    { label: isRussian ? "Ресурсы"     : "Resources",          path: "/resources" },
   ];
+  const navItems = RESOURCES_VISIBLE
+    ? [...baseNavItems, { label: isRussian ? "Ресурсы" : "Resources", path: "/resources" }]
+    : baseNavItems;
 
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname === path;

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, FileDown, MapPin, GraduationCap, Quote, Target, Compass } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import PreviewBanner from "@/components/PreviewBanner";
 import {
   UNDERRATED_SCHOLARSHIPS,
   TIER_LOOKUP,
@@ -75,6 +76,7 @@ const UnderratedScholarships = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navigation language="en" variant="overlay" />
+      <PreviewBanner />
       <main className="flex-1 pt-28 pb-16 px-6 print:pt-4 print:pb-4 print:px-6">
         <div className="max-w-3xl mx-auto">
           <Link

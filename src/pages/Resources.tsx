@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, FileText, GraduationCap, FileSignature, Mail, Lock, Brain, CheckSquare } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import PreviewBanner from "@/components/PreviewBanner";
 
 /**
  * /resources — TopUni's public discovery surface for downloadable
@@ -128,6 +129,7 @@ const Resources = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navigation language="en" variant="overlay" />
+      <PreviewBanner />
       <main className="flex-1 pt-28 pb-16 px-6">
         <div className="max-w-5xl mx-auto">
           <Link

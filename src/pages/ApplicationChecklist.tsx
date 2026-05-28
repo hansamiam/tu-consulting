@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, FileDown, Lock, Quote, CheckSquare, AlertTriangle, MessageSquare, Scissors } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import PreviewBanner from "@/components/PreviewBanner";
 import {
   NIGHT_BEFORE_CHECK,
   PRE_SUBMISSION_CHECK,
@@ -24,6 +25,7 @@ const ApplicationChecklist = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navigation language="en" variant="overlay" />
+      <PreviewBanner />
       <main className="flex-1 pt-28 pb-16 px-6 print:pt-4 print:pb-4">
         <div className="max-w-3xl mx-auto">
           <Link
