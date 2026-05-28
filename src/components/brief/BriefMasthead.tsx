@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { Crown, Share2, Printer, FileDown, Loader2 } from "lucide-react";
+import { Crown, Share2, FileDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -222,25 +222,33 @@ export function BriefMasthead({
             size="sm"
             onClick={handlePrint}
             disabled={isStreaming}
-            className="gap-1.5 h-9"
+            className="gap-1.5 h-9 border-gold-dark/40 hover:bg-gold/10"
             data-print-hide
-            title={t("Print or save as PDF via your browser", "Печать или PDF через браузер", isRu)}
+            title={t(
+              "Opens your browser's print dialog — choose 'Save as PDF' for download",
+              "Открывает диалог печати — выберите «Сохранить как PDF»",
+              isRu,
+            )}
           >
-            <Printer className="w-3.5 h-3.5" />
-            {t("Print", "Печать", isRu)}
+            <FileDown className="w-3.5 h-3.5" />
+            {t("Save as PDF", "Сохранить PDF", isRu)}
           </Button>
-          {onDownloadPdf && (
+          {/* Pro upsell — kept for the future server-side puppeteer
+              render that will produce a branded multi-page PDF without
+              needing the user's browser print dialog. Until then the
+              button is hidden so we don't promise a feature we can't
+              deliver; the Save as PDF button above gets users a working
+              download today. */}
+          {onDownloadPdf && isPro && (
             <Button
-              variant={isPro ? "outline" : "gold"}
+              variant="outline"
               size="sm"
               onClick={onDownloadPdf}
               disabled={isStreaming}
               className="gap-1.5 h-9"
             >
-              {isPro ? <FileDown className="w-3.5 h-3.5" /> : <Crown className="w-3.5 h-3.5" />}
-              {isPro
-                ? t("Download PDF", "Скачать PDF", isRu)
-                : t("PDF · Pro", "PDF · Pro", isRu)}
+              <Crown className="w-3.5 h-3.5" />
+              {t("Branded PDF · Pro", "Брендированный PDF · Pro", isRu)}
             </Button>
           )}
         </div>

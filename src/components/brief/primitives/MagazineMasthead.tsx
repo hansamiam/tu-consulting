@@ -10,7 +10,7 @@
  * not dashboard. Stats live inside section bodies instead.
  */
 import React from "react";
-import { Share2, Printer } from "lucide-react";
+import { Share2, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Props {
@@ -74,18 +74,35 @@ export const MagazineMasthead: React.FC<Props> = ({
         )}
       </div>
 
-      {/* Action row */}
+      {/* Action row. Save-as-PDF is the user-perceived value of the
+          print flow — "Print" reads as "send to printer" which most
+          users don't want. Labelling it "Save as PDF" maps to what the
+          browser's print dialog does by default and turns this masthead
+          into the first deliverable affordance of the report. */}
       {(onShare || onPrint) && (
-        <div className="mt-5 flex items-center justify-center gap-2">
-          {onShare && (
-            <Button variant="ghost" size="sm" onClick={onShare} className="text-gold-dark hover:bg-gold/10 gap-1.5 h-8">
-              <Share2 className="h-3.5 w-3.5" /> Share
-            </Button>
-          )}
+        <div className="mt-5 flex flex-col items-center gap-2 print:hidden">
+          <div className="flex items-center justify-center gap-2">
+            {onPrint && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onPrint}
+                className="gap-1.5 h-9 border-gold-dark/40 text-foreground hover:bg-gold/10"
+                title="Opens your browser's print dialog — choose 'Save as PDF' for download"
+              >
+                <FileDown className="h-3.5 w-3.5" /> Save as PDF
+              </Button>
+            )}
+            {onShare && (
+              <Button variant="ghost" size="sm" onClick={onShare} className="text-gold-dark hover:bg-gold/10 gap-1.5 h-9">
+                <Share2 className="h-3.5 w-3.5" /> Share
+              </Button>
+            )}
+          </div>
           {onPrint && (
-            <Button variant="ghost" size="sm" onClick={onPrint} className="text-muted-foreground hover:text-foreground gap-1.5 h-8">
-              <Printer className="h-3.5 w-3.5" /> Print
-            </Button>
+            <p className="text-[10px] text-muted-foreground tracking-wide">
+              Opens print dialog — choose "Save as PDF" for download.
+            </p>
           )}
         </div>
       )}
