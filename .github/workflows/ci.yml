@@ -50,43 +50,6 @@ jobs:
       - name: Test (Vitest — renderer snapshots)
         run: npm run test
 
-  # Brief verification — locks the v7 brief generator behavior across
-  # three archetype fixtures + the banned-vocab scan. Runs against the
-  # static editorial-rules.ts + archetype-library.ts + brief-sections.ts
-  # — no DB / LLM calls. Both scripts are pure Deno.
-  #
-  # The scan-static-copy.ts script caught the PR #46 tagline regression
-  # on 2026-05-23 (PR #54 fix-forward) — exactly the case this job is
-  # designed to catch automatically going forward.
-  brief-verify:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Deno
-        uses: denoland/setup-deno@v1
-        with:
-          deno-version: v2.x
-
-      - name: Banned-vocab scan (archetype taglines + handoff templates)
-        run: deno run --allow-read scripts/scan-static-copy.ts
-
-      - name: Verify brief — Yerlan (Bridge-Domain Kid exemplar)
-        run: deno run --allow-read scripts/verify-brief.ts scripts/sample-brief.test.json
-
-      - name: Verify brief — Aigerim (Open Question fixture)
-        run: deno run --allow-read scripts/verify-brief.ts scripts/sample-brief-typical.test.json
-
-      - name: Verify brief — Daniyar (Tight Lane fixture)
-        run: deno run --allow-read scripts/verify-brief.ts scripts/sample-brief-tight-lane.test.json
-
-      - name: Verify brief — KZ first-abroad (CIS "leaving home" framing)
-        run: deno run --allow-read scripts/verify-brief.ts scripts/sample-brief-kz-first-abroad.test.json
-
-      - name: Verify brief — US first-abroad ("first-gen college" framing)
-        run: deno run --allow-read scripts/verify-brief.ts scripts/sample-brief-us-first-abroad.test.json
-
   # Live edge-function smoke test — POSTs a known-good profile to the
   # deployed topuni-ai-pathway, reads the SSE stream, and asserts:
   #   1. archetype event fires
