@@ -1,4 +1,4 @@
-import { SectionHead } from "../primitives";
+import { SectionLabel } from "../primitives";
 import type { Language } from "../types";
 import { t } from "../types";
 
@@ -7,19 +7,16 @@ interface Props {
   language: Language;
 }
 
-// The one element that EARNS visual weight: the gold left-bar pull
-// quote. McKinsey would call this the "key takeaway box" but without
-// the box — just the left rule + italic display type.
+// v4: drop the italic + gold-left-bar pull-quote treatment. Just a
+// label and the diagnosis paragraph in quotes. Word-doc plain.
 export const HonestDiagnosis = ({ text, language }: Props) => {
   if (!text) return null;
   return (
-    <section className="mb-6">
-      <SectionHead>{t(language, "The Read", "Главное")}</SectionHead>
-      <blockquote className="m-0 border-l-2 border-gold pl-4 sm:pl-5 py-1">
-        <p className="font-heading italic text-[15.5px] sm:text-[17px] leading-[1.5] text-foreground m-0 max-w-[600px]">
-          {text}
-        </p>
-      </blockquote>
+    <section className="mb-5">
+      <SectionLabel>{t(language, "The Read", "Главное")}</SectionLabel>
+      <p className="text-[13px] leading-[1.6] text-foreground/85 m-0">
+        &ldquo;{text}&rdquo;
+      </p>
     </section>
   );
 };

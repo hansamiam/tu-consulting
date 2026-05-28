@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { setPostAuthRedirect } from "@/lib/postAuthRedirect";
 import { AuthDialog } from "@/components/auth/AuthDialog";
-import { Eyebrow } from "../primitives";
+import { SectionLabel } from "../primitives";
 import type { Language } from "../types";
 import { t } from "../types";
 
@@ -153,7 +153,7 @@ export const MembershipCTA = ({ language }: Props) => {
           className="rounded-2xl border border-gold/40 bg-gold/[0.06] p-5 sm:p-6"
         >
           <div className="mb-2">
-            <Eyebrow>{copy.eyebrow[language]}</Eyebrow>
+            <SectionLabel>{copy.eyebrow[language]}</SectionLabel>
           </div>
           <h2 className="font-heading text-[20px] sm:text-[24px] font-bold leading-[1.2] tracking-tight text-foreground m-0 mb-3">
             {copy.headline[language]}

@@ -65,7 +65,7 @@ serve(async (req) => {
       return respondError(404, "not found", corsHeaders);
     }
 
-    return respondJson(200, { report: data.payload });
+    return respondJson(200, { report: data.payload }, corsHeaders);
   } catch (e) {
     const msg = (e as Error).message || String(e);
     console.error("[get-strategy] error:", msg);

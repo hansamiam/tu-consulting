@@ -1,10 +1,7 @@
-// Fit Diagnosis — list of subcategory rows with the closed-set
-// verdict and one-sentence reason.
-//
-// v3 redesign: no bordered card wrapping. Each row is just a tight
-// label / verdict / reason group, separated by hairline dividers.
+// v4: dead-simple rows. Subcategory label + verdict on one baseline,
+// reason on the next line. No card, no rules, no dividers — just type.
 
-import { SectionHead } from "../primitives";
+import { SectionLabel } from "../primitives";
 import type { FitRow, Language } from "../types";
 import { t } from "../types";
 
@@ -16,24 +13,21 @@ interface Props {
 export const FitDiagnosis = ({ rows, language }: Props) => {
   if (!rows || rows.length === 0) return null;
   return (
-    <section className="mb-6">
-      <SectionHead>{t(language, "Fit Diagnosis", "Диагностика fit")}</SectionHead>
-      <div>
+    <section className="mb-5">
+      <SectionLabel>{t(language, "Fit Diagnosis", "Диагностика fit")}</SectionLabel>
+      <div className="space-y-2.5">
         {rows.map((row, i) => (
-          <div
-            key={i}
-            className={`py-3 ${i < rows.length - 1 ? "border-b border-foreground/10" : "pb-0"} ${i === 0 ? "pt-0" : ""}`}
-          >
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 mb-1">
-              <span className="text-[9.5px] font-bold uppercase tracking-[0.22em] text-foreground/55 w-[140px] shrink-0">
+          <div key={i}>
+            <div className="flex flex-wrap items-baseline gap-x-2 mb-0.5">
+              <span className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-foreground/55">
                 {row.subcategory}
               </span>
-              <span className="font-heading text-[14px] sm:text-[14.5px] font-bold text-foreground tracking-tight">
+              <span className="text-[13px] font-bold text-foreground">
                 {row.verdict}
               </span>
             </div>
             {row.reason && (
-              <p className="text-[12.5px] leading-[1.5] text-foreground/72 m-0 sm:pl-[152px]">
+              <p className="text-[12.5px] leading-[1.5] text-foreground/72 m-0">
                 {row.reason}
               </p>
             )}

@@ -1,10 +1,7 @@
-// BestNextMove + DoNotWaste — paired one-liners.
-//
-// v3 redesign: drop the rose / gold callout cards entirely. Use the
-// shared InlineLabelBlock primitive — eyebrow label + bold sentence.
-// Two stacked rows, tight spacing.
+// v4: TOP PRIORITY + DO NOT WASTE TIME — two stacked sections, each
+// a SectionLabel + one short paragraph. No card, no border, no icon.
 
-import { InlineLabelBlock } from "../primitives";
+import { SectionLabel } from "../primitives";
 import type { Language } from "../types";
 import { t } from "../types";
 
@@ -17,17 +14,23 @@ interface Props {
 export const NextMoves = ({ bestNextMove, doNotWaste, language }: Props) => {
   if (!bestNextMove && !doNotWaste) return null;
   return (
-    <section className="mb-6">
+    <>
       {bestNextMove && (
-        <InlineLabelBlock label={t(language, "Best Next Move", "Лучший шаг")}>
-          {bestNextMove}
-        </InlineLabelBlock>
+        <section className="mb-5">
+          <SectionLabel>{t(language, "Top Priority", "Главный приоритет")}</SectionLabel>
+          <p className="text-[13px] leading-[1.55] text-foreground/85 m-0 font-medium">
+            {bestNextMove}
+          </p>
+        </section>
       )}
       {doNotWaste && (
-        <InlineLabelBlock label={t(language, "Do Not Waste Time On", "Не тратьте время на")}>
-          {doNotWaste}
-        </InlineLabelBlock>
+        <section className="mb-5">
+          <SectionLabel>{t(language, "Do Not Waste Time", "Не тратьте время")}</SectionLabel>
+          <p className="text-[13px] leading-[1.55] text-foreground/85 m-0 font-medium">
+            {doNotWaste}
+          </p>
+        </section>
       )}
-    </section>
+    </>
   );
 };
