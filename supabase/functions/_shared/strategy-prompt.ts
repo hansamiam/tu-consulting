@@ -25,11 +25,6 @@ import type { PromptContext } from "./intake-to-prompt-context.ts";
 
 export const STRATEGY_REPORT_SCHEMA = {
   type: "object",
-  required: [
-    "applicantType", "axes", "headline", "honestDiagnosis",
-    "strengths", "watchouts", "focusNext",
-    "fitDiagnosis", "bestNextMove", "doNotWaste",
-  ],
   properties: {
     applicantType: {
       type: "object",
@@ -61,9 +56,9 @@ export const STRATEGY_REPORT_SCHEMA = {
     },
     headline:        { type: "string", description: "ONE substantive sentence starting with firstName. MUST naturally weave (a) the applicantType.label identity AND (b) the bestFitPathway label into the prose. Pathway is NOT rendered as a standalone label in the UI — it lives in this sentence. Example: 'Aigerim, you're a capable STEM builder with the olympiad record to back it — strongest fit for fully-funded engineering tracks in Europe.' (The phrase 'fully-funded engineering tracks' IS the pathway, woven in.) NOT a stamped label." },
     honestDiagnosis: { type: "string", description: "3-5 sentences. The candid pull-quote verdict. Names the strongest lever, the biggest gap, and what's at stake if the gap isn't addressed. Reads like the gold-pull-quote in a consulting report." },
-    strengths:       { type: "array", items: { type: "string" }, description: "Exactly 3 bullets. Each bullet is 1-2 substantive sentences naming the specific intake signal AND why it's load-bearing for their target." },
-    watchouts:       { type: "array", items: { type: "string" }, description: "Exactly 3 weaknesses. Each bullet is 1-2 sentences: name the gap + state what it costs at application time. No softening with 'opportunity' / 'growth area'." },
-    focusNext:       { type: "array", items: { type: "string" }, description: "Exactly 3 actionable bullets. Each MUST cite a specific intake field, be a different category of move (build/contact/draft/score/verify/pivot), and be doable in 30 days. NO example anchors — use the rich intake context." },
+    uniqueEdge:        { type: "string", description: "1-2 substantive sentences. THE PLAY. Names the specific assets in their intake that win them programs / funding. Don't list bullets; write narrative consulting copy. Cite specific intake fields." },
+    blindspot:         { type: "string", description: "1-2 substantive sentences. THE BLINDSPOT. Names ONE specific academic threshold or credential gap the student must cross + what filters them out if they don't. Direct. Specific. No softening." },
+    targetOpportunity: { type: "string", description: "1-2 substantive sentences. THE PIVOT / TARGET OPPORTUNITY. Names the strategic CATEGORY of programs to target (NOT specific schools per Golden Rule) + the strategic move. Action-oriented." },
     fitDiagnosis: {
       type: "array",
       description: "Length 4 (Bachelor/Master) or 5 (PhD). One row per subcategory.",
@@ -77,10 +72,11 @@ export const STRATEGY_REPORT_SCHEMA = {
         },
       },
     },
-    bestNextMove: { type: "string", description: "ONE sentence. Start with an action verb." },
-    doNotWaste:   { type: "string", description: "ONE sentence. What NOT to spend time on." },
-    evidenceGap:  { type: "string", description: "Master/PhD ONLY. The single most load-bearing missing piece of evidence in the application (e.g. quantitative proof, writing sample, supervisor outreach record). 1-2 substantive sentences naming what's missing + what it costs. Empty string for Bachelor profiles." },
   },
+  required: [
+    "applicantType", "bestFitPathway", "axes", "headline", "honestDiagnosis",
+    "uniqueEdge", "blindspot", "targetOpportunity", "fitDiagnosis",
+  ],
 } as const;
 
 /* ─── Voice anchors (label style references, NOT a closed set) ─── */
@@ -226,16 +222,7 @@ ${renderSubcategories(MASTER_SUBCATEGORIES, "en")}
 == PHD (5 subcategories, only if targetDegree=phd) ==
 ${renderSubcategories(PHD_SUBCATEGORIES, "en")}
 
-# STRENGTHS / WATCHOUTS / FOCUS NEXT
-
-- \`strengths\`: exactly 3 bullets. Each pulls from a real intake field. No "you have potential" filler — name the specific signal.
-- \`watchouts\`: exactly 3 bullets. These are WEAKNESSES, named directly. State what's missing or below threshold + what it costs at application time. Examples: "IELTS 6.5 — below the 7.0 median used by most fully-funded Master's programs." or "No published research — locks you out of Tier-1 PhD funding routes." Do NOT soften with "opportunity for the next 6 months" or "area for growth". The student needs to feel each gap to act on it.
-- \`focusNext\`: exactly 3 bullets. Quality criteria — NO example anchors (avoids templated output; you have rich intake context, use it):
-  • Each bullet MUST cite a SPECIFIC intake field (the actual test score, the specific named scholarship, the actual major, the actual nationality, the actual quantitative weakness — whatever the intake reveals)
-  • Each bullet MUST be a DIFFERENT CATEGORY of move (don't return three "improve your X" variations — vary the move type: build / contact / draft / score / verify / pivot)
-  • Each bullet MUST be doable in the next 30 days (no 6-month projects)
-  • Each bullet MUST start with an action verb the student can act on this month
-  • For Master/PhD profiles: at least one bullet must address quant or research strength if those are weak in the intake
+(See THREE STRATEGIC MOVES section above for uniqueEdge / blindspot / targetOpportunity — that replaces the old strengths/weaknesses/focusNext stack.)
 
 # HEADLINE + HONEST DIAGNOSIS
 
@@ -344,16 +331,28 @@ ${renderSubcategories(MASTER_SUBCATEGORIES, "ru")}
 == PHD (5 подкатегорий, только если targetDegree=phd) ==
 ${renderSubcategories(PHD_SUBCATEGORIES, "ru")}
 
-# STRENGTHS / WATCHOUTS / FOCUS NEXT
+# ТРИ СТРАТЕГИЧЕСКИХ ХОДА — Unique Edge / Blindspot / Target Opportunity
 
-- \`strengths\`: ровно 3 пункта. Каждый — 1-2 substantive предложения, называющие конкретный сигнал из анкеты И почему он load-bearing для цели студента. Никакого "у вас есть потенциал".
-- \`watchouts\`: ровно 3 пункта. Это СЛАБЫЕ СТОРОНЫ, названные прямо, 1-2 предложения каждый: назовите пробел + во что это обойдётся на этапе подачи. Примеры: "IELTS 6.5 — ниже медианы 7.0 для большинства master-программ с полным финансированием" или "Нет публикаций — закрывает доступ к топ-программам PhD с фондовым финансированием". НЕ смягчайте формулировками вроде "возможность на 6 месяцев" или "точка роста".
-- \`focusNext\`: ровно 3 пункта. Критерии качества — БЕЗ примеров-якорей (избегайте шаблонного вывода; у вас богатый контекст из анкеты, используйте его):
-  • Каждый пункт ОБЯЗАН ссылаться на КОНКРЕТНОЕ поле анкеты (фактический балл теста, конкретная названная стипендия, реальная специальность, реальное гражданство, конкретный quantitative пробел — то, что раскрывает анкета)
-  • Каждый пункт ОБЯЗАН быть РАЗНОЙ КАТЕГОРИИ действия (не три варианта "улучши X" — варьируйте тип: построить / связаться / написать / пересдать / проверить / pivot)
-  • Каждый пункт ОБЯЗАН быть выполнимым в ближайшие 30 дней
-  • Каждый пункт ОБЯЗАН начинаться с глагола
-  • Для Master/PhD: минимум один пункт должен затрагивать quant или исследовательскую силу, если они слабы в анкете
+Заменяют старый bullet-список strengths/weaknesses/focusNext. Три коротких прозаических предложения, каждое — стратегический ход. БЕЗ маркированных списков.
+
+- \`uniqueEdge\` — THE PLAY. 1-2 предложения. Называет конкретные активы из анкеты, которые реально выигрывают программы / финансирование. Цитируйте конкретные поля анкеты.
+- \`blindspot\` — THE HURDLE. 1-2 предложения. Называет ОДИН конкретный академический порог или пробел в доказательствах, который нужно преодолеть + последствие на этапе подачи. Прямо. Без смягчения "возможность для роста". Студент должен почувствовать порог конкретно.
+- \`targetOpportunity\` — THE PIVOT. 1-2 предложения. Называет стратегическую КАТЕГОРИЮ программ (не конкретные школы по Золотому Правилу) + стратегический pivot.
+
+Эти три вместе заменяют старый стек из 9 пунктов. Читаются как голос cofounder, переводящий business logic в чёткий стратегический нарратив.
+
+# IF/THEN ДЕРЕВО РЕШЕНИЙ (триггеры)
+
+Применяйте эти правила когда анкета подходит. Они переопределяют мягкий default-framing:
+
+- ЕСЛИ targetDegree = phd И fieldOfStudy содержит "econom" И quantBackground = "light" ТО: targetOpportunity ОБЯЗАН направить от классического Econ PhD к applied/interdisciplinary PhD; uniqueEdge ОБЯЗАН подчеркнуть writing sample + applied research; blindspot ОБЯЗАН назвать конкретный math/stats/econometrics порог.
+- ЕСЛИ targetDegree = phd И researchExperience = "none" ТО: blindspot ОБЯЗАН отметить отсутствие research record как критический PhD барьер.
+- ЕСЛИ targetDegree = master И workExperience = "none" И major карта в MBA/professional ТО: blindspot ОБЯЗАН отметить отсутствующий work-history фильтр.
+- ЕСЛИ targetDegree = bachelor И hasLeadership = "no" ТО: uniqueEdge не может опираться на лидерство.
+- ЕСЛИ englishLevel = ниже 6.0 ИЛИ "не сдавал" ТО: blindspot ОБЯЗАН назвать английский как первичный near-term порог.
+- ЕСЛИ fundingPosture = "full_funding_first" И США bachelor ТО: targetOpportunity ОБЯЗАН направить к регионам с лучшим international-aid record.
+
+Это условия срабатывания, не буквальный текст. Модель проводит их через прозаический голос выше.
 
 # HEADLINE + HONEST DIAGNOSIS
 

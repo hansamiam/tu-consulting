@@ -27,18 +27,15 @@ export interface StrategyReportV2 {
   /** Strategic-frame badge rendered between Headline and HonestDiagnosis.
    *  Closed-set, snapped server-side. */
   bestFitPathway: { label: string };
-  /** Master/PhD only — single most load-bearing missing piece of
-   *  evidence. Empty string for Bachelor. */
-  evidenceGap: string;
   axes: AxisValue[]; // length 5
   headline: string;
   honestDiagnosis: string;
-  strengths: string[]; // length 3
-  watchouts: string[]; // length 3
-  focusNext: string[]; // length 3
+  /** v6 (2026-05-29) — 3 strategic moves replacing the old 9-bullet
+   *  stack. Each is 1-2 substantive sentences. */
+  uniqueEdge: string;
+  blindspot: string;
+  targetOpportunity: string;
   fitDiagnosis: FitRow[]; // length 4 (bachelor/master) or 5 (phd)
-  bestNextMove: string;
-  doNotWaste: string;
   readinessScore: number; // 0..5 in 0.5 steps
   targetDegree: TargetDegree;
   language: Language;

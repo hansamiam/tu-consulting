@@ -1,16 +1,13 @@
-// v5 dossier — McKinsey Word-doc + premium float-up reveal.
+// v6 dossier — Play / Blindspot / Pivot narrative framing.
 //
 // Section order locked 2026-05-29:
 //   Masthead -> Headline -> READINESS SCORE -> (diagnosis prose,
-//   no label) -> STRENGTHS TO BUILD AROUND -> WEAKNESSES TO FIX
-//   -> FIT DIAGNOSIS -> EVIDENCE GAP (M/PhD only) -> THIS MONTH
-//   -> TOP PRIORITY -> DON'T WASTE TIME ON -> MembershipCTA
+//   no label) -> UNIQUE EDGE -> BLINDSPOT -> TARGET OPPORTUNITY
+//   -> FIT DIAGNOSIS -> MembershipCTA
 //
-// Background: forced bg-white on this surface (overrides the cream
-// site bg). Container max-w-[640px], Word-column width.
-//
-// First-mount reveal: each section fades-in + slides up 12px with
-// an 80ms stagger via framer-motion. Total reveal ~600-800ms.
+// Replaces the v5 9-bullet Strengths/Weaknesses/Focus + bestNextMove
+// + doNotWaste + EvidenceGap stack. Three short prose moves +
+// the strategy-fit grid + CTA.
 
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
@@ -18,10 +15,8 @@ import type { StrategyReportV2 } from "./types";
 import { Masthead } from "./sections/Masthead";
 import { ReadinessHero } from "./sections/ReadinessHero";
 import { HonestDiagnosis } from "./sections/HonestDiagnosis";
-import { StrengthsWatchouts } from "./sections/StrengthsWatchouts";
+import { StrategicMoves } from "./sections/StrategicMoves";
 import { FitDiagnosis } from "./sections/FitDiagnosis";
-import { EvidenceGap } from "./sections/EvidenceGap";
-import { NextMoves } from "./sections/NextMoves";
 import { MembershipCTA } from "./sections/MembershipCTA";
 
 interface Props {
@@ -76,28 +71,16 @@ export const StrategyDossier = ({ report }: Props) => {
         </Reveal>
 
         <Reveal index={next()}>
-          <StrengthsWatchouts
-            strengths={report.strengths}
-            watchouts={report.watchouts}
-            focusNext={report.focusNext}
+          <StrategicMoves
+            uniqueEdge={report.uniqueEdge ?? ""}
+            blindspot={report.blindspot ?? ""}
+            targetOpportunity={report.targetOpportunity ?? ""}
             language={report.language}
           />
         </Reveal>
 
         <Reveal index={next()}>
           <FitDiagnosis rows={report.fitDiagnosis} language={report.language} />
-        </Reveal>
-
-        <Reveal index={next()}>
-          <EvidenceGap text={report.evidenceGap ?? ""} language={report.language} />
-        </Reveal>
-
-        <Reveal index={next()}>
-          <NextMoves
-            bestNextMove={report.bestNextMove}
-            doNotWaste={report.doNotWaste}
-            language={report.language}
-          />
         </Reveal>
 
         <Reveal index={next()}>

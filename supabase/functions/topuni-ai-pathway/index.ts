@@ -42,18 +42,16 @@ export interface StrategyReportV2 {
   /** Strategic-frame badge rendered between Headline and HonestDiagnosis.
    *  Snapped to the closed BEST_FIT_PATHWAYS set in coerceReport. */
   bestFitPathway: { label: string };
-  /** Master/PhD only — single most load-bearing missing piece of
-   *  evidence. Empty string for Bachelor. */
-  evidenceGap: string;
   axes: AxisOut[];
   headline: string;
   honestDiagnosis: string;
-  strengths: string[];
-  watchouts: string[];
-  focusNext: string[];
+  /** v6 (2026-05-29) — 3 strategic moves replacing the old 9-bullet
+   *  stack. Each is 1-2 substantive sentences. The cofounder
+   *  Play / Blindspot / Pivot framing. */
+  uniqueEdge: string;
+  blindspot: string;
+  targetOpportunity: string;
   fitDiagnosis: FitOut[];
-  bestNextMove: string;
-  doNotWaste: string;
   readinessScore: number;
   targetDegree: TargetDegree;
   language: Language;
@@ -217,36 +215,24 @@ function coerceReport(
     };
   });
 
-  const arr3 = (k: string): string[] => {
-    const v = r[k];
-    if (!Array.isArray(v)) return ["", "", ""];
-    return [0, 1, 2].map((i) => typeof v[i] === "string" ? (v[i] as string) : "");
-  };
-
   const readinessScore = Math.round(
     (axes.reduce((s, a) => s + a.value, 0) / axes.length) * 2
   ) / 2;
 
-  // Bachelor gets empty evidenceGap (their gaps are activity/testing/
-  // essay and covered by watchouts already). Master/PhD models a
-  // single load-bearing missing-evidence callout.
-  const evidenceGap = ctx.targetDegree === "bachelor"
-    ? ""
-    : (typeof r.evidenceGap === "string" ? r.evidenceGap.trim() : "");
+  const uniqueEdge = typeof r.uniqueEdge === "string" ? r.uniqueEdge.trim() : "";
+  const blindspot = typeof r.blindspot === "string" ? r.blindspot.trim() : "";
+  const targetOpportunity = typeof r.targetOpportunity === "string" ? r.targetOpportunity.trim() : "";
 
   return {
     applicantType,
     bestFitPathway,
-    evidenceGap,
     axes,
     headline: typeof r.headline === "string" ? r.headline : "",
     honestDiagnosis: typeof r.honestDiagnosis === "string" ? r.honestDiagnosis : "",
-    strengths: arr3("strengths"),
-    watchouts: arr3("watchouts"),
-    focusNext: arr3("focusNext"),
+    uniqueEdge,
+    blindspot,
+    targetOpportunity,
     fitDiagnosis,
-    bestNextMove: typeof r.bestNextMove === "string" ? r.bestNextMove : "",
-    doNotWaste: typeof r.doNotWaste === "string" ? r.doNotWaste : "",
     readinessScore,
     targetDegree: ctx.targetDegree,
     language: ctx.language,
