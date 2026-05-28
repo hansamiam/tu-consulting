@@ -13,6 +13,9 @@ import caFlag from "@/assets/flags/ca.svg";
 import gbFlag from "@/assets/flags/gb.svg";
 import cnFlag from "@/assets/flags/cn.svg";
 import krFlag from "@/assets/flags/kr.svg";
+import { useAuth } from "@/contexts/AuthContext";
+import { AuthDialog } from "@/components/auth/AuthDialog";
+import { setPostAuthRedirect } from "@/lib/postAuthRedirect";
 import Navigation from "@/components/Navigation";
 import { shouldRedirectToRussian } from "@/utils/languageDetection";
 import { ScrollProgress } from "@/components/ScrollProgress";
@@ -40,10 +43,40 @@ const TEAM = [
 
 const Index = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [authOpen, setAuthOpen] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   // Live catalog counter — pulled from Supabase on mount. Falls back
   // gracefully to a static line if the count call fails. Read scope
   // is anon-safe (head:true count uses public RLS).
   const [liveCount, setLiveCount] = useState<number | null>(null);
+
+  // 2026-05-29 — landing "Claim my spot" CTA now skips /pricing and
+  // goes straight to Stripe hosted checkout (full-page redirect, not
+  // an embedded panel). Auth modal opens inline if signed out.
+  const startCheckoutDirect = async () => {
+    if (!user) {
+      setPostAuthRedirect(window.location.pathname);
+      setAuthOpen(true);
+      return;
+    }
+    setCheckoutLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "create-subscription-checkout",
+        { body: { tier: "founding", interval: "month", embedded: false } },
+      );
+      if (error) throw new Error(error.message);
+      if (data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+      throw new Error("Checkout URL missing");
+    } catch (e) {
+      console.error("[index-cta] checkout error:", (e as Error).message);
+      setCheckoutLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (shouldRedirectToRussian()) navigate('/ru');
@@ -343,10 +376,17 @@ const Index = () => {
                 variant="gold"
                 size="lg"
                 className="text-base px-8 py-6 gap-2"
-                onClick={() => navigate('/pricing')}
+                onClick={startCheckoutDirect}
+                disabled={checkoutLoading}
               >
                 Claim my early-access spot <ArrowRight className="h-4 w-4" />
               </Button>
+              <AuthDialog
+                open={authOpen}
+                onOpenChange={setAuthOpen}
+                language="en"
+                initialMode="signup"
+              />
             </motion.div>
           </div>
         </section>

@@ -27,60 +27,19 @@ interface CtaCopy {
   body: { en: string; ru: string };
 }
 
+// 2026-05-29 — purged the "You have potential / You have gaps" memo-
+// speak variant ("internal thought, not client-facing" per Samuel).
+// Single locked CTA — no random rotation surfacing a bad copy.
 const CTA_POOL: CtaCopy[] = [
   {
-    eyebrow: { en: "This is only the beginning", ru: "Это только начало" },
+    eyebrow: { en: "Turn this snapshot into a real scholarship plan", ru: "Превратите этот snapshot в реальный план" },
     headline: {
-      en: "Your snapshot is the diagnosis. The plan is the next step.",
-      ru: "Ваш отчёт — это диагноз. Дальше нужен план.",
+      en: "Join the first-ever Top Uni Membership Program.",
+      ru: "Вступайте в первую программу Top Uni Membership.",
     },
     body: {
-      en: "Inside Top Uni Membership we build your actual application list, line up deadlines, and cut the scholarships that don't fit your profile. You don't have to figure this out alone.",
-      ru: "В Top Uni Membership мы собираем ваш реальный список заявок, расставляем дедлайны и отсекаем стипендии, которые не подходят профилю. Не нужно разбираться в одиночку.",
-    },
-  },
-  {
-    eyebrow: { en: "Want help turning this into a real plan?", ru: "Хотите превратить это в реальный план?" },
-    headline: {
-      en: "Join Top Uni Membership.",
-      ru: "Вступайте в Top Uni Membership.",
-    },
-    body: {
-      en: "Monthly strategy workshops, office hours with our team, Discover database access, application templates, and curated scholarship opportunities — for students applying abroad with scholarships.",
-      ru: "Ежемесячные стратегические воркшопы, office hours с командой, доступ к Discover, шаблоны заявок и подобранные стипендии — для студентов, поступающих за рубеж со стипендией.",
-    },
-  },
-  {
-    eyebrow: { en: "Don't apply blind", ru: "Не подавайте вслепую" },
-    headline: {
-      en: "Stop guessing which scholarships you actually have a shot at.",
-      ru: "Хватит гадать, где у вас реально есть шанс.",
-    },
-    body: {
-      en: "Members get monthly strategy workshops, office hours, the Discover database, and feedback on application materials before they're submitted. Structure and access, not another AI tool.",
-      ru: "Участники получают ежемесячные стратегические воркшопы, office hours, доступ к Discover и фидбек на материалы до подачи. Структура и доступ, а не очередной AI-инструмент.",
-    },
-  },
-  {
-    eyebrow: { en: "You have potential. You also have gaps.", ru: "У вас есть потенциал. И есть пробелы." },
-    headline: {
-      en: "Don't close those gaps alone.",
-      ru: "Не закрывайте эти пробелы в одиночку.",
-    },
-    body: {
-      en: "Top Uni Membership gives you the structure and access to fix what your snapshot just diagnosed — without the price tag of an elite consulting firm.",
-      ru: "Top Uni Membership даёт структуру и доступ, чтобы закрыть то, что только что диагностировал ваш отчёт — без ценника элитной консалтинговой фирмы.",
-    },
-  },
-  {
-    eyebrow: { en: "Turn this snapshot into a real plan", ru: "Превратите snapshot в реальный план" },
-    headline: {
-      en: "Join the Top Uni Scholarship Membership.",
-      ru: "Вступайте в Top Uni Scholarship Membership.",
-    },
-    body: {
-      en: "Turn this free snapshot into a real application plan with monthly workshops, office hours, and member-only scholarship insights.",
-      ru: "Превратите бесплатный отчёт в реальный план поступления — ежемесячные воркшопы, office hours и инсайды по стипендиям только для участников.",
+      en: "Monthly workshops, office hours, and member-only scholarship insights — for students applying abroad on scholarships.",
+      ru: "Ежемесячные воркшопы, office hours и member-only инсайды по стипендиям — для студентов, поступающих за рубеж со стипендией.",
     },
   },
 ];
@@ -193,10 +152,7 @@ export const MembershipCTA = ({ language }: Props) => {
             </div>
           ) : (
             <p className="text-[13px] leading-[1.5] text-foreground m-0 mb-5">
-              <span className="font-bold">$39.99 / {t(language, "month", "месяц")}.</span>{" "}
-              <span className="text-foreground/65">
-                {t(language, "Cancel anytime.", "Отмена в любой момент.")}
-              </span>
+              <span className="font-bold">$39.99 / {t(language, "month", "месяц")}.</span>
             </p>
           )}
 
