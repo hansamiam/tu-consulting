@@ -163,6 +163,13 @@ interface WizardDraft {
   gmatState?: "unspecified" | "taken" | "not_yet";
   gre?: string;
   gmat?: string;
+  /** 2026-05-29 — English Proficiency MC (cofounder spec). Lives on
+   *  the Universal Step 1 alongside identity + target degree. The
+   *  numeric IELTS/TOEFL inputs on Step 2 are still available for
+   *  precision, but most users will pick a bucket here and skip the
+   *  numeric inputs entirely. */
+  englishProficiency?: "ielts_7_plus" | "ielts_6_0_to_6_5" | "ielts_below_6" | "toefl_equiv" | "not_taken_yet";
+
   /** 2026-05-29 grad-applicant additions (Samuel's spec):
    *  These three drive most of the LLM's grad-track diagnosis quality.
    *  quantBackground specifically resolves the cofounder's
@@ -497,6 +504,8 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
     (draft?.gmatState as TestState) ?? (draft?.gmat ? "taken" : "unspecified"),
   );
 
+  // 2026-05-29 English Proficiency MC on Step 1 per cofounder spec.
+  const [englishProficiency, setEnglishProficiency] = useState<WizardDraft["englishProficiency"]>(draft?.englishProficiency);
   // 2026-05-29 grad + bachelor additions per Samuel's spec.
   const [quantBackground, setQuantBackground] = useState<WizardDraft["quantBackground"]>(draft?.quantBackground);
   const [workExperience, setWorkExperience] = useState<WizardDraft["workExperience"]>(draft?.workExperience);
