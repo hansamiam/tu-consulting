@@ -1210,51 +1210,27 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                             placeholder: t("e.g. 720", "напр. 720"),
                           }] : []),
                         ]).map(({ key, label, scale, state, setState, value, setValue, clamp, inputMode, placeholder }) => (
-                          <div key={key} className="space-y-2.5 rounded-lg border border-border/70 bg-card p-3.5">
+                          // 2026-05-29 — Taken/Not yet segmented control
+                          // dropped per Samuel. Score is always editable.
+                          // Empty = not taken (LLM context infers from
+                          // missing value); state tracking kept in sync so
+                          // localStorage drafts stay coherent.
+                          <div key={key} className="space-y-2 rounded-lg border border-border/70 bg-card p-3.5">
                             <Label className="text-xs uppercase tracking-wider font-medium block">
                               {label} <span className="text-muted-foreground/70 font-normal normal-case">{scale}</span>
+                              <span className="text-muted-foreground/60 font-normal normal-case ml-1">·  {t("leave blank if not taken", "оставь пустым если не сдавал")}</span>
                             </Label>
-                            <div className="flex rounded-md overflow-hidden border border-border bg-background text-[11.5px] w-full">
-                              <button
-                                type="button"
-                                onClick={() => setState("taken")}
-                                className={`flex-1 px-3 py-1.5 font-medium transition-colors ${
-                                  state === "taken"
-                                    ? "bg-gold-dark text-primary-foreground"
-                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                                }`}
-                              >
-                                {t("Taken", "Сдал(а)")}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => { setState("not_yet"); setValue(""); }}
-                                className={`flex-1 px-3 py-1.5 font-medium border-l border-border transition-colors ${
-                                  state === "not_yet"
-                                    ? "bg-foreground/85 text-background"
-                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                                }`}
-                              >
-                                {t("Not yet", "Ещё нет")}
-                              </button>
-                            </div>
-                            {state === "taken" && (
-                              <Input
-                                value={value}
-                                inputMode={inputMode}
-                                onChange={e => setValue(clamp(e.target.value))}
-                                placeholder={placeholder}
-                                className="h-11 bg-card"
-                              />
-                            )}
-                            {state === "not_yet" && (
-                              <p className="text-[11.5px] text-muted-foreground/85 italic leading-relaxed">
-                                {t(
-                                  "We'll fold a registration plan into your strategy.",
-                                  "Добавим план регистрации в твою стратегию.",
-                                )}
-                              </p>
-                            )}
+                            <Input
+                              value={value}
+                              inputMode={inputMode}
+                              onChange={e => {
+                                const next = clamp(e.target.value);
+                                setValue(next);
+                                setState(next.trim() ? "taken" : "unspecified");
+                              }}
+                              placeholder={placeholder}
+                              className="h-11 bg-card"
+                            />
                           </div>
                         ))}
                       </div>
