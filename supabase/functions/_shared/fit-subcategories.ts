@@ -152,6 +152,77 @@ export function subcategoriesFor(degree: TargetDegree): FitSubcategory[] {
   return PHD_SUBCATEGORIES;
 }
 
+/* ─── Best-Fit Pathway — small strategic-frame badge at top of dossier ─ */
+
+export interface BestFitPathwayOption {
+  id: string;
+  label: { en: string; ru: string };
+  /** One short sentence the model can lean on. Not rendered to the
+   *  user directly — informs the rest of the report's framing. */
+  hint: { en: string; ru: string };
+}
+
+export const BEST_FIT_PATHWAYS: BestFitPathwayOption[] = [
+  {
+    id: "funding_first",
+    label: { en: "Funding-first", ru: "Финансирование-в-первую-очередь" },
+    hint: {
+      en: "Optimize for programs with the highest probability of full funding, not the highest brand.",
+      ru: "Оптимизируйте под программы с максимальной вероятностью полного финансирования, а не под бренд.",
+    },
+  },
+  {
+    id: "prestige_tolerant",
+    label: { en: "Prestige-tolerant", ru: "Терпимый к престижу" },
+    hint: {
+      en: "You're willing to accept partial funding or pay-in if the program is top-tier.",
+      ru: "Готовы принять частичное финансирование или доплату, если программа — топ.",
+    },
+  },
+  {
+    id: "research_first",
+    label: { en: "Research-first", ru: "Исследование-в-первую-очередь" },
+    hint: {
+      en: "The program's research fit + supervisor access outweighs brand and funding.",
+      ru: "Исследовательский fit и доступ к руководителю важнее бренда и денег.",
+    },
+  },
+  {
+    id: "professional_first",
+    label: { en: "Applied/Professional", ru: "Прикладной/профессиональный" },
+    hint: {
+      en: "Industry placement, career pivot, and applied learning matter more than research depth.",
+      ru: "Трудоустройство, pivot карьеры и прикладное обучение важнее глубины исследований.",
+    },
+  },
+  {
+    id: "affordability_first",
+    label: { en: "Affordability-first", ru: "Доступная стоимость" },
+    hint: {
+      en: "Stay-region-and-scholarship-up, or pick lower-cost destinations with strong outcomes.",
+      ru: "Остаться в регионе со стипендией или выбрать более доступные направления с сильными результатами.",
+    },
+  },
+];
+
+export function findPathwayByLabel(label: string, lang: Language): BestFitPathwayOption | null {
+  const norm = (s: string) => s.toLowerCase().replace(/[\s ]+/g, " ").trim();
+  const target = norm(label);
+  for (const p of BEST_FIT_PATHWAYS) {
+    if (norm(p.label[lang]) === target) return p;
+  }
+  // Loose match — strip dashes/punct
+  const loose = (s: string) => norm(s).replace(/[—\-–\/]/g, " ").replace(/[.,;:]+$/, "");
+  for (const p of BEST_FIT_PATHWAYS) {
+    if (loose(p.label[lang]) === loose(label)) return p;
+  }
+  // ID-style fallback (model echoed the id)
+  for (const p of BEST_FIT_PATHWAYS) {
+    if (norm(p.id.replace(/_/g, " ")) === norm(label)) return p;
+  }
+  return null;
+}
+
 /** Verdict lookup by language label string — used to validate LLM output
  *  against the closed set. Falls back to nearest-by-id when the model
  *  has minor whitespace/punctuation drift. */

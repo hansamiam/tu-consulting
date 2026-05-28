@@ -12,6 +12,7 @@ import {
   BACHELOR_SUBCATEGORIES,
   MASTER_SUBCATEGORIES,
   PHD_SUBCATEGORIES,
+  BEST_FIT_PATHWAYS,
   type FitSubcategory,
   type Language,
 } from "./fit-subcategories.ts";
@@ -35,6 +36,14 @@ export const STRATEGY_REPORT_SCHEMA = {
       required: ["label"],
       properties: {
         label: { type: "string", description: "≤4 words. Coined for INTERNAL analytics only — NEVER rendered as a stamped pill in the UI. The model weaves the identity into the headline prose instead." },
+      },
+    },
+    bestFitPathway: {
+      type: "object",
+      required: ["label"],
+      description: "Strategic-frame label picked from the closed set in the BEST-FIT PATHWAY section of the prompt.",
+      properties: {
+        label: { type: "string", description: "MUST be one of the 5 closed-set BEST-FIT PATHWAY labels for the current language." },
       },
     },
     axes: {
@@ -70,6 +79,7 @@ export const STRATEGY_REPORT_SCHEMA = {
     },
     bestNextMove: { type: "string", description: "ONE sentence. Start with an action verb." },
     doNotWaste:   { type: "string", description: "ONE sentence. What NOT to spend time on." },
+    evidenceGap:  { type: "string", description: "Master/PhD ONLY. The single most load-bearing missing piece of evidence in the application (e.g. quantitative proof, writing sample, supervisor outreach record). 1-2 substantive sentences naming what's missing + what it costs. Empty string for Bachelor profiles." },
   },
 } as const;
 
@@ -114,6 +124,12 @@ const AXES_BY_DEGREE = {
 
 export function axesFor(degree: PromptContext["targetDegree"], lang: Language): readonly string[] {
   return AXES_BY_DEGREE[degree][lang];
+}
+
+function renderPathways(lang: Language): string {
+  return BEST_FIT_PATHWAYS.map((p) =>
+    `  - "${p.label[lang]}" — ${p.hint[lang]}`,
+  ).join("\n");
 }
 
 /* ─── Helpers to render subcategory + verdict tables into the prompt ── */
@@ -165,6 +181,14 @@ Voice anchors for the label (style references, NOT a closed set):
 
 ${anchors}
 
+# BEST-FIT PATHWAY — pick ONE from closed set
+
+Pick the SINGLE strategic frame that best fits the applicant. The label MUST come from this closed list (use the exact spelling and casing — closed-set validation snaps mismatches to the closest entry):
+
+${renderPathways("en")}
+
+When between two, pick the more honest one (e.g. lean Affordability-first over Funding-first when GPA is borderline AND no standout signal exists). Don't invent new labels.
+
 # READINESS AXES — score each 1..5
 
 You will receive the axis names for the target degree in the INTAKE block. Score each axis 1..5 with one short \`reason\` sentence.
@@ -206,6 +230,14 @@ ${renderSubcategories(PHD_SUBCATEGORIES, "en")}
 
 - \`bestNextMove\`: ONE sentence. The single highest-ROI move for the next 6 months. Start with an action verb.
 - \`doNotWaste\`: ONE sentence. The single thing the student should NOT spend time on right now given their gap profile.
+
+# EVIDENCE GAP (Master + PhD ONLY)
+
+- \`evidenceGap\`: 1-2 substantive sentences naming the SINGLE most load-bearing missing piece of evidence in the application. NOT a generic weakness from the watchouts list — this is THE thing that, if not addressed, will sink the candidacy. Examples:
+  • "Quantitative proof — your econ-PhD shortlist will demand visible stats/coding output. Eight weeks of a focused portfolio project would credibly bridge this."
+  • "Writing sample sharpening — the proposal exists but reads thin. Two workshop rounds before September deadlines would meaningfully tighten it."
+  • "Supervisor outreach record — top PhD funding flows through advisor advocacy. Three pre-application cold-emails to aligned faculty are the move."
+- For Bachelor profiles output \`evidenceGap\` as empty string "" — Bachelor gaps are activity / testing / essay and already covered above.
 
 # LANGUAGE
 
@@ -251,6 +283,14 @@ function buildCachedPrefixRU(): string {
 
 ${anchors}
 
+# BEST-FIT PATHWAY — выберите ОДНУ из закрытого набора
+
+Выберите ОДНО стратегическое направление, которое лучше всего описывает абитуриента. Лейбл ОБЯЗАН быть из этого закрытого списка (точное написание; закрытая валидация подгонит mismatches к ближайшему элементу):
+
+${renderPathways("ru")}
+
+При выборе между двумя берите более честный вариант (например, Доступная стоимость вместо Финансирование-в-первую-очередь, если GPA пограничный И нет выдающихся сигналов). Не выдумывайте новые лейблы.
+
 # ОСИ ГОТОВНОСТИ — оценка от 1 до 5
 
 В блоке INTAKE вы получите названия осей для целевой степени. Оцените каждую ось от 1 до 5 с одним коротким \`reason\` предложением.
@@ -292,6 +332,13 @@ ${renderSubcategories(PHD_SUBCATEGORIES, "ru")}
 
 - \`bestNextMove\`: ОДНО предложение. Самый высокоокупаемый ход на ближайшие 6 месяцев. Начинайте с глагола.
 - \`doNotWaste\`: ОДНО предложение. То, на что НЕ стоит тратить время с учётом профиля.
+
+# EVIDENCE GAP (только Master + PhD)
+
+- \`evidenceGap\`: 1-2 substantive предложения, называющие ЕДИНСТВЕННЫЙ наиболее load-bearing недостающий элемент доказательств в заявке. НЕ просто общая слабость из watchouts — это ТО, что потопит candidacy, если не закрыть. Примеры:
+  • "Quantitative proof — econ-PhD шорт-лист потребует видимых stats/coding output. Восемь недель focused portfolio project достоверно закроют этот пробел."
+  • "Подтяжка writing sample — proposal есть, но читается тонко. Два круга воркшопов до сентябрьских дедлайнов существенно его уплотнят."
+- Для Bachelor выводите \`evidenceGap\` пустой строкой "" — пробелы Bachelor (активности / тесты / эссе) уже покрыты выше.
 
 # ЯЗЫК
 

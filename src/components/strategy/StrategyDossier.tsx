@@ -8,10 +8,12 @@
 import type { StrategyReportV2 } from "./types";
 import { Masthead } from "./sections/Masthead";
 import { ReadinessHero } from "./sections/ReadinessHero";
+import { BestFitPathway } from "./sections/BestFitPathway";
 import { HonestDiagnosis } from "./sections/HonestDiagnosis";
 import { ReadinessRadar } from "./sections/ReadinessRadar";
 import { StrengthsWatchouts } from "./sections/StrengthsWatchouts";
 import { FitDiagnosis } from "./sections/FitDiagnosis";
+import { EvidenceGap } from "./sections/EvidenceGap";
 import { NextMoves } from "./sections/NextMoves";
 import { MembershipCTA } from "./sections/MembershipCTA";
 import { Eyebrow } from "./primitives";
@@ -33,6 +35,11 @@ export const StrategyDossier = ({ report }: Props) => {
         <ReadinessHero
           headline={report.headline}
           readinessScore={report.readinessScore}
+          language={report.language}
+        />
+
+        <BestFitPathway
+          label={report.bestFitPathway?.label ?? ""}
           language={report.language}
         />
 
@@ -66,6 +73,8 @@ export const StrategyDossier = ({ report }: Props) => {
         />
 
         <FitDiagnosis rows={report.fitDiagnosis} language={report.language} />
+
+        <EvidenceGap text={report.evidenceGap ?? ""} language={report.language} />
 
         <NextMoves
           bestNextMove={report.bestNextMove}

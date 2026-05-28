@@ -22,6 +22,8 @@ import { findBanned } from "../_shared/banned-phrases.ts";
 import {
   subcategoriesFor,
   findVerdictByLabel,
+  findPathwayByLabel,
+  BEST_FIT_PATHWAYS,
   type FitSubcategory,
   type Language,
   type TargetDegree,
@@ -37,6 +39,12 @@ export interface StrategyReportV2 {
   /** Internal taxonomy label — NOT rendered as a stamped pill. The
    *  model weaves the identity into the headline prose instead. */
   applicantType: { label: string };
+  /** Strategic-frame badge rendered between Headline and HonestDiagnosis.
+   *  Snapped to the closed BEST_FIT_PATHWAYS set in coerceReport. */
+  bestFitPathway: { label: string };
+  /** Master/PhD only — single most load-bearing missing piece of
+   *  evidence. Empty string for Bachelor. */
+  evidenceGap: string;
   axes: AxisOut[];
   headline: string;
   honestDiagnosis: string;
@@ -169,6 +177,16 @@ function coerceReport(
       : (ctx.language === "ru" ? "Развивающийся кандидат" : "Emerging Applicant"),
   };
 
+  // Snap the LLM-coined pathway label to the closed BEST_FIT_PATHWAYS
+  // set. If we can't match, default to Funding-first (most-common
+  // honest fallback for the international-scholarship audience).
+  const bp = (r.bestFitPathway ?? {}) as Record<string, unknown>;
+  const rawPathwayLabel = typeof bp.label === "string" ? bp.label.trim() : "";
+  const matchedPathway = rawPathwayLabel ? findPathwayByLabel(rawPathwayLabel, ctx.language) : null;
+  const bestFitPathway = {
+    label: matchedPathway ? matchedPathway.label[ctx.language] : BEST_FIT_PATHWAYS[0].label[ctx.language],
+  };
+
   const expectedAxes = axesFor(ctx.targetDegree, ctx.language);
   const axesRaw = Array.isArray(r.axes) ? r.axes : [];
   const axes: AxisOut[] = expectedAxes.map((name, i) => {
@@ -205,8 +223,17 @@ function coerceReport(
     (axes.reduce((s, a) => s + a.value, 0) / axes.length) * 2
   ) / 2;
 
+  // Bachelor gets empty evidenceGap (their gaps are activity/testing/
+  // essay and covered by watchouts already). Master/PhD models a
+  // single load-bearing missing-evidence callout.
+  const evidenceGap = ctx.targetDegree === "bachelor"
+    ? ""
+    : (typeof r.evidenceGap === "string" ? r.evidenceGap.trim() : "");
+
   return {
     applicantType,
+    bestFitPathway,
+    evidenceGap,
     axes,
     headline: typeof r.headline === "string" ? r.headline : "",
     honestDiagnosis: typeof r.honestDiagnosis === "string" ? r.honestDiagnosis : "",

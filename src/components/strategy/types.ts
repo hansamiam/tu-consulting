@@ -24,6 +24,12 @@ export interface StrategyReportV2 {
    *  UI. Woven into `headline` by the model. Kept here for analytics
    *  / cache key + future personalization. */
   applicantType: { label: string };
+  /** Strategic-frame badge rendered between Headline and HonestDiagnosis.
+   *  Closed-set, snapped server-side. */
+  bestFitPathway: { label: string };
+  /** Master/PhD only — single most load-bearing missing piece of
+   *  evidence. Empty string for Bachelor. */
+  evidenceGap: string;
   axes: AxisValue[]; // length 5
   headline: string;
   honestDiagnosis: string;
