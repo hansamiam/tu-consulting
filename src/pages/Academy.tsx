@@ -108,8 +108,10 @@ const Academy = ({ language = "en" }: AcademyProps) => {
 
       {/* PAST WORKSHOPS — recordings archive. Queries published rows
           from public.academy_workshops where recording_url is set and
-          scheduled_for is in the past. Section self-hides when empty
-          (the resources block below already covers "coming soon"). */}
+          scheduled_for is in the past. Section self-hides when empty.
+          (Public /academy/resources surface retired 2026-05-28 — the
+          file library is now admin-only at /admin/academy/resources,
+          used for lead-magnet drops on IG / newsletter / outreach.) */}
       <PastWorkshops language={language} />
 
       {/* COMING SOON — single link to the lead-magnet primer at /lesson
