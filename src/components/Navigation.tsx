@@ -92,11 +92,14 @@ const Navigation = ({ language = "en", variant = "default", overlayThreshold = 8
   // Workspace inside the navItems array, which made it shift
   // position based on auth state and visually compete with the
   // Sign-in button when both could appear.
+  // /resources is admin-only — distribute lead magnets via direct
+  // links (IG/newsletter/outreach), not a public nav tab. PR #215
+  // re-added the link by mirroring the old LF pattern; restored the
+  // admin-only policy here.
   const navItems = [
     { label: "TopUni AI",                                     path: isRussian ? "/topuni-ai/ru" : "/topuni-ai" },
     { label: isRussian ? "Подбор"       : "Discover",          path: isRussian ? "/discover/ru" : "/discover" },
     { label: isRussian ? "Академия"    : "Academy",           path: isRussian ? "/academy/ru" : "/academy" },
-    { label: isRussian ? "Ресурсы"     : "Resources",          path: "/resources" },
   ];
 
   const isActive = (path: string, exact?: boolean) =>
