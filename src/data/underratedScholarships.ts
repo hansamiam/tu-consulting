@@ -15,6 +15,20 @@
 
 export type EduLevel = "UG" | "Masters" | "PhD" | "Postdoc" | "Pro";
 
+/**
+ * Competitiveness tier — coarse but real. Helps applicants triage
+ * "could I even get this?" before they spend two weeks on the essay.
+ *
+ * S = Rhodes-tier brutal. <5% acceptance, requires top-1% profile.
+ * A = Highly competitive. 5–15% acceptance. Top-5% profile needed.
+ * B = Competitive but reachable. 15–35% acceptance. Strong profile + fit.
+ * C = Open + underused. 35%+ acceptance for qualified applicants.
+ *
+ * These are field-estimated (acceptance numbers aren't always public).
+ * Treat as triage guidance, not promises.
+ */
+export type CompetitivenessTier = "S" | "A" | "B" | "C";
+
 export interface UnderratedScholarship {
   /** Display name as the sponsor uses it. */
   name: string;
@@ -32,7 +46,106 @@ export interface UnderratedScholarship {
   fieldFocus?: string;
   /** Optional tags for clustering on the page (region, theme). */
   tags?: string[];
+  /** Triage tier — see CompetitivenessTier doc. */
+  tier?: CompetitivenessTier;
 }
+
+/**
+ * Tier lookup keyed by scholarship name — kept separate from the
+ * main entry array to make tier updates a 1-line diff. The lookup is
+ * applied at read time by the page component.
+ *
+ * Methodology: best-effort triage based on published acceptance
+ * rates where available, field consensus where not. Update yearly.
+ */
+export const TIER_LOOKUP: Record<string, CompetitivenessTier> = {
+  // S — Rhodes-tier brutal. <5% acceptance.
+  "Knight-Hennessy Scholars": "S",
+  "Lester B. Pearson International Scholarship": "S",
+  "Karsh International Scholars Program": "S",
+
+  // A — Highly competitive. 5–15%. Top-5% profile.
+  "Schwarzman Scholars": "A",
+  "Yenching Academy": "A",
+  "Chevening Awards": "A",
+  "Fulbright Foreign Student Program": "A",
+  "Erasmus Mundus Joint Masters": "A",
+  "Mastercard Foundation Scholars Program": "A",
+  "Vanier Canada Graduate Scholarship": "A",
+  "Joint Japan/World Bank Graduate Scholarship": "A",
+  "Hubert H. Humphrey Fellowship": "A",
+
+  // B — Competitive but reachable. 15–35%. Strong profile + fit.
+  "DAAD EPOS Scholarship": "B",
+  "Aga Khan Foundation International Scholarship": "B",
+  "Said Foundation Scholarship": "B",
+  "KAUST Fellowship": "B",
+  "Eiffel Excellence Scholarship": "B",
+  "Rotary Peace Fellowship": "B",
+  "Bocconi Scholarships for International Students": "B",
+  "Joyce Ivy Foundation Summer Scholars": "B",
+  "Global Korea Scholarship (KGSP)": "B",
+
+  // C — Open + underused. 35%+ for qualified applicants. Apply more.
+  "MEXT Scholarship": "C",
+  "Türkiye Bursları": "C",
+  "Stipendium Hungaricum": "C",
+  "Chinese Government Scholarship (CSC)": "C",
+  "OFID Scholarship": "C",
+  "Government of Italy Scholarship": "C",
+  "Australia Awards": "C",
+  "NTU President's Graduate Fellowship": "C",
+  "NUS Research Scholarship": "C",
+};
+
+/**
+ * "If you only have 60 days, apply to these" — prioritization
+ * shortcut for paralysed applicants. The 5 picks balance reachability
+ * (tier C/B), broad eligibility, and high coverage (full ride vs. just
+ * tuition). Treat as a triage suggestion, not a ranked list.
+ */
+export const SIXTY_DAY_PICKS: string[] = [
+  "Türkiye Bursları",
+  "Stipendium Hungaricum",
+  "MEXT Scholarship",
+  "KAUST Fellowship",
+  "Erasmus Mundus Joint Masters",
+];
+
+/**
+ * Application strategy notes per region — the kind of guidance you
+ * only get from someone who's been through the process. ChatGPT
+ * doesn't know that you can't apply to Fulbright AND Chevening in
+ * the same cycle from some countries, or that MEXT has two parallel
+ * tracks most people don't realise.
+ */
+export interface RegionStrategy {
+  region: string;
+  note: string;
+}
+
+export const REGION_STRATEGY: RegionStrategy[] = [
+  {
+    region: "Asia (China + Japan + Korea + Singapore)",
+    note: "MEXT has two application tracks (embassy + direct-uni); apply to BOTH — they don't conflict and the direct-uni track is much less competitive. Schwarzman + Yenching overlap heavily; only do both if your story differentiates. KGSP includes a Korean prep year, so language isn't a gate.",
+  },
+  {
+    region: "Europe (EU + UK)",
+    note: "Erasmus Mundus is the highest-leverage application of your life — one form, ~150 programs. Chevening + Eiffel + Italy Govt + Stipendium Hungaricum can all be applied to in the same cycle. Bocconi is integrated with admission. Said Foundation has near-zero applications outside the Levant.",
+  },
+  {
+    region: "United States",
+    note: "Fulbright commission rules vary 10× by country — check your commission's website before assuming general FAQs apply. Knight-Hennessy + Schwarzman target opposite signals: Knight wants leadership impact at scale, Schwarzman wants future-China-engagement narrative.",
+  },
+  {
+    region: "Africa + Africa-eligible global",
+    note: "Mastercard Foundation across ~20 partner unis is the single biggest funding pipeline. Apply via the partner uni's regular admit, not directly to Mastercard. Aga Khan ISP is open to all (not just Ismaili Muslims) — most people don't know.",
+  },
+  {
+    region: "MENA + South Asia + CIS",
+    note: "Türkiye Bursları + Stipendium Hungaricum + Italy Govt have country-specific quotas that are sometimes unfilled — research yours before deciding it's competitive. KAUST in Saudi is full-ride STEM with almost zero apps from outside the region.",
+  },
+];
 
 export const UNDERRATED_SCHOLARSHIPS: UnderratedScholarship[] = [
   {
