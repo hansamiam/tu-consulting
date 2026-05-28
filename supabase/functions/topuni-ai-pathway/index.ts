@@ -69,6 +69,10 @@ export interface StrategyReportV2 {
    *  dossier via /topuni-ai/r/:id?t=<readToken>. Owners read via RLS
    *  without needing this. */
   readToken: string;
+  /** Pass-through from intake — drives the masthead meta line
+   *  "Prepared for: X | Track: Master's (Data Science) | Target: USA/Canada". */
+  fieldOfStudy: string;
+  targetCountries: string[];
 }
 
 /* ─── Capture anon brief lead (carry-over from v1) ─── */
@@ -249,6 +253,8 @@ function coerceReport(
     generatedAt: new Date().toISOString(),
     profileHash,
     firstName: ctx.firstName,
+    fieldOfStudy: ctx.fieldOfStudy,
+    targetCountries: ctx.targetCountries,
     // Placeholders — filled in by writeCache below.
     id: "",
     readToken: "",

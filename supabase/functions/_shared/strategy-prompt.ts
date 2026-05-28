@@ -63,7 +63,7 @@ export const STRATEGY_REPORT_SCHEMA = {
     honestDiagnosis: { type: "string", description: "3-5 sentences. The candid pull-quote verdict. Names the strongest lever, the biggest gap, and what's at stake if the gap isn't addressed. Reads like the gold-pull-quote in a consulting report." },
     strengths:       { type: "array", items: { type: "string" }, description: "Exactly 3 bullets. Each bullet is 1-2 substantive sentences naming the specific intake signal AND why it's load-bearing for their target." },
     watchouts:       { type: "array", items: { type: "string" }, description: "Exactly 3 weaknesses. Each bullet is 1-2 sentences: name the gap + state what it costs at application time. No softening with 'opportunity' / 'growth area'." },
-    focusNext:       { type: "array", items: { type: "string" }, description: "Exactly 3 actionable bullets. Each starts with a verb the student can act on this month, with 1-2 sentences of specifics (which test, which professor, which essay angle)." },
+    focusNext:       { type: "array", items: { type: "string" }, description: "Exactly 3 actionable bullets. Each MUST cite a specific intake field, be a different category of move (build/contact/draft/score/verify/pivot), and be doable in 30 days. NO example anchors — use the rich intake context." },
     fitDiagnosis: {
       type: "array",
       description: "Length 4 (Bachelor/Master) or 5 (PhD). One row per subcategory.",
@@ -164,6 +164,17 @@ Rules of voice (absolute):
 - Anything that sounds like a motivational poster — cut it.
 - Optimistic Realist means: the picture is honest, and the path forward is real. Not "everything is fine"; not "everything is doomed". The student should finish reading slightly anxious AND knowing exactly what to do about it.
 
+# GOLDEN RULE — Free report = What + Why, never How
+
+This is the FREE strategy report. Give the student the WHAT (their position, their gaps, their best-fit pathway) and the WHY (the reasoning behind each verdict, the consequence of each gap at application time). NEVER give the HOW. Specifically:
+- NEVER name specific universities, scholarships by name (beyond what they already mentioned in intake), or program codes
+- NEVER write step-by-step application instructions ("first do X, then Y, then submit by Z")
+- NEVER provide essay outlines, supervisor email templates, or proposal frameworks
+- NEVER list a curated 5-7 school target list
+- DO name the strategic category (Funding-first markets, Mid-tier merit, Interdisciplinary PhDs, etc.) — categories are guidance, not roadmaps
+- DO surface a specific gap with its specific cost — that's diagnosis, not how-to
+- The membership turns the snapshot into the actual plan. Don't give away the plan.
+
 # OUTPUT
 
 You will receive an INTAKE block in the user message. Produce ONE JSON object matching the schema enforced by responseSchema. Every string VALUE in English. JSON keys remain English. Do NOT wrap the JSON in markdown fences. Do NOT add fields not in the schema.
@@ -219,11 +230,12 @@ ${renderSubcategories(PHD_SUBCATEGORIES, "en")}
 
 - \`strengths\`: exactly 3 bullets. Each pulls from a real intake field. No "you have potential" filler — name the specific signal.
 - \`watchouts\`: exactly 3 bullets. These are WEAKNESSES, named directly. State what's missing or below threshold + what it costs at application time. Examples: "IELTS 6.5 — below the 7.0 median used by most fully-funded Master's programs." or "No published research — locks you out of Tier-1 PhD funding routes." Do NOT soften with "opportunity for the next 6 months" or "area for growth". The student needs to feel each gap to act on it.
-- \`focusNext\`: exactly 3 bullets. Each is an action with a verb the student can do this month (book, draft, email, score, retake, write). Voice anchors for the SHAPE of each bullet (NOT a closed set — actual output should be much more sophisticated and intake-grounded):
-  • Bachelor: improve English / test readiness · build one major-related project · strengthen activity story
-  • Master: improve proof of quantitative abilities · strengthen career story · clarify program type
-  • PhD: narrow research question · identify supervisors · strengthen proposal
-  Use as anchors for the KIND of move that belongs in this list — never as literal text. Each bullet MUST cite something specific from the intake.
+- \`focusNext\`: exactly 3 bullets. Quality criteria — NO example anchors (avoids templated output; you have rich intake context, use it):
+  • Each bullet MUST cite a SPECIFIC intake field (the actual test score, the specific named scholarship, the actual major, the actual nationality, the actual quantitative weakness — whatever the intake reveals)
+  • Each bullet MUST be a DIFFERENT CATEGORY of move (don't return three "improve your X" variations — vary the move type: build / contact / draft / score / verify / pivot)
+  • Each bullet MUST be doable in the next 30 days (no 6-month projects)
+  • Each bullet MUST start with an action verb the student can act on this month
+  • For Master/PhD profiles: at least one bullet must address quant or research strength if those are weak in the intake
 
 # HEADLINE + HONEST DIAGNOSIS
 
@@ -270,6 +282,17 @@ function buildCachedPrefixRU(): string {
 - Это правило применяется ко ВСЕМ snake_case значениям из INTAKE — fundingPosture ("full_funding_first" / "partial" / "flexible"), englishLevel ("ielts_7_plus" / "not_taken_yet"), perceivedWeakness и др. НИКОГДА не цитируйте их буквально. Переводите: "full_funding_first" → "нужно полное финансирование"; "not_taken_yet" → "ещё не сдавал тест"; "ielts_7_plus" → "IELTS 7+". Snake_case в кавычках = автоматический перегенератор.
 - Всё, что звучит как мотивационный плакат — вырезайте.
 - Optimistic Realist означает: картинка честная, путь вперёд реальный. Не "всё в порядке"; не "всё пропало". Студент должен закончить чтение слегка встревоженным И понимающим, что именно делать.
+
+# ЗОЛОТОЕ ПРАВИЛО — Бесплатный отчёт = Что + Почему, никогда Как
+
+Это БЕСПЛАТНЫЙ отчёт. Дайте студенту ЧТО (их позиция, пробелы, лучший pathway) и ПОЧЕМУ (логика каждого вердикта, цена каждого пробела при подаче). НИКОГДА не давайте КАК. Конкретно:
+- НИКОГДА не называйте конкретные университеты, стипендии по имени (кроме упомянутых в анкете), коды программ
+- НИКОГДА не пишите пошаговые инструкции по подаче ("сначала X, потом Y, дедлайн Z")
+- НИКОГДА не давайте outline эссе, шаблоны писем руководителю, фреймворки proposal
+- НИКОГДА не давайте список из 5-7 школ
+- МОЖНО назвать стратегическую КАТЕГОРИЮ (Funding-first рынки, Mid-tier merit, Interdisciplinary PhD и т.п.) — категории это ориентир, не дорожная карта
+- МОЖНО озвучить конкретный пробел с его конкретной ценой — это диагностика, не how-to
+- Подписка превращает snapshot в реальный план. Не отдавайте план бесплатно.
 
 # ВЫВОД
 
@@ -325,11 +348,12 @@ ${renderSubcategories(PHD_SUBCATEGORIES, "ru")}
 
 - \`strengths\`: ровно 3 пункта. Каждый — 1-2 substantive предложения, называющие конкретный сигнал из анкеты И почему он load-bearing для цели студента. Никакого "у вас есть потенциал".
 - \`watchouts\`: ровно 3 пункта. Это СЛАБЫЕ СТОРОНЫ, названные прямо, 1-2 предложения каждый: назовите пробел + во что это обойдётся на этапе подачи. Примеры: "IELTS 6.5 — ниже медианы 7.0 для большинства master-программ с полным финансированием" или "Нет публикаций — закрывает доступ к топ-программам PhD с фондовым финансированием". НЕ смягчайте формулировками вроде "возможность на 6 месяцев" или "точка роста".
-- \`focusNext\`: ровно 3 пункта. Каждый — действие с глаголом, 1-2 предложения со спецификой (какой тест, какой профессор, какой угол эссе). Ориентиры по форме (НЕ закрытый набор — реальный output должен быть более sophisticated и привязан к анкете):
-  • Bachelor: подтянуть английский / готовность к тестам · запустить один проект по своему направлению · усилить нарратив активностей
-  • Master: усилить доказательства количественных навыков · подтянуть карьерный нарратив · определиться с типом программы
-  • PhD: сузить исследовательский вопрос · найти потенциальных руководителей · усилить research proposal
-  Используйте это как ориентир ТИПА действия, а не как буквальный текст. Каждый bullet ОБЯЗАН ссылаться на что-то конкретное из анкеты.
+- \`focusNext\`: ровно 3 пункта. Критерии качества — БЕЗ примеров-якорей (избегайте шаблонного вывода; у вас богатый контекст из анкеты, используйте его):
+  • Каждый пункт ОБЯЗАН ссылаться на КОНКРЕТНОЕ поле анкеты (фактический балл теста, конкретная названная стипендия, реальная специальность, реальное гражданство, конкретный quantitative пробел — то, что раскрывает анкета)
+  • Каждый пункт ОБЯЗАН быть РАЗНОЙ КАТЕГОРИИ действия (не три варианта "улучши X" — варьируйте тип: построить / связаться / написать / пересдать / проверить / pivot)
+  • Каждый пункт ОБЯЗАН быть выполнимым в ближайшие 30 дней
+  • Каждый пункт ОБЯЗАН начинаться с глагола
+  • Для Master/PhD: минимум один пункт должен затрагивать quant или исследовательскую силу, если они слабы в анкете
 
 # HEADLINE + HONEST DIAGNOSIS
 

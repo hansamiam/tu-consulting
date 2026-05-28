@@ -57,6 +57,9 @@ export const StrategyDossier = ({ report }: Props) => {
             firstName={report.firstName}
             language={report.language}
             generatedAt={report.generatedAt}
+            targetDegree={report.targetDegree}
+            fieldOfStudy={report.fieldOfStudy}
+            targetCountries={report.targetCountries}
           />
         </Reveal>
 

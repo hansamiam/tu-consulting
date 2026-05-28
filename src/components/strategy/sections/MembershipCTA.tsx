@@ -73,14 +73,14 @@ const CTA_POOL: CtaCopy[] = [
     },
   },
   {
-    eyebrow: { en: "Turn this snapshot into a real plan", ru: "Превратите этот отчёт в реальный план" },
+    eyebrow: { en: "Turn this snapshot into a real plan", ru: "Превратите snapshot в реальный план" },
     headline: {
-      en: "Join the first-ever Top Uni Membership Program.",
-      ru: "Вступайте в первую программу Top Uni Membership.",
+      en: "Join the Top Uni Scholarship Membership.",
+      ru: "Вступайте в Top Uni Scholarship Membership.",
     },
     body: {
-      en: "We work with students applying abroad on scholarships — strategy workshops, office hours, the Discover database, and feedback on your materials before they're submitted. Stop guessing where to apply.",
-      ru: "Мы работаем со студентами, которые поступают за рубеж со стипендией — стратегические воркшопы, office hours, доступ к Discover и обратная связь по материалам до подачи. Хватит гадать, куда подавать.",
+      en: "Turn this free snapshot into a real application plan with monthly workshops, office hours, and member-only scholarship insights.",
+      ru: "Превратите бесплатный отчёт в реальный план поступления — ежемесячные воркшопы, office hours и инсайды по стипендиям только для участников.",
     },
   },
 ];

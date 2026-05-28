@@ -46,6 +46,10 @@ export interface StrategyReportV2 {
   profileHash: string;
   /** Used for the formal "Prepared for: {firstName}" masthead line. */
   firstName: string;
+  /** Pass-through from intake — drives the masthead meta line
+   *  "Prepared for: X | Track: Master's (Data Science) | Target: USA/Canada". */
+  fieldOfStudy: string;
+  targetCountries: string[];
 }
 
 export interface StrategyApiResponse {

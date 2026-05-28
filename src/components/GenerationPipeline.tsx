@@ -3,33 +3,33 @@ import { motion } from "framer-motion";
 import {
   Check,
   Loader2,
-  Database,
-  Award,
-  Target,
   FileText,
-  Calendar,
-  Brain,
+  Compass,
+  BarChart3,
+  Quote,
+  AlertOctagon,
+  MapPin,
 } from "lucide-react";
 
 /**
- * GenerationPipeline — the trust-building loading experience.
+ * GenerationPipeline — v2 pipeline (2026-05-29 rewrite).
  *
- * Rather than a generic "loading…" spinner, this component shows a real-time
- * pipeline view of what the AI is doing on the backend:
- *   1. Retrieving 200+ scholarships from the verified database
- *   2. Embedding your profile (1536-dim semantic vector)
- *   3. Ranking by 6 dimensions (academic / country / field / coverage / ...)
- *   4. Drafting strategic positioning + 90-day plan
- *   5. Mapping deadlines onto your timeline
- *   6. Finalizing brief
+ * Honest narration of what the v2 strategy edge function actually
+ * does (no more v1 embeddings + ranking + essay angles + deadlines
+ * lies). Each step references the actual intake so the loading state
+ * feels bespoke, not templated.
  *
- * Each step references the actual user profile (GPA, IELTS, countries) so it
- * reads as bespoke rather than templated. Steps tick at calibrated timings
- * that roughly match real backend phases — by the time step 3-4 ticks, the
- * first stream chunk is usually arriving.
+ * Steps map roughly to the function's real phases:
+ *   1. Reading your intake (degree, scores, signals)
+ *   2. Resolving cultural context (CIS/first-gen/global)
+ *   3. Scoring readiness across 5 axes
+ *   4. Drafting the honest diagnosis (Gemini 2.5 Flash call)
+ *   5. Naming the weaknesses + what they cost
+ *   6. Composing your strategic-frame pathway
  *
- * Visual treatment: dense, technical, premium. Like watching a build pipeline
- * complete — each step is a small celebration of competence.
+ * Step timings calibrated to the typical ~15-20s Gemini call so the
+ * pipeline visually catches up just before the response arrives.
+ * Step list never shows 100% — parent unmounts on response.
  */
 
 interface Profile {
@@ -64,58 +64,76 @@ export function GenerationPipeline({ profile, isRu = false }: Props) {
   const gpa = profile.gpa?.trim();
   const ielts = profile.ielts?.trim();
   const majorText = profile.major?.trim() || "";
+  const gradeText = profile.gradeLevel?.trim() || "";
 
   const steps: Step[] = useMemo(() => [
     {
-      id: "retrieve",
-      Icon: Database,
-      label: t("Loading the verified Discover catalog", "Загружаем верифицированный каталог Discover"),
-      detail: t("Programs from governments, universities, and foundations", "Программы от правительств, университетов и фондов"),
-      doneAt: 700,
-    },
-    {
-      id: "embed",
-      Icon: Brain,
-      label: t("Embedding your profile", "Векторизуем ваш профиль"),
-      detail: countryList
-        ? t(`Targeting ${countryList} · ${majorText || "your field"}`, `Цель: ${countryList} · ${majorText || "ваше направление"}`)
-        : t("Encoding into a 1536-dim semantic vector", "Кодируем в 1536-мерный вектор"),
-      doneAt: 1700,
-    },
-    {
-      id: "rank",
-      Icon: Target,
-      label: t("Ranking on 6 dimensions", "Ранжируем по 6 измерениям"),
-      detail: gpa || ielts
-        ? t(
-            `Academics ${gpa ? `(GPA ${gpa})` : ""}${ielts ? `, English (IELTS ${ielts})` : ""}, eligibility, coverage, urgency`,
-            `Академика ${gpa ? `(GPA ${gpa})` : ""}${ielts ? `, английский (IELTS ${ielts})` : ""}, право на участие, покрытие, срочность`
-          )
-        : t("Academics · eligibility · coverage · field · country · timing", "Академика · право · покрытие · направление · страна · сроки"),
-      doneAt: 3100,
-    },
-    {
-      id: "shortlist",
-      Icon: Award,
-      label: t("Mapping schools to your funding", "Привязываем школы к вашему финансированию"),
-      detail: t("3 schools where your scholarships actually land you", "3 школы, куда вас приведут эти стипендии"),
-      doneAt: 5000,
-    },
-    {
-      id: "essay",
+      id: "intake",
       Icon: FileText,
-      label: t("Drafting 3 essay angles", "Составляем 3 ракурса для эссе"),
-      detail: t("Each anchored to a specific signal in your profile", "Каждый — на основе конкретного сигнала вашего профиля"),
-      doneAt: 7500,
+      label: t("Reading your intake", "Читаем вашу анкету"),
+      detail: gradeText && majorText
+        ? t(`${gradeText} · ${majorText}${gpa ? ` · GPA ${gpa}` : ""}`, `${gradeText} · ${majorText}${gpa ? ` · GPA ${gpa}` : ""}`)
+        : t("Degree, scores, signals, free-text", "Уровень, оценки, сигналы, free-text"),
+      doneAt: 1200,
     },
     {
-      id: "calendar",
-      Icon: Calendar,
-      label: t("Mapping upcoming deadlines", "Сводим ближайшие дедлайны"),
-      detail: t("Sorted to surface what's most urgent first", "Сортируем по срочности"),
-      doneAt: 10500,
+      id: "context",
+      Icon: Compass,
+      label: t("Resolving cultural context", "Определяем культурный контекст"),
+      detail: t(
+        "Framing for first-gen-abroad vs first-gen-college vs global-step",
+        "Рамка для first-gen-abroad / first-gen-college / global-step",
+      ),
+      doneAt: 2800,
     },
-  ], [countryList, gpa, ielts, majorText, isRu]);
+    {
+      id: "axes",
+      Icon: BarChart3,
+      label: t("Scoring readiness across 5 axes", "Оцениваем готовность по 5 осям"),
+      detail: ielts || gpa
+        ? t(
+            `Academic ${gpa ? `(GPA ${gpa})` : ""}${ielts ? ` · English (IELTS ${ielts})` : ""} · testing · experience · funding`,
+            `Академика ${gpa ? `(GPA ${gpa})` : ""}${ielts ? ` · английский (IELTS ${ielts})` : ""} · тесты · опыт · финансирование`,
+          )
+        : t(
+            "Academic strength · testing · experience · narrative · funding",
+            "Академика · тесты · опыт · нарратив · финансирование",
+          ),
+      doneAt: 5500,
+    },
+    {
+      id: "diagnosis",
+      Icon: Quote,
+      label: t("Drafting your honest diagnosis", "Готовим честный диагноз"),
+      detail: countryList
+        ? t(`Optimistic-realist framing for ${countryList}`, `Optimistic-realist рамка для ${countryList}`)
+        : t(
+            "Two-to-three sentence pull-quote — honest about the gap, the lever, and the stakes",
+            "2-3 предложения — про рычаг, пробел и ставки",
+          ),
+      doneAt: 9000,
+    },
+    {
+      id: "weaknesses",
+      Icon: AlertOctagon,
+      label: t("Naming weaknesses and what they cost", "Называем слабости и их цену"),
+      detail: t(
+        "Each gap with the specific application-time consequence",
+        "Каждый пробел с конкретной ценой при подаче",
+      ),
+      doneAt: 12500,
+    },
+    {
+      id: "pathway",
+      Icon: MapPin,
+      label: t("Composing your strategic pathway", "Складываем стратегию"),
+      detail: t(
+        "Funding-first · Research-first · Applied · Affordability-first — one frame",
+        "Funding-first · Research-first · Applied · Affordability-first — одна рамка",
+      ),
+      doneAt: 15500,
+    },
+  ], [countryList, gpa, ielts, majorText, gradeText, isRu]);
 
   // Continuous progress bar tied to wall-clock; steps "complete" when their
   // doneAt ms is hit. We never show 100% until the response actually arrives;
@@ -134,24 +152,19 @@ export function GenerationPipeline({ profile, isRu = false }: Props) {
 
   return (
     <div className="py-10 px-4 max-w-2xl mx-auto">
-      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-6"
       >
-        {/* Header — pulse dot dropped 2026-05-25 (was an orphan after
-            the "WORKING" eyebrow label was stripped earlier the same
-            day). Progress bar + step list below carry the "we're
-            working" signal; the dot alone read as a random speck. */}
         <h3 className="font-heading text-2xl font-bold text-foreground tracking-tight mb-1">
           {profile.fullName
             ? t(`Building ${profile.fullName.split(" ")[0]}'s strategy`, `Готовим стратегию для ${profile.fullName.split(" ")[0]}`)
             : t("Building your strategy report", "Готовим ваш стратегический отчёт")}
         </h3>
         <p className="text-sm text-muted-foreground">
-          {t("This usually takes 20–40 seconds. The brief streams in below as it generates.",
-             "Обычно 20–40 секунд. Брифинг появится ниже по мере генерации.")}
+          {t("This usually takes 20–30 seconds.",
+             "Обычно 20–30 секунд.")}
         </p>
       </motion.div>
 
