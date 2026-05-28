@@ -1,18 +1,15 @@
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, FileText, GraduationCap, FileSignature, Mail, Lock, Brain } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import { useAuth } from "@/contexts/AuthContext";
+import { isAdminUser, isAdminBypass } from "@/lib/adminMode";
 
 /**
- * /resources — TopUni's public discovery surface for downloadable
- * products. Mirrors the LF /resources catalog pattern; today only
- * the Underrated Scholarships PDF is live, but the page already
- * scaffolds the catalog plan so visitors can see what's coming.
- *
- * The Strategy Report PDF lives inside /topuni-ai (the wizard
- * generates one personalised per visitor), so it's framed here as a
- * "build your own" card pointing at the wizard — not a static
- * download.
+ * /resources — admin-only catalog of downloadable products. Lead
+ * magnets are distributed via direct links (IG/newsletter/outreach),
+ * not a public discovery page. Non-admins get redirected home so
+ * stale shared links don't expose the catalog.
  *
  * Adding a new product: push into FREE_RESOURCES or PAID_RESOURCES.
  */
@@ -115,6 +112,8 @@ const Card = ({ r, paid }: { r: ResourceCard; paid?: boolean }) => (
 );
 
 const Resources = () => {
+  const { user } = useAuth();
+  if (!isAdminUser(user) && !isAdminBypass()) return <Navigate to="/" replace />;
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navigation language="en" variant="overlay" />
