@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, FileText, GraduationCap, FileSignature, Mail, Lock, Brain, CheckSquare } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileText, GraduationCap, FileSignature, Mail, Lock, Brain, CheckSquare, Compass } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import PreviewBanner from "@/components/PreviewBanner";
@@ -44,6 +44,14 @@ const FREE_RESOURCES: ResourceCard[] = [
     format: "Personalised PDF",
     icon: Brain,
     pill: "AI",
+  },
+  {
+    title: "Pick Your 10 Programs in 7 Days",
+    blurb: "One day of structured prompts in your inbox for 7 days. By Sunday you've moved from research paralysis to a locked, calibrated list of 10 programs.",
+    href: "/pick-your-ten",
+    format: "7-day email course",
+    icon: Compass,
+    pill: "New",
   },
 ];
 
