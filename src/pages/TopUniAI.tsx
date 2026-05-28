@@ -58,7 +58,6 @@ import {
 import { useNavigate } from "react-router-dom";
 import { saveProfile, getStoredProfile } from "@/components/discover/DiscoverProfileGate";
 import { projectToDiscoverProfile } from "@/lib/topuniIntakeProjection";
-import { detectArchetypeOrFallback, getArchetype } from "../../supabase/functions/_shared/archetype-library";
 import { KNOWN_SCHOLARSHIP_CHIPS, knownScholarshipLabel } from "@/lib/known-scholarship-chips";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -1829,63 +1828,22 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                       // audit — no scholarship-consulting platform
                       // surfaces this kind of named-identity moment to
                       // the user.
-                      const narrativeFilled = [careerGoal, extracurriculars, background, namedSchools]
-                        .some((s) => (s ?? "").trim().length > 6);
-                      const revealMatch = narrativeFilled
-                        ? detectArchetypeOrFallback({
-                            nationality,
-                            gradeLevel,
-                            major,
-                            targetCountries,
-                            careerGoal,
-                            extracurriculars: composeExtracurriculars(selectedECTags, extracurriculars) || extracurriculars,
-                            background,
-                            namedSchools,
-                            firstToApplyAbroad,
-                            foreignLanguages,
-                          })
-                        : null;
-                      const revealArch = revealMatch ? getArchetype(revealMatch.id) : null;
+                      // 2026-05-28 v2: the biographical archetype reveal
+                      // card was retired with the rest of the archetype
+                      // library — Samuel flagged the labels as "too rigid,
+                      // AI sloppy, cheesy". The wizard final step now just
+                      // shows the Generate CTA; the LLM-coined Applicant
+                      // Type label is surfaced inside the dossier itself.
                       return (
-                        <>
-                          {revealMatch && revealArch && (
-                            <div className="rounded-xl border border-gold/35 bg-gold/[0.04] px-5 py-4 mt-2">
-                              <p className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-gold-dark m-0 mb-1.5">
-                                {t("How we're reading this", "Как мы читаем")}
-                              </p>
-                              {revealMatch.isFallback ? (
-                                <p className="text-[14.5px] leading-[1.55] text-foreground m-0">
-                                  {t(
-                                    "Your story doesn't fit one obvious mold — that's useful information. Your strategy will lean into the specific texture of what you've shared, not a template.",
-                                    "Твоя история не вписывается в готовый шаблон — это полезный сигнал. Твоя стратегия будет работать с конкретной фактурой того, что ты рассказал(а), а не с шаблоном.",
-                                  )}
-                                </p>
-                              ) : (
-                                <p className="text-[14.5px] leading-[1.55] text-foreground m-0">
-                                  {t(
-                                    `Reading you as ${revealArch.name}. ${revealArch.tagline}`,
-                                    `Читаем тебя как ${revealArch.name}. ${revealArch.tagline}`,
-                                  )}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                          {/* 2026-05-20: dropped the redundant "Skip for
-                              now" ghost button — it called the same
-                              onGenerate handler as the primary CTA, so
-                              two buttons doing the same thing read as
-                              clutter. The label hint above already
-                              tells users they can leave fields blank. */}
-                          <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
-                            <Button variant="outline" onClick={() => goToStep(3)}>
-                              <ArrowLeft className="mr-2 w-4 h-4" /> {t("Back", "Назад")}
-                            </Button>
-                            <Button variant="gold" size="lg" onClick={onGenerate}>
-                              {t("Give me my strategy", "Дай мне стратегию")}
-                              <ArrowRight className="ml-2 w-5 h-5" />
-                            </Button>
-                          </div>
-                        </>
+                        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
+                          <Button variant="outline" onClick={() => goToStep(3)}>
+                            <ArrowLeft className="mr-2 w-4 h-4" /> {t("Back", "Назад")}
+                          </Button>
+                          <Button variant="gold" size="lg" onClick={onGenerate}>
+                            {t("Give me my strategy", "Дай мне стратегию")}
+                            <ArrowRight className="ml-2 w-5 h-5" />
+                          </Button>
+                        </div>
                       );
                     })()}
                   </motion.div>
