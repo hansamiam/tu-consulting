@@ -1,4 +1,7 @@
-import { Eyebrow, SectionTitle } from "../primitives";
+// v4: dead-simple rows. Subcategory label + verdict on one baseline,
+// reason on the next line. No card, no rules, no dividers — just type.
+
+import { SectionLabel } from "../primitives";
 import type { FitRow, Language } from "../types";
 import { t } from "../types";
 
@@ -10,29 +13,21 @@ interface Props {
 export const FitDiagnosis = ({ rows, language }: Props) => {
   if (!rows || rows.length === 0) return null;
   return (
-    <section className="mb-8 sm:mb-10">
-      <div className="mb-3">
-        <Eyebrow>{t(language, "Fit diagnosis", "Диагностика fit")}</Eyebrow>
-        <SectionTitle>
-          {t(language, "Where you actually fit", "Где вы реально подходите")}
-        </SectionTitle>
-      </div>
-      <div className="rounded-2xl border border-border bg-card overflow-hidden">
+    <section className="mb-5">
+      <SectionLabel>{t(language, "Fit Diagnosis", "Диагностика fit")}</SectionLabel>
+      <div className="space-y-2.5">
         {rows.map((row, i) => (
-          <div
-            key={i}
-            className={`px-5 py-4 ${i < rows.length - 1 ? "border-b border-border" : ""}`}
-          >
-            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mb-1.5">
-              <span className="text-[11.5px] font-bold uppercase tracking-wider text-foreground/55">
+          <div key={i}>
+            <div className="flex flex-wrap items-baseline gap-x-2 mb-0.5">
+              <span className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-foreground/55">
                 {row.subcategory}
               </span>
-              <span className="font-heading text-[14.5px] font-bold text-foreground">
+              <span className="text-[13px] font-bold text-foreground">
                 {row.verdict}
               </span>
             </div>
             {row.reason && (
-              <p className="text-[13.5px] leading-[1.45] text-foreground/72 m-0">
+              <p className="text-[12.5px] leading-[1.5] text-foreground/72 m-0">
                 {row.reason}
               </p>
             )}

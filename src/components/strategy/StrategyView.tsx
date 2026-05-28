@@ -1,13 +1,13 @@
-// Data-fetching wrapper around StrategyDossier. Posts the wizard
-// profile to topuni-ai-pathway, renders skeleton during fetch, then
-// renders the dossier. Replaces TopUniDashboard for v2.
+// Data-fetching wrapper around StrategyDossier.
+// Loading state = the build-pipeline experience (GenerationPipeline)
+// brought back per Samuel 2026-05-29 ("generic crap" → "bring back").
 //
 // See plan: ~/.claude/plans/back-to-the-wizard-crispy-storm.md
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
 import { EDGE_FUNCTIONS_URL } from "@/lib/env";
 import { supabase } from "@/integrations/supabase/client";
+import { GenerationPipeline } from "@/components/GenerationPipeline";
 import { StrategyDossier } from "./StrategyDossier";
 import type { Language, StrategyApiResponse, StrategyReportV2 } from "./types";
 import { t } from "./types";
@@ -65,27 +65,15 @@ export const StrategyView = ({ profile, language }: Props) => {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center max-w-md px-6">
-          <Loader2 className="w-7 h-7 text-gold-dark mx-auto mb-4 animate-spin" />
-          <h2 className="font-heading text-[22px] font-bold leading-tight text-foreground mb-2">
-            {t(language, "Generating your strategy…", "Готовим вашу стратегию…")}
-          </h2>
-          <p className="text-[14px] leading-[1.5] text-foreground/65 m-0">
-            {t(
-              language,
-              "Reading your intake, scoring readiness across 5 axes, and drafting your honest diagnosis.",
-              "Анализируем анкету, оцениваем готовность по 5 осям и формулируем честный диагноз.",
-            )}
-          </p>
-        </div>
+      <main className="min-h-screen bg-white">
+        <GenerationPipeline profile={profile} isRu={language === "ru"} />
       </main>
     );
   }
 
   if (error || !report) {
     return (
-      <main className="min-h-screen bg-background flex items-center justify-center">
+      <main className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center max-w-md px-6">
           <h2 className="font-heading text-[22px] font-bold leading-tight text-foreground mb-3">
             {t(language, "Something went wrong.", "Что-то пошло не так.")}

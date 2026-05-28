@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { setPostAuthRedirect } from "@/lib/postAuthRedirect";
 import { AuthDialog } from "@/components/auth/AuthDialog";
-import { Eyebrow } from "../primitives";
+import { SectionLabel } from "../primitives";
 import type { Language } from "../types";
 import { t } from "../types";
 
@@ -70,6 +70,17 @@ const CTA_POOL: CtaCopy[] = [
     body: {
       en: "Top Uni Membership gives you the structure and access to fix what your snapshot just diagnosed — without the price tag of an elite consulting firm.",
       ru: "Top Uni Membership даёт структуру и доступ, чтобы закрыть то, что только что диагностировал ваш отчёт — без ценника элитной консалтинговой фирмы.",
+    },
+  },
+  {
+    eyebrow: { en: "Turn this snapshot into a real plan", ru: "Превратите snapshot в реальный план" },
+    headline: {
+      en: "Join the Top Uni Scholarship Membership.",
+      ru: "Вступайте в Top Uni Scholarship Membership.",
+    },
+    body: {
+      en: "Turn this free snapshot into a real application plan with monthly workshops, office hours, and member-only scholarship insights.",
+      ru: "Превратите бесплатный отчёт в реальный план поступления — ежемесячные воркшопы, office hours и инсайды по стипендиям только для участников.",
     },
   },
 ];
@@ -147,10 +158,13 @@ export const MembershipCTA = ({ language }: Props) => {
 
   return (
     <>
-      <section className="mt-2 mb-4 pt-6 border-t border-border">
-        <div className="rounded-3xl border border-gold/40 bg-gold/[0.05] p-6 sm:p-8">
+      <section className="mt-3 mb-4 pt-6 border-t border-foreground/15 print:break-inside-avoid">
+        <div
+          data-strategy-cta
+          className="rounded-2xl border border-gold/40 bg-gold/[0.06] p-5 sm:p-6"
+        >
           <div className="mb-2">
-            <Eyebrow>{copy.eyebrow[language]}</Eyebrow>
+            <SectionLabel>{copy.eyebrow[language]}</SectionLabel>
           </div>
           <h2 className="font-heading text-[20px] sm:text-[24px] font-bold leading-[1.2] tracking-tight text-foreground m-0 mb-3">
             {copy.headline[language]}

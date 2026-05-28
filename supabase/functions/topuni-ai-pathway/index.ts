@@ -22,6 +22,8 @@ import { findBanned } from "../_shared/banned-phrases.ts";
 import {
   subcategoriesFor,
   findVerdictByLabel,
+  findPathwayByLabel,
+  BEST_FIT_PATHWAYS,
   type FitSubcategory,
   type Language,
   type TargetDegree,
@@ -37,15 +39,19 @@ export interface StrategyReportV2 {
   /** Internal taxonomy label — NOT rendered as a stamped pill. The
    *  model weaves the identity into the headline prose instead. */
   applicantType: { label: string };
+  /** Strategic-frame badge rendered between Headline and HonestDiagnosis.
+   *  Snapped to the closed BEST_FIT_PATHWAYS set in coerceReport. */
+  bestFitPathway: { label: string };
   axes: AxisOut[];
   headline: string;
   honestDiagnosis: string;
-  strengths: string[];
-  watchouts: string[];
-  focusNext: string[];
+  /** v6 (2026-05-29) — 3 strategic moves replacing the old 9-bullet
+   *  stack. Each is 1-2 substantive sentences. The cofounder
+   *  Play / Blindspot / Pivot framing. */
+  uniqueEdge: string;
+  blindspot: string;
+  targetOpportunity: string;
   fitDiagnosis: FitOut[];
-  bestNextMove: string;
-  doNotWaste: string;
   readinessScore: number;
   targetDegree: TargetDegree;
   language: Language;
@@ -54,6 +60,17 @@ export interface StrategyReportV2 {
   /** Code-computed — derived from intake, used for the formal
    *  "Prepared for: {firstName}" line in the dossier masthead. */
   firstName: string;
+  /** Persisted row id — the URL the user can return to. Populated
+   *  after the row is written (or read from cache hit). */
+  id: string;
+  /** 32-char random token. Allows anon visitors to re-open their
+   *  dossier via /topuni-ai/r/:id?t=<readToken>. Owners read via RLS
+   *  without needing this. */
+  readToken: string;
+  /** Pass-through from intake — drives the masthead meta line
+   *  "Prepared for: X | Track: Master's (Data Science) | Target: USA/Canada". */
+  fieldOfStudy: string;
+  targetCountries: string[];
 }
 
 /* ─── Capture anon brief lead (carry-over from v1) ─── */
@@ -118,10 +135,17 @@ async function queueStrategyEmail(
   email: string,
   fullName: string | null,
   language: Language,
+  reportId: string,
+  readToken: string,
 ) {
   if (!email || !email.includes("@")) return;
   try {
     const idemBase = userId ?? `anon-${email.trim().toLowerCase()}`;
+    // Persistent dossier URL. Anonymous recipients open via `?t=`; auth'd
+    // users get the same path resolved through RLS on the saved row.
+    const briefUrl = userId
+      ? `${SITE}/topuni-ai/r/${reportId}`
+      : `${SITE}/topuni-ai/r/${reportId}?t=${readToken}`;
     await admin.functions.invoke("send-transactional-email", {
       body: {
         recipientEmail: email,
@@ -129,7 +153,7 @@ async function queueStrategyEmail(
         idempotencyKey: `brief-generated-${idemBase}`,
         templateData: {
           firstName: fullName?.split(" ")[0] || undefined,
-          briefUrl: `${SITE}/topuni-ai${language === "ru" ? "/ru" : ""}`,
+          briefUrl,
           language,
         },
       },
@@ -153,6 +177,16 @@ function coerceReport(
     label: typeof ap.label === "string"
       ? ap.label.trim()
       : (ctx.language === "ru" ? "Развивающийся кандидат" : "Emerging Applicant"),
+  };
+
+  // Snap the LLM-coined pathway label to the closed BEST_FIT_PATHWAYS
+  // set. If we can't match, default to Funding-first (most-common
+  // honest fallback for the international-scholarship audience).
+  const bp = (r.bestFitPathway ?? {}) as Record<string, unknown>;
+  const rawPathwayLabel = typeof bp.label === "string" ? bp.label.trim() : "";
+  const matchedPathway = rawPathwayLabel ? findPathwayByLabel(rawPathwayLabel, ctx.language) : null;
+  const bestFitPathway = {
+    label: matchedPathway ? matchedPathway.label[ctx.language] : BEST_FIT_PATHWAYS[0].label[ctx.language],
   };
 
   const expectedAxes = axesFor(ctx.targetDegree, ctx.language);
@@ -181,33 +215,35 @@ function coerceReport(
     };
   });
 
-  const arr3 = (k: string): string[] => {
-    const v = r[k];
-    if (!Array.isArray(v)) return ["", "", ""];
-    return [0, 1, 2].map((i) => typeof v[i] === "string" ? (v[i] as string) : "");
-  };
-
   const readinessScore = Math.round(
     (axes.reduce((s, a) => s + a.value, 0) / axes.length) * 2
   ) / 2;
 
+  const uniqueEdge = typeof r.uniqueEdge === "string" ? r.uniqueEdge.trim() : "";
+  const blindspot = typeof r.blindspot === "string" ? r.blindspot.trim() : "";
+  const targetOpportunity = typeof r.targetOpportunity === "string" ? r.targetOpportunity.trim() : "";
+
   return {
     applicantType,
+    bestFitPathway,
     axes,
     headline: typeof r.headline === "string" ? r.headline : "",
     honestDiagnosis: typeof r.honestDiagnosis === "string" ? r.honestDiagnosis : "",
-    strengths: arr3("strengths"),
-    watchouts: arr3("watchouts"),
-    focusNext: arr3("focusNext"),
+    uniqueEdge,
+    blindspot,
+    targetOpportunity,
     fitDiagnosis,
-    bestNextMove: typeof r.bestNextMove === "string" ? r.bestNextMove : "",
-    doNotWaste: typeof r.doNotWaste === "string" ? r.doNotWaste : "",
     readinessScore,
     targetDegree: ctx.targetDegree,
     language: ctx.language,
     generatedAt: new Date().toISOString(),
     profileHash,
     firstName: ctx.firstName,
+    fieldOfStudy: ctx.fieldOfStudy,
+    targetCountries: ctx.targetCountries,
+    // Placeholders — filled in by writeCache below.
+    id: "",
+    readToken: "",
   };
 }
 
@@ -238,7 +274,7 @@ async function readCached(
   language: Language,
 ): Promise<StrategyReportV2 | null> {
   const { data, error } = await reportsTable(admin)
-    .select("payload")
+    .select("id, read_token, payload")
     .eq("profile_hash", profileHash)
     .eq("language", language)
     .maybeSingle();
@@ -246,7 +282,12 @@ async function readCached(
     console.warn("[cache] read failed:", error.message);
     return null;
   }
-  return (data?.payload as StrategyReportV2) ?? null;
+  if (!data?.payload) return null;
+  return {
+    ...(data.payload as StrategyReportV2),
+    id: data.id as string,
+    readToken: data.read_token as string,
+  };
 }
 
 async function writeCache(
@@ -254,8 +295,11 @@ async function writeCache(
   report: StrategyReportV2,
   userId: string | null,
   email: string | null,
-): Promise<void> {
-  const { error } = await reportsTable(admin)
+): Promise<{ id: string; readToken: string } | null> {
+  // The payload we persist includes id + readToken so cache reads get
+  // them back via `payload->>'id'` if needed. The top-level columns are
+  // still the source of truth.
+  const { data, error } = await reportsTable(admin)
     .upsert(
       {
         user_id: userId,
@@ -268,8 +312,14 @@ async function writeCache(
         payload: report,
       },
       { onConflict: "profile_hash,language" },
-    );
-  if (error) console.warn("[cache] write failed:", error.message);
+    )
+    .select("id, read_token")
+    .single();
+  if (error) {
+    console.warn("[cache] write failed:", error.message);
+    return null;
+  }
+  return { id: data.id as string, readToken: data.read_token as string };
 }
 
 /* ─── Handler ─── */
@@ -332,17 +382,22 @@ serve(async (req) => {
     const email = typeof body.profile.email === "string" ? body.profile.email.trim() : null;
     const fullName = typeof body.profile.fullName === "string" ? body.profile.fullName : null;
 
-    await writeCache(admin, report, userId, email);
+    const written = await writeCache(admin, report, userId, email);
+    if (written) {
+      report.id = written.id;
+      report.readToken = written.readToken;
+    }
 
     // Fire-and-forget lead capture + welcome email.
     if (!userId && email) {
       captureAnonBriefLead(admin, body.profile, language, req).catch(() => { /* ignore */ });
     }
-    if (email) {
-      queueStrategyEmail(admin, userId, email, fullName, language).catch(() => { /* ignore */ });
+    if (email && report.id && report.readToken) {
+      queueStrategyEmail(admin, userId, email, fullName, language, report.id, report.readToken)
+        .catch(() => { /* ignore */ });
     }
 
-    console.log(`[strategy] generated hash=${profileHash} lang=${language} t=${tGen}ms cache=${result.usedCache} regen=${result.regenerated}`);
+    console.log(`[strategy] generated hash=${profileHash} lang=${language} t=${tGen}ms cache=${result.usedCache} regen=${result.regenerated} id=${report.id}`);
     return respondJson(200, {
       report,
       cached: false,

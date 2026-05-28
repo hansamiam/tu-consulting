@@ -12,6 +12,7 @@ import {
   BACHELOR_SUBCATEGORIES,
   MASTER_SUBCATEGORIES,
   PHD_SUBCATEGORIES,
+  BEST_FIT_PATHWAYS,
   type FitSubcategory,
   type Language,
 } from "./fit-subcategories.ts";
@@ -24,17 +25,20 @@ import type { PromptContext } from "./intake-to-prompt-context.ts";
 
 export const STRATEGY_REPORT_SCHEMA = {
   type: "object",
-  required: [
-    "applicantType", "axes", "headline", "honestDiagnosis",
-    "strengths", "watchouts", "focusNext",
-    "fitDiagnosis", "bestNextMove", "doNotWaste",
-  ],
   properties: {
     applicantType: {
       type: "object",
       required: ["label"],
       properties: {
         label: { type: "string", description: "≤4 words. Coined for INTERNAL analytics only — NEVER rendered as a stamped pill in the UI. The model weaves the identity into the headline prose instead." },
+      },
+    },
+    bestFitPathway: {
+      type: "object",
+      required: ["label"],
+      description: "Strategic-frame label picked from the closed set in the BEST-FIT PATHWAY section of the prompt.",
+      properties: {
+        label: { type: "string", description: "MUST be one of the 5 closed-set BEST-FIT PATHWAY labels for the current language." },
       },
     },
     axes: {
@@ -50,11 +54,11 @@ export const STRATEGY_REPORT_SCHEMA = {
         },
       },
     },
-    headline:        { type: "string", description: "ONE substantive sentence starting with firstName. MUST naturally weave the applicantType.label identity into the prose (e.g. 'Aigerim, you're a capable STEM builder with the olympiad record to back it — strongest fit for fully-funded engineering tracks in Europe.'). NOT a stamped label." },
+    headline:        { type: "string", description: "ONE substantive sentence starting with firstName. MUST naturally weave (a) the applicantType.label identity AND (b) the bestFitPathway label into the prose. Pathway is NOT rendered as a standalone label in the UI — it lives in this sentence. Example: 'Aigerim, you're a capable STEM builder with the olympiad record to back it — strongest fit for fully-funded engineering tracks in Europe.' (The phrase 'fully-funded engineering tracks' IS the pathway, woven in.) NOT a stamped label." },
     honestDiagnosis: { type: "string", description: "3-5 sentences. The candid pull-quote verdict. Names the strongest lever, the biggest gap, and what's at stake if the gap isn't addressed. Reads like the gold-pull-quote in a consulting report." },
-    strengths:       { type: "array", items: { type: "string" }, description: "Exactly 3 bullets. Each bullet is 1-2 substantive sentences naming the specific intake signal AND why it's load-bearing for their target." },
-    watchouts:       { type: "array", items: { type: "string" }, description: "Exactly 3 weaknesses. Each bullet is 1-2 sentences: name the gap + state what it costs at application time. No softening with 'opportunity' / 'growth area'." },
-    focusNext:       { type: "array", items: { type: "string" }, description: "Exactly 3 actionable bullets. Each starts with a verb the student can act on this month, with 1-2 sentences of specifics (which test, which professor, which essay angle)." },
+    uniqueEdge:        { type: "string", description: "1-2 substantive sentences. THE PLAY. Names the specific assets in their intake that win them programs / funding. Don't list bullets; write narrative consulting copy. Cite specific intake fields." },
+    blindspot:         { type: "string", description: "1-2 substantive sentences. THE BLINDSPOT. Names ONE specific academic threshold or credential gap the student must cross + what filters them out if they don't. Direct. Specific. No softening." },
+    targetOpportunity: { type: "string", description: "1-2 substantive sentences. THE PIVOT / TARGET OPPORTUNITY. Names the strategic CATEGORY of programs to target (NOT specific schools per Golden Rule) + the strategic move. Action-oriented." },
     fitDiagnosis: {
       type: "array",
       description: "Length 4 (Bachelor/Master) or 5 (PhD). One row per subcategory.",
@@ -68,9 +72,11 @@ export const STRATEGY_REPORT_SCHEMA = {
         },
       },
     },
-    bestNextMove: { type: "string", description: "ONE sentence. Start with an action verb." },
-    doNotWaste:   { type: "string", description: "ONE sentence. What NOT to spend time on." },
   },
+  required: [
+    "applicantType", "bestFitPathway", "axes", "headline", "honestDiagnosis",
+    "uniqueEdge", "blindspot", "targetOpportunity", "fitDiagnosis",
+  ],
 } as const;
 
 /* ─── Voice anchors (label style references, NOT a closed set) ─── */
@@ -116,6 +122,12 @@ export function axesFor(degree: PromptContext["targetDegree"], lang: Language): 
   return AXES_BY_DEGREE[degree][lang];
 }
 
+function renderPathways(lang: Language): string {
+  return BEST_FIT_PATHWAYS.map((p) =>
+    `  - "${p.label[lang]}" — ${p.hint[lang]}`,
+  ).join("\n");
+}
+
 /* ─── Helpers to render subcategory + verdict tables into the prompt ── */
 
 function renderSubcategories(subs: FitSubcategory[], lang: Language): string {
@@ -148,6 +160,17 @@ Rules of voice (absolute):
 - Anything that sounds like a motivational poster — cut it.
 - Optimistic Realist means: the picture is honest, and the path forward is real. Not "everything is fine"; not "everything is doomed". The student should finish reading slightly anxious AND knowing exactly what to do about it.
 
+# GOLDEN RULE — Free report = What + Why, never How
+
+This is the FREE strategy report. Give the student the WHAT (their position, their gaps, their best-fit pathway) and the WHY (the reasoning behind each verdict, the consequence of each gap at application time). NEVER give the HOW. Specifically:
+- NEVER name specific universities, scholarships by name (beyond what they already mentioned in intake), or program codes
+- NEVER write step-by-step application instructions ("first do X, then Y, then submit by Z")
+- NEVER provide essay outlines, supervisor email templates, or proposal frameworks
+- NEVER list a curated 5-7 school target list
+- DO name the strategic category (Funding-first markets, Mid-tier merit, Interdisciplinary PhDs, etc.) — categories are guidance, not roadmaps
+- DO surface a specific gap with its specific cost — that's diagnosis, not how-to
+- The membership turns the snapshot into the actual plan. Don't give away the plan.
+
 # OUTPUT
 
 You will receive an INTAKE block in the user message. Produce ONE JSON object matching the schema enforced by responseSchema. Every string VALUE in English. JSON keys remain English. Do NOT wrap the JSON in markdown fences. Do NOT add fields not in the schema.
@@ -164,6 +187,14 @@ Coin \`applicantType.label\` (≤4 words) in the voice of these anchors. This is
 Voice anchors for the label (style references, NOT a closed set):
 
 ${anchors}
+
+# BEST-FIT PATHWAY — pick ONE from closed set
+
+Pick the SINGLE strategic frame that best fits the applicant. The label MUST come from this closed list (use the exact spelling and casing — closed-set validation snaps mismatches to the closest entry):
+
+${renderPathways("en")}
+
+When between two, pick the more honest one (e.g. lean Affordability-first over Funding-first when GPA is borderline AND no standout signal exists). Don't invent new labels.
 
 # READINESS AXES — score each 1..5
 
@@ -191,11 +222,7 @@ ${renderSubcategories(MASTER_SUBCATEGORIES, "en")}
 == PHD (5 subcategories, only if targetDegree=phd) ==
 ${renderSubcategories(PHD_SUBCATEGORIES, "en")}
 
-# STRENGTHS / WATCHOUTS / FOCUS NEXT
-
-- \`strengths\`: exactly 3 bullets. Each pulls from a real intake field. No "you have potential" filler — name the specific signal.
-- \`watchouts\`: exactly 3 bullets. These are WEAKNESSES, named directly. State what's missing or below threshold + what it costs at application time. Examples: "IELTS 6.5 — below the 7.0 median used by most fully-funded Master's programs." or "No published research — locks you out of Tier-1 PhD funding routes." Do NOT soften with "opportunity for the next 6 months" or "area for growth". The student needs to feel each gap to act on it.
-- \`focusNext\`: exactly 3 bullets. Each is an action with a verb the student can do this month (book, draft, email, score, retake, write).
+(See THREE STRATEGIC MOVES section above for uniqueEdge / blindspot / targetOpportunity — that replaces the old strengths/weaknesses/focusNext stack.)
 
 # HEADLINE + HONEST DIAGNOSIS
 
@@ -206,6 +233,14 @@ ${renderSubcategories(PHD_SUBCATEGORIES, "en")}
 
 - \`bestNextMove\`: ONE sentence. The single highest-ROI move for the next 6 months. Start with an action verb.
 - \`doNotWaste\`: ONE sentence. The single thing the student should NOT spend time on right now given their gap profile.
+
+# EVIDENCE GAP (Master + PhD ONLY)
+
+- \`evidenceGap\`: 1-2 substantive sentences naming the SINGLE most load-bearing missing piece of evidence in the application. NOT a generic weakness from the watchouts list — this is THE thing that, if not addressed, will sink the candidacy. Examples:
+  • "Quantitative proof — your econ-PhD shortlist will demand visible stats/coding output. Eight weeks of a focused portfolio project would credibly bridge this."
+  • "Writing sample sharpening — the proposal exists but reads thin. Two workshop rounds before September deadlines would meaningfully tighten it."
+  • "Supervisor outreach record — top PhD funding flows through advisor advocacy. Three pre-application cold-emails to aligned faculty are the move."
+- For Bachelor profiles output \`evidenceGap\` as empty string "" — Bachelor gaps are activity / testing / essay and already covered above.
 
 # LANGUAGE
 
@@ -235,6 +270,17 @@ function buildCachedPrefixRU(): string {
 - Всё, что звучит как мотивационный плакат — вырезайте.
 - Optimistic Realist означает: картинка честная, путь вперёд реальный. Не "всё в порядке"; не "всё пропало". Студент должен закончить чтение слегка встревоженным И понимающим, что именно делать.
 
+# ЗОЛОТОЕ ПРАВИЛО — Бесплатный отчёт = Что + Почему, никогда Как
+
+Это БЕСПЛАТНЫЙ отчёт. Дайте студенту ЧТО (их позиция, пробелы, лучший pathway) и ПОЧЕМУ (логика каждого вердикта, цена каждого пробела при подаче). НИКОГДА не давайте КАК. Конкретно:
+- НИКОГДА не называйте конкретные университеты, стипендии по имени (кроме упомянутых в анкете), коды программ
+- НИКОГДА не пишите пошаговые инструкции по подаче ("сначала X, потом Y, дедлайн Z")
+- НИКОГДА не давайте outline эссе, шаблоны писем руководителю, фреймворки proposal
+- НИКОГДА не давайте список из 5-7 школ
+- МОЖНО назвать стратегическую КАТЕГОРИЮ (Funding-first рынки, Mid-tier merit, Interdisciplinary PhD и т.п.) — категории это ориентир, не дорожная карта
+- МОЖНО озвучить конкретный пробел с его конкретной ценой — это диагностика, не how-to
+- Подписка превращает snapshot в реальный план. Не отдавайте план бесплатно.
+
 # ВЫВОД
 
 Вы получите блок INTAKE в сообщении пользователя. Произведите ОДИН JSON-объект, соответствующий схеме responseSchema. Каждое строковое ЗНАЧЕНИЕ — на русском. Ключи JSON остаются на английском. НЕ оборачивайте JSON в markdown-кавычки. НЕ добавляйте поля сверх схемы.
@@ -250,6 +296,14 @@ function buildCachedPrefixRU(): string {
 Образцы голоса для лейбла (стилевые ориентиры, НЕ закрытый набор):
 
 ${anchors}
+
+# BEST-FIT PATHWAY — выберите ОДНУ из закрытого набора
+
+Выберите ОДНО стратегическое направление, которое лучше всего описывает абитуриента. Лейбл ОБЯЗАН быть из этого закрытого списка (точное написание; закрытая валидация подгонит mismatches к ближайшему элементу):
+
+${renderPathways("ru")}
+
+При выборе между двумя берите более честный вариант (например, Доступная стоимость вместо Финансирование-в-первую-очередь, если GPA пограничный И нет выдающихся сигналов). Не выдумывайте новые лейблы.
 
 # ОСИ ГОТОВНОСТИ — оценка от 1 до 5
 
@@ -277,21 +331,45 @@ ${renderSubcategories(MASTER_SUBCATEGORIES, "ru")}
 == PHD (5 подкатегорий, только если targetDegree=phd) ==
 ${renderSubcategories(PHD_SUBCATEGORIES, "ru")}
 
-# STRENGTHS / WATCHOUTS / FOCUS NEXT
+# ТРИ СТРАТЕГИЧЕСКИХ ХОДА — Unique Edge / Blindspot / Target Opportunity
 
-- \`strengths\`: ровно 3 пункта. Каждый — 1-2 substantive предложения, называющие конкретный сигнал из анкеты И почему он load-bearing для цели студента. Никакого "у вас есть потенциал".
-- \`watchouts\`: ровно 3 пункта. Это СЛАБЫЕ СТОРОНЫ, названные прямо, 1-2 предложения каждый: назовите пробел + во что это обойдётся на этапе подачи. Примеры: "IELTS 6.5 — ниже медианы 7.0 для большинства master-программ с полным финансированием" или "Нет публикаций — закрывает доступ к топ-программам PhD с фондовым финансированием". НЕ смягчайте формулировками вроде "возможность на 6 месяцев" или "точка роста".
-- \`focusNext\`: ровно 3 пункта. Каждый — действие с глаголом, 1-2 предложения со спецификой (какой тест, какой профессор, какой угол эссе).
+Заменяют старый bullet-список strengths/weaknesses/focusNext. Три коротких прозаических предложения, каждое — стратегический ход. БЕЗ маркированных списков.
+
+- \`uniqueEdge\` — THE PLAY. 1-2 предложения. Называет конкретные активы из анкеты, которые реально выигрывают программы / финансирование. Цитируйте конкретные поля анкеты.
+- \`blindspot\` — THE HURDLE. 1-2 предложения. Называет ОДИН конкретный академический порог или пробел в доказательствах, который нужно преодолеть + последствие на этапе подачи. Прямо. Без смягчения "возможность для роста". Студент должен почувствовать порог конкретно.
+- \`targetOpportunity\` — THE PIVOT. 1-2 предложения. Называет стратегическую КАТЕГОРИЮ программ (не конкретные школы по Золотому Правилу) + стратегический pivot.
+
+Эти три вместе заменяют старый стек из 9 пунктов. Читаются как голос cofounder, переводящий business logic в чёткий стратегический нарратив.
+
+# IF/THEN ДЕРЕВО РЕШЕНИЙ (триггеры)
+
+Применяйте эти правила когда анкета подходит. Они переопределяют мягкий default-framing:
+
+- ЕСЛИ targetDegree = phd И fieldOfStudy содержит "econom" И quantBackground = "light" ТО: targetOpportunity ОБЯЗАН направить от классического Econ PhD к applied/interdisciplinary PhD; uniqueEdge ОБЯЗАН подчеркнуть writing sample + applied research; blindspot ОБЯЗАН назвать конкретный math/stats/econometrics порог.
+- ЕСЛИ targetDegree = phd И researchExperience = "none" ТО: blindspot ОБЯЗАН отметить отсутствие research record как критический PhD барьер.
+- ЕСЛИ targetDegree = master И workExperience = "none" И major карта в MBA/professional ТО: blindspot ОБЯЗАН отметить отсутствующий work-history фильтр.
+- ЕСЛИ targetDegree = bachelor И hasLeadership = "no" ТО: uniqueEdge не может опираться на лидерство.
+- ЕСЛИ englishLevel = ниже 6.0 ИЛИ "не сдавал" ТО: blindspot ОБЯЗАН назвать английский как первичный near-term порог.
+- ЕСЛИ fundingPosture = "full_funding_first" И США bachelor ТО: targetOpportunity ОБЯЗАН направить к регионам с лучшим international-aid record.
+
+Это условия срабатывания, не буквальный текст. Модель проводит их через прозаический голос выше.
 
 # HEADLINE + HONEST DIAGNOSIS
 
-- \`headline\`: ОДНО substantive предложение, начинающееся с имени. Вплетает идентичность applicantType И картину готовности в прозу (см. раздел APPLICANT TYPE). Не обещайте университеты. Не обещайте исходы. Длина: достаточно, чтобы реально что-то сказать (~25-40 слов).
+- \`headline\`: ОДНО substantive предложение, начинающееся с имени. Вплетает идентичность applicantType И стратегию bestFitPathway И картину готовности в прозу. (Pathway НЕ показывается отдельным лейблом в UI — он ОБЯЗАН быть в headline.) Не обещайте университеты. Не обещайте исходы. Длина: ~25-40 слов.
 - \`honestDiagnosis\`: 3-5 предложений. Откровенный pull-quote вердикт. Предложение 1 — сильнейший рычаг. Предложение 2 — крупнейший пробел. Предложение 3 — что на кону, если пробел не закрыть за 6 месяцев. Опциональные 4-5 — культурный контекст (если применимо, ОДИН РАЗ) и/или стратегическая дорожка, которую cohort помог бы заблокировать. Читается как pull-quote в консалтинговом отчёте — substantive, не лаконично.
 
 # BEST NEXT MOVE / DO NOT WASTE
 
 - \`bestNextMove\`: ОДНО предложение. Самый высокоокупаемый ход на ближайшие 6 месяцев. Начинайте с глагола.
 - \`doNotWaste\`: ОДНО предложение. То, на что НЕ стоит тратить время с учётом профиля.
+
+# EVIDENCE GAP (только Master + PhD)
+
+- \`evidenceGap\`: 1-2 substantive предложения, называющие ЕДИНСТВЕННЫЙ наиболее load-bearing недостающий элемент доказательств в заявке. НЕ просто общая слабость из watchouts — это ТО, что потопит candidacy, если не закрыть. Примеры:
+  • "Quantitative proof — econ-PhD шорт-лист потребует видимых stats/coding output. Восемь недель focused portfolio project достоверно закроют этот пробел."
+  • "Подтяжка writing sample — proposal есть, но читается тонко. Два круга воркшопов до сентябрьских дедлайнов существенно его уплотнят."
+- Для Bachelor выводите \`evidenceGap\` пустой строкой "" — пробелы Bachelor (активности / тесты / эссе) уже покрыты выше.
 
 # ЯЗЫК
 
@@ -322,6 +400,10 @@ export function buildTail(ctx: PromptContext): string {
       researchSignals: ctx.researchSignals,
       culturalContext: ctx.culturalContext,
       careerGoal: ctx.careerGoal,
+      quantBackground: ctx.quantBackground,
+      workExperience: ctx.workExperience,
+      researchExperience: ctx.researchExperience,
+      hasLeadership: ctx.hasLeadership,
       background: ctx.background,
       namedSchools: ctx.namedSchools,
       foreignLanguages: ctx.foreignLanguages,

@@ -465,3 +465,21 @@
   /* Charts: monochrome-safe form */
   svg { color: #000 !important; }
 }
+
+/* v3 strategy dossier — extra print tuning for the executive-summary
+   PDF look. The base print rules above already handle most of this;
+   these adjustments are scoped to the new <main> container only so
+   the legacy printable-brief surfaces are unaffected. */
+@media print {
+  /* Slightly tighter print margins for the dossier — gives more
+     horizontal room without going edge-to-edge */
+  main {
+    background: white !important;
+  }
+  /* Mute the gold-tint MembershipCTA on print so a printed PDF doesn't
+     have a giant yellow block at the bottom; keep the border + text */
+  main [data-strategy-cta] {
+    background: white !important;
+  }
+}
+

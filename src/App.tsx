@@ -43,6 +43,7 @@ const PaymentInfo          = lazy(() => import("./pages/PaymentInfo"));
 const PaymentInfoRu        = lazy(() => import("./pages/PaymentInfoRu"));
 const TopUniAI             = lazy(() => import("./pages/TopUniAI"));
 const TopUniAIRu           = lazy(() => import("./pages/TopUniAIRu"));
+const StrategyRead         = lazy(() => import("./pages/StrategyRead"));
 const TopUniAIPartners     = lazy(() => import("./pages/TopUniAIPartners"));
 const TopUniAIPartnersRu   = lazy(() => import("./pages/TopUniAIPartnersRu"));
 const Discover             = lazy(() => import("./pages/Discover"));
@@ -185,6 +186,8 @@ const App = () => (
           <Route path="/payment-info/ru" element={<PaymentInfoRu />} />
           <Route path="/topuni-ai" element={<TopUniAI />} />
           <Route path="/topuni-ai/ru" element={<TopUniAIRu />} />
+          <Route path="/topuni-ai/r/:reportId" element={<StrategyRead language="en" />} />
+          <Route path="/topuni-ai/ru/r/:reportId" element={<StrategyRead language="ru" />} />
           <Route path="/topuni-ai/partners" element={<TopUniAIPartners />} />
           <Route path="/topuni-ai/partners/ru" element={<TopUniAIPartnersRu />} />
           {/* Discover = scholarship decision engine. /scholarships kept as alias. */}
