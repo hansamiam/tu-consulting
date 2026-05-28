@@ -1,16 +1,15 @@
-// Sub-masthead under the formal Top Uni masthead. Holds the
-// substantive headline + the Readiness Score label/dots.
-//
-// Applicant-type label is intentionally NOT rendered here — the LLM
-// weaves the identity into the headline prose instead (Samuel's
-// 2026-05-28 feedback: pill stamp reads cringy / class-reveal-y).
+// Executive Summary block — headline + Readiness Score + Best-Fit
+// Pathway as a tight stat-grid under the headline. No filled boxes;
+// the eyebrow + thin gold rule does the visual work.
 
+import { SectionHead } from "../primitives";
 import type { Language } from "../types";
 import { t } from "../types";
 
 interface Props {
   headline: string;
   readinessScore: number; // 0..5
+  bestFitPathway: string;
   language: Language;
 }
 
@@ -23,7 +22,7 @@ const ScoreDots = ({ score }: { score: number }) => {
         return (
           <div
             key={n}
-            className="relative w-4 h-4 rounded-full border-2 border-gold/60 bg-transparent overflow-hidden"
+            className="relative w-3.5 h-3.5 rounded-full border-[1.5px] border-gold/60 bg-transparent overflow-hidden"
           >
             <div
               className="absolute inset-0 bg-gold-dark"
@@ -32,25 +31,48 @@ const ScoreDots = ({ score }: { score: number }) => {
           </div>
         );
       })}
-      <span className="ml-2 font-heading text-[15px] font-bold text-foreground tabular-nums">
-        {score.toFixed(1).replace(/\.0$/, "")}<span className="text-foreground/40"> / 5</span>
+      <span className="ml-1.5 font-heading text-[14.5px] font-bold text-foreground tabular-nums">
+        {score.toFixed(1).replace(/\.0$/, "")}
+        <span className="text-foreground/40"> / 5</span>
       </span>
     </div>
   );
 };
 
-export const ReadinessHero = ({ headline, readinessScore, language }: Props) => {
+const StatRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="flex items-baseline gap-3">
+    <span className="text-[9.5px] font-bold uppercase tracking-[0.22em] text-foreground/55 w-[120px] shrink-0">
+      {label}
+    </span>
+    <div className="flex-1">{children}</div>
+  </div>
+);
+
+export const ReadinessHero = ({
+  headline,
+  readinessScore,
+  bestFitPathway,
+  language,
+}: Props) => {
   return (
-    <section className="mb-8 sm:mb-10">
-      <h1 className="font-heading text-[24px] sm:text-[32px] font-bold leading-[1.18] tracking-tight text-foreground m-0 mb-6 max-w-3xl">
+    <section className="mb-6">
+      <SectionHead>{t(language, "Executive Summary", "Краткое резюме")}</SectionHead>
+
+      <h1 className="font-heading text-[22px] sm:text-[28px] font-bold leading-[1.2] tracking-tight text-foreground m-0 mb-5 max-w-[640px]">
         {headline || t(language, "Your strategy is ready.", "Ваша стратегия готова.")}
       </h1>
 
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <span className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-foreground/55">
-          {t(language, "Readiness Score", "Уровень готовности")}
-        </span>
-        <ScoreDots score={readinessScore} />
+      <div className="space-y-1.5">
+        <StatRow label={t(language, "Readiness Score", "Готовность")}>
+          <ScoreDots score={readinessScore} />
+        </StatRow>
+        {bestFitPathway && (
+          <StatRow label={t(language, "Best-Fit Pathway", "Стратегия")}>
+            <span className="font-heading text-[14.5px] font-bold text-foreground tracking-tight">
+              {bestFitPathway}
+            </span>
+          </StatRow>
+        )}
       </div>
     </section>
   );

@@ -147,8 +147,11 @@ export const MembershipCTA = ({ language }: Props) => {
 
   return (
     <>
-      <section className="mt-2 mb-4 pt-6 border-t border-border">
-        <div className="rounded-3xl border border-gold/40 bg-gold/[0.05] p-6 sm:p-8">
+      <section className="mt-3 mb-4 pt-6 border-t border-foreground/15 print:break-inside-avoid">
+        <div
+          data-strategy-cta
+          className="rounded-2xl border border-gold/40 bg-gold/[0.06] p-5 sm:p-6"
+        >
           <div className="mb-2">
             <Eyebrow>{copy.eyebrow[language]}</Eyebrow>
           </div>
