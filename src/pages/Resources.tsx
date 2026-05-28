@@ -47,9 +47,15 @@ const FREE_RESOURCES: ResourceCard[] = [
 ];
 
 const PAID_RESOURCES: ResourceCard[] = [
-  // Empty for now — placeholder cards below signal what's coming
-  // without overpromising. Pull these into PAID_RESOURCES as each
-  // ships.
+  {
+    title: "Recommendation Letter Asks",
+    blurb: "Five relationship archetypes (close prof / distant prof / employer / mentor / peer), the full ask + follow-up + thank-you email templates, the red flags that mean find someone else, and the recommender packet.",
+    href: "/recommendation-letter-asks",
+    format: "22-page field guide",
+    price: "$19",
+    icon: Mail,
+    pill: "Field Guide N°2",
+  },
 ];
 
 const COMING_SOON = [
@@ -62,11 +68,6 @@ const COMING_SOON = [
     title: "Scholarship Essay Bank",
     blurb: "Twenty winning scholarship essays with line-by-line annotations. Why each landed. Templates for your own.",
     icon: FileText,
-  },
-  {
-    title: "Recommendation Letter Asks",
-    blurb: "Scripts + templates for asking professors and supervisors — the exact email that gets a yes, what to send with it.",
-    icon: Mail,
   },
 ];
 
