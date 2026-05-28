@@ -1642,7 +1642,10 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         <Label htmlFor="careerGoal" className="text-xs uppercase tracking-wider font-medium">{t("Who do you want to be?", "Кем ты хочешь стать?")}</Label>
                         <Textarea
                           id="careerGoal"
-                          placeholder={t("e.g. data scientist focused on climate modeling", "напр. data scientist в климатическом моделировании")}
+                          placeholder={t(
+                            "e.g. Run a development bank in Central Asia · Get into a Stanford CS PhD · Move to Berlin and work in climate tech · Build a fintech that banks Kyrgyz migrants",
+                            "напр. Возглавить банк развития в Центральной Азии · Поступить в Stanford на CS PhD · Переехать в Берлин и работать в climate tech · Запустить финтех для мигрантов из Кыргызстана",
+                          )}
                           value={careerGoal}
                           onChange={(e) => setCareerGoal(e.target.value)}
                           className="min-h-[70px] resize-none bg-card"
