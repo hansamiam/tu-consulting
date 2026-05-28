@@ -59,7 +59,7 @@ export const STRATEGY_REPORT_SCHEMA = {
         },
       },
     },
-    headline:        { type: "string", description: "ONE substantive sentence starting with firstName. MUST naturally weave the applicantType.label identity into the prose (e.g. 'Aigerim, you're a capable STEM builder with the olympiad record to back it — strongest fit for fully-funded engineering tracks in Europe.'). NOT a stamped label." },
+    headline:        { type: "string", description: "ONE substantive sentence starting with firstName. MUST naturally weave (a) the applicantType.label identity AND (b) the bestFitPathway label into the prose. Pathway is NOT rendered as a standalone label in the UI — it lives in this sentence. Example: 'Aigerim, you're a capable STEM builder with the olympiad record to back it — strongest fit for fully-funded engineering tracks in Europe.' (The phrase 'fully-funded engineering tracks' IS the pathway, woven in.) NOT a stamped label." },
     honestDiagnosis: { type: "string", description: "3-5 sentences. The candid pull-quote verdict. Names the strongest lever, the biggest gap, and what's at stake if the gap isn't addressed. Reads like the gold-pull-quote in a consulting report." },
     strengths:       { type: "array", items: { type: "string" }, description: "Exactly 3 bullets. Each bullet is 1-2 substantive sentences naming the specific intake signal AND why it's load-bearing for their target." },
     watchouts:       { type: "array", items: { type: "string" }, description: "Exactly 3 weaknesses. Each bullet is 1-2 sentences: name the gap + state what it costs at application time. No softening with 'opportunity' / 'growth area'." },
@@ -325,7 +325,7 @@ ${renderSubcategories(PHD_SUBCATEGORIES, "ru")}
 
 # HEADLINE + HONEST DIAGNOSIS
 
-- \`headline\`: ОДНО substantive предложение, начинающееся с имени. Вплетает идентичность applicantType И картину готовности в прозу (см. раздел APPLICANT TYPE). Не обещайте университеты. Не обещайте исходы. Длина: достаточно, чтобы реально что-то сказать (~25-40 слов).
+- \`headline\`: ОДНО substantive предложение, начинающееся с имени. Вплетает идентичность applicantType И стратегию bestFitPathway И картину готовности в прозу. (Pathway НЕ показывается отдельным лейблом в UI — он ОБЯЗАН быть в headline.) Не обещайте университеты. Не обещайте исходы. Длина: ~25-40 слов.
 - \`honestDiagnosis\`: 3-5 предложений. Откровенный pull-quote вердикт. Предложение 1 — сильнейший рычаг. Предложение 2 — крупнейший пробел. Предложение 3 — что на кону, если пробел не закрыть за 6 месяцев. Опциональные 4-5 — культурный контекст (если применимо, ОДИН РАЗ) и/или стратегическая дорожка, которую cohort помог бы заблокировать. Читается как pull-quote в консалтинговом отчёте — substantive, не лаконично.
 
 # BEST NEXT MOVE / DO NOT WASTE

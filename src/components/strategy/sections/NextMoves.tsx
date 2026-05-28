@@ -25,7 +25,7 @@ export const NextMoves = ({ bestNextMove, doNotWaste, language }: Props) => {
       )}
       {doNotWaste && (
         <section className="mb-5">
-          <SectionLabel>{t(language, "Do Not Waste Time", "Не тратьте время")}</SectionLabel>
+          <SectionLabel>{t(language, "Don't Waste Time On", "Не тратьте время на")}</SectionLabel>
           <p className="text-[13px] leading-[1.55] text-foreground/85 m-0 font-medium">
             {doNotWaste}
           </p>

@@ -28,7 +28,7 @@ export const StrengthsWatchouts = ({ strengths, watchouts, focusNext, language }
   <>
     {strengths && strengths.length > 0 && (
       <section className="mb-5">
-        <SectionLabel>{t(language, "Strengths", "Сильные стороны")}</SectionLabel>
+        <SectionLabel>{t(language, "Strengths to Build Around", "Сильные стороны")}</SectionLabel>
         <BulletList items={strengths} />
       </section>
     )}
@@ -42,7 +42,7 @@ export const StrengthsWatchouts = ({ strengths, watchouts, focusNext, language }
 
     {focusNext && focusNext.length > 0 && (
       <section className="mb-5">
-        <SectionLabel>{t(language, "Next Steps", "Следующие шаги")}</SectionLabel>
+        <SectionLabel>{t(language, "This Month", "В этом месяце")}</SectionLabel>
         <BulletList items={focusNext} />
       </section>
     )}
