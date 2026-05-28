@@ -163,6 +163,17 @@ interface WizardDraft {
   gmatState?: "unspecified" | "taken" | "not_yet";
   gre?: string;
   gmat?: string;
+  /** 2026-05-29 grad-applicant additions (Samuel's spec):
+   *  These three drive most of the LLM's grad-track diagnosis quality.
+   *  quantBackground specifically resolves the cofounder's
+   *  "PhD-Econ-without-math pivot" classroom. */
+  quantBackground?: "heavy" | "moderate" | "light";
+  workExperience?: "none" | "1_2" | "3_5" | "5_plus";
+  researchExperience?: "extensive" | "moderate" | "light" | "none";
+  /** 2026-05-29 bachelor-applicant addition (Samuel's spec): quick
+   *  Y/N on whether they held a leadership role. Low friction, high
+   *  signal for narrative differentiation. */
+  hasLeadership?: "yes" | "no";
   /** Wall-clock ms — drafts older than 14 days are dropped on read. */
   ts?: number;
 }
@@ -481,6 +492,12 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
     (draft?.gmatState as TestState) ?? (draft?.gmat ? "taken" : "unspecified"),
   );
 
+  // 2026-05-29 grad + bachelor additions per Samuel's spec.
+  const [quantBackground, setQuantBackground] = useState<WizardDraft["quantBackground"]>(draft?.quantBackground);
+  const [workExperience, setWorkExperience] = useState<WizardDraft["workExperience"]>(draft?.workExperience);
+  const [researchExperience, setResearchExperience] = useState<WizardDraft["researchExperience"]>(draft?.researchExperience);
+  const [hasLeadership, setHasLeadership] = useState<WizardDraft["hasLeadership"]>(draft?.hasLeadership);
+
   const [careerGoal, setCareerGoal] = useState<string>(draft?.careerGoal ?? "");
   const [extracurriculars, setExtracurriculars] = useState<string>(draft?.extracurriculars ?? "");
   const [background, setBackground] = useState<string>(draft?.background ?? "");
@@ -601,6 +618,8 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
         // Sparse-input pass — Step 3 EC chip selections.
         selectedECTags: selectedECTags.length > 0 ? selectedECTags : undefined,
         knownScholarships: knownScholarships.length > 0 ? knownScholarships : undefined,
+        // 2026-05-29 grad + bachelor additions.
+        quantBackground, workExperience, researchExperience, hasLeadership,
         // 2026-05-26 — per-test taken/not-yet chip state. Persisted so a
         // page refresh keeps the user's answer rather than resetting to
         // "unspecified" + an empty score input.
@@ -618,6 +637,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
     prestige, scholarship, careerRoi, visaAccess, locationPref,
     careerGoal, extracurriculars, background, namedSchools,
     foreignLanguages, firstToApplyAbroad, selectedECTags, knownScholarships,
+    quantBackground, workExperience, researchExperience, hasLeadership,
     ieltsState, toeflState, satState,
     greState, gmatState, gre, gmat,
   ]);
@@ -643,6 +663,8 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
     careerGoal, extracurriculars, background, namedSchools,
     foreignLanguages, firstToApplyAbroad, selectedECTags, knownScholarships,
     gre, gmat,
+    // 2026-05-29 — grad + bachelor additions per Samuel's spec.
+    quantBackground, workExperience, researchExperience, hasLeadership,
   };
 
   return (
@@ -1294,6 +1316,100 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           </div>
                         ))}
                       </div>
+                      {/* 2026-05-29 — grad-applicant additions per Samuel's
+                          spec. Quantitative background is the single
+                          highest-signal field for the cofounder's
+                          "PhD-Econ-without-math pivot" detection. Work
+                          experience + research experience are buckets
+                          (none / 1-2 / 3-5 / 5+) rather than free text
+                          so the LLM gets clean signal. */}
+                      {isGraduateApp && (
+                        <div className="space-y-4 rounded-lg border border-border/70 bg-card p-4">
+                          <div className="space-y-2">
+                            <Label className="text-xs uppercase tracking-wider font-medium block">
+                              {t("Math / quantitative background", "Математическая / quant подготовка")} <span className="text-rose-500 font-bold ml-0.5">*</span>
+                            </Label>
+                            <div className="flex flex-wrap gap-1.5">
+                              {([
+                                ["heavy",    t("Heavy (advanced stats / calculus)", "Сильная (advanced stats / calculus)")],
+                                ["moderate", t("Moderate (basic stats / econ)",     "Умеренная (basic stats / econ)")],
+                                ["light",    t("Light / none",                       "Слабая / нет")],
+                              ] as const).map(([val, label]) => (
+                                <button
+                                  key={val}
+                                  type="button"
+                                  onClick={() => setQuantBackground(val)}
+                                  aria-pressed={quantBackground === val}
+                                  className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
+                                    quantBackground === val
+                                      ? "bg-gold/15 text-gold-dark border-gold"
+                                      : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
+                                  }`}
+                                >
+                                  {label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-xs uppercase tracking-wider font-medium block">
+                              {t("Full-time work experience", "Опыт работы (full-time)")} <span className="text-rose-500 font-bold ml-0.5">*</span>
+                            </Label>
+                            <div className="flex flex-wrap gap-1.5">
+                              {([
+                                ["none",   t("None",          "Нет")],
+                                ["1_2",    t("1–2 years",     "1–2 года")],
+                                ["3_5",    t("3–5 years",     "3–5 лет")],
+                                ["5_plus", t("5+ years",      "5+ лет")],
+                              ] as const).map(([val, label]) => (
+                                <button
+                                  key={val}
+                                  type="button"
+                                  onClick={() => setWorkExperience(val)}
+                                  aria-pressed={workExperience === val}
+                                  className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
+                                    workExperience === val
+                                      ? "bg-gold/15 text-gold-dark border-gold"
+                                      : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
+                                  }`}
+                                >
+                                  {label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-xs uppercase tracking-wider font-medium block">
+                              {t("Research experience", "Исследовательский опыт")} <span className="text-rose-500 font-bold ml-0.5">*</span>
+                            </Label>
+                            <div className="flex flex-wrap gap-1.5">
+                              {([
+                                ["extensive", t("Extensive (published papers)",     "Серьёзный (есть публикации)")],
+                                ["moderate",  t("Moderate (thesis / lab assistant)", "Умеренный (диплом / lab assistant)")],
+                                ["light",     t("Light (class projects only)",       "Лёгкий (только курсовые)")],
+                                ["none",      t("None",                              "Нет")],
+                              ] as const).map(([val, label]) => (
+                                <button
+                                  key={val}
+                                  type="button"
+                                  onClick={() => setResearchExperience(val)}
+                                  aria-pressed={researchExperience === val}
+                                  className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
+                                    researchExperience === val
+                                      ? "bg-gold/15 text-gold-dark border-gold"
+                                      : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
+                                  }`}
+                                >
+                                  {label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {isPhDApp && (
                         <p className="text-[12px] text-muted-foreground/70 italic">
                           {t(
@@ -1610,6 +1726,47 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         ))}
                       </div>
                     </div>
+
+                    {/* 2026-05-29 — bachelor leadership Y/N per Samuel's
+                        spec. Quick low-friction signal for narrative
+                        differentiation (separates "club president" from
+                        "did sports recreationally"). Master/PhD profiles
+                        skip this — their work experience already captures
+                        leadership context. */}
+                    {!isGraduateApp && (
+                      <div className="space-y-2 rounded-lg border border-border/70 bg-card p-4">
+                        <Label className="text-xs uppercase tracking-wider font-medium block">
+                          {t("Held a leadership role?", "Был(а) в роли лидера?")}
+                        </Label>
+                        <p className="text-[12px] text-muted-foreground leading-relaxed -mt-1 mb-1">
+                          {t(
+                            "e.g. club president, team captain, student gov, founded an initiative",
+                            "напр. президент клуба, капитан команды, студсовет, основатель инициативы",
+                          )}
+                        </p>
+                        <div className="flex gap-1.5">
+                          {([
+                            ["yes", t("Yes", "Да")],
+                            ["no",  t("Not really", "Не особо")],
+                          ] as const).map(([val, label]) => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() => setHasLeadership(val)}
+                              aria-pressed={hasLeadership === val}
+                              className={`px-4 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
+                                hasLeadership === val
+                                  ? "bg-gold/15 text-gold-dark border-gold"
+                                  : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex justify-between pt-4">
                       <Button variant="outline" onClick={() => goToStep(2)}><ArrowLeft className="mr-2 w-4 h-4" /> {t("Back", "Назад")}</Button>
                       <Button

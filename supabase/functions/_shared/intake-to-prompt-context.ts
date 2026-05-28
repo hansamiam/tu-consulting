@@ -45,6 +45,16 @@ export interface PromptContext {
   culturalContext: FirstAbroadFraming;
   /** Optional career goal text. ≤200 chars. */
   careerGoal?: string;
+  /** 2026-05-29 grad-applicant additions (Samuel's spec).
+   *  quantBackground is the highest-signal field for the
+   *  "PhD-Econ-without-math pivot" detection. */
+  quantBackground?: "heavy" | "moderate" | "light";
+  workExperience?: "none" | "1_2" | "3_5" | "5_plus";
+  researchExperience?: "extensive" | "moderate" | "light" | "none";
+  /** 2026-05-29 bachelor-applicant addition (Samuel's spec): Y/N on
+   *  leadership for narrative differentiation. */
+  hasLeadership?: "yes" | "no";
+
   /** Free-text background blob (Sharpen-step). Trimmed. */
   background?: string;
   /** Named schools blob (Sharpen-step). Trimmed. */
@@ -213,6 +223,14 @@ export function projectIntake(profile: any, language: Language): PromptContext {
     researchSignals: collectResearchSignals(profile),
     culturalContext: firstAbroadFramingFor(profile.nationality),
     careerGoal: (profile.careerGoal || "").trim() || undefined,
+    quantBackground: ["heavy", "moderate", "light"].includes(profile.quantBackground)
+      ? profile.quantBackground : undefined,
+    workExperience: ["none", "1_2", "3_5", "5_plus"].includes(profile.workExperience)
+      ? profile.workExperience : undefined,
+    researchExperience: ["extensive", "moderate", "light", "none"].includes(profile.researchExperience)
+      ? profile.researchExperience : undefined,
+    hasLeadership: ["yes", "no"].includes(profile.hasLeadership)
+      ? profile.hasLeadership : undefined,
     background: (profile.background || "").trim().slice(0, 600) || undefined,
     namedSchools: (profile.namedSchools || "").trim().slice(0, 400) || undefined,
     foreignLanguages: Array.isArray(profile.foreignLanguages) && profile.foreignLanguages.length
@@ -253,6 +271,10 @@ export async function profileHashFor(ctx: PromptContext): Promise<string> {
     rs: [...ctx.researchSignals].sort(),
     cc: ctx.culturalContext,
     cg: ctx.careerGoal?.slice(0, 200),
+    qb: ctx.quantBackground,
+    we: ctx.workExperience,
+    re: ctx.researchExperience,
+    lead: ctx.hasLeadership,
     bg: ctx.background?.slice(0, 200),
     ns: ctx.namedSchools?.slice(0, 200),
     fl: ctx.foreignLanguages ? [...ctx.foreignLanguages].sort() : null,
