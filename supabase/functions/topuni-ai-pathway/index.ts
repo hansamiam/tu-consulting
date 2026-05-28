@@ -344,6 +344,35 @@ serve(async (req) => {
   } catch (e) {
     const msg = (e as Error).message || String(e);
     console.error("[strategy] error", msg);
+
+    // Pretty-print the most common Gemini billing failure modes so the
+    // StrategyView UI can render something a human can act on. (The
+    // full Gemini error stays in the logs.)
+    if (/prepayment credits (?:are\s+)?depleted|prepay.*depleted/i.test(msg)) {
+      return respondError(
+        502,
+        "AI provider billing not active. Please add prepayment credits at https://ai.studio/projects or switch to a free-tier API key.",
+        corsHeaders,
+        { code: "ai_billing_required" },
+      );
+    }
+    if (/FAILED_PRECONDITION|billing must be enabled/i.test(msg)) {
+      return respondError(
+        502,
+        "AI provider requires billing to be enabled on the project for context caching. Enable billing or use a non-cache fallback.",
+        corsHeaders,
+        { code: "ai_billing_precondition" },
+      );
+    }
+    if (/RESOURCE_EXHAUSTED/i.test(msg)) {
+      return respondError(
+        429,
+        "AI provider rate limit hit. Wait a moment and retry.",
+        corsHeaders,
+        { code: "ai_rate_limited" },
+      );
+    }
+
     return respondError(500, msg, corsHeaders);
   }
 });

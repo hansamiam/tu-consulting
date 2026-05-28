@@ -85,10 +85,27 @@ async function createCachedContent(lang: Language): Promise<CacheEntry> {
   return entry;
 }
 
+/* In-process "cache disabled" flag. Set once we observe a 429
+ * / FAILED_PRECONDITION / paid-tier-required error from cachedContents
+ * — context caching is a paid-tier feature on Gemini, so on a free-tier
+ * key it will reliably fail. Setting this short-circuits all subsequent
+ * cache attempts for the lifetime of the warm edge function. Cleared
+ * on cold start. */
+let CACHE_DISABLED = false;
+
+function shouldDisableCacheForever(errText: string): boolean {
+  // Heuristics for "this account literally cannot use cachedContents":
+  //   - FAILED_PRECONDITION (free tier without billing)
+  //   - prepayment credits depleted (paid tier zero balance)
+  //   - RESOURCE_EXHAUSTED on a cache CREATE call
+  return /FAILED_PRECONDITION|prepayment credits depleted|billing must be enabled|RESOURCE_EXHAUSTED/i.test(errText);
+}
+
 async function getOrCreateCache(lang: Language): Promise<CacheEntry | null> {
+  if (CACHE_DISABLED) return null;
+
   const existing = CACHE_STATE.get(lang);
   if (existing && existing.expiresAt - CACHE_SAFETY_MARGIN_MS > Date.now()) {
-    // Verify prompt hasn't changed since cache was created
     const currentHash = await hashString(buildCachedPrefix(lang));
     if (currentHash === existing.promptHash) return existing;
     console.log(`[gemini-cache] prompt hash changed for lang=${lang}, rotating`);
@@ -97,7 +114,13 @@ async function getOrCreateCache(lang: Language): Promise<CacheEntry | null> {
   try {
     return await createCachedContent(lang);
   } catch (e) {
-    console.warn(`[gemini-cache] create failed for lang=${lang}, falling back to inline prefix:`, e);
+    const msg = (e as Error).message || String(e);
+    if (shouldDisableCacheForever(msg)) {
+      CACHE_DISABLED = true;
+      console.warn(`[gemini-cache] disabled for this process (paid feature unavailable): ${msg.slice(0, 200)}`);
+    } else {
+      console.warn(`[gemini-cache] create failed for lang=${lang}, falling back to inline prefix:`, msg);
+    }
     return null;
   }
 }
