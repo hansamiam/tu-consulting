@@ -96,6 +96,20 @@ function inferDegree(gradeLevel: string | null | undefined): TargetDegree {
 }
 
 function inferEnglishLevel(p: any): PromptContext["englishLevel"] {
+  // 2026-05-29 — explicit Step 1 MC pick is canonical when set.
+  // Numeric IELTS/TOEFL inputs on Step 2 are precision additions
+  // that override only when the user picked a different score range
+  // than their MC chip implied (rare edge case — trust the MC).
+  if (
+    p.englishProficiency === "ielts_7_plus" ||
+    p.englishProficiency === "ielts_6_0_to_6_5" ||
+    p.englishProficiency === "ielts_below_6" ||
+    p.englishProficiency === "toefl_equiv" ||
+    p.englishProficiency === "not_taken_yet"
+  ) {
+    return p.englishProficiency;
+  }
+
   // Per-test taken/not_yet state takes priority.
   const ieltsTaken = p.ieltsState === "taken";
   const toeflTaken = p.toeflState === "taken";
