@@ -71,6 +71,7 @@ const LeadMagnet           = lazy(() => import("./pages/LeadMagnet"));
 const UnderratedScholarships = lazy(() => import("./pages/UnderratedScholarships"));
 const Resources             = lazy(() => import("./pages/Resources"));
 const RecommendationLetterAsks = lazy(() => import("./pages/RecommendationLetterAsks"));
+const ApplicationChecklist  = lazy(() => import("./pages/ApplicationChecklist"));
 const CountryGuide         = lazy(() => import("./pages/CountryGuide"));
 const NotFound             = lazy(() => import("./pages/NotFound"));
 const PaymentCanceled      = lazy(() => import("./pages/PaymentCanceled"));
@@ -270,6 +271,7 @@ const App = () => (
           <Route path="/underrated-scholarships" element={<UnderratedScholarships />} />
           <Route path="/resources" element={<Resources />} />
           <Route path="/recommendation-letter-asks" element={<RecommendationLetterAsks />} />
+          <Route path="/application-checklist" element={<ApplicationChecklist />} />
           {/* Backward-compat — /lesson was renamed to /intro 2026-05-27.
               Keep redirects so shared links don't 404. */}
           <Route path="/lesson"    element={<Navigate to="/intro" replace />} />

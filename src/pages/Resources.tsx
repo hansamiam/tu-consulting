@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, FileText, GraduationCap, FileSignature, Mail, Lock, Brain } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileText, GraduationCap, FileSignature, Mail, Lock, Brain, CheckSquare } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 
@@ -55,6 +55,15 @@ const PAID_RESOURCES: ResourceCard[] = [
     price: "$19",
     icon: Mail,
     pill: "Field Guide N°2",
+  },
+  {
+    title: "The Application Submission Checklist",
+    blurb: "The 72 hours before you hit submit. 17 procedural checks across long-lead prep + night-before verification. The 5 reasons applications die at the office level (before any committee reads them). Waitlist letter + interview prep templates.",
+    href: "/application-checklist",
+    format: "18-page field guide",
+    price: "$19",
+    icon: CheckSquare,
+    pill: "Field Guide N°3",
   },
 ];
 
