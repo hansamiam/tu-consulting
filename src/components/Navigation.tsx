@@ -92,11 +92,17 @@ const Navigation = ({ language = "en", variant = "default", overlayThreshold = 8
   // Workspace inside the navItems array, which made it shift
   // position based on auth state and visually compete with the
   // Sign-in button when both could appear.
+  // /resources retired from public nav 2026-05-28. The catalog is a
+  // lead-magnet staging surface (PDF downloads distributed via IG /
+  // newsletter / outreach), not a browse-on-site product — it gave the
+  // brand a half-built feel by surfacing "Coming Soon" cards in the
+  // header. Individual product URLs (/underrated-scholarships, etc.)
+  // remain public so shared links keep working. Admins still see the
+  // catalog at /resources via the in-page admin gate.
   const navItems = [
     { label: "TopUni AI",                                     path: isRussian ? "/topuni-ai/ru" : "/topuni-ai" },
     { label: isRussian ? "Подбор"       : "Discover",          path: isRussian ? "/discover/ru" : "/discover" },
     { label: isRussian ? "Академия"    : "Academy",           path: isRussian ? "/academy/ru" : "/academy" },
-    { label: isRussian ? "Ресурсы"     : "Resources",          path: "/resources" },
   ];
 
   const isActive = (path: string, exact?: boolean) =>

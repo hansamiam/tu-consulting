@@ -29,7 +29,8 @@ const OfferingsRu          = lazy(() => import("./pages/OfferingsRu"));
 const FAQ                  = lazy(() => import("./pages/FAQ"));
 const FAQRu                = lazy(() => import("./pages/FAQRu"));
 const Blog                 = lazy(() => import("./pages/Blog"));
-const BlogRu               = lazy(() => import("./pages/BlogRu"));
+// /blog now language-aware — single Blog component renders EN + RU.
+// BlogRu.tsx retired 2026-05-28 (file removed).
 const BlogArticle          = lazy(() => import("./pages/BlogArticle"));
 const ThankYou             = lazy(() => import("./pages/ThankYou"));
 const ThankYouRu           = lazy(() => import("./pages/ThankYouRu"));
@@ -88,6 +89,7 @@ const AdminWaitlist              = lazy(() => import("./pages/admin/Waitlist"));
 const AdminCurate                = lazy(() => import("./pages/admin/Curate"));
 const AdminAcademy               = lazy(() => import("./pages/admin/Academy"));
 const AdminAcademyResources      = lazy(() => import("./pages/admin/AcademyResources"));
+const AdminJournalEntries        = lazy(() => import("./pages/admin/JournalEntries"));
 const AdminPartnerInquiries      = lazy(() => import("./pages/admin/PartnerInquiries"));
 const AdminSourceCandidates      = lazy(() => import("./pages/admin/SourceCandidates"));
 const AdminDeadlineAudit         = lazy(() => import("./pages/admin/DeadlineAudit"));
@@ -166,8 +168,8 @@ const App = () => (
               "What to look for in an admissions consultant" */}
           <Route path="/why-tu" element={<Navigate to="/blog/admissions-consultant-checklist" replace />} />
           <Route path="/why-tu/ru" element={<Navigate to="/blog/admissions-consultant-checklist/ru" replace />} />
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/blog/ru" element={<BlogRu />} />
+          <Route path="/blog" element={<Blog language="en" />} />
+          <Route path="/blog/ru" element={<Blog language="ru" />} />
           <Route path="/blog/:id" element={<BlogArticle language="en" />} />
           <Route path="/blog/:id/ru" element={<BlogArticle language="ru" />} />
           <Route path="/thank-you" element={<ThankYou />} />
@@ -253,6 +255,7 @@ const App = () => (
           <Route path="/admin/analytics" element={<AdminAnalyticsFunnel />} />
           <Route path="/admin/academy" element={<AdminAcademy />} />
           <Route path="/admin/academy/resources" element={<AdminAcademyResources />} />
+          <Route path="/admin/journal" element={<AdminJournalEntries />} />
           <Route path="/admin/waitlist" element={<AdminWaitlist />} />
           <Route path="/admin/curate" element={<AdminCurate />} />
           <Route path="/admin/partner-inquiries" element={<AdminPartnerInquiries />} />

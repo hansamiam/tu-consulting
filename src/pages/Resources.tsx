@@ -1,18 +1,24 @@
-import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, FileText, GraduationCap, FileSignature, Mail, Lock, Brain } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import { useAuth } from "@/contexts/AuthContext";
+import { isAdminUser, isAdminBypass, consumeAdminUrlFlag } from "@/lib/adminMode";
 
 /**
- * /resources — TopUni's public discovery surface for downloadable
- * products. Mirrors the LF /resources catalog pattern; today only
- * the Underrated Scholarships PDF is live, but the page already
- * scaffolds the catalog plan so visitors can see what's coming.
+ * /resources — admin-only catalog of TopUni's downloadable products.
  *
- * The Strategy Report PDF lives inside /topuni-ai (the wizard
- * generates one personalised per visitor), so it's framed here as a
- * "build your own" card pointing at the wizard — not a static
- * download.
+ * 2026-05-28: pulled from public nav + gated to admins. The cards
+ * here are lead magnets distributed via IG / newsletter / outreach —
+ * the catalog page surfacing "Coming Soon" tiles to drive-by visitors
+ * read as half-built. Individual product URLs (/underrated-scholarships,
+ * /topuni-ai → strategy PDF) remain public so shared links keep
+ * working; this catalog page is the editor's view of "what's in flight."
+ *
+ * Non-admin visitors → redirected to /. Admins keep the full catalog
+ * (incl. COMING_SOON placeholders) so they can preview before pushing
+ * a new card live.
  *
  * Adding a new product: push into FREE_RESOURCES or PAID_RESOURCES.
  */
@@ -115,6 +121,21 @@ const Card = ({ r, paid }: { r: ResourceCard; paid?: boolean }) => (
 );
 
 const Resources = () => {
+  const navigate = useNavigate();
+  const { user, loading } = useAuth();
+  const admin = isAdminUser(user) || isAdminBypass();
+
+  useEffect(() => {
+    if (loading) return;
+    consumeAdminUrlFlag();
+    if (!admin) navigate("/", { replace: true });
+  }, [loading, admin, navigate]);
+
+  // Hold render until auth resolves, then either bail (non-admin
+  // navigates away) or show the catalog. Render-nothing during the
+  // gap is cleaner than a flash of the public catalog.
+  if (loading || !admin) return null;
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navigation language="en" variant="overlay" />

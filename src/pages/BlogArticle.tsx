@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { blogArticles } from "@/data/blogArticles";
 
 interface Props {
@@ -12,75 +13,135 @@ interface Props {
 
 const SITE = "https://topuni.org";
 
+// Unified article shape — both DB rows and static blogArticles fall
+// into this so the render path doesn't need two code paths.
+interface ArticleView {
+  slug: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  readTime: string;
+  image: string;
+  content: string[];
+  publishedAt: string | null;
+}
+
 const BlogArticle = ({ language }: Props) => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const article = blogArticles.find((a) => a.id === id);
   const isRu = language === "ru";
   const blogPath = isRu ? "/blog/ru" : "/blog";
+  const [article, setArticle] = useState<ArticleView | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  // DB first (admin-published journal_entries), static second (legacy
+  // hardcoded blogArticles list). The legacy URLs need to keep
+  // resolving — when /why-tu was reframed it redirected to
+  // /blog/admissions-consultant-checklist, which is a static entry.
+  useEffect(() => {
+    if (!id) { setLoaded(true); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("journal_entries" as never)
+        .select("slug, title, excerpt, category, read_time, hero_image_url, content, published_at")
+        .eq("slug", id)
+        .eq("language", isRu ? "ru" : "en")
+        .eq("is_published", true)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (data) {
+        const row = data as unknown as {
+          slug: string; title: string; excerpt: string | null;
+          category: string | null; read_time: string | null;
+          hero_image_url: string | null; content: string[];
+          published_at: string | null;
+        };
+        setArticle({
+          slug: row.slug,
+          title: row.title,
+          excerpt: row.excerpt ?? "",
+          category: row.category ?? "",
+          readTime: row.read_time ?? "",
+          image: row.hero_image_url ?? "",
+          content: row.content ?? [],
+          publishedAt: row.published_at,
+        });
+        setLoaded(true);
+        return;
+      }
+
+      const fallback = blogArticles.find((a) => a.id === id);
+      if (fallback) {
+        setArticle({
+          slug: fallback.id,
+          title: isRu ? fallback.titleRu : fallback.title,
+          excerpt: isRu ? fallback.excerptRu : fallback.excerpt,
+          category: isRu ? fallback.categoryRu : fallback.category,
+          readTime: isRu ? fallback.readTimeRu : fallback.readTime,
+          image: fallback.image,
+          content: isRu ? fallback.contentRu : fallback.content,
+          publishedAt: null,
+        });
+      }
+      setLoaded(true);
+    })();
+    return () => { cancelled = true; };
+  }, [id, isRu]);
 
   // ─── SEO meta + JSON-LD ───────────────────────────────────────────
-  // Every Journal article needs: <title>, meta description, canonical,
-  // OG / Twitter cards, and Article schema. Without these the page is
-  // invisible to rich-result surfaces and shares default to the site
-  // OG image. Re-runs whenever article / language flips.
   useEffect(() => {
     if (!article) return;
-    const title = isRu ? article.titleRu : article.title;
-    const excerpt = isRu ? article.excerptRu : article.excerpt;
-    const category = isRu ? article.categoryRu : article.category;
-    const url = `${SITE}/blog/${article.id}${isRu ? "/ru" : ""}`;
+    const url = `${SITE}/blog/${article.slug}${isRu ? "/ru" : ""}`;
 
-    document.title = `${title} — TopUni`;
-    setMeta("description", excerpt);
-    setMeta("og:title", `${title} — TopUni`, true);
-    setMeta("og:description", excerpt, true);
+    document.title = `${article.title} — TopUni`;
+    setMeta("description", article.excerpt);
+    setMeta("og:title", `${article.title} — TopUni`, true);
+    setMeta("og:description", article.excerpt, true);
     setMeta("og:type", "article", true);
     setMeta("og:url", url, true);
-    setMeta("og:image", article.image, true);
-    setMeta("og:image:alt", title, true);
-    setMeta("article:section", category, true);
+    if (article.image) setMeta("og:image", article.image, true);
+    if (article.image) setMeta("og:image:alt", article.title, true);
+    if (article.category) setMeta("article:section", article.category, true);
     setMeta("twitter:card", "summary_large_image");
-    setMeta("twitter:title", title);
-    setMeta("twitter:description", excerpt);
-    setMeta("twitter:image", article.image);
+    setMeta("twitter:title", article.title);
+    setMeta("twitter:description", article.excerpt);
+    if (article.image) setMeta("twitter:image", article.image);
     setLink("canonical", url);
 
     injectJsonLd({
       "@context": "https://schema.org",
       "@type": "Article",
-      headline: title,
-      description: excerpt,
-      image: article.image,
+      headline: article.title,
+      description: article.excerpt,
+      ...(article.image ? { image: article.image } : {}),
       url,
-      // We don't track per-article publish dates today — these are
-      // editorial pieces that get periodic refreshes. Fall back to a
-      // stable past date so the schema is valid; real datePublished
-      // would be a small content-model addition for later.
-      datePublished: "2026-01-01",
+      // DB rows carry a real publish date; static articles fall back
+      // to a stable date so the schema validates either way.
+      datePublished: article.publishedAt ?? "2026-01-01",
       dateModified: new Date().toISOString().slice(0, 10),
-      articleSection: category,
-      author: {
-        "@type": "Organization",
-        name: "TopUni",
-        url: SITE,
-      },
+      ...(article.category ? { articleSection: article.category } : {}),
+      author: { "@type": "Organization", name: "TopUni", url: SITE },
       publisher: {
         "@type": "Organization",
         name: "TopUni",
         url: SITE,
-        logo: {
-          "@type": "ImageObject",
-          url: `${SITE}/icon.png`,
-        },
+        logo: { "@type": "ImageObject", url: `${SITE}/icon.png` },
       },
-      mainEntityOfPage: {
-        "@type": "WebPage",
-        "@id": url,
-      },
+      mainEntityOfPage: { "@type": "WebPage", "@id": url },
       inLanguage: isRu ? "ru" : "en",
     });
   }, [article, isRu]);
+
+  if (!loaded) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation language={language} />
+      </div>
+    );
+  }
 
   if (!article) {
     return (
@@ -96,11 +157,6 @@ const BlogArticle = ({ language }: Props) => {
     );
   }
 
-  const title = isRu ? article.titleRu : article.title;
-  const category = isRu ? article.categoryRu : article.category;
-  const readTime = isRu ? article.readTimeRu : article.readTime;
-  const content = isRu ? article.contentRu : article.content;
-
   return (
     <div className="min-h-screen bg-background">
       <Navigation language={language} />
@@ -114,21 +170,25 @@ const BlogArticle = ({ language }: Props) => {
         </button>
 
         <article>
-          {/* Editorial header */}
           <header className="mb-10 pb-10 border-b border-border">
-            <div className="flex items-center gap-3 mb-6 text-xs">
-              <span className="font-mono uppercase tracking-wider text-accent">{category}</span>
-              <span className="text-muted-foreground/50">·</span>
-              <span className="text-muted-foreground">{readTime}</span>
-            </div>
+            {(article.category || article.readTime) && (
+              <div className="flex items-center gap-3 mb-6 text-xs">
+                {article.category && (
+                  <>
+                    <span className="font-mono uppercase tracking-wider text-accent">{article.category}</span>
+                    {article.readTime && <span className="text-muted-foreground/50">·</span>}
+                  </>
+                )}
+                {article.readTime && <span className="text-muted-foreground">{article.readTime}</span>}
+              </div>
+            )}
             <h1 className="font-heading text-4xl lg:text-6xl font-bold leading-[1.05] tracking-tight">
-              {title}
+              {article.title}
             </h1>
           </header>
 
-          {/* Body */}
           <div className="space-y-7 text-[17px] lg:text-lg leading-[1.7] text-foreground/85">
-            {content.map((paragraph, i) => {
+            {article.content.map((paragraph, i) => {
               const parts = paragraph.split(/\*\*(.*?)\*\*/g);
               return (
                 <p key={i}>
@@ -153,7 +213,6 @@ const BlogArticle = ({ language }: Props) => {
             })}
           </div>
 
-          {/* Editorial footer */}
           <footer className="mt-16 pt-10 border-t border-border">
             <div className="bg-muted/30 border border-border rounded-lg p-7 lg:p-9">
               <p className="text-xs font-mono uppercase tracking-[0.2em] text-accent mb-3">
@@ -207,16 +266,11 @@ function setLink(rel: string, href: string) {
   el.setAttribute("href", href);
 }
 function injectJsonLd(payload: object) {
-  // Replace any prior LD payload tagged with the topuni-article id, so
-  // re-renders with new article data don't accumulate <script> tags.
   const id = "topuni-article-jsonld";
   document.head.querySelector(`script#${id}`)?.remove();
   const el = document.createElement("script");
   el.id = id;
   el.type = "application/ld+json";
-  // Escape \</script> + <!-- so a stray sequence in article content
-  // can't break out of the JSON-LD block. See ScholarshipDetail
-  // injectJsonLd for the same defense.
   el.text = JSON.stringify(payload)
     .replace(/<\/script>/gi, "<\\/script>")
     .replace(/<!--/g, "<\\u0021--");
