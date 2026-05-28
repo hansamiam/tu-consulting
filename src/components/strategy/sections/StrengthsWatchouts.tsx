@@ -50,7 +50,7 @@ export const StrengthsWatchouts = ({ strengths, watchouts, focusNext, language }
       iconColor="text-amber-700 dark:text-amber-400"
       border="border-amber-500/30"
       bg="bg-amber-500/[0.05]"
-      title={t(language, "Watch-outs", "На что обратить внимание")}
+      title={t(language, "Weaknesses", "Слабые стороны")}
       items={watchouts}
     />
     <Column
