@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { trackPageView } from "@/utils/analytics";
+import { track } from "@/lib/analytics";
 import { motion, AnimatePresence } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import topuniBg from "@/assets/topuni-bg.jpg";
@@ -305,6 +306,10 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
   // animation regardless of intent.
   const [stepDir, setStepDir] = useState<1 | -1>(1);
   const goToStep = (next: number) => {
+    // Fire funnel event on forward step transitions (drop-off telemetry).
+    if (next > step) {
+      void track("wizard_step_completed", { from: step, to: next });
+    }
     setStepDir(next > step ? 1 : -1);
     setStep(next);
   };

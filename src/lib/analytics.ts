@@ -43,7 +43,15 @@ export type EventName =
    * so we don't spam the events table per character. */
   | "discover_search_zero_results"
   /** Brief generation failed at the empty-stream guard (round 96). */
-  | "brief_generation_failed";
+  | "brief_generation_failed"
+  /** 2026-05-29 — funnel events for the v2 wizard + strategy report.
+   *  Fires on each step transition with a `from`/`to` step number in
+   *  metadata. */
+  | "wizard_step_completed"
+  /** Click on the dossier's MembershipCTA gold button. */
+  | "strategy_cta_clicked"
+  /** Click on the landing's "Claim my early-access spot" CTA. */
+  | "landing_cta_clicked";
 
 const ANON_ID_KEY = "topuni-anon-id";
 

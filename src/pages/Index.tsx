@@ -16,6 +16,7 @@ import krFlag from "@/assets/flags/kr.svg";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthDialog } from "@/components/auth/AuthDialog";
 import { setPostAuthRedirect } from "@/lib/postAuthRedirect";
+import { track } from "@/lib/analytics";
 import Navigation from "@/components/Navigation";
 import { shouldRedirectToRussian } from "@/utils/languageDetection";
 import { ScrollProgress } from "@/components/ScrollProgress";
@@ -55,6 +56,7 @@ const Index = () => {
   // goes straight to Stripe hosted checkout (full-page redirect, not
   // an embedded panel). Auth modal opens inline if signed out.
   const startCheckoutDirect = async () => {
+    track("landing_cta_clicked", { authed: !!user, surface: "index" });
     if (!user) {
       setPostAuthRedirect(window.location.pathname);
       setAuthOpen(true);

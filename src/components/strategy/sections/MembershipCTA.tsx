@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { track } from "@/lib/analytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { setPostAuthRedirect } from "@/lib/postAuthRedirect";
 import { AuthDialog } from "@/components/auth/AuthDialog";
@@ -75,6 +76,12 @@ export const MembershipCTA = ({ language }: Props) => {
 
   const startCheckout = async () => {
     setError(null);
+    track("strategy_cta_clicked", {
+      authed: !!user,
+      foundingLeft,
+      stillOpen,
+      language,
+    });
 
     if (!user) {
       // Send them back to the dossier after auth so they can continue
