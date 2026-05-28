@@ -3,6 +3,13 @@ project_id = "bsfldtpemfxhnkdzccib"
 [functions.create-checkout]
 verify_jwt = false
 
+# 2026-05-28 Sprint A: serves /topuni-ai/r/:reportId reads. Anonymous
+# callers pass the row's read_token via the request body; the function
+# validates server-side. verify_jwt=false so anon calls reach the
+# handler — owner check happens via admin.auth.getUser inside.
+[functions.get-strategy]
+verify_jwt = false
+
 [functions.cohort-reminder-cron]
 # Self-gated via requireAdminOrService. pg_cron + pg_net call carries the
 # dispatchClient token; public callers without the token get 401.
