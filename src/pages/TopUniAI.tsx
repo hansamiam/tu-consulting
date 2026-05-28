@@ -632,7 +632,8 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
         // Sparse-input pass — Step 3 EC chip selections.
         selectedECTags: selectedECTags.length > 0 ? selectedECTags : undefined,
         knownScholarships: knownScholarships.length > 0 ? knownScholarships : undefined,
-        // 2026-05-29 grad + bachelor additions.
+        // 2026-05-29 grad + bachelor additions + English MC.
+        englishProficiency,
         quantBackground, workExperience, researchExperience, hasLeadership,
         // 2026-05-26 — per-test taken/not-yet chip state. Persisted so a
         // page refresh keeps the user's answer rather than resetting to
@@ -652,6 +653,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
     careerGoal, extracurriculars, background, namedSchools,
     foreignLanguages, firstToApplyAbroad, selectedECTags, knownScholarships,
     quantBackground, workExperience, researchExperience, hasLeadership,
+    englishProficiency,
     ieltsState, toeflState, satState,
     greState, gmatState, gre, gmat,
   ]);
@@ -678,6 +680,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
     foreignLanguages, firstToApplyAbroad, selectedECTags, knownScholarships,
     gre, gmat,
     // 2026-05-29 — grad + bachelor additions per Samuel's spec.
+    englishProficiency,
     quantBackground, workExperience, researchExperience, hasLeadership,
   };
 
@@ -936,6 +939,38 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           </SelectContent>
                         </Select>
                       </div>
+
+                      {/* 2026-05-29 — English Proficiency MC on Step 1
+                          per cofounder spec. Replaces the requirement for
+                          users to know their exact IELTS / TOEFL score on
+                          Step 2. Numeric inputs there stay as optional
+                          precision additions for users who do know. */}
+                      <div className="space-y-1.5">
+                        <Label className="text-xs uppercase tracking-wider font-medium">{t("English proficiency", "Уровень английского")} <span className="text-rose-500 font-bold ml-0.5">*</span></Label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {([
+                            ["ielts_7_plus",       t("IELTS 7.0+",      "IELTS 7.0+")],
+                            ["ielts_6_0_to_6_5",   t("IELTS 6.0–6.5",   "IELTS 6.0–6.5")],
+                            ["ielts_below_6",      t("Below 6.0",       "Ниже 6.0")],
+                            ["toefl_equiv",        t("TOEFL equivalent","TOEFL эквивалент")],
+                            ["not_taken_yet",      t("Haven't taken it yet", "Ещё не сдавал(а)")],
+                          ] as const).map(([val, label]) => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() => setEnglishProficiency(val)}
+                              aria-pressed={englishProficiency === val}
+                              className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
+                                englishProficiency === val
+                                  ? "bg-gold/15 text-gold-dark border-gold"
+                                  : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                     {/* 2026-05-29 wizard rewrite per Samuel:
                         First-in-family chip and foreign-languages chips
@@ -1035,7 +1070,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           }
                           goToStep(2);
                         }}
-                        disabled={accountSubmitting || !fullName.trim() || !email.trim() || !nationality.trim() || !gradeLevel}
+                        disabled={accountSubmitting || !fullName.trim() || !email.trim() || !nationality.trim() || !gradeLevel || !englishProficiency}
                       >
                         {t("Next", "Далее")} <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
