@@ -1391,7 +1391,10 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                       <Button
                         variant="gold"
                         onClick={() => goToStep(3)}
-                        disabled={!gpa.trim()}
+                        disabled={
+                          !gpa.trim() ||
+                          (isGraduateApp && (!quantBackground || !workExperience || !researchExperience))
+                        }
                       >
                         {t("Next", "Далее")} <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>

@@ -5,69 +5,54 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 
-const SITE_NAME = 'TopUni AI'
+// 2026-05-29 — rewritten for v2 dossier. v1 archetype / scholarship-
+// matches / Monday move framing dropped. New "what's inside" mirrors
+// the Play / Blindspot / Pivot structure the live report ships.
 
 interface Props {
   /** First name if known. Falls back to a neutral greeting. */
   firstName?: string
-  /** Public share URL — /brief/:slug */
+  /** Persistent strategy URL — /topuni-ai/r/:id(?t=<token>) */
   briefUrl: string
-  /** Eyebrow stats line: "12 matches · $640K potential · earliest deadline 18 days" */
-  statsLine?: string
-  /** Top 3 matched scholarship names — rendered as a quick list */
-  topMatches?: string[]
-  /** Major + target country chips for personalization */
-  major?: string
-  targetCountries?: string[]
   /** "ru" → render the Russian variant, anything else → English. */
   language?: 'en' | 'ru'
 }
 
 const COPY = {
   en: {
-    kicker: 'TopUni AI · Strategy Brief',
-    greetingNamed: (n: string) => `${n}, your strategy brief is ready.`,
-    greetingNeutral: 'Your strategy brief is ready.',
-    builtFor: (s: string) => `Built for ${s}.`,
-    forCountries: (cs: string) => `for ${cs}`,
-    previewFallback: 'Your TopUni AI admissions strategy is ready to read.',
-    openBrief: 'Open my brief',
-    topMatches: 'Top scholarship matches',
-    seeAll: 'See all matches and the strategy →',
+    kicker: 'Top Uni · Strategy Report',
+    greetingNamed: (n: string) => `${n}, your strategy is ready.`,
+    greetingNeutral: 'Your strategy is ready.',
+    subline: 'We diagnosed your fit, named the blindspot, and mapped your pivot.',
+    previewFallback: 'Your Top Uni strategy report is ready to read.',
+    openBrief: 'Open my report',
     insideTitle: "What's inside",
     insideRows: [
-      ['Your archetype', 'the applicant shape readers will see, named.'],
-      ['Who you are', 'the smaller pile your file actually goes in.'],
-      ['Where you belong', 'countries + schools that fit, with the lore that matters.'],
-      ['The essay only you can write', 'one specific seed grounded in your story.'],
-      ['What you\'re avoiding', 'the one honest gap, named warmly.'],
-      ['Your Monday move', 'one action this week — low bar, real momentum.'],
+      ['Readiness Score', 'where you stand across 5 axes, honest about gaps.'],
+      ['Unique Edge', 'the specific assets that win you programs.'],
+      ['Blindspot', 'the single threshold or credential to cross.'],
+      ['Target Opportunity', 'the strategic category to aim for — not a school list.'],
     ] as const,
-    saveLink: 'Save the link — your brief is permanent if you have an account, or stays live for 30 days otherwise.',
-    teamSignoff: '— The TopUni AI Team',
+    saveLink: 'This link is yours. Save it — your strategy stays accessible as long as you have an account.',
+    teamSignoff: '— The Top Uni Team',
     htmlLang: 'en',
   },
   ru: {
-    kicker: 'TopUni AI · Стратегический брифинг',
-    greetingNamed: (n: string) => `${n}, ваш стратегический брифинг готов.`,
-    greetingNeutral: 'Ваш стратегический брифинг готов.',
-    builtFor: (s: string) => `Подготовлен для: ${s}.`,
-    forCountries: (cs: string) => `для ${cs}`,
-    previewFallback: 'Ваш брифинг TopUni AI готов к прочтению.',
-    openBrief: 'Открыть брифинг',
-    topMatches: 'Лучшие стипендии',
-    seeAll: 'Все совпадения и стратегия →',
+    kicker: 'Top Uni · Стратегический отчёт',
+    greetingNamed: (n: string) => `${n}, ваша стратегия готова.`,
+    greetingNeutral: 'Ваша стратегия готова.',
+    subline: 'Мы диагностировали ваш fit, назвали blindspot и обозначили pivot.',
+    previewFallback: 'Ваш стратегический отчёт Top Uni готов к прочтению.',
+    openBrief: 'Открыть отчёт',
     insideTitle: 'Что внутри',
     insideRows: [
-      ['Твой архетип', 'форма абитуриента, которую увидят приёмные.'],
-      ['Кто ты', 'та меньшая стопка, куда реально попадает твоё досье.'],
-      ['Куда ты подходишь', 'страны и школы, которые подходят, с реальной фактурой.'],
-      ['Эссе, которое можешь написать только ты', 'одно конкретное зерно, основанное на твоей истории.'],
-      ['Что ты обходишь стороной', 'один честный пробел, названный мягко.'],
-      ['Твой первый шаг в понедельник', 'одно действие на эту неделю — низкий порог, реальный сдвиг.'],
+      ['Уровень готовности', 'где вы находитесь по 5 осям — честно о пробелах.'],
+      ['Unique Edge', 'конкретные активы, которые выигрывают программы.'],
+      ['Blindspot', 'один порог или credential, который нужно преодолеть.'],
+      ['Target Opportunity', 'стратегическая категория — не список школ.'],
     ] as const,
-    saveLink: 'Сохраните ссылку — брифинг хранится бессрочно при наличии аккаунта или 30 дней без него.',
-    teamSignoff: '— Команда TopUni AI',
+    saveLink: 'Эта ссылка — ваша. Сохраните её — стратегия остаётся доступной, пока у вас есть аккаунт.',
+    teamSignoff: '— Команда Top Uni',
     htmlLang: 'ru',
   },
 } as const
@@ -75,64 +60,26 @@ const COPY = {
 const BriefGeneratedEmail = ({
   firstName,
   briefUrl,
-  statsLine,
-  topMatches,
-  major,
-  targetCountries,
   language = 'en',
 }: Props) => {
   const c = COPY[language === 'ru' ? 'ru' : 'en']
   const greeting = firstName ? c.greetingNamed(firstName) : c.greetingNeutral
-  const targetLine = (() => {
-    const parts: string[] = []
-    if (major) parts.push(major)
-    if (targetCountries && targetCountries.length > 0) {
-      parts.push(c.forCountries(targetCountries.slice(0, 2).join(' & ')))
-    }
-    return parts.join(' ')
-  })()
 
   return (
     <Html lang={c.htmlLang} dir="ltr">
       <Head />
-      <Preview>{statsLine || c.previewFallback}</Preview>
+      <Preview>{c.previewFallback}</Preview>
       <Body style={main}>
         <Container style={container}>
           <Text style={kicker}>{c.kicker}</Text>
           <Heading style={h1}>{greeting}</Heading>
-
-          {targetLine && (
-            <Text style={subline}>{c.builtFor(targetLine)}</Text>
-          )}
-
-          {statsLine && (
-            <Section style={statsCard}>
-              <Text style={statsText}>{statsLine}</Text>
-            </Section>
-          )}
+          <Text style={subline}>{c.subline}</Text>
 
           <Section style={btnWrap}>
             <Button href={briefUrl} style={primaryBtn}>
               {c.openBrief}
             </Button>
           </Section>
-
-          {topMatches && topMatches.length > 0 && (
-            <>
-              <Hr style={hr} />
-              <Heading style={h3}>{c.topMatches}</Heading>
-              <Text style={text}>
-                {topMatches.slice(0, 3).map((name, i) => (
-                  <React.Fragment key={i}>
-                    <strong>{i + 1}.</strong> {name}<br />
-                  </React.Fragment>
-                ))}
-              </Text>
-              <Text style={subtle}>
-                <a href={briefUrl} style={subtleLink}>{c.seeAll}</a>
-              </Text>
-            </>
-          )}
 
           <Hr style={hr} />
           <Heading style={h3}>{c.insideTitle}</Heading>
@@ -158,39 +105,26 @@ export const template = {
   subject: ((data: Record<string, any>) => {
     const isRu = data.language === 'ru'
     const name = data.firstName || ''
-    const major = data.major ? ` ${data.major}` : ''
     if (isRu) {
-      return name
-        ? `${name}, ваш${major ? ' брифинг' : ' стратегический брифинг'} готов`
-        : `Ваш${major ? ' брифинг' : ' стратегический брифинг'} готов`
+      return name ? `${name}, ваша стратегия готова` : 'Ваша стратегия готова'
     }
-    return name
-      ? `${name}, your${major} strategy brief is ready`
-      : `Your${major} strategy brief is ready`
+    return name ? `${name}, your strategy is ready` : 'Your Top Uni strategy is ready'
   }),
-  displayName: 'Brief generated — open it now',
+  displayName: 'Strategy ready — open it now',
   previewData: {
     firstName: 'Aizada',
-    briefUrl: 'https://topuni.org/brief/x7k2p9q4',
-    statsLine: '12 matches · $640K potential funding · earliest deadline in 18 days',
-    topMatches: ['Chevening Scholarships', 'DAAD Master Scholarship', 'Knight-Hennessy Scholars'],
-    major: 'Computer Science',
-    targetCountries: ['United Kingdom', 'Germany'],
+    briefUrl: 'https://topuni.org/topuni-ai/r/x7k2p9q4?t=abc123',
     language: 'en',
   },
 } satisfies TemplateEntry
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
+const main = { backgroundColor: '#ffffff', fontFamily: 'Georgia, serif' }
 const container = { padding: '32px 28px', maxWidth: '560px' }
 const h1 = { fontSize: '24px', fontWeight: 'bold', color: '#0a2540', margin: '4px 0 8px', lineHeight: '1.25' }
 const h3 = { fontSize: '13px', fontWeight: 'bold', color: '#0a2540', margin: '4px 0 10px', textTransform: 'uppercase' as const, letterSpacing: '0.1em' }
-const subline = { fontSize: '14px', color: '#5d6b7a', margin: '0 0 16px' }
-const kicker = { fontSize: '11px', fontWeight: 'bold', color: '#b8860b', textTransform: 'uppercase' as const, letterSpacing: '0.18em', margin: '0 0 6px' }
-const statsCard = { backgroundColor: '#fff8e7', border: '1px solid #f0d987', borderRadius: '10px', padding: '14px 16px', margin: '4px 0 22px' }
-const statsText = { fontSize: '14px', color: '#7a5e0a', fontWeight: 'bold', margin: '0', lineHeight: '1.45' }
+const subline = { fontSize: '14px', color: '#5d6b7a', margin: '0 0 22px', lineHeight: '1.5' }
+const kicker = { fontSize: '11px', fontWeight: 'bold', color: '#b8860b', textTransform: 'uppercase' as const, letterSpacing: '0.22em', margin: '0 0 6px' }
 const text = { fontSize: '14px', color: '#3c4858', lineHeight: '1.7', margin: '0 0 8px' }
-const subtle = { fontSize: '13px', color: '#8898aa', margin: '12px 0 0' }
-const subtleLink = { color: '#0a2540', textDecoration: 'underline' }
 const btnWrap = { textAlign: 'center' as const, margin: '8px 0 4px' }
 const primaryBtn = { backgroundColor: '#0a2540', color: '#ffffff', padding: '14px 32px', borderRadius: '8px', fontSize: '15px', fontWeight: 'bold', textDecoration: 'none' }
 const hr = { borderColor: '#e6ebf1', margin: '24px 0' }
