@@ -829,18 +829,25 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                   <p className="text-sm text-foreground/85 flex-1 min-w-0 leading-snug">
                     {hubContext.kind === "scholarship" ? (
                       <>
-                        Building strategy around{" "}
+                        {t("Building strategy around", "Строим стратегию вокруг")}{" "}
                         <span className="font-semibold text-foreground">{hubContext.label}</span>.
                       </>
                     ) : hubContext.kind === "shared-brief" ? (
                       <>
-                        Pre-filled from the brief you just read. Enter your scores to make it yours.
+                        {t(
+                          "Pre-filled from the brief you just read. Enter your scores to make it yours.",
+                          "Заполнено из отчёта, который вы только что читали. Введите свои баллы, чтобы сделать его своим.",
+                        )}
                       </>
                     ) : (
                       <>
-                        Pre-filled from the{" "}
+                        {t("Pre-filled from the", "Заполнено из")}{" "}
                         <span className="font-semibold text-foreground">{hubContext.label}</span>{" "}
-                        {hubContext.kind === "country" ? "country hub" : hubContext.kind === "field" ? "field hub" : "theme hub"}.
+                        {hubContext.kind === "country"
+                          ? t("country hub", "странового хаба")
+                          : hubContext.kind === "field"
+                          ? t("field hub", "хаба специальности")
+                          : t("theme hub", "тематического хаба")}.
                       </>
                     )}
                   </p>
@@ -854,7 +861,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                     }}
                     className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-4 hover:underline shrink-0"
                   >
-                    Clear
+                    {t("Clear", "Очистить")}
                   </button>
                 </div>
               )}
@@ -1007,7 +1014,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               {t("Save your report", "Сохраните ваш отчёт")}
                             </p>
                             <p className="text-[11px] text-foreground/70 leading-snug mt-0.5">
-                              {t("Set a password to create an account.", "Задайте пароль чтобы создать аккаунт.")}
+                              {t("Set a password to create an account.", "Задайте пароль, чтобы создать аккаунт.")}
                             </p>
                           </div>
                         </div>
@@ -1153,10 +1160,10 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               }}
                               inputMode="decimal"
                               placeholder={
-                                gpaScale === "5.0" ? "e.g. 4.7"
-                                : gpaScale === "10.0" ? "e.g. 8.5"
-                                : gpaScale === "100" ? "e.g. 87"
-                                : "e.g. 3.7"
+                                gpaScale === "5.0" ? t("e.g. 4.7", "напр. 4.7")
+                                : gpaScale === "10.0" ? t("e.g. 8.5", "напр. 8.5")
+                                : gpaScale === "100" ? t("e.g. 87", "напр. 87")
+                                : t("e.g. 3.7", "напр. 3.7")
                               }
                               className="h-11 bg-card flex-1"
                             />
@@ -1505,11 +1512,11 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         <Select value={timeline} onValueChange={setTimeline}>
                           <SelectTrigger className="h-11 bg-card"><SelectValue placeholder={t("Select", "Выберите")} /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Fall 2026">Fall 2026</SelectItem>
-                            <SelectItem value="Spring 2027">Spring 2027</SelectItem>
-                            <SelectItem value="Fall 2027">Fall 2027</SelectItem>
-                            <SelectItem value="Spring 2028">Spring 2028</SelectItem>
-                            <SelectItem value="Flexible">Flexible</SelectItem>
+                            <SelectItem value="Fall 2026">{t("Fall 2026", "Осень 2026")}</SelectItem>
+                            <SelectItem value="Spring 2027">{t("Spring 2027", "Весна 2027")}</SelectItem>
+                            <SelectItem value="Fall 2027">{t("Fall 2027", "Осень 2027")}</SelectItem>
+                            <SelectItem value="Spring 2028">{t("Spring 2028", "Весна 2028")}</SelectItem>
+                            <SelectItem value="Flexible">{t("Flexible", "Гибко")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

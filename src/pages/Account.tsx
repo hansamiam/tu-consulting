@@ -19,6 +19,7 @@ import { MembershipSettings } from "@/components/pipeline/MembershipSettings";
 import { ProfileSettingsCard } from "@/components/account/ProfileSettingsCard";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 
 interface AccountProps { language?: "en" | "ru"; }
 
@@ -84,6 +85,14 @@ const Account = ({ language = "en" }: AccountProps) => {
                 .maybeSingle();
               if (sub && ["active", "trialing"].includes(sub.status as string) && ["pro", "founding"].includes(sub.tier as string)) {
                 active = true;
+                // Fire payment_completed funnel event ONCE per redirect.
+                // The webhook is what really granted membership; this is
+                // the client-side confirmation that the funnel completed.
+                void track("payment_completed", {
+                  tier: sub.tier,
+                  status: sub.status,
+                  attempts: i + 1,
+                });
                 break;
               }
             }

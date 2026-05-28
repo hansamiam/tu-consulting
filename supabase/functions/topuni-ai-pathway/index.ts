@@ -146,7 +146,7 @@ async function queueStrategyEmail(
     const briefUrl = userId
       ? `${SITE}/topuni-ai/r/${reportId}`
       : `${SITE}/topuni-ai/r/${reportId}?t=${readToken}`;
-    await admin.functions.invoke("send-transactional-email", {
+    const { error } = await admin.functions.invoke("send-transactional-email", {
       body: {
         recipientEmail: email,
         templateName: "brief-generated",
@@ -158,8 +158,25 @@ async function queueStrategyEmail(
         },
       },
     });
+    if (error) {
+      // Surface with structured fields so we can grep edge logs by
+      // template_name / report_id when auditing missing strategy emails.
+      console.error("[strategy-email] enqueue rejected", {
+        reason: "invoke_returned_error",
+        template_name: "brief-generated",
+        report_id: reportId,
+        user_id: userId,
+        error: error.message,
+      });
+    }
   } catch (e) {
-    console.warn("[strategy-email] enqueue failed", e);
+    console.error("[strategy-email] enqueue threw", {
+      reason: "exception",
+      template_name: "brief-generated",
+      report_id: reportId,
+      user_id: userId,
+      error: (e as Error).message,
+    });
   }
 }
 

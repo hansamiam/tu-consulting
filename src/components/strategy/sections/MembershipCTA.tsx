@@ -33,7 +33,7 @@ interface CtaCopy {
 // Single locked CTA — no random rotation surfacing a bad copy.
 const CTA_POOL: CtaCopy[] = [
   {
-    eyebrow: { en: "Turn this snapshot into a real scholarship plan", ru: "Превратите этот snapshot в реальный план" },
+    eyebrow: { en: "Turn this snapshot into a real scholarship plan", ru: "Превратите этот срез в реальный план по стипендиям" },
     headline: {
       en: "Join the first-ever Top Uni Membership Program.",
       ru: "Вступайте в первую программу Top Uni Membership.",
@@ -147,7 +147,7 @@ export const MembershipCTA = ({ language }: Props) => {
                   {t(
                     language,
                     "First 50 students get 50% off — use the promo code at checkout.",
-                    "Первые 50 студентов получают 50% скидку — используйте промокод на оплате.",
+                    "Первые 50 студентов получают 50% скидку — используйте промокод при оплате.",
                   )}
                 </span>
               </p>
