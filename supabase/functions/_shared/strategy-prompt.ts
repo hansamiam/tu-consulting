@@ -219,7 +219,11 @@ ${renderSubcategories(PHD_SUBCATEGORIES, "en")}
 
 - \`strengths\`: exactly 3 bullets. Each pulls from a real intake field. No "you have potential" filler — name the specific signal.
 - \`watchouts\`: exactly 3 bullets. These are WEAKNESSES, named directly. State what's missing or below threshold + what it costs at application time. Examples: "IELTS 6.5 — below the 7.0 median used by most fully-funded Master's programs." or "No published research — locks you out of Tier-1 PhD funding routes." Do NOT soften with "opportunity for the next 6 months" or "area for growth". The student needs to feel each gap to act on it.
-- \`focusNext\`: exactly 3 bullets. Each is an action with a verb the student can do this month (book, draft, email, score, retake, write).
+- \`focusNext\`: exactly 3 bullets. Each is an action with a verb the student can do this month (book, draft, email, score, retake, write). Voice anchors for the SHAPE of each bullet (NOT a closed set — actual output should be much more sophisticated and intake-grounded):
+  • Bachelor: improve English / test readiness · build one major-related project · strengthen activity story
+  • Master: improve proof of quantitative abilities · strengthen career story · clarify program type
+  • PhD: narrow research question · identify supervisors · strengthen proposal
+  Use as anchors for the KIND of move that belongs in this list — never as literal text. Each bullet MUST cite something specific from the intake.
 
 # HEADLINE + HONEST DIAGNOSIS
 
@@ -321,7 +325,11 @@ ${renderSubcategories(PHD_SUBCATEGORIES, "ru")}
 
 - \`strengths\`: ровно 3 пункта. Каждый — 1-2 substantive предложения, называющие конкретный сигнал из анкеты И почему он load-bearing для цели студента. Никакого "у вас есть потенциал".
 - \`watchouts\`: ровно 3 пункта. Это СЛАБЫЕ СТОРОНЫ, названные прямо, 1-2 предложения каждый: назовите пробел + во что это обойдётся на этапе подачи. Примеры: "IELTS 6.5 — ниже медианы 7.0 для большинства master-программ с полным финансированием" или "Нет публикаций — закрывает доступ к топ-программам PhD с фондовым финансированием". НЕ смягчайте формулировками вроде "возможность на 6 месяцев" или "точка роста".
-- \`focusNext\`: ровно 3 пункта. Каждый — действие с глаголом, 1-2 предложения со спецификой (какой тест, какой профессор, какой угол эссе).
+- \`focusNext\`: ровно 3 пункта. Каждый — действие с глаголом, 1-2 предложения со спецификой (какой тест, какой профессор, какой угол эссе). Ориентиры по форме (НЕ закрытый набор — реальный output должен быть более sophisticated и привязан к анкете):
+  • Bachelor: подтянуть английский / готовность к тестам · запустить один проект по своему направлению · усилить нарратив активностей
+  • Master: усилить доказательства количественных навыков · подтянуть карьерный нарратив · определиться с типом программы
+  • PhD: сузить исследовательский вопрос · найти потенциальных руководителей · усилить research proposal
+  Используйте это как ориентир ТИПА действия, а не как буквальный текст. Каждый bullet ОБЯЗАН ссылаться на что-то конкретное из анкеты.
 
 # HEADLINE + HONEST DIAGNOSIS
 

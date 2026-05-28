@@ -72,6 +72,17 @@ const CTA_POOL: CtaCopy[] = [
       ru: "Top Uni Membership даёт структуру и доступ, чтобы закрыть то, что только что диагностировал ваш отчёт — без ценника элитной консалтинговой фирмы.",
     },
   },
+  {
+    eyebrow: { en: "Turn this snapshot into a real plan", ru: "Превратите этот отчёт в реальный план" },
+    headline: {
+      en: "Join the first-ever Top Uni Membership Program.",
+      ru: "Вступайте в первую программу Top Uni Membership.",
+    },
+    body: {
+      en: "We work with students applying abroad on scholarships — strategy workshops, office hours, the Discover database, and feedback on your materials before they're submitted. Stop guessing where to apply.",
+      ru: "Мы работаем со студентами, которые поступают за рубеж со стипендией — стратегические воркшопы, office hours, доступ к Discover и обратная связь по материалам до подачи. Хватит гадать, куда подавать.",
+    },
+  },
 ];
 
 export const MembershipCTA = ({ language }: Props) => {

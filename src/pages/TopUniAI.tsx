@@ -847,7 +847,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder={t("What should we call you?", "Как тебя зовут?")} className="h-11 bg-card" />
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">{t("Where do we send your strategy?", "Куда отправить твою стратегию?")}</Label>
+                          <Label className="text-xs uppercase tracking-wider font-medium">{t("Where do we send your strategy?", "Куда отправить твою стратегию?")} <span className="text-rose-600 font-bold">*</span></Label>
                           <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@email.com" className="h-11 bg-card" />
                         </div>
                       </div>
@@ -855,7 +855,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         {/* WhatsApp field retired — never used by the
                             brief generator and the extra "give us your
                             phone" ask was friction with no payoff. */}
-                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Where are you from?", "Откуда ты?")}</Label>
+                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Where are you from?", "Откуда ты?")} <span className="text-rose-600 font-bold">*</span></Label>
                         <Input
                           value={nationality}
                           onChange={e => setNationality(e.target.value)}
@@ -887,7 +887,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         })()}
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Current stage *", "Текущий этап *")}</Label>
+                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Current stage", "Текущий этап")} <span className="text-rose-600 font-bold">*</span></Label>
                         <Select value={gradeLevel} onValueChange={setGradeLevel}>
                           <SelectTrigger className="h-11 bg-card"><SelectValue placeholder={t("Where are you in school right now?", "На каком ты этапе?")} /></SelectTrigger>
                           <SelectContent>
@@ -1094,16 +1094,19 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                       </p>
                     </div>
                     <div className="grid gap-5">
-                      <div className="grid sm:grid-cols-2 gap-4">
+                      {/* GPA on its own full-width row — scale chips
+                          drop below the input rather than crammed next
+                          to it, per Samuel 2026-05-29 polish pass. */}
+                      <div className="space-y-2">
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">{t("What's your GPA looking like?", "Какой у тебя средний балл?")}</Label>
+                          <Label className="text-xs uppercase tracking-wider font-medium">{t("What's your GPA looking like?", "Какой у тебя средний балл?")} <span className="text-rose-500 font-bold ml-0.5">*</span></Label>
                           {/* Paired input + scale picker — covers the four
                               common bases (US 4.0, post-Soviet 5.0,
                               Continental Europe 10.0, percentage 100) so
                               users put in their actual number rather than
                               mentally converting. Downstream scoring
                               normalizes to 4.0. */}
-                          <div className="flex gap-2">
+                          <div className="flex flex-col sm:flex-row gap-2">
                             <Input
                               value={gpa}
                               onKeyDown={e => {
@@ -1162,13 +1165,19 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                             </div>
                           </div>
                         </div>
-                        {/* 2026-05-26 Sam: empty score was ambiguous (haven't
-                            taken vs took-but-skipped). Per-test taken/not-yet
-                            chip — only show the score input when the user
-                            confirms "Taken". When "Not yet", the brief
-                            generator sees the test in notTakenTests and
-                            switches from critique-the-score advice to plan-
-                            a-registration advice. */}
+                      </div>
+                      {/* 2026-05-26 Sam: empty score was ambiguous (haven't
+                          taken vs took-but-skipped). Per-test taken/not-yet
+                          chip — only show the score input when the user
+                          confirms "Taken". When "Not yet", the brief
+                          generator sees the test in notTakenTests and
+                          switches from critique-the-score advice to plan-
+                          a-registration advice.
+                          2026-05-29 polish: each test is a self-contained
+                          vertical card — label on its own line, segmented
+                          control below at full width, input below. No more
+                          orphan toggles cramped beside the label. */}
+                      <div className="grid sm:grid-cols-2 gap-4">
                         {([
                           {
                             key: "ielts" as const,
@@ -1237,35 +1246,33 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                             placeholder: t("e.g. 720", "напр. 720"),
                           }] : []),
                         ]).map(({ key, label, scale, state, setState, value, setValue, clamp, inputMode, placeholder }) => (
-                          <div key={key} className="space-y-2">
-                            <div className="flex items-center justify-between gap-2 flex-wrap">
-                              <Label className="text-xs uppercase tracking-wider font-medium">
-                                {label} <span className="text-muted-foreground/70 font-normal normal-case">{scale}</span>
-                              </Label>
-                              <div className="flex rounded-md overflow-hidden border border-border bg-card text-[11px]">
-                                <button
-                                  type="button"
-                                  onClick={() => setState("taken")}
-                                  className={`px-2.5 py-1 font-medium transition-colors ${
-                                    state === "taken"
-                                      ? "bg-gold-dark text-primary-foreground"
-                                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                                  }`}
-                                >
-                                  {t("Taken", "Сдал(а)")}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => { setState("not_yet"); setValue(""); }}
-                                  className={`px-2.5 py-1 font-medium border-l border-border transition-colors ${
-                                    state === "not_yet"
-                                      ? "bg-foreground/85 text-background"
-                                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                                  }`}
-                                >
-                                  {t("Not yet", "Ещё нет")}
-                                </button>
-                              </div>
+                          <div key={key} className="space-y-2.5 rounded-lg border border-border/70 bg-card p-3.5">
+                            <Label className="text-xs uppercase tracking-wider font-medium block">
+                              {label} <span className="text-muted-foreground/70 font-normal normal-case">{scale}</span>
+                            </Label>
+                            <div className="flex rounded-md overflow-hidden border border-border bg-background text-[11.5px] w-full">
+                              <button
+                                type="button"
+                                onClick={() => setState("taken")}
+                                className={`flex-1 px-3 py-1.5 font-medium transition-colors ${
+                                  state === "taken"
+                                    ? "bg-gold-dark text-primary-foreground"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                }`}
+                              >
+                                {t("Taken", "Сдал(а)")}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setState("not_yet"); setValue(""); }}
+                                className={`flex-1 px-3 py-1.5 font-medium border-l border-border transition-colors ${
+                                  state === "not_yet"
+                                    ? "bg-foreground/85 text-background"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                }`}
+                              >
+                                {t("Not yet", "Ещё нет")}
+                              </button>
                             </div>
                             {state === "taken" && (
                               <Input
@@ -1354,7 +1361,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           a specialty not in the canonical list (e.g.
                           "Quantum Biophysics") aren't blocked. */}
                       <div className="space-y-1.5">
-                        <Label className="text-xs uppercase tracking-wider font-medium">{t("What do you want to study?", "Что ты хочешь изучать?")}</Label>
+                        <Label className="text-xs uppercase tracking-wider font-medium">{t("What do you want to study?", "Что ты хочешь изучать?")} <span className="text-rose-500 font-bold ml-0.5">*</span></Label>
                         {(() => {
                           // Alphabetical so a 38-item dropdown is scannable.
                           // Previous order was clustered by domain (STEM →
