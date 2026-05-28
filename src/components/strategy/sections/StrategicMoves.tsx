@@ -1,7 +1,5 @@
-// v6 (2026-05-29) — three strategic moves replacing the old 9-bullet
-// strengths / weaknesses / focusNext stack. Each is a 1-2 sentence
-// piece of narrative consulting copy. The cofounder Play / Hurdle /
-// Pivot framing translated to in-product labels.
+// v7 — three strategic moves. Each gets a gold-accent label (small
+// gold rule + uppercase eyebrow) above 1-2 sentences of prose.
 
 import { SectionLabel } from "../primitives";
 import type { Language } from "../types";
@@ -17,9 +15,9 @@ interface Props {
 const Move = ({ label, text }: { label: string; text: string }) => {
   if (!text) return null;
   return (
-    <section className="mb-5">
+    <section className="mb-4">
       <SectionLabel>{label}</SectionLabel>
-      <p className="text-[13px] leading-[1.55] text-foreground/85 m-0">{text}</p>
+      <p className="text-[12.5px] leading-[1.55] text-foreground/85 m-0">{text}</p>
     </section>
   );
 };

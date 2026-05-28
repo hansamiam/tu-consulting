@@ -12,8 +12,8 @@ interface Props {
 export const HonestDiagnosis = ({ text }: Props) => {
   if (!text) return null;
   return (
-    <section className="mb-5">
-      <p className="text-[13px] leading-[1.6] text-foreground/85 m-0">{text}</p>
+    <section className="mb-4">
+      <p className="text-[12.5px] leading-[1.6] text-foreground/85 m-0">{text}</p>
     </section>
   );
 };

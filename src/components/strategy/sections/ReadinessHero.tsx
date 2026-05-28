@@ -1,55 +1,24 @@
-// Headline + single Readiness Score stat line.
-// Pathway is no longer surfaced as a standalone label — the LLM
-// weaves it into the headline prose.
+// v7 — Headline only. Readiness Score moved up into the Masthead's
+// top-right (per Samuel: "not after the bolded stuff"). The headline
+// is the next thing the eye lands on.
+//
+// Type weight + size dropped: was 21px bold, now 18px medium. Lets
+// the prose read like a magazine intro, not a SaaS hero.
 
 import type { Language } from "../types";
 import { t } from "../types";
 
 interface Props {
   headline: string;
-  readinessScore: number; // 0..5
   language: Language;
 }
 
-const ScoreDots = ({ score }: { score: number }) => {
-  const dots = [1, 2, 3, 4, 5];
+export const ReadinessHero = ({ headline, language }: Props) => {
   return (
-    <span className="inline-flex items-center gap-1.5" aria-label={`Readiness score ${score} out of 5`}>
-      {dots.map((n) => {
-        const fill = Math.max(0, Math.min(1, score - (n - 1)));
-        return (
-          <span
-            key={n}
-            className="relative inline-block w-3 h-3 rounded-full border-[1.5px] border-foreground/40 bg-transparent overflow-hidden"
-          >
-            <span
-              className="absolute inset-0 bg-foreground"
-              style={{ clipPath: `inset(0 ${100 - fill * 100}% 0 0)` }}
-            />
-          </span>
-        );
-      })}
-      <span className="ml-2 text-[13px] font-bold text-foreground tabular-nums">
-        {score.toFixed(1).replace(/\.0$/, "")}
-        <span className="text-foreground/40"> / 5</span>
-      </span>
-    </span>
-  );
-};
-
-export const ReadinessHero = ({ headline, readinessScore, language }: Props) => {
-  return (
-    <section className="mb-5">
-      <h1 className="font-heading text-[19px] sm:text-[21px] font-bold leading-[1.3] tracking-tight text-foreground m-0 mb-5">
+    <section className="mb-4">
+      <h1 className="font-heading text-[17px] sm:text-[19px] font-semibold leading-[1.4] tracking-tight text-foreground m-0">
         {headline || t(language, "Your strategy is ready.", "Ваша стратегия готова.")}
       </h1>
-
-      <div className="flex items-baseline gap-3">
-        <span className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-foreground/80 w-[150px] shrink-0">
-          {t(language, "Readiness Score", "Готовность")}
-        </span>
-        <ScoreDots score={readinessScore} />
-      </div>
     </section>
   );
 };

@@ -5,7 +5,8 @@
 import type { ReactNode } from "react";
 
 export const SectionLabel = ({ children }: { children: ReactNode }) => (
-  <p className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-foreground/80 m-0 mb-1.5">
+  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gold-dark m-0 mb-1.5">
+    <span className="inline-block w-3 h-[2px] bg-gold align-middle mr-2 -mt-0.5" />
     {children}
   </p>
 );
