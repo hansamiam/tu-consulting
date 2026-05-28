@@ -203,6 +203,7 @@ const Admin = () => {
             <Button variant="outline" size="sm" onClick={() => nav("/admin/partner-inquiries")} className="gap-1.5"><Inbox className="h-4 w-4" />Partner inquiries</Button>
             <Button variant="outline" size="sm" onClick={() => nav("/admin/deadline-audit")} className="gap-1.5"><AlertTriangle className="h-4 w-4" />Deadline audit</Button>
             <Button variant="outline" size="sm" onClick={() => nav("/admin/academy/resources")} className="gap-1.5"><FileText className="h-4 w-4" />Academy resources</Button>
+            <Button variant="outline" size="sm" onClick={() => nav("/admin/products")} className="gap-1.5"><Inbox className="h-4 w-4" />Products</Button>
             <Button variant="outline" size="sm" onClick={() => nav("/admin/insights")} className="gap-1.5"><BarChart3 className="h-4 w-4" />Insights</Button>
             <Button variant="outline" size="sm" onClick={() => supabase.auth.signOut()}>Sign out</Button>
           </div>
