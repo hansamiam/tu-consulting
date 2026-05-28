@@ -2,7 +2,9 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, FileDown, Lock, Quote, CheckSquare, AlertTriangle, MessageSquare, Scissors } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import PreviewBanner from "@/components/PreviewBanner";
+import ComingSoonWall from "@/components/ComingSoonWall";
+import DraftAdminBanner from "@/components/DraftAdminBanner";
+import { useProductGate } from "@/hooks/useProductGate";
 import {
   NIGHT_BEFORE_CHECK,
   PRE_SUBMISSION_CHECK,
@@ -21,11 +23,17 @@ import {
  * Concrete + checklist-based, on purpose. Buyers know exactly what
  * they're getting before they pay.
  */
+const SLUG = "application-checklist" as const;
+
 const ApplicationChecklist = () => {
+  const { canView, isAdmin, published } = useProductGate(SLUG);
+
+  if (!canView) return <ComingSoonWall slug={SLUG} />;
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navigation language="en" variant="overlay" />
-      <PreviewBanner />
+      {!published && isAdmin && <DraftAdminBanner slug={SLUG} />}
       <main className="flex-1 pt-28 pb-16 px-6 print:pt-4 print:pb-4">
         <div className="max-w-3xl mx-auto">
           <Link

@@ -3,7 +3,9 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Mail, Check, Loader2, Quote, Calendar } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import PreviewBanner from "@/components/PreviewBanner";
+import ComingSoonWall from "@/components/ComingSoonWall";
+import DraftAdminBanner from "@/components/DraftAdminBanner";
+import { useProductGate } from "@/hooks/useProductGate";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PICK_YOUR_TEN, COURSE_SUMMARY } from "@/data/pickYourTen";
@@ -18,9 +20,14 @@ import { PICK_YOUR_TEN, COURSE_SUMMARY } from "@/data/pickYourTen";
  * with source='pick_your_ten'. Daily delivery infra is parked until
  * Samuel signs off on the catalog — same pattern as LF.
  */
+const SLUG = "pick-your-ten" as const;
+
 const PickYourTen = () => {
+  const { canView, isAdmin, published } = useProductGate(SLUG);
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "done">("idle");
+
+  if (!canView) return <ComingSoonWall slug={SLUG} />;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +56,7 @@ const PickYourTen = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navigation language="en" variant="overlay" />
-      <PreviewBanner />
+      {!published && isAdmin && <DraftAdminBanner slug={SLUG} />}
       <main className="flex-1 pt-28 pb-16 px-6">
         <div className="max-w-3xl mx-auto">
           <Link

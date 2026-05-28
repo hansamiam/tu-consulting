@@ -89,6 +89,7 @@ const AdminScholarshipVerification = lazy(() => import("./pages/admin/Scholarshi
 const AdminAnalyticsFunnel       = lazy(() => import("./pages/admin/AnalyticsFunnel"));
 const AdminWaitlist              = lazy(() => import("./pages/admin/Waitlist"));
 const AdminCurate                = lazy(() => import("./pages/admin/Curate"));
+const AdminProducts              = lazy(() => import("./pages/admin/Products"));
 const AdminAcademy               = lazy(() => import("./pages/admin/Academy"));
 const AdminAcademyResources      = lazy(() => import("./pages/admin/AcademyResources"));
 const AdminPartnerInquiries      = lazy(() => import("./pages/admin/PartnerInquiries"));
@@ -258,6 +259,7 @@ const App = () => (
           <Route path="/admin/academy/resources" element={<AdminAcademyResources />} />
           <Route path="/admin/waitlist" element={<AdminWaitlist />} />
           <Route path="/admin/curate" element={<AdminCurate />} />
+          <Route path="/admin/products" element={<AdminProducts />} />
           <Route path="/admin/partner-inquiries" element={<AdminPartnerInquiries />} />
           <Route path="/admin/source-candidates" element={<AdminSourceCandidates />} />
           <Route path="/admin/deadline-audit" element={<AdminDeadlineAudit />} />

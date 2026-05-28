@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, FileText, GraduationCap, FileSignature, Mail, Lock, Brain, CheckSquare, Compass } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileText, GraduationCap, FileSignature, Mail, Lock, Brain, CheckSquare, Compass, Clock } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import PreviewBanner from "@/components/PreviewBanner";
+import { useAuth } from "@/contexts/AuthContext";
+import { isAdminUser, isAdminBypass } from "@/lib/adminMode";
+import { isPublished } from "@/lib/productCatalog";
 
 /**
  * /resources — TopUni's public discovery surface for downloadable
@@ -26,10 +28,15 @@ interface ResourceCard {
   price?: string;
   icon: React.ComponentType<{ className?: string }>;
   pill?: string;
+  /** Slug into productCatalog — when present, the card respects the
+   *  per-product publish state. Cards without a slug (legacy / always-
+   *  live items like the AI strategy builder) skip the check. */
+  slug?: string;
 }
 
 const FREE_RESOURCES: ResourceCard[] = [
   {
+    slug: "underrated-scholarships",
     title: "30 scholarships you haven't heard of",
     blurb: "The Rhodes and Fulbright get the airtime. Meanwhile, 30 high-value programs sit underused — full rides at Tsinghua, KAUST, Hungary, Türkiye, and beyond. Region by region.",
     href: "/underrated-scholarships",
@@ -46,6 +53,7 @@ const FREE_RESOURCES: ResourceCard[] = [
     pill: "AI",
   },
   {
+    slug: "pick-your-ten",
     title: "Pick Your 10 Programs in 7 Days",
     blurb: "One day of structured prompts in your inbox for 7 days. By Sunday you've moved from research paralysis to a locked, calibrated list of 10 programs.",
     href: "/pick-your-ten",
@@ -57,6 +65,7 @@ const FREE_RESOURCES: ResourceCard[] = [
 
 const PAID_RESOURCES: ResourceCard[] = [
   {
+    slug: "recommendation-letter-asks",
     title: "Recommendation Letter Asks",
     blurb: "Five relationship archetypes (close prof / distant prof / employer / mentor / peer), the full ask + follow-up + thank-you email templates, the red flags that mean find someone else, and the recommender packet.",
     href: "/recommendation-letter-asks",
@@ -66,6 +75,7 @@ const PAID_RESOURCES: ResourceCard[] = [
     pill: "Field Guide N°2",
   },
   {
+    slug: "application-checklist",
     title: "The Application Submission Checklist",
     blurb: "The 72 hours before you hit submit. 17 procedural checks across long-lead prep + night-before verification. The 5 reasons applications die at the office level (before any committee reads them). Waitlist letter + interview prep templates.",
     href: "/application-checklist",
@@ -89,7 +99,38 @@ const COMING_SOON = [
   },
 ];
 
-const Card = ({ r, paid }: { r: ResourceCard; paid?: boolean }) => (
+const Card = ({ r, paid, isAdmin }: { r: ResourceCard; paid?: boolean; isAdmin?: boolean }) => {
+  const published = !r.slug || isPublished(r.slug);
+  const showAsDraft = !published && !isAdmin;
+
+  if (showAsDraft) {
+    return (
+      <div className="relative flex flex-col rounded-2xl border border-dashed border-border/60 bg-muted/30 p-5">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
+            <r.icon className="w-5 h-5 text-muted-foreground" />
+          </div>
+          <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-1 rounded-full bg-muted text-muted-foreground">
+            Soon
+          </span>
+        </div>
+        <h3 className="font-heading text-lg font-bold text-muted-foreground mb-1.5 leading-tight">
+          {r.title}
+        </h3>
+        <p className="text-sm text-muted-foreground/80 leading-snug mb-4 flex-1">
+          {r.blurb}
+        </p>
+        <div className="flex items-center justify-between border-t border-border/60 pt-3 mt-auto text-[11px] text-muted-foreground">
+          <span>{r.format}</span>
+          <Link to={r.href} className="inline-flex items-center gap-1 text-gold-dark hover:underline">
+            Notify me <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
   <Link
     to={r.href}
     className="group relative flex flex-col rounded-2xl border border-border bg-card p-5 transition-all hover:border-gold-dark/40 hover:shadow-md"
@@ -98,13 +139,20 @@ const Card = ({ r, paid }: { r: ResourceCard; paid?: boolean }) => (
       <div className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center shrink-0">
         <r.icon className="w-5 h-5 text-gold-dark" />
       </div>
-      {r.pill && (
-        <span className={`text-[10px] font-bold tracking-widest uppercase px-2 py-1 rounded-full ${
-          paid ? "bg-amber-100 text-amber-900" : "bg-gold/15 text-gold-dark"
-        }`}>
-          {r.pill}
-        </span>
-      )}
+      <div className="flex items-center gap-1.5">
+        {isAdmin && !published && (
+          <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-1 rounded-full bg-amber-100 text-amber-900 inline-flex items-center gap-1">
+            <Clock className="w-3 h-3" /> Draft
+          </span>
+        )}
+        {r.pill && (
+          <span className={`text-[10px] font-bold tracking-widest uppercase px-2 py-1 rounded-full ${
+            paid ? "bg-amber-100 text-amber-900" : "bg-gold/15 text-gold-dark"
+          }`}>
+            {r.pill}
+          </span>
+        )}
+      </div>
     </div>
     <h3 className="font-heading text-lg font-bold text-foreground mb-1.5 leading-tight tracking-tight">
       {r.title}
@@ -131,13 +179,15 @@ const Card = ({ r, paid }: { r: ResourceCard; paid?: boolean }) => (
       </span>
     </div>
   </Link>
-);
+  );
+};
 
 const Resources = () => {
+  const { user } = useAuth();
+  const isAdmin = isAdminUser(user as { email?: string | null } | null) || isAdminBypass();
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navigation language="en" variant="overlay" />
-      <PreviewBanner />
       <main className="flex-1 pt-28 pb-16 px-6">
         <div className="max-w-5xl mx-auto">
           <Link
@@ -175,7 +225,7 @@ const Resources = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {FREE_RESOURCES.map((r) => (
-                <Card key={r.href} r={r} />
+                <Card key={r.href} r={r} isAdmin={isAdmin} />
               ))}
             </div>
           </section>
@@ -192,7 +242,7 @@ const Resources = () => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {PAID_RESOURCES.map((r) => (
-                  <Card key={r.href} r={r} paid />
+                  <Card key={r.href} r={r} paid isAdmin={isAdmin} />
                 ))}
                 {COMING_SOON.map((s) => (
                   <div
