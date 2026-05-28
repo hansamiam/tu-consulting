@@ -6,7 +6,7 @@ import topuniBg from "@/assets/topuni-bg.jpg";
 // BetaBanner retired site-wide 2026-05-10 per user direction.
 import { TopUniAIEntrance } from "@/components/topuni/TopUniAIEntrance";
 import { Footer } from "@/components/Footer";
-import TopUniDashboard from "@/components/TopUniDashboard";
+import { StrategyView } from "@/components/strategy/StrategyView";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -637,6 +637,13 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
     targetCountries, major, budget, scholarshipNeeded, timeline,
     prestige: prestige[0], scholarship: scholarship[0],
     careerRoi: careerRoi[0], visaAccess: visaAccess[0], locationPref: locationPref[0],
+    // 2026-05-28 v2: surface the full intake to the new strategy prompt
+    // context. The v1 dashboard's Pro-depth dialog overlaid these; v2
+    // reads them straight from wizard state via the projection in
+    // supabase/functions/_shared/intake-to-prompt-context.ts.
+    careerGoal, extracurriculars, background, namedSchools,
+    foreignLanguages, firstToApplyAbroad, selectedECTags, knownScholarships,
+    gre, gmat,
   };
 
   return (
@@ -1898,10 +1905,9 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.4 }}
             >
-              <TopUniDashboard
+              <StrategyView
                 profile={profile}
-                language="en"
-                onBack={() => navigate("/discover")}
+                language={language}
               />
             </motion.div>
           )}
