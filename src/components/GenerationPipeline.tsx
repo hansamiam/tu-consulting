@@ -151,7 +151,8 @@ export function GenerationPipeline({ profile, isRu = false }: Props) {
   const progressPct = Math.min(95, (elapsed / totalDuration) * 100);
 
   return (
-    <div className="py-10 px-4 max-w-2xl mx-auto">
+    <div className="min-h-screen flex items-center justify-center px-4 py-10">
+    <div className="w-full max-w-2xl">
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -240,6 +241,7 @@ export function GenerationPipeline({ profile, isRu = false }: Props) {
           );
         })}
       </ul>
+    </div>
     </div>
   );
 }
