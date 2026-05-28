@@ -6,6 +6,7 @@
 // See plan: ~/.claude/plans/back-to-the-wizard-crispy-storm.md
 
 import type { StrategyReportV2 } from "./types";
+import { Masthead } from "./sections/Masthead";
 import { ReadinessHero } from "./sections/ReadinessHero";
 import { HonestDiagnosis } from "./sections/HonestDiagnosis";
 import { ReadinessRadar } from "./sections/ReadinessRadar";
@@ -23,13 +24,16 @@ export const StrategyDossier = ({ report }: Props) => {
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-3xl px-5 sm:px-8 py-10 sm:py-14">
-        <ReadinessHero
-          headline={report.headline}
-          applicantTypeLabel={report.applicantType.label}
-          applicantTypeFraming={report.applicantType.framing}
-          readinessScore={report.readinessScore}
+        <Masthead
+          firstName={report.firstName}
           language={report.language}
           generatedAt={report.generatedAt}
+        />
+
+        <ReadinessHero
+          headline={report.headline}
+          readinessScore={report.readinessScore}
+          language={report.language}
         />
 
         <HonestDiagnosis text={report.honestDiagnosis} language={report.language} />

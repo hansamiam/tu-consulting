@@ -20,7 +20,10 @@ export interface FitRow {
 }
 
 export interface StrategyReportV2 {
-  applicantType: { label: string; framing: string };
+  /** Internal taxonomy label — NOT rendered as a stamped pill in the
+   *  UI. Woven into `headline` by the model. Kept here for analytics
+   *  / cache key + future personalization. */
+  applicantType: { label: string };
   axes: AxisValue[]; // length 5
   headline: string;
   honestDiagnosis: string;
@@ -35,6 +38,8 @@ export interface StrategyReportV2 {
   language: Language;
   generatedAt: string; // ISO
   profileHash: string;
+  /** Used for the formal "Prepared for: {firstName}" masthead line. */
+  firstName: string;
 }
 
 export interface StrategyApiResponse {

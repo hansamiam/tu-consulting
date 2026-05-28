@@ -34,7 +34,9 @@ interface AxisOut { name: string; value: number; reason: string; }
 interface FitOut { subcategory: string; verdict: string; reason: string; }
 
 export interface StrategyReportV2 {
-  applicantType: { label: string; framing: string };
+  /** Internal taxonomy label — NOT rendered as a stamped pill. The
+   *  model weaves the identity into the headline prose instead. */
+  applicantType: { label: string };
   axes: AxisOut[];
   headline: string;
   honestDiagnosis: string;
@@ -49,6 +51,9 @@ export interface StrategyReportV2 {
   language: Language;
   generatedAt: string;
   profileHash: string;
+  /** Code-computed — derived from intake, used for the formal
+   *  "Prepared for: {firstName}" line in the dossier masthead. */
+  firstName: string;
 }
 
 /* ─── Capture anon brief lead (carry-over from v1) ─── */
@@ -145,8 +150,9 @@ function coerceReport(
 
   const ap = (r.applicantType ?? {}) as Record<string, unknown>;
   const applicantType = {
-    label: typeof ap.label === "string" ? ap.label.trim() : (ctx.language === "ru" ? "Развивающийся кандидат" : "Emerging Applicant"),
-    framing: typeof ap.framing === "string" ? ap.framing.trim() : "",
+    label: typeof ap.label === "string"
+      ? ap.label.trim()
+      : (ctx.language === "ru" ? "Развивающийся кандидат" : "Emerging Applicant"),
   };
 
   const expectedAxes = axesFor(ctx.targetDegree, ctx.language);
@@ -201,6 +207,7 @@ function coerceReport(
     language: ctx.language,
     generatedAt: new Date().toISOString(),
     profileHash,
+    firstName: ctx.firstName,
   };
 }
 

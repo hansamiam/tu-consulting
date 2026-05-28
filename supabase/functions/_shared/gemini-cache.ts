@@ -149,7 +149,7 @@ async function callGemini(opts: GeminiCallOpts): Promise<unknown> {
     generationConfig: {
       temperature: 0.35,
       topP: 0.9,
-      maxOutputTokens: 2048,
+      maxOutputTokens: 6144,
       responseMimeType: "application/json",
       responseSchema: STRATEGY_REPORT_SCHEMA,
     },
@@ -198,7 +198,7 @@ async function callGeminiInline(opts: GeminiCallOpts): Promise<unknown> {
     generationConfig: {
       temperature: 0.35,
       topP: 0.9,
-      maxOutputTokens: 2048,
+      maxOutputTokens: 6144,
       responseMimeType: "application/json",
       responseSchema: STRATEGY_REPORT_SCHEMA,
     },

@@ -32,10 +32,9 @@ export const STRATEGY_REPORT_SCHEMA = {
   properties: {
     applicantType: {
       type: "object",
-      required: ["label", "framing"],
+      required: ["label"],
       properties: {
-        label:   { type: "string", description: "≤4 words. Crisp, specific. No hype." },
-        framing: { type: "string", description: "ONE sentence — Optimistic Realist intro." },
+        label: { type: "string", description: "≤4 words. Coined for INTERNAL analytics only — NEVER rendered as a stamped pill in the UI. The model weaves the identity into the headline prose instead." },
       },
     },
     axes: {
@@ -51,11 +50,11 @@ export const STRATEGY_REPORT_SCHEMA = {
         },
       },
     },
-    headline:        { type: "string", description: "ONE sentence starting with firstName." },
-    honestDiagnosis: { type: "string", description: "2-3 sentences. Optimistic Realist pull-quote." },
-    strengths:       { type: "array", items: { type: "string" }, description: "Exactly 3 bullets." },
-    watchouts:       { type: "array", items: { type: "string" }, description: "Exactly 3 weaknesses, named directly. Don't soften with 'opportunity'." },
-    focusNext:       { type: "array", items: { type: "string" }, description: "Exactly 3 actionable bullets." },
+    headline:        { type: "string", description: "ONE substantive sentence starting with firstName. MUST naturally weave the applicantType.label identity into the prose (e.g. 'Aigerim, you're a capable STEM builder with the olympiad record to back it — strongest fit for fully-funded engineering tracks in Europe.'). NOT a stamped label." },
+    honestDiagnosis: { type: "string", description: "3-5 sentences. The candid pull-quote verdict. Names the strongest lever, the biggest gap, and what's at stake if the gap isn't addressed. Reads like the gold-pull-quote in a consulting report." },
+    strengths:       { type: "array", items: { type: "string" }, description: "Exactly 3 bullets. Each bullet is 1-2 substantive sentences naming the specific intake signal AND why it's load-bearing for their target." },
+    watchouts:       { type: "array", items: { type: "string" }, description: "Exactly 3 weaknesses. Each bullet is 1-2 sentences: name the gap + state what it costs at application time. No softening with 'opportunity' / 'growth area'." },
+    focusNext:       { type: "array", items: { type: "string" }, description: "Exactly 3 actionable bullets. Each starts with a verb the student can act on this month, with 1-2 sentences of specifics (which test, which professor, which essay angle)." },
     fitDiagnosis: {
       type: "array",
       description: "Length 4 (Bachelor/Master) or 5 (PhD). One row per subcategory.",
@@ -65,7 +64,7 @@ export const STRATEGY_REPORT_SCHEMA = {
         properties: {
           subcategory: { type: "string" },
           verdict:     { type: "string", description: "MUST be from the closed set for this subcategory." },
-          reason:      { type: "string", description: "One sentence citing the intake." },
+          reason:      { type: "string", description: "1-2 substantive sentences citing the specific intake evidence that led to this verdict." },
         },
       },
     },
@@ -144,6 +143,8 @@ Rules of voice (absolute):
 - Never reference the student's "journey", "uniqueness", or "potential" as filler. Address what is actually in their intake.
 - Speak directly to the student in second person ("Your math record…").
 - If their cultural context is first_to_leave_home (CIS, MENA, parts of EU), acknowledge the family-context weight ONCE in honestDiagnosis. Don't sentimentalize it. If first_gen_college, acknowledge the navigation cost ONCE. If first_global_step, no special acknowledgment.
+- The culturalContext tag (e.g. "first_to_leave_home") is for YOUR awareness only — NEVER output its literal name in user-facing text. Translate into natural prose: "first in your family to study abroad", "navigating this without a roadmap from home", "the first in your network to take this step", etc.
+- This rule applies to ALL snake_case field values in INTAKE — fundingPosture ("full_funding_first" / "partial" / "flexible"), englishLevel ("ielts_7_plus" / "not_taken_yet"), perceivedWeakness array values, etc. NEVER quote these literally. Translate: "full_funding_first" → "needing full funding"; "not_taken_yet" → "not yet sat for the test"; "ielts_7_plus" → "IELTS 7+". Quoted snake_case in output is an automatic regen trigger.
 - Anything that sounds like a motivational poster — cut it.
 - Optimistic Realist means: the picture is honest, and the path forward is real. Not "everything is fine"; not "everything is doomed". The student should finish reading slightly anxious AND knowing exactly what to do about it.
 
@@ -151,13 +152,18 @@ Rules of voice (absolute):
 
 You will receive an INTAKE block in the user message. Produce ONE JSON object matching the schema enforced by responseSchema. Every string VALUE in English. JSON keys remain English. Do NOT wrap the JSON in markdown fences. Do NOT add fields not in the schema.
 
-# APPLICANT TYPE — voice anchors
+# APPLICANT TYPE — INTERNAL ONLY, weave into headline prose
 
-Coin \`applicantType.label\` in the voice of these anchors. Do NOT copy a label verbatim unless it actually fits. If no anchor fits cleanly, coin a new label in the same voice band — short (≤4 words), specific, no hype. Avoid clinical / forced phrasing.
+Coin \`applicantType.label\` (≤4 words) in the voice of these anchors. This is for INTERNAL analytics — the UI does NOT render it as a stamped pill / class-reveal / "Applicant Type: X" tag (Samuel rejected that as cringy). Instead, you MUST weave the identity NATURALLY into the \`headline\` field. Example:
+
+  ❌ DON'T (this is what we stripped): pill that says "Applicant Type: STEM Builder"
+  ❌ DON'T: headline = "Aigerim, you are a STEM Builder."
+  ✅ DO:    headline = "Aigerim, you're a capable STEM builder with an olympiad record — strongest fit for fully-funded engineering tracks in Europe and selective US programs."
+  ✅ DO:    headline = "Aigerim, you're a sharp generalist with research instinct who hasn't yet picked a lane — that uncertainty IS the strategy problem to solve in the next 6 months."
+
+Voice anchors for the label (style references, NOT a closed set):
 
 ${anchors}
-
-Then write \`applicantType.framing\` as ONE sentence that names what their label says about their next 6 months. Honest. Optimistic.
 
 # READINESS AXES — score each 1..5
 
@@ -224,6 +230,8 @@ function buildCachedPrefixRU(): string {
 - Никаких отсылок к "уникальному пути", "уникальности" или "потенциалу" как наполнителю. Обращайтесь к тому, что реально в анкете.
 - Обращайтесь к студенту на "вы".
 - Если культурный контекст first_to_leave_home (СНГ, MENA, части ЕС), ОДИН РАЗ в honestDiagnosis отметьте вес семейного контекста. Не сентиментализируйте. Если first_gen_college, ОДИН РАЗ отметьте навигационную сложность. Если first_global_step — никаких специальных отметок.
+- Тег culturalContext (например, "first_to_leave_home") — ТОЛЬКО для вашего понимания. НИКОГДА не выводите его буквально в тексте для пользователя. Переводите в естественную прозу.
+- Это правило применяется ко ВСЕМ snake_case значениям из INTAKE — fundingPosture ("full_funding_first" / "partial" / "flexible"), englishLevel ("ielts_7_plus" / "not_taken_yet"), perceivedWeakness и др. НИКОГДА не цитируйте их буквально. Переводите: "full_funding_first" → "нужно полное финансирование"; "not_taken_yet" → "ещё не сдавал тест"; "ielts_7_plus" → "IELTS 7+". Snake_case в кавычках = автоматический перегенератор.
 - Всё, что звучит как мотивационный плакат — вырезайте.
 - Optimistic Realist означает: картинка честная, путь вперёд реальный. Не "всё в порядке"; не "всё пропало". Студент должен закончить чтение слегка встревоженным И понимающим, что именно делать.
 
@@ -231,13 +239,17 @@ function buildCachedPrefixRU(): string {
 
 Вы получите блок INTAKE в сообщении пользователя. Произведите ОДИН JSON-объект, соответствующий схеме responseSchema. Каждое строковое ЗНАЧЕНИЕ — на русском. Ключи JSON остаются на английском. НЕ оборачивайте JSON в markdown-кавычки. НЕ добавляйте поля сверх схемы.
 
-# APPLICANT TYPE — образцы голоса
+# APPLICANT TYPE — ТОЛЬКО ВНУТРЕННИЙ, вплетайте в headline
 
-Сформулируйте \`applicantType.label\` в голосе этих образцов. НЕ копируйте лейбл дословно, если он не подходит. Если ни один образец не подходит чётко, придумайте новый лейбл в том же голосовом диапазоне — короткий (≤4 слова), конкретный, без шумихи. Избегайте клинических/натянутых формулировок.
+Сформулируйте \`applicantType.label\` (≤4 слова) в голосе образцов. Этот лейбл — ТОЛЬКО для внутренней аналитики; UI НЕ рендерит его как штампованный pill / class-reveal / "Тип кандидата: X" тег (Samuel отверг это как cringy). Вместо этого ОБЯЗАТЕЛЬНО вплетайте идентичность ЕСТЕСТВЕННО в поле \`headline\`. Пример:
+
+  ❌ НЕЛЬЗЯ: pill "Тип кандидата: STEM-строитель"
+  ❌ НЕЛЬЗЯ: headline = "Айгерим, вы — STEM-строитель."
+  ✅ МОЖНО: headline = "Айгерим, вы — способный STEM-строитель с олимпиадным треком — сильнейший fit для полностью финансируемых инженерных программ в Европе и селективных университетов США."
+
+Образцы голоса для лейбла (стилевые ориентиры, НЕ закрытый набор):
 
 ${anchors}
-
-Затем напишите \`applicantType.framing\` ОДНИМ предложением, обозначающим, что значит этот лейбл для ближайших 6 месяцев. Честно. Оптимистично.
 
 # ОСИ ГОТОВНОСТИ — оценка от 1 до 5
 
@@ -267,14 +279,14 @@ ${renderSubcategories(PHD_SUBCATEGORIES, "ru")}
 
 # STRENGTHS / WATCHOUTS / FOCUS NEXT
 
-- \`strengths\`: ровно 3 пункта. Каждый — из реального поля анкеты. Никакого "у вас есть потенциал" — называйте конкретный сигнал.
-- \`watchouts\`: ровно 3 пункта. Это СЛАБЫЕ СТОРОНЫ, названные прямо. Назовите, что не хватает или ниже порога + во что это обойдётся на этапе подачи. Примеры: "IELTS 6.5 — ниже медианы 7.0 для большинства master-программ с полным финансированием" или "Нет публикаций — закрывает доступ к топ-программам PhD с фондовым финансированием". НЕ смягчайте формулировками вроде "возможность на 6 месяцев" или "точка роста". Студент должен почувствовать каждый пробел.
-- \`focusNext\`: ровно 3 пункта. Каждый — действие с глаголом, выполнимое в этом месяце (записаться, написать, отправить, пересдать).
+- \`strengths\`: ровно 3 пункта. Каждый — 1-2 substantive предложения, называющие конкретный сигнал из анкеты И почему он load-bearing для цели студента. Никакого "у вас есть потенциал".
+- \`watchouts\`: ровно 3 пункта. Это СЛАБЫЕ СТОРОНЫ, названные прямо, 1-2 предложения каждый: назовите пробел + во что это обойдётся на этапе подачи. Примеры: "IELTS 6.5 — ниже медианы 7.0 для большинства master-программ с полным финансированием" или "Нет публикаций — закрывает доступ к топ-программам PhD с фондовым финансированием". НЕ смягчайте формулировками вроде "возможность на 6 месяцев" или "точка роста".
+- \`focusNext\`: ровно 3 пункта. Каждый — действие с глаголом, 1-2 предложения со спецификой (какой тест, какой профессор, какой угол эссе).
 
 # HEADLINE + HONEST DIAGNOSIS
 
-- \`headline\`: ОДНО предложение, начинающееся с имени. Формат: "{firstName}, вы — сильный кандидат для {category}." Где {category} основано на сильнейшей оси или вердикте fit. Не обещайте университеты. Не обещайте исходы.
-- \`honestDiagnosis\`: 2-3 предложения. Откровенный pull-quote вердикт. Называет сильнейший рычаг И крупнейший пробел. Читается как pull-quote в консалтинговом отчёте.
+- \`headline\`: ОДНО substantive предложение, начинающееся с имени. Вплетает идентичность applicantType И картину готовности в прозу (см. раздел APPLICANT TYPE). Не обещайте университеты. Не обещайте исходы. Длина: достаточно, чтобы реально что-то сказать (~25-40 слов).
+- \`honestDiagnosis\`: 3-5 предложений. Откровенный pull-quote вердикт. Предложение 1 — сильнейший рычаг. Предложение 2 — крупнейший пробел. Предложение 3 — что на кону, если пробел не закрыть за 6 месяцев. Опциональные 4-5 — культурный контекст (если применимо, ОДИН РАЗ) и/или стратегическая дорожка, которую cohort помог бы заблокировать. Читается как pull-quote в консалтинговом отчёте — substantive, не лаконично.
 
 # BEST NEXT MOVE / DO NOT WASTE
 
