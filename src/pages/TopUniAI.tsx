@@ -423,9 +423,14 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
   );
   const [showMoreECChips, setShowMoreECChips] = useState(false);
   const toggleECTag = (token: string) => {
-    setSelectedECTags((prev) =>
-      prev.includes(token) ? prev.filter((t) => t !== token) : [...prev, token],
-    );
+    setSelectedECTags((prev) => {
+      if (prev.includes(token)) return prev.filter((t) => t !== token);
+      // Cap at 3 per Samuel 2026-05-29 spec ("top 3 ECs"). If at cap,
+      // drop the oldest and add the new — feels like a "swap" rather
+      // than a hard block which strands users in a dead state.
+      if (prev.length >= 3) return [...prev.slice(1), token];
+      return [...prev, token];
+    });
   };
   // 2026-05-27 Sam: known-scholarship awareness chips on Step 3.
   // Optional multi-select; tokens are canonical scholarship_name from
@@ -773,9 +778,8 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                     pass (it's identity context, not a test score). */}
                 {[
                   { n: 1, label: t("You", "О тебе") },
-                  { n: 2, label: t("Scores", "Баллы") },
-                  { n: 3, label: t("Direction", "Куда") },
-                  { n: 4, label: t("Story", "История") },
+                  { n: 2, label: t("Academics", "Академика") },
+                  { n: 3, label: t("Goals", "Цели") },
                 ].map(s => {
                   const isActive = s.n === step;
                   const isDone = s.n < step;
@@ -1043,7 +1047,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                       <div className="flex items-baseline gap-3 mb-3">
                         <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">02</span>
                         <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">
-                          {t("Your numbers", "Баллы")}
+                          {t("Academics", "Академика")}
                         </span>
                       </div>
                       <h2 className="font-heading text-[32px] sm:text-[44px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
@@ -1387,7 +1391,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                     <div>
                       <div className="flex items-baseline gap-3 mb-3">
                         <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">03</span>
-                        <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{t("Direction", "Куда")}</span>
+                        <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{t("Goals", "Цели")}</span>
                       </div>
                       <h2 className="font-heading text-[32px] sm:text-[44px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
                         {t("Pick your direction.", "Выбери направление.")}
@@ -1671,8 +1675,12 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         "did sports recreationally"). Master/PhD profiles
                         skip this — their work experience already captures
                         leadership context. */}
-                    {!isGraduateApp && (
-                      <div className="space-y-2 rounded-lg border border-border/70 bg-card p-4">
+                    {/* 2026-05-29 — Leadership chip now applies to ALL
+                        degrees per Samuel's spec (was bachelor-only).
+                        Grad applicants get the work-experience chip on
+                        Step 2, but explicit leadership signal is still
+                        load-bearing for narrative differentiation. */}
+                    <div className="space-y-2 rounded-lg border border-border/70 bg-card p-4">
                         <Label className="text-xs uppercase tracking-wider font-medium block">
                           {t("Held a leadership role?", "Был(а) в роли лидера?")}
                         </Label>
@@ -1702,43 +1710,12 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                             </button>
                           ))}
                         </div>
-                      </div>
-                    )}
-
-                    <div className="flex justify-between pt-4">
-                      <Button variant="outline" onClick={() => goToStep(2)}><ArrowLeft className="mr-2 w-4 h-4" /> {t("Back", "Назад")}</Button>
-                      <Button
-                        variant="gold"
-                        onClick={() => goToStep(4)}
-                        disabled={!isPlausibleMajor(major)}
-                      >
-                        {t("Next", "Далее")} <ArrowRight className="ml-2 w-4 h-4" />
-                      </Button>
                     </div>
-                  </motion.div>
-                )}
 
-                {step === 4 && (
-                  <motion.div
-                    key="step4"
-                    initial={stepEnter}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={stepExit}
-                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                    className="space-y-7"
-                  >
-                    <div>
-                      <div className="flex items-baseline gap-3 mb-3">
-                        <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">04</span>
-                        <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{t("Story", "История")}</span>
-                      </div>
-                      <h2 className="font-heading text-[32px] sm:text-[44px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
-                        {t("Tell us more — or skip ahead.", "Расскажите больше — или пропустите.")}
-                      </h2>
-                      <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[54ch]">
-                        {t("Optional.", "По желанию.")}
-                      </p>
-                    </div>
+                    {/* 2026-05-29 wizard consolidation per Samuel: Step 4
+                        merged into Step 3 (Goals). No "Next" footer here
+                        — the Generate footer below is the only nav out. */}
+
                     <div className="space-y-5">
                       <div className="space-y-1.5">
                         <Label htmlFor="careerGoal" className="text-xs uppercase tracking-wider font-medium">{t("Who do you want to be?", "Кем ты хочешь стать?")}</Label>
@@ -1766,15 +1743,20 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           the field is what shifts. */}
                       <div className="space-y-2">
                         <Label htmlFor="extracurriculars" className="text-xs uppercase tracking-wider font-medium">
-                          {isPhDApp
-                            ? t("Research experience, publications, target supervisors", "Исследовательский опыт, публикации, целевые научные руководители")
-                            : isMastersApp
-                            ? t("Work or research experience", "Опыт работы или исследований")
-                            : t("What do you like to do outside class?", "Чем ты любишь заниматься помимо учёбы?")}
+                          {t("Top 3 activity themes", "Топ-3 темы активностей")}
                         </Label>
-                        {!isGraduateApp && (
+                        {/* 2026-05-29 — EC chips now apply to ALL degrees
+                            (was bachelor-only), cap at 3 per Samuel's spec
+                            for "top 3 ECs". toggleECTag still allows
+                            picking more than 3, but we surface a count
+                            hint and visually disable further picks. */}
+                        {true && (
                           <div className="space-y-1.5">
-                            <p className="text-muted-foreground text-xs">{t("Quick picks — tap any that apply.", "Быстрый выбор — отметь подходящее.")}</p>
+                            <p className="text-muted-foreground text-xs">
+                              {selectedECTags.length >= 3
+                                ? t("3 picked — tap one to swap.", "Выбрано 3 — нажми, чтобы поменять.")
+                                : t("Pick up to 3.", "Выбери до 3.")}
+                            </p>
                             <div className="flex flex-wrap gap-2">
                               {EC_BROAD_CHIPS.map((c) => {
                                 const selected = selectedECTags.includes(c.token);
