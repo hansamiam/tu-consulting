@@ -24,6 +24,9 @@ import {
   Target,
   Shield,
   CheckCircle2,
+  Trophy,
+  Banknote,
+  Plane,
   Search,
   BookOpen,
   ListChecks,
@@ -402,6 +405,22 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
   const [email, setEmail] = useState(draft?.email ?? "");
   const [whatsapp, setWhatsapp] = useState(draft?.whatsapp ?? "");
   const [nationality, setNationality] = useState(draft?.nationality ?? "");
+  // 2026-05-30 — Step-1 nationality typeahead keyboard nav. Mouse click
+  // worked but Arrow Up/Down + Enter didn't. Lifting matches into a memo
+  // so the onKeyDown handler and the suggestions render share one source
+  // of truth; activeIdx tracks which suggestion is highlighted.
+  const nationalityMatches = useMemo(() => {
+    const q = nationality.trim().toLowerCase();
+    if (!q) return [];
+    const exact = ALL_COUNTRIES.find(c => c.v.toLowerCase() === q);
+    if (exact) return [];
+    return ALL_COUNTRIES.filter(c => c.v.toLowerCase().includes(q)).slice(0, 5);
+  }, [nationality]);
+  const [nationalityActiveIdx, setNationalityActiveIdx] = useState(0);
+  // Whenever the suggestion set changes, snap the highlighted index back
+  // to the top so the user doesn't accidentally Enter-select a stale row
+  // that's no longer at that position.
+  useEffect(() => { setNationalityActiveIdx(0); }, [nationalityMatches]);
   const [gradeLevel, setGradeLevel] = useState(draft?.gradeLevel ?? "");
   // 2026-05-26 cofounder branch: Step-1 grade-level determines whether
   // the rest of the wizard asks about extracurriculars (undergraduate
@@ -1006,32 +1025,53 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         <Input
                           value={nationality}
                           onChange={e => setNationality(e.target.value)}
+                          onKeyDown={e => {
+                            if (nationalityMatches.length === 0) return;
+                            if (e.key === "ArrowDown") {
+                              e.preventDefault();
+                              setNationalityActiveIdx(i => Math.min(i + 1, nationalityMatches.length - 1));
+                            } else if (e.key === "ArrowUp") {
+                              e.preventDefault();
+                              setNationalityActiveIdx(i => Math.max(i - 1, 0));
+                            } else if (e.key === "Enter") {
+                              e.preventDefault();
+                              const pick = nationalityMatches[nationalityActiveIdx];
+                              if (pick) setNationality(pick.v);
+                            } else if (e.key === "Escape") {
+                              // Soft-dismiss the suggestions by selecting
+                              // the typed value as-is — pre-fix Escape did
+                              // nothing because the suggestions are an
+                              // open popover not a focusable element.
+                              setNationality(nationality.trim());
+                            }
+                          }}
                           placeholder={t("Type any country (Kazakhstan, Nigeria, …)", "Любая страна (Казахстан, Кыргызстан, …)")}
                           className="h-11 bg-card"
+                          autoComplete="off"
                         />
-                        {(() => {
-                          const q = nationality.trim().toLowerCase();
-                          if (!q) return null;
-                          const exact = ALL_COUNTRIES.find(c => c.v.toLowerCase() === q);
-                          if (exact) return null;
-                          const matches = ALL_COUNTRIES.filter(c => c.v.toLowerCase().includes(q)).slice(0, 5);
-                          if (matches.length === 0) return null;
-                          return (
-                            <div className="absolute z-20 left-0 right-0 top-full mt-1 rounded-md border border-border bg-card shadow-lg overflow-hidden">
-                              {matches.map(c => (
-                                <button
-                                  key={c.v}
-                                  type="button"
-                                  onClick={() => setNationality(c.v)}
-                                  className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/60 transition-colors"
-                                >
-                                  <span>{c.f}</span>
-                                  <span>{c.v}</span>
-                                </button>
-                              ))}
-                            </div>
-                          );
-                        })()}
+                        {nationalityMatches.length > 0 && (
+                          <div
+                            role="listbox"
+                            className="absolute z-20 left-0 right-0 top-full mt-1 rounded-md border border-border bg-card shadow-lg overflow-hidden"
+                          >
+                            {nationalityMatches.map((c, i) => (
+                              <button
+                                key={c.v}
+                                type="button"
+                                role="option"
+                                aria-selected={i === nationalityActiveIdx}
+                                onMouseEnter={() => setNationalityActiveIdx(i)}
+                                onClick={() => setNationality(c.v)}
+                                className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
+                                  i === nationalityActiveIdx ? "bg-muted/60" : "hover:bg-muted/60"
+                                }`}
+                              >
+                                <span>{c.f}</span>
+                                <span>{c.v}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs uppercase tracking-wider font-medium">{t("Degree you're applying for", "На какую степень поступаешь")} <span className="text-rose-500 font-bold ml-0.5">*</span></Label>
@@ -1520,12 +1560,12 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                       )}
 
                       {/* 2026-05-30 v3 switcharoo — grad-only previous-degree
-                          + field-continuity + bridge now live on Academics
-                          (they belong with the academic record). The
-                          quant / work / research chips moved up to
-                          Narrative. Cofounder spec: pivot read needs both
-                          the prior major AND the bridge alongside the
-                          target field for the LLM to call deepen vs pivot. */}
+                          + field-continuity live on Academics. Bridge
+                          question dropped (the LLM infers the bridge from
+                          previousMajor + fieldContinuity; asking the user
+                          to articulate it was something we should help
+                          them do, not extract from them). Quant / work /
+                          research chips moved to Narrative. */}
                       {isGraduateApp && (
                         <div className="space-y-4 rounded-lg border border-border/70 bg-card p-4">
                           <div className="space-y-1.5">
@@ -1533,19 +1573,13 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               {t("What did you study before?", "Что ты изучал(а) раньше?")}{" "}
                               <span className="text-rose-500 font-bold ml-0.5">*</span>
                             </Label>
-                            <p className="text-[12px] text-muted-foreground -mt-0.5">
-                              {t(
-                                "Your current or most recent degree + major. Add concentration if it changes the read.",
-                                "Твоя текущая или последняя степень + специальность. Добавь концентрацию, если это важно.",
-                              )}
-                            </p>
                             <Input
                               id="previousMajor"
                               value={previousMajor}
                               onChange={e => setPreviousMajor(e.target.value)}
                               placeholder={t(
-                                "e.g. BSc Economics · BA Political Science (IR concentration)",
-                                "напр. BSc Экономика · BA Политология (концентрация: МО)",
+                                "e.g. BSc Economics · BA Political Science",
+                                "напр. BSc Экономика · BA Политология",
                               )}
                               className="h-11 bg-card"
                             />
@@ -1578,30 +1612,6 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               ))}
                             </div>
                           </div>
-
-                          {(fieldContinuity === "related" || fieldContinuity === "different") && (
-                            <div className="space-y-1.5">
-                              <Label htmlFor="fieldBridge" className="text-xs uppercase tracking-wider font-medium">
-                                {t("How do you bridge the two?", "Что связывает твой бэкграунд и цель?")}
-                              </Label>
-                              <p className="text-[12px] text-muted-foreground -mt-0.5">
-                                {t(
-                                  "Coursework, research, work, projects — anything connecting your background to the new field.",
-                                  "Курсы, исследования, работа, проекты — всё, что связывает прошлый опыт и новую область.",
-                                )}
-                              </p>
-                              <Textarea
-                                id="fieldBridge"
-                                value={fieldBridge}
-                                onChange={e => setFieldBridge(e.target.value)}
-                                placeholder={t(
-                                  "e.g. RA for an econ professor on inequality data · 18 credits of intermediate macro · 2 years at a fintech startup",
-                                  "напр. RA у профессора по экономике · 18 кредитов macro · 2 года в финтех-стартапе",
-                                )}
-                                className="min-h-[64px] resize-none bg-card"
-                              />
-                            </div>
-                          )}
                         </div>
                       )}
 
@@ -1667,92 +1677,68 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           + bridge moved to Academics this batch — they
                           belong with the academic record. */}
                       {isGraduateApp && (
-                        <div className="space-y-4 rounded-lg border border-border/70 bg-card p-4">
-                          <div className="space-y-2">
-                            <Label className="text-xs uppercase tracking-wider font-medium block">
-                              {t("Math / quantitative background", "Математическая / quant подготовка")}{" "}
-                              <span className="text-rose-500 font-bold ml-0.5">*</span>
-                            </Label>
-                            <div className="flex flex-wrap gap-1.5">
-                              {([
-                                ["heavy",    t("Heavy (advanced stats / calculus)", "Сильная (advanced stats / calculus)")],
-                                ["moderate", t("Moderate (basic stats / econ)",     "Умеренная (basic stats / econ)")],
-                                ["light",    t("Light / none",                       "Слабая / нет")],
-                              ] as const).map(([val, label]) => (
-                                <button
-                                  key={val}
-                                  type="button"
-                                  onClick={() => setQuantBackground(val)}
-                                  aria-pressed={quantBackground === val}
-                                  className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
-                                    quantBackground === val
-                                      ? "bg-gold/15 text-gold-dark border-gold"
-                                      : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
-                                  }`}
-                                >
-                                  {label}
-                                </button>
-                              ))}
+                        // 2026-05-30 v3 polish — drop the heavy bordered
+                        // wrapper. The 3 chip rows now flow with the rest
+                        // of the page; tighter vertical rhythm matches
+                        // the sleek feel of bachelor's curriculum block.
+                        <div className="space-y-5">
+                          {([
+                            {
+                              label: t("Math / quantitative background", "Математическая / quant подготовка"),
+                              value: quantBackground,
+                              set: setQuantBackground,
+                              options: [
+                                ["heavy",    t("Heavy",             "Сильная")],
+                                ["moderate", t("Moderate",          "Умеренная")],
+                                ["light",    t("Very light / none", "Очень слабая / нет")],
+                              ] as const,
+                            },
+                            {
+                              label: t("Full-time work experience", "Опыт работы (full-time)"),
+                              value: workExperience,
+                              set: setWorkExperience,
+                              options: [
+                                ["none",   t("None",      "Нет")],
+                                ["1_2",    t("1–2 years", "1–2 года")],
+                                ["3_5",    t("3–5 years", "3–5 лет")],
+                                ["5_plus", t("5+ years",  "5+ лет")],
+                              ] as const,
+                            },
+                            {
+                              label: t("Research experience", "Исследовательский опыт"),
+                              value: researchExperience,
+                              set: setResearchExperience,
+                              options: [
+                                ["extensive", t("Extensive",         "Серьёзный")],
+                                ["moderate",  t("Moderate",          "Умеренный")],
+                                ["light",     t("Very light / none", "Очень слабый / нет")],
+                              ] as const,
+                            },
+                          ] as const).map(({ label, value, set, options }) => (
+                            <div key={label} className="space-y-2">
+                              <Label className="text-xs uppercase tracking-wider font-medium block">
+                                {label} <span className="text-rose-500 font-bold ml-0.5">*</span>
+                              </Label>
+                              <div className="flex flex-wrap gap-1.5">
+                                {options.map(([val, lbl]) => (
+                                  <button
+                                    key={val}
+                                    type="button"
+                                    // deno-lint-ignore no-explicit-any
+                                    onClick={() => set(val as any)}
+                                    aria-pressed={value === val}
+                                    className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
+                                      value === val
+                                        ? "bg-gold/15 text-gold-dark border-gold"
+                                        : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
+                                    }`}
+                                  >
+                                    {lbl}
+                                  </button>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label className="text-xs uppercase tracking-wider font-medium block">
-                              {t("Full-time work experience", "Опыт работы (full-time)")}{" "}
-                              <span className="text-rose-500 font-bold ml-0.5">*</span>
-                            </Label>
-                            <div className="flex flex-wrap gap-1.5">
-                              {([
-                                ["none",   t("None",          "Нет")],
-                                ["1_2",    t("1–2 years",     "1–2 года")],
-                                ["3_5",    t("3–5 years",     "3–5 лет")],
-                                ["5_plus", t("5+ years",      "5+ лет")],
-                              ] as const).map(([val, label]) => (
-                                <button
-                                  key={val}
-                                  type="button"
-                                  onClick={() => setWorkExperience(val)}
-                                  aria-pressed={workExperience === val}
-                                  className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
-                                    workExperience === val
-                                      ? "bg-gold/15 text-gold-dark border-gold"
-                                      : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
-                                  }`}
-                                >
-                                  {label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label className="text-xs uppercase tracking-wider font-medium block">
-                              {t("Research experience", "Исследовательский опыт")}{" "}
-                              <span className="text-rose-500 font-bold ml-0.5">*</span>
-                            </Label>
-                            <div className="flex flex-wrap gap-1.5">
-                              {([
-                                ["extensive", t("Extensive (published papers)",     "Серьёзный (есть публикации)")],
-                                ["moderate",  t("Moderate (thesis / lab assistant)", "Умеренный (диплом / lab assistant)")],
-                                ["light",     t("Light (class projects only)",       "Лёгкий (только курсовые)")],
-                                ["none",      t("None",                              "Нет")],
-                              ] as const).map(([val, label]) => (
-                                <button
-                                  key={val}
-                                  type="button"
-                                  onClick={() => setResearchExperience(val)}
-                                  aria-pressed={researchExperience === val}
-                                  className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
-                                    researchExperience === val
-                                      ? "bg-gold/15 text-gold-dark border-gold"
-                                      : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
-                                  }`}
-                                >
-                                  {label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
+                          ))}
                         </div>
                       )}
 
@@ -1830,9 +1816,18 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         </Label>
                         <Textarea
                           id="careerGoalNarr"
+                          // 2026-05-30 — placeholder calibrated to the
+                          // CIS demographic (Kazakhstan + Kyrgyzstan).
+                          // 10-year horizon means "graduated from", not
+                          // "got into". Mix of routes: research / consulting
+                          // / building / strategy. Pulled the older
+                          // "development bank in Central Asia" line —
+                          // didn't land as aspirational; "AI safety at
+                          // Anthropic" + "tech founder back in Almaty"
+                          // both feel real for this audience.
                           placeholder={t(
-                            "e.g. Run a development bank in Central Asia · Get into a Stanford CS PhD · Move to Berlin and work in climate tech",
-                            "напр. Возглавить банк развития в Центральной Азии · Поступить в Stanford на CS PhD · Переехать в Берлин и работать в climate tech",
+                            "e.g. Finished my Stanford CS PhD, working on AI safety · Strategy consultant at McKinsey Almaty · Founded a YC-backed startup in Kazakhstan · Senior climate-policy advisor at the UN in Berlin",
+                            "напр. Защитил(а) PhD по CS в Стэнфорде, работаю над AI safety · Стратегический консультант в McKinsey Алматы · Основал(а) YC-стартап в Казахстане · Старший советник по климатической политике в ООН в Берлине",
                           )}
                           value={careerGoal}
                           onChange={(e) => setCareerGoal(e.target.value)}
@@ -1981,7 +1976,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           "Open" — strategy quality cratered. Still cap=3
                           so the dossier stays comparative without going
                           5-country-pile-on. */}
-                      <p className="text-muted-foreground text-xs mt-1 mb-3">{t(`Pick 1–${COUNTRY_PICK_CAP}.`, `Выбери 1–${COUNTRY_PICK_CAP}.`)}</p>
+                      <p className="text-muted-foreground text-xs mt-1 mb-3">{t(`Pick up to ${COUNTRY_PICK_CAP}.`, `Выбери до ${COUNTRY_PICK_CAP}.`)}</p>
                       <div className="flex flex-wrap gap-2">
                         {[...COUNTRY_DEFAULT_CHIPS, OTHER_TOKEN].map((token) => {
                           const isOther = token === OTHER_TOKEN;
@@ -2102,9 +2097,14 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                       <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark/80 font-medium mb-3">{t("What matters to you", "Что важно для тебя")}</p>
                       <div className="space-y-3.5">
                         {[
-                          { label: t("Prestige", "Престиж"), value: prestige, set: setPrestige, icon: GraduationCap, low: t("Any school", "Любой вуз"), high: t("Top 50 only", "Только топ-50") },
-                          { label: t("Scholarship need", "Нужна стипендия"), value: scholarship, set: setScholarship, icon: Shield, low: t("Self-fund OK", "Готов(а) платить"), high: t("Must be free", "Только бесплатно") },
-                          { label: t("Visa accessibility", "Доступность визы"), value: visaAccess, set: setVisaAccess, icon: CheckCircle2, low: t("Don't mind", "Не важно"), high: t("Easy access", "Простая виза") },
+                          // 2026-05-30 — slider icons swapped per Samuel:
+                          //   GraduationCap → Trophy   (Prestige reads as
+                          //     ranking/achievement, not a degree itself)
+                          //   Shield        → Banknote (money, not safety)
+                          //   CheckCircle2  → Plane    (visa = movement)
+                          { label: t("Prestige", "Престиж"), value: prestige, set: setPrestige, icon: Trophy, low: t("Any school", "Любой вуз"), high: t("Top 50 only", "Только топ-50") },
+                          { label: t("Scholarship need", "Нужна стипендия"), value: scholarship, set: setScholarship, icon: Banknote, low: t("Self-fund OK", "Готов(а) платить"), high: t("Must be free", "Только бесплатно") },
+                          { label: t("Visa accessibility", "Доступность визы"), value: visaAccess, set: setVisaAccess, icon: Plane, low: t("Don't mind", "Не важно"), high: t("Easy access", "Простая виза") },
                         ].map(item => (
                           <div key={item.label}>
                             <div className="flex items-center justify-between mb-1">

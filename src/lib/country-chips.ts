@@ -64,7 +64,10 @@ export const COUNTRY_MASTER: CountryEntry[] = [
   { token: "China",           en: "China",           ru: "Китай",          flag: "🇨🇳" },
   { token: "Japan",           en: "Japan",           ru: "Япония",         flag: "🇯🇵" },
   { token: "Malaysia",        en: "Malaysia",        ru: "Малайзия",       flag: "🇲🇾" },
-  { token: "Czech Republic",  en: "Czech Republic",  ru: "Чехия",          flag: "🇨🇿" },
+  // 2026-05-30 — display label shortened to "Czechia". Token kept as
+  // "Czech Republic" for cached-draft backward compat. Shorter label
+  // also keeps the chip row from wrapping "Other" onto a third line.
+  { token: "Czech Republic",  en: "Czechia",         ru: "Чехия",          flag: "🇨🇿" },
   { token: "Poland",          en: "Poland",          ru: "Польша",         flag: "🇵🇱" },
   { token: "Italy",           en: "Italy",           ru: "Италия",         flag: "🇮🇹" },
   { token: "France",          en: "France",          ru: "Франция",        flag: "🇫🇷" },

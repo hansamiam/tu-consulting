@@ -38,11 +38,22 @@ const CTA_POOL: CtaCopy[] = [
       ru: "Вступайте в первую программу Top Uni Membership.",
     },
     body: {
-      en: "Monthly workshops, office hours, and member-only scholarship insights — for students applying abroad on scholarships.",
-      ru: "Ежемесячные воркшопы, office hours и member-only инсайды по стипендиям — для студентов, поступающих за рубеж со стипендией.",
+      // 2026-05-30 — dropped the "— for students applying abroad on
+      // scholarships" tail. Audience is already obvious from context
+      // (they just got a scholarship-strategy dossier). Tail read as
+      // salesy filler.
+      en: "Monthly workshops, office hours, and member-only scholarship insights.",
+      ru: "Ежемесячные воркшопы, office hours и member-only инсайды по стипендиям.",
     },
   },
 ];
+
+// 2026-05-30 — launch-discount pricing. $39.99 standard struck through,
+// $29.99 shown as the live price for the first 50 founders. Decoupled
+// from the founding_member_counter status: if the cap is reached we
+// fall back to showing $39.99 as the standard price.
+const STANDARD_PRICE = "$39.99";
+const LAUNCH_PRICE = "$29.99";
 
 export const MembershipCTA = ({ language }: Props) => {
   const { user } = useAuth();
@@ -111,9 +122,11 @@ export const MembershipCTA = ({ language }: Props) => {
     }
   };
 
+  // 2026-05-30 — shortened. "Claim 50% Off — Join Top Uni" read long
+  // and salesy next to the new launch-discount inline pricing.
   const ctaLabel = stillOpen
-    ? t(language, "Claim 50% Off — Join Top Uni", "Получить 50% — вступить в Top Uni")
-    : t(language, "Join Top Uni Membership", "Вступить в Top Uni Membership");
+    ? t(language, "Join Top Uni", "Вступить в Top Uni")
+    : t(language, "Join Top Uni", "Вступить в Top Uni");
 
   return (
     <>
@@ -142,14 +155,16 @@ export const MembershipCTA = ({ language }: Props) => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[12.5px] leading-[1.45] text-foreground/85 m-0">
-                <span className="font-semibold">$39.99 / {t(language, "month", "месяц")}.</span>
-                {stillOpen && (
+                {stillOpen ? (
                   <>
-                    {" "}
+                    <span className="text-foreground/45 line-through mr-1.5">{STANDARD_PRICE}</span>
+                    <span className="font-semibold">{LAUNCH_PRICE} / {t(language, "month", "месяц")}.</span>{" "}
                     <span className="text-foreground/60">
-                      {t(language, "First 50 students get 50% off.", "Первые 50 студентов — 50% скидка.")}
+                      {t(language, "Launch discount — first 50.", "Запуск — для первых 50.")}
                     </span>
                   </>
+                ) : (
+                  <span className="font-semibold">{STANDARD_PRICE} / {t(language, "month", "месяц")}.</span>
                 )}
               </p>
               {stillOpen && (
