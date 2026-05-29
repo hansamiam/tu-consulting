@@ -163,6 +163,43 @@ async function queueStrategyEmail(
   }
 }
 
+/* ─── Output language guard ───
+ * The strategy prompt explicitly tells the LLM to write all string
+ * values in the target language (English or Russian). Gemini occasionally
+ * slips and writes one or more long fields in the wrong language. This
+ * is a soft instrumentation guard: detect mismatches by scanning the
+ * long narrative fields for Cyrillic-vs-Latin ratio, log a warning per
+ * field that crosses the threshold. Doesn't block the response — full
+ * regen would require a second LLM call which is too expensive for a
+ * rare slip. Telemetry is what lets us tune this later.
+ */
+function detectLanguageMismatch(
+  language: Language,
+  fields: Record<string, string>,
+  profileHash: string,
+): void {
+  for (const [name, raw] of Object.entries(fields)) {
+    const s = (raw || "").trim();
+    if (s.length < 40) continue;
+    const cyrillicCount = (s.match(/[Ѐ-ӿ]/g) || []).length;
+    const latinCount = (s.match(/[A-Za-z]/g) || []).length;
+    const totalLetters = cyrillicCount + latinCount;
+    if (totalLetters < 30) continue;
+    const cyrillicRatio = cyrillicCount / totalLetters;
+    if (language === "ru" && cyrillicRatio < 0.5) {
+      console.warn("[strategy] language-guard EN-leak in RU run", {
+        field: name, cyrillicRatio: cyrillicRatio.toFixed(2), profileHash,
+        sample: s.slice(0, 120),
+      });
+    } else if (language === "en" && cyrillicRatio > 0.3) {
+      console.warn("[strategy] language-guard RU-leak in EN run", {
+        field: name, cyrillicRatio: cyrillicRatio.toFixed(2), profileHash,
+        sample: s.slice(0, 120),
+      });
+    }
+  }
+}
+
 /* ─── Coerce + validate the raw LLM JSON into the final report ─── */
 function coerceReport(
   raw: unknown,
@@ -362,6 +399,17 @@ serve(async (req) => {
     const tGen = Date.now() - t0;
 
     const report = coerceReport(result.report, ctx, profileHash);
+
+    // 2026-05-30 — soft language-guard: log a warning if any long
+    // narrative field doesn't match the requested language. Doesn't
+    // block the response; lets us monitor LLM language slips over time.
+    detectLanguageMismatch(ctx.language, {
+      headline: report.headline,
+      honestDiagnosis: report.honestDiagnosis,
+      uniqueEdge: report.uniqueEdge,
+      blindspot: report.blindspot,
+      targetOpportunity: report.targetOpportunity,
+    }, profileHash);
 
     // Post-LLM final guard: if banned phrase STILL present, log + ship
     // anyway (deterministic fallback ideal lives in a follow-up; the

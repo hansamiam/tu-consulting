@@ -1688,9 +1688,9 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               value: quantBackground,
                               set: setQuantBackground,
                               options: [
-                                ["heavy",    t("Heavy",             "Сильная")],
-                                ["moderate", t("Moderate",          "Умеренная")],
-                                ["light",    t("Very light / none", "Очень слабая / нет")],
+                                ["heavy",    t("Heavy (advanced stats / calculus)", "Сильная (advanced stats / calculus)")],
+                                ["moderate", t("Moderate (basic stats / econ)",     "Умеренная (basic stats / econ)")],
+                                ["light",    t("Very light / none",                  "Очень слабая / нет")],
                               ] as const,
                             },
                             {
@@ -1709,9 +1709,9 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               value: researchExperience,
                               set: setResearchExperience,
                               options: [
-                                ["extensive", t("Extensive",         "Серьёзный")],
-                                ["moderate",  t("Moderate",          "Умеренный")],
-                                ["light",     t("Very light / none", "Очень слабый / нет")],
+                                ["extensive", t("Extensive (published papers)",      "Серьёзный (есть публикации)")],
+                                ["moderate",  t("Moderate (thesis / lab assistant)", "Умеренный (диплом / lab assistant)")],
+                                ["light",     t("Very light / none",                  "Очень слабый / нет")],
                               ] as const,
                             },
                           ] as const).map(({ label, value, set, options }) => (
@@ -1816,18 +1816,17 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         </Label>
                         <Textarea
                           id="careerGoalNarr"
-                          // 2026-05-30 — placeholder calibrated to the
-                          // CIS demographic (Kazakhstan + Kyrgyzstan).
-                          // 10-year horizon means "graduated from", not
-                          // "got into". Mix of routes: research / consulting
-                          // / building / strategy. Pulled the older
-                          // "development bank in Central Asia" line —
-                          // didn't land as aspirational; "AI safety at
-                          // Anthropic" + "tech founder back in Almaty"
-                          // both feel real for this audience.
+                          // 2026-05-30 — placeholder rewrite. Pulled
+                          // McKinsey Almaty (finance/consulting reads
+                          // monocultural for this audience). 4 examples
+                          // now span: STEM research · medicine · global
+                          // policy · arts. Single mention of Almaty
+                          // (Kazakhstan); the rest stay open / global so
+                          // the prompt doesn't telegraph one career
+                          // identity over another.
                           placeholder={t(
-                            "e.g. Finished my Stanford CS PhD, working on AI safety · Strategy consultant at McKinsey Almaty · Founded a YC-backed startup in Kazakhstan · Senior climate-policy advisor at the UN in Berlin",
-                            "напр. Защитил(а) PhD по CS в Стэнфорде, работаю над AI safety · Стратегический консультант в McKinsey Алматы · Основал(а) YC-стартап в Казахстане · Старший советник по климатической политике в ООН в Берлине",
+                            "e.g. Finished my Stanford PhD, leading public-health research · Doctor at a clinic in Almaty · Senior policy advisor at the UN · Filmmaker whose docs travel international festivals",
+                            "напр. Защитил(а) PhD в Стэнфорде, веду исследования в public health · Врач в клинике в Алматы · Старший советник по политике в ООН · Режиссёр, чьи док-фильмы ездят по международным фестивалям",
                           )}
                           value={careerGoal}
                           onChange={(e) => setCareerGoal(e.target.value)}
@@ -1879,62 +1878,15 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           regions — what the optional path delivered
                           anyway. The major/field below is the real
                           locking variable for direction. */}
-                      {/* Intended major — converted from a native
-                          <datalist> (browser-default ugly dropdown) to a
-                          themed Select to match the rest of the wizard.
-                          "Other" reveals a free-text input so users with
-                          a specialty not in the canonical list (e.g.
-                          "Quantum Biophysics") aren't blocked. */}
+                      {/* 2026-05-30 — Combobox upgrade per Samuel.
+                          Free-typing filters the list AND becomes the
+                          submitted value if no row matches. Picks
+                          quantum-biophysics + Türkiye-side specialties
+                          without forcing the user through an "Other"
+                          escape hatch. */}
                       <div className="space-y-1.5">
                         <Label className="text-xs uppercase tracking-wider font-medium">{t("What do you want to study?", "Что ты хочешь изучать?")} <span className="text-rose-500 font-bold ml-0.5">*</span></Label>
-                        {(() => {
-                          // Alphabetical so a 38-item dropdown is scannable.
-                          // Previous order was clustered by domain (STEM →
-                          // social sci → arts) but the clustering wasn't
-                          // visually labelled, so it read as random.
-                          // "Undecided" pinned at top — it's the "I don't
-                          // know yet" escape hatch and a likely default for
-                          // younger users.
-                          const MAJORS = [
-                            "Undecided",
-                            "Anthropology", "Architecture", "Artificial Intelligence",
-                            "Biology", "Business", "Chemistry", "Communications",
-                            "Computer Science", "Cultural Studies", "Data Science",
-                            "Design", "Development Studies", "Economics", "Education",
-                            "Engineering", "Environmental Studies", "Film", "Finance",
-                            "History", "International Relations", "Journalism", "Law",
-                            "Linguistics", "Literature", "Marketing", "Mathematics",
-                            "Medicine & Public Health", "Music", "Performing Arts",
-                            "Philosophy", "Physics", "Political Science", "Psychology",
-                            "Public Policy", "Social Work", "Sociology", "Statistics",
-                            "Sustainability", "Visual Arts",
-                          ];
-                          const isOther = !!major && !MAJORS.includes(major);
-                          const selectValue = isOther ? "__other__" : (major || "");
-                          return (
-                            <>
-                              <Select
-                                value={selectValue}
-                                onValueChange={v => setMajor(v === "__other__" ? (isOther ? major : "") : v)}
-                              >
-                                <SelectTrigger className="h-11 bg-card"><SelectValue placeholder={t("Select your major", "Выберите специальность")} /></SelectTrigger>
-                                <SelectContent className="max-h-72">
-                                  {MAJORS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                                  <SelectItem value="__other__">{t("Other (type below)", "Другое (ввести ниже)")}</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              {selectValue === "__other__" && (
-                                <Input
-                                  value={isOther ? major : ""}
-                                  onChange={e => setMajor(e.target.value)}
-                                  placeholder={t("e.g. Quantum Biophysics", "напр. Квантовая биофизика")}
-                                  className="h-11 bg-card mt-2"
-                                  autoFocus
-                                />
-                              )}
-                            </>
-                          );
-                        })()}
+                        <MajorCombobox value={major} onChange={setMajor} t={t} language={language} />
                       </div>
                       {/* Self-fund Select retired 2026-05-09 — overlapped
                           with the "Scholarship need" 1–5 slider on step 3.
@@ -2358,6 +2310,128 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
             and the cream canvas calls for site chrome. */}
         {screen === "dashboard" && <Footer language="en" />}
       </div>
+    </div>
+  );
+};
+
+/* ─── MajorCombobox ────────────────────────────────────────────────
+ * Typeahead for the "What do you want to study?" field.
+ *
+ * Behaviour:
+ *   - The input shows whatever the user has typed (or picked).
+ *   - Suggestions filter the canonical major list by substring match.
+ *   - Arrow Up/Down navigates suggestions, Enter selects, Escape closes.
+ *   - If the user types a value that doesn't match anything (e.g.
+ *     "Quantum Biophysics"), that string is what gets submitted —
+ *     no "Other" escape hatch needed, no second input.
+ *   - When the input is empty, dropdown shows the full curated list.
+ * ──────────────────────────────────────────────────────────────────── */
+const MAJORS = [
+  // Alphabetical so the dropdown is scannable.
+  "Undecided",
+  "Anthropology", "Architecture", "Artificial Intelligence",
+  "Biology", "Business", "Chemistry", "Communications",
+  "Computer Science", "Cultural Studies", "Data Science",
+  "Design", "Development Studies", "Economics", "Education",
+  "Engineering", "Environmental Studies", "Film", "Finance",
+  "History", "International Relations", "Journalism", "Law",
+  "Linguistics", "Literature", "Marketing", "Mathematics",
+  "Medicine & Public Health", "Music", "Performing Arts",
+  "Philosophy", "Physics", "Political Science", "Psychology",
+  "Public Policy", "Social Work", "Sociology", "Statistics",
+  "Sustainability", "Visual Arts",
+];
+
+interface MajorComboboxProps {
+  value: string;
+  onChange: (v: string) => void;
+  t: (en: string, ru: string) => string;
+  language: "en" | "ru";
+}
+
+const MajorCombobox = ({ value, onChange, t }: MajorComboboxProps) => {
+  const [open, setOpen] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const matches = useMemo(() => {
+    const q = value.trim().toLowerCase();
+    if (!q) return MAJORS;
+    const starts = MAJORS.filter(m => m.toLowerCase().startsWith(q));
+    const contains = MAJORS.filter(m => !m.toLowerCase().startsWith(q) && m.toLowerCase().includes(q));
+    return [...starts, ...contains];
+  }, [value]);
+  useEffect(() => { setActiveIdx(0); }, [matches]);
+
+  const pickIfMatch = (raw: string) => {
+    // If the typed value canonical-matches a row, normalise to that
+    // exact casing/spelling. Otherwise pass through as-is — the user's
+    // free-text submission is the source of truth.
+    const norm = raw.trim();
+    const exact = MAJORS.find(m => m.toLowerCase() === norm.toLowerCase());
+    onChange(exact ?? norm);
+  };
+
+  return (
+    <div className="relative">
+      <Input
+        value={value}
+        onChange={e => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => { setTimeout(() => setOpen(false), 120); /* allow click before close */ }}
+        onKeyDown={e => {
+          if (!open || matches.length === 0) return;
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setActiveIdx(i => Math.min(i + 1, matches.length - 1));
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setActiveIdx(i => Math.max(i - 1, 0));
+          } else if (e.key === "Enter") {
+            e.preventDefault();
+            const pick = matches[activeIdx];
+            if (pick) onChange(pick);
+            setOpen(false);
+          } else if (e.key === "Escape") {
+            setOpen(false);
+            pickIfMatch(value);
+          } else if (e.key === "Tab") {
+            // Tab commits whatever's typed — normalise to canonical if
+            // it matches, then let the default behaviour move focus.
+            pickIfMatch(value);
+            setOpen(false);
+          }
+        }}
+        placeholder={t("Search or type your major", "Введи или выбери специальность")}
+        className="h-11 bg-card"
+        autoComplete="off"
+      />
+      {open && matches.length > 0 && (
+        <div
+          role="listbox"
+          className="absolute z-30 left-0 right-0 top-full mt-1 max-h-72 overflow-y-auto rounded-md border border-border bg-card shadow-lg"
+        >
+          {matches.map((m, i) => (
+            <button
+              key={m}
+              type="button"
+              role="option"
+              aria-selected={i === activeIdx}
+              onMouseDown={e => {
+                // Use onMouseDown so the click fires before onBlur
+                // closes the popover.
+                e.preventDefault();
+                onChange(m);
+                setOpen(false);
+              }}
+              onMouseEnter={() => setActiveIdx(i)}
+              className={`w-full flex items-center px-3 py-2 text-left text-sm transition-colors ${
+                i === activeIdx ? "bg-muted/60 text-foreground" : "text-foreground/85 hover:bg-muted/60"
+              }`}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

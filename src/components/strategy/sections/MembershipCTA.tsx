@@ -122,10 +122,11 @@ export const MembershipCTA = ({ language }: Props) => {
     }
   };
 
-  // 2026-05-30 — single locked label "Become a member". Matches the
-  // Discover sidebar + scholarship-detail card convention so users see
-  // one phrase for the conversion ask across the whole product.
-  const ctaLabel = t(language, "Become a member", "Стать участником");
+  // 2026-05-30 — "Join Top Uni" locked. Pre-fix had "Become a member"
+  // but Samuel reverted that on the dossier-CTA surface specifically;
+  // the strategy report wants brand voice ("Top Uni"), not the generic
+  // membership ask. Discover sidebar continues to use "Become a member".
+  const ctaLabel = t(language, "Join Top Uni", "Вступить в Top Uni");
 
   return (
     <>
