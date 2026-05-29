@@ -5,6 +5,8 @@
 // See plan: ~/.claude/plans/back-to-the-wizard-crispy-storm.md
 
 import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import topuniBg from "@/assets/topuni-bg.jpg";
 import { EDGE_FUNCTIONS_URL } from "@/lib/env";
 import { supabase } from "@/integrations/supabase/client";
 import { GenerationPipeline } from "@/components/GenerationPipeline";
@@ -21,6 +23,10 @@ interface Props {
 export const StrategyView = ({ profile, language }: Props) => {
   const [report, setReport] = useState<StrategyReportV2 | null>(null);
   const [loading, setLoading] = useState(true);
+  // 2026-05-29 v2 — between "report arrived" and "dossier mounted" we
+  // hold a brief reveal frame (~750ms) so the transition reads as a
+  // letter unsealing instead of a brutal swap. Skipped on error path.
+  const [revealing, setRevealing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fired = useRef(false);
 
@@ -50,7 +56,14 @@ export const StrategyView = ({ profile, language }: Props) => {
         const json = (await resp.json()) as StrategyApiResponse;
         if (!cancelled) {
           setReport(json.report);
+          // 2026-05-30 — reveal window bumped to 2.2s. Samuel reported
+          // not seeing the animation; 750ms reads as a flicker rather
+          // than a moment. The new sequence has 4 staged elements
+          // (envelope glow → eyebrow → headline → arrow) spread across
+          // the window so the user actually registers it.
           setLoading(false);
+          setRevealing(true);
+          setTimeout(() => { if (!cancelled) setRevealing(false); }, 2200);
         }
       } catch (e) {
         if (!cancelled) {
@@ -63,17 +76,129 @@ export const StrategyView = ({ profile, language }: Props) => {
     return () => { cancelled = true; };
   }, [profile, language]);
 
-  if (loading) {
+  if (loading || revealing) {
     return (
-      <main className="min-h-screen bg-white">
-        <GenerationPipeline profile={profile} isRu={language === "ru"} />
+      // 2026-05-29 v2 — campus parallax backdrop mirrors the wizard's
+      // visual signature so the loading state doesn't feel like a
+      // separate app. Cream canvas + fixed-position blurred topuniBg
+      // at 12% opacity — same recipe as TopUniAI.tsx:734.
+      <main
+        className="min-h-screen relative overflow-hidden"
+        style={{ background: "hsl(38 35% 97%)" }}
+      >
+        <div
+          className="fixed inset-0 z-0 opacity-[0.12] pointer-events-none"
+          style={{
+            backgroundImage: `url(${topuniBg})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            filter: "blur(3px)",
+          }}
+          aria-hidden
+        />
+        <div className="relative z-10">
+          <AnimatePresence mode="wait">
+            {loading && (
+              <motion.div
+                key="pipeline"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <GenerationPipeline profile={profile} isRu={language === "ru"} />
+              </motion.div>
+            )}
+            {!loading && revealing && (
+              <motion.div
+                key="reveal"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, scale: 0.97 }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                className="min-h-screen flex items-center justify-center px-4 relative"
+              >
+                {/* Soft radiating glow behind the headline — telegraphs
+                    "something is opening" without an explicit envelope
+                    illustration. Pulses once then settles. */}
+                <motion.div
+                  className="absolute inset-0 pointer-events-none flex items-center justify-center"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: [0, 1, 0.6] }}
+                  transition={{ duration: 1.6, times: [0, 0.45, 1], ease: "easeOut" }}
+                  aria-hidden
+                >
+                  <div className="h-[420px] w-[420px] sm:h-[600px] sm:w-[600px] rounded-full bg-gradient-to-br from-gold/35 via-gold/10 to-transparent blur-3xl" />
+                </motion.div>
+
+                <div className="text-center relative z-10 max-w-lg">
+                  <motion.div
+                    initial={{ scale: 0.6, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                    className="inline-block px-5 py-2 rounded-full border border-gold/50 bg-gold/15 text-[11px] uppercase tracking-[0.22em] font-bold text-gold-dark mb-6 shadow-sm"
+                  >
+                    {t(language, "Strategy ready", "Стратегия готова")}
+                  </motion.div>
+                  <motion.h2
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                    className="font-heading text-[32px] sm:text-[42px] font-bold tracking-tight text-foreground leading-[1.1] mb-4"
+                  >
+                    {t(language, "Opening your dossier…", "Открываем твой dossier…")}
+                  </motion.h2>
+                  {/* 2026-05-30 — third staged element: a short body line +
+                      a slow-rising arrow indicate the user should expect
+                      the page to scroll/transition. Fills the back half
+                      of the 2.2s window so the moment doesn't feel front-
+                      loaded. */}
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5, delay: 0.9, ease: "easeOut" }}
+                    className="text-[14px] leading-[1.55] text-foreground/65 m-0 mb-7"
+                  >
+                    {t(
+                      language,
+                      "Your honest diagnosis, your edge, your blindspot, and your next move.",
+                      "Честный диагноз, твоё преимущество, слепое пятно и следующий шаг.",
+                    )}
+                  </motion.p>
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 8 }}
+                    transition={{ duration: 0.9, delay: 1.2, ease: "easeInOut", repeat: Infinity, repeatType: "reverse" }}
+                    className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-gold/40 bg-gold/10"
+                    aria-hidden
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="w-4 h-4 text-gold-dark"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M12 5v14M5 12l7 7 7-7" />
+                    </svg>
+                  </motion.div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </main>
     );
   }
 
   if (error || !report) {
     return (
-      <main className="min-h-screen bg-white flex items-center justify-center">
+      <main
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "hsl(38 35% 97%)" }}
+      >
         <div className="text-center max-w-md px-6">
           <h2 className="font-heading text-[22px] font-bold leading-tight text-foreground mb-3">
             {t(language, "Something went wrong.", "Что-то пошло не так.")}

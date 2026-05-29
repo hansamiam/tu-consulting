@@ -24,10 +24,21 @@ import {
   Target,
   Shield,
   CheckCircle2,
+  Trophy,
+  Banknote,
+  Plane,
   Search,
   BookOpen,
   ListChecks,
-  Map,
+  // 2026-05-30 — aliased to MapIcon to avoid shadowing the global JS
+  // Map constructor in this file's module scope. Pre-fix the
+  // nationality typeahead's `new Map(...)` resolved to this icon
+  // component in the production bundle (the lucide Map is a
+  // forwardRef function, not a constructor), throwing "Us is not a
+  // constructor" at runtime the moment the user typed in Step 1.
+  // The icon itself is currently unused below (legacy import) but
+  // tree-shaking only kicks in on truly unreferenced names.
+  Map as MapIcon,
   Zap,
   Crown,
   Plus,
@@ -159,16 +170,44 @@ interface WizardDraft {
   ieltsState?: "unspecified" | "taken" | "not_yet";
   toeflState?: "unspecified" | "taken" | "not_yet";
   satState?: "unspecified" | "taken" | "not_yet";
+  actState?: "unspecified" | "taken" | "not_yet";
   greState?: "unspecified" | "taken" | "not_yet";
   gmatState?: "unspecified" | "taken" | "not_yet";
+  act?: string;
   gre?: string;
   gmat?: string;
-  /** 2026-05-29 — English Proficiency MC (cofounder spec). Lives on
-   *  the Universal Step 1 alongside identity + target degree. The
-   *  numeric IELTS/TOEFL inputs on Step 2 are still available for
-   *  precision, but most users will pick a bucket here and skip the
-   *  numeric inputs entirely. */
-  englishProficiency?: "ielts_7_plus" | "ielts_6_0_to_6_5" | "ielts_below_6" | "toefl_equiv" | "not_taken_yet";
+  /** 2026-05-29 v2 — bachelor Step-2 additions. AP/IB skews how an
+   *  admissions reader weighs a transcript; favorite subject is the
+   *  narrative anchor for applicants without much else to grab. */
+  curriculumType?: "ap" | "ib" | "alevel" | "national" | "other";
+  favoriteSubject?: string;
+  /** 2026-05-30 v3 — grad-only Narrative additions (cofounder spec).
+   *  A Master's / PhD strategy hinges on whether the applicant is
+   *  doubling down on their undergrad field, pivoting to an adjacent
+   *  one, or jumping into a new domain. previousMajor + fieldContinuity
+   *  + fieldBridge let the LLM read pivot viability instead of
+   *  guessing from major alone.
+   *
+   *    previousMajor   — free text, what they studied (degree + major)
+   *    fieldContinuity — closed-set verdict on relationship to target
+   *    fieldBridge     — optional connective tissue when pivoting */
+  previousMajor?: string;
+  fieldContinuity?: "same" | "related" | "different";
+  fieldBridge?: string;
+  /** 2026-05-29 v2 — English Proficiency captured via test+score on
+   *  Step 1 (replaces the old 5-chip MC). The user picks the test they
+   *  took (IELTS / TOEFL / Other / Not yet); for IELTS/TOEFL they enter
+   *  the score directly; for Other they enter a short note (Duolingo,
+   *  half-American, English-medium school, etc.). englishProficiency
+   *  is derived from these inputs at save-time. The "other" bucket is
+   *  passed to the LLM as raw text via englishOtherNote so it can make
+   *  a judgement call. */
+  englishTestKind?: "ielts" | "toefl" | "other" | "not_yet";
+  englishOtherNote?: string;
+  /** Kept for cached-draft backward compat. New flows derive this from
+   *  englishTestKind + ielts/toefl score; the LLM intake projector
+   *  reads englishOtherNote when englishTestKind === "other". */
+  englishProficiency?: "ielts_7_plus" | "ielts_6_0_to_6_5" | "ielts_below_6" | "toefl_equiv" | "not_taken_yet" | "other";
 
   /** 2026-05-29 grad-applicant additions (Samuel's spec):
    *  These three drive most of the LLM's grad-track diagnosis quality.
@@ -177,6 +216,17 @@ interface WizardDraft {
   quantBackground?: "heavy" | "moderate" | "light";
   workExperience?: "none" | "1_2" | "3_5" | "5_plus";
   researchExperience?: "extensive" | "moderate" | "light" | "none";
+  /** 2026-05-29 v2 — Narrative page Top-3 capture. Three numbered
+   *  rows; each row pairs a free-text activity / experience with a
+   *  per-row leadership toggle so the LLM can see WHICH item the user
+   *  led on (not just "led something somewhere"). The legacy
+   *  hasLeadership chip below is derived from these now. */
+  activity1?: string;
+  activity2?: string;
+  activity3?: string;
+  activity1Leadership?: "yes" | "no";
+  activity2Leadership?: "yes" | "no";
+  activity3Leadership?: "yes" | "no";
   /** 2026-05-29 bachelor-applicant addition (Samuel's spec): quick
    *  Y/N on whether they held a leadership role. Low friction, high
    *  signal for narrative differentiation. */
@@ -210,6 +260,17 @@ const clampScore = (raw: string, max: number, allowDecimal: boolean): string => 
   if (isNaN(num)) return "";
   if (num > max) return String(max);
   return cleaned;
+};
+
+/** Lightweight email-shape gate. RFC 5322 is unsanitary in practice;
+ *  this rejects the everyday typos (missing @, missing domain dot,
+ *  trailing whitespace inside, leading dot, double-@) while letting
+ *  the long tail through. The downstream Resend send still validates
+ *  authoritatively; this is the user-facing first-pass. */
+const isPlausibleEmail = (raw: string): boolean => {
+  const s = (raw || "").trim();
+  if (s.length < 5 || s.length > 254) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s);
 };
 
 /** Block the Step 3 Next button when the "Other" major free-text input
@@ -272,6 +333,158 @@ interface TopUniAIProps {
    *  the saveProfile redirect target to /discover/ru. */
   language?: "en" | "ru";
 }
+
+/* ─── MajorCombobox ────────────────────────────────────────────────
+ * Typeahead for the "What do you want to study?" field.
+ *
+ * Declared BEFORE TopUniAI to avoid any forward-reference / inlining
+ * edge case in production minification — Samuel hit a "Us is not a
+ * constructor" runtime error after the v2 audit and the most likely
+ * culprit was Vite/Terser misinterpreting the late-declared component.
+ *
+ * Behaviour: free-typing filters the canonical major list AND becomes
+ * the submitted value if no row matches. Arrow Up/Down navigates,
+ * Enter selects, Escape closes, Tab commits. Bilingual: matches both
+ * EN and RU labels; canonical EN token is what gets persisted.
+ * ──────────────────────────────────────────────────────────────────── */
+const MAJORS: Array<{ en: string; ru: string }> = [
+  { en: "Undecided",                 ru: "Ещё не решил(а)" },
+  { en: "Anthropology",              ru: "Антропология" },
+  { en: "Architecture",              ru: "Архитектура" },
+  { en: "Artificial Intelligence",   ru: "Искусственный интеллект" },
+  { en: "Biology",                   ru: "Биология" },
+  { en: "Business",                  ru: "Бизнес" },
+  { en: "Chemistry",                 ru: "Химия" },
+  { en: "Communications",            ru: "Коммуникации" },
+  { en: "Computer Science",          ru: "Computer Science" },
+  { en: "Cultural Studies",          ru: "Культурология" },
+  { en: "Data Science",              ru: "Data Science" },
+  { en: "Design",                    ru: "Дизайн" },
+  { en: "Development Studies",       ru: "Development Studies" },
+  { en: "Economics",                 ru: "Экономика" },
+  { en: "Education",                 ru: "Педагогика" },
+  { en: "Engineering",               ru: "Инженерия" },
+  { en: "Environmental Studies",     ru: "Экология" },
+  { en: "Film",                      ru: "Кино" },
+  { en: "Finance",                   ru: "Финансы" },
+  { en: "History",                   ru: "История" },
+  { en: "International Relations",   ru: "Международные отношения" },
+  { en: "Journalism",                ru: "Журналистика" },
+  { en: "Law",                       ru: "Юриспруденция" },
+  { en: "Linguistics",               ru: "Лингвистика" },
+  { en: "Literature",                ru: "Литература" },
+  { en: "Marketing",                 ru: "Маркетинг" },
+  { en: "Mathematics",               ru: "Математика" },
+  { en: "Medicine & Public Health",  ru: "Медицина и public health" },
+  { en: "Music",                     ru: "Музыка" },
+  { en: "Performing Arts",           ru: "Исполнительские искусства" },
+  { en: "Philosophy",                ru: "Философия" },
+  { en: "Physics",                   ru: "Физика" },
+  { en: "Political Science",         ru: "Политология" },
+  { en: "Psychology",                ru: "Психология" },
+  { en: "Public Policy",             ru: "Государственная политика" },
+  { en: "Social Work",               ru: "Социальная работа" },
+  { en: "Sociology",                 ru: "Социология" },
+  { en: "Statistics",                ru: "Статистика" },
+  { en: "Sustainability",            ru: "Устойчивое развитие" },
+  { en: "Visual Arts",               ru: "Изобразительное искусство" },
+];
+
+interface MajorComboboxProps {
+  value: string;
+  onChange: (v: string) => void;
+  t: (en: string, ru: string) => string;
+  language: "en" | "ru";
+}
+
+const MajorCombobox = ({ value, onChange, t, language }: MajorComboboxProps) => {
+  const isRu = language === "ru";
+  const labelFor = (m: { en: string; ru: string }) => (isRu ? m.ru : m.en);
+  const [open, setOpen] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const matches = useMemo(() => {
+    const q = value.trim().toLowerCase();
+    if (!q) return MAJORS;
+    const hit = (m: { en: string; ru: string }) =>
+      m.en.toLowerCase().includes(q) || m.ru.toLowerCase().includes(q);
+    const startsWith = (m: { en: string; ru: string }) =>
+      m.en.toLowerCase().startsWith(q) || m.ru.toLowerCase().startsWith(q);
+    const starts = MAJORS.filter(startsWith);
+    const contains = MAJORS.filter(m => !startsWith(m) && hit(m));
+    return [...starts, ...contains];
+  }, [value]);
+  useEffect(() => { setActiveIdx(0); }, [matches]);
+
+  const pickIfMatch = (raw: string) => {
+    const norm = raw.trim().toLowerCase();
+    const exact = MAJORS.find(m => m.en.toLowerCase() === norm || m.ru.toLowerCase() === norm);
+    onChange(exact ? exact.en : raw.trim());
+  };
+
+  const canonical = isRu ? MAJORS.find(m => m.en === value) : null;
+  const displayValue = canonical ? canonical.ru : value;
+
+  return (
+    <div className="relative">
+      <Input
+        value={displayValue}
+        onChange={e => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => { setTimeout(() => setOpen(false), 120); }}
+        onKeyDown={e => {
+          if (!open || matches.length === 0) return;
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setActiveIdx(i => Math.min(i + 1, matches.length - 1));
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setActiveIdx(i => Math.max(i - 1, 0));
+          } else if (e.key === "Enter") {
+            e.preventDefault();
+            const pick = matches[activeIdx];
+            if (pick) onChange(pick.en);
+            setOpen(false);
+          } else if (e.key === "Escape") {
+            setOpen(false);
+            pickIfMatch(value);
+          } else if (e.key === "Tab") {
+            pickIfMatch(value);
+            setOpen(false);
+          }
+        }}
+        placeholder={t("Search or type your major", "Введи или выбери специальность")}
+        className="h-11 bg-card"
+        autoComplete="off"
+      />
+      {open && matches.length > 0 && (
+        <div
+          role="listbox"
+          className="absolute z-30 left-0 right-0 top-full mt-1 max-h-72 overflow-y-auto rounded-md border border-border bg-card shadow-lg"
+        >
+          {matches.map((m, i) => (
+            <button
+              key={m.en}
+              type="button"
+              role="option"
+              aria-selected={i === activeIdx}
+              onMouseDown={e => {
+                e.preventDefault();
+                onChange(m.en);
+                setOpen(false);
+              }}
+              onMouseEnter={() => setActiveIdx(i)}
+              className={`w-full flex items-center px-3 py-2 text-left text-sm transition-colors ${
+                i === activeIdx ? "bg-muted/60 text-foreground" : "text-foreground/85 hover:bg-muted/60"
+              }`}
+            >
+              {labelFor(m)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
   const ru = language === "ru";
@@ -361,8 +574,48 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
 
   const [fullName, setFullName] = useState(draft?.fullName ?? "");
   const [email, setEmail] = useState(draft?.email ?? "");
+  // 2026-05-30 — emailTouched gates whether the inline error renders.
+  // Stays false until the user blurs out of the field; that way the
+  // error doesn't shout while they're mid-typing.
+  const [emailTouched, setEmailTouched] = useState(false);
   const [whatsapp, setWhatsapp] = useState(draft?.whatsapp ?? "");
   const [nationality, setNationality] = useState(draft?.nationality ?? "");
+  // 2026-05-30 — Step-1 nationality typeahead keyboard nav. Mouse click
+  // worked but Arrow Up/Down + Enter didn't. Lifting matches into a memo
+  // so the onKeyDown handler and the suggestions render share one source
+  // of truth; activeIdx tracks which suggestion is highlighted.
+  // RU localisation: cross-reference COUNTRY_MASTER (which carries en/ru
+  // labels for ~50 countries) and pick the RU label when language=ru.
+  // Falls back to the English `v` for countries not in the master list.
+  // Match logic also broadens to RU substrings so a user typing
+  // "Казахстан" finds Kazakhstan.
+  const nationalityMatches = useMemo(() => {
+    const q = nationality.trim().toLowerCase();
+    if (!q) return [];
+    const masterByToken = new Map(COUNTRY_MASTER.map(c => [c.token.toLowerCase(), c]));
+    const exact = ALL_COUNTRIES.find(c => {
+      const masterRu = masterByToken.get(c.v.toLowerCase())?.ru?.toLowerCase();
+      return c.v.toLowerCase() === q || masterRu === q;
+    });
+    if (exact) return [];
+    return ALL_COUNTRIES.filter(c => {
+      const masterRu = masterByToken.get(c.v.toLowerCase())?.ru?.toLowerCase();
+      return c.v.toLowerCase().includes(q) || (masterRu && masterRu.includes(q));
+    }).slice(0, 5).map(c => {
+      const m = masterByToken.get(c.v.toLowerCase());
+      // Display label respects the wizard's current language; canonical
+      // English value still gets written to state on selection so
+      // downstream (intake projection, prompt context) stays
+      // language-stable.
+      const display = ru && m?.ru ? m.ru : c.v;
+      return { v: c.v, f: c.f, display };
+    });
+  }, [nationality, ru]);
+  const [nationalityActiveIdx, setNationalityActiveIdx] = useState(0);
+  // Whenever the suggestion set changes, snap the highlighted index back
+  // to the top so the user doesn't accidentally Enter-select a stale row
+  // that's no longer at that position.
+  useEffect(() => { setNationalityActiveIdx(0); }, [nationalityMatches]);
   const [gradeLevel, setGradeLevel] = useState(draft?.gradeLevel ?? "");
   // 2026-05-26 cofounder branch: Step-1 grade-level determines whether
   // the rest of the wizard asks about extracurriculars (undergraduate
@@ -383,8 +636,18 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
   const [ielts, setIelts] = useState(draft?.ielts ?? "");
   const [toefl, setToefl] = useState(draft?.toefl ?? "");
   const [sat, setSat] = useState(draft?.sat ?? "");
+  // 2026-05-29 v2 — ACT added on bachelor Step 2 alongside SAT per
+  // Samuel's audit. Captured as a 1–36 integer.
+  const [act, setAct] = useState(draft?.act ?? "");
   const [gre, setGre] = useState(draft?.gre ?? "");
   const [gmat, setGmat] = useState(draft?.gmat ?? "");
+  // 2026-05-29 v2 — curriculum + favorite subject for bachelor track.
+  // Curriculum is the strategic high-leverage signal (AP/IB skews
+  // selectivity reads); favorite subject is the soft narrative anchor
+  // the LLM can hook the Honest Diagnosis around for younger applicants
+  // without anything else to grab.
+  const [curriculumType, setCurriculumType] = useState<WizardDraft["curriculumType"]>(draft?.curriculumType);
+  const [favoriteSubject, setFavoriteSubject] = useState<string>(draft?.favoriteSubject ?? "");
   const [targetCountries, setTargetCountries] = useState<string[]>(Array.isArray(draft?.targetCountries) ? draft!.targetCountries! : []);
   // 2026-05-23: country chips restored. Step 2 renders 11 default chips
   // + an "Other" chip that opens a typeahead modal. Cap at 3 per
@@ -497,6 +760,9 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
   const [satState, setSatState] = useState<TestState>(
     (draft?.satState as TestState) ?? (draft?.sat ? "taken" : "unspecified"),
   );
+  const [actState, setActState] = useState<TestState>(
+    (draft?.actState as TestState) ?? (draft?.act ? "taken" : "unspecified"),
+  );
   const [greState, setGreState] = useState<TestState>(
     (draft?.greState as TestState) ?? (draft?.gre ? "taken" : "unspecified"),
   );
@@ -504,13 +770,60 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
     (draft?.gmatState as TestState) ?? (draft?.gmat ? "taken" : "unspecified"),
   );
 
-  // 2026-05-29 English Proficiency MC on Step 1 per cofounder spec.
-  const [englishProficiency, setEnglishProficiency] = useState<WizardDraft["englishProficiency"]>(draft?.englishProficiency);
+  // 2026-05-29 v2 English Proficiency on Step 1 — test-kind + score
+  // pattern. Replaces the 5-chip MC. englishProficiency is derived
+  // below for downstream consumers (intake-to-prompt-context.ts).
+  const [englishTestKind, setEnglishTestKind] = useState<WizardDraft["englishTestKind"]>(
+    draft?.englishTestKind ??
+      // Migrate cached drafts that only have the old MC field.
+      (draft?.englishProficiency === "ielts_7_plus" ||
+       draft?.englishProficiency === "ielts_6_0_to_6_5" ||
+       draft?.englishProficiency === "ielts_below_6"
+        ? "ielts"
+        : draft?.englishProficiency === "toefl_equiv"
+          ? "toefl"
+          : draft?.englishProficiency === "not_taken_yet"
+            ? "not_yet"
+            : undefined),
+  );
+  const [englishOtherNote, setEnglishOtherNote] = useState<string>(draft?.englishOtherNote ?? "");
+  // Derived bucket for backward compat with intake-to-prompt-context.
+  // Reads the live ielts/toefl state declared above so changing the
+  // score updates the bucket immediately.
+  const englishProficiency: WizardDraft["englishProficiency"] = useMemo(() => {
+    if (englishTestKind === "not_yet") return "not_taken_yet";
+    if (englishTestKind === "other") return "other";
+    if (englishTestKind === "toefl") return "toefl_equiv";
+    if (englishTestKind === "ielts") {
+      const n = parseFloat(ielts);
+      if (!isNaN(n)) {
+        if (n >= 7) return "ielts_7_plus";
+        if (n >= 6) return "ielts_6_0_to_6_5";
+        return "ielts_below_6";
+      }
+      return undefined;
+    }
+    return undefined;
+  }, [englishTestKind, ielts]);
   // 2026-05-29 grad + bachelor additions per Samuel's spec.
   const [quantBackground, setQuantBackground] = useState<WizardDraft["quantBackground"]>(draft?.quantBackground);
   const [workExperience, setWorkExperience] = useState<WizardDraft["workExperience"]>(draft?.workExperience);
   const [researchExperience, setResearchExperience] = useState<WizardDraft["researchExperience"]>(draft?.researchExperience);
   const [hasLeadership, setHasLeadership] = useState<WizardDraft["hasLeadership"]>(draft?.hasLeadership);
+  // 2026-05-29 v2 — Narrative page state. Top 3 activities (or work /
+  // research experiences for grad applicants) with per-row leadership
+  // Y/N. Replaces the single hasLeadership chip + EC tag pile on the
+  // old Goals page.
+  const [activity1, setActivity1] = useState<string>(draft?.activity1 ?? "");
+  const [activity2, setActivity2] = useState<string>(draft?.activity2 ?? "");
+  const [activity3, setActivity3] = useState<string>(draft?.activity3 ?? "");
+  const [activity1Leadership, setActivity1Leadership] = useState<"yes" | "no" | undefined>(draft?.activity1Leadership);
+  const [activity2Leadership, setActivity2Leadership] = useState<"yes" | "no" | undefined>(draft?.activity2Leadership);
+  const [activity3Leadership, setActivity3Leadership] = useState<"yes" | "no" | undefined>(draft?.activity3Leadership);
+  // 2026-05-30 v3 — grad-only Narrative state per cofounder spec.
+  const [previousMajor, setPreviousMajor] = useState<string>(draft?.previousMajor ?? "");
+  const [fieldContinuity, setFieldContinuity] = useState<WizardDraft["fieldContinuity"]>(draft?.fieldContinuity);
+  const [fieldBridge, setFieldBridge] = useState<string>(draft?.fieldBridge ?? "");
 
   const [careerGoal, setCareerGoal] = useState<string>(draft?.careerGoal ?? "");
   const [extracurriculars, setExtracurriculars] = useState<string>(draft?.extracurriculars ?? "");
@@ -634,7 +947,11 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
         knownScholarships: knownScholarships.length > 0 ? knownScholarships : undefined,
         // 2026-05-29 grad + bachelor additions + English MC.
         englishProficiency,
+        englishTestKind, englishOtherNote: englishOtherNote || undefined,
         quantBackground, workExperience, researchExperience, hasLeadership,
+        // 2026-05-30 v3 grad-only Narrative state.
+        previousMajor: previousMajor || undefined,
+        fieldContinuity, fieldBridge: fieldBridge || undefined,
         // 2026-05-26 — per-test taken/not-yet chip state. Persisted so a
         // page refresh keeps the user's answer rather than resetting to
         // "unspecified" + an empty score input.
@@ -653,7 +970,8 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
     careerGoal, extracurriculars, background, namedSchools,
     foreignLanguages, firstToApplyAbroad, selectedECTags, knownScholarships,
     quantBackground, workExperience, researchExperience, hasLeadership,
-    englishProficiency,
+    englishProficiency, englishTestKind, englishOtherNote,
+    previousMajor, fieldContinuity, fieldBridge,
     ieltsState, toeflState, satState,
     greState, gmatState, gre, gmat,
   ]);
@@ -681,7 +999,14 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
     gre, gmat,
     // 2026-05-29 — grad + bachelor additions per Samuel's spec.
     englishProficiency,
+    // 2026-05-29 v2 — raw English-test capture so the LLM gets the
+    // user's actual answer (e.g. "Duolingo 130" / "English-medium
+    // school") instead of just a bucketed label.
+    englishTestKind, englishOtherNote,
     quantBackground, workExperience, researchExperience, hasLeadership,
+    // 2026-05-30 v3 — grad-only Narrative additions (cofounder spec).
+    // Drives the LLM's pivot-vs-deepen read for Master's / PhD.
+    previousMajor, fieldContinuity, fieldBridge,
   };
 
   return (
@@ -791,7 +1116,8 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                 {[
                   { n: 1, label: t("You", "О тебе") },
                   { n: 2, label: t("Academics", "Академика") },
-                  { n: 3, label: t("Goals", "Цели") },
+                  { n: 3, label: t("Narrative", "Нарратив") },
+                  { n: 4, label: t("Goals", "Цели") },
                 ].map(s => {
                   const isActive = s.n === step;
                   const isDone = s.n < step;
@@ -871,22 +1197,39 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           {t("Who you are", "Кто вы")}
                         </span>
                       </div>
-                      <h2 className="font-heading text-[32px] sm:text-[44px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
+                      <h2 className="font-heading text-[28px] sm:text-[40px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
                         {t("Let's start with you.", "Начнём с вас.")}
                       </h2>
-                      <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[50ch]">
-                        {t("The basics that shape every program match.", "Основы для подбора программ.")}
-                      </p>
                     </div>
                     <div className="grid gap-5">
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">{t("Full name *", "Полное имя *")}</Label>
+                          <Label className="text-xs uppercase tracking-wider font-medium">{t("Name", "Имя")} <span className="text-rose-500 font-bold ml-0.5">*</span></Label>
                           <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder={t("What should we call you?", "Как тебя зовут?")} className="h-11 bg-card" />
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-xs uppercase tracking-wider font-medium">{t("Where do we send your strategy?", "Куда отправить твою стратегию?")} <span className="text-rose-600 font-bold">*</span></Label>
-                          <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@email.com" className="h-11 bg-card" />
+                          <Input
+                            type="email"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                            onBlur={() => {
+                              // Show the inline error only after the user
+                              // has touched the field — typing in then
+                              // tabbing away is "touched". Stays out of
+                              // their way until they've actually engaged.
+                              if (email.trim()) setEmailTouched(true);
+                            }}
+                            placeholder="you@email.com"
+                            className={`h-11 bg-card ${emailTouched && !isPlausibleEmail(email) ? "border-rose-500 focus-visible:ring-rose-500" : ""}`}
+                            autoComplete="email"
+                            inputMode="email"
+                          />
+                          {emailTouched && !isPlausibleEmail(email) && (
+                            <p className="text-[11.5px] text-rose-600 leading-snug m-0">
+                              {t("Double-check this email address.", "Проверь адрес ещё раз.")}
+                            </p>
+                          )}
                         </div>
                       </div>
                       <div className="space-y-1.5 relative">
@@ -897,32 +1240,53 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         <Input
                           value={nationality}
                           onChange={e => setNationality(e.target.value)}
+                          onKeyDown={e => {
+                            if (nationalityMatches.length === 0) return;
+                            if (e.key === "ArrowDown") {
+                              e.preventDefault();
+                              setNationalityActiveIdx(i => Math.min(i + 1, nationalityMatches.length - 1));
+                            } else if (e.key === "ArrowUp") {
+                              e.preventDefault();
+                              setNationalityActiveIdx(i => Math.max(i - 1, 0));
+                            } else if (e.key === "Enter") {
+                              e.preventDefault();
+                              const pick = nationalityMatches[nationalityActiveIdx];
+                              if (pick) setNationality(pick.v);
+                            } else if (e.key === "Escape") {
+                              // Soft-dismiss the suggestions by selecting
+                              // the typed value as-is — pre-fix Escape did
+                              // nothing because the suggestions are an
+                              // open popover not a focusable element.
+                              setNationality(nationality.trim());
+                            }
+                          }}
                           placeholder={t("Type any country (Kazakhstan, Nigeria, …)", "Любая страна (Казахстан, Кыргызстан, …)")}
                           className="h-11 bg-card"
+                          autoComplete="off"
                         />
-                        {(() => {
-                          const q = nationality.trim().toLowerCase();
-                          if (!q) return null;
-                          const exact = ALL_COUNTRIES.find(c => c.v.toLowerCase() === q);
-                          if (exact) return null;
-                          const matches = ALL_COUNTRIES.filter(c => c.v.toLowerCase().includes(q)).slice(0, 5);
-                          if (matches.length === 0) return null;
-                          return (
-                            <div className="absolute z-20 left-0 right-0 top-full mt-1 rounded-md border border-border bg-card shadow-lg overflow-hidden">
-                              {matches.map(c => (
-                                <button
-                                  key={c.v}
-                                  type="button"
-                                  onClick={() => setNationality(c.v)}
-                                  className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/60 transition-colors"
-                                >
-                                  <span>{c.f}</span>
-                                  <span>{c.v}</span>
-                                </button>
-                              ))}
-                            </div>
-                          );
-                        })()}
+                        {nationalityMatches.length > 0 && (
+                          <div
+                            role="listbox"
+                            className="absolute z-20 left-0 right-0 top-full mt-1 rounded-md border border-border bg-card shadow-lg overflow-hidden"
+                          >
+                            {nationalityMatches.map((c, i) => (
+                              <button
+                                key={c.v}
+                                type="button"
+                                role="option"
+                                aria-selected={i === nationalityActiveIdx}
+                                onMouseEnter={() => setNationalityActiveIdx(i)}
+                                onClick={() => setNationality(c.v)}
+                                className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
+                                  i === nationalityActiveIdx ? "bg-muted/60" : "hover:bg-muted/60"
+                                }`}
+                              >
+                                <span>{c.f}</span>
+                                <span>{c.display}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs uppercase tracking-wider font-medium">{t("Degree you're applying for", "На какую степень поступаешь")} <span className="text-rose-500 font-bold ml-0.5">*</span></Label>
@@ -934,35 +1298,50 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               ["Master's",      "Магистратура"],
                               ["PhD applicant", "PhD"],
                             ] as const).map(([val, ruLabel]) => (
-                              <SelectItem key={val} value={val}>{t(val, ruLabel)}</SelectItem>
+                              <SelectItem key={val} value={val}>
+                                {/* "PhD applicant" is the internal token (matches isPhDApp gradeLevel check on
+                                    line ~373). User-facing label is just "PhD" — "applicant" reads as
+                                    weird filler. */}
+                                {val === "PhD applicant" ? t("PhD", "PhD") : t(val, ruLabel)}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
 
-                      {/* 2026-05-29 — English Proficiency MC on Step 1
-                          per cofounder spec. Replaces the requirement for
-                          users to know their exact IELTS / TOEFL score on
-                          Step 2. Numeric inputs there stay as optional
-                          precision additions for users who do know. */}
-                      <div className="space-y-1.5">
-                        <Label className="text-xs uppercase tracking-wider font-medium">{t("English proficiency", "Уровень английского")} <span className="text-rose-500 font-bold ml-0.5">*</span></Label>
+                      {/* 2026-05-29 v2 — English captured via test + score
+                          instead of a 5-chip MC. Cofounder feedback: the
+                          MC felt forced; just ask the real question. The
+                          LLM judges proficiency from the score (or the
+                          short "Other" note for non-IELTS/TOEFL paths). */}
+                      <div className="space-y-2.5">
+                        <Label className="text-xs uppercase tracking-wider font-medium">
+                          {t("Have you taken IELTS or TOEFL?", "Сдавал(а) IELTS или TOEFL?")}{" "}
+                          <span className="text-rose-500 font-bold ml-0.5">*</span>
+                        </Label>
                         <div className="flex flex-wrap gap-1.5">
                           {([
-                            ["ielts_7_plus",       t("IELTS 7.0+",      "IELTS 7.0+")],
-                            ["ielts_6_0_to_6_5",   t("IELTS 6.0–6.5",   "IELTS 6.0–6.5")],
-                            ["ielts_below_6",      t("Below 6.0",       "Ниже 6.0")],
-                            ["toefl_equiv",        t("TOEFL equivalent","TOEFL эквивалент")],
-                            ["not_taken_yet",      t("Haven't taken it yet", "Ещё не сдавал(а)")],
+                            ["ielts",   t("IELTS",            "IELTS")],
+                            ["toefl",   t("TOEFL",            "TOEFL")],
+                            ["other",   t("Other",            "Другое")],
+                            ["not_yet", t("Haven't taken it", "Ещё не сдавал(а)")],
                           ] as const).map(([val, label]) => (
                             <button
                               key={val}
                               type="button"
-                              onClick={() => setEnglishProficiency(val)}
-                              aria-pressed={englishProficiency === val}
+                              onClick={() => {
+                                setEnglishTestKind(val);
+                                // Clear adjacent state so a back-and-forth
+                                // pick doesn't smuggle a stale score / note
+                                // through to Generate.
+                                if (val !== "ielts") setIelts("");
+                                if (val !== "toefl") setToefl("");
+                                if (val !== "other") setEnglishOtherNote("");
+                              }}
+                              aria-pressed={englishTestKind === val}
                               className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
-                                englishProficiency === val
-                                  ? "bg-gold/15 text-gold-dark border-gold"
+                                englishTestKind === val
+                                  ? "bg-gold/20 text-brand-navy border-gold"
                                   : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
                               }`}
                             >
@@ -970,6 +1349,59 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                             </button>
                           ))}
                         </div>
+                        {englishTestKind === "ielts" && (
+                          // IELTS scores are issued in 0.5 increments
+                          // (0, 0.5, 1.0, …, 9.0). Snap on blur so 4.2
+                          // becomes 4.0, 4.3 becomes 4.5, etc. Numeric
+                          // clamp during typing stays at [0, 9].
+                          <Input
+                            value={ielts}
+                            inputMode="decimal"
+                            onChange={e => {
+                              const next = clampScore(e.target.value, 9, true);
+                              setIelts(next);
+                              setIeltsState(next.trim() ? "taken" : "unspecified");
+                            }}
+                            onBlur={() => {
+                              if (!ielts.trim()) return;
+                              const n = parseFloat(ielts);
+                              if (isNaN(n)) return;
+                              const snapped = Math.max(0, Math.min(9, Math.round(n * 2) / 2));
+                              setIelts(snapped.toFixed(1));
+                            }}
+                            placeholder={t("e.g. 7.0", "напр. 7.0")}
+                            className="h-11 bg-card max-w-[180px]"
+                          />
+                        )}
+                        {englishTestKind === "toefl" && (
+                          // TOEFL iBT is integer-only [0, 120]. Snap on
+                          // blur to round any stray decimal and clamp.
+                          <Input
+                            value={toefl}
+                            inputMode="numeric"
+                            onChange={e => {
+                              const next = clampScore(e.target.value, 120, false);
+                              setToefl(next);
+                              setToeflState(next.trim() ? "taken" : "unspecified");
+                            }}
+                            onBlur={() => {
+                              if (!toefl.trim()) return;
+                              const n = parseInt(toefl, 10);
+                              if (isNaN(n)) return;
+                              setToefl(String(Math.max(0, Math.min(120, n))));
+                            }}
+                            placeholder={t("e.g. 100", "напр. 100")}
+                            className="h-11 bg-card max-w-[180px]"
+                          />
+                        )}
+                        {englishTestKind === "other" && (
+                          <Input
+                            value={englishOtherNote}
+                            onChange={e => setEnglishOtherNote(e.target.value)}
+                            placeholder={t("e.g. Duolingo 130", "напр. Duolingo 130")}
+                            className="h-11 bg-card max-w-[260px]"
+                          />
+                        )}
                       </div>
                     </div>
                     {/* 2026-05-29 wizard rewrite per Samuel:
@@ -1070,7 +1502,25 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           }
                           goToStep(2);
                         }}
-                        disabled={accountSubmitting || !fullName.trim() || !email.trim() || !nationality.trim() || !gradeLevel || !englishProficiency}
+                        disabled={
+                          accountSubmitting ||
+                          !fullName.trim() ||
+                          !isPlausibleEmail(email) ||
+                          !nationality.trim() ||
+                          !gradeLevel ||
+                          !englishTestKind ||
+                          (englishTestKind === "ielts" && !ielts.trim()) ||
+                          (englishTestKind === "toefl" && !toefl.trim()) ||
+                          (englishTestKind === "other" && !englishOtherNote.trim())
+                        }
+                        onMouseDown={() => {
+                          // If the user clicks Next without leaving the
+                          // email field first, force the touched-state
+                          // so the inline error surfaces.
+                          if (email.trim() && !isPlausibleEmail(email)) {
+                            setEmailTouched(true);
+                          }
+                        }}
                       >
                         {t("Next", "Далее")} <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
@@ -1094,12 +1544,9 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           {t("Academics", "Академика")}
                         </span>
                       </div>
-                      <h2 className="font-heading text-[32px] sm:text-[44px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
+                      <h2 className="font-heading text-[28px] sm:text-[40px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
                         {t("How does your academic record look?", "Как выглядит твоя успеваемость?")}
                       </h2>
-                      <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[50ch]">
-                        {t("Skip the tests you haven't taken.", "Пропускай тесты, которые не сдавал.")}
-                      </p>
                     </div>
                     <div className="grid gap-5">
                       {/* GPA on its own full-width row — scale chips
@@ -1107,7 +1554,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           to it, per Samuel 2026-05-29 polish pass. */}
                       <div className="space-y-2">
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">{t("What's your GPA looking like?", "Какой у тебя средний балл?")} <span className="text-rose-500 font-bold ml-0.5">*</span></Label>
+                          <Label className="text-xs uppercase tracking-wider font-medium">{t("Most recent GPA", "Последний средний балл")} <span className="text-rose-500 font-bold ml-0.5">*</span></Label>
                           {/* Paired input + scale picker — covers the four
                               common bases (US 4.0, post-Soviet 5.0,
                               Continental Europe 10.0, percentage 100) so
@@ -1134,9 +1581,16 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               onChange={e => {
                                 const v = e.target.value.replace(/[^0-9.]/g, "");
                                 const parts = v.split(".");
-                                const cleaned = parts.length > 2
+                                let cleaned = parts.length > 2
                                   ? `${parts[0]}.${parts.slice(1).join("")}`
                                   : v;
+                                // 2026-05-29 v2 — allow up to 2 decimals
+                                // during typing. Round to 1 decimal on
+                                // blur (below) so the stored value snaps.
+                                const afterDot = cleaned.split(".")[1];
+                                if (afterDot && afterDot.length > 2) {
+                                  cleaned = `${cleaned.split(".")[0]}.${afterDot.slice(0, 2)}`;
+                                }
                                 // Clamp at the chosen scale so users can't type 9999 on a 4.0 scale.
                                 const max = parseFloat(gpaScale);
                                 const num = parseFloat(cleaned);
@@ -1145,6 +1599,13 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                                   return;
                                 }
                                 setGpa(cleaned);
+                              }}
+                              onBlur={() => {
+                                // Snap to 1 decimal on commit. "3.75" → "3.8",
+                                // "8.49" → "8.5". Empty stays empty.
+                                if (!gpa.trim()) return;
+                                const n = parseFloat(gpa);
+                                if (!isNaN(n)) setGpa(n.toFixed(1));
                               }}
                               inputMode="decimal"
                               placeholder={
@@ -1155,13 +1616,18 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               }
                               className="h-11 bg-card flex-1"
                             />
-                            <div className="flex rounded-md overflow-hidden border border-border bg-card shrink-0">
+                            {/* 2026-05-30 — mobile fix: each scale button
+                                takes equal share via flex-1, and the picker
+                                itself spans full width when stacked under
+                                the GPA input (sm:w-auto preserves natural
+                                width once the row lays out horizontally). */}
+                            <div className="flex w-full sm:w-auto rounded-md overflow-hidden border border-border bg-card">
                               {["4.0", "5.0", "10.0", "100"].map(s => (
                                 <button
                                   type="button"
                                   key={s}
                                   onClick={() => setGpaScale(s)}
-                                  className={`px-2.5 text-xs font-semibold transition-colors ${
+                                  className={`flex-1 sm:flex-initial h-11 sm:h-auto px-3 sm:px-2.5 text-xs font-semibold transition-colors ${
                                     gpaScale === s
                                       ? "bg-gold-dark text-primary-foreground"
                                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -1185,32 +1651,13 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           vertical card — label on its own line, segmented
                           control below at full width, input below. No more
                           orphan toggles cramped beside the label. */}
+                      {/* 2026-05-29 v2 — IELTS / TOEFL removed from Step
+                          2; they're now captured on Step 1 via the new
+                          test-kind widget. Step 2 is degree-branched:
+                          Bachelor's gets SAT + ACT; Master's gets GRE +
+                          GMAT; PhD gets GRE only. */}
                       <div className="grid sm:grid-cols-2 gap-4">
                         {([
-                          {
-                            key: "ielts" as const,
-                            label: "IELTS",
-                            scale: "(0–9)",
-                            state: ieltsState,
-                            setState: setIeltsState,
-                            value: ielts,
-                            setValue: setIelts,
-                            clamp: (v: string) => clampScore(v, 9, true),
-                            inputMode: "decimal" as const,
-                            placeholder: t("e.g. 7.0", "напр. 7.0"),
-                          },
-                          {
-                            key: "toefl" as const,
-                            label: "TOEFL",
-                            scale: "(0–120)",
-                            state: toeflState,
-                            setState: setToeflState,
-                            value: toefl,
-                            setValue: setToefl,
-                            clamp: (v: string) => clampScore(v, 120, false),
-                            inputMode: "numeric" as const,
-                            placeholder: t("e.g. 100", "напр. 100"),
-                          },
                           ...(!isGraduateApp ? [{
                             key: "sat" as const,
                             label: "SAT",
@@ -1223,12 +1670,22 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                             inputMode: "numeric" as const,
                             placeholder: t("e.g. 1450", "напр. 1450"),
                           }] : []),
+                          ...(!isGraduateApp ? [{
+                            key: "act" as const,
+                            label: "ACT",
+                            scale: "(1–36)",
+                            state: actState,
+                            setState: setActState,
+                            value: act,
+                            setValue: setAct,
+                            clamp: (v: string) => clampScore(v, 36, false),
+                            inputMode: "numeric" as const,
+                            placeholder: t("e.g. 32", "напр. 32"),
+                          }] : []),
                           // Graduate-track tests. GRE for any graduate
                           // applicant; GMAT only for Master's-track
                           // (business-school flavour — PhD applicants
-                          // rarely sit GMAT). The 2026-05-27 "next pass"
-                          // footnote that used to live below is now an
-                          // actual capture path.
+                          // rarely sit GMAT).
                           ...(isGraduateApp ? [{
                             key: "gre" as const,
                             label: "GRE",
@@ -1278,33 +1735,33 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           </div>
                         ))}
                       </div>
-                      {/* 2026-05-29 — grad-applicant additions per Samuel's
-                          spec. Quantitative background is the single
-                          highest-signal field for the cofounder's
-                          "PhD-Econ-without-math pivot" detection. Work
-                          experience + research experience are buckets
-                          (none / 1-2 / 3-5 / 5+) rather than free text
-                          so the LLM gets clean signal. */}
-                      {isGraduateApp && (
+                      {/* 2026-05-29 v2 — Bachelor-track curriculum + favorite
+                          subject. Curriculum chips frame how an admissions
+                          reader weighs the GPA (AP/IB vs national curriculum
+                          calibrates selectivity). Favorite subject gives the
+                          LLM a narrative anchor for applicants with thin ECs. */}
+                      {!isGraduateApp && (
                         <div className="space-y-4 rounded-lg border border-border/70 bg-card p-4">
                           <div className="space-y-2">
                             <Label className="text-xs uppercase tracking-wider font-medium block">
-                              {t("Math / quantitative background", "Математическая / quant подготовка")} <span className="text-rose-500 font-bold ml-0.5">*</span>
+                              {t("Curriculum / program", "Программа / куррикулум")}
                             </Label>
                             <div className="flex flex-wrap gap-1.5">
                               {([
-                                ["heavy",    t("Heavy (advanced stats / calculus)", "Сильная (advanced stats / calculus)")],
-                                ["moderate", t("Moderate (basic stats / econ)",     "Умеренная (basic stats / econ)")],
-                                ["light",    t("Light / none",                       "Слабая / нет")],
+                                ["ap",       t("AP",                "AP")],
+                                ["ib",       t("IB",                "IB")],
+                                ["alevel",   t("A-Level",           "A-Level")],
+                                ["national", t("National curriculum","Национальная программа")],
+                                ["other",    t("Other",             "Другое")],
                               ] as const).map(([val, label]) => (
                                 <button
                                   key={val}
                                   type="button"
-                                  onClick={() => setQuantBackground(val)}
-                                  aria-pressed={quantBackground === val}
+                                  onClick={() => setCurriculumType(curriculumType === val ? undefined : val)}
+                                  aria-pressed={curriculumType === val}
                                   className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
-                                    quantBackground === val
-                                      ? "bg-gold/15 text-gold-dark border-gold"
+                                    curriculumType === val
+                                      ? "bg-gold/20 text-brand-navy border-gold"
                                       : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
                                   }`}
                                 >
@@ -1316,51 +1773,66 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
 
                           <div className="space-y-2">
                             <Label className="text-xs uppercase tracking-wider font-medium block">
-                              {t("Full-time work experience", "Опыт работы (full-time)")} <span className="text-rose-500 font-bold ml-0.5">*</span>
+                              {t("Favorite subject", "Любимый предмет")}
                             </Label>
-                            <div className="flex flex-wrap gap-1.5">
-                              {([
-                                ["none",   t("None",          "Нет")],
-                                ["1_2",    t("1–2 years",     "1–2 года")],
-                                ["3_5",    t("3–5 years",     "3–5 лет")],
-                                ["5_plus", t("5+ years",      "5+ лет")],
-                              ] as const).map(([val, label]) => (
-                                <button
-                                  key={val}
-                                  type="button"
-                                  onClick={() => setWorkExperience(val)}
-                                  aria-pressed={workExperience === val}
-                                  className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
-                                    workExperience === val
-                                      ? "bg-gold/15 text-gold-dark border-gold"
-                                      : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
-                                  }`}
-                                >
-                                  {label}
-                                </button>
-                              ))}
-                            </div>
+                            <Input
+                              value={favoriteSubject}
+                              onChange={e => setFavoriteSubject(e.target.value)}
+                              placeholder={t(
+                                "e.g. Biology · Calculus · History · Studio Art",
+                                "напр. Биология · Математика · История · Искусство",
+                              )}
+                              className="h-11 bg-card"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 2026-05-30 v3 switcharoo — grad-only previous-degree
+                          + field-continuity live on Academics. Bridge
+                          question dropped (the LLM infers the bridge from
+                          previousMajor + fieldContinuity; asking the user
+                          to articulate it was something we should help
+                          them do, not extract from them). Quant / work /
+                          research chips moved to Narrative. */}
+                      {isGraduateApp && (
+                        <div className="space-y-4 rounded-lg border border-border/70 bg-card p-4">
+                          <div className="space-y-1.5">
+                            <Label htmlFor="previousMajor" className="text-xs uppercase tracking-wider font-medium">
+                              {t("What did you study before?", "Что ты изучал(а) раньше?")}{" "}
+                              <span className="text-rose-500 font-bold ml-0.5">*</span>
+                            </Label>
+                            <Input
+                              id="previousMajor"
+                              value={previousMajor}
+                              onChange={e => setPreviousMajor(e.target.value)}
+                              placeholder={t(
+                                "e.g. BSc Economics · BA Political Science",
+                                "напр. BSc Экономика · BA Политология",
+                              )}
+                              className="h-11 bg-card"
+                            />
                           </div>
 
                           <div className="space-y-2">
                             <Label className="text-xs uppercase tracking-wider font-medium block">
-                              {t("Research experience", "Исследовательский опыт")} <span className="text-rose-500 font-bold ml-0.5">*</span>
+                              {t("Is your target field the same as your background?", "Целевая область та же, что и бэкграунд?")}{" "}
+                              <span className="text-rose-500 font-bold ml-0.5">*</span>
                             </Label>
                             <div className="flex flex-wrap gap-1.5">
                               {([
-                                ["extensive", t("Extensive (published papers)",     "Серьёзный (есть публикации)")],
-                                ["moderate",  t("Moderate (thesis / lab assistant)", "Умеренный (диплом / lab assistant)")],
-                                ["light",     t("Light (class projects only)",       "Лёгкий (только курсовые)")],
-                                ["none",      t("None",                              "Нет")],
+                                ["same",      t("Same field",              "Та же область")],
+                                ["related",   t("Related / adjacent",      "Смежная")],
+                                ["different", t("Different field (pivot)", "Другая (пивот)")],
                               ] as const).map(([val, label]) => (
                                 <button
                                   key={val}
                                   type="button"
-                                  onClick={() => setResearchExperience(val)}
-                                  aria-pressed={researchExperience === val}
+                                  onClick={() => setFieldContinuity(fieldContinuity === val ? undefined : val)}
+                                  aria-pressed={fieldContinuity === val}
                                   className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
-                                    researchExperience === val
-                                      ? "bg-gold/15 text-gold-dark border-gold"
+                                    fieldContinuity === val
+                                      ? "bg-gold/20 text-brand-navy border-gold"
                                       : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
                                   }`}
                                 >
@@ -1393,7 +1865,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         onClick={() => goToStep(3)}
                         disabled={
                           !gpa.trim() ||
-                          (isGraduateApp && (!quantBackground || !workExperience || !researchExperience))
+                          (isGraduateApp && (!previousMajor.trim() || !fieldContinuity))
                         }
                       >
                         {t("Next", "Далее")} <ArrowRight className="ml-2 w-4 h-4" />
@@ -1402,6 +1874,10 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                   </motion.div>
                 )}
 
+                {/* 2026-05-29 v2 — NEW Step 3 (Narrative). Top 3
+                    activities / experiences with per-row leadership.
+                    careerGoal lives here as the closing question. Old
+                    Step 3 (Goals) is now Step 4 below. */}
                 {step === 3 && (
                   <motion.div
                     key="step3"
@@ -1414,14 +1890,217 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                     <div>
                       <div className="flex items-baseline gap-3 mb-3">
                         <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">03</span>
+                        <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{t("Narrative", "Нарратив")}</span>
+                      </div>
+                      <h2 className="font-heading text-[28px] sm:text-[40px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
+                        {t("What's your story?", "В чём твоя история?")}
+                      </h2>
+                    </div>
+
+                    <div className="space-y-6">
+                      {/* 2026-05-30 v3 switcharoo — grad applicants now
+                          get the quant / work / research chips on Narrative
+                          (moved up from Academics). Bachelor applicants
+                          get the Top 3 numbered list with per-row "I led
+                          this" toggle. Previous-degree + field-continuity
+                          + bridge moved to Academics this batch — they
+                          belong with the academic record. */}
+                      {isGraduateApp && (
+                        // 2026-05-30 v3 polish — drop the heavy bordered
+                        // wrapper. The 3 chip rows now flow with the rest
+                        // of the page; tighter vertical rhythm matches
+                        // the sleek feel of bachelor's curriculum block.
+                        <div className="space-y-5">
+                          {/* 2026-05-30 — order swapped to Quant → Research →
+                              Work per Samuel. Reads as a natural academic
+                              progression (skill basis → research output →
+                              work history); also keeps the two 3-option
+                              chip rows adjacent which is visually cleaner
+                              than 3 / 4 / 3. */}
+                          {([
+                            {
+                              label: t("Math / quantitative background", "Математическая / quant подготовка"),
+                              value: quantBackground,
+                              set: setQuantBackground,
+                              options: [
+                                ["heavy",    t("Heavy (advanced stats / calculus)", "Сильная (статистика, calculus)")],
+                                ["moderate", t("Moderate (basic stats / econ)",     "Умеренная (базовая статистика, econ)")],
+                                ["light",    t("Very light / none",                  "Очень слабая / нет")],
+                              ] as const,
+                            },
+                            {
+                              label: t("Research experience", "Исследовательский опыт"),
+                              value: researchExperience,
+                              set: setResearchExperience,
+                              options: [
+                                ["extensive", t("Extensive (published papers)",      "Серьёзный (есть публикации)")],
+                                ["moderate",  t("Moderate (thesis / lab assistant)", "Умеренный (диплом / lab-ассистент)")],
+                                ["light",     t("Very light / none",                  "Очень слабый / нет")],
+                              ] as const,
+                            },
+                            {
+                              label: t("Full-time work experience", "Опыт работы (full-time)"),
+                              value: workExperience,
+                              set: setWorkExperience,
+                              options: [
+                                ["none",   t("None",      "Нет")],
+                                ["1_2",    t("1–2 years", "1–2 года")],
+                                ["3_5",    t("3–5 years", "3–5 лет")],
+                                ["5_plus", t("5+ years",  "5+ лет")],
+                              ] as const,
+                            },
+                          ] as const).map(({ label, value, set, options }) => (
+                            <div key={label} className="space-y-2">
+                              <Label className="text-xs uppercase tracking-wider font-medium block">
+                                {label} <span className="text-rose-500 font-bold ml-0.5">*</span>
+                              </Label>
+                              <div className="flex flex-wrap gap-1.5">
+                                {options.map(([val, lbl]) => (
+                                  <button
+                                    key={val}
+                                    type="button"
+                                    // deno-lint-ignore no-explicit-any
+                                    onClick={() => set(val as any)}
+                                    aria-pressed={value === val}
+                                    className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
+                                      value === val
+                                        ? "bg-gold/20 text-brand-navy border-gold"
+                                        : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
+                                    }`}
+                                  >
+                                    {lbl}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Top 3 activities — bachelor-only per 2026-05-30
+                          v3 audit. Grad applicants don't get a Top 3
+                          rows surface; their structured chips above
+                          replace it. */}
+                      {!isGraduateApp && (
+                        <div className="space-y-3">
+                          <Label className="text-xs uppercase tracking-wider font-medium">
+                            {t("Top 3 activities", "Топ-3 активности")}
+                          </Label>
+                          <p className="text-[12px] text-muted-foreground -mt-1">
+                            {t(
+                              "Clubs, sports, jobs, side projects — anything you spent real time on. Star the ones you led.",
+                              "Клубы, спорт, работа, проекты — то, на что ты реально тратил(а) время. Отметь, где был(а) лидером.",
+                            )}
+                          </p>
+                          {([
+                            { n: 1, val: activity1, set: setActivity1, lead: activity1Leadership, setLead: setActivity1Leadership },
+                            { n: 2, val: activity2, set: setActivity2, lead: activity2Leadership, setLead: setActivity2Leadership },
+                            { n: 3, val: activity3, set: setActivity3, lead: activity3Leadership, setLead: setActivity3Leadership },
+                          ] as const).map(({ n, val, set, lead, setLead }) => (
+                            <div key={n} className="grid grid-cols-[28px_1fr_auto] gap-3 items-start">
+                              <span className="font-heading text-[18px] font-bold text-gold-dark tabular-nums leading-[2.2]">
+                                {n}.
+                              </span>
+                              <Input
+                                value={val}
+                                onChange={e => set(e.target.value)}
+                                placeholder={
+                                  n === 1
+                                    ? t("e.g. Founded a debate club at school",
+                                        "напр. Основал(а) клуб дебатов в школе")
+                                    : n === 2
+                                      ? t("e.g. Captained the basketball team for 2 years",
+                                          "напр. Капитан баскетбольной команды 2 года")
+                                      : t("e.g. Volunteered teaching English to refugees",
+                                          "напр. Волонтёр преподавал(а) английский беженцам")
+                                }
+                                className="h-11 bg-card"
+                              />
+                              {/* 2026-05-30 v3 — "Led / Yes / No" was
+                                  confusing per Samuel ("LED? I did not
+                                  get that it meant leadership"). One
+                                  clear toggle pill: "I led this". Gold
+                                  fill + star when active. Absence ⇒
+                                  did not lead — no explicit "no" needed. */}
+                              <button
+                                type="button"
+                                onClick={() => setLead(lead === "yes" ? undefined : "yes")}
+                                aria-pressed={lead === "yes"}
+                                title={t(
+                                  "Mark if you held a leadership role on this one",
+                                  "Отметь, если был(а) в роли лидера",
+                                )}
+                                className={`shrink-0 inline-flex items-center gap-1.5 px-3 h-9 rounded-full border text-[12px] font-semibold transition-all mt-1 ${
+                                  lead === "yes"
+                                    ? "bg-gold/20 text-brand-navy border-gold"
+                                    : "bg-background text-foreground/55 border-border/70 hover:border-gold-dark/60 hover:text-foreground/80"
+                                }`}
+                              >
+                                <span aria-hidden className="text-[14px] leading-none">{lead === "yes" ? "★" : "☆"}</span>
+                                {t("I led this", "Я был(а) лидером")}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="careerGoalNarr" className="text-xs uppercase tracking-wider font-medium">
+                          {t("Where do you see yourself in 10 years?", "Кем ты видишь себя через 10 лет?")}{" "}
+                          <span className="text-muted-foreground/70 font-normal normal-case">{t("(optional)", "(по желанию)")}</span>
+                        </Label>
+                        <Textarea
+                          id="careerGoalNarr"
+                          // 2026-05-30 — rewrite #3. Dropped "Doctor at
+                          // a clinic in Almaty" — Samuel flagged that
+                          // clinic-doctor doesn't read aspirational in
+                          // the CIS context; the prestige register for
+                          // medicine here is "surgeon at a flagship
+                          // hospital" or "researcher at a world-class
+                          // lab", not "GP at the local clinic". Also
+                          // fixed RU leak ("in public health" stayed EN
+                          // on the previous round).
+                          placeholder={t(
+                            "e.g. Finished my Stanford PhD, leading public-health research · Neurosurgeon at a flagship hospital · Senior policy advisor at the UN · Filmmaker whose docs travel international festivals",
+                            "напр. Защитил(а) PhD в Стэнфорде, веду исследования по public health · Нейрохирург во флагманском госпитале · Старший советник по политике в ООН · Режиссёр, чьи док-фильмы ездят по международным фестивалям",
+                          )}
+                          value={careerGoal}
+                          onChange={(e) => setCareerGoal(e.target.value)}
+                          className="min-h-[80px] resize-none bg-card"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between pt-4">
+                      <Button variant="outline" onClick={() => goToStep(2)}><ArrowLeft className="mr-2 w-4 h-4" /> {t("Back", "Назад")}</Button>
+                      <Button
+                        variant="gold"
+                        onClick={() => goToStep(4)}
+                        disabled={isGraduateApp && (!quantBackground || !workExperience || !researchExperience)}
+                      >
+                        {t("Next", "Далее")} <ArrowRight className="ml-2 w-4 h-4" />
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {step === 4 && (
+                  <motion.div
+                    key="step4"
+                    initial={stepEnter}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={stepExit}
+                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                    className="space-y-7"
+                  >
+                    <div>
+                      <div className="flex items-baseline gap-3 mb-3">
+                        <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">04</span>
                         <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{t("Goals", "Цели")}</span>
                       </div>
-                      <h2 className="font-heading text-[32px] sm:text-[44px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
+                      <h2 className="font-heading text-[28px] sm:text-[40px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
                         {t("Pick your direction.", "Выбери направление.")}
                       </h2>
-                      <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[52ch]">
-                        {t("Field, timeline, and what matters to you.", "Область, сроки и что для тебя важно.")}
-                      </p>
                     </div>
                     <div className="space-y-6">
                       {/* Target countries removed entirely 2026-05-10.
@@ -1435,76 +2114,36 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           regions — what the optional path delivered
                           anyway. The major/field below is the real
                           locking variable for direction. */}
-                      {/* Intended major — converted from a native
-                          <datalist> (browser-default ugly dropdown) to a
-                          themed Select to match the rest of the wizard.
-                          "Other" reveals a free-text input so users with
-                          a specialty not in the canonical list (e.g.
-                          "Quantum Biophysics") aren't blocked. */}
+                      {/* 2026-05-30 — Combobox upgrade per Samuel.
+                          Free-typing filters the list AND becomes the
+                          submitted value if no row matches. Picks
+                          quantum-biophysics + Türkiye-side specialties
+                          without forcing the user through an "Other"
+                          escape hatch. */}
                       <div className="space-y-1.5">
                         <Label className="text-xs uppercase tracking-wider font-medium">{t("What do you want to study?", "Что ты хочешь изучать?")} <span className="text-rose-500 font-bold ml-0.5">*</span></Label>
-                        {(() => {
-                          // Alphabetical so a 38-item dropdown is scannable.
-                          // Previous order was clustered by domain (STEM →
-                          // social sci → arts) but the clustering wasn't
-                          // visually labelled, so it read as random.
-                          // "Undecided" pinned at top — it's the "I don't
-                          // know yet" escape hatch and a likely default for
-                          // younger users.
-                          const MAJORS = [
-                            "Undecided",
-                            "Anthropology", "Architecture", "Artificial Intelligence",
-                            "Biology", "Business", "Chemistry", "Communications",
-                            "Computer Science", "Cultural Studies", "Data Science",
-                            "Design", "Development Studies", "Economics", "Education",
-                            "Engineering", "Environmental Studies", "Film", "Finance",
-                            "History", "International Relations", "Journalism", "Law",
-                            "Linguistics", "Literature", "Marketing", "Mathematics",
-                            "Medicine & Public Health", "Music", "Performing Arts",
-                            "Philosophy", "Physics", "Political Science", "Psychology",
-                            "Public Policy", "Social Work", "Sociology", "Statistics",
-                            "Sustainability", "Visual Arts",
-                          ];
-                          const isOther = !!major && !MAJORS.includes(major);
-                          const selectValue = isOther ? "__other__" : (major || "");
-                          return (
-                            <>
-                              <Select
-                                value={selectValue}
-                                onValueChange={v => setMajor(v === "__other__" ? (isOther ? major : "") : v)}
-                              >
-                                <SelectTrigger className="h-11 bg-card"><SelectValue placeholder={t("Select your major", "Выберите специальность")} /></SelectTrigger>
-                                <SelectContent className="max-h-72">
-                                  {MAJORS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                                  <SelectItem value="__other__">{t("Other (type below)", "Другое (ввести ниже)")}</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              {selectValue === "__other__" && (
-                                <Input
-                                  value={isOther ? major : ""}
-                                  onChange={e => setMajor(e.target.value)}
-                                  placeholder={t("e.g. Quantum Biophysics", "напр. Квантовая биофизика")}
-                                  className="h-11 bg-card mt-2"
-                                  autoFocus
-                                />
-                              )}
-                            </>
-                          );
-                        })()}
+                        <MajorCombobox value={major} onChange={setMajor} t={t} language={language} />
                       </div>
                       {/* Self-fund Select retired 2026-05-09 — overlapped
                           with the "Scholarship need" 1–5 slider on step 3.
                           Budget is now derived from that slider downstream. */}
                       <div className="space-y-1.5">
-                        <Label className="text-xs uppercase tracking-wider font-medium">{t("When are you starting?", "Когда стартуешь?")}</Label>
+                        <Label className="text-xs uppercase tracking-wider font-medium">
+                          {t("When do you plan to start?", "Когда планируешь начать?")}{" "}
+                          <span className="text-rose-500 font-bold ml-0.5">*</span>
+                        </Label>
                         <Select value={timeline} onValueChange={setTimeline}>
-                          <SelectTrigger className="h-11 bg-card"><SelectValue placeholder={t("Select", "Выберите")} /></SelectTrigger>
+                          <SelectTrigger className="h-11 bg-card"><SelectValue placeholder={t("Select", "Выбери")} /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Fall 2026">Fall 2026</SelectItem>
-                            <SelectItem value="Spring 2027">Spring 2027</SelectItem>
-                            <SelectItem value="Fall 2027">Fall 2027</SelectItem>
-                            <SelectItem value="Spring 2028">Spring 2028</SelectItem>
-                            <SelectItem value="Flexible">Flexible</SelectItem>
+                            {/* 2026-05-30 — value (token) stays canonical EN
+                                for downstream consumers (prompt, hub-context
+                                seeding). Display label flips to RU when
+                                language=ru. */}
+                            <SelectItem value="Fall 2026">{t("Fall 2026", "Осень 2026")}</SelectItem>
+                            <SelectItem value="Spring 2027">{t("Spring 2027", "Весна 2027")}</SelectItem>
+                            <SelectItem value="Fall 2027">{t("Fall 2027", "Осень 2027")}</SelectItem>
+                            <SelectItem value="Spring 2028">{t("Spring 2028", "Весна 2028")}</SelectItem>
+                            <SelectItem value="Flexible">{t("Flexible", "Гибкий")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -1519,8 +2158,17 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         intentionally include Hungary / Türkiye / China to
                         teach Top Uni's anti-Crimson positioning. */}
                     <div className="pt-2">
-                      <Label className="text-xs uppercase tracking-wider font-medium">{t("Where do you want to study?", "Куда хочешь поступать?")}</Label>
-                      <p className="text-muted-foreground text-xs mt-1 mb-3">{t(`Pick up to ${COUNTRY_PICK_CAP} — optional.`, `Выбери до ${COUNTRY_PICK_CAP} — по желанию.`)}</p>
+                      <Label className="text-xs uppercase tracking-wider font-medium">
+                        {t("Where do you want to study?", "Куда хочешь поступать?")}{" "}
+                        <span className="text-rose-500 font-bold ml-0.5">*</span>
+                      </Label>
+                      {/* 2026-05-30 — made required. Empty targetCountries
+                          fed Card 02 ("Where you belong") with no anchor
+                          and the LLM either invented or fell back to
+                          "Open" — strategy quality cratered. Still cap=3
+                          so the dossier stays comparative without going
+                          5-country-pile-on. */}
+                      <p className="text-muted-foreground text-xs mt-1 mb-3">{t(`Pick up to ${COUNTRY_PICK_CAP}.`, `Выбери до ${COUNTRY_PICK_CAP}.`)}</p>
                       <div className="flex flex-wrap gap-2">
                         {[...COUNTRY_DEFAULT_CHIPS, OTHER_TOKEN].map((token) => {
                           const isOther = token === OTHER_TOKEN;
@@ -1538,7 +2186,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               aria-pressed={selected}
                               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[36px] ${
                                 selected
-                                  ? "bg-gold/15 text-gold-dark border-gold"
+                                  ? "bg-gold/20 text-brand-navy border-gold"
                                   : isOther
                                     ? "bg-card text-foreground border-dashed border-border hover:border-gold-dark/60"
                                     : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
@@ -1565,7 +2213,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               type="button"
                               onClick={() => toggleCountry(token)}
                               aria-pressed={true}
-                              className="inline-flex items-center gap-1.5 rounded-full border bg-gold/15 text-gold-dark border-gold px-3 py-1.5 text-xs font-medium min-h-[36px]"
+                              className="inline-flex items-center gap-1.5 rounded-full border bg-gold/20 text-brand-navy border-gold px-3 py-1.5 text-xs font-medium min-h-[36px]"
                             >
                               <Check className="w-3 h-3" />
                               <span className="leading-none" aria-hidden>{countryFlag(token)}</span>
@@ -1621,40 +2269,11 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         )}
                       </DialogContent>
                     </Dialog>
-                    {/* Known-scholarship awareness chips (2026-05-27).
-                        "Any scholarships already on your radar?" — optional
-                        multi-select; signals user awareness of named
-                        programs and lets the brief generator lead with
-                        what they recognise. Tokens are canonical
-                        scholarship_name from the catalog. Per the
-                        2026-05-27 competitor audit, NO scholarship-
-                        consulting platform asks this at intake. */}
-                    <div className="pt-2">
-                      <Label className="text-xs uppercase tracking-wider font-medium">{t("Any scholarships on your radar?", "Какие стипендии уже на радаре?")}</Label>
-                      <p className="text-muted-foreground text-xs mt-1 mb-3">{t("Pick any you've heard of — optional.", "Отметь, о каких ты слышал(а) — по желанию.")}</p>
-                      <div className="flex flex-wrap gap-2">
-                        {KNOWN_SCHOLARSHIP_CHIPS.map((c) => {
-                          const selected = knownScholarships.includes(c.token);
-                          return (
-                            <button
-                              key={c.token}
-                              type="button"
-                              onClick={() => toggleKnownScholarship(c.token)}
-                              aria-pressed={selected}
-                              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[36px] ${
-                                selected
-                                  ? "bg-gold/15 text-gold-dark border-gold"
-                                  : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
-                              }`}
-                            >
-                              {selected && <Check className="w-3 h-3" />}
-                              <span className="leading-none" aria-hidden>{c.flag}</span>
-                              {knownScholarshipLabel(c.token, language === "ru" ? "ru" : "en")}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    {/* 2026-05-29 v2 — "Any scholarships on your radar?"
+                        deleted per Samuel. Friction without signal — the
+                        strategy report needs to teach scholarships, not
+                        ask the user to name them first. knownScholarships
+                        state retained in cached drafts; just no UI input. */}
                     {/* Priorities sliders — folded into Step 02 on 2026-05-20
                         when 4 steps collapsed to 3. Three sliders that
                         shape the brief: prestige, scholarship need, visa
@@ -1670,9 +2289,14 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                       <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark/80 font-medium mb-3">{t("What matters to you", "Что важно для тебя")}</p>
                       <div className="space-y-3.5">
                         {[
-                          { label: t("Prestige", "Престиж"), value: prestige, set: setPrestige, icon: GraduationCap, low: t("Any school", "Любой вуз"), high: t("Top 50 only", "Только топ-50") },
-                          { label: t("Scholarship need", "Нужна стипендия"), value: scholarship, set: setScholarship, icon: Shield, low: t("Self-fund OK", "Готов(а) платить"), high: t("Must be free", "Только бесплатно") },
-                          { label: t("Visa accessibility", "Доступность визы"), value: visaAccess, set: setVisaAccess, icon: CheckCircle2, low: t("Don't mind", "Не важно"), high: t("Easy access", "Простая виза") },
+                          // 2026-05-30 — slider icons swapped per Samuel:
+                          //   GraduationCap → Trophy   (Prestige reads as
+                          //     ranking/achievement, not a degree itself)
+                          //   Shield        → Banknote (money, not safety)
+                          //   CheckCircle2  → Plane    (visa = movement)
+                          { label: t("Prestige", "Престиж"), value: prestige, set: setPrestige, icon: Trophy, low: t("Any school", "Любой вуз"), high: t("Top 50 only", "Только топ-50") },
+                          { label: t("Scholarship need", "Нужна стипендия"), value: scholarship, set: setScholarship, icon: Banknote, low: t("Self-fund OK", "Готов(а) платить"), high: t("Must be free", "Только бесплатно") },
+                          { label: t("Visa accessibility", "Доступность визы"), value: visaAccess, set: setVisaAccess, icon: Plane, low: t("Don't mind", "Не важно"), high: t("Easy access", "Простая виза") },
                         ].map(item => (
                           <div key={item.label}>
                             <div className="flex items-center justify-between mb-1">
@@ -1692,67 +2316,23 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                       </div>
                     </div>
 
-                    {/* 2026-05-29 — bachelor leadership Y/N per Samuel's
-                        spec. Quick low-friction signal for narrative
-                        differentiation (separates "club president" from
-                        "did sports recreationally"). Master/PhD profiles
-                        skip this — their work experience already captures
-                        leadership context. */}
-                    {/* 2026-05-29 — Leadership chip now applies to ALL
-                        degrees per Samuel's spec (was bachelor-only).
-                        Grad applicants get the work-experience chip on
-                        Step 2, but explicit leadership signal is still
-                        load-bearing for narrative differentiation. */}
-                    <div className="space-y-2 rounded-lg border border-border/70 bg-card p-4">
-                        <Label className="text-xs uppercase tracking-wider font-medium block">
-                          {t("Held a leadership role?", "Был(а) в роли лидера?")}
-                        </Label>
-                        <p className="text-[12px] text-muted-foreground leading-relaxed -mt-1 mb-1">
-                          {t(
-                            "e.g. club president, team captain, student gov, founded an initiative",
-                            "напр. президент клуба, капитан команды, студсовет, основатель инициативы",
-                          )}
-                        </p>
-                        <div className="flex gap-1.5">
-                          {([
-                            ["yes", t("Yes", "Да")],
-                            ["no",  t("Not really", "Не особо")],
-                          ] as const).map(([val, label]) => (
-                            <button
-                              key={val}
-                              type="button"
-                              onClick={() => setHasLeadership(val)}
-                              aria-pressed={hasLeadership === val}
-                              className={`px-4 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
-                                hasLeadership === val
-                                  ? "bg-gold/15 text-gold-dark border-gold"
-                                  : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
-                              }`}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                    </div>
-
-                    {/* 2026-05-29 wizard consolidation per Samuel: Step 4
-                        merged into Step 3 (Goals). No "Next" footer here
-                        — the Generate footer below is the only nav out. */}
-
-                    <div className="space-y-5">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="careerGoal" className="text-xs uppercase tracking-wider font-medium">{t("Who do you want to be?", "Кем ты хочешь стать?")}</Label>
-                        <Textarea
-                          id="careerGoal"
-                          placeholder={t(
-                            "e.g. Run a development bank in Central Asia · Get into a Stanford CS PhD · Move to Berlin and work in climate tech · Build a fintech that banks Kyrgyz migrants",
-                            "напр. Возглавить банк развития в Центральной Азии · Поступить в Stanford на CS PhD · Переехать в Берлин и работать в climate tech · Запустить финтех для мигрантов из Кыргызстана",
-                          )}
-                          value={careerGoal}
-                          onChange={(e) => setCareerGoal(e.target.value)}
-                          className="min-h-[70px] resize-none bg-card"
-                        />
-                      </div>
+                    {/* 2026-05-29 v2 — single hasLeadership chip removed;
+                        the new Narrative page (Step 3) captures per-row
+                        leadership for each of the Top 3 activities, which
+                        is the higher-signal version of the same question.
+                        hasLeadership is derived from those rows in the
+                        profile build-up below.
+                        careerGoal + EC chips also moved up to Narrative —
+                        Goals is now strictly direction (major, timeline,
+                        countries, priorities) so the page reads cleanly. */}
+                    <div className="space-y-5">{/* placeholder section so spacing stays consistent before Generate */}</div>
+                    <div className="hidden">
+                      {/* Keep the EC chip + careerGoal markup referenced
+                          below in saveProfile / composeExtracurriculars so
+                          the variables don't go unused while we transition.
+                          Hidden from rendering but keeps the implicit
+                          dependencies typed. */}
+                      <textarea defaultValue={careerGoal} readOnly />
                       {/* 2026-05-26 degree-branched intake. Bachelor's track
                           keeps the EC chips + textarea — undergraduate
                           admissions and undergrad scholarships care about
@@ -1791,7 +2371,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                                     aria-pressed={selected}
                                     className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[34px] ${
                                       selected
-                                        ? "bg-gold/15 text-gold-dark border-gold"
+                                        ? "bg-gold/20 text-brand-navy border-gold"
                                         : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
                                     }`}
                                   >
@@ -1822,7 +2402,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                                       aria-pressed={selected}
                                       className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[34px] ${
                                         selected
-                                          ? "bg-gold/15 text-gold-dark border-gold"
+                                          ? "bg-gold/20 text-brand-navy border-gold"
                                           : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
                                       }`}
                                     >
@@ -1853,18 +2433,42 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         before the brief streams. */}
                     {(() => {
                       const onGenerate = () => {
+                        // 2026-05-29 v2 — Top 3 activities → flat string
+                        // for the extracurriculars field the LLM already
+                        // reads. Per-row leadership rolls into the line
+                        // so the strategy report can call out WHICH item
+                        // the user led on, not just whether they led.
+                        const composeActivities = (): string => {
+                          const rows: Array<{ text: string; led: "yes" | "no" | undefined }> = [
+                            { text: activity1.trim(), led: activity1Leadership },
+                            { text: activity2.trim(), led: activity2Leadership },
+                            { text: activity3.trim(), led: activity3Leadership },
+                          ];
+                          const formatted = rows
+                            .filter(r => r.text.length > 0)
+                            .map((r, i) => `${i + 1}. ${r.text}${r.led === "yes" ? " (led)" : ""}`)
+                            .join("\n");
+                          return formatted;
+                        };
+                        const activitiesText = composeActivities();
+                        const extracurricularsCombined = [activitiesText, composeExtracurriculars(selectedECTags, extracurriculars)]
+                          .filter(Boolean)
+                          .join("\n\n") || undefined;
+                        // Derive hasLeadership from the per-row narrative
+                        // for backward compat with intake-to-prompt-context.
+                        const derivedLeadership: "yes" | "no" | undefined =
+                          [activity1Leadership, activity2Leadership, activity3Leadership].some(l => l === "yes")
+                            ? "yes"
+                            : [activity1Leadership, activity2Leadership, activity3Leadership].some(l => l === "no")
+                              ? "no"
+                              : hasLeadership;
                         try {
                           saveProfile(projectToDiscoverProfile({
                             fullName, email, nationality, gradeLevel,
                             gpa, gpaScale, ielts, toefl, sat, gre, gmat, major, budget,
                             targetCountries,
                             careerGoal,
-                            // 2026-05-23: chip tag-line prepended to free
-                            // text so backend reads a single combined
-                            // extracurriculars field. Tags-only path also
-                            // covered (sparse fillers picking chips with
-                            // empty textarea still feed the brief).
-                            extracurriculars: composeExtracurriculars(selectedECTags, extracurriculars) || undefined,
+                            extracurriculars: extracurricularsCombined,
                             background, namedSchools,
                             foreignLanguages: foreignLanguages.length > 0 ? foreignLanguages : undefined,
                             firstToApplyAbroad,
@@ -1872,6 +2476,10 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                             knownScholarships,
                           }));
                         } catch { /* localStorage may be unavailable; brief still renders */ }
+                        // Keep derivedLeadership reachable as a side-effect
+                        // so the profile object below picks it up via the
+                        // hasLeadership closure variable.
+                        if (derivedLeadership !== hasLeadership) setHasLeadership(derivedLeadership);
                         setScreen("dashboard");
                       };
                       // 2026-05-27: archetype micro-reveal. Runs the
@@ -1899,7 +2507,12 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           <Button variant="outline" onClick={() => goToStep(3)}>
                             <ArrowLeft className="mr-2 w-4 h-4" /> {t("Back", "Назад")}
                           </Button>
-                          <Button variant="gold" size="lg" onClick={onGenerate}>
+                          <Button
+                            variant="gold"
+                            size="lg"
+                            onClick={onGenerate}
+                            disabled={!major.trim() || !timeline.trim() || targetCountries.length === 0}
+                          >
                             {t("Give me my strategy", "Дай мне стратегию")}
                             <ArrowRight className="ml-2 w-5 h-5" />
                           </Button>

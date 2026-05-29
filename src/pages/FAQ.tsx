@@ -15,7 +15,7 @@ const FAQS: { category: string; q: string; a: string }[] = [
   {
     category: "Membership",
     q: "How much is TopUni Membership and what's included?",
-    a: "TopUni Membership is $39/month or $360/year (saving $108 vs paying monthly). It includes a personalised AI strategy, the full Discover scholarship database with strategy notes, the Workspace (application pipeline + deadline calendar + essay drafts with AI critique), live monthly workshops with our founders, the recordings library, and direct line to the founder team. Founding-cohort members get a discount via a code at checkout.",
+    a: "TopUni Membership is $39/month or $360/year (saving $108 vs paying monthly). It includes a personalised AI strategy, the full Discover scholarship database with strategy notes, the Workspace (application pipeline + deadline calendar + essay drafts with AI critique), live workshops + office hours every two weeks with our founders, the recordings library, and direct line to the founder team. Founding-cohort members get a discount via a code at checkout.",
   },
   {
     category: "Membership",
@@ -30,7 +30,7 @@ const FAQS: { category: string; q: string; a: string }[] = [
   {
     category: "Membership",
     q: "What happens to my saved scholarships, essays, and notes if I cancel?",
-    a: "Your saved data stays on your account. Cancellation removes access to membership features (deeper Discover retrieval, monthly workshops, the strategy, etc.) but the scholarships you saved, the essay drafts you wrote, the deadlines you tracked, and the notes you took are all still there if you re-subscribe. We don't believe in vendor-lock-in dressed up as a subscription.",
+    a: "Your saved data stays on your account. Cancellation removes access to membership features (deeper Discover retrieval, biweekly workshops + office hours, the strategy, etc.) but the scholarships you saved, the essay drafts you wrote, the deadlines you tracked, and the notes you took are all still there if you re-subscribe. We don't believe in vendor-lock-in dressed up as a subscription.",
   },
   {
     category: "Membership",
@@ -69,7 +69,7 @@ const FAQS: { category: string; q: string; a: string }[] = [
   {
     category: "Team",
     q: "Do I get 1:1 coaching as a member?",
-    a: "Membership includes monthly live workshops with the founders, the recordings library, and a direct line to submit questions for upcoming sessions. It does NOT include 1:1 essay reviews or scheduled coaching calls — those are part of a future Elite tier we're building. If you need 1:1 work today, see /offerings.",
+    a: "Membership includes live workshops + open office hours every two weeks with the founders (alternating fortnights — one workshop and one office hour per month), the recordings library, and a direct line to submit questions for upcoming sessions. It does NOT include 1:1 essay reviews or scheduled coaching calls — those are part of a future Elite tier we're building. If you need 1:1 work today, see /offerings.",
   },
 
   // ── Trust + Privacy ────────────────────────────────────────

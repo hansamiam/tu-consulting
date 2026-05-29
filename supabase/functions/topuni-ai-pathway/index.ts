@@ -163,6 +163,43 @@ async function queueStrategyEmail(
   }
 }
 
+/* ─── Output language guard ───
+ * The strategy prompt explicitly tells the LLM to write all string
+ * values in the target language (English or Russian). Gemini occasionally
+ * slips and writes one or more long fields in the wrong language. This
+ * is a soft instrumentation guard: detect mismatches by scanning the
+ * long narrative fields for Cyrillic-vs-Latin ratio, log a warning per
+ * field that crosses the threshold. Doesn't block the response — full
+ * regen would require a second LLM call which is too expensive for a
+ * rare slip. Telemetry is what lets us tune this later.
+ */
+function detectLanguageMismatch(
+  language: Language,
+  fields: Record<string, string>,
+  profileHash: string,
+): void {
+  for (const [name, raw] of Object.entries(fields)) {
+    const s = (raw || "").trim();
+    if (s.length < 40) continue;
+    const cyrillicCount = (s.match(/[Ѐ-ӿ]/g) || []).length;
+    const latinCount = (s.match(/[A-Za-z]/g) || []).length;
+    const totalLetters = cyrillicCount + latinCount;
+    if (totalLetters < 30) continue;
+    const cyrillicRatio = cyrillicCount / totalLetters;
+    if (language === "ru" && cyrillicRatio < 0.5) {
+      console.warn("[strategy] language-guard EN-leak in RU run", {
+        field: name, cyrillicRatio: cyrillicRatio.toFixed(2), profileHash,
+        sample: s.slice(0, 120),
+      });
+    } else if (language === "en" && cyrillicRatio > 0.3) {
+      console.warn("[strategy] language-guard RU-leak in EN run", {
+        field: name, cyrillicRatio: cyrillicRatio.toFixed(2), profileHash,
+        sample: s.slice(0, 120),
+      });
+    }
+  }
+}
+
 /* ─── Coerce + validate the raw LLM JSON into the final report ─── */
 function coerceReport(
   raw: unknown,
@@ -215,9 +252,14 @@ function coerceReport(
     };
   });
 
-  const readinessScore = Math.round(
-    (axes.reduce((s, a) => s + a.value, 0) / axes.length) * 2
-  ) / 2;
+  // 2026-05-30 — calibrated range [2.0, 4.5] in 0.5 steps. Pre-clamp
+  // the report could show 1.0 (too brutal — no one is a 1.0 candidate)
+  // or 5.0 (no one is "perfect" against scholarship gates). Most real
+  // profiles land 2.5–4.0; pinning 3.0 as the gravity center reads as
+  // honest-realist rather than as a participation trophy or a punch.
+  const rawAvg = axes.reduce((s, a) => s + a.value, 0) / axes.length;
+  const snappedHalfStep = Math.round(rawAvg * 2) / 2;
+  const readinessScore = Math.max(2.0, Math.min(4.5, snappedHalfStep));
 
   const uniqueEdge = typeof r.uniqueEdge === "string" ? r.uniqueEdge.trim() : "";
   const blindspot = typeof r.blindspot === "string" ? r.blindspot.trim() : "";
@@ -363,6 +405,17 @@ serve(async (req) => {
 
     const report = coerceReport(result.report, ctx, profileHash);
 
+    // 2026-05-30 — soft language-guard: log a warning if any long
+    // narrative field doesn't match the requested language. Doesn't
+    // block the response; lets us monitor LLM language slips over time.
+    detectLanguageMismatch(ctx.language, {
+      headline: report.headline,
+      honestDiagnosis: report.honestDiagnosis,
+      uniqueEdge: report.uniqueEdge,
+      blindspot: report.blindspot,
+      targetOpportunity: report.targetOpportunity,
+    }, profileHash);
+
     // Post-LLM final guard: if banned phrase STILL present, log + ship
     // anyway (deterministic fallback ideal lives in a follow-up; the
     // closed-set fitDiagnosis + tight schema means surface drift is
@@ -432,6 +485,18 @@ serve(async (req) => {
         "AI provider rate limit hit. Wait a moment and retry.",
         corsHeaders,
         { code: "ai_rate_limited" },
+      );
+    }
+    // 2026-05-30 — Gemini intermittently 503s under load; we already
+    // retry 3x with backoff inside gemini-cache.ts, so reaching here
+    // means all 3 attempts failed. Surface a user-actionable message
+    // instead of dumping the raw JSON.
+    if (/gemini.*generate failed \(503\)|model is currently experiencing high demand|UNAVAILABLE/i.test(msg)) {
+      return respondError(
+        503,
+        "Gemini is briefly overloaded. We retried 3 times — try again in 30 seconds.",
+        corsHeaders,
+        { code: "ai_overloaded" },
       );
     }
 

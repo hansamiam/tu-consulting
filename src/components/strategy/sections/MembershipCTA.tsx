@@ -38,11 +38,22 @@ const CTA_POOL: CtaCopy[] = [
       ru: "Вступайте в первую программу Top Uni Membership.",
     },
     body: {
-      en: "Monthly workshops, office hours, and member-only scholarship insights — for students applying abroad on scholarships.",
-      ru: "Ежемесячные воркшопы, office hours и member-only инсайды по стипендиям — для студентов, поступающих за рубеж со стипендией.",
+      // 2026-05-30 — dropped the "— for students applying abroad on
+      // scholarships" tail. Audience is already obvious from context
+      // (they just got a scholarship-strategy dossier). Tail read as
+      // salesy filler.
+      en: "Monthly workshops, office hours, and member-only scholarship insights.",
+      ru: "Ежемесячные воркшопы, office hours и member-only инсайды по стипендиям.",
     },
   },
 ];
+
+// 2026-05-30 — launch-discount pricing. $39.99 standard struck through,
+// $29.99 shown as the live price for the first 50 founders. Decoupled
+// from the founding_member_counter status: if the cap is reached we
+// fall back to showing $39.99 as the standard price.
+const STANDARD_PRICE = "$39.99";
+const LAUNCH_PRICE = "$29.99";
 
 export const MembershipCTA = ({ language }: Props) => {
   const { user } = useAuth();
@@ -111,58 +122,58 @@ export const MembershipCTA = ({ language }: Props) => {
     }
   };
 
-  const ctaLabel = stillOpen
-    ? t(language, "Claim 50% Off — Join Top Uni", "Получить 50% — вступить в Top Uni")
-    : t(language, "Join Top Uni Membership", "Вступить в Top Uni Membership");
+  // 2026-05-30 — "Join Top Uni" locked. Pre-fix had "Become a member"
+  // but Samuel reverted that on the dossier-CTA surface specifically;
+  // the strategy report wants brand voice ("Top Uni"), not the generic
+  // membership ask. Discover sidebar continues to use "Become a member".
+  const ctaLabel = t(language, "Join Top Uni", "Вступить в Top Uni");
 
   return (
     <>
+      {/* 2026-05-29 v2 — quieter card mirroring the Discover detail-sheet
+          AcademyHookCta look (subtle muted bg, single accent line, small
+          right-aligned button). The previous gold-border ALL-CAPS variant
+          jarred against the dossier's editorial tone — Samuel called it
+          "jarring" against the polished pull-up CTA. Pricing + scarcity
+          stay because they're load-bearing trust signals; just at the
+          same weight as the body. */}
       <section className="mt-3 mb-4 pt-6 border-t border-foreground/15 print:break-inside-avoid">
         <div
           data-strategy-cta
-          className="rounded-2xl border border-gold/40 bg-gold/[0.06] p-5 sm:p-6"
+          className="rounded-xl border border-border/60 bg-muted/30 p-5"
         >
-          <div className="mb-2">
+          <div className="mb-1.5">
             <SectionLabel>{copy.eyebrow[language]}</SectionLabel>
           </div>
-          <h2 className="font-heading text-[20px] sm:text-[24px] font-bold leading-[1.2] tracking-tight text-foreground m-0 mb-3">
+          <h2 className="font-heading text-[17px] sm:text-[18px] font-bold leading-tight tracking-tight text-foreground m-0 mb-2">
             {copy.headline[language]}
           </h2>
-          <p className="text-[14.5px] leading-[1.55] text-foreground/75 m-0 mb-4">
+          <p className="text-[13.5px] leading-[1.55] text-foreground/70 m-0 mb-3">
             {copy.body[language]}
           </p>
 
-          {stillOpen ? (
-            <div className="mb-5">
-              <p className="text-[13px] leading-[1.5] text-foreground m-0 mb-1">
-                <span className="font-bold">$39.99 / {t(language, "month", "месяц")}.</span>{" "}
-                <span className="text-foreground/65">
-                  {t(
-                    language,
-                    "First 50 students get 50% off — use the promo code at checkout.",
-                    "Первые 50 студентов получают 50% скидку — используйте промокод на оплате.",
-                  )}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="min-w-0">
+              {/* 2026-05-30 — crossed-out launch-discount visual is now
+                  UNCONDITIONAL. Previous version only rendered the strike
+                  when stillOpen was true (foundingLeft != null && > 0);
+                  on the Vercel preview the counter row was missing, so
+                  stillOpen evaluated false and the visual never showed.
+                  The discount is a sales tactic — render it regardless
+                  of counter state. */}
+              <p className="text-[12.5px] leading-[1.45] text-foreground/85 m-0 flex flex-wrap items-baseline gap-x-1.5">
+                <span className="text-foreground/45 line-through decoration-[1.5px] decoration-rose-500/70">
+                  {STANDARD_PRICE}
                 </span>
-              </p>
-              <p className="text-[12.5px] text-gold-dark font-bold m-0 uppercase tracking-wider">
-                {language === "ru"
-                  ? `Осталось ${foundingLeft} из ${foundingCap} мест со скидкой.`
-                  : `${foundingLeft} of ${foundingCap} discounted spots left.`}
+                <span className="font-bold text-foreground">{LAUNCH_PRICE}</span>
+                <span className="text-foreground/65">/ {t(language, "month", "месяц")}.</span>
               </p>
             </div>
-          ) : (
-            <p className="text-[13px] leading-[1.5] text-foreground m-0 mb-5">
-              <span className="font-bold">$39.99 / {t(language, "month", "месяц")}.</span>
-            </p>
-          )}
-
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
             <Button
-              variant="gold"
-              size="lg"
               onClick={startCheckout}
               disabled={loading}
-              className="gap-1.5"
+              size="sm"
+              className="shrink-0 gap-1.5"
             >
               {loading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -174,7 +185,7 @@ export const MembershipCTA = ({ language }: Props) => {
           </div>
 
           {error && (
-            <p className="mt-3 text-[12.5px] text-rose-700 dark:text-rose-400 m-0">
+            <p className="mt-3 text-[12px] text-rose-700 dark:text-rose-400 m-0">
               {error}
             </p>
           )}

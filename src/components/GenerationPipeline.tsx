@@ -6,8 +6,6 @@ import {
   FileText,
   Compass,
   BarChart3,
-  Quote,
-  AlertOctagon,
   MapPin,
 } from "lucide-react";
 
@@ -63,75 +61,91 @@ export function GenerationPipeline({ profile, isRu = false }: Props) {
   const countryList = (profile.targetCountries || []).slice(0, 2).join(", ");
   const gpa = profile.gpa?.trim();
   const ielts = profile.ielts?.trim();
-  const majorText = profile.major?.trim() || "";
-  const gradeText = profile.gradeLevel?.trim() || "";
+  // 2026-05-30 — gradeLevel + major are stored as canonical EN tokens;
+  // the loading screen interpolation was leaking "Master's · Architecture"
+  // into the RU pipeline. Localise inline for display only; the
+  // downstream profile object the LLM reads is untouched.
+  const GRADE_RU: Record<string, string> = {
+    "Bachelor's": "Бакалавриат",
+    "Master's": "Магистратура",
+    "PhD applicant": "PhD",
+    "Working professional": "Опытный специалист",
+    "High School": "Школа",
+    "Gap Year": "Gap Year",
+  };
+  // Small inline map covers the 30+ most-likely picks. Long-tail
+  // "Other" entries (free text typed by the user) display as-is in
+  // either language — that's fine since the user typed them in their
+  // own language to begin with.
+  const MAJOR_RU: Record<string, string> = {
+    "Undecided": "Ещё не решил(а)",
+    "Anthropology": "Антропология", "Architecture": "Архитектура",
+    "Artificial Intelligence": "Искусственный интеллект",
+    "Biology": "Биология", "Business": "Бизнес", "Chemistry": "Химия",
+    "Communications": "Коммуникации", "Computer Science": "Computer Science",
+    "Cultural Studies": "Культурология", "Data Science": "Data Science",
+    "Design": "Дизайн", "Development Studies": "Development Studies",
+    "Economics": "Экономика", "Education": "Педагогика",
+    "Engineering": "Инженерия", "Environmental Studies": "Экология",
+    "Film": "Кино", "Finance": "Финансы", "History": "История",
+    "International Relations": "Международные отношения",
+    "Journalism": "Журналистика", "Law": "Юриспруденция",
+    "Linguistics": "Лингвистика", "Literature": "Литература",
+    "Marketing": "Маркетинг", "Mathematics": "Математика",
+    "Medicine & Public Health": "Медицина и public health",
+    "Music": "Музыка", "Performing Arts": "Исполнительские искусства",
+    "Philosophy": "Философия", "Physics": "Физика",
+    "Political Science": "Политология", "Psychology": "Психология",
+    "Public Policy": "Государственная политика",
+    "Social Work": "Социальная работа", "Sociology": "Социология",
+    "Statistics": "Статистика", "Sustainability": "Устойчивое развитие",
+    "Visual Arts": "Изобразительное искусство",
+  };
+  const rawMajor = profile.major?.trim() || "";
+  const rawGrade = profile.gradeLevel?.trim() || "";
+  const majorText = isRu ? (MAJOR_RU[rawMajor] ?? rawMajor) : rawMajor;
+  const gradeText = isRu ? (GRADE_RU[rawGrade] ?? rawGrade) : rawGrade;
 
+  // 2026-05-29 v2 — 6 steps → 4. Each line is one short, true sentence.
+  // Trimmed the editorial buzz ("honest diagnosis", "Optimistic-realist
+  // framing", "Funding-first · Research-first · …") that read as filler.
   const steps: Step[] = useMemo(() => [
     {
       id: "intake",
       Icon: FileText,
-      label: t("Reading your intake", "Читаем вашу анкету"),
+      label: t("Reading your intake", "Читаем твою анкету"),
       detail: gradeText && majorText
-        ? t(`${gradeText} · ${majorText}${gpa ? ` · GPA ${gpa}` : ""}`, `${gradeText} · ${majorText}${gpa ? ` · GPA ${gpa}` : ""}`)
-        : t("Degree, scores, signals, free-text", "Уровень, оценки, сигналы, free-text"),
-      doneAt: 1200,
+        ? `${gradeText} · ${majorText}${gpa ? ` · GPA ${gpa}` : ""}`
+        : t("Degree, scores, narrative", "Уровень, оценки, нарратив"),
+      doneAt: 2000,
     },
     {
       id: "context",
       Icon: Compass,
-      label: t("Resolving cultural context", "Определяем культурный контекст"),
-      detail: t(
-        "Framing for first-gen-abroad vs first-gen-college vs global-step",
-        "Рамка для first-gen-abroad / first-gen-college / global-step",
-      ),
-      doneAt: 2800,
+      label: t("Framing your context", "Рамка контекста"),
+      detail: t("Cultural lens + funding posture", "Культурная рамка + finансы"),
+      doneAt: 5000,
     },
     {
-      id: "axes",
+      id: "readiness",
       Icon: BarChart3,
-      label: t("Scoring readiness across 5 axes", "Оцениваем готовность по 5 осям"),
+      label: t("Scoring your readiness", "Оцениваем готовность"),
       detail: ielts || gpa
         ? t(
-            `Academic ${gpa ? `(GPA ${gpa})` : ""}${ielts ? ` · English (IELTS ${ielts})` : ""} · testing · experience · funding`,
-            `Академика ${gpa ? `(GPA ${gpa})` : ""}${ielts ? ` · английский (IELTS ${ielts})` : ""} · тесты · опыт · финансирование`,
+            `Across academics${gpa ? ` (GPA ${gpa})` : ""}, testing, experience`,
+            `По академике${gpa ? ` (GPA ${gpa})` : ""}, тестам, опыту`,
           )
-        : t(
-            "Academic strength · testing · experience · narrative · funding",
-            "Академика · тесты · опыт · нарратив · финансирование",
-          ),
-      doneAt: 5500,
+        : t("Across academics, testing, experience, narrative", "По академике, тестам, опыту, нарративу"),
+      doneAt: 9500,
     },
     {
-      id: "diagnosis",
-      Icon: Quote,
-      label: t("Drafting your honest diagnosis", "Готовим честный диагноз"),
-      detail: countryList
-        ? t(`Optimistic-realist framing for ${countryList}`, `Optimistic-realist рамка для ${countryList}`)
-        : t(
-            "Two-to-three sentence pull-quote — honest about the gap, the lever, and the stakes",
-            "2-3 предложения — про рычаг, пробел и ставки",
-          ),
-      doneAt: 9000,
-    },
-    {
-      id: "weaknesses",
-      Icon: AlertOctagon,
-      label: t("Naming weaknesses and what they cost", "Называем слабости и их цену"),
-      detail: t(
-        "Each gap with the specific application-time consequence",
-        "Каждый пробел с конкретной ценой при подаче",
-      ),
-      doneAt: 12500,
-    },
-    {
-      id: "pathway",
+      id: "strategy",
       Icon: MapPin,
-      label: t("Composing your strategic pathway", "Складываем стратегию"),
-      detail: t(
-        "Funding-first · Research-first · Applied · Affordability-first — one frame",
-        "Funding-first · Research-first · Applied · Affordability-first — одна рамка",
-      ),
-      doneAt: 15500,
+      label: t("Writing your strategy", "Пишем твою стратегию"),
+      detail: countryList
+        ? t(`Honest diagnosis · play · pivot · blindspot — ${countryList}`, `Диагноз · play · pivot · blindspot — ${countryList}`)
+        : t("Honest diagnosis · play · pivot · blindspot", "Диагноз · play · pivot · blindspot"),
+      doneAt: 15000,
     },
   ], [countryList, gpa, ielts, majorText, gradeText, isRu]);
 
@@ -150,98 +164,145 @@ export function GenerationPipeline({ profile, isRu = false }: Props) {
 
   const progressPct = Math.min(95, (elapsed / totalDuration) * 100);
 
+  // 2026-05-30 — loading screen polish per Samuel ("bland / too much
+  // space"). Changes:
+  //   • drop min-h-screen flex-center; let it sit naturally with top
+  //     padding so the page doesn't feel like a vast empty canvas
+  //   • header block grows: monogram + "TU STRATEGY ENGINE" eyebrow +
+  //     larger headline + name pill + progress %
+  //   • each step row now has a left vertical thread connecting the
+  //     status indicators so the pipeline reads as a flowing path
+  //   • current step's detail line gets a soft animated underline
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-10">
-    <div className="w-full max-w-2xl">
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-6"
-      >
-        <h3 className="font-heading text-2xl font-bold text-foreground tracking-tight mb-1">
-          {profile.fullName
-            ? t(`Building ${profile.fullName.split(" ")[0]}'s strategy`, `Готовим стратегию для ${profile.fullName.split(" ")[0]}`)
-            : t("Building your strategy report", "Готовим ваш стратегический отчёт")}
-        </h3>
-        <p className="text-sm text-muted-foreground">
-          {t("This usually takes 20–30 seconds.",
-             "Обычно 20–30 секунд.")}
-        </p>
-      </motion.div>
-
-      {/* Progress bar */}
-      <div className="h-1 bg-muted rounded-full overflow-hidden mb-6">
+    <div className="px-4 py-16 sm:py-20">
+      <div className="w-full max-w-2xl mx-auto">
         <motion.div
-          className="h-full bg-gradient-to-r from-gold-dark to-gold"
-          initial={{ width: 0 }}
-          animate={{ width: `${progressPct}%` }}
-          transition={{ duration: 0.3, ease: "linear" }}
-        />
-      </div>
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="mb-8"
+        >
+          {/* Eyebrow row — monogram square + brand line */}
+          <div className="flex items-center gap-2.5 mb-4">
+            <span className="inline-flex items-center justify-center h-6 w-6 rounded-md bg-gold-dark text-primary-foreground font-heading font-bold text-[12px] leading-none shadow-sm">
+              TU
+            </span>
+            <span className="text-[10px] uppercase tracking-[0.22em] font-bold text-gold-dark">
+              {t("Top Uni · Strategy engine", "Top Uni · Strategy engine")}
+            </span>
+          </div>
 
-      {/* Step list */}
-      <ul className="space-y-3">
-        {steps.map((step, i) => {
-          const isDone = elapsed >= step.doneAt;
-          const isActive = !isDone && (i === 0 || elapsed >= steps[i - 1].doneAt);
-          const isPending = !isDone && !isActive;
+          <h3 className="font-heading text-[26px] sm:text-[32px] font-bold text-foreground tracking-tight leading-[1.1] mb-2">
+            {profile.fullName
+              ? t(`Building ${profile.fullName.split(" ")[0]}'s strategy`, `Готовим стратегию для ${profile.fullName.split(" ")[0]}`)
+              : t("Building your strategy report", "Готовим твой стратегический отчёт")}
+          </h3>
+          <p className="text-[14px] text-muted-foreground leading-relaxed">
+            {t("Usually 20–30 seconds. Hang tight.",
+               "Обычно 20–30 секунд. Подожди немного.")}
+          </p>
+        </motion.div>
 
-          return (
-            <motion.li
-              key={step.id}
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: isPending ? 0.35 : 1, x: 0 }}
-              transition={{ duration: 0.35, delay: i * 0.05 }}
-              className="flex items-start gap-3"
-            >
-              {/* Status indicator */}
-              <span className={`shrink-0 h-7 w-7 rounded-lg flex items-center justify-center transition-all ${
-                isDone
-                  ? "bg-gold-dark text-primary-foreground shadow-sm"
-                  : isActive
-                    ? "bg-gold/20 text-gold-dark ring-1 ring-gold/40"
-                    : "bg-muted text-muted-foreground/50"
-              }`}>
-                {isDone ? <Check className="w-3.5 h-3.5" strokeWidth={3} />
-                  : isActive ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  : <step.Icon className="w-3.5 h-3.5" />}
-              </span>
+        {/* Progress bar + numeric % so the user has a concrete signal */}
+        <div className="flex items-center gap-3 mb-7">
+          <div className="h-1.5 bg-muted rounded-full overflow-hidden flex-1">
+            <motion.div
+              className="h-full bg-gradient-to-r from-gold-dark via-gold to-gold-dark bg-[length:200%_100%]"
+              initial={{ width: 0, backgroundPosition: "0% 50%" }}
+              animate={{
+                width: `${progressPct}%`,
+                backgroundPosition: ["0% 50%", "200% 50%"],
+              }}
+              transition={{
+                width: { duration: 0.3, ease: "linear" },
+                backgroundPosition: { duration: 2.5, ease: "linear", repeat: Infinity },
+              }}
+            />
+          </div>
+          <span className="font-mono text-[11px] tabular-nums text-foreground/55 font-semibold min-w-[2.5ch] text-right">
+            {Math.round(progressPct)}%
+          </span>
+        </div>
 
-              <div className="min-w-0 flex-1 pt-0.5">
-                <div className="flex items-baseline justify-between gap-3">
-                  <p className={`font-medium text-sm transition-colors ${
-                    isDone ? "text-foreground" :
-                    isActive ? "text-foreground" :
-                    "text-muted-foreground/70"
+        {/* Step list with a vertical thread connecting status indicators */}
+        <ul className="relative space-y-4">
+          <span
+            aria-hidden
+            className="absolute left-[13px] top-3.5 bottom-3.5 w-px bg-gradient-to-b from-transparent via-border to-transparent"
+          />
+          {steps.map((step, i) => {
+            const isDone = elapsed >= step.doneAt;
+            const isActive = !isDone && (i === 0 || elapsed >= steps[i - 1].doneAt);
+            const isPending = !isDone && !isActive;
+
+            return (
+              <motion.li
+                key={step.id}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: isPending ? 0.4 : 1, x: 0 }}
+                transition={{ duration: 0.4, delay: i * 0.06, ease: [0.16, 1, 0.3, 1] }}
+                className="relative flex items-start gap-3.5"
+              >
+                {/* Status indicator (sits over the thread) */}
+                <span className={`relative z-10 shrink-0 h-7 w-7 rounded-lg flex items-center justify-center transition-all ${
+                  isDone
+                    ? "bg-gold-dark text-primary-foreground shadow-sm"
+                    : isActive
+                      ? "bg-gold/15 text-gold-dark ring-2 ring-gold/50 shadow-[0_0_0_4px_rgba(218,165,32,0.08)]"
+                      : "bg-card border border-border/70 text-muted-foreground/50"
+                }`}>
+                  {isDone ? <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                    : isActive ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    : <step.Icon className="w-3.5 h-3.5" />}
+                </span>
+
+                <div className="min-w-0 flex-1 pt-0.5">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className={`font-semibold text-[14px] transition-colors ${
+                      isDone ? "text-foreground/85" :
+                      isActive ? "text-foreground" :
+                      "text-muted-foreground/75"
+                    }`}>
+                      {step.label}
+                    </p>
+                    {isActive && (
+                      <motion.span
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-[10.5px] font-bold text-gold-dark uppercase tracking-[0.14em] whitespace-nowrap"
+                      >
+                        {t("running", "идёт")}
+                      </motion.span>
+                    )}
+                    {isDone && (
+                      <span className="text-[10.5px] font-bold text-emerald-700 uppercase tracking-[0.14em] whitespace-nowrap">
+                        {t("done", "готово")}
+                      </span>
+                    )}
+                  </div>
+                  <p className={`text-[12.5px] mt-0.5 leading-snug ${
+                    isPending ? "text-muted-foreground/45" : "text-muted-foreground"
                   }`}>
-                    {step.label}
+                    {step.detail}
                   </p>
+                  {/* Soft animated underline on the active step's detail —
+                      moving gradient cue that something is happening even
+                      when the spinner is just spinning. */}
                   {isActive && (
                     <motion.span
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="text-[11px] font-medium text-gold-dark whitespace-nowrap"
-                    >
-                      {t("running", "идёт")}
-                    </motion.span>
-                  )}
-                  {isDone && (
-                    <span className="text-[11px] font-medium text-emerald-700 whitespace-nowrap">
-                      {t("done", "готово")}
-                    </span>
+                      aria-hidden
+                      className="block h-px bg-gradient-to-r from-transparent via-gold/60 to-transparent mt-1.5"
+                      initial={{ width: "0%" }}
+                      animate={{ width: ["0%", "100%", "0%"] }}
+                      transition={{ duration: 1.6, ease: "easeInOut", repeat: Infinity }}
+                    />
                   )}
                 </div>
-                <p className={`text-xs mt-0.5 leading-snug ${
-                  isPending ? "text-muted-foreground/40" : "text-muted-foreground"
-                }`}>
-                  {step.detail}
-                </p>
-              </div>
-            </motion.li>
-          );
-        })}
-      </ul>
-    </div>
+              </motion.li>
+            );
+          })}
+        </ul>
+      </div>
     </div>
   );
 }
